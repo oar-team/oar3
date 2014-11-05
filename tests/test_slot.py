@@ -1,4 +1,5 @@
 import unittest
+from  kao.slot import *
 
 class TestFoo(unittest.TestCase):
 

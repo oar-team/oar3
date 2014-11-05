@@ -76,6 +76,21 @@ def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
 
 #y = [ [(1, 4), (10,17)],  [(6,9), (19,22)], [(25,30)] ]
 
+
+def keep_no_empty_scat_bks(itvs, itvss_ref):
+    ''' keep_no_empty_scat_bks : 
+    keep no empty scattered blocks where their intersection with itvs is not empty '''
+    lr = len(itvss_ref)
+    i = 0 
+    r_itvss = []
+
+    while(i<lr):
+        x = itvss_ref[i]
+        if (intersec(x, itvs) != []):
+            r_itvss.append(x)
+        i += 1
+    return r_itvss
+
 def sub_intervals(itvs1,itvs2):
     lx = len(itvs1)
     ly = len(itvs2)
