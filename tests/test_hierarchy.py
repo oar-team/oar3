@@ -2,8 +2,34 @@ import unittest
 from  kao.hierarchy import *
 
 class TestHierarchy(unittest.TestCase):
-    def find(self):
-         self.assertEqual(1,1)
+    def test_find_resource_hierarchies_scattere1(self):
+        h0 = [[(1, 16)],[(17, 32)]]
+            
+        x = find_resource_hierarchies_scattered ([(1, 32)], [h0], [2])
+        self.assertEqual(x, [(1, 16), (17, 32)])
+
+    def test_find_resource_hierarchies_scattere2(self):
+        h0 = [[(1, 16)],[(17, 32)]]
+        h1 = [[(1,8)],[(9,16)],[(17,24)],[(25,32)]]
+
+        x = find_resource_hierarchies_scattered ([(1, 32)], [h0,h1], [2,1])
+        self.assertEqual(x, [(1, 8), (17, 24)])
+
+
+    def test_find_resource_hierarchies_scattere3(self):
+        h0 = [[(1, 16)],[(17, 32)]]
+        h1 = [[(1,8)],[(9,16)],[(17,24)],[(25,32)]]
+
+        x = find_resource_hierarchies_scattered ([(1, 12),(17,28)], [h0,h1], [2,1])
+        self.assertEqual(x, [(1, 8), (17, 24)])
+    
+    def test_find_resource_hierarchies_scattere4(self):
+        h0 = [[(1, 16)],[(17, 32)]]
+        h1 = [[(1,8)],[(9,16)],[(17,24)],[(25,32)]]
+        h2 = [[(1,4)], [(5,8)], [(8,12)], [(13,16)], [(17,20)],[(21,24)],[(25,28)],[(29,32)]]
+
+        x = find_resource_hierarchies_scattered ([(1, 32)], [h0,h1,h2], [2,1,1])
+        self.assertEqual(x, [(1, 4), (17, 20)])
 
 if __name__ == '__main__':
     unittest.main()

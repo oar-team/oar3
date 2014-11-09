@@ -3,7 +3,7 @@ from  kao.interval import *
 
 class TestInterval(unittest.TestCase):
 
-    def intersec(self):
+    def test_intersec(self):
         x =  [(1, 4), (6,9)]
         y = intersec(x,x)
         self.assertEqual(y,x)

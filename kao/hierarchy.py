@@ -1,5 +1,10 @@
 from interval import *
 
+class Hierarchy:
+    #TODO extract hierarchy from ressources table
+    def __init__(self,hy):
+        self.hy = hy
+
 def find_resource_hierarchies_scattered(itvs, hy, rqts):
     l_hy = len(hy)
     if (l_hy == 1):
