@@ -77,10 +77,26 @@ def assign_resources_mld_job_split_slots(slots, job, hy):
 
     split_slots(prev_sid_left, prev_sid_right, job)
 
-def schedule_id_jobs_ct_dep(slots_set, jobs, hy_levels, jobs_dependencies, req_jobs_status, id_jobs security_time):
+def schedule_id_jobs_ct_dep(slots_set, jobs, hy, jobs_dependencies, req_jobs_status, id_jobs security_time):
     '''Schedule loop with support for jobs container - can be recursive 
     (recursivity has not be tested) plus dependencies support actual schedule
     function used '''
 
-    for j_id in id_jobs:
-        pass
+    for jid in id_jobs:
+        job = jobs[jid]
+        #TODO
+        #if jobs_dependencies[j_id].has_key(j_id):
+        #    continue
+        #else:
+        
+        ss_id =0
+        if job.types.has_key("inner"):
+            ss_id = job.types["inner"]
+            
+        slots = slots_set[ss_id]
+
+        assign_resources_mld_job_split_slots(job, slots, hy)
+
+        if job.types.has_key("container"):
+            slot = Slot(1, 0, 0, job.res_set, job.start_time, \ 
+                        job.start_time + job.walltime - security_time)
