@@ -3,7 +3,7 @@ class Job:
                  moldable_id, mld_res_rqts):
         self.id = id
         self.state = state
-        self.start_time = b
+        self.start_time = start_time
         self.walltime = walltime
         self.user = user
         self.name = name

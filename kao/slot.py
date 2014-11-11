@@ -10,7 +10,8 @@ class Slot:
         self.itvs = itvs
         self.b = b
         self.e = e
-        
+
+# not used TO REMOVE?         
 def intersec_slots(slots):
     'Return intersection of intervals from a slot list'
     return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs), slots, slots[0].itvs) 
@@ -18,13 +19,15 @@ def intersec_slots(slots):
 def intersec_itvs_slots(slots, sid_left, sid_right):
     sid = sid_left
     itvs_acc = slots[sid].itvs
-    sid = slot[sid].next
+    sid = slots[sid].next
 
     while(sid != sid_right):
-        intersec(itvs_acc, slot[sid].itvs)
-        sid = slot[sid].next
+        itvs_acc = intersec(itvs_acc, slots[sid].itvs)
+        sid = slots[sid].next
+
     if (sid_left != sid_right):
-        intersec(itvs_acc,slot[sid_right].itvs)
+        itvs_acc = intersec(itvs_acc, slots[sid_right].itvs)
+
     return itvs_acc
 
 class SlotSet:
@@ -46,21 +49,21 @@ class SlotSet:
     def slot_before_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, slot.id, slot.itvs, slot.b, job.b-1)
+        a_slot = Slot(s_id, slot.prev, slot.id, slot.itvs, slot.b, job.start_time-1)
         slot.prev = s_id
         self.slots[s_id] = a_slot
 
     # generate B slot
     def slot_during_job(self, slot, job):
-        slot.s = max(slot.b, job.b)
-        slot.e = min(slot.e, job.b + job.walltime - 1)
-        slot.itvs = sub_intervals(slot.itvs - job.itvs)
+        slot.s = max(slot.b, job.start_time)
+        slot.e = min(slot.e, job.start_time + job.walltime - 1)
+        slot.itvs = sub_intervals(slot.itvs, job.res_set)
 
     # generate C slot - slot after job's end
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs, job.b + job.walltime, slot.e)
+        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs, job.start_time + job.walltime, slot.e)
         slot.next = s_id
         self.slots[s_id] = c_slot             
 
@@ -72,45 +75,48 @@ class SlotSet:
                 # generate AB | ABC 
                 if ((job.start_time + job.walltime) - 1) > slot.e:
                     # generate AB
-                    slot_before_job(slot, job)
-                    slot_during_job(slot, job)
+                    self.slot_before_job(slot, job)
+                    self.slot_during_job(slot, job)
                 else:
                     # generate ABC
-                    slot_before_job(slot, job)
-                    slot_during_job(slot, job)
-                    slot_after_job(slot, job)
+                    self.slot_before_job(slot, job)
+                    self.slot_during_job(slot, job)
+                    self.slot_after_job(slot, job)
             else:
                 # generate B | BC
                 if ((job.start_time + job.walltime) - 1) >= slot.e:
                     # generate B
-                    slot_during_job(slot, job)
+                    self.slot_during_job(slot, job)
                 else:
                     # generate BC
-                    slot_during_job(slot, job)
-                    slot_after_job(slot, job)
+                    self.slot_during_job(slot, job)
+                    self.slot_after_job(slot, job)
             if (sid == sid_right):
                 break
                 
-    def split_slots_prev_scheduled_jobs(self, jobs):
+
+#    def split_slots_prev_scheduled_one_job
+
+
+    def split_slots_prev_scheduled_jobs(self, ordered_jobs):
         ''' function which insert previously occupied slots in slots
         job must be sorted by start_time
         used in kamelot for pseudo_jobs_resources_available_upto splitting'''
-        slot = slots[1] # 1
-        id_slots2split = []
+        slot = self.slots[1] # 1
+        left_sid_2_split = 1
+        right_sid_2_split = 1
         
-        for job in jobs:
+        for job in ordered_jobs:
             # find_first_slot
-            while not( (slot.s > job.start_time) or ((slot.s <= job.start_time) and (job.start_time <= slot.e)) ):
-                slot = slots[slot.next]
-                
-            slot_begin = slot 
+            while not( (slot.b > job.start_time) or ((slot.b <= job.start_time) and (job.start_time <= slot.e)) ):
+                left_sid_2_split = slot.next
+                slot = self.slots[slot.next]
+                            
             # find_slots_encompass
-            while not (slot.e >  (job.start_time + job.walltime)): 
-                id_slots2split.append[slot.id]
-                slot = slots[slot.next]
+            while not (slot.e >  (job.start_time + job.walltime)):
+                right_sid_2_split = slot.next
+                slot = self.slots[slot.next]
+                
+            self.split_slots(left_sid_2_split, right_sid_2_split, job)
 
-            # 
-            split_slots(id_slots2split, job)
-            
-            slot = slot_begin
 

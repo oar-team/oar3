@@ -3,18 +3,23 @@ from job import *
 from slot import *
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
+    jobs_slotsets = {0:[]}
     for j_id in ordered_id_jobs:
         job = jobs[j_id]
         
         if job.types.has_key("container"):
             t_e = job.start_time + job.walltime - security_time
             slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
+            jobs_slotsets[j_id] = []
 
         ss_id =0
         if job.types.has_key("inner"):
             ss_id = job.types["inner"]
+        
+        jobs_slotsets[ss_id].append(job)
             
-        split_slots_prev_scheduled_one_job(slots_sets[ss_id], [job])
+        for ss_id,slot_set in slots_sets.iteritems():
+            slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
     
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance 
@@ -38,7 +43,7 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
         #find next contiguous slots_time
         sid_left += 1 
         slot_s = slots[sid_left].s
-        while( (slot_e-slot_s+1) < walltime) ) :
+        while ( (slot_e-slot_s+1) < walltime ):
             sid_right += 1
             slot_e = slots[sid_right].e
         #
@@ -48,7 +53,7 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
     return (itvs, sid_left, sid_right)
 
         
-def assign_resources_job_split_slots:
+def assign_resources_job_split_slots():
     '''not implemented see assign_resources_mld_job_split_slots'''
 
 def assign_resources_mld_job_split_slots(slots, job, hy):
@@ -77,7 +82,7 @@ def assign_resources_mld_job_split_slots(slots, job, hy):
 
     split_slots(prev_sid_left, prev_sid_right, job)
 
-def schedule_id_jobs_ct_dep(slots_set, jobs, hy, jobs_dependencies, req_jobs_status, id_jobs security_time):
+def schedule_id_jobs_ct(slots_set, jobs, hy, req_jobs_status, id_jobs, security_time):
     '''Schedule loop with support for jobs container - can be recursive 
     (recursivity has not be tested) plus dependencies support actual schedule
     function used '''
@@ -98,5 +103,11 @@ def schedule_id_jobs_ct_dep(slots_set, jobs, hy, jobs_dependencies, req_jobs_sta
         assign_resources_mld_job_split_slots(job, slots, hy)
 
         if job.types.has_key("container"):
-            slot = Slot(1, 0, 0, job.res_set, job.start_time, \ 
+            slot = Slot(1, 0, 0, job.res_set, job.start_time, \
                         job.start_time + job.walltime - security_time)
+
+
+j1 = Job(1,"", 10, 100, "", "", "", {}, [(10, 20), (25,30)], 1, [])
+slots_set = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 1000))
+all_slots_sets = {0:slots_set}
+set_slots_with_prev_scheduled_jobs(all_slots_sets, {1:j1,2:j2}, [1],60)
