@@ -10,6 +10,12 @@ class Slot:
         self.itvs = itvs
         self.b = b
         self.e = e
+    def show(self):
+        print "(id:", self.id, "p:", self.prev, "n:", self.next, ") b:", self.b, "e:", self.e, "itvs:", self.itvs
+
+    def copy_itvs(self):
+        return [itv for itv in self.itvs]
+    
 
 # not used TO REMOVE?         
 def intersec_slots(slots):
@@ -36,6 +42,12 @@ class SlotSet:
         self.slots = {1: first_slot}
         self.last_id = 1
 
+
+    def show_slots(self):
+        for i, slot in self.slots.iteritems():
+            slot.show()
+        print '---'
+
     #
     # split slot accordingly with job resource assignment *)
     # new slot A + B + C (A, B and C can be null)         *)
@@ -47,15 +59,19 @@ class SlotSet:
 
     # generate A slot - slot before job's begin
     def slot_before_job(self, slot, job):
+        s_id = slot.id
         self.last_id += 1
-        s_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, slot.id, slot.itvs, slot.b, job.start_time-1)
+        n_id = self.last_id
+        a_slot = Slot(s_id, slot.prev, n_id, slot.copy_itvs(), slot.b, job.start_time-1)
         slot.prev = s_id
         self.slots[s_id] = a_slot
+        #slot_id is changed so we have always the rightmost slot (min slot.b) w/ sid = 1 r 
+        slot.id = n_id
+        self.slots[n_id] = slot
 
     # generate B slot
     def slot_during_job(self, slot, job):
-        slot.s = max(slot.b, job.start_time)
+        slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         slot.itvs = sub_intervals(slot.itvs, job.res_set)
 
@@ -63,7 +79,7 @@ class SlotSet:
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs, job.start_time + job.walltime, slot.e)
+        c_slot = Slot(s_id, slot.id, slot.next, slot.copy_itvs(), job.start_time + job.walltime, slot.e)
         slot.next = s_id
         self.slots[s_id] = c_slot             
 
@@ -73,15 +89,17 @@ class SlotSet:
             slot = self.slots[sid]
             if job.start_time > slot.b:
                 # generate AB | ABC 
-                if ((job.start_time + job.walltime) - 1) > slot.e:
+                if ( job.start_time + job.walltime)  > slot.e:
                     # generate AB
                     self.slot_before_job(slot, job)
                     self.slot_during_job(slot, job)
                 else:
                     # generate ABC
                     self.slot_before_job(slot, job)
-                    self.slot_during_job(slot, job)
+                    # generate C before modify slot / B
                     self.slot_after_job(slot, job)
+                    self.slot_during_job(slot, job)
+
             else:
                 # generate B | BC
                 if ((job.start_time + job.walltime) - 1) >= slot.e:
@@ -89,14 +107,14 @@ class SlotSet:
                     self.slot_during_job(slot, job)
                 else:
                     # generate BC
-                    self.slot_during_job(slot, job)
+                    # generate C before modify slot / B
                     self.slot_after_job(slot, job)
+                    self.slot_during_job(slot, job)
+
             if (sid == sid_right):
                 break
                 
-
 #    def split_slots_prev_scheduled_one_job
-
 
     def split_slots_prev_scheduled_jobs(self, ordered_jobs):
         ''' function which insert previously occupied slots in slots

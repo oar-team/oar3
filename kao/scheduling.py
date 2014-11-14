@@ -107,7 +107,7 @@ def schedule_id_jobs_ct(slots_set, jobs, hy, req_jobs_status, id_jobs, security_
                         job.start_time + job.walltime - security_time)
 
 
-j1 = Job(1,"", 10, 100, "", "", "", {}, [(10, 20), (25,30)], 1, [])
-slots_set = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 1000))
-all_slots_sets = {0:slots_set}
-set_slots_with_prev_scheduled_jobs(all_slots_sets, {1:j1,2:j2}, [1],60)
+#j1 = Job(1,"", 10, 100, "", "", "", {}, [(10, 20), (25,30)], 1, [])
+#slots_set = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 1000))
+#all_slots_sets = {0:slots_set}
+#set_slots_with_prev_scheduled_jobs(all_slots_sets, {1:j1,2:j2}, [1],60)
