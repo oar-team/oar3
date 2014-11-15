@@ -76,7 +76,17 @@ def slots_2_val_ref(slots):
 #slots_set = SlotSet(Slot(1, 0, 2, [(1, 32)], 1, 20))
 #slots_set.slots[2]=Slot(2,1,0,[(10,15,),(21,30)],21,40)
 
-#plot_slots_and_job(slots_set, {1:j1,2:j2}, 40, 70)
+
+
+j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
+j2 = Job(1,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
+ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
+all_ss = {0:ss}
+
+#set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
+
+
+#plot_slots_and_job(all_ss[0], {1:j1,2:j2}, 40, 100)
 
 #j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
 #ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))

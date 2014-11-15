@@ -129,12 +129,14 @@ class SlotSet:
             while not( (slot.b > job.start_time) or ((slot.b <= job.start_time) and (job.start_time <= slot.e)) ):
                 left_sid_2_split = slot.next
                 slot = self.slots[slot.next]
-                            
+
+            right_sid_2_split = left_sid_2_split
             # find_slots_encompass
             while not (slot.e >  (job.start_time + job.walltime)):
                 right_sid_2_split = slot.next
                 slot = self.slots[slot.next]
                 
+            #self.show_slots()
             self.split_slots(left_sid_2_split, right_sid_2_split, job)
 
 
