@@ -18,8 +18,8 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, securi
         
         jobs_slotsets[ss_id].append(job)
             
-        for ss_id,slot_set in slots_sets.iteritems():
-            slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
+    for ss_id,slot_set in slots_sets.iteritems():
+        slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
     
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance 

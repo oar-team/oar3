@@ -83,10 +83,9 @@ j2 = Job(1,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
 ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
 all_ss = {0:ss}
 
-#set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
+set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
 
-
-#plot_slots_and_job(all_ss[0], {1:j1,2:j2}, 40, 100)
+plot_slots_and_job(all_ss[0], {1:j1,2:j2}, 40, 100)
 
 #j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
 #ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
