@@ -13,10 +13,6 @@ class Slot:
     def show(self):
         print "(id:", self.id, "p:", self.prev, "n:", self.next, ") b:", self.b, "e:", self.e, "itvs:", self.itvs
 
-    def copy_itvs(self):
-        return [itv for itv in self.itvs]
-    
-
 # not used TO REMOVE?         
 def intersec_slots(slots):
     'Return intersection of intervals from a slot list'
@@ -71,7 +67,7 @@ class SlotSet:
         s_id = slot.id
         self.last_id += 1
         n_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, n_id, slot.copy_itvs(), slot.b, job.start_time-1)
+        a_slot = Slot(s_id, slot.prev, n_id, list(slot.itvs), slot.b, job.start_time-1)
         slot.prev = s_id
         self.slots[s_id] = a_slot
         #slot_id is changed so we have always the rightmost slot (min slot.b) w/ sid = 1 r 
@@ -88,7 +84,7 @@ class SlotSet:
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, slot.copy_itvs(), job.start_time + job.walltime, slot.e)
+        c_slot = Slot(s_id, slot.id, slot.next, list(slot.itvs), job.start_time + job.walltime, slot.e)
         slot.next = s_id
         self.slots[s_id] = c_slot             
 
