@@ -25,14 +25,24 @@ def intersec_slots(slots):
 def intersec_itvs_slots(slots, sid_left, sid_right):
     sid = sid_left
     itvs_acc = slots[sid].itvs
-    sid = slots[sid].next
+#    sid = slots[sid].next
 
-    while(sid != sid_right):
+#    if (sid_left == sid_right):
+#        return itvs_acc
+    
+#    while True:
+#        print "yop---->",sid
+#        itvs_acc = intersec(itvs_acc, slots[sid].itvs)
+#        sid = slots[sid].next
+
+#        if (sid_left == sid_right):
+#            break
+#            itvs_acc = intersec(itvs_acc, slots[sid_right].itvs)
+    
+    while (sid != sid_right):
+        sid = slots[sid].next
         itvs_acc = intersec(itvs_acc, slots[sid].itvs)
         sid = slots[sid].next
-
-    if (sid_left != sid_right):
-        itvs_acc = intersec(itvs_acc, slots[sid_right].itvs)
 
     return itvs_acc
 

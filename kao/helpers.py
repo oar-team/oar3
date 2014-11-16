@@ -76,20 +76,32 @@ def slots_2_val_ref(slots):
 #slots_set = SlotSet(Slot(1, 0, 2, [(1, 32)], 1, 20))
 #slots_set.slots[2]=Slot(2,1,0,[(10,15,),(21,30)],21,40)
 
-
-
 j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
-j2 = Job(1,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
-ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
+j2 = Job(2,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
+
+res = [(1, 32)]
+ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
 all_ss = {0:ss}
 
-set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
+hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-plot_slots_and_job(all_ss[0], {1:j1,2:j2}, 40, 100)
+j3 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
+         [ 
+             (1, 60, 
+              [  ( [("node", 2)], res)  ]
+             )
+         ]         
+       ) 
+assign_resources_mld_job_split_slots(ss, j3, hy)
 
-#j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
-#ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
-#ss.split_slots(1,1,j1)
+#set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
+
+plot_slots_and_job(all_ss[0], {1:j3}, 40, 150)
+
+
+#j4 = Job(1,"", 0 , 10, "", "", "", {}, [(10, 20)], 1, [])
+#ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 0, 20))
+#ss.split_slots(1,1,j4)
 #ss.show_slots()
 
 

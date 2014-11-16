@@ -1,5 +1,6 @@
 from hierarchy import *
 from job import *
+from interval import intersec
 from slot import *
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
@@ -26,10 +27,16 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     of a job'''
     result = []
     for hy_res_rqt in hy_res_rqts:
-        (hy_level, hy_nb, constraints) = hy_res_rq
-        itvs_cts_slot = inter_intervals(contraints, itvs_slot)
-        num_hy = hy[hy_level]
-        result.extend( find_resource_hierarchies_scattered(itvs_cts_slot, hy_level, hy_nb) )
+        (hy_level_nbs, constraints) = hy_res_rqt
+        hy_levels = []
+        hy_nbs = []
+        for hy_l_n in hy_level_nbs:
+            (l_name, n) = hy_l_n
+            hy_levels.append(hy[l_name])
+            hy_nbs.append(n)
+        itvs_cts_slots = intersec(constraints, itvs_slots)
+
+        result.extend( find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs) )
 
     return result
 
@@ -38,31 +45,34 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = []
     sid_left = 0
+    sid_right = 1
     slot_e = slots[sid_right].e
     while(itvs == []):
         #find next contiguous slots_time
         sid_left += 1 
-        slot_s = slots[sid_left].s
-        while ( (slot_e-slot_s+1) < walltime ):
+        slot_b = slots[sid_left].b
+        while ( (slot_e-slot_b+1) < walltime ):
             sid_right += 1
             slot_e = slots[sid_right].e
         #
-        itvs_avail = inter_itvs_slots(slots, sid_left, sid_right) 
+        print 'sid_L, sid_R', sid_left, sid_right 
+        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right) 
+        print 'yop -->', hy_res_rqts
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
     return (itvs, sid_left, sid_right)
 
-        
 def assign_resources_job_split_slots():
     '''not implemented see assign_resources_mld_job_split_slots'''
 
-def assign_resources_mld_job_split_slots(slots, job, hy):
-    '''Assign resources to a job and update the list of slots accordingly by 
-    splitting concerned slot - moldable version'''
+def assign_resources_mld_job_split_slots(slots_set, job, hy):
+    '''Assign resources to a job and update by spliting the concerned slots - moldable version'''
     prev_t_finish = 2**32-1 # large enough
     prev_res_set = []
-    prev_res_req = []
+    prev_res_rqt = []
     prev_id_slots = []
+
+    slots = slots_set.slots 
 
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
@@ -71,18 +81,21 @@ def assign_resources_mld_job_split_slots(slots, job, hy):
         if (t_finish < prev_t_finish):
             prev_t_finish = t_finish
             prev_res_set = res_set
-            prev_res_req = res_rqt
+            prev_res_rqt = res_rqt
             prev_sid_left = sid_left
             prev_sid_right = sid_right
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
     job.res_set = prev_res_set
-    job.w = walltime
+    job.walltime = walltime
     job.mld_id = mld_id
 
-    split_slots(prev_sid_left, prev_sid_right, job)
+    slots_set.show_slots()
+    print prev_sid_left, prev_sid_right
 
-def schedule_id_jobs_ct(slots_set, jobs, hy, req_jobs_status, id_jobs, security_time):
+    slots_set.split_slots(prev_sid_left, prev_sid_right, job)
+
+def schedule_id_jobs_ct(slots_sets, jobs, hy, req_jobs_status, id_jobs, security_time):
     '''Schedule loop with support for jobs container - can be recursive 
     (recursivity has not be tested) plus dependencies support actual schedule
     function used '''
@@ -98,9 +111,9 @@ def schedule_id_jobs_ct(slots_set, jobs, hy, req_jobs_status, id_jobs, security_
         if job.types.has_key("inner"):
             ss_id = job.types["inner"]
             
-        slots = slots_set[ss_id]
+        slots_set = slots_sets[ss_id]
 
-        assign_resources_mld_job_split_slots(job, slots, hy)
+        assign_resources_mld_job_split_slots(slots_set, job, hy)
 
         if job.types.has_key("container"):
             slot = Slot(1, 0, 0, job.res_set, job.start_time, \

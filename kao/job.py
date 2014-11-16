@@ -11,5 +11,9 @@ class Job:
         self.types = types
         self.res_set = res_set
         self.moldable_id = moldable_id
-        self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, [(hy_level, hy_nb, constraints)]) ]
+        self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
+        #                                   [   [ (hy_level, hy_nb, constraints) ]  ]
+        # hy_level = [ [string] ]
+        # hy_nb = [ [ int ] ]
+        # constraints = [ [itvs]  ]
     

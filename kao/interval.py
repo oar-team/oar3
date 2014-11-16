@@ -127,7 +127,7 @@ def sub_intervals(itvs1,itvs2):
                     else:
                             if (y[1] < x[1]):
                                 #x overlap partially
-                                itvs1[i] = (y[e]+1,x[1])
+                                itvs1[i] = (y[1]+1,x[1])
                                 k += 1
                             else:
                                 # y overlap totally x
