@@ -42,7 +42,6 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
     while (sid != sid_right):
         sid = slots[sid].next
         itvs_acc = intersec(itvs_acc, slots[sid].itvs)
-        sid = slots[sid].next
 
     return itvs_acc
 

@@ -54,10 +54,8 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
         while ( (slot_e-slot_b+1) < walltime ):
             sid_right += 1
             slot_e = slots[sid_right].e
-        #
-        print 'sid_L, sid_R', sid_left, sid_right 
+        
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right) 
-        print 'yop -->', hy_res_rqts
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
     return (itvs, sid_left, sid_right)
@@ -89,9 +87,6 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     job.res_set = prev_res_set
     job.walltime = walltime
     job.mld_id = mld_id
-
-    slots_set.show_slots()
-    print prev_sid_left, prev_sid_right
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
 

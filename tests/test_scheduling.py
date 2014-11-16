@@ -35,7 +35,28 @@ class TestScheduling(unittest.TestCase):
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
-#    def 
+    def test_assign_resources_mld_job_split_slots(self):
+            
+        v = [ ( 0 , 59 , [(17, 32)] ),( 60 , 100 , [(1, 32)] ) ]
+
+        res = [(1, 32)]
+        ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+        all_ss = {0:ss}
+        
+        hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
+        
+        j1 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
+                 [ 
+                     (1, 60, 
+                      [  ( [("node", 2)], res)  ]
+                  )
+                 ]         
+        )
+        
+        assign_resources_mld_job_split_slots(ss, j1, hy)
+
+        self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
+                    
 
     def test_schedule_id_jobs_ct(self):
         
