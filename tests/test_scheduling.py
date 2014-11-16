@@ -41,11 +41,8 @@ class TestScheduling(unittest.TestCase):
 
         res = [(1, 32)]
         ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-        all_ss = {0:ss}
-        
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
-        
-        j1 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
+        j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
                  [ 
                      (1, 60, 
                       [  ( [("node", 2)], res)  ]
@@ -59,10 +56,24 @@ class TestScheduling(unittest.TestCase):
                     
 
     def test_schedule_id_jobs_ct(self):
+        v = [ ( 0 , 59 , [(17, 32)] ),( 60 , 100 , [(1, 32)] ) ]
+
+        res = [(1, 32)]
+        ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+        all_ss = {0:ss}
+        hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
+        j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
+                 [ 
+                     (1, 60, 
+                      [  ( [("node", 2)], res)  ]
+                  )
+                 ]         
+        )
         
-#        schedule_id_jobs_ct(slots_set, jobs, hy, req_jobs_status???, id_jobs, security_time):
-        sched = []
-        self.assertEqual(sched,[]) 
+        schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
+
+        self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -90,10 +90,8 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
 
-def schedule_id_jobs_ct(slots_sets, jobs, hy, req_jobs_status, id_jobs, security_time):
-    '''Schedule loop with support for jobs container - can be recursive 
-    (recursivity has not be tested) plus dependencies support actual schedule
-    function used '''
+def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
+    '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
     for jid in id_jobs:
         job = jobs[jid]

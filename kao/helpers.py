@@ -92,7 +92,9 @@ j3 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0,
              )
          ]         
        ) 
-assign_resources_mld_job_split_slots(ss, j3, hy)
+
+schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20)
+#assign_resources_mld_job_split_slots(ss, j3, hy)
 
 #set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
 
