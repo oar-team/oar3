@@ -71,12 +71,14 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     prev_id_slots = []
 
     slots = slots_set.slots 
+    prev_start_time = slots[1].b
 
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
         (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots, job, res_rqt, hy)
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
+            prev_start_time = slots[sid_left].b
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
@@ -85,16 +87,19 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
     job.res_set = prev_res_set
-    job.walltime = walltime
+    job.start_time = prev_start_time
+    job.walltime = walltime 
     job.mld_id = mld_id
 
-    slots_set.split_slots(prev_sid_left, prev_sid_right, job)
+    #Take avantage of job.starttime = slots[prev_sid_left].b
+    slots_set.split_slots(prev_sid_left, prev_sid_right, job) 
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
     for jid in id_jobs:
         job = jobs[jid]
+        print "j_id:", jid
         #TODO
         #if jobs_dependencies[j_id].has_key(j_id):
         #    continue
@@ -105,6 +110,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
             ss_id = job.types["inner"]
             
         slots_set = slots_sets[ss_id]
+        
+        slots_set.show_slots()
 
         assign_resources_mld_job_split_slots(slots_set, job, hy)
 

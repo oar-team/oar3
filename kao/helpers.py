@@ -58,8 +58,8 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
     except:
         pass
     plt.show()
-
-
+    #mpld3.show()
+        
 
 def slots_2_val_ref(slots):
     '''function used to generate reference value for unitest'''    
@@ -71,40 +71,67 @@ def slots_2_val_ref(slots):
         if (sid == 0):
             break
 
+def slots_all_2_val_ref(slots):
+    '''function used to generate reference value for unitest'''    
+    sid = 1
+    while True:
+        slot = slots[sid]            
+        print '(', slot.id, ',', slot.prev, ',', slot.next, ',', slot.itvs, ',', slot.b, ',', slot.e, '),'
+        sid = slot.next
+        if (sid == 0):
+            break
+
+
 #j1 = Job(1,"", 10, 10, "", "", "", {}, [(10, 20), (25,30)], 1, [])
 #j2 = Job(2,"", 5, 5, "", "", "", {}, [(1, 10), (15,20)], 1, [])
 #slots_set = SlotSet(Slot(1, 0, 2, [(1, 32)], 1, 20))
 #slots_set.slots[2]=Slot(2,1,0,[(10,15,),(21,30)],21,40)
 
-j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
-j2 = Job(2,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
+#j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
+#j2 = Job(2,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
 
 res = [(1, 32)]
-ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
 all_ss = {0:ss}
 
 hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-j3 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
-         [ 
-             (1, 60, 
-              [  ( [("node", 2)], res)  ]
-             )
-         ]         
-       ) 
+jobs ={}
+#j3 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 2)], res)  ])]) 
+n = 1
+for i in range(1, n+1):
+    jobs[i] = Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], res)  ])]) 
+j_ids = [i for i in range(1, n+1)]
 
-schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20)
+#j = Job(4,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 2)], res)  ])]) 
+#jobs[4] = j
+#j_ids.append(4)
+
+#schedule_id_jobs_ct(all_ss, jobs, hy, j_ids, 10)
+
 #assign_resources_mld_job_split_slots(ss, j3, hy)
-
 #set_slots_with_prev_scheduled_jobs(all_ss, {1:j1, 2:j2}, [1,2], 10)
 
-plot_slots_and_job(all_ss[0], {1:j3}, 40, 150)
+#plot_slots_and_job(all_ss[0], jobs, 40, 500)
 
 
-#j4 = Job(1,"", 0 , 10, "", "", "", {}, [(10, 20)], 1, [])
+#j = Job(1,"", 0 , 10, "", "", "", {}, [(10, 20)], 1, [])
 #ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 0, 20))
 #ss.split_slots(1,1,j4)
 #ss.show_slots()
 
+#############
+v = [ ( 1, 0, 2, [], 0, 59 ),
+      ( 2, 1, 0, [(1, 32)], 60, 1000  ) ]
+
+ss = SlotSet(None, { i+1: Slot(*a) for i,a in enumerate(v) } )
+j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], res)  ])]) 
+j2 = Job(2,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], res)  ])]) 
+
+jobs = {1: j1, 2: j2}
+
+schedule_id_jobs_ct({0: ss}, jobs, hy, [1, 2], 10)
+
+plot_slots_and_job(ss, jobs, 40, 500)
 
 

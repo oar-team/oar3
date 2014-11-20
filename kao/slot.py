@@ -11,7 +11,7 @@ class Slot:
         self.b = b
         self.e = e
     def show(self):
-        print "(id:", self.id, "p:", self.prev, "n:", self.next, ") b:", self.b, "e:", self.e, "itvs:", self.itvs
+        print "(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:", self.itvs, "b:", self.b, "e:", self.e
 
 # not used TO REMOVE?         
 def intersec_slots(slots):
@@ -42,14 +42,20 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
     return itvs_acc
 
 class SlotSet:
-    def __init__(self, first_slot ):
-        
-        self.slots = {1: first_slot}
-        self.last_id = 1
-
+    def __init__(self, first_slot, slots = {} ):
+        if (first_slot != None):
+            self.slots = {1: first_slot}
+            self.last_id = 1
+        else:
+            self.slots = slots
+            s = slots[1]
+            while (s.next !=0):
+                s = slots[s.next]
+            self.last_id = s.id
 
     def show_slots(self):
         for i, slot in self.slots.iteritems():
+            print i
             slot.show()
         print '---'
 
@@ -89,6 +95,7 @@ class SlotSet:
         self.slots[s_id] = c_slot             
 
     def split_slots(self, sid_left, sid_right, job):
+        print "yop--->", sid_left, sid_right, job.start_time, job.walltime
         sid = sid_left
         while True:
             slot = self.slots[sid]
