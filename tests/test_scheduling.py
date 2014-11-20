@@ -55,7 +55,7 @@ class TestScheduling(unittest.TestCase):
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
                     
 
-    def test_schedule_id_jobs_ct(self):
+    def test_schedule_id_jobs_ct_1(self):
         v = [ ( 0 , 59 , [(17, 32)] ),( 60 , 100 , [(1, 32)] ) ]
 
         res = [(1, 32)]
@@ -73,6 +73,9 @@ class TestScheduling(unittest.TestCase):
         schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
+
+
+
 
 
 if __name__ == '__main__':

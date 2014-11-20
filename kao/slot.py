@@ -21,20 +21,7 @@ def intersec_slots(slots):
 def intersec_itvs_slots(slots, sid_left, sid_right):
     sid = sid_left
     itvs_acc = slots[sid].itvs
-#    sid = slots[sid].next
 
-#    if (sid_left == sid_right):
-#        return itvs_acc
-    
-#    while True:
-#        print "yop---->",sid
-#        itvs_acc = intersec(itvs_acc, slots[sid].itvs)
-#        sid = slots[sid].next
-
-#        if (sid_left == sid_right):
-#            break
-#            itvs_acc = intersec(itvs_acc, slots[sid_right].itvs)
-    
     while (sid != sid_right):
         sid = slots[sid].next
         itvs_acc = intersec(itvs_acc, slots[sid].itvs)
@@ -42,7 +29,12 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
     return itvs_acc
 
 class SlotSet:
-    def __init__(self, first_slot, slots = {} ):
+
+    def __init__(self, first_slot ):
+        self.slots = {1: first_slot}
+        self.last_id = 1
+
+    def __init1__(self, first_slot, slots = {} ):
         if (first_slot != None):
             self.slots = {1: first_slot}
             self.last_id = 1
@@ -95,7 +87,7 @@ class SlotSet:
         self.slots[s_id] = c_slot             
 
     def split_slots(self, sid_left, sid_right, job):
-        print "yop--->", sid_left, sid_right, job.start_time, job.walltime
+        #        print "yop--->", sid_left, sid_right, job.start_time, job.walltime
         sid = sid_left
         while True:
             slot = self.slots[sid]

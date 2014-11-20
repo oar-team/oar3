@@ -111,7 +111,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
             
         slots_set = slots_sets[ss_id]
         
-        slots_set.show_slots()
+        #slots_set.show_slots()
 
         assign_resources_mld_job_split_slots(slots_set, job, hy)
 
