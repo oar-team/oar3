@@ -81,7 +81,6 @@ def slots_all_2_val_ref(slots):
         if (sid == 0):
             break
 
-
 #j1 = Job(1,"", 10, 10, "", "", "", {}, [(10, 20), (25,30)], 1, [])
 #j2 = Job(2,"", 5, 5, "", "", "", {}, [(1, 10), (15,20)], 1, [])
 #slots_set = SlotSet(Slot(1, 0, 2, [(1, 32)], 1, 20))
@@ -91,8 +90,8 @@ def slots_all_2_val_ref(slots):
 #j2 = Job(2,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
 
 res = [(1, 32)]
-ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
-all_ss = {0:ss}
+#ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+#all_ss = {0:ss}
 
 hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
@@ -153,17 +152,17 @@ v = [ ( 1, 0, 0, [(1, 32)], 0, 2**31  ) ]
 
 #ss = SlotSet(None, { i+1: Slot(*a) for i,a in enumerate(v) } )
 
-ss = SlotSet(Slot(1, 0, 0, res, 0, 2**31)) 
+ss = SlotSet(Slot(1, 0, 0, list(res), 10, 2**31)) 
 
 ss.show_slots()
 
-n = 2
+n = 1000
 jobs = {}
 for i in range (1, n+1):
-    jobs[i]= Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], res)  ])]) 
+    jobs[i]= Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], list(res) )  ])]) 
 
 jids = range(1, n+1)
 
 schedule_id_jobs_ct({0: ss}, jobs, hy, jids, 10)
 
-#plot_slots_and_job(ss, jobs, 40, 10000)
+plot_slots_and_job(ss, jobs, 40, 10000)

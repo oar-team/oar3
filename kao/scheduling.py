@@ -34,8 +34,8 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             (l_name, n) = hy_l_n
             hy_levels.append(hy[l_name])
             hy_nbs.append(n)
-        itvs_cts_slots = intersec(constraints, itvs_slots)
 
+        itvs_cts_slots = intersec(constraints, itvs_slots)
         result.extend( find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs) )
 
     return result
@@ -54,8 +54,8 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
         while ( (slot_e-slot_b+1) < walltime ):
             sid_right += 1
             slot_e = slots[sid_right].e
-        
-        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right) 
+
+        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)         
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
     return (itvs, sid_left, sid_right)
@@ -92,14 +92,20 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     job.mld_id = mld_id
 
     #Take avantage of job.starttime = slots[prev_sid_left].b
+    #print "before"
+
     slots_set.split_slots(prev_sid_left, prev_sid_right, job) 
+
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
+    #    for k,job in jobs.iteritems():
+    #print "*********j_id:", k, job.mld_res_rqts[0]
+
     for jid in id_jobs:
         job = jobs[jid]
-        print "j_id:", jid
+        #print "j_id:", jid, job.mld_res_rqts[0]
         #TODO
         #if jobs_dependencies[j_id].has_key(j_id):
         #    continue
@@ -118,5 +124,3 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
         if job.types.has_key("container"):
             slot = Slot(1, 0, 0, job.res_set, job.start_time, \
                         job.start_time + job.walltime - security_time)
-
-

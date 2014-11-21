@@ -30,11 +30,11 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
 class SlotSet:
 
-    def __init__(self, first_slot ):
+    def __init1__(self, first_slot ):
         self.slots = {1: first_slot}
         self.last_id = 1
 
-    def __init1__(self, first_slot, slots = {} ):
+    def __init__(self, first_slot, slots = {} ):
         if (first_slot != None):
             self.slots = {1: first_slot}
             self.last_id = 1
@@ -142,5 +142,3 @@ class SlotSet:
                 
             #self.show_slots()
             self.split_slots(left_sid_2_split, right_sid_2_split, job)
-
-

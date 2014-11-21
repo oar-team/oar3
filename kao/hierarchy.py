@@ -7,6 +7,7 @@ class Hierarchy:
 
 def find_resource_hierarchies_scattered(itvs, hy, rqts):
     l_hy = len(hy)
+    #    print "find itvs: ", itvs, rqts[0]
     if (l_hy == 1):
         return extract_n_scattered_block_itv(itvs, hy[0], rqts[0])
     else:
@@ -32,8 +33,8 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
                 print avail_bks[i], "*", hy[h+1]
                 #TODO test cosf of [] filtering .....
                 avail_sub_bks = [ intersec(avail_bks[i],x) for x in hy[h+1] if intersec(avail_bks[i],x) != [] ] 
-                print avail_sub_bks
-                print "--------------------------------------"
+                #print avail_sub_bks
+                #print "--------------------------------------"
                 r = extract_n_scattered_block_itv(itvs, avail_sub_bks, rqts[h+1])
                 #r = []
                 if (r != []):
