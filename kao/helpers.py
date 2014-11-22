@@ -156,7 +156,7 @@ ss = SlotSet(Slot(1, 0, 0, list(res), 10, 2**31))
 
 ss.show_slots()
 
-n = 1000
+n = 10
 jobs = {}
 for i in range (1, n+1):
     jobs[i]= Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 4)], list(res) )  ])]) 
@@ -165,4 +165,4 @@ jids = range(1, n+1)
 
 schedule_id_jobs_ct({0: ss}, jobs, hy, jids, 10)
 
-plot_slots_and_job(ss, jobs, 40, 10000)
+#plot_slots_and_job(ss, jobs, 40, 10000)

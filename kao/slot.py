@@ -30,10 +30,6 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
 class SlotSet:
 
-    def __init1__(self, first_slot ):
-        self.slots = {1: first_slot}
-        self.last_id = 1
-
     def __init__(self, first_slot, slots = {} ):
         if (first_slot != None):
             self.slots = {1: first_slot}
@@ -44,6 +40,9 @@ class SlotSet:
             while (s.next !=0):
                 s = slots[s.next]
             self.last_id = s.id
+            
+        # cache the last sid_left given for by walltime 
+        self.cache = {}
 
     def show_slots(self):
         for i, slot in self.slots.iteritems():

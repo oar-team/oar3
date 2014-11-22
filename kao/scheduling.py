@@ -40,24 +40,42 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
     return result
 
-def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy):
+def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache):
     '''find first_suitable_contiguous_slot '''
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = []
-    sid_left = 0
-    sid_right = 1
+    updated_cache = False
+    
+    # to not always begin by the first slots ( O(n^2) ) 
+    if walltime in cache:
+        sid_left = cache[walltime]
+    else:
+        sid_left = 1
+    
+    sid_right = sid_left
+    
     slot_e = slots[sid_right].e
-    while(itvs == []):
+
+    while True:
         #find next contiguous slots_time
-        sid_left += 1 
+  
         slot_b = slots[sid_left].b
-        while ( (slot_e-slot_b+1) < walltime ):
-            sid_right += 1
+
+        while ( (slot_e-slot_b+1) < walltime):
+            sid_right = slots[sid_right].next
             slot_e = slots[sid_right].e
+        
+        if not updated_cache: #and slots[sid_left].itvs != [] #TO TEST 
+            cache[walltime] = sid_left
 
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)         
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
+        if (itvs != []):
+            break
+
+        sid_left = slots[sid_left].next            
+      
     return (itvs, sid_left, sid_right)
 
 def assign_resources_job_split_slots():
@@ -70,12 +88,13 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     prev_res_rqt = []
     prev_id_slots = []
 
-    slots = slots_set.slots 
+    slots = slots_set.slots
+    cache = slots_set.cache
     prev_start_time = slots[1].b
 
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
-        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots, job, res_rqt, hy)
+        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache)
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
             prev_start_time = slots[sid_left].b
