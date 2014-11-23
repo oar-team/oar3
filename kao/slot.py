@@ -41,7 +41,9 @@ class SlotSet:
                 s = slots[s.next]
             self.last_id = s.id
             
-        # cache the last sid_left given for by walltime 
+        #  cache the last sid_left given for by walltime => not used
+        # cache the last sid_left given for same previous job
+        #  (same requested resources w/ constraintes)
         self.cache = {}
 
     def show_slots(self):

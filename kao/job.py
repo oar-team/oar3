@@ -21,7 +21,7 @@ class Job:
 
     '''
     def __init__(self, id, state, start_time, walltime, user, name, project, types, res_set, \
-                 moldable_id, mld_res_rqts):
+                 moldable_id, mld_res_rqts, key_cache=""):
         self.id = id
         self.state = state
         self.start_time = start_time
@@ -37,4 +37,11 @@ class Job:
         # hy_level = [ [string] ]
         # hy_nb = [ [ int ] ]
         # constraints = [ [itvs]  ]
-    
+        self.key_cache = key_cache
+        if not key_cache:
+            if len(mld_res_rqts) == 1:
+                (m_id, walltime, res_rqt) = mld_res_rqts[0]
+                self.key_cache = (str(walltime)).join(str(res_rqt))
+            else:
+                #TODO cache for moldable_id
+                pass

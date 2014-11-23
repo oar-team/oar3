@@ -40,21 +40,32 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
     return result
 
-def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache):
+def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     '''find first_suitable_contiguous_slot '''
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = []
-    updated_cache = False
+
+    slots = slots_set.slots
+    #cache_walltime = slots_set.cache_walltime
+    cache = slots_set.cache
+  
+    #updated_cache = False
     
     # to not always begin by the first slots ( O(n^2) ) 
-    if walltime in cache:
-        sid_left = cache[walltime]
+    if job.key_cache and job.key_cache in cache:
+        sid_left = cache[job.key_cache] 
     else:
         sid_left = 1
+
+#    if walltime in cache:
+#        sid_left = cache[walltime]
+#    else:
+#        sid_left = 1
     
-    sid_right = sid_left
-    
+    sid_right = sid_left    
     slot_e = slots[sid_right].e
+
+    print 'first sid_left', sid_left
 
     while True:
         #find next contiguous slots_time
@@ -65,8 +76,9 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache):
             sid_right = slots[sid_right].next
             slot_e = slots[sid_right].e
         
-        if not updated_cache: #and slots[sid_left].itvs != [] #TO TEST 
-            cache[walltime] = sid_left
+#        if not updated_cache and (slots[sid_left].itvs != []):
+#            cache[walltime] = sid_left
+#            updated_cache = True
 
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)         
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
@@ -75,7 +87,10 @@ def find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache):
             break
 
         sid_left = slots[sid_left].next            
-      
+ 
+    if job.key_cache:
+        cache[job.key_cache] = sid_left
+ 
     return (itvs, sid_left, sid_right)
 
 def assign_resources_job_split_slots():
@@ -94,7 +109,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
-        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots, job, res_rqt, hy, cache)
+        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy)
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
             prev_start_time = slots[sid_left].b

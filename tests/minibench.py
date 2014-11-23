@@ -19,9 +19,9 @@ class Timer(object):
         if self.verbose:
             print 'elapsed time: %f ms' % self.msecs
 
-def create_simple_job(i, res_rqt, ctnts_res):
+def create_simple_job(i, res_rqt, ctnts_res, key_cache=""):
 
-    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )] ) 
+    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )], key_cache ) 
     
 
 def create_jobs(n, nb_res, res, mode="default", **kwargs):
@@ -50,11 +50,11 @@ def init_data_structure(nb_res):
 
     return (res, hy, all_ss)
 
-def simple_same_jobs_nb_res(nb_job, nb_rqt_res, ctnts_res):
+def simple_same_jobs_nb_res(nb_job, nb_rqt_res, ctnts_res, key_cache = ""):
     jobs = {}
 
     for i in range(1, nb_job + 1):
-        jobs[i] = create_simple_job(i, nb_rqt_res, ctnts_res)
+        jobs[i] = create_simple_job(i, nb_rqt_res, ctnts_res, key_cache)
 
     return (range(1, nb_job+1), jobs)
 
@@ -63,16 +63,16 @@ def eva_sched_foo(all_ss, jobs, hy, j_ids ):
     schedule_id_jobs_ct(all_ss, jobs, hy, j_ids, 10)
 
 
-def simple_bench_1():
+def simple_bench_1(key_cache=""):
     nb_res = 10
     
     x = []
     y = []
-    for k in range(1, 18):
+    for k in range(1, 12):
         i = 2**k
         print "nb_jobs", i
         (res, hy, all_ss) = init_data_structure(nb_res)
-        (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res)
+        (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res, key_cache)
         
         with Timer() as t:
             eva_sched_foo(all_ss, jobs, hy, j_ids )
@@ -85,12 +85,12 @@ def simple_bench_1():
     print y
         
 
-def simple_bench_0():
+def simple_bench_0(key_cache=""):
     nb_res = 10
     i = 1024
     print "nb_jobs", i
     (res, hy, all_ss) = init_data_structure(nb_res)
-    (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res)
+    (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res, key_cache)
         
     eva_sched_foo(all_ss, jobs, hy, j_ids )
 
