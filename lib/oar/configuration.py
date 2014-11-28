@@ -26,8 +26,7 @@ class Configuration(dict):
         defaults.update(defaults or {})
         dict.__init__(self, defaults)
         for config_file in self.DEFAULT_CONFIG_FILES:
-            if self.load_file(config_file, silent=True):
-                break
+            self.load_file(config_file, silent=True)
 
     def load_file(self, filename, comment_char="#", strip_quotes=True,
                   silent=False):
