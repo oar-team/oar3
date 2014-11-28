@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import with_statement, absolute_import, unicode_literals
 
 import errno
+import pprint
 
-from .compat import iteritems
+from io import open
+
+from .compat import iteritems, integer_types
 
 
 class Configuration(dict):
@@ -19,6 +23,7 @@ class Configuration(dict):
         'SQLALCHEMY_POOL_TIMEOUT': None,
         'SQLALCHEMY_POOL_RECYCLE': None,
         'SQLALCHEMY_MAX_OVERFLOW': None,
+        'LOG_LEVEL': 1,
     }
 
     def __init__(self, defaults=None):
@@ -37,9 +42,10 @@ class Configuration(dict):
         :param comment_char: The string character used to comment
         :param strip_quotes: Strip the quotes
         """
+        decimal_types = integer_types + (float, )
         try:
             equal_char = "="
-            with open(filename) as config_file:
+            with open(filename, encoding="utf-8") as config_file:
                 for line in config_file:
                     if comment_char in line:
                         line, comment = line.split(comment_char, 1)
@@ -48,6 +54,7 @@ class Configuration(dict):
                         key = key.strip()
                         value = value.strip()
                         value = value.strip('"\'')
+                        value = self._try_convert_value(value, decimal_types)
                         self[key] = value
         except IOError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
@@ -55,6 +62,15 @@ class Configuration(dict):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
         return True
+
+    def _try_convert_value(self, value, decimal_types):
+        if value.isdecimal():
+            for _type in decimal_types:
+                try:
+                    return _type(value)
+                except:
+                    pass
+        return value
 
     def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
         """Returns a dictionary containing a subset of configuration options
@@ -95,5 +111,5 @@ class Configuration(dict):
             rv[key] = v
         return rv
 
-    def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict.__repr__(self))
+    def __str__(self):
+        return pprint.pprint(self)
