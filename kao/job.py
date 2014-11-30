@@ -58,7 +58,9 @@ def get_waiting_jobs(queue):
     waiting_jids = []   
     nb_waiting_jobs = 0
 
-    for j in Job.query.filter(Job.state == "Waiting").filter(Job.queue == queue):
+    for j in Job.query.filter(Job.state == "Waiting")\
+                      .filter(Job.queue == queue)\
+                      .filter(Job.reservation = 'None'):
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)
@@ -66,3 +68,44 @@ def get_waiting_jobs(queue):
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
         
+
+    def get_ ():
+        req = db.query(Job.id, Job.properties,\
+                       MoldableJobDescription.id, MoldableJobDescription.walltime,\
+                       JobResourceDescription.res_job_resource_type, JobResourceDescription.res_job_resource_type,\
+                       
+                       JobResourceDescription.res_job_value, JobResourceDescription.res_job_order,\
+                       JobResourceGroup.res_group_property).
+
+#  let query_base = Printf.sprintf "
+#    SELECT jobs.job_id, moldable_job_descriptions.moldable_walltime, jobs.properties,
+#        moldable_job_descriptions.moldable_id,
+#        job_resource_descriptions.res_job_resource_type,
+#        job_resource_descriptions.res_job_value,
+#        job_resource_descriptions.res_job_order,
+#        job_resource_groups.res_group_property,
+#        jobs.job_user,
+#        jobs.project
+#    FROM moldable_job_descriptions, job_resource_groups, job_resource_descriptions, jobs
+#    WHERE
+#      moldable_job_descriptions.moldable_index = 'CURRENT'
+#      AND job_resource_groups.res_group_index = 'CURRENT'
+#      AND job_resource_descriptions.res_job_index = 'CURRENT' "
+#  and query_end = "
+#      AND jobs.reservation = 'None'
+#      AND jobs.job_id = moldable_job_descriptions.moldable_job_id
+#      AND job_resource_groups.res_group_index = 'CURRENT'
+#      AND job_resource_groups.res_group_moldable_id = moldable_job_descriptions.moldable_id
+#      AND job_resource_descriptions.res_job_index = 'CURRENT'
+#      AND job_resource_descriptions.res_job_group_id = job_resource_groups.res_group_id
+#      ORDER BY moldable_job_descriptions.moldable_id, job_resource_groups.res_group_id, job_resource_descriptions.res_job_order ASC;"
+#      (* ORDER BY job_resource_descriptions.res_job_order DESC; *)
+#  in
+#    let query =
+#      if fairsharing_flag then
+#        query_base ^ " AND jobs.job_id IN (" ^ (Helpers.concatene_sep "," id fs_jobids) ^ ") " ^ query_end
+#      else
+#        query_base ^ " AND jobs.state = 'Waiting' AND jobs.queue_name = '" ^ queue ^"' "^ query_end
+
+def get_scheduled_jobs():
+    pass
