@@ -2,8 +2,16 @@ from interval import *
 
 class Hierarchy:
     #TODO extract hierarchy from ressources table
-    def __init__(self,hy):
-        self.hy = hy
+    def __init__(self, hy=None, hy_rid=None, ):
+        if hy_rid:
+            self.hy = {}
+            for hy_label, hy_level_roids in hy_rid.iteritems():
+                self.hy[hy_label] = [ordered_ids2itvs(ids) in k, ids in hy_level_roids.iteritems()]
+        else:
+            if hy:
+                self.hy = hy
+            else:
+                raise Exception("Hierarchy description must be provided")
 
 def find_resource_hierarchies_scattered(itvs, hy, rqts):
     l_hy = len(hy)

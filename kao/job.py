@@ -1,4 +1,5 @@
-class Job:
+from oar import Job
+class Job(Job):
     ''' Use 
 
         j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
@@ -20,7 +21,12 @@ class Job:
     
 
     '''
-    def __init__(self, id, state, start_time, walltime, user, name, project, types, res_set, \
+    def pseudo(self, start_time, walltime, res_set):
+        self.start_time = start_time
+        self.walltime = walltime
+        self.res_set = res_set
+        
+    def set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
                  moldable_id, mld_res_rqts, key_cache=""):
         self.id = id
         self.state = state
@@ -45,3 +51,18 @@ class Job:
             else:
                 #TODO cache for moldable_id
                 pass
+
+def get_waiting_jobs(queue):
+    #TODO  fairsharing_nb_job_limit
+    waiting_jobs = {}
+    waiting_jids = []   
+    nb_waiting_jobs = 0
+
+    for j in Job.query.filter(Job.state == "Waiting").filter(Job.queue == queue):
+        jid = int(j.id)
+        waiting_jobs[jid] = j
+        waiting_jids.append(jid)
+        nb_waiting_jobs += 1
+
+    return (waiting_jobs, waiting_jids, nb_waiting_jobs)
+        

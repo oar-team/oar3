@@ -1,3 +1,27 @@
+def ordered_ids2itvs(ids):
+    itvs = []
+    if ids[0]:
+        b = ids[0]
+        e = ids[0]
+        for i in ids:
+            if i > (e+1): #end itv and prepare new itv
+                itvs.append( (b,e) )
+                b = i 
+            e = i
+        itvs.append( (b,e) )
+            
+    return itvs
+
+def unordered_ids2itvs(unordered_ids):
+    return ordered_ids2itvs( sorted(unordered_ids) )
+
+def itvs2ids(itvs):
+    ids = []
+    for itv in itvs:
+        b, e = itv
+        ids.extend( range(b, e+1) )
+
+    return ids
 
 def test_and_sub_prefix_itvs(prefix_itvs, itvs):
     #need of sub_intervals
