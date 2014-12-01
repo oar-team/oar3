@@ -6,7 +6,7 @@ class Hierarchy:
         if hy_rid:
             self.hy = {}
             for hy_label, hy_level_roids in hy_rid.iteritems():
-                self.hy[hy_label] = [ordered_ids2itvs(ids) in k, ids in hy_level_roids.iteritems()]
+                self.hy[hy_label] = [ordered_ids2itvs(ids) for k, ids in hy_level_roids.iteritems()]
         else:
             if hy:
                 self.hy = hy

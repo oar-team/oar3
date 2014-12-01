@@ -1,6 +1,6 @@
 def ordered_ids2itvs(ids):
     itvs = []
-    if ids[0]:
+    if ids:
         b = ids[0]
         e = ids[0]
         for i in ids:

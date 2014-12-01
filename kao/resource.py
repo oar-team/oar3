@@ -14,20 +14,16 @@ class ResourceSet:
         self.rid_i2o = array("i", [0] * MAX_NB_RESOURCES)
         self.rid_o2i = array("i", [0] * MAX_NB_RESOURCES)
 
-        #prepare hierachy stuff
-        #"SCHEDULER_PRIORITY_HIERARCHY_ORDER="/host/cpu/core/"
-        conf_hy_ordered_labels = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
-        hy_ordered_labels = []
-        for i in conf_hy_ordered_labels.split("/"):
-            if i != "":
-                if i == "resource_id":
-                    i = "id"
-                hy_ordered_labels.append(i)
+        #prepare hierarchy stuff
+        #"HIERARCHY_LABELS" = "resource_id,network_address"
+        conf_hy_labels = config["HIERARCHY_LABELS"] if "HIERARCHY_LABELS" in config else "resource_id,network_address"
 
-        hy_rid = {}
-        for hy_label in hy_ordered_labels:
-            hy_rid[hy_label] = {} 
-
+        hy_labels = conf_hy_labels.split(",")
+        hy_labels_w_id = [ "id" if v == "resource_id" else v for v in hy_labels ]
+        
+        hy_roid = {}
+        for hy_label in hy_labels_w_id:
+            hy_roid[hy_label] = {} 
 
         # available_upto for pseudo job in slot
         available_upto = {}
@@ -47,27 +43,33 @@ class ResourceSet:
                 self.rid_o2i[roid] = rid
 
                 #fill hy_rid structure
-                for hy_label in hy_ordered_labels:
+                for hy_label in hy_labels_w_id:
                     v = getattr(r,hy_label)
                     if v:
-                        if hy_label not in hy_rid:
-                            hy_rid[hy_label] = {}
-                        if v in hy_rid[hy_label]:
-                            hy_rid[hy_label][v].append(roid)
+                        if hy_label not in hy_roid:
+                            hy_roid[hy_label] = {}
+                        if v in hy_roid[hy_label]:
+                            hy_roid[hy_label][v].append(roid)
                         else:
-                            hy_rid[hy_label][v] = [roid]
+                            hy_roid[hy_label][v] = [roid]
 
                 #fill available_upto structure
                 if r.available_upto in available_upto:
-                    available_upto[r.available_upto].append(rid)            
+                    available_upto[r.available_upto].append(roid)            
                 else:
-                    available_upto[r.available_upto] = [rid]
-            #global ordered resources intervals
-            self.rid_itvs = ordered_ids2itvs(roids)
+                    available_upto[r.available_upto] = [roid]
 
-            #create hierarchy
-            self.hierarchy = Hierarchy(hy_rid).hy
+        #global ordered resources intervals
+        print roids
+        self.roid_itvs = ordered_ids2itvs(roids)
+        
+        if "id" in hy_roid:
+            hy_roid["resource_id"] =  hy_roid["id"]
+            del hy_roid["id"]
 
-            #transform available_upto
-            for k, v in available_upto.iteritems():
-                self.available_upto[k] = ordered_ids2itvs(v)
+        #create hierarchy
+        self.hierarchy = Hierarchy(hy_rid=hy_roid).hy
+        
+        #transform available_upto
+        for k, v in available_upto.iteritems():
+            self.available_upto[k] = ordered_ids2itvs(v)
