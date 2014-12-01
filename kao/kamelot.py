@@ -1,10 +1,11 @@
 import time
 from oar import config
+import resource
 import job
 import scheduling
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
-                                                                                         *)
+
 besteffort_duration = 5*60
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
@@ -12,14 +13,14 @@ max_time_minus_one = 2147483647 #(* 2**31-1 *)
 besteffort_duration = 300
 
 #Set undefined config value to default one
-default_config = {"HIERARCHY_LABEL": "resource_id,network_address,cpu,core",
+default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
                   "SCHEDULER_JOB_SECURITY_TIME": "60",
                   "FAIRSHARING_ENABLED": "no",
                   "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30"
 }
 for k,v in default_config.iteritems():
-    if not config[k]:
+    if not k in config:
         config[k] = k
 
 #
@@ -84,7 +85,7 @@ if __name__ == '__main__':
         #
         # get get_scheduled_jobs
         #
-        def get_scheduled_jobs()
+        get_scheduled_jobs()
 
         all_slot_sets = {0:initial_slot_set}
 

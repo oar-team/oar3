@@ -60,7 +60,7 @@ def get_waiting_jobs(queue):
 
     for j in Job.query.filter(Job.state == "Waiting")\
                       .filter(Job.queue == queue)\
-                      .filter(Job.reservation = 'None'):
+                      .filter(Job.reservation == 'None'):
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)
@@ -69,13 +69,14 @@ def get_waiting_jobs(queue):
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
         
 
-    def get_ ():
-        req = db.query(Job.id, Job.properties,\
-                       MoldableJobDescription.id, MoldableJobDescription.walltime,\
-                       JobResourceDescription.res_job_resource_type, JobResourceDescription.res_job_resource_type,\
-                       
-                       JobResourceDescription.res_job_value, JobResourceDescription.res_job_order,\
-                       JobResourceGroup.res_group_property).
+def get_data_jobs():
+    req = db.query(Job.id, Job.properties,\
+                   MoldableJobDescription.id, MoldableJobDescription.walltime,\
+                   JobResourceDescription.res_job_resource_type,\
+                   JobResourceDescription.res_job_resource_type,\
+                   JobResourceDescription.res_job_value, JobResourceDescription.res_job_order,\
+                   JobResourceGroup.res_group_property
+               )
 
 #  let query_base = Printf.sprintf "
 #    SELECT jobs.job_id, moldable_job_descriptions.moldable_walltime, jobs.properties,
