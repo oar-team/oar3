@@ -64,6 +64,16 @@ class BaseModel(object):
     query_class = BaseQuery
     query = None
 
+    @classmethod
+    def create(cls, **kwargs):
+        record = cls(**kwargs)
+        try:
+            cls.db.session.add(record)
+            cls.db.session.commit()
+            return record
+        except Exception:
+            cls.db.session.rollback()
+            raise
 
     def to_dict(self, exluded_keys=set()):
         keys = get_entity_loaded_propnames(self) - exluded_keys
