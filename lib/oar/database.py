@@ -104,6 +104,7 @@ class ModelProperty(object):
                                               metaclass=BaseDeclarativeMeta)
                 self._model = automap_base(base_model)
                 self._model.query = QueryProperty(obj)
+                self._model.db = obj
             return self._model
 
 
