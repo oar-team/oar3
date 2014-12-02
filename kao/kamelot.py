@@ -1,7 +1,8 @@
 import time
 from oar import config
-import resource
-import job
+from resource import ResourceSet
+from job import Job, get_waiting_jobs, get_data_jobs
+from slot import SlotSet, Slot
 import scheduling
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
@@ -47,20 +48,24 @@ if config["FAIRSHARING_ENABLED"] == "yes":
 #                
 # Main function
 #
-if __name__ == '__main__':
+if True or __name__ == '__main__':
     now = int(time.time())
 
     #
     # Retreive waiting jobs
     #
+    queue = "test"
     waiting_jobs, waiting_jids, nb_waiting_jobs = get_waiting_jobs(queue)
 
-    if nb_waiting_jobs > 1:
+    print waiting_jobs, waiting_jids, nb_waiting_jobs
+
+
+    if True or nb_waiting_jobs > 1:
 
         #
         # Get  additionalwaiting jobs' data
         #
-        get_data_waiting_jobs(waiting_jobs)
+        get_data_jobs(waiting_jobs, waiting_jids)
  
         # TODO get types attributs of wating jobs
 
@@ -68,7 +73,7 @@ if __name__ == '__main__':
         # Determine Global Resource Intervals and Initial Slot                           
         #
         resource_set = ResourceSet()
-        initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.rid_itvs, now, max_time))
+        initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
         
         #
         #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -77,15 +82,16 @@ if __name__ == '__main__':
         for t_avail_upto in sorted(resource_set.available_upto.keys()):
             itvs = resource_set.available_upto[t_avail_upto]
             j = Job()
-            j.peusdo(t_avail_upto, max_time - t_avail_upto, itvs)
+            print t_avail_upto, max_time - t_avail_upto, itvs
+            j.pseudo(t_avail_upto, max_time - t_avail_upto, itvs)
             pseudo_jobs.append(j)
         
-            initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+        initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
             
         #
         # get get_scheduled_jobs
         #
-        get_scheduled_jobs()
+        #get_scheduled_jobs()
 
         all_slot_sets = {0:initial_slot_set}
 
@@ -93,3 +99,7 @@ if __name__ == '__main__':
         # Scheduled
         #
     
+
+
+print "yopa"
+        

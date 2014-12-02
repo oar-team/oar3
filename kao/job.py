@@ -1,4 +1,5 @@
-from oar import Job
+from oar import db, Job, MoldableJobDescription, JobResourceDescription, JobResourceGroup
+
 class Job(Job):
     ''' Use 
 
@@ -59,7 +60,7 @@ def get_waiting_jobs(queue):
     nb_waiting_jobs = 0
 
     for j in Job.query.filter(Job.state == "Waiting")\
-                      .filter(Job.queue == queue)\
+                      .filter(Job.queue_name == queue)\
                       .filter(Job.reservation == 'None'):
         jid = int(j.id)
         waiting_jobs[jid] = j
@@ -69,14 +70,27 @@ def get_waiting_jobs(queue):
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
         
 
-def get_data_jobs():
-    req = db.query(Job.id, Job.properties,\
-                   MoldableJobDescription.id, MoldableJobDescription.walltime,\
+def get_data_jobs(jobs, jids):
+    req = db.query(Job.id,\
+                   MoldableJobDescription.id,\
+                   MoldableJobDescription.walltime,\
                    JobResourceDescription.res_job_resource_type,\
-                   JobResourceDescription.res_job_resource_type,\
-                   JobResourceDescription.res_job_value, JobResourceDescription.res_job_order,\
-                   JobResourceGroup.res_group_property
-               )
+                   JobResourceDescription.res_job_value,\
+                   JobResourceDescription.res_job_order,\
+                   JobResourceGroup.res_group_property)\
+            .filter(MoldableJobDescription.index == 'CURRENT')\
+            .filter(JobResourceGroup.res_group_index == 'CURRENT')\
+            .filter(JobResourceDescription.res_job_index == 'CURRENT')\
+            .filter(Job.id.in_( tuple(jids) ))\
+            .filter(Job.id == MoldableJobDescription.job_id)\
+            .filter(JobResourceGroup.res_group_moldable_id == MoldableJobDescription.id)\
+            .filter(JobResourceDescription.res_job_group_id == JobResourceGroup.res_group_id)\
+            .order_by(MoldableJobDescription.id,\
+                      JobResourceGroup.res_group_id, JobResourceDescription.res_job_order)\
+            .all()
+
+    for x in req:
+        print x
 
 #  let query_base = Printf.sprintf "
 #    SELECT jobs.job_id, moldable_job_descriptions.moldable_walltime, jobs.properties,
@@ -93,13 +107,13 @@ def get_data_jobs():
 #      AND job_resource_groups.res_group_index = 'CURRENT'
 #      AND job_resource_descriptions.res_job_index = 'CURRENT' "
 #  and query_end = "
-#      AND jobs.reservation = 'None'
+
 #      AND jobs.job_id = moldable_job_descriptions.moldable_job_id
-#      AND job_resource_groups.res_group_index = 'CURRENT'
 #      AND job_resource_groups.res_group_moldable_id = moldable_job_descriptions.moldable_id
-#      AND job_resource_descriptions.res_job_index = 'CURRENT'
 #      AND job_resource_descriptions.res_job_group_id = job_resource_groups.res_group_id
+
 #      ORDER BY moldable_job_descriptions.moldable_id, job_resource_groups.res_group_id, job_resource_descriptions.res_job_order ASC;"
+
 #      (* ORDER BY job_resource_descriptions.res_job_order DESC; *)
 #  in
 #    let query =

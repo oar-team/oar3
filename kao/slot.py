@@ -1,4 +1,4 @@
-from job import *
+import job
 from interval import intersec, sub_intervals
 from hierarchy import find_resource_hierarchies_scattered
 
@@ -137,7 +137,7 @@ class SlotSet:
 
             right_sid_2_split = left_sid_2_split
             # find_slots_encompass
-            while not (slot.e >  (job.start_time + job.walltime)):
+            while not (slot.e >=  (job.start_time + job.walltime)):
                 right_sid_2_split = slot.next
                 slot = self.slots[slot.next]
                 
