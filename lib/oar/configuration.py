@@ -24,6 +24,7 @@ class Configuration(dict):
         'SQLALCHEMY_POOL_RECYCLE': None,
         'SQLALCHEMY_MAX_OVERFLOW': None,
         'LOG_LEVEL': 1,
+        'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s'
     }
 
     def __init__(self, defaults=None):

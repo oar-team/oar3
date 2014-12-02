@@ -3,9 +3,11 @@ __version__ = '2.6.dev'
 
 
 from .configuration import Configuration
+from .logging import create_logger
 from .database import Database
 
 config = Configuration()
+logger = create_logger()
 db = Database()
 
 from . import utils
