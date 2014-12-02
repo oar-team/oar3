@@ -3,8 +3,10 @@ from __future__ import with_statement, absolute_import
 
 import functools
 import threading
+import datetime
+import json
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
@@ -38,10 +40,42 @@ class BaseQuery(Query):
         return rv
 
 
+def get_entity_loaded_propnames(sa_instance):
+    ins = inspect(sa_instance)
+    keynames = set(
+        ins.mapper.column_attrs.keys() +  # Columns
+        ins.mapper.relationships.keys()  # Relationships
+    )
+    # If the sa_instance is not transient -- exclude unloaded keys
+    # Transient entities won't load these anyway, so it's safe to include
+    # all columns and get defaults
+    if not ins.transient:
+        keynames -= ins.unloaded
+
+    # If the sa_instance is expired -- reload expired attributes as well
+    # Expired attributes are usually unloaded as well!
+    if ins.expired:
+        keynames |= ins.expired_attributes
+    return keynames
+
+
 class BaseModel(object):
 
     query_class = BaseQuery
     query = None
+
+
+    def to_dict(self, exluded_keys=set()):
+        keys = get_entity_loaded_propnames(self) - exluded_keys
+        return dict(((name, getattr(self, name)) for name in keys))
+
+    def to_json(self):
+        data = {}
+        for k, v in self.to_dict().items():
+            if isinstance(v, datetime.datetime):
+                v = v.isoformat()
+            data[k] = v
+        return json.dumps(data)
 
 
 class BaseDeclarativeMeta(DeclarativeMeta):
