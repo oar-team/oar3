@@ -1,5 +1,5 @@
-from oar import db, Job, MoldableJobDescription, JobResourceDescription, JobResourceGroup
-
+from oar import db, Job, MoldableJobDescription, JobResourceDescription, JobResourceGroup, Resource
+from interval import unordered_ids2itvs
 class Job(Job):
     ''' Use 
 
@@ -67,16 +67,16 @@ def get_waiting_jobs(queue):
         waiting_jids.append(jid)
         nb_waiting_jobs += 1
 
-    return (waiting_jobs, waiting_jids, nb_waiting_jobs)
+    return (waiting_jobs, waiting_jids, nb_waiting_jobs, resource_set)
         
 
-def get_data_jobs(jobs, jids):
+def get_data_jobs(jobs, jids, rid_i2o):
     req = db.query(Job.id,\
                    MoldableJobDescription.id,\
                    MoldableJobDescription.walltime,\
                    JobResourceDescription.res_job_resource_type,\
                    JobResourceDescription.res_job_value,\
-                   JobResourceDescription.res_job_order,\
+                   JobResourceDescription.res_job_order,\ #to remove ???
                    JobResourceGroup.res_group_property)\
             .filter(MoldableJobDescription.index == 'CURRENT')\
             .filter(JobResourceGroup.res_group_index == 'CURRENT')\
@@ -89,38 +89,33 @@ def get_data_jobs(jobs, jids):
                       JobResourceGroup.res_group_id, JobResourceDescription.res_job_order)\
             .all()
 
+    cache_constraints = {}
+
     for x in req:
         print x
+        j_id, mld_id, mld_id_walltime, res_type, res_value, res_order, res_grp_property = x #remove res_order
+        job = jobs[j_id]
 
-#  let query_base = Printf.sprintf "
-#    SELECT jobs.job_id, moldable_job_descriptions.moldable_walltime, jobs.properties,
-#        moldable_job_descriptions.moldable_id,
-#        job_resource_descriptions.res_job_resource_type,
-#        job_resource_descriptions.res_job_value,
-#        job_resource_descriptions.res_job_order,
-#        job_resource_groups.res_group_property,
-#        jobs.job_user,
-#        jobs.project
-#    FROM moldable_job_descriptions, job_resource_groups, job_resource_descriptions, jobs
-#    WHERE
-#      moldable_job_descriptions.moldable_index = 'CURRENT'
-#      AND job_resource_groups.res_group_index = 'CURRENT'
-#      AND job_resource_descriptions.res_job_index = 'CURRENT' "
-#  and query_end = "
+        #
+        # determine resource constraints
+        #
+        if (job.properties == "" and (res_grp_property == "" or res_grp_property == "type = 'default'" )):
+            res_constraints = resources_set.roid_itvs
+        else:
+            if job.properties == "" or res_grp_property == "":
+                and_sql = ""
+            else:
+                and_sql = " AND "
+            
+            sql_constraints = job.properties + and_sql + res_grp_property
 
-#      AND jobs.job_id = moldable_job_descriptions.moldable_job_id
-#      AND job_resource_groups.res_group_moldable_id = moldable_job_descriptions.moldable_id
-#      AND job_resource_descriptions.res_job_group_id = job_resource_groups.res_group_id
-
-#      ORDER BY moldable_job_descriptions.moldable_id, job_resource_groups.res_group_id, job_resource_descriptions.res_job_order ASC;"
-
-#      (* ORDER BY job_resource_descriptions.res_job_order DESC; *)
-#  in
-#    let query =
-#      if fairsharing_flag then
-#        query_base ^ " AND jobs.job_id IN (" ^ (Helpers.concatene_sep "," id fs_jobids) ^ ") " ^ query_end
-#      else
-#        query_base ^ " AND jobs.state = 'Waiting' AND jobs.queue_name = '" ^ queue ^"' "^ query_end
+            if sql_constraints in cache_constraints:
+                res_constraints = cache_constraints[sql_constraints]
+            else:
+                request_constraints = db.query(Resource.id).filter(sql_constraints).all() 
+                roids = [ resource_set.rid_i2o(int(x[0])) for x in request_constraints ]
+                roids_itvs = unordered_ids2itvs(roids)
+                cache_constraints[sql_constraints] = res_constraints
 
 def get_scheduled_jobs():
     pass

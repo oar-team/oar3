@@ -62,19 +62,13 @@ if True or __name__ == '__main__':
 
     if True or nb_waiting_jobs > 1:
 
-        #
-        # Get  additionalwaiting jobs' data
-        #
-        get_data_jobs(waiting_jobs, waiting_jids)
- 
-        # TODO get types attributs of wating jobs
 
         #                                                                                
         # Determine Global Resource Intervals and Initial Slot                           
         #
         resource_set = ResourceSet()
         initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
-        
+
         #
         #  Resource availabilty (Available_upto field) is integrated through pseudo job
         #
@@ -87,6 +81,11 @@ if True or __name__ == '__main__':
             pseudo_jobs.append(j)
         
         initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+
+        #
+        # Get  additionalwaiting jobs' data
+        #
+        get_data_jobs(waiting_jobs, waiting_jids, resource_set)
             
         #
         # get get_scheduled_jobs
