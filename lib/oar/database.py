@@ -77,15 +77,20 @@ class BaseModel(object):
 
     def to_dict(self, exluded_keys=set()):
         keys = get_entity_loaded_propnames(self) - exluded_keys
-        return dict(((name, getattr(self, name)) for name in keys))
-
-    def to_json(self):
         data = {}
-        for k, v in self.to_dict().items():
+        for k in keys:
+            v = getattr(self, k)
+            if isinstance(v, BaseModel) and v != self:
+                v = v.to_dict()
+            data[k] = v
+        return data
+
+    def to_json(self, exluded_keys=set()):
+        data = {}
+        for k, v in self.to_dict(exluded_keys).items():
             if isinstance(v, datetime.datetime):
                 v = v.isoformat()
             data[k] = v
-        return json.dumps(data)
 
 
 class BaseDeclarativeMeta(DeclarativeMeta):
@@ -99,6 +104,8 @@ class BaseDeclarativeMeta(DeclarativeMeta):
         if autoreflect:
             self.__table__.info['autoreflect'] = True
 
+        return json.dumps(data, sort_keys=True, indent=4, encoding="utf-8",
+                          separators=(',', ': '))
 
 class QueryProperty(object):
 
