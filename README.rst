@@ -21,7 +21,7 @@ Query::
 
 ::
 
-    >>> db.query(Resource).first()
+    >>> db.session.query(Resource).first()
     <oar.models.Resource object at 0x2becb10>
     >>> Resource.query.first()
     <oar.models.Resource object at 0x2becb10>
@@ -33,7 +33,7 @@ Query::
 
 ::
 
-    >>> for r in Resource.query.filter(Resource.core > 3).limit(2).all():
+    >>> for r in Resource.query.filter(Resource.core > 3).limit(2):
     ...     print(r.id, r.network_address)
     ...
     (12L, u'node3')
@@ -41,6 +41,6 @@ Query::
 
 ::
 
-    >>> req = db.query(Resource.id, Resource.network_address)
+    >>> req = db.session.query(Resource.id, Resource.network_address)
     >>> req.filter(Resource.core > 3).limit(2).all()
     [(12L, u'node3'), (9L, u'node3')]
