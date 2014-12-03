@@ -239,15 +239,8 @@ class ResourceLog(db.Model):
     finaud_decision = db.Column(db.String(3), index=True, default="NO")
 
 
-class ResourceQuery(BaseQuery):
-    pass
-
-
-class Resource(db.Model):
+class Resource(db.DeferredReflection, db.Model):
     __tablename__ = 'resources'
-    ## autoreflect allow sqlalchemy to complete this Model from database
-    __autoreflect__ = True
-    query_class = ResourceQuery
 
     id = db.Column('resource_id', db.BigInteger, primary_key=True)
     type = db.Column(db.String(100), index=True, default="default")

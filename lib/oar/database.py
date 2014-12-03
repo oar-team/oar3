@@ -8,13 +8,12 @@ import json
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist, InvalidConfiguration
-from .compat import string_types, itervalues
+from .compat import string_types
 
 __all__ = ["Database"]
 
@@ -91,19 +90,6 @@ class BaseModel(object):
             if isinstance(v, datetime.datetime):
                 v = v.isoformat()
             data[k] = v
-
-
-class BaseDeclarativeMeta(DeclarativeMeta):
-
-    def __new__(cls, name, bases, d):
-        return DeclarativeMeta.__new__(cls, name, bases, d)
-
-    def __init__(self, name, bases, d):
-        autoreflect = d.pop('__autoreflect__', None)
-        DeclarativeMeta.__init__(self, name, bases, d)
-        if autoreflect:
-            self.__table__.info['autoreflect'] = True
-
         return json.dumps(data, sort_keys=True, indent=4, encoding="utf-8",
                           separators=(',', ': '))
 
@@ -138,9 +124,10 @@ class SessionProperty(object):
         if obj is not None:
             if self._session is None:
                 self._session = self._create_scoped_session(obj)
-                if not obj._prepared:
-                    obj.prepare()
+                if not obj._reflected:
+                    obj.reflect()
             return self._session
+        return self
 
 
 class ModelProperty(object):
@@ -151,12 +138,11 @@ class ModelProperty(object):
     def __get__(self, obj, type):
         if obj is not None:
             if self._model is None:
-                base_model = declarative_base(cls=BaseModel, name='Model',
-                                              metaclass=BaseDeclarativeMeta)
-                self._model = automap_base(base_model)
+                self._model = declarative_base(cls=BaseModel, name='Model')
                 self._model.query = QueryProperty(obj)
                 self._model.db = obj
             return self._model
+        return self
 
 
 class Database(object):
@@ -166,11 +152,12 @@ class Database(object):
 
     session = SessionProperty()
     Model = ModelProperty()
+    DeferredReflection = DeferredReflection
     BaseQuery = BaseQuery
 
     def __init__(self, session_options=None):
         self.connector = None
-        self._prepared = False
+        self._reflected = False
         self._uri = None
         self._session_options = dict(session_options or {})
         self._engine_lock = threading.Lock()
@@ -208,29 +195,11 @@ class Database(object):
         """Proxy for Model.metadata"""
         return self.Model.metadata
 
-    def get_tables_for_autoreflect(self, bind=None):
-        """Returns a list of all tables marked for autoreflect."""
-        result = []
-        for table in itervalues(self.Model.metadata.tables):
-            if table.info.get('autoreflect'):
-                result.append(table.name)
-        return result
-
-    def prepare(self, **kwargs):
+    def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         # a list of all tables marked for autoreflect
-        autoreflect_tables = []
-        for table in itervalues(self.Model.metadata.tables):
-            if table.info.get('autoreflect'):
-                autoreflect_tables.append(table.name)
-        self.Model.metadata.reflect(
-            self.engine,
-            extend_existing=True,
-            autoload_replace=False,
-            only=autoreflect_tables,
-        )
-        self.Model.prepare(self.engine, **kwargs)
-        self._prepared = True
+        self.DeferredReflection.prepare(self.engine)
+        self._reflected = True
 
     def __repr__(self):
         engine = None
