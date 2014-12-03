@@ -16,7 +16,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from .exceptions import DoesNotExist, InvalidConfiguration
 from .compat import string_types, itervalues
 
-__all__ = ["Database", "BaseQuery"]
+__all__ = ["Database"]
 
 
 class BaseQuery(Query):
@@ -166,6 +166,7 @@ class Database(object):
 
     session = SessionProperty()
     Model = ModelProperty()
+    BaseQuery = BaseQuery
 
     def __init__(self, session_options=None):
         self.connector = None
