@@ -195,6 +195,27 @@ class Database(object):
         """Proxy for Model.metadata"""
         return self.Model.metadata
 
+    @property
+    def query(self):
+        """Proxy for session.query"""
+        return self.session.query
+
+    def add(self, *args, **kwargs):
+        """Proxy for session.add"""
+        return self.session.add(*args, **kwargs)
+
+    def flush(self, *args, **kwargs):
+        """Proxy for session.flush"""
+        return self.session.flush(*args, **kwargs)
+
+    def commit(self):
+        """Proxy for session.commit"""
+        return self.session.commit()
+
+    def rollback(self):
+        """Proxy for session.rollback"""
+        return self.session.rollback()
+
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         # a list of all tables marked for autoreflect
