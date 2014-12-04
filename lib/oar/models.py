@@ -107,7 +107,7 @@ class FragJob(db.Model):
     state = db.Column('frag_state', db.String(16), index=True, default="LEON")
 
 
-class GanttJobsPrediction(db.Model):
+class GanttJobsPredictions(db.Model):
     __tablename__ = 'gantt_jobs_predictions'
 
     moldable_id = db.Column('moldable_job_id', db.Integer,
