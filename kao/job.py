@@ -1,5 +1,6 @@
-from oar import db, Job, MoldableJobDescription, JobResourceDescription, JobResourceGroup, Resource
-from oar import GanttJobsPrediction, GanttJobsResource, MoldableJobDescription
+from oar import (db, Job, MoldableJob, JobResourceDescription,
+                 JobResourceGroup, Resource, GanttJobsPrediction,
+                 GanttJobsResource)
 from interval import unordered_ids2itvs, itvs2ids
 class Job(Job):
     ''' Use 
@@ -78,26 +79,23 @@ def get_data_jobs(jobs, jids, resource_set):
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
 
     '''
-
-    req = db.query(Job.id,\
-                   MoldableJobDescription.id,\
-                   MoldableJobDescription.walltime,\
-                   JobResourceGroup.res_group_id,\
-                   JobResourceGroup.res_group_moldable_id,\
-                   JobResourceGroup.res_group_property,\
-                   JobResourceDescription.res_job_group_id,\
-                   JobResourceDescription.res_job_resource_type,\
-                   JobResourceDescription.res_job_value)\
-            .filter(MoldableJobDescription.index == 'CURRENT')\
-            .filter(JobResourceGroup.res_group_index == 'CURRENT')\
-            .filter(JobResourceDescription.res_job_index == 'CURRENT')\
+    req = db.query(Job.id,
+                   MoldableJob.id,
+                   MoldableJob.walltime,
+                   JobResourceGroup.id,
+                   JobResourceGroup.property,
+                   JobResourceDescription.resource_type,
+                   JobResourceDescription.value)\
+            .filter(MoldableJob.index == 'CURRENT')\
+            .filter(JobResourceGroup.index == 'CURRENT')\
+            .filter(JobResourceDescription.index == 'CURRENT')\
             .filter(Job.id.in_( tuple(jids) ))\
-            .filter(Job.id == MoldableJobDescription.job_id)\
-            .filter(JobResourceGroup.res_group_moldable_id == MoldableJobDescription.id)\
-            .filter(JobResourceDescription.res_job_group_id == JobResourceGroup.res_group_id)\
-            .order_by(MoldableJobDescription.id,JobResourceGroup.res_group_id,\
-                      JobResourceDescription.res_job_group_id,\
-                      JobResourceDescription.res_job_order)\
+            .join(MoldableJob)\
+            .join(JobResourceGroup)\
+            .join(JobResourceDescription)\
+            .order_by(MoldableJob.id,
+                      JobResourceGroup.id,
+                      JobResourceDescription.order)\
             .all()
 
     cache_constraints = {}
@@ -207,14 +205,14 @@ def get_data_jobs(jobs, jids, resource_set):
 
 def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
     # TODO GanttJobsPrediction => GanttJobsPredictionS
-    req = db.query(Job,\
-                   GanttJobsPrediction.start_time,\
-                   MoldableJobDescription.walltime,\
+    req = db.query(Job,
+                   GanttJobsPrediction.start_time,
+                   MoldableJob.walltime,
                    GanttJobsResource.resource_id)\
             .filter(MoldableJobDescription.index == 'CURRENT')\
-            .filter(GanttJobsResource.moldable_job_id == GanttJobsPrediction.moldable_job_id)\
-            .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_job_id)\
-            .filter(Job.id == MoldableJobDescription.id)\
+            .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+            .filter(MoldableJob.id == GanttJobsPrediction.moldable_id)\
+            .filter(Job.id == MoldableJob.id)\
             .order_by(Job.start_time, Job.id)\
             .all()
 
