@@ -1,0 +1,5 @@
+
+- Documentation
+- test with pytest
+- test multiples python version with tox
+- package first release
