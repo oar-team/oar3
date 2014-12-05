@@ -71,7 +71,22 @@ def get_waiting_jobs(queue):
         nb_waiting_jobs += 1
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
-        
+            
+def get_jobs_types(jids):
+    jobs_types = {}
+    for j_type in JobType.filter(Job_type.job_id.in_( tuple(jids) )):
+        jid = j_type.job_id
+        t_v = j_type.type.split("=")
+        t = t_v[0]
+        if len(tv) == 2:
+            v = t_v[1]
+        else:
+            v = None
+        if jid not in jobs_types:
+            jobs_types[jid] = {}
+        jobs_types[jid][t] = v
+                                 
+    return job_types
 
 def get_data_jobs(jobs, jids, resource_set):
     '''
@@ -79,6 +94,9 @@ def get_data_jobs(jobs, jids, resource_set):
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
 
     '''
+
+    job_types = get_jobs_types(jids)
+
     req = db.query(Job.id,
                    MoldableJob.id,
                    MoldableJob.walltime,
@@ -122,7 +140,7 @@ def get_data_jobs(jobs, jids, resource_set):
                 jrg.append( (jr_descriptions, res_constraints) )
                 mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
                 job.mld_res_rqts = mld_res_rqts
-                job.types = {} #TODO
+                job.types = job_types[job.id]
                 job.key_cache = str(mld_res_rqts)
                 mld_res_rqts = []
                 jrg = []
@@ -196,7 +214,7 @@ def get_data_jobs(jobs, jids, resource_set):
     jrg.append( (jr_descriptions, res_constraints) )
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
     job.mld_res_rqts = mld_res_rqts
-    job.types = {} #TODO
+    job.types =  job_types[job.id]
     job.key_cache = str(mld_res_rqts)
 
     #print "======================"
@@ -216,8 +234,9 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
             .order_by(Job.start_time, Job.id)\
             .all()
 
+    j_ids = []
     jobs = []
-    prev_j_id = 0
+    prev_jid = 0
     roids = []
     job_ugly = {} # ugly workaround for  UnboundLocalError: local variable 'job' referenced before assignment 
     #               witrh Python 3 use nonlocal keyword
@@ -230,8 +249,10 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
                 if prev_jid != 0:
                     job.res_set = unordered_ids2itvs(roids)
                     jobs.append(job)
+                    jids.append(job.id)
                     roids = []
                     
+                prev_jid = j.id
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime
@@ -242,6 +263,11 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
         job = job_ugly[1]
         job.res_set = unordered_ids2itvs(roids)
         jobs.append(job)
+        jids.append(job.id)
+
+        jobs_types = get_jobs_types(jids)
+        for j in jobs:            
+            j.types = jobs_types[j.id]
     
     return jobs
 
