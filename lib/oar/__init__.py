@@ -3,7 +3,7 @@ __version__ = '2.6.dev'
 
 
 from .configuration import Configuration
-from .logging import create_logger
+from .logging import create_logger, get_logger
 from .database import Database
 
 config = Configuration()

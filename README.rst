@@ -1,7 +1,10 @@
 Python OAR Common Library
 -------------------------
 
-Configuration::
+Configuration
+=============
+
+::
 
     >>> from oar import config
     >>>
@@ -13,7 +16,10 @@ Configuration::
     {'default_resources': '/resource_id=1', 'force_job_key': 'no', 'nodes_resources': 'network_address'}
 
 
-Query::
+Query
+=====
+
+::
 
     >>> from oar import db, Resource
     >>> db
@@ -44,3 +50,21 @@ Query::
     >>> req = db.query(Resource.id, Resource.network_address)
     >>> req.filter(Resource.core > 3).limit(2).all()
     [(12L, u'node3'), (9L, u'node3')]
+
+
+Logger
+======
+
+Logging from the root logger::
+
+    >> from oar import logger as log
+    >> log.info("Init confiuration")
+    ## [INFO] [2014-12-05 14:13:42,239] [oar]: Init confiuration
+
+Logging from your own sublogger::
+
+    >> from oar import get_logger
+    >> log = get_logger("oar.kao")
+    >> log.error("fatal error")
+    ## [ERROR] [2014-12-05 14:14:32,116] [oar.kao]: fatal error
+

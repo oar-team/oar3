@@ -48,3 +48,6 @@ def _configure(handler):
         handler.baseFilename = config['LOG_FILE']
     handler.setLevel(LEVELS[config['LOG_LEVEL']])
     handler.setFormatter(Formatter(config['LOG_FORMAT']))
+
+
+get_logger = getLogger
