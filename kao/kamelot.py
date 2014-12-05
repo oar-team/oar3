@@ -1,9 +1,9 @@
 import time
 from oar import config
 from resource import ResourceSet
-from job import Job, get_waiting_jobs, get_data_jobs
+from job import Job, get_waiting_jobs, get_data_jobs, get_scheduled_jobs, save_assigns
 from slot import SlotSet, Slot
-import scheduling
+from scheduling import schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
@@ -80,25 +80,34 @@ if True or __name__ == '__main__':
             j.pseudo(t_avail_upto, max_time - t_avail_upto, itvs)
             pseudo_jobs.append(j)
         
-        initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+        if pseudo_jobs != []:
+            initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
 
         #
-        # Get  additionalwaiting jobs' data
+        # Get  additional waiting jobs' data
         #
         get_data_jobs(waiting_jobs, waiting_jids, resource_set)
             
         #
-        # get get_scheduled_jobs
+        # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        #get_scheduled_jobs()
+        scheduled_jobs = get_scheduled_jobs(resource_set)
+
+        if scheduled_jobs != []:
+            initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
 
         all_slot_sets = {0:initial_slot_set}
 
         #
         # Scheduled
         #
-    
+        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, 20)
 
+        #
+        # Save assignement
+        #
+
+        save_assigns(waiting_jobs, resource_set)
 
 print "yopa"
         

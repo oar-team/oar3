@@ -120,6 +120,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
             prev_sid_right = sid_right
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
+    job.moldable_id = mld_id
     job.res_set = prev_res_set
     job.start_time = prev_start_time
     job.walltime = walltime 
