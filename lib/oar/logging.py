@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from logging import getLogger, FileHandler as BaseFileHandler, Formatter, \
-     INFO, ERROR, WARN, DEBUG, NOTSET
+     INFO, ERROR, WARN, DEBUG
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
@@ -24,7 +24,7 @@ class DeferredFileHandler(BaseFileHandler):
 def create_logger():
     """Creates a new logger object."""
     logger = getLogger("oar")
-    logger.setLevel(NOTSET)
+    logger.setLevel(DEBUG)
 
     sa_logger = getLogger("sqlalchemy.engine")
     sa_logger.setLevel(INFO)
