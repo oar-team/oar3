@@ -1,7 +1,7 @@
 import time
-from oar import config
+from oar import config, logging, Job
 from resource import ResourceSet
-from job import Job, get_waiting_jobs, get_data_jobs, get_scheduled_jobs, save_assigns
+from job import get_waiting_jobs, get_data_jobs, get_scheduled_jobs, save_assigns
 from slot import SlotSet, Slot
 from scheduling import schedule_id_jobs_ct
 
@@ -60,7 +60,7 @@ if True or __name__ == '__main__':
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
 
-    if True or nb_waiting_jobs > 1:
+    if  nb_waiting_jobs > 1:
 
 
         #                                                                                
@@ -77,7 +77,10 @@ if True or __name__ == '__main__':
             itvs = resource_set.available_upto[t_avail_upto]
             j = Job()
             print t_avail_upto, max_time - t_avail_upto, itvs
-            j.pseudo(t_avail_upto, max_time - t_avail_upto, itvs)
+            j.start_time = t_avail_upto
+            j.walltime = max_time - t_avail_upto
+            j.res_set = itvs
+
             pseudo_jobs.append(j)
         
         if pseudo_jobs != []:

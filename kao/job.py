@@ -1,11 +1,13 @@
 from oar import (db, Job, MoldableJob, JobResourceDescription,
                  JobResourceGroup, Resource, GanttJobsPrediction,
-                 GanttJobsResource)
-from interval import unordered_ids2itvs, itvs2ids
-class Job(Job):
-    ''' Use 
+                 GanttJobsResource, JobType)
 
-        j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
+from interval import unordered_ids2itvs, itvs2ids
+
+#class Job(Job):
+''' Use 
+
+    j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
                  [ 
                      (1, 60, 
                       [  ( [("node", 2)], [(1,32)] )  ]
@@ -23,38 +25,33 @@ class Job(Job):
                  ]                                     # resources (Properties)
     
 
-    '''
-
-    def pseudo(self, start_time, walltime, res_set):
-        self.start_time = start_time
-        self.walltime = walltime
-        self.res_set = res_set
+'''
         
-    def set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
-                 moldable_id, mld_res_rqts, key_cache=""):
-        self.id = id
-        self.state = state
-        self.start_time = start_time
-        self.walltime = walltime
-        self.user = user
-        self.name = name
-        self.project = project
-        self.types = types
-        self.res_set = res_set
-        self.moldable_id = moldable_id
-        self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
-        #                                   [   [ (hy_level, hy_nb, constraints) ]  ]
-        # hy_level = [ [string] ]
-        # hy_nb = [ [ int ] ]
-        # constraints = [ [itvs]  ]
-        self.key_cache = key_cache
-        if not key_cache:
-            if len(mld_res_rqts) == 1:
-                (m_id, walltime, res_rqt) = mld_res_rqts[0]
-                self.key_cache = (str(walltime)).join(str(res_rqt))
-            else:
-                #TODO cache for moldable_id
-                pass
+def set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
+        moldable_id, mld_res_rqts, key_cache=""):
+    self.id = id
+    self.state = state
+    self.start_time = start_time
+    self.walltime = walltime
+    self.user = user
+    self.name = name
+    self.project = project
+    self.types = types
+    self.res_set = res_set
+    self.moldable_id = moldable_id
+    self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
+    #                                   [   [ (hy_level, hy_nb, constraints) ]  ]
+    # hy_level = [ [string] ]
+    # hy_nb = [ [ int ] ]
+    # constraints = [ [itvs]  ]
+    self.key_cache = key_cache
+    if not key_cache:
+        if len(mld_res_rqts) == 1:
+            (m_id, walltime, res_rqt) = mld_res_rqts[0]
+            self.key_cache = (str(walltime)).join(str(res_rqt))
+        else:
+            #TODO cache for moldable_id
+            pass
 
 def get_waiting_jobs(queue):
     #TODO  fairsharing_nb_job_limit
@@ -74,7 +71,7 @@ def get_waiting_jobs(queue):
             
 def get_jobs_types(jids):
     jobs_types = {}
-    for j_type in JobType.filter(Job_type.job_id.in_( tuple(jids) )):
+    for j_type in JobType.query.filter(JobType.job_id.in_( tuple(jids) )):
         jid = j_type.job_id
         t_v = j_type.type.split("=")
         t = t_v[0]
@@ -86,7 +83,7 @@ def get_jobs_types(jids):
             jobs_types[jid] = {}
         jobs_types[jid][t] = v
                                  
-    return job_types
+    return jobs_types
 
 def get_data_jobs(jobs, jids, resource_set):
     '''
@@ -126,7 +123,10 @@ def get_data_jobs(jobs, jids, resource_set):
     mld_res_rqts = []
     jrg = []
     jr_descriptions = []
-    
+    res_constraints = []
+    prev_mld_id_walltime = 0
+    job_ugly = {}  # ugly workaround for UnboundLocalError: local variable 'job' referenced before assignment 
+
     for x in req:
         j_id, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
         #print  x
@@ -153,6 +153,7 @@ def get_data_jobs(jobs, jids, resource_set):
             prev_mld_id_walltime = mld_id_walltime
             prev_j_id = j_id
             job = jobs[j_id]
+            job_ugly[1] = job 
 
         else:
             #
@@ -213,6 +214,7 @@ def get_data_jobs(jobs, jids, resource_set):
     # complete the last job
     jrg.append( (jr_descriptions, res_constraints) )
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
+    job = job_ugly[1]
     job.mld_res_rqts = mld_res_rqts
     job.types =  job_types[job.id]
     job.key_cache = str(mld_res_rqts)
