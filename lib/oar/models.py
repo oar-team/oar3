@@ -70,7 +70,7 @@ class EventLogHostname(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey("event_logs.event_id"),
                          primary_key=True)
     hostname = db.Column(db.String(255), primary_key=True, index=True)
-    event_log = db.relationship('EventLog', backref='hostnames')
+    event_log = db.relationship('oar.models.EventLog', backref='hostnames')
 
 
 class EventLog(db.Model):
@@ -115,7 +115,7 @@ class GanttJobsPrediction(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJob')
 
 
 class GanttJobsPredictionsLog(db.Model):
@@ -127,7 +127,7 @@ class GanttJobsPredictionsLog(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJob')
 
 
 class GanttJobsPredictionsVisu(db.Model):
@@ -138,7 +138,7 @@ class GanttJobsPredictionsVisu(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJob')
 
 
 class GanttJobsResource(db.Model):
@@ -152,8 +152,8 @@ class GanttJobsResource(db.Model):
         db.ForeignKey("resources.resource_id"),
         primary_key=True,
     )
-    moldable = db.relationship('MoldableJob')
-    resource = db.relationship('Resource')
+    moldable = db.relationship('oar.models.MoldableJob')
+    resource = db.relationship('oar.models.Resource')
 
 
 class GanttJobsResourcesLog(db.Model):
@@ -168,8 +168,8 @@ class GanttJobsResourcesLog(db.Model):
         db.ForeignKey("resources.resource_id"),
         primary_key=True,
     )
-    moldable = db.relationship('MoldableJob')
-    resource = db.relationship('Resource')
+    moldable = db.relationship('oar.models.MoldableJob')
+    resource = db.relationship('oar.models.Resource')
 
 
 
@@ -185,8 +185,8 @@ class GanttJobsResourcesVisu(db.Model):
         primary_key=True,
     )
 
-    moldable = db.relationship('MoldableJob')
-    resource = db.relationship('Resource')
+    moldable = db.relationship('oar.models.MoldableJob')
+    resource = db.relationship('oar.models.Resource')
 
 
 class JobStateLog(db.Model):
@@ -252,22 +252,24 @@ class Job(db.Model):
     suspended = db.Column(db.String(3), index=True, default="NO")
 
     ## relations
-    queue = db.relationship('Queue', backref='jobs')
-    file = db.relationship('File', backref='jobs')
+    queue = db.relationship('oar.models.Queue', backref='jobs')
+    file = db.relationship('oar.models.File', backref='jobs')
 
-    depends_on_jobs = db.relationship("Job",
+    depends_on_jobs = db.relationship('oar.models.Job',
         secondary=job_dependencies,
         primaryjoin=id==job_dependencies.c.job_id,
         secondaryjoin=id==job_dependencies.c.job_id_required,
         backref="needed_by_jobs",
     )
-    frag = db.relationship('FragJob', backref="job", uselist=False)
-    chalenge = db.relationship('Challenge', backref='job', uselist=False)
-    state_logs = db.relationship('JobStateLog', backref='job')
-    types = db.relationship('JobType', backref='job')
-    event_logs = db.relationship('EventLog', backref='job')
+    frag = db.relationship('oar.models.FragJob', backref="job",
+                           uselist=False)
+    chalenge = db.relationship('oar.models.Challenge', backref='job',
+                               uselist=False)
+    state_logs = db.relationship('oar.models.JobStateLog', backref='job')
+    types = db.relationship('oar.models.JobType', backref='job')
+    event_logs = db.relationship('oar.models.EventLog', backref='job')
     ## relations
-    moldables = db.relationship('MoldableJob', backref='job')
+    moldables = db.relationship('oar.models.MoldableJob', backref='job')
 
 
 class MoldableJob(db.Model):
@@ -279,7 +281,7 @@ class MoldableJob(db.Model):
     walltime = db.Column('moldable_walltime', db.Integer, default="0")
     index = db.Column('moldable_index', db.String(7), index=True,
                       default="CURRENT")
-    groups = db.relationship('JobResourceGroup', backref='moldable')
+    groups = db.relationship('oar.models.JobResourceGroup', backref='moldable')
 
 
 class JobResourceGroup(db.Model):
@@ -293,7 +295,8 @@ class JobResourceGroup(db.Model):
     property = db.Column('res_group_property', db.Text)
     index = db.Column('res_group_index', db.String(7), index=True)
     ## relations
-    descriptions = db.relationship('JobResourceDescription', backref='group')
+    descriptions = db.relationship('oar.models.JobResourceDescription',
+                                   backref='group')
 
 
 class JobResourceDescription(db.Model):
@@ -362,7 +365,7 @@ class Resource(db.DeferredReflection, db.Model):
     drain = db.Column(db.String(3), default="NO")
 
     ## relations
-    logs = db.relationship('ResourceLog', backref='resource')
+    logs = db.relationship('oar.models.ResourceLog', backref='resource')
     assigned_to_moldable = db.relationship("MoldableJob",
         secondary=assigned_resources,
         backref="assigned_ressources",
