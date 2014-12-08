@@ -13,12 +13,12 @@ db = Database()
 from . import utils
 
 from .models import (
-    Accounting, AdmissionRule, Challenge, EventLog,
+    Accounting, AdmissionRule, Challenge, EventLog, AssignedResource,
     EventLogHostname, File, FragJob, GanttJobsPrediction,
     GanttJobsPredictionsLog, GanttJobsPredictionsVisu, GanttJobsResource,
-    GanttJobsResourcesLog, GanttJobsResourcesVisu, Job,
+    GanttJobsResourcesLog, GanttJobsResourcesVisu, Job, JobDependencie,
     JobResourceDescription, JobResourceGroup, JobStateLog, JobType,
-    MoldableJob, Queue, Resource, ResourceLog, Scheduler
+    MoldableJobDescription, Queue, Resource, ResourceLog, Scheduler
 )
 
 from .exceptions import (
