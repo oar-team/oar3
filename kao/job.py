@@ -36,7 +36,7 @@ def set(self, id, state, start_time, walltime, user, name, project, types, res_s
     self.user = user
     self.name = name
     self.project = project
-    self._types = types
+    self.types = types
     self.res_set = res_set
     self.moldable_id = moldable_id
     self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
@@ -145,7 +145,7 @@ def get_data_jobs(jobs, jids, resource_set):
                 jrg.append( (jr_descriptions, res_constraints) )
                 mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
                 job.mld_res_rqts = mld_res_rqts
-                job._types = job_types[job.id]
+                job.types = job_types[job.id]
                 job.key_cache = str(mld_res_rqts)
                 mld_res_rqts = []
                 jrg = []
@@ -221,9 +221,9 @@ def get_data_jobs(jobs, jids, resource_set):
     
     job.mld_res_rqts = mld_res_rqts
     if job.id in jobs_types:
-        job._types = jobs_types[job.id]
+        job.types = jobs_types[job.id]
     else:
-        job._types = {}
+        job.types = {}
  
     job.key_cache = str(mld_res_rqts)
 
@@ -276,7 +276,7 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
 
         jobs_types = get_jobs_types(jids)
         for j in jobs:            
-            j._types = jobs_types[j.id]
+            j.types = jobs_types[j.id]
         
     return jobs
 
