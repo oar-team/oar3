@@ -1,4 +1,4 @@
-from oar import (db, Job, MoldableJob, JobResourceDescription,
+from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
                  JobResourceGroup, Resource, GanttJobsPrediction,
                  GanttJobsResource, JobType)
 
@@ -97,22 +97,22 @@ def get_data_jobs(jobs, jids, resource_set):
     jobs_types = get_jobs_types(jids)
 
     req = db.query(Job.id,
-                   MoldableJob.id,
-                   MoldableJob.walltime,
+                   MoldableJobDescription.id,
+                   MoldableJobDescription.walltime,
                    JobResourceGroup.id,
                    JobResourceGroup.moldable_id,
                    JobResourceGroup.property,
                    JobResourceDescription.group_id,
                    JobResourceDescription.resource_type,
                    JobResourceDescription.value)\
-            .filter(MoldableJob.index == 'CURRENT')\
+            .filter(MoldableJobDescription.index == 'CURRENT')\
             .filter(JobResourceGroup.index == 'CURRENT')\
             .filter(JobResourceDescription.index == 'CURRENT')\
             .filter(Job.id.in_( tuple(jids) ))\
-            .join(MoldableJob)\
+            .join(MoldableJobDescription)\
             .join(JobResourceGroup)\
             .join(JobResourceDescription)\
-            .order_by(MoldableJob.id,
+            .order_by(MoldableJobDescription.id,
                       JobResourceGroup.id,
                       JobResourceDescription.order)\
             .all()
@@ -235,12 +235,12 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
     # TODO GanttJobsPrediction => GanttJobsPredictionS
     req = db.query(Job,
                    GanttJobsPrediction.start_time,
-                   MoldableJob.walltime,
+                   MoldableJobDescription.walltime,
                    GanttJobsResource.resource_id)\
-            .filter(MoldableJob.index == 'CURRENT')\
+            .filter(MoldableJobDescription.index == 'CURRENT')\
             .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
-            .filter(MoldableJob.id == GanttJobsPrediction.moldable_id)\
-            .filter(Job.id == MoldableJob.id)\
+            .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+            .filter(Job.id == MoldableJobDescription.id)\
             .order_by(Job.start_time, Job.id)\
             .all()
 
