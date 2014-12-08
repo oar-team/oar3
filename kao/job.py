@@ -36,7 +36,7 @@ def set(self, id, state, start_time, walltime, user, name, project, types, res_s
     self.user = user
     self.name = name
     self.project = project
-    self.types = types
+    self._types = types
     self.res_set = res_set
     self.moldable_id = moldable_id
     self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
@@ -78,11 +78,13 @@ def get_jobs_types(jids):
         if len(tv) == 2:
             v = t_v[1]
         else:
-            v = None
-        if jid not in jobs_types:
-            jobs_types[jid] = {}
-        jobs_types[jid][t] = v
-                                 
+            v = ""
+        if not jid in jobs_types:
+            jobs_types[jid] = dict()
+
+        print t, v
+        (jobs_types[jid])[t] = v
+       
     return jobs_types
 
 def get_data_jobs(jobs, jids, resource_set):
@@ -92,13 +94,15 @@ def get_data_jobs(jobs, jids, resource_set):
 
     '''
 
-    job_types = get_jobs_types(jids)
+    jobs_types = get_jobs_types(jids)
 
     req = db.query(Job.id,
                    MoldableJob.id,
                    MoldableJob.walltime,
                    JobResourceGroup.id,
+                   JobResourceGroup.moldable_id,
                    JobResourceGroup.property,
+                   JobResourceDescription.group_id,
                    JobResourceDescription.resource_type,
                    JobResourceDescription.value)\
             .filter(MoldableJob.index == 'CURRENT')\
@@ -125,7 +129,8 @@ def get_data_jobs(jobs, jids, resource_set):
     jr_descriptions = []
     res_constraints = []
     prev_mld_id_walltime = 0
-    job_ugly = {}  # ugly workaround for UnboundLocalError: local variable 'job' referenced before assignment 
+
+    global job
 
     for x in req:
         j_id, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
@@ -140,7 +145,7 @@ def get_data_jobs(jobs, jids, resource_set):
                 jrg.append( (jr_descriptions, res_constraints) )
                 mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
                 job.mld_res_rqts = mld_res_rqts
-                job.types = job_types[job.id]
+                job._types = job_types[job.id]
                 job.key_cache = str(mld_res_rqts)
                 mld_res_rqts = []
                 jrg = []
@@ -153,8 +158,7 @@ def get_data_jobs(jobs, jids, resource_set):
             prev_mld_id_walltime = mld_id_walltime
             prev_j_id = j_id
             job = jobs[j_id]
-            job_ugly[1] = job 
-
+            
         else:
             #
             # new moldable_id
@@ -214,9 +218,13 @@ def get_data_jobs(jobs, jids, resource_set):
     # complete the last job
     jrg.append( (jr_descriptions, res_constraints) )
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
-    job = job_ugly[1]
+    
     job.mld_res_rqts = mld_res_rqts
-    job.types =  job_types[job.id]
+    if job.id in jobs_types:
+        job._types = jobs_types[job.id]
+    else:
+        job._types = {}
+ 
     job.key_cache = str(mld_res_rqts)
 
     #print "======================"
@@ -229,7 +237,7 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
                    GanttJobsPrediction.start_time,
                    MoldableJob.walltime,
                    GanttJobsResource.resource_id)\
-            .filter(MoldableJobDescription.index == 'CURRENT')\
+            .filter(MoldableJob.index == 'CURRENT')\
             .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
             .filter(MoldableJob.id == GanttJobsPrediction.moldable_id)\
             .filter(Job.id == MoldableJob.id)\
@@ -240,8 +248,9 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
     jobs = []
     prev_jid = 0
     roids = []
-    job_ugly = {} # ugly workaround for  UnboundLocalError: local variable 'job' referenced before assignment 
-    #               witrh Python 3 use nonlocal keyword
+
+    global job
+
     #(job, a, b, c) = req[0]
     if req != []:
         for x in req:
@@ -258,19 +267,17 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime
-                job_ugly[1] = job 
-                    
+
             roids.append(resource_set.rid_i2o[r_id])
 
-        job = job_ugly[1]
         job.res_set = unordered_ids2itvs(roids)
         jobs.append(job)
         jids.append(job.id)
 
         jobs_types = get_jobs_types(jids)
         for j in jobs:            
-            j.types = jobs_types[j.id]
-    
+            j._types = jobs_types[j.id]
+        
     return jobs
 
 def save_assigns(jobs, resource_set):

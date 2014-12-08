@@ -60,7 +60,7 @@ if True or __name__ == '__main__':
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
 
-    if  nb_waiting_jobs > 1:
+    if True or nb_waiting_jobs > 1:
 
 
         #                                                                                
