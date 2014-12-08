@@ -115,7 +115,7 @@ class GanttJobsPrediction(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
 
 
 class GanttJobsPredictionsLog(db.Model):
@@ -127,7 +127,7 @@ class GanttJobsPredictionsLog(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
 
 
 class GanttJobsPredictionsVisu(db.Model):
@@ -138,7 +138,7 @@ class GanttJobsPredictionsVisu(db.Model):
         primary_key=True,
     )
     start_time = db.Column(db.Integer, default="0")
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
 
 
 class GanttJobsResource(db.Model):
@@ -152,7 +152,7 @@ class GanttJobsResource(db.Model):
         db.ForeignKey("resources.resource_id"),
         primary_key=True,
     )
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
     resource = db.relationship('oar.models.Resource')
 
 
@@ -168,7 +168,7 @@ class GanttJobsResourcesLog(db.Model):
         db.ForeignKey("resources.resource_id"),
         primary_key=True,
     )
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
     resource = db.relationship('oar.models.Resource')
 
 
@@ -185,7 +185,7 @@ class GanttJobsResourcesVisu(db.Model):
         primary_key=True,
     )
 
-    moldable = db.relationship('oar.models.MoldableJob')
+    moldable = db.relationship('oar.models.MoldableJobDescription')
     resource = db.relationship('oar.models.Resource')
 
 
@@ -269,10 +269,10 @@ class Job(db.Model):
     types = db.relationship('oar.models.JobType', backref='job')
     event_logs = db.relationship('oar.models.EventLog', backref='job')
     ## relations
-    moldables = db.relationship('oar.models.MoldableJob', backref='job')
+    moldables = db.relationship('oar.models.MoldableJobDescription', backref='job')
 
 
-class MoldableJob(db.Model):
+class MoldableJobDescription(db.Model):
     __tablename__ = 'moldable_job_descriptions'
 
     id = db.Column('moldable_id', db.BigInteger, primary_key=True)
@@ -366,7 +366,7 @@ class Resource(db.DeferredReflection, db.Model):
 
     ## relations
     logs = db.relationship('oar.models.ResourceLog', backref='resource')
-    assigned_to_moldable = db.relationship("MoldableJob",
+    assigned_to_moldable = db.relationship("MoldableJobDescription",
         secondary=assigned_resources,
         backref="assigned_ressources",
     )
