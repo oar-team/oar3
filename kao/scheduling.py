@@ -8,14 +8,14 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, securi
     for j_id in ordered_id_jobs:
         job = jobs[j_id]
         
-        if "container" in job._types:
+        if "container" in job.types:
             t_e = job.start_time + job.walltime - security_time
             slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
             jobs_slotsets[j_id] = []
 
         ss_id =0
-        if "inner" in job._types:
-            ss_id = job._types["inner"]
+        if "inner" in job.types:
+            ss_id = job.types["inner"]
         
         jobs_slotsets[ss_id].append(job)
             
@@ -147,8 +147,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
         #else:
         
         ss_id =0
-        if "inner" in job._types:
-            ss_id = job._types["inner"]
+        if "inner" in job.types:
+            ss_id = job.types["inner"]
             
         slots_set = slots_sets[ss_id]
         
