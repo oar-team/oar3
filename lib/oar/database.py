@@ -224,6 +224,15 @@ class Database(object):
         self.DeferredReflection.prepare(self.engine)
         self._reflected = True
 
+    def create_all(self):
+        """Creates all tables. """
+        self.metadata.create_all(bind=self.engine)
+
+    def close(self, **kwargs):
+        """Proxy for Session.close"""
+        if self.connector is not None:
+            return self.session.close()
+
     def __repr__(self):
         engine = None
         if self.connector is not None:

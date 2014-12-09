@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from . import db
 
+
 schema = db.Table(
     db.Column('version', db.String(255)),
     db.Column('name', db.String(255))
 )
-
 
 
 class AssignedResource(db.Model):
