@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
-import errno
 import pprint
 
 from io import open
@@ -58,7 +57,7 @@ class Configuration(dict):
                         value = self._try_convert_value(value, decimal_types)
                         self[key] = value
         except IOError as e:
-            if silent and e.errno in (errno.ENOENT, errno.EISDIR):
+            if silent:
                 return False
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
