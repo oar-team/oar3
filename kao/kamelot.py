@@ -32,10 +32,10 @@ for k,v in default_config.iteritems():
 #
 # Karma and Fairsharing stuff *)
 #
-if config["FAIRSHARING_ENABLED"] == "yes": 
+if config["FAIRSHARING_ENABLED"] == "yes":
     fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
     karma_window_size =  3600 * 30 * 24 # TODO in conf ???
-    
+
 #TODO
 #
 # Sort jobs accordingly to karma value (fairsharing)  *)
@@ -45,7 +45,7 @@ if config["FAIRSHARING_ENABLED"] == "yes":
 #               #
 
 
-#                
+#
 # Main function
 #
 if True or __name__ == '__main__':
@@ -63,8 +63,8 @@ if True or __name__ == '__main__':
     if True or nb_waiting_jobs > 1:
 
 
-        #                                                                                
-        # Determine Global Resource Intervals and Initial Slot                           
+        #
+        # Determine Global Resource Intervals and Initial Slot
         #
         resource_set = ResourceSet()
         initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
@@ -82,7 +82,7 @@ if True or __name__ == '__main__':
             j.res_set = itvs
 
             pseudo_jobs.append(j)
-        
+
         if pseudo_jobs != []:
             initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
 
@@ -90,7 +90,7 @@ if True or __name__ == '__main__':
         # Get  additional waiting jobs' data
         #
         get_data_jobs(waiting_jobs, waiting_jids, resource_set)
-            
+
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
@@ -113,4 +113,4 @@ if True or __name__ == '__main__':
         save_assigns(waiting_jobs, resource_set)
 
 print "yopa"
-        
+

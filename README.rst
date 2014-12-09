@@ -15,7 +15,7 @@ Main features
     - available resources are timely arranged through contiugous slots.
 - Other choices (high level programs' structures) follow those from the Perl version.
 - The first version will be without DB interaction (it'll be just a demonstrator) also
-1rst scheduler will not support : 
-    - dependencies, fairsharing, timesharing, placeholder, quotas, resource always added,  
+1rst scheduler will not support :
+    - dependencies, fairsharing, timesharing, placeholder, quotas, resource always added,
 and will support :
     - hierarchy, container

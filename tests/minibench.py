@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../kao/')
-from scheduling import * 
+from scheduling import *
 #http://www.huyng.com/posts/python-performance-analysis/
 import time
 
@@ -21,21 +21,21 @@ class Timer(object):
 
 def create_simple_job(i, res_rqt, ctnts_res, key_cache=""):
 
-    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )], key_cache ) 
-    
+    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )], key_cache )
+
 
 def create_jobs(n, nb_res, res, mode="default", **kwargs):
     jobs = {}
     for i in range(1, n+1):
-        jobs[i] = Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
-                      [ 
-                          (1, 60, 
+        jobs[i] = Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0,
+                      [
+                          (1, 60,
                            #   [  ( [("node", (i % nb_res) + 1) ], res ) ]
 #10
                            [  ( [("node", 10) ], res ) ]
                        )
-                      ]         
-                  ) 
+                      ]
+                  )
     return( [x for x in range(1, i+1)], jobs)
 
 
@@ -65,7 +65,7 @@ def eva_sched_foo(all_ss, jobs, hy, j_ids ):
 
 def simple_bench_1(key_cache=""):
     nb_res = 10
-    
+
     x = []
     y = []
     for k in range(1, 12):
@@ -73,17 +73,17 @@ def simple_bench_1(key_cache=""):
         print "nb_jobs", i
         (res, hy, all_ss) = init_data_structure(nb_res)
         (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res, key_cache)
-        
+
         with Timer() as t:
             eva_sched_foo(all_ss, jobs, hy, j_ids )
         print "=> nb_job:", i, " time: %s s" % t.secs
 
-        x.append(i) 
+        x.append(i)
         y.append(t.secs)
 
     print x
     print y
-        
+
 
 def simple_bench_0(key_cache=""):
     nb_res = 10
@@ -91,7 +91,7 @@ def simple_bench_0(key_cache=""):
     print "nb_jobs", i
     (res, hy, all_ss) = init_data_structure(nb_res)
     (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res, key_cache)
-        
+
     eva_sched_foo(all_ss, jobs, hy, j_ids )
 
 

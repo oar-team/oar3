@@ -6,10 +6,10 @@ def ordered_ids2itvs(ids):
         for i in ids:
             if i > (e+1): #end itv and prepare new itv
                 itvs.append( (b,e) )
-                b = i 
+                b = i
             e = i
         itvs.append( (b,e) )
-            
+
     return itvs
 
 def unordered_ids2itvs(unordered_ids):
@@ -36,7 +36,7 @@ def test_and_sub_prefix_itvs(prefix_itvs, itvs):
 
     if (lx == 0):
         return (True,itvs)
-    
+
     while (flag) and (i<lx) and (i<ly):
         x = prefix_itvs[i]
         y = itvs[i]
@@ -44,7 +44,7 @@ def test_and_sub_prefix_itvs(prefix_itvs, itvs):
         if not (x[0]==y[0]) and (x[1]==y[1]):
             flag = False
             i -= 1
-                        
+
     residue_itvs = [x for x in islice(itvs, i, None)]
 
     return flag, residue_itvs
@@ -63,7 +63,7 @@ def equal_itvs(itvs1, itvs2):
         return False
     if (lx == 0):
         return True
-    while (i<lx): 
+    while (i<lx):
         x = itvs1[i]
         y = itvs2[i]
         if not ((x[0]==y[0]) and (x[1]==y[1])):
@@ -71,13 +71,13 @@ def equal_itvs(itvs1, itvs2):
         i += 1
     return True
 
-def extract_n_scattered_block_itv(itvs1, itvs_ref, n): 
+def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
     #itv_l_a lst_itvs_reference n
     #need of test_and_sub_prefix_itvs:
     lr = len(itvs_ref)
     i = 0
     itvs = []
-    
+
     while (n>0) and (i<lr):
         x = itvs_ref[i]
         y = intersec(itvs1, x)
@@ -85,7 +85,7 @@ def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
             itvs.extend(x)
             n -= 1
         i += 1
-    
+
     if (n==0):
         itvs.sort()
         return itvs
@@ -102,10 +102,10 @@ def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
 
 
 def keep_no_empty_scat_bks(itvs, itvss_ref):
-    ''' keep_no_empty_scat_bks : 
+    ''' keep_no_empty_scat_bks :
     keep no empty scattered blocks where their intersection with itvs is not empty '''
     lr = len(itvss_ref)
-    i = 0 
+    i = 0
     r_itvss = []
 
     while(i<lr):
@@ -119,29 +119,29 @@ def sub_intervals(itvs1,itvs2):
     lx = len(itvs1)
     ly = len(itvs2)
     i = 0
-    k = 0   
+    k = 0
     itvs = []
 
     while (i<lx) and (lx>0):
-        x = itvs1[i]        
+        x = itvs1[i]
         if (k == ly):
             itvs.append(x)
             i += 1
         else:
             y = itvs2[k]
-            #y before x w/ no overlap 
+            #y before x w/ no overlap
             if (y[1] < x[0]):
                 k += 1
-            else:   
+            else:
                 # x before y w/ no overlap
                 if (y[0] > x[1]):
                     itvs.append(x)
                     i += 1
-                else:    
+                else:
                     if (y[0] > x[0]):
                         if (y[1] < x[1]):
                             # x overlap totally y
-                            itvs.append( (x[0],y[0]-1) ) 
+                            itvs.append( (x[0],y[0]-1) )
                             itvs1[i] = (y[1]+1,x[1])
                             k += 1
                         else:
@@ -166,7 +166,7 @@ def intersec(itvs1,itvs2):
     i = 0
     k = 0
     itvs = []
-    
+
     while (i<lx) and (lx>0) and (ly>0):
         x = itvs1[i]
         if (k == ly):
@@ -174,15 +174,15 @@ def intersec(itvs1,itvs2):
         else:
             y = itvs2[k]
 
-        # y before x w/ no overlap 
+        # y before x w/ no overlap
         if (y[1] < x[0]):
             k += 1
         else:
 
-            # x before y w/ no overlap    
+            # x before y w/ no overlap
             if (y[0] > x[1]):
                 i += 1
-            else:    
+            else:
 
                 if (y[0] >= x[0]):
                     if (y[1] <= x[1]):
@@ -198,5 +198,5 @@ def intersec(itvs1,itvs2):
                         else:
                             itvs.append(x)
                             i += 1
-                            
+
     return itvs

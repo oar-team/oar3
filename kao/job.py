@@ -5,28 +5,28 @@ from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
 from interval import unordered_ids2itvs, itvs2ids
 
 #class Job(Job):
-''' Use 
+''' Use
 
-    j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0, 
-                 [ 
-                     (1, 60, 
+    j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0,
+                 [
+                     (1, 60,
                       [  ( [("node", 2)], [(1,32)] )  ]
                   )
-                 ]         
+                 ]
         )
 
     Attributes:
 
     mld_res_rqts: Resources requets by moldable instance
                   [                                    # first moldable instance
-                     (1, 60,                           # moldable id, walltime 
+                     (1, 60,                           # moldable id, walltime
                       [  ( [("node", 2)], [(1,32)] ) ] # list of requests composed of
-                  )                                    # list of hierarchy request and filtered 
+                  )                                    # list of hierarchy request and filtered
                  ]                                     # resources (Properties)
-    
+
 
 '''
-        
+
 def set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
         moldable_id, mld_res_rqts, key_cache=""):
     self.id = id
@@ -39,7 +39,7 @@ def set(self, id, state, start_time, walltime, user, name, project, types, res_s
     self.types = types
     self.res_set = res_set
     self.moldable_id = moldable_id
-    self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime, 
+    self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime,
     #                                   [   [ (hy_level, hy_nb, constraints) ]  ]
     # hy_level = [ [string] ]
     # hy_nb = [ [ int ] ]
@@ -56,7 +56,7 @@ def set(self, id, state, start_time, walltime, user, name, project, types, res_s
 def get_waiting_jobs(queue):
     #TODO  fairsharing_nb_job_limit
     waiting_jobs = {}
-    waiting_jids = []   
+    waiting_jids = []
     nb_waiting_jobs = 0
 
     for j in Job.query.filter(Job.state == "Waiting")\
@@ -68,7 +68,7 @@ def get_waiting_jobs(queue):
         nb_waiting_jobs += 1
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
-            
+
 def get_jobs_types(jids):
     jobs_types = {}
     for j_type in JobType.query.filter(JobType.job_id.in_( tuple(jids) )):
@@ -84,7 +84,7 @@ def get_jobs_types(jids):
 
         print t, v
         (jobs_types[jid])[t] = v
-       
+
     return jobs_types
 
 def get_data_jobs(jobs, jids, resource_set):
@@ -136,7 +136,7 @@ def get_data_jobs(jobs, jids, resource_set):
         j_id, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
         #print  x
         #
-        # new job 
+        # new job
         #
         if j_id != prev_j_id:
             if first_job:
@@ -158,7 +158,7 @@ def get_data_jobs(jobs, jids, resource_set):
             prev_mld_id_walltime = mld_id_walltime
             prev_j_id = j_id
             job = jobs[j_id]
-            
+
         else:
             #
             # new moldable_id
@@ -168,9 +168,9 @@ def get_data_jobs(jobs, jids, resource_set):
                 if jrg != []:
                     jrg.append( (jr_descriptions, res_constraints) )
                     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
-                
+
                 prev_mld_id = mld_id
-                prev_mld_id_walltime = mld_id_walltime 
+                prev_mld_id_walltime = mld_id_walltime
                 jrg = []
                 jr_descriptions = []
         #
@@ -199,9 +199,9 @@ def get_data_jobs(jobs, jids, resource_set):
                     and_sql = ""
                 else:
                     and_sql = " AND "
-            
+
                 sql_constraints = job.properties + and_sql + jrg_grp_property
-                    
+
                 if sql_constraints in cache_constraints:
                     res_constraints = cache_constraints[sql_constraints]
                 else:
@@ -218,13 +218,13 @@ def get_data_jobs(jobs, jids, resource_set):
     # complete the last job
     jrg.append( (jr_descriptions, res_constraints) )
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
-    
+
     job.mld_res_rqts = mld_res_rqts
     if job.id in jobs_types:
         job.types = jobs_types[job.id]
     else:
         job.types = {}
- 
+
     job.key_cache = str(mld_res_rqts)
 
     #print "======================"
@@ -256,13 +256,13 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
         for x in req:
             (j, start_time, walltime, r_id) = x
             print x
-            if j.id != prev_jid: 
+            if j.id != prev_jid:
                 if prev_jid != 0:
                     job.res_set = unordered_ids2itvs(roids)
                     jobs.append(job)
                     jids.append(job.id)
                     roids = []
-                    
+
                 prev_jid = j.id
                 job = j
                 job.start_time = start_time
@@ -275,9 +275,9 @@ def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
         jids.append(job.id)
 
         jobs_types = get_jobs_types(jids)
-        for j in jobs:            
+        for j in jobs:
             j.types = jobs_types[j.id]
-        
+
     return jobs
 
 def save_assigns(jobs, resource_set):
@@ -285,7 +285,7 @@ def save_assigns(jobs, resource_set):
     mld_id_start_time_s = []
     for j in jobs.itervalues():
         mld_id_start_time_s.append( (j.moldable_id, j.start_time) )
-        riods = itvs2ids(j.res_set) 
+        riods = itvs2ids(j.res_set)
         mld_id_rid_s = [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods]
         mld_id_rid_s.append( (j.moldable_id, mld_id_rid_s) )
 

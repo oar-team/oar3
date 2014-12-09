@@ -7,7 +7,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, securi
     jobs_slotsets = {0:[]}
     for j_id in ordered_id_jobs:
         job = jobs[j_id]
-        
+
         if "container" in job.types:
             t_e = job.start_time + job.walltime - security_time
             slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
@@ -16,14 +16,14 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, securi
         ss_id =0
         if "inner" in job.types:
             ss_id = job.types["inner"]
-        
+
         jobs_slotsets[ss_id].append(job)
-            
+
     for ss_id,slot_set in slots_sets.iteritems():
         slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
-    
+
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
-    '''find resources in interval for all resource subrequests of a moldable instance 
+    '''find resources in interval for all resource subrequests of a moldable instance
     of a job'''
     result = []
     for hy_res_rqt in hy_res_rqts:
@@ -48,12 +48,12 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     slots = slots_set.slots
     #cache_walltime = slots_set.cache_walltime
     cache = slots_set.cache
-  
+
     #updated_cache = False
-    
-    # to not always begin by the first slots ( O(n^2) ) 
+
+    # to not always begin by the first slots ( O(n^2) )
     if job.key_cache and job.key_cache in cache:
-        sid_left = cache[job.key_cache] 
+        sid_left = cache[job.key_cache]
     else:
         sid_left = 1
 
@@ -61,36 +61,36 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
 #        sid_left = cache[walltime]
 #    else:
 #        sid_left = 1
-    
-    sid_right = sid_left    
+
+    sid_right = sid_left
     slot_e = slots[sid_right].e
 
     print 'first sid_left', sid_left
 
     while True:
         #find next contiguous slots_time
-  
+
         slot_b = slots[sid_left].b
 
         while ( (slot_e-slot_b+1) < walltime):
             sid_right = slots[sid_right].next
             slot_e = slots[sid_right].e
-        
+
 #        if not updated_cache and (slots[sid_left].itvs != []):
 #            cache[walltime] = sid_left
 #            updated_cache = True
 
-        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)         
+        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if (itvs != []):
             break
 
-        sid_left = slots[sid_left].next            
- 
+        sid_left = slots[sid_left].next
+
     if job.key_cache:
         cache[job.key_cache] = sid_left
- 
+
     return (itvs, sid_left, sid_right)
 
 def assign_resources_job_split_slots():
@@ -123,13 +123,13 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     job.moldable_id = mld_id
     job.res_set = prev_res_set
     job.start_time = prev_start_time
-    job.walltime = walltime 
+    job.walltime = walltime
     job.mld_id = mld_id
 
     #Take avantage of job.starttime = slots[prev_sid_left].b
     #print "before"
 
-    slots_set.split_slots(prev_sid_left, prev_sid_right, job) 
+    slots_set.split_slots(prev_sid_left, prev_sid_right, job)
 
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
@@ -145,13 +145,13 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
         #if jobs_dependencies[j_id].has_key(j_id):
         #    continue
         #else:
-        
+
         ss_id =0
         if "inner" in job.types:
             ss_id = job.types["inner"]
-            
+
         slots_set = slots_sets[ss_id]
-        
+
         #slots_set.show_slots()
 
         assign_resources_mld_job_split_slots(slots_set, job, hy)

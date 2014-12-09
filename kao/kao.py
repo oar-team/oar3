@@ -18,7 +18,7 @@ def kao():
     ###########################################################################################################
     #Initialize Gantt tables with scheduled reservation jobs, Running jobs, toLaunch jobs and Launching jobs; #
     ###########################################################################################################
-    
+
     # First get resources that we must add for each reservation jobs
     # TODO move to admission rules ???
 
@@ -30,7 +30,7 @@ def kao():
 
 
     #calculate now date with no overlap with other jobs
-    
+
 
 #@click.command()
 #@click.option('--count', default=1, help='Number of greetings.')
@@ -38,8 +38,8 @@ def kao():
 #def kao(count, name):
 #    """Simple program that greets NAME for a total of COUNT times."""
 #    for x in range(count):
-#        click.echo('Hello %s!' % name)                                        
+#        click.echo('Hello %s!' % name)
 
 if __name__ == '__main__':
     kao()
-    
+

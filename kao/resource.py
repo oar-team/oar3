@@ -6,7 +6,7 @@ from array import *
 MAX_NB_RESOURCES = 100000
 
 class ResourceSet:
-    
+
     def __init__(self):
 
         #prepare resource order/indirection stuff
@@ -20,16 +20,16 @@ class ResourceSet:
 
         hy_labels = conf_hy_labels.split(",")
         hy_labels_w_id = [ "id" if v == "resource_id" else v for v in hy_labels ]
-        
+
         hy_roid = {}
         for hy_label in hy_labels_w_id:
-            hy_roid[hy_label] = {} 
+            hy_roid[hy_label] = {}
 
         # available_upto for pseudo job in slot
         available_upto = {}
         self.available_upto = {}
 
-        roids = [] 
+        roids = []
 
         #retreive resource in order from DB
         self.resources_db = Resource.query.order_by(order_by_clause).all()
@@ -55,21 +55,21 @@ class ResourceSet:
 
                 #fill available_upto structure
                 if r.available_upto in available_upto:
-                    available_upto[r.available_upto].append(roid)            
+                    available_upto[r.available_upto].append(roid)
                 else:
                     available_upto[r.available_upto] = [roid]
 
         #global ordered resources intervals
         print roids
         self.roid_itvs = ordered_ids2itvs(roids)
-        
+
         if "id" in hy_roid:
             hy_roid["resource_id"] =  hy_roid["id"]
             del hy_roid["id"]
 
         #create hierarchy
         self.hierarchy = Hierarchy(hy_rid=hy_roid).hy
-        
+
         #transform available_upto
         for k, v in available_upto.iteritems():
             self.available_upto[k] = ordered_ids2itvs(v)

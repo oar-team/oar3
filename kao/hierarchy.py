@@ -24,10 +24,10 @@ def find_resource_hierarchies_scattered(itvs, hy, rqts):
 def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
 
     #potentiel available blocks
-    avail_bks = keep_no_empty_scat_bks(itvs, top) 
+    avail_bks = keep_no_empty_scat_bks(itvs, top)
     l_avail_bks = len(avail_bks)
 
-    if (l_avail_bks < rqts[h]): 
+    if (l_avail_bks < rqts[h]):
         #not enough scattered blocks
         return []
     else:
@@ -40,7 +40,7 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
             while (i<l_avail_bks) and (nb_r != rqts[h]):  #need
                 print avail_bks[i], "*", hy[h+1]
                 #TODO test cosf of [] filtering .....
-                avail_sub_bks = [ intersec(avail_bks[i],x) for x in hy[h+1] if intersec(avail_bks[i],x) != [] ] 
+                avail_sub_bks = [ intersec(avail_bks[i],x) for x in hy[h+1] if intersec(avail_bks[i],x) != [] ]
                 #print avail_sub_bks
                 #print "--------------------------------------"
                 r = extract_n_scattered_block_itv(itvs, avail_sub_bks, rqts[h+1])
@@ -54,12 +54,12 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
                 return itvs_acc
             else:
                 return []
-                
-        else: 
+
+        else:
             #intermediate hierarchy level
             #iter on available_bk
             itvs_acc = []
-            i = 0 
+            i = 0
             nb_r = 0
             while (i < l_avail_bks) and (nb_r != rqts[h]):
                 r = find_resource_n_h(itvs, hy, rqts, [avail_bks[i]], h+1, h_bottom)
@@ -79,8 +79,8 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
 #    else:
 #        F(X)
 #
-#                    
-#def F(X):     
+#
+#def F(X):
 #    avail_bks
 #    return if not enough bks
 #    if bottom-1:

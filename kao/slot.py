@@ -13,10 +13,10 @@ class Slot:
     def show(self):
         print "(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:", self.itvs, "b:", self.b, "e:", self.e
 
-# not used TO REMOVE?         
+# not used TO REMOVE?
 def intersec_slots(slots):
     'Return intersection of intervals from a slot list'
-    return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs), slots, slots[0].itvs) 
+    return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs), slots, slots[0].itvs)
 
 def intersec_itvs_slots(slots, sid_left, sid_right):
     sid = sid_left
@@ -40,7 +40,7 @@ class SlotSet:
             while (s.next !=0):
                 s = slots[s.next]
             self.last_id = s.id
-            
+
         #  cache the last sid_left given for by walltime => not used
         # cache the last sid_left given for same previous job
         #  (same requested resources w/ constraintes)
@@ -69,7 +69,7 @@ class SlotSet:
         a_slot = Slot(s_id, slot.prev, n_id, list(slot.itvs), slot.b, job.start_time-1)
         slot.prev = s_id
         self.slots[s_id] = a_slot
-        #slot_id is changed so we have always the rightmost slot (min slot.b) w/ sid = 1 r 
+        #slot_id is changed so we have always the rightmost slot (min slot.b) w/ sid = 1 r
         slot.id = n_id
         self.slots[n_id] = slot
 
@@ -85,7 +85,7 @@ class SlotSet:
         s_id = self.last_id
         c_slot = Slot(s_id, slot.id, slot.next, list(slot.itvs), job.start_time + job.walltime, slot.e)
         slot.next = s_id
-        self.slots[s_id] = c_slot             
+        self.slots[s_id] = c_slot
 
     def split_slots(self, sid_left, sid_right, job):
         #        print "yop--->", sid_left, sid_right, job.start_time, job.walltime
@@ -93,7 +93,7 @@ class SlotSet:
         while True:
             slot = self.slots[sid]
             if job.start_time > slot.b:
-                # generate AB | ABC 
+                # generate AB | ABC
                 if ( job.start_time + job.walltime)  > slot.e:
                     # generate AB
                     self.slot_before_job(slot, job)
@@ -118,7 +118,7 @@ class SlotSet:
 
             if (sid == sid_right):
                 break
-                
+
 #    def split_slots_prev_scheduled_one_job
 
     def split_slots_prev_scheduled_jobs(self, ordered_jobs):
@@ -128,7 +128,7 @@ class SlotSet:
         slot = self.slots[1] # 1
         left_sid_2_split = 1
         right_sid_2_split = 1
-        
+
         for job in ordered_jobs:
             # find_first_slot
             while not( (slot.b > job.start_time) or ((slot.b <= job.start_time) and (job.start_time <= slot.e)) ):
@@ -140,6 +140,6 @@ class SlotSet:
             while not (slot.e >=  (job.start_time + job.walltime)):
                 right_sid_2_split = slot.next
                 slot = self.slots[slot.next]
-                
+
             #self.show_slots()
             self.split_slots(left_sid_2_split, right_sid_2_split, job)
