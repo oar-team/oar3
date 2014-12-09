@@ -16,7 +16,7 @@ class Configuration(dict):
     DEFAULT_CONFIG_FILES = ["/etc/oar/oar.conf"]
 
     DEFAULT_CONFIG = {
-        'SQLALCHEMY_NATIVE_UNICODE': True,
+        'SQLALCHEMY_CONVERT_UNICODE': True,
         'SQLALCHEMY_ECHO': False,
         'SQLALCHEMY_POOL_SIZE': None,
         'SQLALCHEMY_POOL_TIMEOUT': None,

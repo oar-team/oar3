@@ -15,7 +15,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from .exceptions import DoesNotExist, InvalidConfiguration
 from .compat import string_types
 
-__all__ = ["Database"]
+__all__ = ['Database']
 
 
 class BaseQuery(Query):
@@ -248,7 +248,7 @@ class EngineConnector(object):
         _setdefault('pool_timeout', 'SQLALCHEMY_POOL_TIMEOUT')
         _setdefault('pool_recycle', 'SQLALCHEMY_POOL_RECYCLE')
         _setdefault('max_overflow', 'SQLALCHEMY_MAX_OVERFLOW')
-        _setdefault('use_native_unicode', 'SQLALCHEMY_NATIVE_UNICODE')
+        _setdefault('convert_unicode', 'SQLALCHEMY_CONVERT_UNICODE')
 
     def apply_driver_hacks(self, info, options):
         """This method is called before engine creation and used to inject
