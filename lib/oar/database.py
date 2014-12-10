@@ -299,6 +299,16 @@ class EngineConnector(object):
 
 def _include_sqlalchemy(db):
     import sqlalchemy
+    from sqlalchemy import BigInteger
+    from sqlalchemy.dialects import postgresql as pgsql, mysql, sqlite
+
+    BigIntegerType = BigInteger()
+    BigIntegerType = BigIntegerType.with_variant(pgsql.BIGINT(), 'postgresql')
+    BigIntegerType = BigIntegerType.with_variant(mysql.BIGINT(), 'mysql')
+    BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), 'sqlite')
+
+    setattr(db, "BigInteger", BigIntegerType)
+
     for module in sqlalchemy, sqlalchemy.orm:
         for key in module.__all__:
             if not hasattr(db, key):
