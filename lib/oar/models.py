@@ -47,6 +47,7 @@ class Accounting(db.Model):
 
 class AdmissionRule(db.Model):
     __tablename__ = 'admission_rules'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column(db.BigInteger, primary_key=True)
     priority = db.Column(db.Integer, default="0")
@@ -74,6 +75,7 @@ class EventLogHostname(db.Model):
 
 class EventLog(db.Model):
     __tablename__ = 'event_logs'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('event_id', db.BigInteger, primary_key=True)
     type = db.Column(db.String(50), index=True, default="")
@@ -86,6 +88,7 @@ class EventLog(db.Model):
 
 class File(db.Model):
     __tablename__ = 'files'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('file_id', db.BigInteger, primary_key=True)
     md5sum = db.Column(db.String(255), index=True, default="NULL")
@@ -97,6 +100,7 @@ class File(db.Model):
 
 class FragJob(db.Model):
     __tablename__ = 'frag_jobs'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('frag_id_job', db.Integer,
         db.ForeignKey("jobs.job_id"),
@@ -180,6 +184,7 @@ class GanttJobsResourcesVisu(db.Model):
 
 class JobStateLog(db.Model):
     __tablename__ = 'job_state_logs'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('job_state_log_id', db.BigInteger, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.job_id"), index=True,
@@ -191,6 +196,7 @@ class JobStateLog(db.Model):
 
 class JobType(db.Model):
     __tablename__ = 'job_types'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('job_type_id', db.BigInteger, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.job_id"), index=True,
@@ -203,6 +209,7 @@ class Job(db.Model):
     __tablename__ = 'jobs'
     __table_args__ = (
         db.Index('state_id', 'state', 'job_id'),
+        {'sqlite_autoincrement': True}
     )
 
     id = db.Column('job_id', db.BigInteger, primary_key=True)
@@ -243,6 +250,7 @@ class Job(db.Model):
 
 class MoldableJobDescription(db.Model):
     __tablename__ = 'moldable_job_descriptions'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('moldable_id', db.BigInteger, primary_key=True)
     job_id = db.Column('moldable_job_id', db.Integer,
@@ -254,6 +262,7 @@ class MoldableJobDescription(db.Model):
 
 class JobResourceGroup(db.Model):
     __tablename__ = 'job_resource_groups'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('res_group_id', db.BigInteger, primary_key=True)
     moldable_id = db.Column('res_group_moldable_id', db.Integer,
@@ -293,6 +302,7 @@ class Queue(db.Model):
 
 class ResourceLog(db.Model):
     __tablename__ = 'resource_logs'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('resource_log_id', db.BigInteger, primary_key=True)
     resource_id = db.Column(db.Integer,
@@ -308,6 +318,7 @@ class ResourceLog(db.Model):
 
 class Resource(db.DeferredReflection, db.Model):
     __tablename__ = 'resources'
+    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('resource_id', db.BigInteger, primary_key=True)
     type = db.Column(db.String(100), index=True, default="default")
