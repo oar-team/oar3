@@ -3,6 +3,7 @@ import pytest
 
 from sqlalchemy.orm.util import object_state
 
+from tempfile import mkstemp
 from . import DEFAULT_CONFIG
 
 from oar import Resource
@@ -13,11 +14,13 @@ from oar import config, db as initial_db
 def db(request):
     config.clear()
     config.update(DEFAULT_CONFIG)
+    _, config["LOG_FILE"] = mkstemp()
     def teardown():
         initial_db.close()
+    request.addfinalizer(teardown)
+
     initial_db.create_all()
     initial_db.reflect()
-    request.addfinalizer(teardown)
     return initial_db
 
 

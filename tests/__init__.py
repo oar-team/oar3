@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
     'JOB_RESOURCE_MANAGER_FILE': '/etc/oar/job_resource_manager_cgroups.pl',
     'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': 'cpuset',
     'LOG_CATEGORIES': 'all',
-    'LOG_FILE': '/var/log/oar.log',
+    'LOG_FILE': '',
     'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
     'LOG_LEVEL': 3,
     'OAREXEC_DEBUG_MODE': 0,
