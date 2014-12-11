@@ -1,3 +1,5 @@
+import kamelot
+from platform import Platform
 from random import seed, randint
 from sets import Set
 import simpy
@@ -61,7 +63,27 @@ class SimSched:
         new_job_ids = [self.new_job_id]
         print new_job_ids
         return env.timeout(randint(5,15),  new_job_ids)
-            
+ 
+class ResourceSetSimu():
+    def __init__(self, **kwargs):
+        self.rid_i2o = kwargs["rid_i2o"]
+        self.rid_o2i = kwargs["rid_o2i"]
+        self.hierarchy = kwargs["hierarchy"]
+        self.available_upto =  kwargs["available_upto"]
+        self.roid_itvs =  kwargs["roid_itvs"]
+        
+class JobSimu():
+    def __init__(self, **kwargs):
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
 env = simpy.Environment()
-simsched = SimSched(env)
+nb_res = 10
+res_set = ResourceSetSimu(
+    rid_i2o = range(nb_res),
+    rid_o2i = range(nb_res),
+    roid_itvs = [(0,nb_res-1)]
+)
+plt = Platform("simu", env=env, resource_set = res_set )
+simsched = SimSched(env, plt)
 env.run(until=40)

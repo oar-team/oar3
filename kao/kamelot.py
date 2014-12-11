@@ -1,7 +1,5 @@
-import time
 from oar import config, logging, Job
-from resource import ResourceSet
-from job import get_waiting_jobs, get_data_jobs, get_scheduled_jobs, save_assigns
+from platform import Platform
 from slot import SlotSet, Slot
 from scheduling import schedule_id_jobs_ct
 
@@ -18,7 +16,7 @@ default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
                   "SCHEDULER_JOB_SECURITY_TIME": "60",
                   "FAIRSHARING_ENABLED": "no",
-                  "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30"
+                  "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
 }
 for k,v in default_config.iteritems():
     if not k in config:
@@ -46,16 +44,17 @@ if config["FAIRSHARING_ENABLED"] == "yes":
 
 
 #
-# Main function
 #
-if True or __name__ == '__main__':
-    now = int(time.time())
+#
+
+def schedule_cycle(plt):
+    now = plt.get_time()
 
     #
     # Retreive waiting jobs
     #
     queue = "test"
-    waiting_jobs, waiting_jids, nb_waiting_jobs = get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
@@ -66,7 +65,7 @@ if True or __name__ == '__main__':
         #
         # Determine Global Resource Intervals and Initial Slot
         #
-        resource_set = ResourceSet()
+        resource_set = plt.resource_set()
         initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
 
         #
@@ -89,12 +88,12 @@ if True or __name__ == '__main__':
         #
         # Get  additional waiting jobs' data
         #
-        get_data_jobs(waiting_jobs, waiting_jids, resource_set)
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = get_scheduled_jobs(resource_set)
+        scheduled_jobs = plt.get_scheduled_jobs(resource_set)
 
         if scheduled_jobs != []:
             initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
@@ -110,7 +109,16 @@ if True or __name__ == '__main__':
         # Save assignement
         #
 
-        save_assigns(waiting_jobs, resource_set)
+        plt.save_assigns(waiting_jobs, resource_set)
 
-print "yopa"
+
+
+#
+# Main function
+#
+
+if True or __name__ == '__main__':
+    plt = Platform()
+    schedule_cycle(plt)
+    print "That's all folks"
 
