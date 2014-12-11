@@ -18,7 +18,7 @@ setup(
     version=VERSION,
     url='https://github.com/oar-team/kao',
     install_requires=[
-        'Click',
+        'Click', 'SimPy'
     ],
     packages=find_packages(),
     include_package_data=True,
