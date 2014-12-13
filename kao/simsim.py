@@ -19,8 +19,10 @@ class SimSched:
         self.sched_proc = env.process(self.sched(env))
 
         self.evt_running_jobs = Set()
-        self.evt_2_job = {}
-        self.waiting_jobs = Set()
+        self.running_jids = []
+        plt.running_jids = []
+        self.waiting_jids = Set()
+        plt.waiting_jids = self.waiting_jids
 
     def sched(self, env):
         
@@ -31,7 +33,8 @@ class SimSched:
             print 'Wait for job arrivals or job endings', env.now
 
             events = list(self.evt_running_jobs)
-            events.append(next_job_arrival)
+            if next_job_arrival != None:
+                events.append(next_job_arrival)
             any_of_events = AnyOf(env, events)
             ev = yield any_of_events
             
@@ -42,7 +45,7 @@ class SimSched:
               if k == next_job_arrival:
                   print "job arrives !", v
                   for jid in v:
-                      self.waiting_jobs.add(v)
+                      self.waiting_jids.add(jid)
                   next_job_arrival = self.job_arrival(env)
                   
               else:
@@ -51,18 +54,27 @@ class SimSched:
                   print "remove ev: ", k
                   self.evt_running_jobs.remove(k)
             
-            print "sched is running...."
-            #TODO call sched
-        
+            now = env.now
+
+            #if (next_job_arrival == None):
+            if (next_job_arrival == None) and not self.waiting_jids and not self.evt_running_jobs:
+                print "All job submitted, no more waiting or running jobs ...", now
+                env.exit()
             
-            if self.waiting_jobs:
-                j_to_launch = random.choice(self.waiting_jobs)
-                self.waiting_jobs.remove(j_to_launch)
-                #launch job
-                print "launch", j_to_launch
-                evt_running_job = env.timeout(randint(5,10),j_to_launch)
-                self.evt_running_jobs.add(evt_running_job)
-                self.evt_2_job[evt_running_job] = j_to_launch
+            now = env.now
+            print "call schedule_cycle.... ", now
+            #TODO call sched
+            kamelot.schedule_cycle(plt,"test")
+            
+            #launch jobs if needed
+            for jid, job in plt.assigned_jobs.iteritems():
+                if job.start_time == now:
+                    self.waiting_jids.remove(jid)
+                    job.state = "Running"
+                    print "launch:", jid
+                    evt_running_job = env.timeout(job.run_time,jid)
+                    self.evt_running_jobs.add(evt_running_job)
+                    #self.evt_2_job[evt_running_job] = jid
 
     def job_arrival(self, env):
         if self.sub_time_idx < self.sub_time_len:
@@ -81,11 +93,31 @@ class ResourceSetSimu():
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
-        
+
 class JobSimu():
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+
+def get_waiting_jobs_simu(queue, jobs, waiting_jids):
+    print " get_waiting_jobs_simu:", waiting_jids
+    waiting_jobs = {} 
+    waiting_jids_lst = []
+    nb_waiting_jobs = 0
+    for jid in waiting_jids:
+        job = jobs[jid]
+        print "job:", jid, job
+        waiting_jobs[jid] = job
+        waiting_jids_lst.append(jid)
+        nb_waiting_jobs += 1
+
+    #print waiting_jobs, waiting_jids, nb_waiting_jobs
+
+    return (waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
+
+def get_scheduled_jobs_simu(jobs, running_jids):
+    running_jobs = [jobs[jid] for jid in running_jids]
+    return running_jobs
 
 env = simpy.Environment()
 nb_res = 10
@@ -93,32 +125,41 @@ nb_res = 10
 #
 # generate ResourceSet
 #
+hy_resource_id = [[(i,i)] for i in range(nb_res)]
 res_set = ResourceSetSimu(
     rid_i2o = range(nb_res),
     rid_o2i = range(nb_res),
-    roid_itvs = [(0,nb_res-1)]
+    roid_itvs = [(0,nb_res-1)],
+    hierarchy = {'resource_id': hy_resource_id},
+    available_upto = {2147483647:[(0,nb_res-1)]}
 )
 
 #
 # generate jobs
 #
 
-nb_jobs = 10
+nb_jobs = 4
 jobs = {}
 submission_time_jids = []
 
 for i in range(1,nb_jobs + 1):
     jobs[i] = JobSimu( id = i,
-                       state = "Wainting",
+                       state = "Waiting",
+                       queue = "test",
                        start_time = 0,
+                       walltime = 0,
                        types = {},
                        res_set = [],
                        moldable_id = 0,
-                       mld_res_rqts = [],
+                       mld_res_rqts =  [(i, 60, [([("resource_id", 1)], [(0,nb_res-1)])])],
+                       run_time = 50,
+                       key_cache = ""
                        )
     
     submission_time_jids.append( (10, [i]) )
 
-plt = Platform("simu", env=env, resource_set = res_set )
+print jobs
+
+plt = Platform("simu", env=env, resource_set=res_set, jobs=jobs )
 simsched = SimSched(env, plt, jobs, submission_time_jids)
-env.run(until=40)
+env.run()

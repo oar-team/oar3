@@ -231,8 +231,7 @@ def get_data_jobs(jobs, jids, resource_set):
     #print "job_id:",job.id,  job.mld_res_rqts
     #print "======================"
 
-def get_scheduled_jobs(resource_set): #available_suspended_res_itvs, now
-    # TODO GanttJobsPrediction => GanttJobsPredictionS
+def get_scheduled_jobs(resource_set): #TODO available_suspended_res_itvs, now
     req = db.query(Job,
                    GanttJobsPrediction.start_time,
                    MoldableJobDescription.walltime,

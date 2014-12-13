@@ -47,19 +47,20 @@ if config["FAIRSHARING_ENABLED"] == "yes":
 #
 #
 
-def schedule_cycle(plt):
+def schedule_cycle(plt, queue = "default"):
     now = plt.get_time()
+
+    print "Begin scheduling....", now
 
     #
     # Retreive waiting jobs
     #
-    queue = "test"
+
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
-
-    if True or nb_waiting_jobs > 1:
+    if nb_waiting_jobs > 0:
 
 
         #
@@ -110,14 +111,14 @@ def schedule_cycle(plt):
         #
 
         plt.save_assigns(waiting_jobs, resource_set)
-
-
+    else:
+        print "no waiting jobs"
 
 #
 # Main function
 #
 
-if True or __name__ == '__main__':
+if __name__ == '__main__':
     plt = Platform()
     schedule_cycle(plt)
     print "That's all folks"
