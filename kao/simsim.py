@@ -5,6 +5,8 @@ from random import seed, randint
 from sets import Set
 import simpy
 from simpy.events import AnyOf
+from helpers import plot_slots_and_job
+from interval import itvs2ids, unordered_ids2itvs
 
 class SimSched:
     def __init__(self, env, plt, jobs, submission_time_jids):
@@ -23,6 +25,7 @@ class SimSched:
         plt.running_jids = []
         self.waiting_jids = Set()
         plt.waiting_jids = self.waiting_jids
+        plt.finished_jids = []
 
     def sched(self, env):
         
@@ -53,6 +56,8 @@ class SimSched:
                   #if k in self.evt_running_jobs:
                   print "remove ev: ", k
                   self.evt_running_jobs.remove(k)
+                  jobs[v].state = "Terminated"
+                  plt.finished_jids.append(v)
             
             now = env.now
 
@@ -120,7 +125,7 @@ def get_scheduled_jobs_simu(jobs, running_jids):
     return running_jobs
 
 env = simpy.Environment()
-nb_res = 10
+nb_res = 32
 
 #
 # generate ResourceSet
@@ -151,7 +156,7 @@ for i in range(1,nb_jobs + 1):
                        types = {},
                        res_set = [],
                        moldable_id = 0,
-                       mld_res_rqts =  [(i, 60, [([("resource_id", 1)], [(0,nb_res-1)])])],
+                       mld_res_rqts =  [(i, 60, [([("resource_id", 20)], [(0,nb_res-1)])])],
                        run_time = 50,
                        key_cache = ""
                        )
@@ -163,3 +168,18 @@ print jobs
 plt = Platform("simu", env=env, resource_set=res_set, jobs=jobs )
 simsched = SimSched(env, plt, jobs, submission_time_jids)
 env.run()
+
+print "Number finished jobs:", len(plt.finished_jids)
+print "Finished job ids:", plt.finished_jids
+
+print jobs
+
+for jid,job in jobs.iteritems():
+    jres_set = job.res_set
+    r_ids = [ res_set.rid_o2i[roid] for roid in itvs2ids(jres_set) ]
+    job.res_set = unordered_ids2itvs(r_ids)
+    print jid, job.state, job.start_time, job.walltime, job.res_set
+
+last_finished_job = jobs[plt.finished_jids[-1]]
+print last_finished_job
+plot_slots_and_job({}, jobs, nb_res, last_finished_job.start_time +  last_finished_job.walltime)

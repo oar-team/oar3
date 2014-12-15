@@ -23,29 +23,31 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
 
     fig, ax = plt.subplots()
 
-    for sid, slot in slots_set.slots.iteritems():
-        col = "blue"
-        if (sid % 2):
-            col = "red"
-        for i,itv in enumerate(slot.itvs):
-            (y0, y1) = itv
-            #print i, y0,y1, slot.b, slot.e
-            #rect =  mpatch.Rectangle((2,2), 8, 2)
-            rect = mpatch.Rectangle((slot.b, y0-0.4), slot.e-slot.b,
-                                    y1-y0+0.9, alpha = 0.1, color=col)
-            if (i==0):
-                annotate(ax, rect, 's'+str(sid))
-            ax.add_artist(rect)
+    if slots_set: 
+        for sid, slot in slots_set.slots.iteritems():
+            col = "blue"
+            if (sid % 2):
+                col = "red"
+            for i,itv in enumerate(slot.itvs):
+                (y0, y1) = itv
+                #print i, y0,y1, slot.b, slot.e
+                #rect =  mpatch.Rectangle((2,2), 8, 2)
+                rect = mpatch.Rectangle((slot.b, y0-0.4), slot.e-slot.b,
+                                        y1-y0+0.9, alpha = 0.1, color=col)
+                if (i==0):
+                    annotate(ax, rect, 's'+str(sid))
+                ax.add_artist(rect)
 
-    for jid, job in jobs.iteritems():
-        col = RGB_tuples[random.randint(0, NB_COLORS-1)]
-        for i, itv in enumerate(job.res_set):
-            (y0,y1) = itv
-            rect = mpatch.Rectangle((job.start_time, y0-0.4), job.walltime,
-                                    y1-y0, alpha = 0.2, color=col)
-            if (i==0):
-                annotate(ax, rect, 'j'+str(jid))
-            ax.add_artist(rect)
+    if jobs:
+        for jid, job in jobs.iteritems():
+            col = RGB_tuples[random.randint(0, NB_COLORS-1)]
+            for i, itv in enumerate(job.res_set):
+                (y0,y1) = itv
+                rect = mpatch.Rectangle((job.start_time, y0-0.4), job.walltime,
+                                        y1-y0, alpha = 0.2, color=col)
+                if (i==0):
+                    annotate(ax, rect, 'j'+str(jid))
+                ax.add_artist(rect)
 
     ax.set_xlim((0, t_max))
     ax.set_ylim((0, nb_res))
@@ -89,11 +91,11 @@ def slots_all_2_val_ref(slots):
 #j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
 #j2 = Job(2,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
 
-res = [(1, 32)]
+#res = [(1, 32)]
 #ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
 #all_ss = {0:ss}
 
-hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
+#hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
 #jobs ={}
 #j3 = Job(3,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 2)], res)  ])])
@@ -148,21 +150,21 @@ hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
 ##################
 #v = [ ( 1, 0, 2, [], 0, 59 ), ( 2, 1, 0, [(1, 32)], 60, 2**31  ) ]
-v = [ ( 1, 0, 0, [(1, 32)], 0, 2**31  ) ]
+#v = [ ( 1, 0, 0, [(1, 32)], 0, 2**31  ) ]
 
 #ss = SlotSet(None, { i+1: Slot(*a) for i,a in enumerate(v) } )
 
-ss = SlotSet(Slot(1, 0, 0, list(res), 10, 2**31))
+#ss = SlotSet(Slot(1, 0, 0, list(res), 10, 2**31))
 
-ss.show_slots()
+#ss.show_slots()
 
-n = 10
-jobs = {}
-for i in range (1, n+1):
-    jobs[i]= Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 1)], list(res) )  ])])
+#n = 10
+#jobs = {}
+#for i in range (1, n+1):
+#    jobs[i]= Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", 1)], list(res) )  ])])
 
-jids = range(1, n+1)
+#jids = range(1, n+1)
 
-schedule_id_jobs_ct({0: ss}, jobs, hy, jids, 10)
+#schedule_id_jobs_ct({0: ss}, jobs, hy, jids, 10)
 
-plot_slots_and_job(ss, jobs, 40, 10000)
+#plot_slots_and_job(ss, jobs, 40, 10000)
