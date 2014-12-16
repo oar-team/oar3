@@ -41,9 +41,12 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
     if jobs:
         for jid, job in jobs.iteritems():
             col = RGB_tuples[random.randint(0, NB_COLORS-1)]
+            duration =  job.walltime
+            if hasattr(job, 'run_time'):
+                duration = job.run_time
             for i, itv in enumerate(job.res_set):
                 (y0,y1) = itv
-                rect = mpatch.Rectangle((job.start_time, y0-0.4), job.walltime,
+                rect = mpatch.Rectangle((job.start_time, y0-0.4), duration,
                                         y1-y0, alpha = 0.2, color=col)
                 if (i==0):
                     annotate(ax, rect, 'j'+str(jid))
