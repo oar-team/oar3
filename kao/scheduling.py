@@ -1,7 +1,7 @@
 from hierarchy import *
 from job import *
 from interval import intersec
-from slot import *
+from slot import intersec_itvs_slots
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
     jobs_slotsets = {0:[]}
@@ -46,7 +46,6 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     itvs = []
 
     slots = slots_set.slots
-    #cache_walltime = slots_set.cache_walltime
     cache = slots_set.cache
 
     #updated_cache = False
@@ -57,28 +56,27 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     else:
         sid_left = 1
 
-#    if walltime in cache:
-#        sid_left = cache[walltime]
-#    else:
-#        sid_left = 1
+    #sid_left = 1 # TODO no cache
 
     sid_right = sid_left
     slot_e = slots[sid_right].e
 
-    print 'first sid_left', sid_left
+    #print 'first sid_left', sid_left
 
     while True:
         #find next contiguous slots_time
 
         slot_b = slots[sid_left].b
 
+        #print "slot_e, slot_b, walltime ", slot_e, slot_b, walltime
+
         while ( (slot_e-slot_b+1) < walltime):
             sid_right = slots[sid_right].next
             slot_e = slots[sid_right].e
-
-#        if not updated_cache and (slots[sid_left].itvs != []):
-#            cache[walltime] = sid_left
-#            updated_cache = True
+            
+        #        if not updated_cache and (slots[sid_left].itvs != []):
+        #            cache[walltime] = sid_left
+        #            updated_cache = True
 
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
@@ -110,6 +108,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
         (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy)
+        #print "after find fisrt suitable"
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
             prev_start_time = slots[sid_left].b
@@ -127,10 +126,10 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     job.mld_id = mld_id
 
     #Take avantage of job.starttime = slots[prev_sid_left].b
-    #print "before"
+
+    #print prev_sid_left, prev_sid_right, job.moldable_id , job.res_set, job.start_time , job.walltime, job.mld_id 
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
-
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''

@@ -1,5 +1,6 @@
 import unittest
 from kao.job import *
+from kao.slot import *
 from kao.scheduling import *
 
 class TestScheduling(unittest.TestCase):
@@ -26,8 +27,9 @@ class TestScheduling(unittest.TestCase):
               ( 50 , 100 , [(1, 32)] )
               ]
 
-        j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
-        j2 = Job(1,"", 30, 20, "", "", "", {}, [(5, 15),(20, 28)], 1, [])
+        j1 = JobTest(id=1, start_time=5, walltime=10, res_set=[(10, 20)], types={})
+        j2 = JobTest(id=2, start_time=30, walltime=20, res_set=[(5, 15),(20, 28)], types={})
+
         ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
         all_ss = {0:ss}
 
@@ -42,12 +44,14 @@ class TestScheduling(unittest.TestCase):
         res = [(1, 32)]
         ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
-        j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0,
-                 [
-                     (1, 60,
-                      [  ( [("node", 2)], res)  ]
-                  )
-                 ]
+
+        #j1 = JobTest(id=1, start_time=0, walltime=0, types={}, key_cache="",
+        j1 = JobTest(id=1, types={}, key_cache="",
+                     mld_res_rqts=[
+                         (1, 60,
+                          [  ( [("node", 2)], res)  ]
+                      )
+                     ]
         )
 
         assign_resources_mld_job_split_slots(ss, j1, hy)
@@ -62,21 +66,18 @@ class TestScheduling(unittest.TestCase):
         ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
-        j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0,
-                 [
-                     (1, 60,
-                      [  ( [("node", 2)], res)  ]
-                  )
-                 ]
+
+        j1 = JobTest(id=1, types={}, key_cache="",
+                     mld_res_rqts=[
+                         (1, 60,
+                          [  ( [("node", 2)], res)  ]
+                      )
+                     ]
         )
 
         schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
-
-
-
-
 
 if __name__ == '__main__':
     unittest.main()

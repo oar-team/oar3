@@ -11,6 +11,10 @@ NB_COLORS = 15
 HSV_tuples = [(x*1.0/NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
 RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
+def dump(obj):
+  for attr in dir(obj):
+    print "obj.%s = %s" % (attr, getattr(obj, attr))
+
 def annotate(ax, rect, annot):
     rx, ry = rect.get_xy()
     cx = rx + rect.get_width()/2.0

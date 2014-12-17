@@ -32,30 +32,53 @@ class TestSlot(unittest.TestCase):
 
     def test_split_slots_AB(self):
         v = [ ( 1 , 4 , [(1, 32)] ),( 5 , 20 , [(1, 9), (21, 32)] )]
-        j1 = Job(1,"", 5, 16, "", "", "", {}, [(10, 20)], 1, [])
+        j1 = JobTest(id=1, start_time=5, walltime=20, res_set=[(10, 20)], moldable_id=1)
         ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
         ss.split_slots(1,1,j1)
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
     def test_split_slots_ABC(self):
         v = [ ( 1 , 4 , [(1, 32)] ),( 5 , 14 , [(1, 9), (21, 32)] ),( 15 , 20 , [(1, 32)] )]
-        j1 = Job(1,"", 5, 10, "", "", "", {}, [(10, 20)], 1, [])
+
+        j1 = JobTest(id=1, start_time=5, walltime=10, res_set=[(10, 20)], moldable_id=1)
         ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
         ss.split_slots(1,1,j1)
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
     def test_split_slots_B(self):
         v = [ ( 1 , 20 , [(1, 9), (21, 32)] ) ]
-        j1 = Job(1,"", 1, 21, "", "", "", {}, [(10, 20)], 1, [])
+        j1 = JobTest(id=1, start_time=1, walltime=21, res_set=[(10, 20)], moldable_id=1)
         ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
         ss.split_slots(1,1,j1)
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
     def test_split_slots_BC(self):
         v = [ ( 1 , 10 , [(1, 9), (21, 32)] ),( 11 , 20 , [(1, 32)] )]
-        j1 = Job(1,"", 1, 10, "", "", "", {}, [(10, 20)], 1, [])
+        j1 = JobTest(id=1, start_time=1, walltime=10, res_set=[(10, 20)], moldable_id=1)
         ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 20))
         ss.split_slots(1,1,j1)
+        self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
+
+
+    def test_bug_split_slots(self):
+        
+        v = [ ( 20, 69 , [(31, 32)] ),
+              ( 70, 79 , [(1, 15), (31, 32)] ),
+              ( 80, 2147483599 , [(1, 32)] ),
+              ( 2147483600, 2147483647, [] )
+        ]
+
+        res = [(1, 32)]
+        s1 = Slot(1,0,4,[(16, 32)],20,69)
+        s2 = Slot(2,1,0,[],2147483600,2147483647)
+        s4 = Slot(4,1,2,[(1, 32)],70,2147483599)
+
+        slts = { s.id: s for s in [s1,s2,s4] }
+        ss = SlotSet(None, slots = slts)
+
+        j2 = JobTest(id=2,start_time=20,  walltime=60, res_set=[(16,30)])
+
+        ss.split_slots(1,4,j2)
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
 if __name__ == '__main__':

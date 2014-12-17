@@ -27,7 +27,16 @@ from interval import unordered_ids2itvs, itvs2ids
 
 '''
 
-def set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
+class JobTest():
+    def __init__(self, **kwargs):
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+
+#
+# TODO to remove but address support for cache w/ moldable befor
+#
+def job_set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
         moldable_id, mld_res_rqts, key_cache=""):
     self.id = id
     self.state = state

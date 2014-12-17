@@ -38,8 +38,8 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
             i = 0
             nb_r = 0
             while (i<l_avail_bks) and (nb_r != rqts[h]):  #need
-                print avail_bks[i], "*", hy[h+1]
-                #TODO test cosf of [] filtering .....
+                #print avail_bks[i], "*", hy[h+1]
+                #TODO test cost of [] filtering .....
                 avail_sub_bks = [ intersec(avail_bks[i],x) for x in hy[h+1] if intersec(avail_bks[i],x) != [] ]
                 #print avail_sub_bks
                 #print "--------------------------------------"

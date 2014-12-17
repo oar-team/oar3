@@ -3,6 +3,8 @@ from platform import Platform
 from slot import SlotSet, Slot
 from scheduling import schedule_id_jobs_ct
 
+from helpers import dump
+
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
 besteffort_duration = 5*60
@@ -98,6 +100,9 @@ def schedule_cycle(plt, queue = "default"):
 
         if scheduled_jobs != []:
             initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
+
+        #print "after split sched"
+        initial_slot_set.show_slots()
 
         all_slot_sets = {0:initial_slot_set}
 

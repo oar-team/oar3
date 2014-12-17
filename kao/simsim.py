@@ -6,11 +6,6 @@ from sets import Set
 import simpy
 from simpy.events import AnyOf
 from helpers import plot_slots_and_job
-import pprint
-#from interval import itvs2ids, unordered_ids2itvs
-
-
-pp = pprint.PrettyPrinter(indent=4)
 
 class SimSched:
     def __init__(self, env, plt, jobs, submission_time_jids):
@@ -45,10 +40,10 @@ class SimSched:
             any_of_events = AnyOf(env, events)
             ev = yield any_of_events
             
-            print ev
+            #print ev
 
             for k,v in ev.iteritems():
-              print "event:..... ", k
+              #print "event:..... ", k
               if k == next_job_arrival:
                   print "job arrives !", v
                   for jid in v:
@@ -58,7 +53,7 @@ class SimSched:
               else:
                   print "job endings !", k, v
                   #if k in self.evt_running_jobs:
-                  print "remove ev: ", k
+                  #print "remove ev: ", k
                   self.evt_running_jobs.remove(k)
                   jobs[v].state = "Terminated"
                   plt.finished_jids.append(v)
@@ -66,14 +61,12 @@ class SimSched:
 
             now = env.now
 
-            #if (next_job_arrival == None):
             if (next_job_arrival == None) and not self.waiting_jids and not self.evt_running_jobs:
                 print "All job submitted, no more waiting or running jobs ...", now
                 env.exit()
             
-            now = env.now
             print "call schedule_cycle.... ", now
-            #TODO call sched
+            
             kamelot.schedule_cycle(plt,"test")
             
             #launch jobs if needed
@@ -85,10 +78,7 @@ class SimSched:
                     evt_running_job = env.timeout(job.run_time,jid)
                     self.evt_running_jobs.add(evt_running_job)
 
-                    
                     plt.running_jids.append(jid)
-
-                    #self.evt_2_job[evt_running_job] = jid
 
     def job_arrival(self, env):
         if self.sub_time_idx < self.sub_time_len:
@@ -97,11 +87,6 @@ class SimSched:
             return env.timeout(t, jids)
         else:
             return None
-
-        #self.new_job_id += 1
-        #new_job_ids = [self.new_job_id]
-        #print new_job_ids
-        #return env.timeout(randint(5,15),  new_job_ids)
  
 class ResourceSetSimu():
     def __init__(self, **kwargs):
@@ -114,13 +99,12 @@ class JobSimu():
             setattr(self, key, value)
 
 def get_waiting_jobs_simu(queue, jobs, waiting_jids):
-    print " get_waiting_jobs_simu:", waiting_jids
+    #print " get_waiting_jobs_simu:", waiting_jids
     waiting_jobs = {} 
     waiting_jids_lst = []
     nb_waiting_jobs = 0
     for jid in waiting_jids:
         job = jobs[jid]
-        #        print "job:", jid, job
         waiting_jobs[jid] = job
         waiting_jids_lst.append(jid)
         nb_waiting_jobs += 1
@@ -131,9 +115,8 @@ def get_waiting_jobs_simu(queue, jobs, waiting_jids):
 
 def get_scheduled_jobs_simu(jobs, running_jids):
     running_jobs = [jobs[jid] for jid in running_jids]
-
-    for job in running_jobs:
-        print "running_jobs", job.id, job.start_time, job.walltime, job.res_set
+    #for job in running_jobs:
+    #    print "running_jobs", job.id, job.start_time, job.walltime, job.res_set
     return running_jobs
 
 env = simpy.Environment()
@@ -142,13 +125,13 @@ nb_res = 32
 #
 # generate ResourceSet
 #
-hy_resource_id = [[(i,i)] for i in range(nb_res)]
+hy_resource_id = [[(i,i)] for i in range(1,nb_res+1)]
 res_set = ResourceSetSimu(
-    rid_i2o = range(nb_res),
-    rid_o2i = range(nb_res),
-    roid_itvs = [(0,nb_res-1)],
+    rid_i2o = range(nb_res+1),
+    rid_o2i = range(nb_res+1),
+    roid_itvs = [(1,nb_res)],
     hierarchy = {'resource_id': hy_resource_id},
-    available_upto = {2147483647:[(0,nb_res-1)]}
+    available_upto = {2147483600:[(1,nb_res)]}
 )
 
 #
@@ -169,13 +152,14 @@ for i in range(1,nb_jobs + 1):
                        res_set = [],
                        moldable_id = 0,
                        mld_res_rqts =  [(i, 60, [([("resource_id", 15)], [(0,nb_res-1)])])],
-                       run_time = 50,
+                       run_time = 20*i,
                        key_cache = ""
                        )
     
     submission_time_jids.append( (10, [i]) )
 
-print jobs
+#submission_time_jids= [(10, [1,2,3,4])]
+#submission_time_jids= [(10, [1,2]), (10, [3])]
 
 plt = Platform("simu", env=env, resource_set=res_set, jobs=jobs )
 simsched = SimSched(env, plt, jobs, submission_time_jids)

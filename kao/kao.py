@@ -1,6 +1,6 @@
 import os
 import os.path as op
-import oar config, logging
+from oar import config, logging
 import meta_sched
 
 
