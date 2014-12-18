@@ -5,43 +5,17 @@ from scheduling_basic import schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
-besteffort_duration = 5*60
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
-# Constant duration time of a besteffort job *)
-besteffort_duration = 300
 
 #Set undefined config value to default one
 default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
                   "SCHEDULER_JOB_SECURITY_TIME": "60",
-                  "FAIRSHARING_ENABLED": "no",
-                  "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
 }
 for k,v in default_config.iteritems():
     if not k in config:
         config[k] = k
-
-#
-# for TOKEN feature
-# SCHEDULER_TOKEN_SCRIPTS="{ fluent => '/usr/local/bin/check_fluent.sh arg1 arg2', soft2 => '/usr/local/bin/check_soft2.sh arg1' }" *)
-# TODO
-
-#
-# Karma and Fairsharing stuff *)
-#
-if config["FAIRSHARING_ENABLED"] == "yes":
-    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
-    karma_window_size =  3600 * 30 * 24 # TODO in conf ???
-
-#TODO
-#
-# Sort jobs accordingly to karma value (fairsharing)  *)
-#
-#               #
-# Suspend stuff #
-#               #
-
 
 #
 #
@@ -53,7 +27,7 @@ def schedule_cycle(plt, queue = "default"):
     print "Begin scheduling....", now
 
     #
-    # Retreive waiting jobs
+    # Retrieve waiting jobs
     #
 
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)

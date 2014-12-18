@@ -1,11 +1,13 @@
-from oar import config, logging, Job
+from oar import config, get_logger, Job
 from platform import Platform
 from slot import SlotSet, Slot
 from scheduling import schedule_id_jobs_ct
 
-from helpers import dump
-
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
+
+
+#config['LOG_FILE'] = '/dev/stdout'
+#log = get_logger("oar.kamelot")
 
 besteffort_duration = 5*60
 max_time = 2147483648 #(* 2**31 *)
@@ -25,21 +27,11 @@ for k,v in default_config.iteritems():
         config[k] = k
 
 #
-# for TOKEN feature
-# SCHEDULER_TOKEN_SCRIPTS="{ fluent => '/usr/local/bin/check_fluent.sh arg1 arg2', soft2 => '/usr/local/bin/check_soft2.sh arg1' }" *)
-# TODO
-
-#
 # Karma and Fairsharing stuff *)
 #
 if config["FAIRSHARING_ENABLED"] == "yes":
-    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
-    karma_window_size =  3600 * 30 * 24 # TODO in conf ???
+    pass
 
-#TODO
-#
-# Sort jobs accordingly to karma value (fairsharing)  *)
-#
 #               #
 # Suspend stuff #
 #               #
@@ -55,7 +47,7 @@ def schedule_cycle(plt, queue = "default"):
     print "Begin scheduling....", now
 
     #
-    # Retreive waiting jobs
+    # Retrieve waiting jobs
     #
 
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
