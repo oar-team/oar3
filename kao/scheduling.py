@@ -3,17 +3,18 @@ from job import *
 from interval import intersec
 from slot import intersec_itvs_slots
 
-def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
-    jobs_slotsets = {0:[]}
-    for j_id in ordered_id_jobs:
-        job = jobs[j_id]
+def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time):
+
+    jobs_slotsets = jobs_slotsets = {0:[]}
+
+    for job in jobs:
 
         if "container" in job.types:
-            t_e = job.start_time + job.walltime - security_time
+            t_e = job.start_time + job.walltime - job_security_time
             slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
             jobs_slotsets[j_id] = []
 
-        ss_id =0
+        ss_id = 0
         if "inner" in job.types:
             ss_id = job.types["inner"]
 
@@ -131,7 +132,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
 
-def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
+def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
     #    for k,job in jobs.iteritems():
@@ -157,4 +158,4 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
 
         if "container" in job.types:
             slot = Slot(1, 0, 0, job.res_set, job.start_time,
-                        job.start_time + job.walltime - security_time)
+                        job.start_time + job.walltime - job_security_time)

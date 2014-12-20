@@ -3,24 +3,25 @@ from job import *
 from interval import intersec
 from slot import intersec_itvs_slots
 
-def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
-    jobs_slotsets = {0:[]}
-    for j_id in ordered_id_jobs:
-        job = jobs[j_id]
-
-        if "container" in job.types:
-            t_e = job.start_time + job.walltime - security_time
-            slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
-            jobs_slotsets[j_id] = []
-
-        ss_id =0
-        if "inner" in job.types:
-            ss_id = job.types["inner"]
-
-        jobs_slotsets[ss_id].append(job)
-
-    for ss_id,slot_set in slots_sets.iteritems():
-        slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
+# TO REMOVE
+#def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, ordered_id_jobs, security_time ):
+#    jobs_slotsets = {0:[]}
+#    for j_id in ordered_id_jobs:
+#        job = jobs[j_id]
+#
+#        if "container" in job.types:
+#            t_e = job.start_time + job.walltime - security_time
+#            slots_sets[j_id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
+#            jobs_slotsets[j_id] = []
+#
+#        ss_id =0
+#        if "inner" in job.types:
+#            ss_id = job.types["inner"]
+#
+#        jobs_slotsets[ss_id].append(job)
+#
+#    for ss_id,slot_set in slots_sets.iteritems():
+#        slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance

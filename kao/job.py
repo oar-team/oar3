@@ -96,7 +96,7 @@ def get_jobs_types(jids):
 
     return jobs_types
 
-def get_data_jobs(jobs, jids, resource_set):
+def get_data_jobs(jobs, jids, resource_set, job_security_time):
     '''
     oarsub -q test -l "nodes=1+{network_address='node3'}/nodes=1/resource_id=1" sleep
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
@@ -164,7 +164,7 @@ def get_data_jobs(jobs, jids, resource_set):
                 #print "======================"
 
             prev_mld_id = mld_id
-            prev_mld_id_walltime = mld_id_walltime
+            prev_mld_id_walltime = mld_id_walltime + job_security_time
             prev_j_id = j_id
             job = jobs[j_id]
 
@@ -240,7 +240,7 @@ def get_data_jobs(jobs, jids, resource_set):
     #print "job_id:",job.id,  job.mld_res_rqts
     #print "======================"
 
-def get_scheduled_jobs(resource_set): #TODO available_suspended_res_itvs, now
+def get_scheduled_jobs(resource_set, job_security_time): #TODO available_suspended_res_itvs, now
     req = db.query(Job,
                    GanttJobsPrediction.start_time,
                    MoldableJobDescription.walltime,
@@ -252,7 +252,7 @@ def get_scheduled_jobs(resource_set): #TODO available_suspended_res_itvs, now
             .order_by(Job.start_time, Job.id)\
             .all()
 
-    j_ids = []
+    jids = []
     jobs = []
     prev_jid = 0
     roids = []
@@ -274,7 +274,7 @@ def get_scheduled_jobs(resource_set): #TODO available_suspended_res_itvs, now
                 prev_jid = j.id
                 job = j
                 job.start_time = start_time
-                job.walltime = walltime
+                job.walltime = walltime + job_security_time
 
             roids.append(resource_set.rid_i2o[r_id])
 

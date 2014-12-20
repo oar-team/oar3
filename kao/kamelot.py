@@ -1,7 +1,7 @@
 from oar import config, get_logger, Job
 from platform import Platform
 from slot import SlotSet, Slot
-from scheduling import schedule_id_jobs_ct
+from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct 
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
@@ -46,6 +46,8 @@ def schedule_cycle(plt, queue = "default"):
 
     if nb_waiting_jobs > 0:
 
+        job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
+
         #
         # Determine Global Resource Intervals and Initial Slot
         #
@@ -72,7 +74,7 @@ def schedule_cycle(plt, queue = "default"):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set)
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         #
         # Karma sorting (Fairsharing) 
@@ -83,20 +85,17 @@ def schedule_cycle(plt, queue = "default"):
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(resource_set)
-
-        if scheduled_jobs != []:
-            initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
-
-        #print "after split sched"
-        initial_slot_set.show_slots()
+        scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time)
 
         all_slot_sets = {0:initial_slot_set}
+        
+        if scheduled_jobs != []:
+            set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time)
 
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, 20)
+        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, job_security_time)
 
         #
         # Save assignement
