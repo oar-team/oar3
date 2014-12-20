@@ -26,20 +26,10 @@ for k,v in default_config.iteritems():
     if not k in config:
         config[k] = k
 
-#
-# Karma and Fairsharing stuff *)
-#
-if config["FAIRSHARING_ENABLED"] == "yes":
-    pass
-
 #               #
 # Suspend stuff #
 #               #
-
-
-#
-#
-#
+# TODO
 
 def schedule_cycle(plt, queue = "default"):
     now = plt.get_time()
@@ -55,7 +45,6 @@ def schedule_cycle(plt, queue = "default"):
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
     if nb_waiting_jobs > 0:
-
 
         #
         # Determine Global Resource Intervals and Initial Slot
@@ -84,6 +73,12 @@ def schedule_cycle(plt, queue = "default"):
         # Get  additional waiting jobs' data
         #
         plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set)
+
+        #
+        # Karma sorting (Fairsharing) 
+        #
+        if config["FAIRSHARING_ENABLED"] == "yes":
+            karma_jobs_sorting(queue, now, jids, jobs, plt)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
