@@ -67,7 +67,7 @@ class SimSched:
             
             print "call schedule_cycle.... ", now
             
-            kamelot.schedule_cycle(plt,"test")
+            kamelot.schedule_cycle(plt,now, "test")
             
             #launch jobs if needed
             for jid, job in plt.assigned_jobs.iteritems():

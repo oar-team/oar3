@@ -1,8 +1,8 @@
 from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
                  JobResourceGroup, Resource, GanttJobsPrediction,
-                 GanttJobsResource, JobType)
+                 GanttJobsResource, JobType, JobStateLog)
 
-from interval import unordered_ids2itvs, itvs2ids
+from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
 #class Job(Job):
 ''' Use
@@ -240,7 +240,26 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     #print "job_id:",job.id,  job.mld_res_rqts
     #print "======================"
 
-def get_scheduled_jobs(resource_set, job_security_time): #TODO available_suspended_res_itvs, now
+def get_job_suspended_sum_duration(jid, now):
+
+    suspended_duration = 0
+    for j_state_log in JobStateLog.query.filter(JobStateLog.job_id == jid)\
+                                        .filter((JobStateLog.job_state == 'Suspended') | (JobStateLog.job_state == 'Resuming')):
+        
+        date_stop = j_state_log.date_stop
+        date_start = j_state_log.date_start
+
+        if date_stop == 0:
+            res_time = now - date_start
+        else:
+            res_time = date_stop - date_start
+
+        if res_time > 0:
+            suspended_duration += res_time
+
+    return suspended_duration
+
+def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_suspended_res_itvs, now
     req = db.query(Job,
                    GanttJobsPrediction.start_time,
                    MoldableJobDescription.walltime,
@@ -275,10 +294,15 @@ def get_scheduled_jobs(resource_set, job_security_time): #TODO available_suspend
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime + job_security_time
+                if job.suspend == "YES":
+                    job.walltime += get_job_suspended_sum_duration(job.id, now)
 
             roids.append(resource_set.rid_i2o[r_id])
 
         job.res_set = unordered_ids2itvs(roids)
+        if job.state == "Suspended": 
+            job.res_set = sub_intervals(job.res_set, resource_set.suspendable_roid_itvs)
+
         jobs.append(job)
         jids.append(job.id)
 

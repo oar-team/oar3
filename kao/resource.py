@@ -14,6 +14,13 @@ class ResourceSet:
         self.rid_i2o = array("i", [0] * MAX_NB_RESOURCES)
         self.rid_o2i = array("i", [0] * MAX_NB_RESOURCES)
 
+        #suspend
+        suspendables_roids = []
+        if "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE" not in config:
+            config["SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE"] = "default"
+        
+        res_suspend_types = (config["SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE"]).split()
+
         #prepare hierarchy stuff
         #"HIERARCHY_LABELS" = "resource_id,network_address"
         conf_hy_labels = config["HIERARCHY_LABELS"] if "HIERARCHY_LABELS" in config else "resource_id,network_address"
@@ -59,6 +66,10 @@ class ResourceSet:
                 else:
                     available_upto[r.available_upto] = [roid]
 
+                #fill resource available for suspended job 
+                if r.type in res_suspend_types:
+                    suspendable_roids.append(roid)
+
         #global ordered resources intervals
         print roids
         self.roid_itvs = ordered_ids2itvs(roids)
@@ -73,3 +84,6 @@ class ResourceSet:
         #transform available_upto
         for k, v in available_upto.iteritems():
             self.available_upto[k] = ordered_ids2itvs(v)
+
+        #
+        self.suspendable_roid_itvs = oardered_ids2itvs(suspendable_roids)

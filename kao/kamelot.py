@@ -1,3 +1,5 @@
+#!/usr/bin/env python 
+import sys
 from oar import config, get_logger, Job
 from platform import Platform
 from slot import SlotSet, Slot
@@ -5,20 +7,19 @@ from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
-
 #config['LOG_FILE'] = '/dev/stdout'
 #log = get_logger("oar.kamelot")
 
-besteffort_duration = 5*60
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
 # Constant duration time of a besteffort job *)
-besteffort_duration = 300
+besteffort_duration = 300 #TODO conf ???
 
 #Set undefined config value to default one
 default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
                   "SCHEDULER_JOB_SECURITY_TIME": "60",
+                  "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
                   "FAIRSHARING_ENABLED": "no",
                   "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
 }
@@ -26,13 +27,7 @@ for k,v in default_config.iteritems():
     if not k in config:
         config[k] = k
 
-#               #
-# Suspend stuff #
-#               #
-# TODO
-
-def schedule_cycle(plt, queue = "default"):
-    now = plt.get_time()
+def schedule_cycle(plt, now, queue = "default"):
 
     print "Begin scheduling....", now
 
@@ -85,12 +80,12 @@ def schedule_cycle(plt, queue = "default"):
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time)
+        scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, now)
 
         all_slot_sets = {0:initial_slot_set}
         
         if scheduled_jobs != []:
-            set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time)
+            set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time) 
 
         #
         # Scheduled
@@ -111,6 +106,11 @@ def schedule_cycle(plt, queue = "default"):
 
 if __name__ == '__main__':
     plt = Platform()
-    schedule_cycle(plt)
+    if len(sys.argv == 3):
+        schedule_cycle(plt, sys.argv[2], sys.argv[1])
+    elif (sys.argv == 2):
+        schedule_cycle(plt, sys.argv[2])
+    else:
+        schedule_cycle(plt, plt.get_time())
     print "That's all folks"
 

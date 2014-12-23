@@ -11,12 +11,10 @@ max_time_minus_one = 2147483647 #(* 2**31-1 *)
 #Set undefined config value to default one
 default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
-                  "SCHEDULER_JOB_SECURITY_TIME": "60",
 }
 for k,v in default_config.iteritems():
     if not k in config:
         config[k] = k
-
 #
 #
 #
@@ -35,7 +33,6 @@ def schedule_cycle(plt, queue = "default"):
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
     if nb_waiting_jobs > 0:
-
 
         #
         # Determine Global Resource Intervals and Initial Slot
@@ -81,7 +78,7 @@ def schedule_cycle(plt, queue = "default"):
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, 20)
+        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, 0)
 
         #
         # Save assignement
