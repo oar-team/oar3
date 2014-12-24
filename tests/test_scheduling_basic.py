@@ -1,7 +1,7 @@
 import unittest
 from kao.job import *
 from kao.slot import *
-from kao.scheduling import *
+from kao.scheduling_basic import *
 
 class TestScheduling(unittest.TestCase):
 
@@ -18,24 +18,6 @@ class TestScheduling(unittest.TestCase):
                 break
             i += 1
         return True
-
-    def test_set_slots_with_prev_scheduled_jobs_1(self):
-        v = [ ( 1 , 4 , [(1, 32)] ),
-              ( 5 , 14 , [(1, 9), (21, 32)] ),
-              ( 15 , 29 , [(1, 32)] ),
-              ( 30 , 49 , [(1, 4), (16, 19), (29, 32)] ),
-              ( 50 , 100 , [(1, 32)] )
-              ]
-
-        j1 = JobTest(id=1, start_time=5, walltime=10, res_set=[(10, 20)], types={})
-        j2 = JobTest(id=2, start_time=30, walltime=20, res_set=[(5, 15),(20, 28)], types={})
-
-        ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
-        all_ss = {0:ss}
-
-        set_slots_with_prev_scheduled_jobs(all_ss, [j1,j2],10)
-
-        self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
     def test_assign_resources_mld_job_split_slots(self):
 
@@ -54,7 +36,7 @@ class TestScheduling(unittest.TestCase):
                      ]
         )
 
-        assign_resources_mld_job_split_slots(ss, j1, hy, -1)
+        assign_resources_mld_job_split_slots(ss, j1, hy)
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
@@ -75,7 +57,7 @@ class TestScheduling(unittest.TestCase):
                      ]
         )
 
-        schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
