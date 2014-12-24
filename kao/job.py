@@ -326,3 +326,21 @@ def save_assigns(jobs, resource_set):
 
     #"INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES "^
     #"INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES "^
+
+def get_current_jobs_dependencies():
+# retrieve jobs dependencies *)
+# return an hashtable, key = job_id, value = list of required jobs *)
+    jobs_dependencies = {}
+
+    req = db.query(JobDependencie, Job.state, Job.exit_code)\
+            .filter(JobDependencie.index == "CURRENT")\
+            .filter(Job.id == JobDependencie.job_id_required)\
+            .all()
+
+    for x in req:
+        j_dep, state, exit_code = x
+        if j_dep.job_id not in jobs_dependencies:
+            jobs_dependencies[j_dep.job_id] = []
+        jobs_dependencies[j_dep.job_id].append( (j_dep.job_id_required, state, exit_code) )
+
+    return jobs_dependencies

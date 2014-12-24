@@ -87,10 +87,16 @@ def schedule_cycle(plt, now, queue = "default"):
         if scheduled_jobs != []:
             set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time) 
 
+
+
+        # Retreive jobs' dependencies
+        jobs_dependencies = plt.get_current_jobs_dependencies()
+
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, job_security_time)
+        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  
+                            waiting_jids, job_security_time, jobs_dependencies)
 
         #
         # Save assignement
