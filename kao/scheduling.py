@@ -86,7 +86,10 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         #            cache[walltime] = sid_left
         #            updated_cache = True
 
-        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
+        if job.ts or (job.ph == USE_PLACEHOLDER):
+            itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
+        else:
+            itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if (itvs != []):

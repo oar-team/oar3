@@ -27,14 +27,14 @@ class TestScheduling(unittest.TestCase):
         ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        #j1 = JobTest(id=1, start_time=0, walltime=0, types={}, key_cache="",
-        j1 = JobTest(id=1, types={}, key_cache="",
+        #j1 = JobPseudo(id=1, start_time=0, walltime=0, types={}, key_cache="",
+        j1 = JobPseudo(id=1, types={}, key_cache="",
                      mld_res_rqts=[
                          (1, 60,
                           [  ( [("node", 2)], res)  ]
                       )
                      ]
-        )
+        , ts=False, ph=0)
 
         assign_resources_mld_job_split_slots(ss, j1, hy)
 
@@ -49,13 +49,13 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobTest(id=1, types={}, key_cache="",
+        j1 = JobPseudo(id=1, types={}, key_cache="",
                      mld_res_rqts=[
                          (1, 60,
                           [  ( [("node", 2)], res)  ]
                       )
                      ]
-        )
+        , ts=False, ph=0)
 
         schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
 

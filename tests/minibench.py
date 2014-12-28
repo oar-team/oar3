@@ -21,7 +21,7 @@ class Timer(object):
 
 def create_simple_job(i, res_rqt, ctnts_res, key_cache=""):
 
-    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )], key_cache )
+    return Job(i,"Waiting", 0, 0, "yop", "", "",{}, [], 0, [(1, 60, [  ( [("node", res_rqt)], list(ctnts_res) )] )], key_cache, ts=False, ph=0)
 
 
 def create_jobs(n, nb_res, res, mode="default", **kwargs):
@@ -35,7 +35,7 @@ def create_jobs(n, nb_res, res, mode="default", **kwargs):
                            [  ( [("node", 10) ], res ) ]
                        )
                       ]
-                  )
+                  , ts=False, ph=0)
     return( [x for x in range(1, i+1)], jobs)
 
 

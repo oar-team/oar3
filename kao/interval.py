@@ -159,6 +159,49 @@ def sub_intervals(itvs1,itvs2):
 
     return itvs
 
+def add_intervals(itvs1,itvs2):
+    lx = len(itvs1)
+    ly = len(itvs2)
+    i = 0
+    k = 0
+    itvs = []
+
+    if itvs1 == []:
+        return itvs2[:]
+    elif itvs2 == []:
+        return itvs1[:]
+  
+    while (i<lx) or (k<ly):
+        if i<lx:
+            x = itvs1[i]
+        if k<ly:
+            y = itvs2[k]
+        # x,y no overlap
+        if x[1] < y[0]:  #x before
+            itvs.append(x)
+            i += 1
+        elif y[1] < x[0]: #y before
+            itvs.append(y)
+            k += 1
+        # x,y overlap 
+        elif y[0] > x[0]: # x begin
+            if y[1] < x[1]: # x overlaps totally y
+                itvs.append(x)
+                i += 1
+            else: #x begins by overlap y and y overlap x at the end  keep x.b y.e on y and remove x
+                itvs.append( (x[0],y[1]) )
+                i += 1
+        else: # y begins
+            if y[1] < x[1]:
+                #y begin by overlaping x and x overlaps y at the end 
+                # -> keep y.b x.e on x and remove y 
+                itvs.append( (y[0], x[1]) )
+                k += 1
+            else:
+                itvs.append(y) #y overlap totally x -> keep y and drop x 
+                i += 1
+
+    return itvs
 
 def intersec(itvs1,itvs2):
     lx = len(itvs1)

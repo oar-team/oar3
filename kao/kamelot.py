@@ -2,6 +2,7 @@
 import sys
 from oar import config, get_logger, Job
 from platform import Platform
+from job import NO_PLACEHOLDER, JobPseudo
 from slot import SlotSet, Slot
 from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct 
 
@@ -55,11 +56,13 @@ def schedule_cycle(plt, now, queue = "default"):
         pseudo_jobs = []
         for t_avail_upto in sorted(resource_set.available_upto.keys()):
             itvs = resource_set.available_upto[t_avail_upto]
-            j = Job()
+            j = JobPseudo()
             print t_avail_upto, max_time - t_avail_upto, itvs
             j.start_time = t_avail_upto
             j.walltime = max_time - t_avail_upto
             j.res_set = itvs
+            j.ts = False
+            j.ph = NO_PLACEHOLDER
 
             pseudo_jobs.append(j)
 

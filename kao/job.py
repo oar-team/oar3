@@ -4,6 +4,8 @@ from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
 
 from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
+
+
 #class Job(Job):
 ''' Use
 
@@ -27,11 +29,18 @@ from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
 '''
 
-class JobTest():
+global NO_PLACEHOLDER
+global SET_PLACEHOLDER
+global USE_PLACEHOLDER
+
+NO_PLACEHOLDER = 0
+SET_PLACEHOLDER = 1
+USE_PLACEHOLDER = 2
+
+class JobPseudo():
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
-
 
 #
 # TODO to remove but address support for cache w/ moldable befor
@@ -78,23 +87,40 @@ def get_waiting_jobs(queue):
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
 
-def get_jobs_types(jids):
+def get_jobs_types(jids, jobs):
     jobs_types = {}
     for j_type in JobType.query.filter(JobType.job_id.in_( tuple(jids) )):
         jid = j_type.job_id
         t_v = j_type.type.split("=")
         t = t_v[0]
-        if len(tv) == 2:
-            v = t_v[1]
+        if t == "timesharing":
+            job = jobs[jid] 
+            job.ts = True
+            job.ts_user, job.ts_jobname = t_v[1].split(',')
+        elif t == "set_placeholder":
+            job = jobs[jid] 
+            job.ph = SET_PLACEHOLDER
+            job.ph_name = t_v[1]
+        elif t == "use_placeholder":
+            job = jobs[jid]
+            job.ph = USE_PLACEHOLDER
+            job.ph_name = t_v[1]
         else:
-            v = ""
-        if not jid in jobs_types:
-            jobs_types[jid] = dict()
+            if len(tv) == 2:
+                v = t_v[1]
+            else:
+                v = ""
+            if not jid in jobs_types:
+                jobs_types[jid] = dict()
 
-        print t, v
-        (jobs_types[jid])[t] = v
+            print t, v
+            (jobs_types[jid])[t] = v
 
-    return jobs_types
+    for job in jobs.itervalues():
+        if job.id in jobs_types:
+            job.types = jobs_types[job.id]
+        else:
+            job.types = {}
 
 def get_data_jobs(jobs, jids, resource_set, job_security_time):
     '''
@@ -102,8 +128,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
 
     '''
-
-    jobs_types = get_jobs_types(jids)
 
     req = db.query(Job.id,
                    MoldableJobDescription.id,
@@ -229,16 +253,15 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
 
     job.mld_res_rqts = mld_res_rqts
-    if job.id in jobs_types:
-        job.types = jobs_types[job.id]
-    else:
-        job.types = {}
 
     job.key_cache = str(mld_res_rqts)
 
     #print "======================"
     #print "job_id:",job.id,  job.mld_res_rqts
     #print "======================"
+
+    get_jobs_types(jids, jobs)
+
 
 def get_job_suspended_sum_duration(jid, now):
 
@@ -306,9 +329,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
         jobs.append(job)
         jids.append(job.id)
 
-        jobs_types = get_jobs_types(jids)
-        for j in jobs:
-            j.types = jobs_types[j.id]
+        get_jobs_types(jids,jobs)
 
     return jobs
 
