@@ -159,57 +159,72 @@ def sub_intervals(itvs1,itvs2):
 
     return itvs
 
-def add_intervals(itvs1,itvs2):
-    lx = len(itvs1)
-    ly = len(itvs2)
-    i = 0
-    k = 0
+def add_intervals(itvs_x,itvs_y):
+    lx = len(itvs_x)
+    ly = len(itvs_y)
+    ix = 0
+    iy = 0
     itvs = []
+    o_itvs = False
 
-    if itvs1 == []:
-        return itvs2[:]
-    elif itvs2 == []:
-        return itvs1[:]
+    if itvs_x == []:
+        return itvs_y[:]
+    elif itvs_y == []:
+        return itvs_x[:]
   
-    while (i<lx) or (k<ly):
-        print itvs
-        if i<lx:
-            x = itvs1[i]
-        else:
-            print "yyyyyyyy",y
-            itvs.append(y)
-            k += 1
-            continue
-        if k<ly:
-            y = itvs2[k]
-        else:
-            itvs.append(x)
-            i += 1
-            continue
+    while (ix < lx) or (iy < ly):
+        if (ix < lx):
+            x = itvs_x[ix]
+        if (iy < ly):
+            y = itvs_y[iy]
+
+        #print "intermediate", itvs
         # x,y no overlap
         if x[1] < y[0]:  #x before
-            itvs.append(x)
-            i += 1
-        elif y[1] < x[0]: #y before
-            itvs.append(y)
-            k += 1
-        # x,y overlap 
-        elif y[0] > x[0]: # x begin
-            if y[1] < x[1]: # x overlaps totally y
+            if (ix < lx):
                 itvs.append(x)
-                k += 1
-            else: #x begins by overlap y and y overlap x at the end  keep x.b y.e on y and remove x
-                itvs.append( (x[0],y[1]) )
-                i += 1
-        else: # y begins
-            if y[1] < x[1]:
-                #y begin by overlaping x and x overlaps y at the end 
-                # -> keep y.b x.e on x and remove y 
-                itvs.append( (y[0], x[1]) )
-                k += 1
+                ix += 1
             else:
-                itvs.append(y) #y overlap totally x -> keep y and drop x 
-                i += 1
+                itvs.append(y)
+                iy += 1
+
+        elif y[1] < x[0]: #y before
+            if (iy < ly):
+                itvs.append(y)
+                iy += 1
+            else:
+                itvs.append(x)
+                ix += 1 
+
+        # x,y overlap 
+        else:
+            if y[0] > x[0]: # x begin
+                a = x[0]
+            else:
+                a = y[0]
+
+            o_itvs = True
+            while o_itvs:
+                if y[0] > x[1] or x[0] > y[1]:
+                    o_itvs = False
+                if y[1] < x[1]: # x overlaps totally y
+                    b = x[1]
+                    iy += 1
+                    if (iy < ly):
+                        y = itvs_y[iy]
+                    else:
+                        ix += 1
+                        o_itvs = False 
+                else: #x begins by overlap y
+                    b = y[1]
+                    ix += 1
+                    if (ix < lx):
+                        x = itvs_x[ix]
+                    else:
+                        iy += 1 
+                        o_itvs = False
+
+            itvs.append( (a,b) )
 
     return itvs
 

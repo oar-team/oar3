@@ -34,14 +34,21 @@ class TestInterval(unittest.TestCase):
        r = [(1, 4), (6, 9)]
        x = [(1, 4)]
        y = [(6, 9)]
-       a = add_interval(x,y)
+       a = add_intervals(x,y)
        self.assertEqual(a, r)
 
     def test_add_intervals2(self):
        r = [(1,9)]
        x = [(1, 4), (6, 9)]
        y = [(2,7)]
-       a = add_interval(x,y)
+       a = add_intervals(x,y)
+       self.assertEqual(a, r)
+
+    def test_add_intervals1(self):
+       r = [(1, 30)]
+       x = [(3, 4), (6, 7), (9, 17), (19, 30)]
+       y = [(1, 10), (15, 20), (22, 24)]
+       a = add_intervals(x,y)
        self.assertEqual(a, r)
 
 if __name__ == '__main__':
