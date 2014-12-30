@@ -4,9 +4,6 @@ from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
 
 from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
-
-
-#class Job(Job):
 ''' Use
 
     j1 = Job(1,"Waiting", 0, 0, "yop", "", "",{}, [], 0,

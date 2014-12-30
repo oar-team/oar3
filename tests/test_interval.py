@@ -4,7 +4,7 @@ from  kao.interval import *
 class TestInterval(unittest.TestCase):
 
     def test_intersec(self):
-        x =  [(1, 4), (6,9)]
+        x =  [(1, 4), (6, 9)]
         y = intersec(x,x)
         self.assertEqual(y,x)
 
@@ -29,6 +29,20 @@ class TestInterval(unittest.TestCase):
          r = [1,3,4,5,7,10,11,12,23]
          a = itvs2ids(y)
          self.assertEqual(a, r)
+
+    def test_add_intervals1(self):
+       r = [(1, 4), (6, 9)]
+       x = [(1, 4)]
+       y = [(6, 9)]
+       a = add_interval(x,y)
+       self.assertEqual(a, r)
+
+    def test_add_intervals2(self):
+       r = [(1,9)]
+       x = [(1, 4), (6, 9)]
+       y = [(2,7)]
+       a = add_interval(x,y)
+       self.assertEqual(a, r)
 
 if __name__ == '__main__':
     unittest.main()

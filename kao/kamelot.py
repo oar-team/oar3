@@ -9,7 +9,8 @@ from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
 #config['LOG_FILE'] = '/dev/stdout'
-#log = get_logger("oar.kamelot")
+
+log = get_logger("oar.kamelot")
 
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)

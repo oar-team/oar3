@@ -172,10 +172,20 @@ def add_intervals(itvs1,itvs2):
         return itvs1[:]
   
     while (i<lx) or (k<ly):
+        print itvs
         if i<lx:
             x = itvs1[i]
+        else:
+            print "yyyyyyyy",y
+            itvs.append(y)
+            k += 1
+            continue
         if k<ly:
             y = itvs2[k]
+        else:
+            itvs.append(x)
+            i += 1
+            continue
         # x,y no overlap
         if x[1] < y[0]:  #x before
             itvs.append(x)
@@ -187,7 +197,7 @@ def add_intervals(itvs1,itvs2):
         elif y[0] > x[0]: # x begin
             if y[1] < x[1]: # x overlaps totally y
                 itvs.append(x)
-                i += 1
+                k += 1
             else: #x begins by overlap y and y overlap x at the end  keep x.b y.e on y and remove x
                 itvs.append( (x[0],y[1]) )
                 i += 1

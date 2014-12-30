@@ -104,7 +104,6 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     job.res_set = prev_res_set
     job.start_time = prev_start_time
     job.walltime = walltime
-    job.mld_id = mld_id
 
     #Take avantage of job.starttime = slots[prev_sid_left].b
 
