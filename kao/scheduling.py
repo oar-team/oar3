@@ -1,7 +1,7 @@
 from hierarchy import *
 from job import *
 from interval import intersec
-from slot import Slot, SlotSet, intersec_itvs_slots
+from slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar import get_logger
 
 log = get_logger("oar.kamelot")
@@ -77,8 +77,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
     while True:
         #find next contiguous slots_time
-
-        #print "job.id:", job.id, "sid_left:", sid_left
+        #print "A: job.id:", job.id, "sid_left:", sid_left, "sid_right:", sid_right
 
         if sid_left != 0 and sid_right != 0:
             slot_b = slots[sid_left].b
@@ -152,7 +151,6 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     job.walltime = walltime
 
     #Take avantage of job.starttime = slots[prev_sid_left].b
-
     #print prev_sid_left, prev_sid_right, job.moldable_id , job.res_set, job.start_time , job.walltime, job.mld_id 
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
@@ -210,9 +208,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time, jobs_d
 
             slots_set = slots_sets[ss_id]
 
-            #slots_set.show_slots()
-
-            assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
+            assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)            
 
             if "container" in job.types:                
                 slot = Slot(1, 0, 0, job.res_set[:], job.start_time,

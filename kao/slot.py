@@ -1,5 +1,5 @@
 from job import SET_PLACEHOLDER, USE_PLACEHOLDER
-from interval import intersec, sub_intervals
+from interval import intersec, sub_intervals, add_intervals
 from hierarchy import find_resource_hierarchies_scattered
 from copy import deepcopy
 
@@ -36,33 +36,36 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
 def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
     
-    sid = slots[sid_left].prev
+    sid = sid_left
     itvs_acc = []
-
-    while (sid != sid_right):
-        sid = slots[sid].next
-
+    while True:
         slot = slots[sid]
         itvs = slot.itvs
         
         if job.ts:
-            if "*" in slot.ts_itvs:
+            if "*" in slot.ts_itvs: #  slot.ts_itvs[user][name]
                 if "*" in slot.ts_itvs["*"]:
-                    itvs = add_interval(itvs, slot.ts_itvs["*"]["*"])
+                    itvs = add_intervals(itvs, slot.ts_itvs["*"]["*"])
                 elif  job.name in slot.ts_itvs["*"]:
-                    itvs = add_interval(itvs, slot.ts_itvs["*"][job.name])
+                    itvs = add_intervals(itvs, slot.ts_itvs["*"][job.name])
             elif job.user in slot.ts_itvs:
                 if "*" in slot.ts_itvs[job.user]:
-                    itvs = add_interval(itvs, slot.ts_itvs[job.user]["*"])
+                    itvs = add_intervals(itvs, slot.ts_itvs[job.user]["*"])
                 elif  job.name in slot.ts_itvs[job.user]:
-                    itvs = add_interval(itvs, slot.ts_itvs[job.user][job.name])
+                    itvs = add_intervals(itvs, slot.ts_itvs[job.user][job.name])
                     
         if job.ph == USE_PLACEHOLDER:
             if job.ph_name in slot.ph_itvs:
-                itvs = add_interval(itvs, slot.ph_itvs[job.ph_name])
-        
+                itvs = add_intervals(itvs, slot.ph_itvs[job.ph_name])        
 
-        itvs_acc = intersec(itvs_acc, itvs)
+        if not itvs_acc:
+            itvs_acc = itvs
+        else:
+            itvs_acc = intersec(itvs_acc, itvs)
+        
+        if sid == sid_right:
+            break
+        sid = slots[sid].next
         
     return itvs_acc
 
@@ -118,12 +121,14 @@ class SlotSet:
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         slot.itvs = sub_intervals(slot.itvs, job.res_set)
         if job.ts:
-            if not slot.ts_itvs[job.user]:
-                slot.ts_itvs[job.user] = {}
-            slot.ts_itvs[job.user][job.name] = job.res_set[:] 
+            if not job.ts_user in slot.ts_itvs:
+                 slot.ts_itvs[job.ts_user] = {}
+
+            if not job.ts_name in slot.ts_itvs[job.ts_user]:
+                slot.ts_itvs[job.ts_user][job.ts_name] = job.res_set[:]
         
         if job.ph == USE_PLACEHOLDER:
-            if slot.ph_itvs[job.ph_name]:
+            if job.ph_name in slot.ph_itvs:
                 slot.ph_itvs[job.ph_name] = sub_interval(slot.ph_itvs[job.ph_name], job.res_set)
 
         if job.ph == SET_PLACEHOLDER:
@@ -196,6 +201,4 @@ class SlotSet:
                 slot = self.slots[slot.next]
 
             #self.show_slots()
-            #print "left_sid_2_split, right_sid_2_split", left_sid_2_split, right_sid_2_split
-            #print job.__dict__
             self.split_slots(left_sid_2_split, right_sid_2_split, job)

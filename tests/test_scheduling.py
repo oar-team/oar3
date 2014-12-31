@@ -100,7 +100,7 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 10, {})
 
-        self.assertTrue(j2.res_set, [(1, 8)])
+        self.assertEqual(j2.res_set, [(1, 8)])
 
     def test_schedule_container_error1(self):
 
@@ -120,7 +120,7 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
 
-        self.assertTrue(j2.start_time, -1)
+        self.assertEqual(j2.start_time, -1)
 
     def test_schedule_container_error2(self):
         ''' inner exceeds container's capacity'''
@@ -141,7 +141,7 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
 
-        self.assertTrue(j2.start_time, -1)
+        self.assertEqual(j2.start_time, -1)
         
     def test_schedule_container_error3(self):
         ''' inner exceeds time container's capacity'''
@@ -162,7 +162,7 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
 
-        self.assertTrue(j2.start_time, -1)
+        self.assertEqual(j2.start_time, -1)
 
     def test_schedule_container_prev_sched(self):
 
@@ -193,8 +193,8 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20, {})
 
-        self.assertTrue(j3.start_time, 200)
-        self.assertTrue(j3.res_set, [(17, 24)])
+        self.assertEqual(j3.start_time, 200)
+        self.assertEqual(j3.res_set, [(17, 24)])
 
     def test_schedule_container_recursif(self):
 
@@ -217,7 +217,7 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {1:j1, 2:j2, 3:j3}, hy, [1,2,3], 10, {})
 
-        self.assertTrue(j3.res_set, [(1, 8)])
+        self.assertEqual(j3.res_set, [(1, 8)])
 
     def test_schedule_container_prev_sched_recursif(self):
 
@@ -246,8 +246,45 @@ class TestScheduling(unittest.TestCase):
 
         schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20, {})
 
-        self.assertTrue(j3.start_time, 210)
-        self.assertTrue(j3.res_set, [(17, 24)])
+        self.assertEqual(j3.start_time, 210)
+        self.assertEqual(j3.res_set, [(17, 24)])
+
+    def test_schedule_timesharing1(self):
+        res = [(1, 32)]
+        ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+        all_ss = {0:ss}
+        hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
+        
+        j1 = JobPseudo(id=1, types={}, key_cache="", 
+                       mld_res_rqts=[(1, 60, [ ( [("node", 4)], res[:]) ])],
+                       user = "toto", name="yop",
+                       ts=True, ts_user="*", ts_name="*", ph=0)
+        
+        j2 = JobPseudo(id=2, types={}, key_cache="", 
+                       mld_res_rqts=[(1, 80, [ ( [("node", 4)], res[:]) ])],
+                       user = "toto", name="yop",
+                       ts=True, ts_user="*", ts_name="*", ph=0)
+        
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
+       
+        print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
+
+        self.assertEqual (j1.start_time, j2.start_time)
+     
+    def test_schedule_timesharing2(self):
+        pass
+        
+    def test_schedule_timesharing_prev_sched(self):
+        pass
+        
+    def test_schedule_placeholder1(self):
+        pass
+
+    def test_schedule_placeholder2(self):
+        pass
+        
+    def test_schedule_placeholder_prev_sched(self):
+        pass
 
 if __name__ == '__main__':
 
