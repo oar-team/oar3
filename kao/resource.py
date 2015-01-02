@@ -15,7 +15,7 @@ class ResourceSet:
         self.rid_o2i = array("i", [0] * MAX_NB_RESOURCES)
 
         #suspend
-        suspendables_roids = []
+        suspendable_roids = []
         if "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE" not in config:
             config["SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE"] = "default"
         
@@ -71,7 +71,7 @@ class ResourceSet:
                     suspendable_roids.append(roid)
 
         #global ordered resources intervals
-        print roids
+        #print roids
         self.roid_itvs = ordered_ids2itvs(roids)
 
         if "id" in hy_roid:
@@ -86,4 +86,4 @@ class ResourceSet:
             self.available_upto[k] = ordered_ids2itvs(v)
 
         #
-        self.suspendable_roid_itvs = oardered_ids2itvs(suspendable_roids)
+        self.suspendable_roid_itvs = ordered_ids2itvs(suspendable_roids)

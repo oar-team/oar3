@@ -8,7 +8,7 @@ from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
-#config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = '/dev/stdout'
 
 log = get_logger("oar.kamelot")
 
@@ -31,7 +31,8 @@ for k,v in default_config.iteritems():
 
 def schedule_cycle(plt, now, queue = "default"):
 
-    print "Begin scheduling....", now
+
+    log.info("Begin scheduling....now:" + str(now) + "queue:" + queue)
 
     #
     # Retrieve waiting jobs
@@ -42,7 +43,7 @@ def schedule_cycle(plt, now, queue = "default"):
     print waiting_jobs, waiting_jids, nb_waiting_jobs
 
     if nb_waiting_jobs > 0:
-
+        log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
         job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
 
         #
@@ -105,10 +106,11 @@ def schedule_cycle(plt, now, queue = "default"):
         #
         # Save assignement
         #
-
+        log.info("save assignement")
+        
         plt.save_assigns(waiting_jobs, resource_set)
     else:
-        print "no waiting jobs"
+        log.info("no waiting jobs")
 
 #
 # Main function
@@ -116,11 +118,12 @@ def schedule_cycle(plt, now, queue = "default"):
 
 if __name__ == '__main__':
     plt = Platform()
-    if len(sys.argv == 3):
-        schedule_cycle(plt, sys.argv[2], sys.argv[1])
-    elif (sys.argv == 2):
-        schedule_cycle(plt, sys.argv[2])
+    log.info("argv..."+str(sys.argv))
+    if len(sys.argv) > 2:
+        schedule_cycle(plt, int(sys.argv[2]), sys.argv[1])
+    elif (sys.argv) == 2:
+        schedule_cycle(plt, plt.get_time(), sys.argv[1])
     else:
         schedule_cycle(plt, plt.get_time())
-    print "That's all folks"
+    log.info("That's all folks")
 

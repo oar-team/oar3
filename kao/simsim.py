@@ -1,5 +1,5 @@
 import collections
-import kamelot
+from kamelot import schedule_cycle
 from platform import Platform
 from random import seed, randint
 from sets import Set
@@ -67,7 +67,7 @@ class SimSched:
             
             print "call schedule_cycle.... ", now
             
-            kamelot.schedule_cycle(plt,now, "test")
+            schedule_cycle(plt,now, "test")
             
             #launch jobs if needed
             for jid, job in plt.assigned_jobs.iteritems():
@@ -97,27 +97,6 @@ class JobSimu():
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
-
-def get_waiting_jobs_simu(queue, jobs, waiting_jids):
-    #print " get_waiting_jobs_simu:", waiting_jids
-    waiting_jobs = {} 
-    waiting_jids_lst = []
-    nb_waiting_jobs = 0
-    for jid in waiting_jids:
-        job = jobs[jid]
-        waiting_jobs[jid] = job
-        waiting_jids_lst.append(jid)
-        nb_waiting_jobs += 1
-
-    #print waiting_jobs, waiting_jids, nb_waiting_jobs
-
-    return (waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
-
-def get_scheduled_jobs_simu(jobs, running_jids):
-    running_jobs = [jobs[jid] for jid in running_jids]
-    #for job in running_jobs:
-    #    print "running_jobs", job.id, job.start_time, job.walltime, job.res_set
-    return running_jobs
 
 env = simpy.Environment()
 nb_res = 32

@@ -1,6 +1,8 @@
 from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
-                 JobResourceGroup, Resource, GanttJobsPrediction,
-                 GanttJobsResource, JobType, JobStateLog)
+                 JobResourceGroup, Resource, GanttJobsPrediction, JobDependencie,
+                 GanttJobsResource, JobType, JobStateLog, get_logger)
+
+log = get_logger("oar.kamelot")
 
 from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
@@ -110,7 +112,7 @@ def get_jobs_types(jids, jobs):
             if not jid in jobs_types:
                 jobs_types[jid] = dict()
 
-            print t, v
+            #print t, v
             (jobs_types[jid])[t] = v
 
     for job in jobs.itervalues():
@@ -175,11 +177,12 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
                 jrg.append( (jr_descriptions, res_constraints) )
                 mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
                 job.mld_res_rqts = mld_res_rqts
-                job.types = job_types[job.id]
                 job.key_cache = str(mld_res_rqts)
                 mld_res_rqts = []
                 jrg = []
                 jr_descriptions = []
+                job.ts = False
+                job.ph = NO_PLACEHOLDER
                 #print "======================"
                 #print "job_id:",job.id,  job.mld_res_rqts
                 #print "======================"
@@ -250,8 +253,9 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
 
     job.mld_res_rqts = mld_res_rqts
-
     job.key_cache = str(mld_res_rqts)
+    job.ts = False
+    job.ph = NO_PLACEHOLDER
 
     #print "======================"
     #print "job_id:",job.id,  job.mld_res_rqts
@@ -292,7 +296,8 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
             .all()
 
     jids = []
-    jobs = []
+    jobs_lst = []
+    jobs = {}
     prev_jid = 0
     roids = []
 
@@ -306,15 +311,18 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
             if j.id != prev_jid:
                 if prev_jid != 0:
                     job.res_set = unordered_ids2itvs(roids)
-                    jobs.append(job)
+                    jobs_lst.append(job)
                     jids.append(job.id)
+                    jobs[job.id] = job
                     roids = []
 
                 prev_jid = j.id
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime + job_security_time
-                if job.suspend == "YES":
+                job.ts = False
+                job.ph = NO_PLACEHOLDER
+                if job.suspended == "YES":
                     job.walltime += get_job_suspended_sum_duration(job.id, now)
 
             roids.append(resource_set.rid_i2o[r_id])
@@ -323,24 +331,28 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
         if job.state == "Suspended": 
             job.res_set = sub_intervals(job.res_set, resource_set.suspendable_roid_itvs)
 
-        jobs.append(job)
+        jobs_lst.append(job)
         jids.append(job.id)
-
+        jobs[job.id] = job
         get_jobs_types(jids,jobs)
 
-    return jobs
+    return jobs_lst
 
 def save_assigns(jobs, resource_set):
     #http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     mld_id_start_time_s = []
+    mld_id_rid_s = []
     for j in jobs.itervalues():
-        mld_id_start_time_s.append( (j.moldable_id, j.start_time) )
+        mld_id_start_time_s.append( {'moldable_job_id': j.moldable_id, 'start_time': j.start_time} )
         riods = itvs2ids(j.res_set)
-        mld_id_rid_s = [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods]
-        mld_id_rid_s.append( (j.moldable_id, mld_id_rid_s) )
+        mld_id_rid_s.extend( [{'moldable_job_id' : j.moldable_id, 'resource_id': resource_set.rid_o2i[rid]} for rid in riods] )
 
-    GanttJobsPrediction.__table__.insert().values( mld_id_start_time_s )
-    GanttJobsResource.__table__.insert().values( mld_id_rid_s )
+    log.info("save assignements")
+
+    db.engine.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s )
+    db.engine.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s )
+
+    db.flush()
 
     #"INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES "^
     #"INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES "^

@@ -3,7 +3,6 @@ from interval import intersec, sub_intervals, add_intervals
 from hierarchy import find_resource_hierarchies_scattered
 from copy import deepcopy
 
-
 class Slot:
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):
         self.id = id
