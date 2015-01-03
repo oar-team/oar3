@@ -8,7 +8,7 @@ from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
-config['LOG_FILE'] = '/dev/stdout'
+#config['LOG_FILE'] = '/dev/stdout'
 
 log = get_logger("oar.kamelot")
 

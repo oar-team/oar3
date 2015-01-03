@@ -1,19 +1,13 @@
-import os
-import os.path as op
-from oar import config, logging
-import meta_sched
+from oar import get_logger
+from meta_sched import meta_schedule
 
-
+log = get_logger("oar.kao")
 #import click
-
-HERE = op.dirname(__file__)
-
-def oar_debug(msg):
-    print(msg)
 
 def kao():
 
-    oar_debug("[MetaSched] Starting Meta Scheduler\n");
+    log.info("[MetaSched] Starting Meta Scheduler");
+    meta_schedule()
 
     ###########################################################################################################
     #Initialize Gantt tables with scheduled reservation jobs, Running jobs, toLaunch jobs and Launching jobs; #
@@ -22,7 +16,6 @@ def kao():
     # First get resources that we must add for each reservation jobs
     # TODO move to admission rules ???
 
-
     # Take care of the currently (or nearly) running jobs
     # Lock to prevent bipbip update in same time
     # TODO: do we need to locks table ????
@@ -30,15 +23,6 @@ def kao():
 
 
     #calculate now date with no overlap with other jobs
-
-
-#@click.command()
-#@click.option('--count', default=1, help='Number of greetings.')
-#@click.option('--name', prompt='Your name', help='The person to greet.')
-#def kao(count, name):
-#    """Simple program that greets NAME for a total of COUNT times."""
-#    for x in range(count):
-#        click.echo('Hello %s!' % name)
 
 if __name__ == '__main__':
     kao()
