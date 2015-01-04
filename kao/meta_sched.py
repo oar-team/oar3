@@ -1,4 +1,4 @@
-import os
+import os, sys
 import subprocess
 from oar import config, Queue
 
@@ -45,9 +45,45 @@ exit_code = 0
 
 ###########
 
+def create_tcp_notification_socket():
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server = config["SERVER_HOSTNAME"]
+    port =  config["SERVER_PORT"]
+    try:
+        socket.connect( (server, port) )
+    except socket.error, exc:
+        log.error("Connection to " + server + ":" + port + " raised exception socket.error: " + exc)
+        sys.exit(1)
+    return socket
+
+def treate_waiting_reservation_jobs(name):
+    pass
+
+def check_reservation_jobs(name):
+    pass
+
+def check_jobs_to_kill():
+    return 0
+
+def check_jobs_to_launch():
+    return 1
+
+
+def update_gantt_visualization():
+    sql_queries = ["TRUNCATE TABLE gantt_jobs_predictions_visu",
+                   "TRUNCATE TABLE gantt_jobs_resources_visu",
+                   "INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
+                   "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
+                   ]
+    for query in sql_queries:
+        result = db.engine.execute(query)
 
 def meta_schedule():
-    
+
+    exit_code = 0
+
+    tcp_notify = create_tcp_notification_socket()
+
     # reservation ??.
     
     initial_time_sec = time.time()
@@ -57,12 +93,6 @@ def meta_schedule():
     #                "sql" => $current_time_sql
     #              );
     
-    #my @queues = OAR::IO::get_active_queues($base);
-    #my $name;
-    #my $policy;
-    #foreach my $i (@queues){
-
-
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
     else:
@@ -78,6 +108,8 @@ def meta_schedule():
             
             cmd_schedudler = binpath + "scheduler/" + queue.scheduler_policy 
             
+            child_launched = True
+
             try:
                 child = subprocessPopen([cmd_schedudler, queue.name, initial_time_sec,initial_time_sql]
                                         ,stdout=subprocess.PIPE)
@@ -93,47 +125,37 @@ def meta_schedule():
                 sched_exit_code, sched_signal_num, sched_dumped_core = rc >> 8, rc & 0x7f, bool(rc & 0x80)
 
             except OSError as e:
+                child_launched = False
                 log.warn(e + " Cannot run: " + cmd_schedudler + " " + queue.name  + " " + 
                          initial_time_sec + " " + initial_time_sql)
 
 
-            if ((!defined($sched_pid)) or ($sched_signal_num != 0) or ($sched_dumped_core != 0)){
-            oar_error("[MetaSched] Error: execution of $policy failed, inactivating queue $name (see `oarnotify')\n");
-            OAR::IO::stop_a_queue($base,$name);
-            }
+            if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core !=0 ): 
+                log.error("Execution of " + queue.scheduler_policy + 
+                          " failed, inactivating queue " + queue.name + " (see `oarnotify')")
+                #stop queue
+                db.query(Queue).filter_by(name=queue.name).update({"state": u"notActive"})
 
-        if ($sched_exit_code == 1){
-            $exit_code = 0;
-        }elsif($sched_exit_code != 0){
-            oar_error("[MetaSched] Error: Scheduler $policy returned a bad value: $sched_exit_code, at time $initial_time{sec}. Inactivating queue $policy (see `oarnotify')\n");
-            OAR::IO::stop_a_queue($base,$name);
-        }
-        treate_waiting_reservation_jobs($name);
-        check_reservation_jobs($name,$Order_part);
-    }else{
-        oar_debug("[MetaSched] Queue $name: No job\n");
-    }
-}
 
-if ($exit_code == 0){
-    if (check_jobs_to_kill() == 1){
+            if sched_exit_code != 1:
+                log.error("Scheduler $policy returned a bad value: " + str(sched_exit_code) + 
+                          ". Inactivating queue " +  queue.scheduler_policy + " (see `oarnotify')")
+                #stop queue
+                db.query(Queue).filter_by(name=queue.name).update({"state": u"notActive"})
+        
+            treate_waiting_reservation_jobs(name)
+            check_reservation_jobs(name)
+
+    if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
-        OAR::Tools::notify_tcp_socket($Remote_host,$Remote_port,"ChState");
-        $exit_code = 2;
-    }elsif (check_jobs_to_launch() == 1){
-        $exit_code = 0;
-    }
-}
-
-#Update visu gantt tables
-
-
-
-
-
+        tcp_notify.send("ChState")
+        exit_code = 2
+    elif check_jobs_to_launch() == 1:
+        exit_code = 0
 
     #Update visu gantt tables
-    
+    update_gantt_visualization():
+
     # Manage dynamic node feature
     
     # Send CHECK signal to Hulot if needed
@@ -145,13 +167,13 @@ if ($exit_code == 0){
     # Run the decisions
     ## Treate "toError" jobs
 
+    ## Treate toAckReservation jobs
 
-## Treate toAckReservation jobs
+    ## Treate toLaunch jobs
+    #foreach my $j (OAR::IO::get_jobs_in_state($base,"toLaunch")){
+    #    notify_to_run_job($base, $j->{job_id});
+    #}
 
+    log.debug("End of Meta Scheduler")
 
-## Treate toLaunch jobs
-#foreach my $j (OAR::IO::get_jobs_in_state($base,"toLaunch")){
-#    notify_to_run_job($base, $j->{job_id});
-#}
-
-return exit_code
+    return exit_code
