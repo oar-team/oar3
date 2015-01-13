@@ -1,0 +1,24 @@
+.vagrant
+.oardocker
+*.py[co]
+*~
+*.log
+*#
+**#
+*.egg
+*.egg-info
+dist
+build
+src/
+eggs
+parts
+sdist
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+*.tar.gz
+env
+
