@@ -20,3 +20,4 @@ pip-log.txt
 .coverage
 .tox
 *.tar.gz
+env
