@@ -252,7 +252,7 @@ class EngineConnector(object):
 
     def apply_pool_defaults(self, options):
         def _setdefault(optionkey, configkey):
-            value = self._config[configkey]
+            value = self._config.get(configkey, None)
             if value is not None:
                 options[optionkey] = value
         _setdefault('pool_size', 'SQLALCHEMY_POOL_SIZE')
