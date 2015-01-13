@@ -59,7 +59,7 @@ class module(ModuleType):
                 setattr(self, extra_name, getattr(module, extra_name))
             return getattr(module, name)
         elif name in attribute_modules:
-            __import__('oar.lib.' + name)
+            __import__('oar_lib.' + name)
         return ModuleType.__getattribute__(self, name)
 
     def __dir__(self):
