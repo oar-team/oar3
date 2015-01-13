@@ -1,5 +1,5 @@
 import unittest
-from  kao.interval import *
+from  oar.kao.interval import *
 
 class TestInterval(unittest.TestCase):
 

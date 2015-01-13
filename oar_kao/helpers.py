@@ -1,5 +1,5 @@
-from slot import *
-from scheduling import *
+from oar.kao.slot import *
+from oar.kao.scheduling import *
 
 import random
 import colorsys

@@ -1,6 +1,7 @@
-import os, sys
+import os
+import sys
 import subprocess
-from oar import config, Queue
+from oar.lib import config, Queue
 
 # Log category
 log = get_logger("oar.kao")
@@ -154,7 +155,7 @@ def meta_schedule():
         exit_code = 0
 
     #Update visu gantt tables
-    update_gantt_visualization():
+    update_gantt_visualization()
 
     # Manage dynamic node feature
     

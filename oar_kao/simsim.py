@@ -1,11 +1,14 @@
 import collections
-from kamelot import schedule_cycle
-from platform import Platform
 from random import seed, randint
+
 from sets import Set
 import simpy
 from simpy.events import AnyOf
-from helpers import plot_slots_and_job
+
+from oar.kao.helpers import plot_slots_and_job
+from oar.kao.kamelot import schedule_cycle
+from oar.kao.platform import Platform
+
 
 class SimSched:
     def __init__(self, env, plt, jobs, submission_time_jids):

@@ -1,10 +1,11 @@
 #!/usr/bin/env python 
 import sys
-from oar import config, get_logger, Job
+from oar.lib import config, get_logger, Job
 from platform import Platform
-from job import NO_PLACEHOLDER, JobPseudo
-from slot import SlotSet, Slot
-from scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct 
+from oar.kao.job import NO_PLACEHOLDER, JobPseudo
+from oar.kao.slot import SlotSet, Slot
+from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, \
+    schedule_id_jobs_ct 
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 

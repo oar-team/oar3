@@ -1,7 +1,7 @@
 import unittest
-from kao.interval import *
-from kao.job import *
-from kao.slot import *
+from oar.kao.interval import *
+from oar.kao.job import *
+from oar.kao.slot import *
 
 class TestSlot(unittest.TestCase):
 

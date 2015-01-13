@@ -1,5 +1,5 @@
 import unittest
-from  kao.hierarchy import *
+from  oar.kao.hierarchy import *
 
 class TestHierarchy(unittest.TestCase):
     def test_find_resource_hierarchies_scattere1(self):

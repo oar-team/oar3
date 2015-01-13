@@ -1,6 +1,7 @@
-from oar import (db, Job, MoldableJobDescription, JobResourceDescription,
-                 JobResourceGroup, Resource, GanttJobsPrediction, JobDependencie,
-                 GanttJobsResource, JobType, JobStateLog, get_logger)
+from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
+                     JobResourceGroup, Resource, GanttJobsPrediction,
+                     JobDependencie, GanttJobsResource, JobType, JobStateLog,
+                     get_logger)
 
 log = get_logger("oar.kamelot")
 

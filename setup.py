@@ -1,21 +1,31 @@
 import os.path as op
+import re
 from setuptools import setup, find_packages
-from kao import VERSION
+
+requirements = [
+    'sqlalchemy',
+]
+
+dependency_links = []
 
 here = op.abspath(op.dirname(__file__))
 
-
 def read(fname):
     ''' Return the file content. '''
-    with open(op.join(here, fname)) as f:
-        return f.read()
+    with open(op.join(here, fname)) as fd:
+        return fd.read()
+
+
+def get_version():
+    return re.compile(r".*__version__ = '(.*?)'", re.S)\
+             .match(read(op.join(here, 'oar_kao', '__init__.py'))).group(1)
 
 
 setup(
     name='kao',
     author='Olivier Richard',
     author_email='olivier.richard@imag.fr',
-    version=VERSION,
+    version=get_version(),
     url='https://github.com/oar-team/kao',
     install_requires=[
         'Click', 'SimPy'
@@ -32,6 +42,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        kao=kao.kao:kao
+        kao=oar_kao:kao
     ''',
 )

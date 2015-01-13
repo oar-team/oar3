@@ -1,8 +1,8 @@
-from oar import config, logging, Job
+from oar.lib import config, logging, Job
 from platform import Platform
-from job import NO_PLACEHOLDER, JobPseudo
-from slot import SlotSet, Slot
-from scheduling_basic import schedule_id_jobs_ct
+from oar.kao.job import NO_PLACEHOLDER, JobPseudo
+from oar.kao.slot import SlotSet, Slot
+from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
