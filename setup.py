@@ -1,33 +1,36 @@
 import re
 import os.path as op
-from setuptools import setup, find_packages
+from setuptools import setup
 
 here = op.abspath(op.dirname(__file__))
+
+requirements = [
+    'sqlalchemy',
+]
+
+dependency_links = []
 
 
 def read(fname):
     ''' Return the file content. '''
-    with open(op.join(here, fname)) as f:
-        return f.read()
+    with open(op.join(here, fname)) as fd:
+        return fd.read()
 
 
-v_file = op.join(here, 'lib', 'oar', '__init__.py')
-VERSION = re.compile(r".*__version__ = '(.*?)'",
-                     re.S).match(read(v_file)).group(1)
+def get_version():
+    return re.compile(r".*__version__ = '(.*?)'", re.S)\
+             .match(read(op.join(here, 'oar_lib', '__init__.py'))).group(1)
 
 
 setup(
     name='oar-lib',
     author='Salem Harrache',
     author_email='salem.harrache@inria.fr',
-    version=VERSION
-    ,
-    url='https://github.com/oar-team/python-oar-common',
-    install_requires=[
-        'sqlalchemy',
-    ],
-    packages=find_packages('lib'),
-    package_dir={'': 'lib'},
+    version=get_version(),
+    url='https://github.com/oar-team/python-oar-lib',
+    packages=['oar', 'oar_lib'],
+    install_requires=requirements,
+    dependency_links=dependency_links,
     include_package_data=True,
     zip_safe=False,
     description='Interact with OAR in Python',
