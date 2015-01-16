@@ -75,7 +75,7 @@ class ResourceSet:
         self.roid_itvs = ordered_ids2itvs(roids)
 
         if "id" in hy_roid:
-            hy_roid["resource_id"] =  hy_roid["id"]
+            hy_roid["resource_id"] = hy_roid["id"]
             del hy_roid["id"]
 
         #create hierarchy

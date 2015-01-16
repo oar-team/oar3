@@ -291,7 +291,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
             .filter(MoldableJobDescription.index == 'CURRENT')\
             .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
             .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-            .filter(Job.id == MoldableJobDescription.id)\
+            .filter(Job.id == MoldableJobDescription.job_id)\
             .order_by(Job.start_time, Job.id)\
             .all()
 
@@ -374,3 +374,66 @@ def get_current_jobs_dependencies():
         jobs_dependencies[j_dep.job_id].append( (j_dep.job_id_required, state, exit_code) )
 
     return jobs_dependencies
+
+#TO REMOVE ?
+def get_current_not_waiting_jobs():
+    jobs = Job.query.filter((Job.index == "CURRENT") & (Job.state != "Wainting")).all()
+    current_not_waiting_jobs = {}
+    jobids_by_state = {}
+    for job in jobs:
+        current_not_waiting_jobs[job.id] = job
+        if not job.state in jobids_by_state:
+            jobids_by_state[job.state] = []
+        jobids_by_state[job.state].append[job.id]
+
+    return (jobids_by_state, current_not_waiting_jobs)
+
+
+def get_gantt_jobs_to_launch(current_time_sec):
+    #NOTE1 doesnt use  m.moldable_index = \'CURRENT\' impacts Pg's performance
+    #NOTE2 doesnt use   AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
+    #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
+    # to limit overhead
+
+    req = db.query(Job,MoldableJobDescriptions.moldable_id)\
+            .filter(GanttJobsPredictions.start_time <= data &
+                    Job.state == "Waiting" &
+                    Job.id == MoldableJobDescription.id &
+                    MoldableJobDescriptions.moldable_id == GanttJobsPredictions.moldable_job_id)\
+            .all()
+
+    #    $req = "SELECT DISTINCT(j.job_id)
+    #            FROM gantt_jobs_resources g1, gantt_jobs_predictions g2, jobs j, moldable_job_descriptions m, resources
+    #            WHERE
+    #               g1.moldable_job_id = g2.moldable_job_id
+    #               AND m.moldable_id = g1.moldable_job_id
+    #               AND j.job_id = m.moldable_job_id
+    #               AND g2.start_time <= $date
+    #               AND j.state = \'Waiting\'
+    
+    return req
+
+def set_jobs_start_time(tuple_jids, start_time):
+    db.query(Job).update({Job.start_time: start_time}).filter(Job.job_id.in_( tuple_jids )):
+    db.commit()
+
+
+def set_job_state(jid, state):
+    pass
+
+def set_jobs_state(tuple_jids, state): #NOT USED
+    db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids )):
+    db.commit()
+
+def add_resource_jobs( tuple_mld_ids ):
+
+    resources_mld_ids = GanttJobsResource.query\
+                                         .filter(GanttJobsResourcejob_id.in_( tuple_mld_ids ))\
+                                         .al()
+
+    assigned_resources = [ {'moldable_id': res_mld_id.moldable_id, 
+                            'resource_id': res_mld_id.resource_id,
+                            'index': 'CURRENT'} for  res_mld_id in resources_mld_ids ]
+
+    db.engine.execute(AssignedResource.__table__.insert(), assigned_resources )
+    db.flush()

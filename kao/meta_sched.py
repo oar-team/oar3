@@ -1,6 +1,7 @@
 import os, sys
 import subprocess
 from oar import config, Queue
+from job import get_current_not_waiting_jobs, get_gantt_jobs_to_launch
 
 # Log category
 log = get_logger("oar.kao")
@@ -56,6 +57,39 @@ def create_tcp_notification_socket():
         sys.exit(1)
     return socket
 
+# Prepare a job to be run by bipbip
+def prepare_jobs_to_be_launched():
+        $job_id,
+        $moldable_job_id,
+        $job_submission_time,
+        $resources_array_ref) = @_;
+
+    #my $running_date = $current_time_sec;
+    #if ($running_date < $job_submission_time){
+    #    $running_date = $job_submission_time;
+    #}
+    
+    tuple_jids = tuple(jids) 
+    #set start_time for jobs to launch 
+    set_jobs_start_time(tuple_jids, start_time)
+
+    # OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
+    for job in jobs:
+        set_assigned_moldable_job(job)
+
+        
+    #OAR::IO::add_resource_job_pairs($base, $moldable_job_id, $resources_array_ref);
+    #TODO
+    add_resource_jobs(tuple_modable_ids)
+
+    #OAR::IO::set_job_state($base, $job_id, "toLaunch");
+    # ser
+
+    #set_jobs_state(tuple_jids, "toLaunch")
+    
+    #notify_to_run_jobs
+
+
 def treate_waiting_reservation_jobs(name):
     pass
 
@@ -63,10 +97,53 @@ def check_reservation_jobs(name):
     pass
 
 def check_jobs_to_kill():
+    log.debug("Begin precessing of besteffort jobs to kill")
+    #my %nodes_for_jobs_to_launch;
+    #if (defined $redis) {
+    #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch_redis($base,$redis,$current_time_sec);
+    #}else{
+    #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch($base,$current_time_sec);
+    #}
     return 0
 
-def check_jobs_to_launch():
-    return 1
+def check_jobs_to_launch(current_time_sec, current_time_sql):
+    log.debug("Begin processing of jobs to launch (start time <= " + current_time_sql)
+
+    return_code = 0
+    #TODO
+    #job to launch
+    jobs_to_launch_moldable_id_req = get_gantt_jobs_to_launch($current_time_sec)
+
+    #my $return_code = 0;
+    #my %jobs_to_launch = (); 
+    #    %jobs_to_launch = OAR::IO::get_gantt_jobs_to_launch($base,$current_time_sec);
+    #} 
+
+    for job_moldable_id in jobs_to_launch_moldable_id_req:
+        return_code = 1
+        log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
+        job, moldable_id = job_moldable_id
+
+        #TODO
+        #if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
+        #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
+        #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);
+        #   OAR::IO::set_gantt_job_startTime($base,$jobs_to_launch{$i}->[0],$current_time_sec);
+        #   oar_warn("[MetaSched] Reduce walltime of job $i to $max_time (was  $mold->{moldable_walltime})\n");
+        #   OAR::IO::add_new_event($base,"REDUCE_RESERVATION_WALLTIME",$i,"Change walltime from $mold->{moldable_walltime} to $max_time");
+    #        my $w = OAR::IO::duration_to_sql($max_time);                                                                            
+    #        if ($job->{message} =~ s/W\=\d+\:\d+\:\d+/W\=$w/g){                                                               
+    #            OAR::IO::set_job_message($base,$i,$job->{message});                                                                  
+    #        }
+    #    }
+
+    if return_code == 1:
+        prepare_jobs_to_be_launched()
+    #    prepare_job_to_be_launched($base, $i, $jobs_to_launch{$i}->[0], $job->{submission_time}, $jobs_to_launch{$i}->[1]);
+
+    log.debug("End processing of jobs to launch");
+
+    return 0
 
 
 def update_gantt_visualization():
@@ -77,6 +154,10 @@ def update_gantt_visualization():
                    ]
     for query in sql_queries:
         result = db.engine.execute(query)
+
+
+def get_current_jobs_not_waiting():
+    pass
 
 def meta_schedule():
 
@@ -159,6 +240,9 @@ def meta_schedule():
     # Manage dynamic node feature
     
     # Send CHECK signal to Hulot if needed
+
+    jobids_by_state, current_not_waiting_jobs = get_current_not_waiting_jobs()
+
 
     # Search jobs to resume
     
