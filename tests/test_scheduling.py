@@ -1,8 +1,8 @@
 import unittest
-from kao.job import *
-from kao.slot import *
-from kao.scheduling import *
-from oar import config, get_logger
+from oar.kao.job import *
+from oar.kao.slot import *
+from oar.kao.scheduling import *
+from oar.lib import config, get_logger
 
 config['LOG_FILE'] = '/dev/stdout'
 log = get_logger("oar.test")

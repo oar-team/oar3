@@ -1,5 +1,5 @@
-from oar import get_logger
-from meta_sched import meta_schedule
+from oar.lib import get_logger
+from oar.kao.meta_sched import meta_schedule
 
 log = get_logger("oar.kao")
 #import click

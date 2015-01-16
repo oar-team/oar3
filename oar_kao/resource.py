@@ -1,6 +1,6 @@
-from oar import config, Resource
-from hierarchy import Hierarchy
-from interval import ordered_ids2itvs
+from oar.lib import config, Resource
+from oar.kao.hierarchy import Hierarchy
+from oar.kao.interval import ordered_ids2itvs
 from array import *
 
 MAX_NB_RESOURCES = 100000

@@ -1,4 +1,4 @@
-from interval import *
+from oar.kao.interval import *
 
 class Hierarchy:
     #TODO extract hierarchy from ressources table

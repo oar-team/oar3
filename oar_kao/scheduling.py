@@ -1,8 +1,8 @@
-from hierarchy import *
-from job import *
-from interval import intersec
-from slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
-from oar import get_logger
+from oar.kao.hierarchy import *
+from oar.kao.job import *
+from oar.kao.interval import intersec
+from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
+from oar.lib import get_logger
 
 log = get_logger("oar.kamelot")
 

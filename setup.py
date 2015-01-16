@@ -1,26 +1,39 @@
 import os.path as op
-from setuptools import setup, find_packages
-from kao import VERSION
+import re
+from setuptools import setup
+
+requirements = [
+    'oar-lib',
+    'Click',
+    'SimPy',
+]
+
+dependency_links = [
+    'git+http://github.com/oar-team/python-oar-lib.git#egg=oar-lib',
+]
 
 here = op.abspath(op.dirname(__file__))
 
-
 def read(fname):
     ''' Return the file content. '''
-    with open(op.join(here, fname)) as f:
-        return f.read()
+    with open(op.join(here, fname)) as fd:
+        return fd.read()
+
+
+def get_version():
+    return re.compile(r".*__version__ = '(.*?)'", re.S)\
+             .match(read(op.join(here, 'oar_kao', '__init__.py'))).group(1)
 
 
 setup(
     name='kao',
     author='Olivier Richard',
     author_email='olivier.richard@imag.fr',
-    version=VERSION,
+    version=get_version(),
     url='https://github.com/oar-team/kao',
-    install_requires=[
-        'Click', 'SimPy'
-    ],
-    packages=find_packages(),
+    install_requires=requirements,
+    dependency_links=dependency_links,
+    packages=['oar_kao'],
     include_package_data=True,
     zip_safe=False,
     description='Another Metascheduler for OAR.',
@@ -32,6 +45,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        kao=kao.kao:kao
+        kao=oar_kao:kao
     ''',
 )

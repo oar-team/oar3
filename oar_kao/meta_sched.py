@@ -1,7 +1,8 @@
-import os, sys
+import os
+import sys
 import subprocess
-from oar import config, Queue
-from job import get_current_not_waiting_jobs, get_gantt_jobs_to_launch
+from oar.lib import config, Queue
+from oar.kao.job import get_current_not_waiting_jobs, get_gantt_jobs_to_launch
 
 # Log category
 log = get_logger("oar.kao")
@@ -235,7 +236,7 @@ def meta_schedule():
         exit_code = 0
 
     #Update visu gantt tables
-    update_gantt_visualization():
+    update_gantt_visualization()
 
     # Manage dynamic node feature
     

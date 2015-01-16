@@ -1,6 +1,6 @@
-from job import SET_PLACEHOLDER, USE_PLACEHOLDER
-from interval import intersec, sub_intervals, add_intervals
-from hierarchy import find_resource_hierarchies_scattered
+from oar.kao.job import SET_PLACEHOLDER, USE_PLACEHOLDER
+from oar.kao.interval import intersec, sub_intervals, add_intervals
+from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from copy import deepcopy
 
 class Slot:

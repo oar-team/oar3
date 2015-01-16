@@ -1,7 +1,7 @@
-from hierarchy import *
-from job import *
-from interval import intersec
-from slot import intersec_itvs_slots
+from oar.kao.hierarchy import *
+from oar.kao.job import *
+from oar.kao.interval import intersec
+from oar.kao.slot import intersec_itvs_slots
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance

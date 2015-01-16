@@ -1,7 +1,7 @@
 import unittest
-from kao.job import *
-from kao.slot import *
-from kao.scheduling_basic import *
+from oar.kao.job import *
+from oar.kao.slot import *
+from oar.kao.scheduling_basic import *
 
 class TestScheduling(unittest.TestCase):
 
