@@ -1,5 +1,5 @@
 from oar.lib import config, logging, Job
-from platform import Platform
+from oar.lib.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, Slot
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
