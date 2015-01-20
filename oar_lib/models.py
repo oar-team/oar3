@@ -2,7 +2,7 @@
 from . import db
 
 
-schema = db.Table(
+schema = db.Table('schema',
     db.Column('version', db.String(255)),
     db.Column('name', db.String(255))
 )
@@ -347,3 +347,9 @@ class Scheduler(db.Model):
     name = db.Column(db.String(100), primary_key=True)
     script = db.Column(db.String(100))
     description = db.Column(db.String(255))
+
+
+
+def get_all_sorted_tables():
+    db.reflect()
+    return db.metadata.sorted_tables
