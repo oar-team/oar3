@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
-from .exceptions import DoesNotExist, InvalidConfiguration
+from .exceptions import DoesNotExist
 from .compat import string_types
 
 __all__ = ['Database']
@@ -168,20 +168,8 @@ class Database(object):
     @property
     def uri(self):
         if self._uri is None:
-            from oar import config
-            try:
-                db_conf = config.get_namespace("DB_")
-                db_conf["type"] = db_conf["type"].lower()
-                if db_conf["type"] == "sqlite":
-                    self._uri = "{type}:///{base_file}".format(**db_conf)
-                    return self._uri
-                elif db_conf["type"] in ("pg", "psql", "pgsql"):
-                    db_conf["type"] = "postgresql"
-                self._uri = "{type}://{base_login}:{base_passwd}" \
-                            "@{hostname}:{port}/{base_name}".format(**db_conf)
-            except KeyError as e:
-                keys = tuple(('DB_%s' % i.upper() for i in e.args))
-                raise InvalidConfiguration("Cannot find %s" % keys)
+            from oar.lib import config
+            self._uri = config.sqlalchemy_uri
         return self._uri
 
     @property

@@ -6,6 +6,7 @@ import pprint
 from io import open
 
 from .compat import iteritems, integer_types
+from .exceptions import InvalidConfiguration
 
 
 class Configuration(dict):
@@ -62,6 +63,37 @@ class Configuration(dict):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             raise
         return True
+
+    def get_sqlalchemy_uri(self, read_only=False):
+        if read_only:
+            login = "base_login_ro"
+            passwd = "base_passwd_ro"
+        else:
+            login = "base_login"
+            passwd = "base_passwd"
+        try:
+            db_conf = self.get_namespace("DB_")
+            db_conf["type"] = db_conf["type"].lower()
+            if db_conf["type"] == "sqlite":
+                sa_uri = "{type}:///{base_file}".format(**db_conf)
+                self._sqlalchemy_uri = sa_uri
+                return sa_uri
+            elif db_conf["type"] in ("pg", "psql", "pgsql"):
+                db_conf["type"] = "postgresql"
+            sa_uri = ("{type}://{%s}:{%s}" \
+                     "@{hostname}:{port}/{base_name}" % (login, passwd))\
+                      .format(**db_conf)
+            self._sqlalchemy_uri = sa_uri
+            return sa_uri
+        except KeyError as e:
+            keys = tuple(('DB_%s' % i.upper() for i in e.args))
+            raise InvalidConfiguration("Cannot find %s" % keys)
+
+    @property
+    def sqlalchemy_uri(self):
+        if not hasattr(self, '_sqlalchemy_uri'):
+            self._sqlalchemy_uri = self.get_sqlalchemy_uri()
+        return self._sqlalchemy_uri
 
     def _try_convert_value(self, value, decimal_types):
         if value.isdecimal():
