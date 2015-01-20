@@ -10,6 +10,9 @@ if PY3:
     text_type = str
     string_types = (str,)
     integer_types = (int,)
+    basestring = str
+    from collections import Callable
+    callable = lambda c: isinstance(c, Callable)
 
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
@@ -26,7 +29,9 @@ else:
     text_type = unicode
     string_types = (str, unicode)
     integer_types = (int, long)
-
+    basestring = basestring
+    callable = callable
+    
     iterkeys = lambda d: d.iterkeys()
     itervalues = lambda d: d.itervalues()
     iteritems = lambda d: d.iteritems()
