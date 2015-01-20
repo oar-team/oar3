@@ -111,7 +111,7 @@ class QueryProperty(object):
 class SessionProperty(object):
 
     def __init__(self):
-        self._session = None
+        self._sessions = {}
 
     def _create_scoped_session(self, db):
         options = db._session_options
@@ -122,11 +122,11 @@ class SessionProperty(object):
 
     def __get__(self, obj, type):
         if obj is not None:
-            if self._session is None:
-                self._session = self._create_scoped_session(obj)
+            if obj not in self._sessions:
+                self._sessions[obj] = self._create_scoped_session(obj)
                 if not obj._reflected:
                     obj.reflect()
-            return self._session
+            return self._sessions[obj]
         return self
 
 
@@ -155,10 +155,10 @@ class Database(object):
     DeferredReflection = DeferredReflection
     BaseQuery = BaseQuery
 
-    def __init__(self, session_options=None):
+    def __init__(self, uri=None, session_options=None):
         self.connector = None
         self._reflected = False
-        self._uri = None
+        self._uri = uri
         self._session_options = dict(session_options or {})
         self._engine_lock = threading.Lock()
 
@@ -231,7 +231,7 @@ class Database(object):
 class EngineConnector(object):
 
     def __init__(self, db):
-        from oar import config
+        from oar.lib import config
         self._config = config
         self._db = db
         self._engine = None
