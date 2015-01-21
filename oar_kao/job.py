@@ -2,6 +2,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType, JobStateLog,
                      get_logger)
+from oar.kao.utils import get_date
 
 log = get_logger("oar.kamelot")
 
@@ -353,7 +354,7 @@ def save_assigns(jobs, resource_set):
     db.engine.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s )
     db.engine.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s )
 
-    db.flush()
+    db.commit()
 
     #"INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES "^
     #"INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES "^
@@ -419,12 +420,102 @@ def set_jobs_start_time(tuple_jids, start_time):
     db.commit()
 
 
-def set_job_state(jid, state):
-    pass
-
 def set_jobs_state(tuple_jids, state): #NOT USED
+    #TODO complete to enhance performance by vectorizing operations
     db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids )):
     db.commit()
+
+def set_job_state(jid, state):
+
+    #TODO
+    # notify_user
+    # update_current_scheduler_priority
+    # job.assigned_moldable_job}) and ($job->{assigned_moldable_job}
+    # OAR::IO::update_scheduler_last_job_date
+    # get_current_resources_with_suspended_job($dbh);
+    # log_job
+    # notify_tcp_socket($Remote_host,$Remote_port,"ChState")
+
+    result = db.query(Job).update({Job.state: state}).filter(Job.job_id == jid)\
+                                            .filter(Job.state != 'Error')\
+                                            .filter(Job.state != 'Terminated')\
+                                            .filter(Job.state != state)
+    db.commit()
+
+    if result.rowcount==1:
+        log.debug("Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
+
+        date = get_date()
+
+        #TODO: optimsz job loh
+        db.query(JobStateLog).update({JobStateLog.date_stop: date}).filter(JobStateLog.date_stop == 0)\
+                                                                   .filter(JobStateLog.job_id == jid)
+        req = JobStateLog.insert().values(job_id=jid, job_state=state, date_start=date)
+        db.engine.execute(req)
+        db.commit()
+
+        if state == "Terminated" or state == "Error" or state == "toLaunch" or \
+           state == "Running" or state == "Suspended" or state == "Resuming":
+            job = Job.query.where(Job.id == jid).one()
+            #TOREMOVE ? addr, port = job.info_type.split(':')
+            if state == "Suspend":
+                notify_user(job, "SUSPENDED", "Job is suspended.")
+            elif state == "Resuming":
+                notify_user(job, "RESUMING", "Job is resuming.")
+            elif state == "Running":
+                notify_user(job, "RUNNING", "Job is running.")
+            elif state == "toLaunch":
+                update_current_scheduler_priority(job,"+2","START");
+            else: # job is "Terminated" or ($state eq "Error")
+                if job.stop_time < job.start_time:
+                     db.query(Job).update({Job.stop_time: job.start_time}).filter(Job.job_id == jid)
+                     db.commit()
+
+                if job.assigned_moldable_job:
+                    #job.assigned_moldable_job}) and ($job->{assigned_moldable_job} ne "")){
+                    # Update last_job_date field for resources used
+                    #OAR::IO::update_scheduler_last_job_date($dbh, $date,$job->{assigned_moldable_job});
+                    update_scheduler_last_job_date(date,job.assigned_moldable_job)
+    
+                if state == "Terminated":
+                    notify_user(job, "END", "Job stopped normally.");
+                else:
+                    # Verify if the job was suspended and if the resource
+                    # property suspended is updated
+                    if job.suspended == "YES":
+                        r = get_current_resources_with_suspended_job()
+                        if len(r) > 0:
+                                                    if ($#r >= 0){
+                        $dbh->do("  UPDATE resources
+                                    SET suspended_jobs = \'NO\'
+                                    WHERE
+                                        resource_id NOT IN (".join(",",@r).")
+                                 ");
+                        else:
+
+                        if ($#r >= 0){
+                        $dbh->do("  UPDATE resources
+                                    SET suspended_jobs = \'NO\'
+                                    WHERE
+                                        resource_id NOT IN (".join(",",@r).")
+                                 ");
+                        }else{
+                            $dbh->do("  UPDATE resources
+                                        SET suspended_jobs = \'NO\'
+                                     ");
+                        }
+                    
+                    notify_user(job, "ERROR", "Job stopped abnormally or an OAR error occured.")
+                
+                update_current_scheduler_priority(job, "-2", "STOP")
+                
+                # Here we must not be asynchronously with the scheduler
+                log_job(job_id});
+                # $dbh is valid so these 2 variables must be defined
+                notify_tcp_socket($Remote_host,$Remote_port,"ChState")
+
+    else:
+        log.warning("Job is already termindated or in error or wanted state, job_id: " + str(jid) + ", wanted state: " + state ) 
 
 def add_resource_jobs( tuple_mld_ids ):
 
