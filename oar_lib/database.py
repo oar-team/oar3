@@ -331,6 +331,14 @@ def _include_sqlalchemy(db):
                 _set_default_query_class(backref[1])
             return fn(*args, **kwargs)
         return newfn
+
+    class Column(sqlalchemy.Column):
+        def __init__(self, *args, **kwargs):
+            kwargs.setdefault("nullable", False)
+            super(Column, self).__init__(*args, **kwargs)
+
+    db.Column = Column
+
     db.relationship = _add_default_query_class(db.relationship)
     db.relation = _add_default_query_class(db.relation)
     db.dynamic_loader = _add_default_query_class(db.dynamic_loader)
