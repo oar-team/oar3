@@ -1,8 +1,8 @@
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType, JobStateLog,
-                     get_logger)
-from oar.kao.utils import get_date
+                     JobStateLog, AssignedResource, get_logger)
+from oar.kao.utils import notification_socket, get_date, notify_user, update_current_scheduler_priority
 
 log = get_logger("oar.kamelot")
 
@@ -26,7 +26,6 @@ from interval import unordered_ids2itvs, itvs2ids, sub_intervals
                       [  ( [("node", 2)], [(1,32)] ) ] # list of requests composed of
                   )                                    # list of hierarchy request and filtered
                  ]                                     # resources (Properties)
-
 
 '''
 
@@ -428,13 +427,8 @@ def set_jobs_state(tuple_jids, state): #NOT USED
 def set_job_state(jid, state):
 
     #TODO
-    # notify_user
-    # update_current_scheduler_priority
-    # job.assigned_moldable_job}) and ($job->{assigned_moldable_job}
-    # OAR::IO::update_scheduler_last_job_date
-    # get_current_resources_with_suspended_job($dbh);
-    # log_job
-    # notify_tcp_socket($Remote_host,$Remote_port,"ChState")
+    # TODO Later: notify_user
+    # TODO Later: update_current_scheduler_priority
 
     result = db.query(Job).update({Job.state: state}).filter(Job.job_id == jid)\
                                             .filter(Job.state != 'Error')\
@@ -447,7 +441,7 @@ def set_job_state(jid, state):
 
         date = get_date()
 
-        #TODO: optimsz job loh
+        #TODO: optimize job log
         db.query(JobStateLog).update({JobStateLog.date_stop: date}).filter(JobStateLog.date_stop == 0)\
                                                                    .filter(JobStateLog.job_id == jid)
         req = JobStateLog.insert().values(job_id=jid, job_state=state, date_start=date)
@@ -471,11 +465,9 @@ def set_job_state(jid, state):
                      db.query(Job).update({Job.stop_time: job.start_time}).filter(Job.job_id == jid)
                      db.commit()
 
-                if job.assigned_moldable_job:
-                    #job.assigned_moldable_job}) and ($job->{assigned_moldable_job} ne "")){
+                if job.assigned_moldable_job != "0":
                     # Update last_job_date field for resources used
-                    #OAR::IO::update_scheduler_last_job_date($dbh, $date,$job->{assigned_moldable_job});
-                    update_scheduler_last_job_date(date,job.assigned_moldable_job)
+                    update_scheduler_last_job_date(date, int(job.assigned_moldable_job))
     
                 if state == "Terminated":
                     notify_user(job, "END", "Job stopped normally.");
@@ -484,41 +476,27 @@ def set_job_state(jid, state):
                     # property suspended is updated
                     if job.suspended == "YES":
                         r = get_current_resources_with_suspended_job()
-                        if len(r) > 0:
-                                                    if ($#r >= 0){
-                        $dbh->do("  UPDATE resources
-                                    SET suspended_jobs = \'NO\'
-                                    WHERE
-                                        resource_id NOT IN (".join(",",@r).")
-                                 ");
-                        else:
 
-                        if ($#r >= 0){
-                        $dbh->do("  UPDATE resources
-                                    SET suspended_jobs = \'NO\'
-                                    WHERE
-                                        resource_id NOT IN (".join(",",@r).")
-                                 ");
-                        }else{
-                            $dbh->do("  UPDATE resources
-                                        SET suspended_jobs = \'NO\'
-                                     ");
-                        }
+                        if r != ():
+                            db.query(Resource).update({Resource.suspended_jobs: 'NO'})\
+                                              .filter(~Resource.id.in_(r))
+                        else:
+                              db.query(Resource).update({Resource.suspended_jobs: 'NO'})
+                        db.commit()
                     
                     notify_user(job, "ERROR", "Job stopped abnormally or an OAR error occured.")
                 
                 update_current_scheduler_priority(job, "-2", "STOP")
                 
                 # Here we must not be asynchronously with the scheduler
-                log_job(job_id});
+                log_job(job);
                 # $dbh is valid so these 2 variables must be defined
-                notify_tcp_socket($Remote_host,$Remote_port,"ChState")
+                socket_notification.send("ChState")
 
     else:
         log.warning("Job is already termindated or in error or wanted state, job_id: " + str(jid) + ", wanted state: " + state ) 
 
 def add_resource_jobs( tuple_mld_ids ):
-
     resources_mld_ids = GanttJobsResource.query\
                                          .filter(GanttJobsResourcejob_id.in_( tuple_mld_ids ))\
                                          .al()
@@ -529,3 +507,48 @@ def add_resource_jobs( tuple_mld_ids ):
 
     db.engine.execute(AssignedResource.__table__.insert(), assigned_resources )
     db.flush()
+
+# Return the list of resources where there are Suspended jobs
+# args: base
+def get_current_resources_with_suspended_job():    
+    res = db.query(AssignedResource.resource_id).filter(AssignedResource.index == 'CURRENT')\
+                                                .filter(Job.state == 'Suspended')\
+                                                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
+                                                .all()
+    
+    return tuple(r for r in res)
+    
+# log_job
+# sets the index fields to LOG on several tables
+# this will speed up future queries
+# parameters : base, jobid
+# return value : /
+def log_job(job):
+    db.query(MoldableJobDescription).update({MoldableJobDescription.index: 'LOG'})\
+                                    .filter(MoldableJobDescription.index == 'CURRENT')\
+                                    .filter(MoldableJobDescription.job_id == job.id)
+    
+    db.query(JobResourceDescription).update({JobResourceDescription.index: 'LOG'})\
+                                    .filter(MoldableJobDescription.job_id == job.id)\
+                                    .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
+                                    .filter(JobResourceDescription.group_id == JobResourceGroup.id) 
+
+    db.query(JobResourceGroup).update({JobResourceGroup.index: 'LOG'})\
+                              .filter(JobResourceGroup.index == 'CURRENT')\
+                              .filter(MoldableJobDescription.index == 'LOG')\
+                              .filter(MoldableJobDescription.job_id == job.id)\
+                              .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)
+        
+    db.query(JobType).update({JobType.index: 'LOG'})\
+                      .filter(JobType.index == 'CURRENT')\
+                      .filter(JobType.job_id == job.id)
+
+    db.query(JobDependencie).update({JobDependencie.index: 'LOG'})\
+                      .filter(JobDependencie.index == 'CURRENT')\
+                      .filter(JobDependencie.job_id == job.id)
+ 
+    if job.assigned_moldable_job != "0":
+        db.query(AssignedResource).update({AssignedResource.index: 'LOG'})\
+                                  .filter(AssignedResource.index == 'CURRENT')\
+                                  .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))
+    db.commit()

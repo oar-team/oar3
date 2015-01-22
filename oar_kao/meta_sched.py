@@ -47,16 +47,7 @@ exit_code = 0
 
 ###########
 
-def create_tcp_notification_socket():
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server = config["SERVER_HOSTNAME"]
-    port =  config["SERVER_PORT"]
-    try:
-        socket.connect( (server, port) )
-    except socket.error, exc:
-        log.error("Connection to " + server + ":" + port + " raised exception socket.error: " + exc)
-        sys.exit(1)
-    return socket
+
 
 # Prepare a job to be run by bipbip
 def prepare_jobs_to_be_launched():
@@ -164,7 +155,7 @@ def meta_schedule():
 
     exit_code = 0
 
-    tcp_notify = create_tcp_notification_socket()
+    create_tcp_notification_socket()
 
     # reservation ??.
     
@@ -230,7 +221,7 @@ def meta_schedule():
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
-        tcp_notify.send("ChState")
+        socket_notification.send("ChState")
         exit_code = 2
     elif check_jobs_to_launch() == 1:
         exit_code = 0
