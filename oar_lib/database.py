@@ -208,6 +208,7 @@ class Database(object):
 
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
+        from oar.lib.models import *
         # a list of all tables marked for autoreflect
         self.DeferredReflection.prepare(self.engine)
         self._reflected = True
