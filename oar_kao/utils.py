@@ -82,6 +82,6 @@ def update_current_scheduler_priority(job, value, state):
 
 def update_scheduler_last_job_date(date, moldable_id):
     req = db.query(Resource).update({Resource.last_job_date: date}).filter(AssignedResourcesMoldable_job_id == moldable_id)\
-                                                                   .filter(AssignedResources.Resource_id = Resources.resource_id)
+                                                                   .filter(AssignedResources.Resource_id == Resources.resource_id)
     db.engine.execute(req)
     db.commit()

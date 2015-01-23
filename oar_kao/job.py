@@ -415,13 +415,13 @@ def get_gantt_jobs_to_launch(current_time_sec):
     return req
 
 def set_jobs_start_time(tuple_jids, start_time):
-    db.query(Job).update({Job.start_time: start_time}).filter(Job.job_id.in_( tuple_jids )):
+    db.query(Job).update({Job.start_time: start_time}).filter(Job.job_id.in_( tuple_jids ))
     db.commit()
 
 
 def set_jobs_state(tuple_jids, state): #NOT USED
     #TODO complete to enhance performance by vectorizing operations
-    db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids )):
+    db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids ))
     db.commit()
 
 def set_job_state(jid, state):
