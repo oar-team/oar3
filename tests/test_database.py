@@ -5,10 +5,10 @@ from sqlalchemy.orm.util import object_state
 
 from tempfile import mkstemp
 from . import DEFAULT_CONFIG
-from .helpers import generate_fake_data
+# from .helpers import generate_fake_data
 
-from oar import Resource
-from oar import config, db as initial_db
+from oar.lib import Resource
+from oar.lib import config, db as initial_db
 
 
 @pytest.fixture(scope="session")
@@ -22,7 +22,7 @@ def db(request):
 
     initial_db.create_all()
     initial_db.reflect()
-    generate_fake_data(initial_db)
+    # generate_fake_data(initial_db)
     return initial_db
 
 
