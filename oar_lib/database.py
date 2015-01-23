@@ -13,7 +13,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
-from .compat import string_types
+from .compat import string_types, iteritems
 
 __all__ = ['Database']
 
@@ -92,6 +92,7 @@ class BaseModel(object):
             data[k] = v
         return json.dumps(data, sort_keys=True, indent=4, encoding="utf-8",
                           separators=(',', ': '))
+
 
 class QueryProperty(object):
 
@@ -186,6 +187,22 @@ class Database(object):
         return self.Model.metadata
 
     @property
+    def models(self):
+        """ Return a dict with all mapping classes"""
+        if not hasattr(self, '_models'):
+            from oar.lib import models as models_module
+            self._models = {}
+            for (name, klass) in iteritems(models_module.__dict__):
+                if isinstance(klass, type):
+                    try:
+                        mapper = class_mapper(klass)
+                        if mapper:
+                            self._models[name] = klass
+                    except UnmappedClassError:
+                        pass
+        return self._models
+
+    @property
     def query(self):
         """Proxy for session.query"""
         return self.session.query
@@ -208,10 +225,12 @@ class Database(object):
 
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
-        from oar.lib.models import *
-        # a list of all tables marked for autoreflect
-        self.DeferredReflection.prepare(self.engine)
-        self._reflected = True
+        models = self.models
+        if not self._reflected:
+            # autoload all tables marked for autoreflect
+            self.DeferredReflection.prepare(self.engine)
+            self._reflected = True
+        return models
 
     def create_all(self, bind=None):
         """Creates all tables. """
