@@ -13,9 +13,14 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
-from .compat import string_types, iteritems
+from .compat import string_types
 
 __all__ = ['Database']
+
+
+def load_all_models():
+    from oar.lib.models import all_models  ## avoid a circular import
+    return dict(all_models())
 
 
 class BaseQuery(Query):
@@ -190,16 +195,7 @@ class Database(object):
     def models(self):
         """ Return a dict with all mapping classes"""
         if not hasattr(self, '_models'):
-            from oar.lib import models as models_module
-            self._models = {}
-            for (name, klass) in iteritems(models_module.__dict__):
-                if isinstance(klass, type):
-                    try:
-                        mapper = class_mapper(klass)
-                        if mapper:
-                            self._models[name] = klass
-                    except UnmappedClassError:
-                        pass
+            self._models = load_all_models()
         return self._models
 
     @property
@@ -225,12 +221,12 @@ class Database(object):
 
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
-        models = self.models
         if not self._reflected:
+            self._models = load_all_models()
+            self.create_all()
             # autoload all tables marked for autoreflect
             self.DeferredReflection.prepare(self.engine)
             self._reflected = True
-        return models
 
     def create_all(self, bind=None):
         """Creates all tables. """

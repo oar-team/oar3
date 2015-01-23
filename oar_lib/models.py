@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import db
 
+
 schema = db.Table('schema',
     db.Column('version', db.String(255)),
     db.Column('name', db.String(255))
@@ -209,13 +210,13 @@ class Job(db.Model):
     id = db.Column('job_id', db.Integer, primary_key=True)
     array_id = db.Column(db.Integer, index=True, default=0)
     array_index = db.Column(db.Integer, default=1)
-    initial_request = db.Column(db.Text)
-    name = db.Column('job_name', db.String(100))
-    env = db.Column('job_env', db.Text)
+    initial_request = db.Column(db.Text, nullable=True)
+    name = db.Column('job_name', db.String(100), nullable=True)
+    env = db.Column('job_env', db.Text, nullable=True)
     type = db.Column('job_type',
                      db.String(11),
                      default="PASSIVE")
-    info_type = db.Column(db.String(255), default="")
+    info_type = db.Column(db.String(255), default="", nullable=True)
     state = db.Column(db.String(16),
                       index=True,
                       default="Waiting")
@@ -237,8 +238,8 @@ class Job(db.Model):
     stop_time = db.Column(db.Integer, default=0)
     file_id = db.Column(db.Integer, nullable=True)
     accounted = db.Column(db.String(3), index=True, default="NO")
-    notify = db.Column(db.String(255), default="NULL")
-    assigned_moldable_job = db.Column(db.Integer, default=0)
+    notify = db.Column(db.String(255), default="NULL", nullable=True)
+    assigned_moldable_job = db.Column(db.Integer, default=0, nullable=True)
     checkpoint = db.Column(db.Integer, default=0)
     checkpoint_signal = db.Column(db.Integer)
     stdout_file = db.Column(db.Text, nullable=True)
@@ -318,7 +319,11 @@ class Scheduler(db.Model):
     description = db.Column(db.String(255))
 
 
+def all_models():
+    import sys
+    import inspect
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
-def get_all_sorted_tables():
-    db.reflect()
-    return db.metadata.sorted_tables
+    for name, obj in inspect.getmembers(sys.modules[__name__]):
+        if inspect.isclass(obj) and isinstance(obj, DeclarativeMeta):
+            yield name, obj
