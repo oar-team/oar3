@@ -20,7 +20,6 @@ blue = lambda x: click.style("%s" % x, fg="blue")
 red = lambda x: click.style("%s" % x, fg="red")
 
 
-
 def log(msg, *args, **kwargs):
     """Logs a message to stderr."""
     if args:
@@ -115,22 +114,20 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar',
 DATABASE_PROMPT = """Please enter the url for your database.
 
 For example:
-PostgreSQL: postgresql://scott:tiger@localhost/mydatabase
-MySQL: mysql://scott:tiger@localhost/foo
+PostgreSQL: postgresql://scott:tiger@localhost/foo
+MySQL: mysql://scott:tiger@localhost/bar
 
 OAR database URL"""
 
-
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=VERSION)
-@click.option('--sql', default=1, help='Dump the SQL (offline mode)')
+@click.option('--sql', is_flag=True, default=False,
+              help='Only dump SQL statements to STDOUT (offline mode)')
 @click.option('--db-url', prompt=DATABASE_PROMPT,
               default=get_default_database_url(),
               help='the url for your OAR database.')
 @click.option('--db-archive-url', prompt="OAR archive database URL",
-              help='the url for your archive database.',
-              default="postgresql://oar:oar@server:5432/oar_archive")
-def cli(db_url, db_archive_url, sql):
+              help='the url for your archive database.')
 @click.option('--debug', is_flag=True, default=False,
               help="Enable Debug.")
 def cli(debug, db_archive_url, db_url, sql):
