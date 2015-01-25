@@ -29,9 +29,13 @@ def sync(db_url, db_archive_url, chunk_size=1000):
 
 
 def create_all_tables(db_archive):
+    db.reflect()
+    inspector = Inspector.from_engine(db_archive.engine)
+    existing_tables = inspector.get_table_names()
     for table in db.metadata.sorted_tables:
-        log(' %s | Creating %s', green('schema'), table.name)
-        table.create(bind=db_archive.engine, checkfirst=True)
+        if table.name not in existing_tables:
+            log(' %s ~> table %s', green('create'), table.name)
+            table.create(bind=db_archive.engine, checkfirst=True)
 
 
 def sync_data(db_archive, chunk_size):
