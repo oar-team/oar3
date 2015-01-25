@@ -9,7 +9,7 @@ from sqlalchemy.engine.reflection import Inspector
 from oar.lib import config, db, Database
 from oar.utils import VERSION
 
-from oar.lib.compat import iteritems
+from oar.lib.compat import iteritems, reraise
 from oar.lib.exceptions import DatabaseError
 
 
@@ -131,13 +131,22 @@ OAR database URL"""
               help='the url for your archive database.',
               default="postgresql://oar:oar@server:5432/oar_archive")
 def cli(db_url, db_archive_url, sql):
+@click.option('--debug', is_flag=True, default=False,
+              help="Enable Debug.")
+def cli(debug, db_archive_url, db_url, sql):
     """Archive OAR database."""
     config._sqlalchemy_uri = db_url
-    sync(db_url, db_archive_url, chunk_size=1000)
+    try:
+        sync(db_url, db_archive_url, chunk_size=10000)
+        log("up-to-date.")
+    except Exception as e:
+        if not debug:
+            sys.stderr.write(u"\nError: %s\n" % e)
+            sys.exit(1)
+        else:
+            exc_type, exc_value, tb = sys.exc_info()
+            reraise(exc_type, exc_value, tb.tb_next)
+
 
 def main(args=sys.argv[1:]):
-    try:
-        cli(args)
-    except Exception as e:
-        sys.stderr.write(u"\nError: %s\n" % e)
-        sys.exit(1)
+    cli(args)
