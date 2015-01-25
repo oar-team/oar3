@@ -1,31 +1,38 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 import sys
 import click
 
-from sqlalchemy.sql.expression import select
 from sqlalchemy import func
+from sqlalchemy.sql.expression import select
+from sqlalchemy.engine.reflection import Inspector
 from oar.lib import config, db, Database
 from oar.utils import VERSION
-from oar.lib.models import *
+
+from oar.lib.compat import iteritems
+from oar.lib.exceptions import DatabaseError
 
 
-
-blue = lambda x: click.style("%s" % x, fg="blue")
+magenta = lambda x: click.style("%s" % x, fg="magenta")
+yellow = lambda x: click.style("%s" % x, fg="yellow")
 green = lambda x: click.style("%s" % x, fg="green")
+blue = lambda x: click.style("%s" % x, fg="blue")
 red = lambda x: click.style("%s" % x, fg="red")
 
 
-def log(msg, *args):
+
+def log(msg, *args, **kwargs):
     """Logs a message to stderr."""
     if args:
         msg %= args
-    click.echo(msg, file=sys.stderr)
+    kwargs.setdefault("file", sys.stderr)
+    click.echo(msg, **kwargs)
 
 
 def sync(db_url, db_archive_url, chunk_size=1000):
     db_archive = Database(uri=db_archive_url)
     create_all_tables(db_archive)
-    sync_data(db_archive, chunk_size)
+    copy_tables(db_archive, chunk_size)
 
 
 def create_all_tables(db_archive):
@@ -38,26 +45,61 @@ def create_all_tables(db_archive):
             table.create(bind=db_archive.engine, checkfirst=True)
 
 
-def sync_data(db_archive, chunk_size):
+def copy_tables(db_archive, chunk_size):
+    for name, Model in iteritems(db.models):
+        pks = Model.__mapper__.primary_key
+        if len(pks) > 1:
+            log(' %s ~> table %s', magenta('ignore'), Model.__table__.name)
+        elif len(pks) == 1:
+            if isinstance(pks[0].type, db.Integer):
+                copy_table(Model, db_archive, chunk_size)
+            else:
+                merge_table(Model, db_archive)
+        elif len(pks) == 0:
+            raise DatabaseError("Cannot copy tables whithout primary key")
 
-    def logging(lenght, table_name):
-        message = '   %s | Copying %s record(s) from %s'
-        log(message, green('data'), blue(lenght), table_name)
 
-    for table in db.metadata.sorted_tables:
-        lenght = db.session.execute(select([func.count()])\
-                           .select_from(table))\
-                           .scalar()
-        insert_query = table.insert()
-        select_query = select([table])
-        result = db.session.execute(select_query)
-        logging(lenght, table.name)
+def merge_table(Model, db_archive):
+    log(' %s ~> table %s', magenta(' merge'), Model.__table__.name)
+    query_result = db.query(Model)
+    for r in query_result:
+         db_archive.session.merge(r)
+    db_archive.session.commit()
+
+
+def copy_table(Model, db_archive, chunk_size):
+    # prepare the connection
+    to_connection = db_archive.engine.connect()
+    from_connection = db.engine.connect()
+    # Get the max pk
+    pk = Model.__mapper__.primary_key[0]
+    max_pk_query = select([func.max(pk)])
+    max_pk = to_connection.execute(max_pk_query).scalar() or 0
+    # Prepare pull query
+    table = Model.__table__
+    insert_query = table.insert()
+    select_missing_rows_query = select([table]).where(pk > max_pk)
+    count_query = select([func.count()]).where(pk > max_pk)\
+                                        .select_from(table)
+
+    total_lenght = from_connection.execute(count_query).scalar()
+    result = from_connection.execute(select_missing_rows_query)
+    if total_lenght > 0:
+        progress = 0
+        message = yellow('\r   copy') + ' ~> table %s (%s)'
+        transaction = to_connection.begin()
         while True:
             rows = result.fetchmany(chunk_size)
-            if len(rows) == 0:
+            lenght = len(rows)
+            if lenght == 0:
+                log("")
                 break
-            db_archive.session.execute(insert_query, rows)
-        db_archive.commit()
+            progress = lenght + progress
+            percentage = blue("%s/%s" % (progress, total_lenght))
+            log(message % (table.name, percentage), nl=False)
+            to_connection.execute(insert_query, rows)
+            del rows
+        transaction.commit()
 
 
 def get_default_database_url():
