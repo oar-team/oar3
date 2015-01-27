@@ -5,7 +5,8 @@ import pprint
 
 from io import open
 
-from .compat import iteritems, integer_types
+from .compat import iteritems
+from .utils import try_convert_decimal
 from .exceptions import InvalidConfiguration
 
 
@@ -43,7 +44,6 @@ class Configuration(dict):
         :param comment_char: The string character used to comment
         :param strip_quotes: Strip the quotes
         """
-        decimal_types = integer_types + (float, )
         try:
             equal_char = "="
             with open(filename, encoding="utf-8") as config_file:
@@ -55,7 +55,7 @@ class Configuration(dict):
                         key = key.strip()
                         value = value.strip()
                         value = value.strip('"\'')
-                        value = self._try_convert_value(value, decimal_types)
+                        value = try_convert_decimal(value)
                         self[key] = value
         except IOError as e:
             if silent:
@@ -94,15 +94,6 @@ class Configuration(dict):
         if not hasattr(self, '_sqlalchemy_uri'):
             self._sqlalchemy_uri = self.get_sqlalchemy_uri()
         return self._sqlalchemy_uri
-
-    def _try_convert_value(self, value, decimal_types):
-        if value.isdecimal():
-            for _type in decimal_types:
-                try:
-                    return _type(value)
-                except:
-                    pass
-        return value
 
     def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
         """Returns a dictionary containing a subset of configuration options

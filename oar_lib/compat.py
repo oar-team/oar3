@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import sys
 
 
@@ -7,63 +6,86 @@ PY3 = sys.version_info[0] == 3
 
 
 if PY3:
-    text_type = str
+    builtin_str = str
+    str = str
+    bytes = bytes
+    basestring = (str, bytes)
     string_types = (str,)
-    integer_types = (int,)
-    basestring = str
-    from collections import Callable
-    callable = lambda c: isinstance(c, Callable)
+    numeric_types = (int, float)
+
+    from io import StringIO
+    from queue import Empty
 
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
     iteritems = lambda d: iter(d.items())
-
-    from io import StringIO
 
     def reraise(tp, value, tb=None):
         if value.__traceback__ is not tb:
             raise value.with_traceback(tb)
         raise value
 
+    def is_bytes(x):
+        return isinstance(x, (bytes, memoryview, bytearray))
+
+    from collections import Callable
+    callable = lambda obj: isinstance(obj, Callable)
+
+    # Simple container
+    from types import SimpleNamespace
+
 else:
-    text_type = unicode
-    string_types = (str, unicode)
-    integer_types = (int, long)
+    builtin_str = str
+    bytes = str
+    str = unicode
     basestring = basestring
-    callable = callable
-    
+    string_types = (unicode, bytes)
+    numeric_types = (int, long, float)
+
+    from cStringIO import StringIO
+    from Queue import Empty
+
     iterkeys = lambda d: d.iterkeys()
     itervalues = lambda d: d.itervalues()
     iteritems = lambda d: d.iteritems()
 
-    from cStringIO import StringIO
-
     exec('def reraise(tp, value, tb=None):\n raise tp, value, tb')
+
+    def is_bytes(x):
+        return isinstance(x, (buffer, bytearray))
+
+    callable = callable
+
+    class SimpleNamespace(object):
+        """
+        A generic container for when multiple values need to be returned
+        """
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
 
 
 def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
 
 
-# Certain versions of pypy have a bug where clearing the exception stack
-# breaks the __exit__ function in a very peculiar way.  This is currently
-# true for pypy 2.2.1 for instance.  The second level of exception blocks
-# is necessary because pypy seems to forget to check if an exception
-# happened until the next bytecode instruction?
-BROKEN_PYPY_CTXMGR_EXIT = False
-if hasattr(sys, 'pypy_version_info'):
-    class _Mgr(object):
-        def __enter__(self):
-            return self
-        def __exit__(self, *args):
-            sys.exc_clear()
-    try:
-        try:
-            with _Mgr():
-                raise AssertionError()
-        except:
-            raise
-    except TypeError:
-        BROKEN_PYPY_CTXMGR_EXIT = True
-    except AssertionError:
-        pass
+def to_unicode(obj, encoding='utf-8'):
+    """
+    Convert ``obj`` to unicode"""
+    # unicode support
+    if isinstance(obj, str):
+        return obj
+
+    # bytes support
+    if is_bytes(obj):
+        if hasattr(obj, 'tobytes'):
+            return str(obj.tobytes(), encoding)
+        return str(obj, encoding)
+
+    # string support
+    if isinstance(obj, basestring):
+        if hasattr(obj, 'decode'):
+            return obj.decode(encoding)
+        else:
+            return str(obj, encoding)
+
+    return str(obj)
