@@ -14,6 +14,8 @@ from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
 from .compat import string_types
+from .utils import SimpleNamespace
+
 
 __all__ = ['Database']
 
@@ -195,7 +197,7 @@ class Database(object):
     def models(self):
         """ Return a dict with all mapping classes"""
         if not hasattr(self, '_models'):
-            self._models = load_all_models()
+            self._models = SimpleNamespace(load_all_models())
         return self._models
 
     @property
@@ -222,7 +224,7 @@ class Database(object):
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         if not self._reflected:
-            self._models = load_all_models()
+            self._models = SimpleNamespace(**load_all_models())
             self.create_all()
             # autoload all tables marked for autoreflect
             self.DeferredReflection.prepare(self.engine)

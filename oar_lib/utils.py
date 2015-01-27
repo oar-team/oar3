@@ -15,3 +15,7 @@ def try_convert_decimal(value):
     return value
 
 
+class SimpleNamespace(dict):
+    def __init__(self, *args, **kwargs):
+        super(SimpleNamespace, self).__init__(*args, **kwargs)
+        self.__dict__ = self
