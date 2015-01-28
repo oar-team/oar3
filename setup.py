@@ -5,13 +5,8 @@ from setuptools import setup
 here = op.abspath(op.dirname(__file__))
 
 requirements = [
-    'oar-lib',
+    'oar-lib>=0.1-dev',
 ]
-
-dependency_links = [
-    'git+https://github.com/oar-team/python-oar-lib.git#egg=oar-lib',
-]
-
 
 def read(fname):
     ''' Return the file content. '''
@@ -32,7 +27,6 @@ setup(
     url='https://github.com/oar-team/python-oar-utils',
     packages=['oar_utils'],
     install_requires=requirements,
-    dependency_links=dependency_links,
     include_package_data=True,
     zip_safe=False,
     description='Custom scripts and various utility functions for OAR.',
