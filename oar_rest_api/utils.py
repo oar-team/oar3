@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+import time
 import json
 import decimal
 import datetime
@@ -33,3 +34,6 @@ class JSONEncoder(json.JSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
+
+def get_utc_timestamp():
+    return time.time()
