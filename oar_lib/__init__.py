@@ -11,26 +11,28 @@ import sys
 
 from .compat import iteritems
 
-__version__ = '0.1-dev'
+__version__ = '2.6.0-dev'
 
 # The implementation of a lazy-loading module in this file replaces the
 # oar package when imported from within.  Attribute access to the oar
 # module will then lazily import from the modules that implement the objects.
 
-
 # import mapping to objects in other modules
 all_by_module = {
-    'oar_lib.models': ['Accounting', 'AdmissionRule', 'AssignedResource',
-                   'Challenge', 'EventLog', 'EventLogHostname', 'File',
-                   'FragJob', 'GanttJobsPrediction', 'GanttJobsPredictionsLog',
-                   'GanttJobsPredictionsVisu', 'GanttJobsResource',
-                   'GanttJobsResourcesLog', 'GanttJobsResourcesVisu', 'Job',
-                   'JobDependencie', 'JobResourceDescription',
-                   'JobResourceGroup', 'JobStateLog', 'JobType',
-                   'MoldableJobDescription', 'Queue', 'Resource',
-                   'ResourceLog', 'Scheduler'],
-    'oar_lib.exceptions': ['OARException', 'InvalidConfiguration',
-                       'DatabaseError', 'DoesNotExist'],
+    'oar_lib.models': [
+        'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
+        'EventLog', 'EventLogHostname', 'File', 'FragJob',
+        'GanttJobsPrediction', 'GanttJobsPredictionsLog',
+        'GanttJobsPredictionsVisu', 'GanttJobsResource',
+        'GanttJobsResourcesLog', 'GanttJobsResourcesVisu', 'Job',
+        'JobDependencie', 'JobResourceDescription', 'JobResourceGroup',
+        'JobStateLog', 'JobType', 'MoldableJobDescription', 'Queue',
+        'Resource', 'ResourceLog', 'Scheduler',
+    ],
+    'oar_lib.exceptions': [
+        'OARException', 'InvalidConfiguration', 'DatabaseError',
+        'DoesNotExist',
+    ],
     'oar_lib.database': ['Database'],
     'oar_lib.logging': ['create_logger', 'get_logger'],
     'oar_lib.configuration': ['Configuration'],
@@ -77,11 +79,12 @@ old_module = sys.modules['oar_lib']
 # setup the new module and patch it into the dict of loaded modules
 new_module = sys.modules['oar_lib'] = module('oar_lib')
 new_module.__dict__.update({
-    '__file__':         __file__,
-    '__package__':      'oar_lib',
-    '__path__':         __path__,
-    '__doc__':          __doc__,
-    '__version__':      __version__,
-    '__all__':          tuple(object_origins) + tuple(attribute_modules),
-    '__docformat__':    'restructuredtext en'
+    '__file__': __file__,
+    '__package__': 'oar_lib',
+    '__path__': __path__,
+    '__doc__': __doc__,
+    '__version__': __version__,
+    '__all__': tuple(object_origins) + tuple(attribute_modules),
+    '__docformat__': 'restructuredtext en',
+    'VERSION': __version__,
 })
