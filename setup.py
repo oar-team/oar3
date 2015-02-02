@@ -6,7 +6,7 @@ here = op.abspath(op.dirname(__file__))
 
 requirements = [
     'oar-lib>=0.1-dev',
-    'flask>=0.8',
+    'flask>=0.10',
 ]
 
 
