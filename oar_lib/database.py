@@ -3,10 +3,10 @@ from __future__ import with_statement, absolute_import
 
 import functools
 import threading
-import datetime
-import json
 
-from sqlalchemy import create_engine, inspect
+from collections import OrderedDict
+
+from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
@@ -46,25 +46,6 @@ class BaseQuery(Query):
         return rv
 
 
-def get_entity_loaded_propnames(sa_instance):
-    ins = inspect(sa_instance)
-    keynames = set(
-        ins.mapper.column_attrs.keys() +  # Columns
-        ins.mapper.relationships.keys()  # Relationships
-    )
-    # If the sa_instance is not transient -- exclude unloaded keys
-    # Transient entities won't load these anyway, so it's safe to include
-    # all columns and get defaults
-    if not ins.transient:
-        keynames -= ins.unloaded
-
-    # If the sa_instance is expired -- reload expired attributes as well
-    # Expired attributes are usually unloaded as well!
-    if ins.expired:
-        keynames |= ins.expired_attributes
-    return keynames
-
-
 class BaseModel(object):
 
     query_class = BaseQuery
@@ -81,24 +62,11 @@ class BaseModel(object):
             cls.db.session.rollback()
             raise
 
-    def to_dict(self, exluded_keys=set()):
-        keys = get_entity_loaded_propnames(self) - exluded_keys
-        data = {}
-        for k in keys:
-            v = getattr(self, k)
-            if isinstance(v, BaseModel) and v != self:
-                v = v.to_dict()
-            data[k] = v
-        return data
-
-    def to_json(self, exluded_keys=set()):
-        data = {}
-        for k, v in self.to_dict(exluded_keys).items():
-            if isinstance(v, datetime.datetime):
-                v = v.isoformat()
-            data[k] = v
-        return json.dumps(data, sort_keys=True, indent=4, encoding="utf-8",
-                          separators=(',', ': '))
+    def _asdict(self):
+        result = OrderedDict()
+        for key in self.__mapper__.c.keys():
+            result[key] = getattr(self, key)
+        return result
 
 
 class QueryProperty(object):
