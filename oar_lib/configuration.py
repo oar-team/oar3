@@ -95,6 +95,10 @@ class Configuration(dict):
             self._sqlalchemy_uri = self.get_sqlalchemy_uri()
         return self._sqlalchemy_uri
 
+    def setdefault_config(self, default_config):
+        for k, v in iteritems(default_config):
+            self.setdefault(k, v)
+
     def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
         """Returns a dictionary containing a subset of configuration options
         that match the specified namespace/prefix. Example usage::
