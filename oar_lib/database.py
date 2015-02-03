@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-import functools
 import threading
 
 from collections import OrderedDict
@@ -13,7 +12,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
-from .compat import string_types
 from .utils import SimpleNamespace
 
 
@@ -137,8 +135,7 @@ class Database(object):
         self._uri = uri
         self._session_options = dict(session_options or {})
         self._engine_lock = threading.Lock()
-
-        # include sqlalchemy orm
+        # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
 
     @property
@@ -183,7 +180,6 @@ class Database(object):
         def shutdown_session(response_or_exc):
             self.session.remove()
             return response_or_exc
-
 
     @property
     def query(self):
@@ -290,59 +286,30 @@ class EngineConnector(object):
             return engine
 
 
-def _include_sqlalchemy(db):
+def _include_sqlalchemy(obj):
     import sqlalchemy
-    from sqlalchemy import BigInteger
-    from sqlalchemy.dialects import postgresql as pgsql, mysql, sqlite
-
-    BigIntegerType = BigInteger()
-    BigIntegerType = BigIntegerType.with_variant(pgsql.BIGINT(), 'postgresql')
-    BigIntegerType = BigIntegerType.with_variant(mysql.BIGINT(), 'mysql')
-    BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), 'sqlite')
-
-    setattr(db, "BigInteger", BigIntegerType)
 
     for module in sqlalchemy, sqlalchemy.orm:
         for key in module.__all__:
-            if not hasattr(db, key):
-                setattr(db, key, getattr(module, key))
-    db.event = sqlalchemy.event
+            if not hasattr(obj, key):
+                setattr(obj, key, getattr(module, key))
+    obj.event = sqlalchemy.event
     # Note: obj.Table does not attempt to be a SQLAlchemy Table class.
-    def _make_table(db):
+    def _make_table(obj):
         def _make_table(*args, **kwargs):
-            if len(args) > 1 and isinstance(args[1], db.Column):
-                args = (args[0], db.metadata) + args[1:]
+            if len(args) > 1 and isinstance(args[1], obj.Column):
+                args = (args[0], obj.metadata) + args[1:]
             info = kwargs.pop('info', None) or {}
             info.setdefault('autoreflect', False)
             kwargs['info'] = info
             return sqlalchemy.Table(*args, **kwargs)
         return _make_table
 
-    db.Table = _make_table(db)
-
-    def _set_default_query_class(d):
-        if 'query_class' not in d:
-            d['query_class'] = BaseQuery
-
-    def _add_default_query_class(fn):
-        @functools.wraps(fn)
-        def newfn(*args, **kwargs):
-            _set_default_query_class(kwargs)
-            if "backref" in kwargs:
-                backref = kwargs['backref']
-                if isinstance(backref, string_types):
-                    backref = (backref, {})
-                _set_default_query_class(backref[1])
-            return fn(*args, **kwargs)
-        return newfn
+    obj.Table = _make_table(obj)
 
     class Column(sqlalchemy.Column):
         def __init__(self, *args, **kwargs):
             kwargs.setdefault("nullable", False)
             super(Column, self).__init__(*args, **kwargs)
 
-    db.Column = Column
-
-    db.relationship = _add_default_query_class(db.relationship)
-    db.relation = _add_default_query_class(db.relation)
-    db.dynamic_loader = _add_default_query_class(db.dynamic_loader)
+    obj.Column = Column
