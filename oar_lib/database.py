@@ -46,9 +46,6 @@ class BaseQuery(Query):
 
 class BaseModel(object):
 
-    query_class = BaseQuery
-    query = None
-
     @classmethod
     def create(cls, **kwargs):
         record = cls(**kwargs)
@@ -92,14 +89,14 @@ class SessionProperty(object):
         options.setdefault('autoflush', True)
         options.setdefault('autocommit', False)
         options.setdefault('bind', db.engine)
+        options.setdefault('query_cls', db.query_class)
         return scoped_session(sessionmaker(**options))
 
     def __get__(self, obj, type):
         if obj is not None:
             if obj not in self._sessions:
                 self._sessions[obj] = self._create_scoped_session(obj)
-                if not obj._reflected:
-                    obj.reflect()
+                obj.reflect()
             return self._sessions[obj]
         return self
 
@@ -112,7 +109,10 @@ class ModelProperty(object):
     def __get__(self, obj, type):
         if obj is not None:
             if self._model is None:
-                self._model = declarative_base(cls=BaseModel, name='Model')
+                class _BaseModel(obj.model_class):
+                    query_class = obj.query_class
+                    query = None
+                self._model = declarative_base(cls=_BaseModel, name='Model')
                 self._model.query = QueryProperty(obj)
                 self._model.db = obj
             return self._model
@@ -127,7 +127,8 @@ class Database(object):
     session = SessionProperty()
     Model = ModelProperty()
     DeferredReflection = DeferredReflection
-    BaseQuery = BaseQuery
+    query_class = BaseQuery
+    model_class = BaseModel
 
     def __init__(self, uri=None, session_options=None):
         self.connector = None
