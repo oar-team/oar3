@@ -160,6 +160,7 @@ class APIBaseQuery(BaseQuery):
         # items than we expected.
         if offset == 0 and len(items) < limit:
             total = len(items)
+            limit = total
         else:
             total = self.order_by(None).count()
         return Pagination(offset, limit, total, items)
@@ -181,14 +182,14 @@ class Pagination(object):
     @property
     def current_page(self):
         """The number of the current page (1 indexed)"""
-        if self.limit > 0:
-            return int(ceil(self.offset / float(self.limit)))
+        if self.limit > 0 and self.offset > 0:
+            return int(ceil(self.offset / float(self.limit))) + 1
         return 1
 
     @property
     def pages(self):
         """The total number of pages"""
-        if self.limit > 0:
+        if self.total > 0 and self.limit > 0:
             return int(ceil(self.total / float(self.limit)))
         return 1
 
