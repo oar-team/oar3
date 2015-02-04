@@ -176,21 +176,6 @@ class Database(object):
             self._models = SimpleNamespace(load_all_models())
         return self._models
 
-    def init_flask_app(self, app):
-         # 0.9 and later
-        if hasattr(app, 'teardown_appcontext'):
-            teardown = app.teardown_appcontext
-        # 0.7 to 0.8
-        elif hasattr(app, 'teardown_request'):
-            teardown = app.teardown_request
-        # Older Flask versions
-        else:
-            teardown = app.after_request
-
-        @teardown
-        def shutdown_session(response_or_exc):
-            self.session.remove()
-            return response_or_exc
     @property
     def tables(self):
         """ Return a namespace with all tables classes"""
