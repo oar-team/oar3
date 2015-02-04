@@ -5,6 +5,7 @@ VERSION = __version__
 from flask import Flask
 
 from oar.lib import db, config
+from .api import APIBaseModel, APIBaseQuery
 from .utils import WSGIProxyFix
 from .routes import api
 from .exceptions import configure_errorhandlers
@@ -25,5 +26,7 @@ def create_app():
     app.config.update(config)
     db.init_flask_app(app)
     configure_errorhandlers(app)
+    db.query_class = APIBaseQuery
+    db.model_class = APIBaseModel
     app.register_blueprint(api, url_prefix="")
     return app

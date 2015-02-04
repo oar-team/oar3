@@ -8,6 +8,8 @@ from flask import Blueprint, Response
 from oar.lib import db
 
 from .utils import JSONEncoder
+from oar.lib.compat import reraise, to_unicode, iteritems
+from oar.lib.database import BaseQuery, BaseModel
 
 
 class API(Blueprint):
@@ -30,7 +32,7 @@ class API(Blueprint):
                 result = f(*args, **kwargs)
                 if result is None:
                     result = {}
-                if isinstance(result, (dict, list, db.Model)):
+                if isinstance(result, (dict, list, BaseModel)):
                     return self._json_response(result)
                 return result
             parent_method(rule, **options)(decorated)
@@ -131,3 +133,21 @@ class ArgParser(object):
         return kwargs
 
 
+
+class APIBaseQuery(BaseQuery):
+
+    def get_or_404(self, ident):
+        try:
+            return self.get_or_error(ident)
+        except:
+            abort(404)
+
+    def first_or_404(self):
+        try:
+            return self.first_or_error()
+        except:
+            abort(404)
+
+
+class APIBaseModel(BaseModel):
+    pass
