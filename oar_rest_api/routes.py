@@ -67,31 +67,53 @@ def resources(offset=0, limit=None):
     return g.data
 
 
-@api.route("/resources/details")
+@api.route('/resources/<int:resource_id>', methods=['GET'])
+def resource_overview(resource_id):
+    g.data.update(db.m.Resource.query.get_or_404(resource_id).asdict())
+    g.data['links'] = []
+    g.data['links'].append({
+        'rel': 'self',
+        'href': url_for('.resource_overview', resource_id=g.data['id']),
+        'title': 'overview',
+    })
+    g.data['links'].append({
+        'rel': 'jobs',
+        'href': url_for('.resource_jobs', resource_id=g.data['id']),
+        'title': 'jobs',
+    })
+    return g.data
+
+
+@api.route('/resources/<int:resource_id>/jobs', methods=['GET'])
+def resource_jobs(resource_id):
+    g.data.update(db.m.Resource.query.get_or_404(resource_id).asdict())
+    return g.data
+
+@api.route('/resources/details')
 def full_resources():
     pass
 
 
-@api.route("/jobs")
+@api.route('/jobs')
 def jobs():
     pass
 
 
-@api.route("/jobs/details")
+@api.route('/jobs/details')
 def detailed_jobs():
     pass
 
 
-@api.route("/jobs/table")
+@api.route('/jobs/table')
 def jobs_table():
     pass
 
 
-@api.route("/config")
+@api.route('/config')
 def config():
     pass
 
 
-@api.route("/admission_rules")
+@api.route('/admission_rules')
 def admission_rules():
     pass
