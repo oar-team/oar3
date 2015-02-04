@@ -13,7 +13,9 @@ if __name__ == '__main__':
                         help='Set the listening port')
     parser.add_argument('-b', '--bind', action="store", default="0.0.0.0",
                         help='Set the binding address')
-
+    parser.add_argument('--no-debug', action="store_true", default=False,
+                        help='Disable debugger')
     args = parser.parse_args()
     app = create_app()
-    app.run(host=args.bind, port=args.port, threaded=True, debug=True)
+    debug = not args.no_debug
+    app.run(host=args.bind, port=args.port, threaded=True, debug=debug)
