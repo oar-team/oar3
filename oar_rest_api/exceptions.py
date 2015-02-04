@@ -5,7 +5,7 @@ from flask import jsonify
 from werkzeug.exceptions import default_exceptions
 from werkzeug.exceptions import HTTPException
 
-from oar.lib.compat import iterkeys
+from oar.lib.compat import iterkeys, to_unicode
 
 
 def configure_errorhandlers(app):
@@ -20,7 +20,11 @@ def configure_errorhandlers(app):
     """
     def make_json_error(ex):
         code = ex.code if isinstance(ex, HTTPException) else 500
-        response = jsonify(code=code, message=str(ex))
+        message = to_unicode(ex)
+        data = getattr(ex, 'data', None)
+        if data:
+            message = to_unicode(data)
+        response = jsonify(code=code, message=message)
         response.status_code = code
         return response
 
