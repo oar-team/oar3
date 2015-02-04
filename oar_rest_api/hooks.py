@@ -1,16 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
-
-from flask import g
 from oar.lib import db
-
-from .utils import get_utc_timestamp
-
-
-def init_global_data():
-    g.data = OrderedDict()
-    g.data['api_timezone'] ='UTC'
-    g.data['api_timestamp'] = get_utc_timestamp()
 
 
 def shutdown_db_session(response_or_exc):
@@ -30,4 +19,3 @@ def register_hooks(app):
         teardown = app.after_request
 
     teardown(shutdown_db_session)
-    app.before_request(init_global_data)

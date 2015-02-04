@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+from collections import OrderedDict
 from flask import url_for, g
 from oar.lib import db
 
 from .api import API
+from .utils import get_utc_timestamp
 
 
 api = API('v1', __name__, version='1.0.2')
+
+
+@api.before_request
+def init_global_data():
+    g.data = OrderedDict()
+    g.data['api_timezone'] ='UTC'
+    g.data['api_timestamp'] = get_utc_timestamp()
 
 
 @api.route('/')
