@@ -161,7 +161,7 @@ class Database(object):
 
     @property
     def models(self):
-        """ Return a dict with all mapping classes"""
+        """ Return a namespace with all mapping classes"""
         if not hasattr(self, '_models'):
             self._models = SimpleNamespace(load_all_models())
         return self._models
@@ -181,6 +181,14 @@ class Database(object):
         def shutdown_session(response_or_exc):
             self.session.remove()
             return response_or_exc
+    @property
+    def tables(self):
+        """ Return a namespace with all tables classes"""
+        if not hasattr(self, '_tables'):
+            self.reflect()
+            tables = dict((t.name, t) for t in self.metadata.sorted_tables)
+            self._tables = SimpleNamespace(tables)
+        return self._tables
 
     @property
     def query(self):
