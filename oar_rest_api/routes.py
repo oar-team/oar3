@@ -37,9 +37,34 @@ def index():
     return g.data
 
 
-@api.route("/resources")
-def resources():
-    pass
+@api.route('/resources', methods=['GET'])
+@api.args({'offset': int, 'limit': int})
+def resources(offset=0, limit=None):
+    page = db.query(db.m.Resource.id,
+                    db.m.Resource.state,
+                    db.m.Resource.available_upto,
+                    db.m.Resource.network_address)\
+             .paginate(offset, limit)
+    g.data['total'] = page.total
+    g.data['links'] = [{'rel': 'self', 'href': page.url}]
+    if page.has_next:
+        g.data['links'].append({'rel': 'next', 'href': page.next_url})
+    g.data['offset'] = offset
+    g.data['items'] = []
+    for item in page:
+        item['links'] = []
+        item['links'].append({
+            'rel': 'self',
+            'href': url_for('.resource_overview', resource_id=item['id']),
+            'title': 'overview',
+        })
+        item['links'].append({
+            'rel': 'jobs',
+            'href': url_for('.resource_jobs', resource_id=item['id']),
+            'title': 'jobs',
+        })
+        g.data['items'].append(item)
+    return g.data
 
 
 @api.route("/resources/details")
