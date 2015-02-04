@@ -160,6 +160,16 @@ class Database(object):
         return self.Model.metadata
 
     @property
+    def m(self):
+        return self.models
+
+
+    @property
+    def t(self):
+        return self.tables
+
+
+    @property
     def models(self):
         """ Return a namespace with all mapping classes"""
         if not hasattr(self, '_models'):
