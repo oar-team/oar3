@@ -9,6 +9,7 @@ from .api import APIBaseModel, APIBaseQuery
 from .utils import WSGIProxyFix
 from .routes import api
 from .exceptions import configure_errorhandlers
+from .hooks import register_hooks
 
 
 default_config = {
@@ -24,9 +25,9 @@ def create_app():
     app.wsgi_app = WSGIProxyFix(app.wsgi_app)
     config.setdefault_config(default_config)
     app.config.update(config)
-    db.init_flask_app(app)
     configure_errorhandlers(app)
     db.query_class = APIBaseQuery
     db.model_class = APIBaseModel
+    register_hooks(app)
     app.register_blueprint(api, url_prefix="")
     return app
