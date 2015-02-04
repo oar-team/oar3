@@ -1,42 +1,31 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-from flask import url_for
-
-# from oar.lib import db
+from flask import url_for, g
+from oar.lib import db
 
 from .api import API
-from collections import OrderedDict
-from .utils import get_utc_timestamp
 
 
-api = API('v1', __name__, version="1.0.2")
+api = API('v1', __name__, version='1.0.2')
 
 
-@api.route("/")
+@api.route('/')
 def index():
-    links = []
-    response = OrderedDict()
-    response["api_version"] = api.version
-    response["apilib_version"] = api.version
-    response["api_timezone"] ="UTC"
-    response["api_timestamp"] = int(get_utc_timestamp())
-    response["oar_version"] = "2.5.4 (Froggy Summer)"
-    response["links"] = links
-    api_resources = ("", "resources","full_resources","jobs","detailed_jobs",
-                     "jobs_table","config","admission_rules")
-    for api_resource in api_resources:
-        if api_resource:
-            links.append({
-                'rel': "collection",
-                'href': url_for(".%s" % api_resource),
-                'title': api_resource,
-            })
-        else:
-            links.append({ 'rel': "self", 'href': url_for(".index"), })
-    response["links"] = links
-    return response
-    # db.models.Job.query.first()
+    g.data['api_version'] = api.version
+    g.data['apilib_version'] = api.version
+    g.data['oar_version'] = '2.5.4 (Froggy Summer)'
+    g.data['links'] = []
+    endpoints = ('index', 'resources','full_resources','jobs','detailed_jobs',
+                 'jobs_table','config','admission_rules')
+    for endpoint in endpoints:
+        rel = 'self' if endpoint == 'index' else 'collection'
+        g.data['links'].append({
+            'rel': rel,
+            'href': url_for('.%s' % endpoint),
+            'title': endpoint,
+        })
+    return g.data
 
 
 @api.route("/resources")
