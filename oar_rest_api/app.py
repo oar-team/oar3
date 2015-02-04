@@ -8,7 +8,7 @@ from oar.lib import db, config
 from .api import APIBaseModel, APIBaseQuery
 from .utils import WSGIProxyFix
 from .routes import api
-from .exceptions import configure_errorhandlers
+from .errors import register_error_handlers
 from .hooks import register_hooks
 
 
@@ -25,9 +25,9 @@ def create_app():
     app.wsgi_app = WSGIProxyFix(app.wsgi_app)
     config.setdefault_config(default_config)
     app.config.update(config)
-    configure_errorhandlers(app)
     db.query_class = APIBaseQuery
     db.model_class = APIBaseModel
+    register_error_handlers(app)
     register_hooks(app)
     app.register_blueprint(api, url_prefix="")
     return app

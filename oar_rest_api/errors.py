@@ -8,7 +8,7 @@ from werkzeug.exceptions import HTTPException
 from oar.lib.compat import iterkeys, to_unicode
 
 
-def configure_errorhandlers(app):
+def register_error_handlers(app):
     """
     Creates a JSON-oriented Flask app.
 
