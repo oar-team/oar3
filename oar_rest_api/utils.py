@@ -31,6 +31,8 @@ class JSONEncoder(json.JSONEncoder):
             return unicode(obj)
         elif hasattr(obj, '_asdict') and callable(getattr(obj, '_asdict')):
             return obj._asdict()
+        elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
+            return obj.asdict()
         else:
             return json.JSONEncoder.default(self, obj)
 
