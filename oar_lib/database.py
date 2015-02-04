@@ -57,7 +57,7 @@ class BaseModel(object):
             cls.db.session.rollback()
             raise
 
-    def _asdict(self):
+    def asdict(self):
         result = OrderedDict()
         for key in self.__mapper__.c.keys():
             result[key] = getattr(self, key)
