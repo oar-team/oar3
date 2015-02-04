@@ -38,4 +38,4 @@ class JSONEncoder(json.JSONEncoder):
 
 
 def get_utc_timestamp():
-    return time.time()
+    return int(time.time())
