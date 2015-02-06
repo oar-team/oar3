@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-__version__ = '0.1-dev'
-VERSION = __version__
-
 from flask import Flask
 
 from oar.lib import db, config
 from .query import APIBaseQuery
 from .utils import WSGIProxyFix
-from .routes import api
+from .views import register_blueprints
 from .errors import register_error_handlers
 from .hooks import register_hooks
 
@@ -28,5 +25,5 @@ def create_app():
     db.query_class = APIBaseQuery
     register_error_handlers(app)
     register_hooks(app)
-    app.register_blueprint(api, url_prefix="")
+    register_blueprints(app)
     return app
