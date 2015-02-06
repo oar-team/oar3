@@ -77,17 +77,17 @@ class ArgParser(object):
 
     DEFAULT_TARGETS = ('querystring', 'json', 'form')
 
-    def __init__(self, argmap, targets):
+    MISSING = object()
+
+    def __init__(self, argmap):
         self.argmap = argmap
-        self.missing = object()
-        self.targets = targets or self.DEFAULT_TARGETS
 
     def get_value(self, data, name):
-        return data.get(name, self.missing)
+        return data.get(name, self.MISSING)
 
     def parse_value(self, name):
         """Pull a form value from the request."""
-        for target in self.targets:
+        for target in self.DEFAULT_TARGETS:
             if target == "querystring":
                 value = self.get_value(request.args, name)
             elif target == "json":
@@ -95,12 +95,12 @@ class ArgParser(object):
                 if json_data:
                     value = self.get_value(json_data, name)
                 else:
-                    value = self.missing
+                    value = self.MISSING
             elif target == "form":
                 value = self.get_value(request.form, name)
-            if value is not self.missing:
+            if value is not self.MISSING:
                 return value
-        return self.missing
+        return self.MISSING
 
     def convert(self, value, argtype):
         if argtype == str:
@@ -113,7 +113,7 @@ class ArgParser(object):
         kwargs = {}
         for argname, argtype in iteritems(self.argmap):
             value = self.parse_value(argname)
-            if value is not self.missing:
+            if value is not self.MISSING:
                 try:
                     kwargs[argname] = self.convert(value, argtype)
                 except:
