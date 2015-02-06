@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-from functools import wraps
+from __future__ import with_statement, absolute_import
 
-from collections import OrderedDict
+import sys
 import json
 from math import ceil
-import sys
+from collections import OrderedDict
+from functools import wraps
 
-from .utils import JSONEncoder
-from flask import Blueprint, Response, abort, current_app, request, url_for
+from flask import Blueprint, Response, abort, current_app, request, url_for, g
 from oar.lib.compat import reraise, to_unicode, iteritems
 from oar.lib.database import BaseQuery, BaseModel
+
+from .utils import JSONEncoder, get_utc_timestamp
 
 
 class API(Blueprint):
@@ -18,6 +20,8 @@ class API(Blueprint):
         version = kwargs.pop("version", None)
         super(API, self).__init__(*args, **kwargs)
         self.version = version if version is not None else self.name
+        self.before_request(self.prepare_response)
+
 
     def route(self, rule, args={}, **options):
         """A decorator that is used to define custom routes, injects parsed
@@ -48,6 +52,10 @@ class API(Blueprint):
             parent_method(rule + ".json", **options)(decorated)
         return decorator
 
+    def prepare_response(self):
+        g.data = OrderedDict()
+        g.data['api_timezone'] ='UTC'
+        g.data['api_timestamp'] = get_utc_timestamp()
 
     def _json_dumps(self, obj, **kwargs):
         """Dumps object to json string. """
