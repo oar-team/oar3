@@ -133,7 +133,6 @@ class ArgParser(object):
         return kwargs
 
 
-
 class APIBaseQuery(BaseQuery):
 
     def get_or_404(self, ident):
@@ -164,10 +163,6 @@ class APIBaseQuery(BaseQuery):
         else:
             total = self.order_by(None).count()
         return Pagination(offset, limit, total, items)
-
-
-class APIBaseModel(BaseModel):
-    pass
 
 
 class Pagination(object):
