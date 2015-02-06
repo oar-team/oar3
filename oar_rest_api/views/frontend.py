@@ -24,7 +24,6 @@ def index():
             'href': url_for('%s.index' % endpoint),
             'title': endpoint,
         })
-    return g.data
 
 
 # @api.route('/resources/details')

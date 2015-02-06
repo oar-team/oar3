@@ -20,7 +20,7 @@ class Blueprint(FlaskBlueprint):
         self.root_prefix = kwargs.pop('url_prefix', '')
         self.trailing_slash = kwargs.pop('trailing_slash', True)
         super(Blueprint, self).__init__(*args, **kwargs)
-        self.before_request(self.prepare_response)
+        self.before_request(self._prepare_response)
 
     def route(self, partial_rule, args={}, **options):
         """A decorator that is used to define custom routes, injects parsed
@@ -32,7 +32,6 @@ class Blueprint(FlaskBlueprint):
             def factorial(x=0):
                 import math
                 return {'result': math.factorial(x)}
-
         """
         if self.root_prefix:
             rule = self.root_prefix + partial_rule
@@ -40,25 +39,66 @@ class Blueprint(FlaskBlueprint):
             rule = partial_rule
         if self.trailing_slash and len(rule) > 1:
             rule = rule.rstrip("/")
-        parent_method = super(Blueprint, self).route
+
         def decorator(f):
-            @wraps(f)
-            def decorated(*proxy_args, **proxy_kwargs):
-                if args:
-                    parser = ArgParser(args)
-                    parsed_kwargs = parser.parse()
-                    proxy_kwargs.update(parsed_kwargs)
-                result = f(*proxy_args, **proxy_kwargs)
-                if result is None:
-                    result = {}
-                if isinstance(result, (dict, list, BaseModel)):
-                    return self._json_response(result)
-                return result
-            parent_method(rule, **options)(decorated)
-            parent_method(rule + ".json", **options)(decorated)
+            @self.jsonify
+            @self.args(args)
+            def wrapper(*proxy_args, **proxy_kwargs):
+                return f(*proxy_args, **proxy_kwargs)
+            endpoint = options.pop("endpoint", f.__name__)
+            self.add_url_rule(rule, endpoint, wrapper, **options)
+            self.add_url_rule(rule + ".json", endpoint + "_json", wrapper,
+                              **options)
+            return wrapper
         return decorator
 
-    def prepare_response(self):
+    @property
+    def jsonify(self):
+        """A decorator that is used to jsonify the response.
+
+        Example usage with: ::
+
+            @app.jsonify('/foo')
+            def foo(name="bar"):
+                g.data["foo"] = name  # or return {"foo": name}
+        """
+        def decorator(func):
+            @wraps(func)
+            def decorated(*proxy_args, **proxy_kwargs):
+                result = func(*proxy_args, **proxy_kwargs)
+                if result is None:
+                    result = g.data
+                if isinstance(result, (dict, list, BaseModel)):
+                    return self._jsonify_response(result)
+                return result
+            return decorated
+        return decorator
+
+    def args(self, argmap):
+        """Decorator that injects parsed arguments into a view function or
+        method.
+
+        Example usage with: ::
+
+            @app.route('/factorial', methods=['GET', 'POST'])
+            @app.args({'x': int})
+            def factorial(x=0):
+                import math
+                return {'result': math.factorial(x)}
+        """
+        def _make_decorator(argmap):
+            def decorator(func):
+                @wraps(func)
+                def decorated(*proxy_args, **proxy_kwargs):
+                    parser = ArgParser(argmap)
+                    parsed_kwargs = parser.parse()
+                    proxy_kwargs.update(parsed_kwargs)
+                    return func(*proxy_args, **proxy_kwargs)
+                return decorated
+            return decorator
+        return _make_decorator(argmap)
+
+    def _prepare_response(self):
         g.data = OrderedDict()
         g.data['api_timezone'] ='UTC'
         g.data['api_timestamp'] = int(time.time())
@@ -72,10 +112,9 @@ class Blueprint(FlaskBlueprint):
         kwargs.setdefault('encoding', 'utf-8')
         return json.dumps(obj, **kwargs)
 
-    def _json_response(self, obj):
+    def _jsonify_response(self, obj):
         """Get a json response. """
-        return Response(self._json_dumps(obj),
-                        mimetype='application/json')
+        return Response(self._json_dumps(obj), mimetype='application/json')
 
 
 def load_blueprints():

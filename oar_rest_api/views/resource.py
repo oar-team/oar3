@@ -31,7 +31,6 @@ def index(offset=0, limit=None):
     for item in page:
         item['links'] = list(get_links(item["id"]))
         g.data['items'].append(item)
-    return g.data
 
 
 @app.route('/<int:resource_id>', methods=['GET'])
@@ -39,11 +38,8 @@ def show(resource_id):
     resource = db.m.Resource.query.get_or_404(resource_id)
     g.data.update(resource.asdict())
     g.data['links'] = get_links(resource.id)
-    return g.data
 
 
 @app.route('/<int:resource_id>/jobs', methods=['GET'])
 def jobs(resource_id):
     g.data.update(db.m.Resource.query.get_or_404(resource_id).asdict())
-    return g.data
-
