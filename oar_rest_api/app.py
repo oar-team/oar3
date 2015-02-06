@@ -5,7 +5,7 @@ VERSION = __version__
 from flask import Flask
 
 from oar.lib import db, config
-from .api import APIBaseQuery
+from .query import APIBaseQuery
 from .utils import WSGIProxyFix
 from .routes import api
 from .errors import register_error_handlers
