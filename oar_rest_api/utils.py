@@ -43,7 +43,7 @@ class JSONEncoder(json.JSONEncoder):
 class ArgParser(object):
     """Flask request argument parser."""
 
-    DEFAULT_TARGETS = ('querystring', 'json', 'form')
+    DEFAULT_TARGETS = ('querystring', 'form', 'json')
 
     MISSING = object()
 
@@ -59,7 +59,7 @@ class ArgParser(object):
             if target == "querystring":
                 value = self.get_value(request.args, name)
             elif target == "json":
-                json_data = request.get_json(silent=True)
+                json_data = request.get_json(silent=True, force=True)
                 if json_data:
                     value = self.get_value(json_data, name)
                 else:
