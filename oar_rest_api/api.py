@@ -19,17 +19,26 @@ class API(Blueprint):
         super(API, self).__init__(*args, **kwargs)
         self.version = version if version is not None else self.name
 
-    def route(self, rule, **options):
-        """A decorator that is used to define custom routes for methods in
-        FlaskView subclasses. The format is exactly the same as Flask's
-        `@app.route` decorator.
+    def route(self, rule, args={}, **options):
+        """A decorator that is used to define custom routes, injects parsed
+        arguments into a view function or method and jsonify the response.
+
+        Example usage with: ::
+
+            @api.route('/hello', methods=['get', 'post'], args={'name': str})
+            def greet(name="world"):
+                return {'message': 'Hello ' + name}
+
         """
         parent_method = super(API, self).route
-
         def decorator(f):
             @wraps(f)
-            def decorated(*args, **kwargs):
-                result = f(*args, **kwargs)
+            def decorated(*proxy_args, **proxy_kwargs):
+                if args:
+                    parser = ArgParser(args)
+                    parsed_kwargs = parser.parse()
+                    proxy_kwargs.update(parsed_kwargs)
+                result = f(*proxy_args, **proxy_kwargs)
                 if result is None:
                     result = {}
                 if isinstance(result, (dict, list, BaseModel)):
@@ -39,28 +48,6 @@ class API(Blueprint):
             parent_method(rule + ".json", **options)(decorated)
         return decorator
 
-    def args(self, argmap, targets=None):
-        """Decorator that injects parsed arguments into a view function or
-        method.
-
-        Example usage with: ::
-
-            @api.route('/echo', methods=['get', 'post'])
-            @api.args({'name': str})
-            def greet(name="world"):
-                return 'Hello ' + name
-        """
-        def _make_decorator(argmap, targets):
-            parser = ArgParser(argmap, targets)
-            def decorator(func):
-                @wraps(func)
-                def decorated(*args, **kwargs):
-                    parsed_args = parser.parse()
-                    parsed_args.update(kwargs)
-                    return func(*args, **parsed_args)
-                return decorated
-            return decorator
-        return _make_decorator(argmap, targets)
 
     def _json_dumps(self, obj, **kwargs):
         """Dumps object to json string. """

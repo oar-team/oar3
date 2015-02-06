@@ -37,8 +37,7 @@ def index():
     return g.data
 
 
-@api.route('/resources', methods=['GET'])
-@api.args({'offset': int, 'limit': int})
+@api.route('/resources', methods=['GET'], args={'offset': int, 'limit': int})
 def resources(offset=0, limit=None):
     page = db.query(db.m.Resource.id,
                     db.m.Resource.state,
