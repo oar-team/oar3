@@ -34,7 +34,6 @@ class APIBaseQuery(BaseQuery):
         # items than we expected.
         if offset == 0 and len(items) < limit:
             total = len(items)
-            limit = total
         else:
             total = self.order_by(None).count()
         return Pagination(offset, limit, total, items)
