@@ -4,7 +4,7 @@ from __future__ import with_statement, absolute_import
 from collections import OrderedDict
 from math import ceil
 
-from flask import abort, current_app, request, url_for
+from flask import abort, current_app, request, url_for, g
 from oar.lib.database import BaseQuery
 
 
@@ -72,6 +72,7 @@ class Pagination(object):
         """Returns the next url for the current endpoint."""
         if self.has_next:
             kwargs = {'offset': self.offset + self.limit, 'limit': self.limit}
+            kwargs.update(g.request_params)
             return url_for(request.endpoint, **kwargs)
 
     @property
@@ -80,6 +81,7 @@ class Pagination(object):
         kwargs = {'offset': self.offset}
         if self.limit > 0:
             kwargs['limit'] = self.limit
+        kwargs.update(g.request_params)
         return url_for(request.endpoint, **kwargs)
 
     def __iter__(self):

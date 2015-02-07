@@ -86,19 +86,19 @@ class Blueprint(FlaskBlueprint):
                 import math
                 return {'result': math.factorial(x)}
         """
-        def _make_decorator(argmap):
-            def decorator(func):
-                @wraps(func)
-                def decorated(*proxy_args, **proxy_kwargs):
-                    parser = ArgParser(argmap)
-                    parsed_kwargs = parser.parse()
-                    proxy_kwargs.update(parsed_kwargs)
-                    return func(*proxy_args, **proxy_kwargs)
-                return decorated
-            return decorator
-        return _make_decorator(argmap)
+        def decorator(func):
+            @wraps(func)
+            def decorated(*proxy_args, **proxy_kwargs):
+                parser = ArgParser(argmap)
+                parsed_kwargs = parser.parse()
+                proxy_kwargs.update(parsed_kwargs)
+                g.request_params.update(proxy_kwargs)
+                return func(*proxy_args, **proxy_kwargs)
+            return decorated
+        return decorator
 
     def _prepare_response(self):
+        g.request_params = {}
         g.data = OrderedDict()
         g.data['api_timezone'] ='UTC'
         g.data['api_timestamp'] = int(time.time())
