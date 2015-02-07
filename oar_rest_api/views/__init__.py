@@ -22,29 +22,38 @@ class Blueprint(FlaskBlueprint):
         super(Blueprint, self).__init__(*args, **kwargs)
         self.before_request(self._prepare_response)
 
-    def route(self, partial_rule, args={}, **options):
+    def route(self, partial_rule, args={}, jsonify=True, **options):
         """A decorator that is used to define custom routes, injects parsed
         arguments into a view function or method and jsonify the response.
 
         Example usage with: ::
 
-            @app.route('/factorial', methods=['GET', 'POST'], args={'x': int})
+            @app.route('/factorial', jsonify=True, args={'x': int})
             def factorial(x=0):
                 import math
                 return {'result': math.factorial(x)}
         """
+        rule = partial_rule
         if self.root_prefix:
-            rule = self.root_prefix + partial_rule
-        else:
-            rule = partial_rule
+            rule = (self.root_prefix + partial_rule)
         if self.trailing_slash and len(rule) > 1:
             rule = rule.rstrip("/")
-
         def decorator(f):
-            @self.jsonify
-            @self.args(args)
-            def wrapper(*proxy_args, **proxy_kwargs):
-                return f(*proxy_args, **proxy_kwargs)
+            if jsonify and not hasattr(f, "decorated_with_jsonify") and args:
+                @self.args(args)
+                @self.jsonify
+                def wrapper(*proxy_args, **proxy_kwargs):
+                    return f(*proxy_args, **proxy_kwargs)
+            elif jsonify and not hasattr(f, "decorated_with_jsonify"):
+                @self.jsonify
+                def wrapper(*proxy_args, **proxy_kwargs):
+                    return f(*proxy_args, **proxy_kwargs)
+            elif args:
+                @self.args(args)
+                def wrapper(*proxy_args, **proxy_kwargs):
+                    return f(*proxy_args, **proxy_kwargs)
+            else:
+                wrapper = f
             endpoint = options.pop("endpoint", f.__name__)
             self.add_url_rule(rule, endpoint, wrapper, **options)
             self.add_url_rule(rule + ".json", endpoint + "_json", wrapper,
@@ -68,9 +77,10 @@ class Blueprint(FlaskBlueprint):
                 result = func(*proxy_args, **proxy_kwargs)
                 if result is None:
                     result = g.data
-                if isinstance(result, (dict, list, BaseModel)):
-                    return self._jsonify_response(result)
-                return result
+                if not isinstance(result, (dict, list, BaseModel)):
+                    return result
+                return self._jsonify_response(result)
+            decorated.decorated_with_jsonify = True
             return decorated
         return decorator
 
