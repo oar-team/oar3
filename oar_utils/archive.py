@@ -57,6 +57,12 @@ def copy_tables(db_archive, chunk_size):
                 merge_table(Model, db_archive)
         elif len(pks) == 0:
             raise DatabaseError("Cannot copy tables whithout primary key")
+    # Tables without primary keys
+    tables_with_pk = (model.__table__ for model in itervalues(db.models))
+    all_tables = (table for table in itervalues(db.tables))
+    for table in set(all_tables) - set(tables_with_pk):
+        empty_table(table, db_archive)
+        copy_table(table, db_archive, chunk_size)
 
 
 def merge_table(Model, db_archive):
@@ -100,6 +106,11 @@ def copy_table(Model, db_archive, chunk_size):
             to_connection.execute(insert_query, rows)
             del rows
         transaction.commit()
+
+
+def empty_table(table, db_archive):
+    log(red(' delete') + ' ~> table ' + table.name)
+    db_archive.engine.execute(table.delete())
 
 
 def get_default_database_url():
