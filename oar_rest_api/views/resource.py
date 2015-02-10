@@ -12,7 +12,7 @@ app = Blueprint('resources', __name__, url_prefix="/resources")
 
 
 def get_links(resource_id, network_address):
-    rel_map = {"member": "node", "self": "show", "jobs": "jobs"}
+    rel_map = {"member": "index", "self": "show", "jobs": "jobs"}
     for rel, endpoint in iteritems(rel_map):
         if rel == "member":
             url = url_for('.%s' % endpoint, network_address=network_address)
@@ -22,7 +22,7 @@ def get_links(resource_id, network_address):
 
 
 @app.route('/', methods=['GET'])
-@app.route('/nodes/<string:network_address>', methods=['GET'], endpoint="node")
+@app.route('/nodes/<string:network_address>', methods=['GET'])
 @app.args({'offset': int, 'limit': int})
 def index(offset=0, limit=None, network_address=None):
     query = db.query(db.m.Resource.id,

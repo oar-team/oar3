@@ -39,24 +39,27 @@ class Blueprint(FlaskBlueprint):
         if self.trailing_slash and len(rule) > 1:
             rule = rule.rstrip("/")
         def decorator(f):
+            endpoint = options.pop("endpoint", f.__name__)
             if jsonify and not hasattr(f, "decorated_with_jsonify") and args:
                 @self.args(args)
                 @self.jsonify
+                @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
             elif jsonify and not hasattr(f, "decorated_with_jsonify"):
                 @self.jsonify
+                @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
             elif args:
                 @self.args(args)
+                @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
             else:
                 wrapper = f
-            endpoint = options.pop("endpoint", f.__name__)
             self.add_url_rule(rule, endpoint, wrapper, **options)
-            self.add_url_rule(rule + ".json", endpoint + "_json", wrapper,
+            self.add_url_rule(rule + ".json", endpoint + "__json", wrapper,
                               **options)
             return wrapper
         return decorator
