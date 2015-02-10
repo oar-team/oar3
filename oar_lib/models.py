@@ -35,7 +35,8 @@ class AdmissionRule(db.Model):
 class AssignedResource(db.Model):
     __tablename__ = 'assigned_resources'
 
-    moldable_job_id = db.Column(db.Integer, primary_key=True, index=True)
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True,
+                            index=True)
     resource_id = db.Column(db.Integer, primary_key=True)
     assigned_resource_index = db.Column(db.String(7),
                                         index=True,
