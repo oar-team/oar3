@@ -9,8 +9,7 @@ from sqlalchemy.engine.reflection import Inspector
 from oar.lib import config, db, Database
 from oar.utils import VERSION
 
-from oar.lib.compat import iteritems, reraise
-from oar.lib.exceptions import DatabaseError
+from oar.lib.compat import iteritems, itervalues, reraise
 
 
 magenta = lambda x: click.style("%s" % x, fg="magenta")
@@ -46,17 +45,7 @@ def create_all_tables(db_archive):
 
 def copy_tables(db_archive, chunk_size):
     for name, Model in iteritems(db.models):
-        pks = Model.__mapper__.primary_key
-        if len(pks) > 1:
-            merge_table(Model, db_archive)
-            # log(' %s ~> table %s', magenta('ignore'), Model.__table__.name)
-        elif len(pks) == 1:
-            if isinstance(pks[0].type, db.Integer):
-                copy_table(Model, db_archive, chunk_size)
-            else:
-                merge_table(Model, db_archive)
-        elif len(pks) == 0:
-            raise DatabaseError("Cannot copy tables whithout primary key")
+        copy_model(Model, db_archive, chunk_size)
     # Tables without primary keys
     tables_with_pk = (model.__table__ for model in itervalues(db.models))
     all_tables = (table for table in itervalues(db.tables))
@@ -65,7 +54,7 @@ def copy_tables(db_archive, chunk_size):
         copy_table(table, db_archive, chunk_size)
 
 
-def merge_table(Model, db_archive):
+def merge_model(Model, db_archive):
     log(' %s ~> table %s', magenta(' merge'), Model.__table__.name)
     query_result = db.query(Model)
     for r in query_result:
@@ -73,32 +62,47 @@ def merge_table(Model, db_archive):
     db_archive.session.commit()
 
 
-def copy_table(Model, db_archive, chunk_size):
+def copy_model(Model, db_archive, chunk_size):
     # prepare the connection
     to_connection = db_archive.engine.connect()
-    from_connection = db.engine.connect()
     # Get the max pk
     pk = Model.__mapper__.primary_key[0]
     max_pk_query = select([func.max(pk)])
-    max_pk = to_connection.execute(max_pk_query).scalar() or 0
-    # Prepare pull query
+    max_pk = to_connection.execute(max_pk_query).scalar()
+    condition = None
+    if max_pk is not None:
+        condition = (pk > max_pk)
     table = Model.__table__
+    copy_table(table, db_archive, chunk_size, select_condition=condition)
+
+
+def copy_table(table, db_archive, chunk_size, select_condition=None):
+    # prepare the connection
+    to_connection = db_archive.engine.connect()
+    from_connection = db.engine.connect()
+
     insert_query = table.insert()
-    select_missing_rows_query = select([table]).where(pk > max_pk)
-    count_query = select([func.count()]).where(pk > max_pk)\
-                                        .select_from(table)
+    select_table = select([table])
+    select_count = select([func.count()]).select_from(table)
+    if select_condition is not None:
+        select_query = select_table.where(select_condition)
+        count_query = select_count.where(select_condition)
+    else:
+        select_query = select_table
+        count_query = select_count
 
     total_lenght = from_connection.execute(count_query).scalar()
-    result = from_connection.execute(select_missing_rows_query)
+    result = from_connection.execute(select_query)
+
+    message = yellow('\r   copy') + ' ~> table %s (%s)'
+    log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
     if total_lenght > 0:
         progress = 0
-        message = yellow('\r   copy') + ' ~> table %s (%s)'
         transaction = to_connection.begin()
         while True:
             rows = result.fetchmany(chunk_size)
             lenght = len(rows)
             if lenght == 0:
-                log("")
                 break
             progress = lenght + progress
             percentage = blue("%s/%s" % (progress, total_lenght))
@@ -106,6 +110,7 @@ def copy_table(Model, db_archive, chunk_size):
             to_connection.execute(insert_query, rows)
             del rows
         transaction.commit()
+    log("")
 
 
 def empty_table(table, db_archive):
