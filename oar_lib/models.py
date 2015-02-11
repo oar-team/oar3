@@ -11,13 +11,10 @@ schema = db.Table('schema',
 class Accounting(db.Model):
     __tablename__ = 'accounting'
 
-    window_start = db.Column(db.Integer, primary_key=True)
-    window_stop = db.Column(db.Integer, primary_key=True, server_default='0')
+    window_start = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    window_stop = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
     accounting_user = db.Column(db.String(255), primary_key=True, index=True, server_default='')
-    accounting_project = db.Column(db.String(255),
-                                   primary_key=True,
-                                   index=True,
-                                   server_default='')
+    accounting_project = db.Column(db.String(255), primary_key=True, index=True, server_default='')
     queue_name = db.Column(db.String(100), primary_key=True, index=True, server_default='')
     consumption_type = db.Column(db.String(5), primary_key=True, index=True, server_default='ASKED')
     consumption = db.Column(db.Integer, server_default='0')
@@ -36,7 +33,7 @@ class AdmissionRule(db.Model):
 class AssignedResource(db.Model):
     __tablename__ = 'assigned_resources'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, index=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
     assigned_resource_index = db.Column(db.String(7), index=True, server_default='CURRENT')
 
@@ -44,7 +41,7 @@ class AssignedResource(db.Model):
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
-    job_id = db.Column(db.Integer, primary_key=True, index=True, server_default='0')
+    job_id = db.Column(db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
     challenge = db.Column(db.String(255), server_default='')
     ssh_private_key = db.Column(db.Text, server_default='')
     ssh_public_key = db.Column(db.Text, server_default='')
@@ -53,7 +50,7 @@ class Challenge(db.Model):
 class EventLogHostname(db.Model):
     __tablename__ = 'event_log_hostnames'
 
-    event_id = db.Column(db.Integer, primary_key=True, server_default='0')
+    event_id = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
     hostname = db.Column(db.String(255), primary_key=True, index=True, server_default='')
 
 
@@ -93,14 +90,14 @@ class FragJob(db.Model):
 class GanttJobsPrediction(db.Model):
     __tablename__ = 'gantt_jobs_predictions'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
 
 class GanttJobsPredictionsLog(db.Model):
     __tablename__ = 'gantt_jobs_predictions_log'
 
-    sched_date = db.Column(db.Integer, primary_key=True, server_default='0')
+    sched_date = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
     moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
@@ -108,21 +105,21 @@ class GanttJobsPredictionsLog(db.Model):
 class GanttJobsPredictionsVisu(db.Model):
     __tablename__ = 'gantt_jobs_predictions_visu'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
 
 class GanttJobsResource(db.Model):
     __tablename__ = 'gantt_jobs_resources'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
 
 class GanttJobsResourcesLog(db.Model):
     __tablename__ = 'gantt_jobs_resources_log'
 
-    sched_date = db.Column(db.Integer, primary_key=True, server_default='0')
+    sched_date = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
     moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
@@ -130,14 +127,14 @@ class GanttJobsResourcesLog(db.Model):
 class GanttJobsResourcesVisu(db.Model):
     __tablename__ = 'gantt_jobs_resources_visu'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
 
 class JobDependencie(db.Model):
     __tablename__ = 'job_dependencies'
 
-    job_id = db.Column(db.Integer, primary_key=True, index=True, server_default='0')
+    job_id = db.Column(db.Integer, primary_key=True, index=True, autoincrement=False, server_default='0')
     job_id_required = db.Column(db.Integer, primary_key=True, server_default='0')
     index = db.Column("job_dependency_index", db.String(7), index=True, server_default='CURRENT')
 
@@ -145,7 +142,7 @@ class JobDependencie(db.Model):
 class JobResourceDescription(db.Model):
     __tablename__ = 'job_resource_descriptions'
 
-    group_id = db.Column('res_job_group_id', db.Integer, primary_key=True, index=True, server_default='0')
+    group_id = db.Column('res_job_group_id', db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
     resource_type = db.Column('res_job_resource_type', db.String(255), primary_key=True, server_default='')
     value = db.Column('res_job_value', db.Integer, server_default='0')
     order = db.Column('res_job_order', db.Integer, primary_key=True, server_default='0')
