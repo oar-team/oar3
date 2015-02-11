@@ -76,7 +76,7 @@ class File(db.Model):
     __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('file_id', db.Integer, primary_key=True)
-    md5sum = db.Column(db.String(255), index=True)
+    md5sum = db.Column(db.String(255), index=True, nullable=True)
     location = db.Column(db.String(255), nullable=True)
     method = db.Column(db.String(255), nullable=True)
     compression = db.Column(db.String(255), nullable=True)
