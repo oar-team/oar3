@@ -19,18 +19,19 @@ blue = lambda x: click.style("%s" % x, fg="blue")
 red = lambda x: click.style("%s" % x, fg="red")
 
 
-def log(msg, *args, **kwargs):
+def log(*args, **kwargs):
     """Logs a message to stderr."""
-    if args:
-        msg %= args
     kwargs.setdefault("file", sys.stderr)
-    click.echo(msg, **kwargs)
+    prefix = kwargs.pop("prefix", "")
+    for msg in args:
+        click.echo(prefix + msg, **kwargs)
 
 
 def sync(db_url, db_archive_url, chunk_size=1000):
     db_archive = Database(uri=db_archive_url)
     create_all_tables(db_archive)
     copy_tables(db_archive, chunk_size)
+    update_sequences(db_archive)
 
 
 def create_all_tables(db_archive):
@@ -116,6 +117,28 @@ def copy_table(table, db_archive, chunk_size, select_condition=None):
 def empty_table(table, db_archive):
     log(red(' delete') + ' ~> table ' + table.name)
     db_archive.engine.execute(table.delete())
+
+
+def update_sequences(db_archive):
+    engine = db_archive.engine
+    def get_sequences_values():
+        for model in itervalues(db.models):
+            for pk in model.__mapper__.primary_key:
+                if not pk.autoincrement:
+                    continue
+                sequence_name = "%s_%s_seq" % (pk.table.name, pk.name)
+                if engine.dialect.has_sequence(engine, sequence_name):
+                    yield sequence_name, pk.name, pk.table.name
+
+    if db_archive.engine.url.get_dialect().name == "postgresql":
+        for sequence_name, pk_name, table_name in get_sequences_values():
+            log(green('\r    fix') + ' ~> sequence %s' % sequence_name)
+            query = "select setval('%s', max(%s)) from %s"
+            try:
+                engine.execute(query % (sequence_name, pk_name, table_name))
+            except Exception as ex:
+                log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
+        db_archive.commit()
 
 
 def get_default_database_url():
