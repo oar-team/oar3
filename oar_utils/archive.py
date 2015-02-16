@@ -9,7 +9,7 @@ from sqlalchemy.engine.reflection import Inspector
 from oar.lib import config, db, Database
 from oar.utils import VERSION
 
-from oar.lib.compat import iteritems, itervalues, reraise
+from oar.lib.compat import iteritems, itervalues, reraise, to_unicode
 
 
 magenta = lambda x: click.style("%s" % x, fg="magenta")
@@ -36,12 +36,16 @@ def sync(db_url, db_archive_url, chunk_size=1000):
 
 def create_all_tables(db_archive):
     db.reflect()
+    db.create_all()
     inspector = Inspector.from_engine(db_archive.engine)
     existing_tables = inspector.get_table_names()
     for table in db.metadata.sorted_tables:
         if table.name not in existing_tables:
-            log(' %s ~> table %s', green('create'), table.name)
-            table.create(bind=db_archive.engine, checkfirst=True)
+            log(' %s ~> table %s' % (green('create'), table.name))
+            try:
+                table.create(bind=db_archive.engine, checkfirst=True)
+            except Exception as ex:
+                log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
 
 
 def copy_tables(db_archive, chunk_size):
@@ -56,7 +60,7 @@ def copy_tables(db_archive, chunk_size):
 
 
 def merge_model(Model, db_archive):
-    log(' %s ~> table %s', magenta(' merge'), Model.__table__.name)
+    log(' %s ~> table %s' % (magenta(' merge'), Model.__table__.name))
     query_result = db.query(Model)
     for r in query_result:
          db_archive.session.merge(r)
@@ -93,14 +97,15 @@ def copy_table(table, db_archive, chunk_size, select_condition=None):
         count_query = select_count
 
     total_lenght = from_connection.execute(count_query).scalar()
-    result = from_connection.execute(select_query)
+    result = from_connection.execution_options(stream_results=True)\
+                            .execute(select_query)
 
     message = yellow('\r   copy') + ' ~> table %s (%s)'
     log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
     if total_lenght > 0:
         progress = 0
-        transaction = to_connection.begin()
         while True:
+            transaction = to_connection.begin()
             rows = result.fetchmany(chunk_size)
             lenght = len(rows)
             if lenght == 0:
@@ -110,12 +115,12 @@ def copy_table(table, db_archive, chunk_size, select_condition=None):
             log(message % (table.name, percentage), nl=False)
             to_connection.execute(insert_query, rows)
             del rows
-        transaction.commit()
+            transaction.commit()
     log("")
 
 
 def empty_table(table, db_archive):
-    log(red(' delete') + ' ~> table ' + table.name)
+    log(magenta('  empty') + ' ~> table ' + table.name)
     db_archive.engine.execute(table.delete())
 
 
