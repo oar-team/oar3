@@ -80,8 +80,12 @@ class Configuration(dict):
                 return sa_uri
             elif db_conf["type"] in ("pg", "psql", "pgsql"):
                 db_conf["type"] = "postgresql"
-            sa_uri = ("{type}://{%s}:{%s}" \
-                     "@{hostname}:{port}/{base_name}" % (login, passwd))\
+            if db_conf.get(passwd, "") != "":
+                user_password = "{%s}:{%s}" % (login, passwd)
+            else:
+                user_password = "{%s}" % login
+            sa_uri = ("{type}://%s" \
+                     "@{hostname}:{port}/{base_name}" % (user_password))\
                       .format(**db_conf)
             self._sqlalchemy_uri = sa_uri
             return sa_uri
