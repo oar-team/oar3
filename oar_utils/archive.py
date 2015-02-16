@@ -161,8 +161,6 @@ OAR database URL"""
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=VERSION)
-@click.option('--sql', is_flag=True, default=False,
-              help='Only dump SQL statements to STDOUT (offline mode)')
 @click.option('--db-url', prompt=DATABASE_PROMPT,
               default=get_default_database_url(),
               help='the url for your OAR database.')
@@ -170,7 +168,7 @@ OAR database URL"""
               help='the url for your archive database.')
 @click.option('--debug', is_flag=True, default=False,
               help="Enable Debug.")
-def cli(debug, db_archive_url, db_url, sql):
+def cli(debug, db_archive_url, db_url):
     """Archive OAR database."""
     config._sqlalchemy_uri = db_url
     try:
