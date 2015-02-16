@@ -1,4 +1,5 @@
 import collections
+import re
 from random import seed, randint
 
 from sets import Set
@@ -12,11 +13,11 @@ from oar.kao.platform import Platform
 config['LOG_FILE'] = '/dev/null'
 
 class SimSched:
-    def __init__(self, res_set, jobs, submission_time_jids, mode_platforme = "simu"):
+    def __init__(self, res_set, jobs, submission_time_jids, mode_platform = "simu"):
 
         self.env = simpy.Environment()
 
-        self.platform = Platform("simu", env=self.env, resource_set=res_set, jobs=jobs )
+        self.platform = Platform(mode_platform, env=self.env, resource_set=res_set, jobs=jobs )
 
         self.jobs = jobs
         self.sub_time_jids = submission_time_jids
@@ -106,3 +107,147 @@ class JobSimu():
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+'''
+SWF Format (extracted from http://www.cs.huji.ac.il/labs/parallel/workload/swf.html)
+
+1    Job Number -- a counter field, starting from 1.
+
+2    Submit Time -- in seconds. The earliest time the log refers to is zero, and is usually 
+         the submittal time of the first job. The lines in the log are sorted by ascending submittal times. 
+         It makes sense for jobs to also be numbered in this order.
+
+3    Wait Time -- in seconds. The difference between the job's submit time and the time at which it actually began to run. 
+         Naturally, this is only relevant to real logs, not to models.
+
+4    Run Time -- in seconds. The wall clock time the job was running (end time minus start time).
+         We decided to use ``wait time'' and ``run time'' instead of the equivalent ``start time'' and 
+         ``end time'' because they are directly attributable to the scheduler and application, and are more 
+         suitable for models where only the run time is relevant.
+         Note that when values are rounded to an integral number of seconds (as often happens in logs) 
+         a run time of 0 is possible and means the job ran for less than 0.5 seconds. On the other hand 
+         it is permissable to use floating point values for time fields.
+
+5    Number of Allocated Processors -- an integer. In most cases this is also the number of processors 
+         the job uses; if the job does not use all of them, we typically don't know about it.
+
+6    Average CPU Time Used -- both user and system, in seconds. This is the average over all processors 
+         of the CPU time used, and may therefore be smaller than the wall clock runtime. 
+         If a log contains the total CPU time used by all the processors, it is divided by the number of allocated processors to derive the average.
+
+7    Used Memory -- in kilobytes. This is again the average per processor.
+
+8    Requested Number of Processors.
+
+9    Requested Time. This can be either runtime (measured in wallclock seconds), or average CPU time 
+         per processor (also in seconds) -- the exact meaning is determined by a header comment. 
+         In many logs this field is used for the user runtime estimate (or upper bound) used in backfilling. 
+         If a log contains a request for total CPU time, it is divided by the number of requested processors.
+
+10   Requested Memory (again kilobytes per processor).
+
+11   Status 1 if the job was completed, 0 if it failed, and 5 if cancelled. If information about chekcpointing 
+         or swapping is included, other values are also possible. See usage note below. This field is meaningless for models, so would be -1.
+
+12   User ID -- a natural number, between one and the number of different users.
+
+13   Group ID -- a natural number, between one and the number of different groups. 
+         Some systems control resource usage by groups rather than by individual users.
+
+14   Executable (Application) Number -- a natural number, between one and the number of different applications 
+         appearing in the workload. in some logs, this might represent a script file used to run jobs rather than 
+         the executable directly; this should be noted in a header comment.
+
+15   Queue Number -- a natural number, between one and the number of different queues in the system. 
+         The nature of the system's queues should be explained in a header comment. This field is where batch and interactive 
+         jobs should be differentiated: we suggest the convention of denoting interactive jobs by 0.
+
+16   Partition Number -- a natural number, between one and the number of different partitions in the systems. 
+         The nature of the system's partitions should be explained in a header comment. 
+         For example, it is possible to use partition numbers to identify which machine in a cluster was used.
+
+17   Preceding Job Number -- this is the number of a previous job in the workload, such that the current job 
+         can only start after the termination of this preceding job. Together with the next field, this allows 
+         the workload to include feedback as described below.
+
+18    Think Time from Preceding Job -- this is the number of seconds that should elapse between the termination of the preceding job 
+      and the submittal of this one. 
+'''
+JID = 0
+SUB_TIME = 1
+WAIT_TIME = 2
+RUN_TIME = 3
+NB_ALLOC_PROCS = 4
+AVG_CPU = 5
+USE_MEM = 6
+REQ_PROCS = 7 
+REQ_TIME = 8
+REQ_MEM = 9
+STATUS = 10
+USER_ID = 11
+GROUP_ID = 12
+APP_NUM = 13
+QUEUE_NUM = 14
+PARTITION_NUM = 15
+PREC_JOB = 16
+THINK_TIME = 16
+class SWFWorkload():
+    def __init__(self, filename):
+        self.jobs_fields = {}
+        self.sub_times = []
+        self.sub_absolute_times_w_jids = {}
+        for line in open(filename):
+            li=line.strip()
+            if not li.startswith(";"):
+                print line.rstrip()
+                fields = [ int(f) for f in re.split('\W+', line) if f != '']
+                jid = fields[JID]
+                sub_time = fields[SUB_TIME]
+                self.jobs_fields[fields[JID]] = fields
+                self.sub_times.append(sub_time)
+                if sub_time in self.sub_absolute_times_w_jids:
+                    self.sub_absolute_times_w_jids[sub_time].append(jid)
+                else:
+                    self.sub_absolute_times_w_jids[sub_time] = [jid]
+                #TODO test time monotonicy according to job_id
+
+        self.sub_times = sorted(set(self.sub_times))
+        
+
+    def gene_jobsim_sub_time(self, jid_begin, jid_end, nb_res):
+        simu_jobs = {} 
+        sub_time_jids = []
+        t_begin = self.jobs_fields[jid_begin][SUB_TIME]
+        t_end = self.jobs_fields[jid_end][SUB_TIME]
+        i = 0
+        t_prev = t_begin
+        while True:
+            t = self.sub_times[i]
+            if t > t_end:
+                break
+            elif t >= t_begin:
+                jids = self.sub_absolute_times_w_jids[t]
+                sub_time_jids.append( (t-t_prev, jids) )
+                t_prev = t
+                for jid in jids:
+                    fields = self.jobs_fields[jid]
+                    req_walltime = fields[REQ_TIME]
+                    req_procs = fields[REQ_PROCS]
+                    simu_jobs[jid] = JobSimu( id = jid,
+                                              state = "Waiting",
+                                              queue = str(fields[QUEUE_NUM]),
+                                              start_time = 0,
+                                              walltime = 0,
+                                              types = {},
+                                              res_set = [],
+                                              moldable_id = 0,
+                                              mld_res_rqts =  [(i, req_walltime, 
+                                                                [([("resource_id", req_procs)],
+                                                                [(0,nb_res-1)])])],
+                                              run_time = fields[RUN_TIME],
+                                              key_cache = "",
+                                              ts=False, ph=0
+                                          )
+
+            i += 1
+        
+        return (simu_jobs, sub_time_jids)

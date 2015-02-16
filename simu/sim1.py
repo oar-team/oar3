@@ -51,8 +51,8 @@ simsched.run()
 
 plt = simsched.platform
 
-print "Number finished jobs:", len(plt.finished_jids)
-print "Finished job ids:", plt.finished_jids
+print "Number completed jobs:", len(plt.finished_jids)
+print "Completed job ids:", plt.finished_jids
 
 print jobs
 
