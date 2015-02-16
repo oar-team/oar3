@@ -6,6 +6,7 @@ here = op.abspath(op.dirname(__file__))
 
 requirements = [
     'oar-lib>=0.1-dev',
+    'sqlalchemy-utils'
 ]
 
 def read(fname):
@@ -45,6 +46,7 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    oar-database-archive=oar_utils.archive:main
+    oar-database-migrate=oar_utils.db.migrate:main
+    oar-database-archive=oar_utils.db.archive:main
     ''',
 )
