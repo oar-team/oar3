@@ -51,10 +51,10 @@ exit_code = 0
 
 # Prepare a job to be run by bipbip
 def prepare_jobs_to_be_launched():
-        $job_id,
-        $moldable_job_id,
-        $job_submission_time,
-        $resources_array_ref) = @_;
+  #      $job_id,
+  #      $moldable_job_id,
+  #      $job_submission_time,
+  #      $resources_array_ref) = @_;
 
     #my $running_date = $current_time_sec;
     #if ($running_date < $job_submission_time){
@@ -104,7 +104,7 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
     return_code = 0
     #TODO
     #job to launch
-    jobs_to_launch_moldable_id_req = get_gantt_jobs_to_launch($current_time_sec)
+    jobs_to_launch_moldable_id_req = get_gantt_jobs_to_launch(current_time_sec)
 
     #my $return_code = 0;
     #my %jobs_to_launch = (); 

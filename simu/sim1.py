@@ -51,8 +51,8 @@ simsched.run()
 
 plt = simsched.platform
 
-print "Number completed jobs:", len(plt.finished_jids)
-print "Completed job ids:", plt.finished_jids
+print "Number completed jobs:", len(plt.completed_jids)
+print "Completed job ids:", plt.completed_jids
 
 print jobs
 
@@ -62,6 +62,6 @@ print jobs
 #    job.res_set = unordered_ids2itvs(r_ids)
 #    print jid, job.state, job.start_time, job.walltime, job.res_set
 
-last_finished_job = jobs[plt.finished_jids[-1]]
-print last_finished_job
-plot_slots_and_job({}, jobs, nb_res, last_finished_job.start_time +  last_finished_job.walltime)
+last_completed_job = jobs[plt.completed_jids[-1]]
+print last_completed_job
+plot_slots_and_job({}, jobs, nb_res, last_completed_job.start_time +  last_completed_job.walltime)

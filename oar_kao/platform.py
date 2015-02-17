@@ -35,7 +35,7 @@ class Platform:
               self.jobs = kwargs["jobs"]
               self.running_jids = None 
               self.waiting_jids = None
-              self.finished_jids = None
+              self.completed_jids = None
               #Karma
               self.get_sum_accounting_window = self.get_sum_accounting_window_simu
               self.get_sum_accounting_by_project = self.get_sum_accounting_by_project_simu
@@ -86,7 +86,7 @@ class Platform:
           return self.env.now
 	    
      def get_waiting_jobs_simu(self,queue):
-          #print " get_waiting_jobs_simu:", waiting_jids
+          print " get_waiting_jobs_simu:", self.waiting_jids
           waiting_jobs = {} 
           waiting_jids_lst = []
           nb_waiting_jobs = 0
@@ -96,7 +96,7 @@ class Platform:
                waiting_jids_lst.append(jid)
                nb_waiting_jobs += 1
 
-          #print waiting_jobs, waiting_jids, nb_waiting_jobs
+          print waiting_jobs, waiting_jids_lst, nb_waiting_jobs
 
           return (waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
 
@@ -115,9 +115,10 @@ class Platform:
 
           for jid,job in jobs.iteritems():
                jres_set = job.res_set
+               print "job.res_set before", jid, job.res_set
                r_ids = [ resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set) ]
                job.res_set = unordered_ids2itvs(r_ids)
-
+               
           self.assigned_jobs = jobs
           
      def get_sum_accounting_window_simu(self, *args):

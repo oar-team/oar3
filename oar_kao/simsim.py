@@ -10,7 +10,7 @@ from oar.lib import config
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
-config['LOG_FILE'] = '/dev/null'
+config['LOG_FILE'] = '/dev/stdout'
 
 class SimSched:
     def __init__(self, res_set, jobs, submission_time_jids, mode_platform = "simu"):
@@ -27,11 +27,11 @@ class SimSched:
         self.sched_proc = self.env.process(self.sched())
 
         self.evt_running_jobs = Set()
-        self.running_jids = []
+        self.running_jids = [] #TO REMOVE ???
         self.platform.running_jids = []
         self.waiting_jids = Set()
         self.platform.waiting_jids = self.waiting_jids
-        self.platform.finished_jids = []
+        self.platform.completed_jids = []
 
     def run(self):
         self.env.run()
@@ -66,7 +66,7 @@ class SimSched:
                   #print "remove ev: ", k
                   self.evt_running_jobs.remove(k)
                   self.jobs[v].state = "Terminated"
-                  self.platform.finished_jids.append(v)
+                  self.platform.completed_jids.append(v)
                   self.platform.running_jids.remove(v)
 
             now = self.env.now
@@ -77,7 +77,7 @@ class SimSched:
             
             print "call schedule_cycle.... ", now
             
-            schedule_cycle(self.platform,now, "test")
+            schedule_cycle(self.platform, now, "test")
             
             #launch jobs if needed
             for jid, job in self.platform.assigned_jobs.iteritems():

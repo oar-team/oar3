@@ -32,16 +32,13 @@ for k,v in default_config.iteritems():
 
 def schedule_cycle(plt, now, queue = "default"):
 
-
-    log.info("Begin scheduling....now:" + str(now) + "queue:" + queue)
-
+    log.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
     #
     # Retrieve waiting jobs
     #
-
+ 
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
-
-    print waiting_jobs, waiting_jids, nb_waiting_jobs
+            
 
     if nb_waiting_jobs > 0:
         log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
