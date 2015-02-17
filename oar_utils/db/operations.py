@@ -150,8 +150,10 @@ def update_sequences(to_db):
 
 
 def copy_db(to_db):
-    from_database = db.engine.url.database
-    to_database = to_db.engine.url.database
+    from_db_name = db.engine.url.database
+    to_db_name = to_db.engine.url.database
+    log(green('  clone') + ' ~> `%s` to `%s` database' % (from_db_name,
+                                                          to_db_name))
     if db.engine.dialect.name == 'postgresql':
         db.session.connection().connection.set_isolation_level(0)
         db.session.execute(
@@ -159,37 +161,37 @@ def copy_db(to_db):
                 CREATE DATABASE "%s" WITH TEMPLATE "%s";
             ''' %
             (
-                to_database,
-                from_database
+                to_db_name,
+                from_db_name
             )
         )
         db.session.connection().connection.set_isolation_level(1)
     elif db.engine.dialect.name == 'mysql':
         # Horribly slow implementation.
-        create_database(to_db.engine.url, to_database)
-        for row in db.sesssion.execute('SHOW TABLES in %s;' % from_database):
+        create_database(to_db.engine.url)
+        for row in db.session.execute('SHOW TABLES in %s;' % from_db_name):
             db.session.execute('''
                 CREATE TABLE %s.%s LIKE %s.%s
             ''' % (
-                to_database,
+                to_db_name,
                 row[0],
-                from_database,
+                from_db_name,
                 row[0]
             ))
             db.session.execute('ALTER TABLE %s.%s DISABLE KEYS' % (
-                to_database,
+                to_db_name,
                 row[0]
             ))
             db.session.execute('''
                 INSERT INTO %s.%s SELECT * FROM %s.%s
             ''' % (
-                to_database,
+                to_db_name,
                 row[0],
-                from_database,
+                from_db_name,
                 row[0]
             ))
             db.session.execute('ALTER TABLE %s.%s ENABLE KEYS' % (
-                to_database,
+                to_db_name,
                 row[0]
             ))
     else:
