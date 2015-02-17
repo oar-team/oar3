@@ -10,7 +10,7 @@ from oar.utils import VERSION
 
 
 from .helpers import log
-from .operations import sync_db
+from .operations import copy_db
 
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar',
@@ -34,7 +34,7 @@ def cli(debug, archive_db_suffix, script):
         if not click.confirm("continue to archive OAR database"):
             raise click.Abort()
     try:
-        sync_db(archive_db_url, chunk_size=10000)
+        copy_db(archive_db_url, chunk_size=10000)
         log("up-to-date.")
     except Exception as e:
         if not debug:

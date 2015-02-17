@@ -27,16 +27,66 @@ def local_database(engine_url):
     return url == db.engine.url
 
 
-def sync_db(to_db_url, chunk_size=1000):
+def copy_db(to_db_url, chunk_size=1000):
     to_db = Database(uri=to_db_url)
     engine_url = to_db.engine.url
-    if not database_exists(engine_url) and local_database(engine_url):
-        if db.engine.dialect.name in ("postgresql", "mysql"):
-            copy_db(to_db)
+    if (not database_exists(engine_url) and local_database(engine_url)
+        and db.engine.dialect.name in ("postgresql", "mysql")):
+            clone_db(to_db)
+    else:
+        tables = sync_schema(to_db)
+        sync_tables(tables, to_db, chunk_size)
+        if db.engine.dialect.name == "postgresql":
+            fix_sequences(to_db)
 
-    tables = sync_schema(to_db)
-    sync_tables(tables, to_db, chunk_size)
-    fix_sequences(to_db)
+
+def clone_db(to_db):
+    from_db_name = db.engine.url.database
+    to_db_name = to_db.engine.url.database
+    log(green('  clone') + ' ~> `%s` to `%s` database' % (from_db_name,
+                                                          to_db_name))
+    if db.engine.dialect.name == 'postgresql':
+        db.session.connection().connection.set_isolation_level(0)
+        db.session.execute(
+            '''
+                CREATE DATABASE "%s" WITH TEMPLATE "%s";
+            ''' %
+            (
+                to_db_name,
+                from_db_name
+            )
+        )
+        db.session.connection().connection.set_isolation_level(1)
+    elif db.engine.dialect.name == 'mysql':
+        # Horribly slow implementation.
+        create_database(to_db.engine.url)
+        for row in db.session.execute('SHOW TABLES in %s;' % from_db_name):
+            db.session.execute('''
+                CREATE TABLE %s.%s LIKE %s.%s
+            ''' % (
+                to_db_name,
+                row[0],
+                from_db_name,
+                row[0]
+            ))
+            db.session.execute('ALTER TABLE %s.%s DISABLE KEYS' % (
+                to_db_name,
+                row[0]
+            ))
+            db.session.execute('''
+                INSERT INTO %s.%s SELECT * FROM %s.%s
+            ''' % (
+                to_db_name,
+                row[0],
+                from_db_name,
+                row[0]
+            ))
+            db.session.execute('ALTER TABLE %s.%s ENABLE KEYS' % (
+                to_db_name,
+                row[0]
+            ))
+    else:
+        raise NotSupportedDatabase()
 
 
 def sync_schema(to_db):
@@ -144,65 +194,14 @@ def fix_sequences(to_db):
                 if engine.dialect.has_sequence(engine, sequence_name):
                     yield sequence_name, pk.name, pk.table.name
 
-    if to_db.engine.url.get_dialect().name == "postgresql":
-        for sequence_name, pk_name, table_name in get_sequences_values():
-            log(green('\r    fix') + ' ~> sequence %s' % sequence_name)
-            query = "select setval('%s', max(%s)) from %s"
-            try:
-                engine.execute(query % (sequence_name, pk_name, table_name))
-            except Exception as ex:
-                log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
-        to_db.commit()
-
-
-def copy_db(to_db):
-    from_db_name = db.engine.url.database
-    to_db_name = to_db.engine.url.database
-    log(green('  clone') + ' ~> `%s` to `%s` database' % (from_db_name,
-                                                          to_db_name))
-    if db.engine.dialect.name == 'postgresql':
-        db.session.connection().connection.set_isolation_level(0)
-        db.session.execute(
-            '''
-                CREATE DATABASE "%s" WITH TEMPLATE "%s";
-            ''' %
-            (
-                to_db_name,
-                from_db_name
-            )
-        )
-        db.session.connection().connection.set_isolation_level(1)
-    elif db.engine.dialect.name == 'mysql':
-        # Horribly slow implementation.
-        create_database(to_db.engine.url)
-        for row in db.session.execute('SHOW TABLES in %s;' % from_db_name):
-            db.session.execute('''
-                CREATE TABLE %s.%s LIKE %s.%s
-            ''' % (
-                to_db_name,
-                row[0],
-                from_db_name,
-                row[0]
-            ))
-            db.session.execute('ALTER TABLE %s.%s DISABLE KEYS' % (
-                to_db_name,
-                row[0]
-            ))
-            db.session.execute('''
-                INSERT INTO %s.%s SELECT * FROM %s.%s
-            ''' % (
-                to_db_name,
-                row[0],
-                from_db_name,
-                row[0]
-            ))
-            db.session.execute('ALTER TABLE %s.%s ENABLE KEYS' % (
-                to_db_name,
-                row[0]
-            ))
-    else:
-        raise NotSupportedDatabase()
-
+    for sequence_name, pk_name, table_name in get_sequences_values():
+        log(green('\r    fix') + ' ~> sequence %s' % sequence_name)
+        query = "select setval('%s', max(%s)) from %s"
+        try:
+            engine.execute(query % (sequence_name, pk_name, table_name))
+        except Exception as ex:
+            log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
+    to_db.commit()
 
 def generic_mapper(table):
     Base = declarative_base()
