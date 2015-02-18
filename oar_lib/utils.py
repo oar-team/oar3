@@ -19,3 +19,22 @@ class SimpleNamespace(dict):
     def __init__(self, *args, **kwargs):
         super(SimpleNamespace, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+
+class cached_property(object):
+    """ A property that is only computed once per instance and then replaces
+    itself with an ordinary attribute. Deleting the attribute resets the
+    property """
+
+    def __init__(self, func):
+        self.__name__ = func.__name__
+        self.__module__ = func.__module__
+        self.__doc__ = func.__doc__
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        obj.__dict__.setdefault("_cache", {})
+        obj._cache.setdefault(self.__name__, self.func(obj))
+        return obj._cache.get(self.__name__)
