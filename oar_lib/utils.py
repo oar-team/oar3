@@ -36,5 +36,8 @@ class cached_property(object):
         if obj is None:
             return self
         obj.__dict__.setdefault("_cache", {})
-        obj._cache.setdefault(self.__name__, self.func(obj))
+        cached_value = obj._cache.get(self.__name__, None)
+        if cached_value is None:
+            ## don't cache None value
+            obj._cache[self.__name__] = self.func(obj)
         return obj._cache.get(self.__name__)
