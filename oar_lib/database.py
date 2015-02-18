@@ -12,7 +12,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
-from .utils import SimpleNamespace
+from .utils import SimpleNamespace, cached_property
 
 
 __all__ = ['Database']
@@ -133,18 +133,16 @@ class Database(object):
     def __init__(self, uri=None, session_options=None):
         self.connector = None
         self._reflected = False
-        self._uri = uri
+        self._cache = {"uri": uri}
         self._session_options = dict(session_options or {})
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
 
-    @property
+    @cached_property
     def uri(self):
-        if self._uri is None:
-            from oar.lib import config
-            self._uri = config.sqlalchemy_uri
-        return self._uri
+        from oar.lib import config
+        return config.get_sqlalchemy_uri()
 
     @property
     def engine(self):
@@ -169,21 +167,17 @@ class Database(object):
         return self.tables
 
 
-    @property
+    @cached_property
     def models(self):
         """ Return a namespace with all mapping classes"""
-        if not hasattr(self, '_models'):
-            self._models = SimpleNamespace(load_all_models())
-        return self._models
+        return SimpleNamespace(load_all_models())
 
-    @property
+    @cached_property
     def tables(self):
         """ Return a namespace with all tables classes"""
-        if not hasattr(self, '_tables'):
-            self.reflect()
-            tables = dict((t.name, t) for t in self.metadata.sorted_tables)
-            self._tables = SimpleNamespace(tables)
-        return self._tables
+        self.reflect()
+        tables = dict((t.name, t) for t in self.metadata.sorted_tables)
+        return SimpleNamespace(tables)
 
     @property
     def query(self):
@@ -209,7 +203,7 @@ class Database(object):
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         if not self._reflected:
-            self._models = SimpleNamespace(**load_all_models())
+            self._cache['models'] = SimpleNamespace(load_all_models())
             self.create_all()
             # autoload all tables marked for autoreflect
             self.DeferredReflection.prepare(self.engine)
