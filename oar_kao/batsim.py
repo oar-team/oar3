@@ -51,11 +51,11 @@ def read_bat_msg(connection):
         print "connection is closed by batsim core"
         exit(1)
         
-    print 'from client (lg_str): %r' % lg_str
+    #print 'from client (lg_str): %r' % lg_str
     lg = struct.unpack("i",lg_str)[0]
-    print 'size msg to recv %d' % lg
+    #print 'size msg to recv %d' % lg
     msg = connection.recv(lg)
-    print 'from client: %r' % msg
+    print 'from batsim : %r' % msg
     sub_msgs = msg.split('|')
     data = sub_msgs[-1].split(":")
     if data[2] != 'T':

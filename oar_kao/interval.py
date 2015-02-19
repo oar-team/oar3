@@ -82,7 +82,11 @@ def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
         x = itvs_ref[i]
         y = intersec(itvs1, x)
         if equal_itvs(x, y):
-            itvs.extend(x)
+            if itvs and ( (itvs[-1][1] + 1) == x[0][0] ) : # test if itvs[-1] and x[0] are in contact
+                itvs[-1] = (itvs[-1][0] , x[0][1] )
+                itvs.extend(x[1:])
+            else:
+                itvs.extend(x)
             n -= 1
         i += 1
 
