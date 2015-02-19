@@ -184,7 +184,7 @@ def add_intervals(itvs_x,itvs_y):
 
         #print "intermediate", itvs
         # x,y no overlap
-        if x[1] < y[0]:  #x before
+        if x[1] < y[0] - 2:  #x before
             if (ix < lx):
                 itvs.append(x)
                 ix += 1
@@ -192,13 +192,23 @@ def add_intervals(itvs_x,itvs_y):
                 itvs.append(y)
                 iy += 1
 
-        elif y[1] < x[0]: #y before
+        elif (x[1] == y[0] -1) and  (ix < lx): #contiguous itvs
+                itvs.append( (x[0],y[1]) )
+                ix += 1
+                iy += 1
+
+        elif y[1] < x[0] - 2: #y before
             if (iy < ly):
                 itvs.append(y)
                 iy += 1
             else:
                 itvs.append(x)
                 ix += 1 
+
+        elif (y[1] == x[0] - 1) and  (iy < ly): #contiguous itvs
+                itvs.append((y[0],x[1]))
+                iy += 1
+                ix += 1
 
         # x,y overlap 
         else:
