@@ -11,9 +11,10 @@ from oar.kao.helpers import plot_slots_and_job
 from oar.kao.interval import itvs2ids
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import config
+from oar.lib import config, get_logger
 
 config['LOG_FILE'] = '/tmp/yop'
+log = get_logger("oar.batsim")
 
 jobs = {}
 jobs_completed = []
@@ -57,32 +58,31 @@ def read_bat_msg(connection):
     msg = connection.recv(lg)
     print 'from batsim : %r' % msg
     sub_msgs = msg.split('|')
-    data = sub_msgs[-1].split(":")
-    if data[2] != 'T':
-        raise Exception("Terminal submessage must be T type")
+    data = sub_msgs[0].split(":")
+    version = int(data[0])
     now = float(data[1])
 
     jobs_submitted = []
     new_jobs_completed = []
-    for i in range(len(sub_msgs)-1):
+    for i in range(1, len(sub_msgs)):
         data = sub_msgs[i].split(':')
-        if data[2] == 'S':
-            jobs_submitted.append( int(data[3]) )
-        elif data[2] == 'C':
-            time = float(data[3])
-            jid = int(data[3])
+        if data[1] == 'S':
+            jobs_submitted.append( int(data[2]) )
+        elif data[1] == 'C':
+            time = float(data[0])
+            jid = int(data[2])
             jobs[jid].state = "Terminated"
             jobs[jid].run_time = time - jobs[jid].run_time
             new_jobs_completed.append(jid)
         else:
-            raise Exception("Unknow submessage type" + data[2] )  
+            raise Exception("Unknow submessage type" + data[1] )  
 
     return (now, jobs_submitted, new_jobs_completed)
 
 def send_bat_msg(connection, now, jids_toLaunch, jobs):
-    msg = "0:" + str(now)
+    msg = "0:" + str(now) + "|"
     if jids_toLaunch:
-        msg += ":J:" 
+        msg += str(now) + ":J:" 
         for jid in jids_toLaunch:
             msg += str(jid) + "="
             for r in itvs2ids(jobs[jid].res_set):
@@ -91,7 +91,7 @@ def send_bat_msg(connection, now, jids_toLaunch, jobs):
         msg = msg[:-1] # remove last semicolon
 
     else: #Do nothing        
-        msg += ":N"
+        msg += str(now) +":N"
 
     print msg
     lg = struct.pack("i",int(len(msg)))
@@ -118,7 +118,7 @@ class BatSched:
         self.jobs = jobs
         self.nb_jobs = len(jobs)
         self.sock = create_uds(uds_name)
-        print >>sys.stderr, 'waiting for a connection'
+        log.info('waiting for a connection')
         self.connection, self.client_address = self.sock.accept()
         
         self.platform.running_jids = []
