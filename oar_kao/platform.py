@@ -2,7 +2,7 @@ import time
 
 from oar.kao.resource import ResourceSet
 from oar.kao.job import (get_waiting_jobs, get_data_jobs, get_scheduled_jobs, 
-                         save_assigns, get_current_jobs_dependencies)
+                         save_assigns)
 from oar.kao.interval import itvs2ids, unordered_ids2itvs
 from oar.kao.karma import (get_sum_accounting_window, get_sum_accounting_by_project, 
                             get_sum_accounting_by_user)
@@ -20,7 +20,6 @@ class Platform:
               self.get_sum_accounting_window = self.get_sum_accounting_window_default
               self.get_sum_accounting_by_project = self.get_sum_accounting_by_project_default
               self.get_sum_accounting_by_user = self.get_sum_accounting_by_user_default
-              self.get_current_jobs_dependencies = self.get_current_jobs_dependencies_default
 
          elif mode == "simu":
               self.env = kwargs["env"]
@@ -40,7 +39,6 @@ class Platform:
               self.get_sum_accounting_window = self.get_sum_accounting_window_simu
               self.get_sum_accounting_by_project = self.get_sum_accounting_by_project_simu
               self.get_sum_accounting_by_user = self.get_sum_accounting_by_user_simu
-              self.get_current_jobs_dependencies = self.get_current_jobs_dependencies_simu
               
          else:
               print "mode: ", mode, " is undefined" 
@@ -71,9 +69,6 @@ class Platform:
 
      def get_sum_accounting_by_user_default(self, *args):
           return get_sum_accounting_by_user(*args)
-
-     def get_current_jobs_dependencies_default(self):
-          return get_current_jobs_dependencies()
 
      #
      # SimSim
@@ -129,6 +124,3 @@ class Platform:
 
      def get_sum_accounting_by_user_simu(self, *args):
           print "get_sum_accounting_by_user NOT IMPLEMENTED"
-
-     def get_current_jobs_dependencies_simu(self):
-          return {}

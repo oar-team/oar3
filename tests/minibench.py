@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../kao/')
-from scheduling import *
+from oar.kao.scheduling import *
 #http://www.huyng.com/posts/python-performance-analysis/
 import time
 

@@ -60,8 +60,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
     if min_start_time < 0:
         # to not always begin by the first slots ( O(n^2) )
         #TODO cache_by_container/inner + moldable + time_sharing(?)
-        if job.key_cache and job.key_cache in cache:
-            sid_left = cache[job.key_cache]
+        if job.key_cache and job.key_cache[mld_id] in cache:
+            sid_left = cache[job.key_cache[mld_id]]
         
     else:
         while slots[sid_left].b < min_start_time:
@@ -111,8 +111,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
         sid_left = slots[sid_left].next
 
-    if job.key_cache and min_start_time > 0: #exclude job w/ dependencies
-        cache[job.key_cache] = sid_left
+    if (job.key_cache and min_start_time > 0): #excluded are job w/ dependencies  and (job.ts or (job.ph == USE_PLACEHOLDER)) :
+        cache[job.key_cache[mld_id]] = sid_left
 
     return (itvs, sid_left, sid_right)
 
@@ -155,53 +155,46 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
 
-def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time, jobs_dependencies):
+def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
     #    for k,job in jobs.iteritems():
     #print "*********j_id:", k, job.mld_res_rqts[0]
 
     for jid in id_jobs:
+        job = jobs[jid]
 
-        #Dependencies 
         min_start_time = -1 
         to_skip = False
-        if jid in jobs_dependencies:
-            for j_dep in jobs_dependencies[jid]:
-                jid_dep, state, exit_code = j_dep
-                if state == "Error":
-                    log.info("job(" + str(jid_dep) +") in dependencies for job("
-                             + str(jid) + ") is in error state") 
-                    #TODO  set job to ERROR"
-                    to_skip = True
-                    break
-                elif state == "Waiting":
-                    #determine endtime
-                    if jid_dep in jobs:
-                        job_dep = jobs[jid_dep]
-                        job_stop_time = job.start_time + job.walltime
-                        if job_stop_time > min_start_time:
-                            min_start_tim = job_stop_time
-                    else:
-                        #TODO
-                        to_skip = True
-                        break
-                elif state == "Terminated" and exit_code ==0:
-                    next
+        #Dependencies 
+        for j_dep in job.deps:
+            jid_dep, state, exit_code = j_dep
+            if state == "Error":
+                log.info("job(" + str(jid_dep) +") in dependencies for job("
+                         + str(jid) + ") is in error state") 
+                #TODO  set job to ERROR"
+                to_skip = True
+                break
+            elif state == "Waiting":
+                #determine endtime
+                if jid_dep in jobs:
+                    job_dep = jobs[jid_dep]
+                    job_stop_time = job.start_time + job.walltime
+                    if job_stop_time > min_start_time:
+                        min_start_tim = job_stop_time
                 else:
+                    #TODO
                     to_skip = True
                     break
+            elif state == "Terminated" and exit_code ==0:
+                next
+            else:
+                to_skip = True
+                break
                     
         if to_skip:
             log.info("job(" + str(jid) + "can't be scheduled due to dependencies")
         else:
-            job = jobs[jid]
-            #print "j_id:", jid, job.mld_res_rqts[0]
-            #TODO
-            #if jobs_dependencies[j_id].has_key(j_id):
-            #    continue
-            #else:
-
             ss_id = 0
             if "inner" in job.types:
                 ss_id = int(job.types["inner"])

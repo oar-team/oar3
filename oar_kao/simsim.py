@@ -244,7 +244,8 @@ class SWFWorkload():
                                                                 [([("resource_id", req_procs)],
                                                                 [(0,nb_res-1)])])],
                                               run_time = fields[RUN_TIME],
-                                              key_cache = "",
+                                              deps = []
+                                              key_cache = {},
                                               ts=False, ph=0
                                           )
 

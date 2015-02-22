@@ -37,7 +37,8 @@ for i in range(1,nb_jobs + 1):
                        moldable_id = 0,
                        mld_res_rqts =  [(i, 60, [([("resource_id", 15)], [(0,nb_res-1)])])],
                        run_time = 20*i,
-                       key_cache = "",
+                       deps = [],
+                       key_cache = {},
                        ts=False, ph=0
                        )
     

@@ -6,7 +6,7 @@ class TestHierarchy(unittest.TestCase):
         h0 = [[(1, 16)],[(17, 32)]]
 
         x = find_resource_hierarchies_scattered ([(1, 32)], [h0], [2])
-        self.assertEqual(x, [(1, 16), (17, 32)])
+        self.assertEqual(x, [(1, 32)])
 
     def test_find_resource_hierarchies_scattere2(self):
         h0 = [[(1, 16)],[(17, 32)]]

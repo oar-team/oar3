@@ -50,7 +50,7 @@ class TestScheduling(unittest.TestCase):
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
         #j1 = JobPseudo(id=1, start_time=0, walltime=0, types={}, key_cache="",
-        j1 = JobPseudo(id=1, types={}, key_cache="",
+        j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                      mld_res_rqts=[
                          (1, 60,
                           [  ( [("node", 2)], res)  ]
@@ -71,7 +71,7 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={}, key_cache="",
+        j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                      mld_res_rqts=[
                          (1, 60,
                           [  ( [("node", 2)], res)  ]
@@ -79,7 +79,7 @@ class TestScheduling(unittest.TestCase):
                      ]
         , ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1}, hy, [1], 20)
 
         self.assertTrue(self.compare_slots_val_ref(ss.slots,v))
 
@@ -90,15 +90,15 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="", 
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 80, [ ( [("node", 2)], res[:]) ])],
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"inner":"1"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 10, {})
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 10)
 
         self.assertEqual(j2.res_set, [(1, 8)])
 
@@ -110,15 +110,15 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="", 
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={}, 
                        mld_res_rqts=[(1, 60, [ ( [("node", 2)], res) ])], 
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"inner":"1"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res2) ])], 
                        ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20)
 
         self.assertEqual(j2.start_time, -1)
 
@@ -131,15 +131,15 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="", 
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={}, 
                        mld_res_rqts=[(1, 60, [ ( [("node", 2)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"inner":"1"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 20, [ ( [("node", 3)], res[:]) ])], 
                        ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20)
 
         self.assertEqual(j2.start_time, -1)
         
@@ -152,15 +152,15 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="", 
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={}, 
                        mld_res_rqts=[(1, 60, [ ( [("node", 2)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"inner":"1"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 70, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20)
 
         self.assertEqual(j2.start_time, -1)
 
@@ -171,27 +171,27 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="",
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={},
                        res_set = [(7,27)],
                        start_time = 200,
                        walltime = 150,
                        mld_res_rqts=[(1, 60, [ ( [("node", 2)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"inner":"1"}, deps=[], key_cache={},
                        res_set = [(9,16)],
                        start_time = 210,
                        walltime = 70,
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j3 = JobPseudo(id=3, types={"inner":"1"}, key_cache="", 
+        j3 = JobPseudo(id=3, types={"inner":"1"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
         set_slots_with_prev_scheduled_jobs(all_ss, [j1,j2], 20)
 
-        schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20, {})
+        schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20)
 
         self.assertEqual(j3.start_time, 200)
         self.assertEqual(j3.res_set, [(17, 24)])
@@ -203,19 +203,19 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="", 
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 80, [ ( [("node", 2)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"container":"","inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"container":"","inner":"1"}, deps=[], key_cache={}, 
                        mld_res_rqts=[(1, 50, [ ( [("node", 2)], res[:]) ])], 
                        ts=False, ph=0)
 
-        j3 = JobPseudo(id=2, types={"inner":"2"}, key_cache="", 
+        j3 = JobPseudo(id=2, types={"inner":"2"}, deps=[], key_cache={}, 
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
-        schedule_id_jobs_ct(all_ss, {1:j1, 2:j2, 3:j3}, hy, [1,2,3], 10, {})
+        schedule_id_jobs_ct(all_ss, {1:j1, 2:j2, 3:j3}, hy, [1,2,3], 10)
 
         self.assertEqual(j3.res_set, [(1, 8)])
 
@@ -226,25 +226,25 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
 
-        j1 = JobPseudo(id=1, types={"container":""}, key_cache="",
+        j1 = JobPseudo(id=1, types={"container":""}, deps=[], key_cache={},
                        res_set = [(7,27)],
                        start_time = 200,
                        walltime = 150,
                        ts=False, ph=0)
 
-        j2 = JobPseudo(id=2, types={"container":"","inner":"1"}, key_cache="", 
+        j2 = JobPseudo(id=2, types={"container":"","inner":"1"}, deps=[], key_cache={}, 
                        res_set = [(15,25)],
                        start_time = 210,
                        walltime = 70,
                        ts=False, ph=0)
 
-        j3 = JobPseudo(id=3, types={"inner":"2"}, key_cache="", 
+        j3 = JobPseudo(id=3, types={"inner":"2"}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 30, [ ( [("node", 1)], res[:]) ])], 
                        ts=False, ph=0)
 
         set_slots_with_prev_scheduled_jobs(all_ss, [j1,j2], 20)
 
-        schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20, {})
+        schedule_id_jobs_ct(all_ss, {3:j3}, hy, [3], 20)
 
         self.assertEqual(j3.start_time, 210)
         self.assertEqual(j3.res_set, [(17, 24)])
@@ -255,17 +255,17 @@ class TestScheduling(unittest.TestCase):
         all_ss = {0:ss}
         hy = {'node': [ [(1,8)], [(9,16)], [(17,24)], [(25,32)] ] }
         
-        j1 = JobPseudo(id=1, types={}, key_cache="", 
+        j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 60, [ ( [("node", 4)], res[:]) ])],
                        user = "toto", name="yop",
                        ts=True, ts_user="*", ts_name="*", ph=0)
         
-        j2 = JobPseudo(id=2, types={}, key_cache="", 
+        j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
                        mld_res_rqts=[(1, 80, [ ( [("node", 4)], res[:]) ])],
                        user = "toto", name="yop",
                        ts=True, ts_user="*", ts_name="*", ph=0)
         
-        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20, {})
+        schedule_id_jobs_ct(all_ss, {1:j1,2:j2}, hy, [1,2], 20)
        
         print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
 

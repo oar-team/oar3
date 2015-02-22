@@ -32,6 +32,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     #updated_cache = False
 
     # to not always begin by the first slots ( O(n^2) )
+    # TODO: 
     if job.key_cache and job.key_cache in cache:
         sid_left = cache[job.key_cache]
     else:
@@ -119,11 +120,6 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
 
     for jid in id_jobs:
         job = jobs[jid]
-        #print "j_id:", jid, job.mld_res_rqts[0]
-        #TODO
-        #if jobs_dependencies[j_id].has_key(j_id):
-        #    continue
-        #else:
 
         ss_id =0
         if "inner" in job.types:

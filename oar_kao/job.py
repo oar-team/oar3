@@ -122,6 +122,22 @@ def get_jobs_types(jids, jobs):
         else:
             job.types = {}
 
+def job_cache_keys(jobs):
+    """
+    Set keys for job use by slot_set cache to speed up the search of suitable slots.
+
+    Jobs with timesharing, placeholder or dependencies requirements are not suitable for this cache feature.
+    Jobs in container might leverage of cache because container is link to a particular slot_set.
+
+    Be default all 
+    """
+
+    #for job_id, job in jobs.iteritems():
+    #    if (not job.ts) and (job.ph == NO_PLACEHOLDER) and (not jobs[job_id].dep)):
+    #        for v in job:
+    #            str(mld_res_rqts)
+    #            #job.key_cache = str(mld_res_rqts)
+
 def get_data_jobs(jobs, jids, resource_set, job_security_time):
     '''
     oarsub -q test -l "nodes=1+{network_address='node3'}/nodes=1/resource_id=1" sleep
@@ -178,10 +194,11 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
                 jrg.append( (jr_descriptions, res_constraints) )
                 mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
                 job.mld_res_rqts = mld_res_rqts
-                job.key_cache = str(mld_res_rqts)
                 mld_res_rqts = []
                 jrg = []
                 jr_descriptions = []
+                job.key_cache = {}
+                job.deps = []
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
                 #print "======================"
@@ -254,7 +271,8 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
 
     job.mld_res_rqts = mld_res_rqts
-    job.key_cache = str(mld_res_rqts)
+    job.key_cache = {}
+    job.deps = []
     job.ts = False
     job.ph = NO_PLACEHOLDER
 
@@ -263,6 +281,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
     #print "======================"
 
     get_jobs_types(jids, jobs)
+    get_current_jobs_dependencies(jobs)
 
 
 def get_job_suspended_sum_duration(jid, now):
@@ -358,11 +377,10 @@ def save_assigns(jobs, resource_set):
     #"INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES "^
     #"INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES "^
 
-def get_current_jobs_dependencies():
+def get_current_jobs_dependencies(jobs):
 # retrieve jobs dependencies *)
 # return an hashtable, key = job_id, value = list of required jobs *)
-    jobs_dependencies = {}
-
+                                                    
     req = db.query(JobDependencie, Job.state, Job.exit_code)\
             .filter(JobDependencie.index == "CURRENT")\
             .filter(Job.id == JobDependencie.job_id_required)\
@@ -370,11 +388,10 @@ def get_current_jobs_dependencies():
 
     for x in req:
         j_dep, state, exit_code = x
-        if j_dep.job_id not in jobs_dependencies:
-            jobs_dependencies[j_dep.job_id] = []
-        jobs_dependencies[j_dep.job_id].append( (j_dep.job_id_required, state, exit_code) )
-
-    return jobs_dependencies
+        if j_dep.job_id not in jobs:
+            log.warning(" during get dependencies for current job " + str(job_id) + " is not in waiting state") # These facts have no  particular impact
+        else:
+            jobs[j_dep.job_id].deps.append( (j_dep.job_id_required, state, exit_code) )
 
 #TO REMOVE ?
 def get_current_not_waiting_jobs():
