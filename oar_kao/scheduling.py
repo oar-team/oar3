@@ -60,8 +60,11 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
     if min_start_time < 0:
         # to not always begin by the first slots ( O(n^2) )
         #TODO cache_by_container/inner + moldable + time_sharing(?)
-        if job.key_cache and job.key_cache[mld_id] in cache:
+        if job.key_cache and (job.key_cache[mld_id] in cache):
             sid_left = cache[job.key_cache[mld_id]]
+            #print "cache hit...... ", sid_left
+            #else:
+            #print "cache miss :("
         
     else:
         while slots[sid_left].b < min_start_time:
@@ -111,8 +114,11 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
         sid_left = slots[sid_left].next
 
-    if (job.key_cache and min_start_time > 0): #excluded are job w/ dependencies  and (job.ts or (job.ph == USE_PLACEHOLDER)) :
+    if (job.key_cache and min_start_time < 0): #and (not job.deps):
         cache[job.key_cache[mld_id]] = sid_left
+        #        print "cache: update entry ",  job.key_cache[mld_id], " with ", sid_left
+        #else:
+        #print "cache: not updated ", job.key_cache, min_start_time, job.deps
 
     return (itvs, sid_left, sid_right)
 

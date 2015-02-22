@@ -42,35 +42,6 @@ class JobPseudo():
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-#
-# TODO to remove but address support for cache w/ moldable befor
-#
-def job_set(self, id, state, start_time, walltime, user, name, project, types, res_set, \
-        moldable_id, mld_res_rqts, key_cache=""):
-    self.id = id
-    self.state = state
-    self.start_time = start_time
-    self.walltime = walltime
-    self.user = user
-    self.name = name
-    self.project = project
-    self.types = types
-    self.res_set = res_set
-    self.moldable_id = moldable_id
-    self.mld_res_rqts = mld_res_rqts #[ (moldable_id, walltime,
-    #                                   [   [ (hy_level, hy_nb, constraints) ]  ]
-    # hy_level = [ [string] ]
-    # hy_nb = [ [ int ] ]
-    # constraints = [ [itvs]  ]
-    self.key_cache = key_cache
-    if not key_cache:
-        if len(mld_res_rqts) == 1:
-            (m_id, walltime, res_rqt) = mld_res_rqts[0]
-            self.key_cache = (str(walltime)).join(str(res_rqt))
-        else:
-            #TODO cache for moldable_id
-            pass
-
 def get_waiting_jobs(queue):
     #TODO  fairsharing_nb_job_limit
     waiting_jobs = {}
@@ -122,21 +93,21 @@ def get_jobs_types(jids, jobs):
         else:
             job.types = {}
 
-def job_cache_keys(jobs):
+def set_jobs_cache_keys(jobs):
     """
     Set keys for job use by slot_set cache to speed up the search of suitable slots.
 
     Jobs with timesharing, placeholder or dependencies requirements are not suitable for this cache feature.
     Jobs in container might leverage of cache because container is link to a particular slot_set.
 
-    Be default all 
-    """
+    For jobs with dependencies, they do not update the cache entries.  
 
-    #for job_id, job in jobs.iteritems():
-    #    if (not job.ts) and (job.ph == NO_PLACEHOLDER) and (not jobs[job_id].dep)):
-    #        for v in job:
-    #            str(mld_res_rqts)
-    #            #job.key_cache = str(mld_res_rqts)
+    """
+    for job_id, job in jobs.iteritems():
+        if (not job.ts) and (job.ph == NO_PLACEHOLDER):
+            for res_rqt in job.mld_res_rqts:
+                (mld_id, walltime, hy_res_rqts) = res_rqt
+                job.key_cache[int(mld_id)] = str(walltime) + str(hy_res_rqts)
 
 def get_data_jobs(jobs, jids, resource_set, job_security_time):
     '''
@@ -282,7 +253,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
 
     get_jobs_types(jids, jobs)
     get_current_jobs_dependencies(jobs)
-
+    set_jobs_cache_keys(jobs)
 
 def get_job_suspended_sum_duration(jid, now):
 
