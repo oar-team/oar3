@@ -13,16 +13,16 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar',
 
 @click.group(context_settings=CONTEXT_SETTINGS, chain=True)
 @click.version_option(version=VERSION)
-@click.option('--script', is_flag=True, default=False,
+@click.option('--force-yes', is_flag=True, default=False,
               help="Never prompts for user intervention")
 @click.option('--archive-db-suffix', default="archive")
 @click.option('--debug', is_flag=True, default=False, help="Enable Debug.")
 @pass_context
-def cli(ctx, debug, archive_db_suffix, script):
+def cli(ctx, debug, archive_db_suffix, force_yes):
     """Archive OAR database."""
     ctx.debug = debug
     ctx.archive_db_suffix = archive_db_suffix
-    ctx.script = script
+    ctx.force_yes = force_yes
     ctx.print_db_info()
 
 
