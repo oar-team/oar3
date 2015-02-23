@@ -152,6 +152,10 @@ class Database(object):
                 self.connector = EngineConnector(self)
             return self.connector.get_engine()
 
+    @cached_property
+    def dialect(self):
+        return self.engine.dialect.name
+
     @property
     def metadata(self):
         """Proxy for Model.metadata"""
