@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
+from __future__ import division, absolute_import, unicode_literals
 
 from copy import copy
 
@@ -18,6 +18,17 @@ from .helpers import green, magenta, yellow, blue, red
 
 class NotSupportedDatabase(Exception):
     pass
+
+
+UNUSED_TABLES = (
+    'accounting',
+    'gantt_jobs_predictions',
+    'gantt_jobs_predictions_log',
+    'gantt_jobs_predictions_visu',
+    'gantt_jobs_resources',
+    'gantt_jobs_resources_log',
+    'gantt_jobs_resources_visu',
+)
 
 
 def copy_db(ctx):
@@ -53,6 +64,8 @@ def clone_db(ctx):
         create_database(ctx.archive_db.engine.url)
         show_tables_query = 'SHOW TABLES in %s;' % ctx.current_db_name
         for row in ctx.current_db.session.execute(show_tables_query):
+            if row[0] in UNUSED_TABLES:
+                ctx.log(yellow(' ignore') + ' ~> table %s' % row[0])
             ctx.current_db.session.execute('''
                 CREATE TABLE %s.%s LIKE %s.%s
             ''' % (
@@ -104,21 +117,21 @@ def sync_tables(ctx, tables):
     raw_conn = ctx.archive_db.engine.connect()
     # Get the max pk
     for table in tables:
-        if table.primary_key:
-            pk = table.primary_key.columns.values()[0]
-            if isinstance(pk.type, Integer):
-                max_pk_query = select([func.max(pk)])
-                max_pk = raw_conn.execute(max_pk_query).scalar()
-                cond = None
-                if max_pk is not None:
-                    cond = (pk > max_pk)
-                copy_table(ctx, table, raw_conn, condition=cond)
+        if table.name not in UNUSED_TABLES:
+            if table.primary_key:
+                pk = table.primary_key.columns.values()[0]
+                if isinstance(pk.type, Integer):
+                    max_pk_query = select([func.max(pk)])
+                    max_pk = raw_conn.execute(max_pk_query).scalar()
+                    cond = None
+                    if max_pk is not None:
+                        cond = (pk > max_pk)
+                    copy_table(ctx, table, raw_conn, condition=cond)
+                else:
+                    merge_table(ctx, table)
             else:
-                merge_table(ctx, table)
-        else:
-            ctx.log(magenta('  empty') + ' ~> table ' + table.name)
-            delete_from_tables(table, raw_conn)
-            copy_table(ctx, table, raw_conn)
+                delete_from_tables(ctx, table, raw_conn)
+                copy_table(ctx, table, raw_conn)
 
 
 def merge_table(ctx, table):
@@ -135,10 +148,13 @@ def merge_table(ctx, table):
     session.commit()
 
 
-def delete_from_tables(table, raw_conn, condition=None):
+def delete_from_tables(ctx, table, raw_conn, condition=None):
     delete_query = table.delete()
     if condition is not None:
+        ctx.log(magenta(' delete') + ' ~> from table ' + table.name)
         delete_query = delete_query.where(condition)
+    else:
+        ctx.log(magenta('  empty') + ' ~> table ' + table.name)
     raw_conn.execute(delete_query)
 
 
