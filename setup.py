@@ -46,7 +46,7 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    oar-database-migrate=oar_utils.db.migrate:main
-    oar-database-archive=oar_utils.db.archive:main
+    oar-database-migrate=oar_utils.db.migrate:cli
+    oar-database-archive=oar_utils.db.archive:cli
     ''',
 )

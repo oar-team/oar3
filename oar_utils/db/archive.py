@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
+from __future__ import division, absolute_import, unicode_literals
 import click
 
 from .. import VERSION
@@ -31,6 +31,29 @@ def cli(ctx, debug, archive_db_suffix, script):
 @pass_context
 def sync(ctx, chunk):
     ctx.chunk = chunk
-    ctx.confirm("Continue to archive your database?")
+    ctx.confirm("Continue to copy data to the archive database?")
+    copy_db(ctx)
+    ctx.log("up-to-date.")
+
+
+@cli.command('purge-resources')
+@click.option('-s', '--status', multiple=True, default=["Dead"],
+              help="Only resources with the giving status")
+@pass_context
+def purge_resources(ctx, table):
+    """ Purge old resources and all attached jobs. """
+    ctx.confirm("Continue to purge resources?")
+    copy_db(ctx)
+    ctx.log("up-to-date.")
+
+
+@cli.command('purge-jobs')
+@click.option('-s', '--status', multiple=True, default=['Terminated'],
+              help="Only jobs with the giving status")
+@click.option('--older-than', type=str, default=None)
+@pass_context
+def purge_jobs(ctx, status, older_than):
+    import pdb; pdb.set_trace()
+    ctx.confirm("Continue to purge resources?")
     copy_db(ctx)
     ctx.log("up-to-date.")
