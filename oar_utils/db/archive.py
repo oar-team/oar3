@@ -49,6 +49,8 @@ def sync(ctx, chunk):
 @cli.command('purge')
 @pass_context
 def purge(ctx):
-    """ Purge old resources and old jobs from you database."""
-    ctx.confirm("Continue to purge resources?")
+    """ Purge old resources and old jobs from your current database."""
+    msg = "Continue to purge old resources and jobs "\
+          "from your current database?"
+    ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
     purge_db(ctx)
