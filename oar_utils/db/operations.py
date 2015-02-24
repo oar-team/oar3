@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, absolute_import, unicode_literals
 
+import re
 from copy import copy
 from functools import partial
 
@@ -8,7 +9,8 @@ from sqlalchemy import func, MetaData, Table, and_, not_
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.types import Integer
 from sqlalchemy.sql.expression import select
-from sqlalchemy_utils.functions import database_exists, create_database
+from sqlalchemy_utils.functions import (database_exists, create_database,
+                                        render_statement)
 from sqlalchemy.ext.declarative import declarative_base
 
 from oar.lib.compat import  itervalues, to_unicode
@@ -17,7 +19,7 @@ from oar.lib.compat import  itervalues, to_unicode
 from .helpers import green, magenta, yellow, blue, red
 
 
-UNUSED_TABLES = [
+IGNORED_TABLES = [
     'accounting',
     'gantt_jobs_predictions',
     'gantt_jobs_predictions_log',
@@ -57,15 +59,37 @@ get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
 get_moldables_columns = partial(get_table_columns, MOLDABLE_JOBS_TABLES)
 
 
+def get_sync_criteria(ctx, table):
+    # prepare query
+    criteria = []
+    if table.name in jobs_table:
+        for column_name in get_jobs_columns(table.name):
+            column = table.c.get(column_name)
+            criteria.append(column < ctx.max_job_to_sync)
+    if table.name in moldable_jobs_tables:
+        for column_name in get_moldables_columns(table.name):
+            column = table.c.get(column_name)
+            criteria.append(column < ctx.max_moldable_job_to_sync)
+    return criteria
+
+
 def copy_db(ctx):
     engine_url = ctx.archive_db.engine.url
+    first_iteration = False
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
         and ctx.current_db.dialect in ("postgresql", "mysql")):
+            first_iteration = True
             clone_db(ctx)
-    tables = sync_schema(ctx)
-    sync_tables(ctx, tables, delete=True)
+    if not first_iteration or ctx.current_db.dialect == "postgresql":
+        tables = sync_schema(ctx)
+        sync_tables(ctx, tables, delete=True)
     if ctx.current_db.dialect == "postgresql":
         fix_sequences(ctx)
+
+
+def reflect_table(ctx, table_name):
+    metadata = MetaData(ctx.current_db.engine)
+    return Table(table_name, metadata, autoload=True)
 
 
 def clone_db(ctx):
@@ -75,13 +99,8 @@ def clone_db(ctx):
     if ctx.current_db.dialect == 'postgresql':
         ctx.current_db.session.connection().connection.set_isolation_level(0)
         ctx.current_db.session.execute(
-            '''
-                CREATE DATABASE "%s" WITH TEMPLATE "%s";
-            ''' %
-            (
-                ctx.archive_db_name,
-                ctx.current_db_name
-            )
+            'CREATE DATABASE "%s" WITH TEMPLATE "%s";'
+            % (ctx.archive_db_name, ctx.current_db_name)
         )
         ctx.current_db.session.connection().connection.set_isolation_level(1)
     elif ctx.current_db.dialect == 'mysql':
@@ -89,32 +108,33 @@ def clone_db(ctx):
         create_database(ctx.archive_db.engine.url)
         show_tables_query = 'SHOW TABLES in %s;' % ctx.current_db_name
         for row in ctx.current_db.session.execute(show_tables_query):
-            if row[0] in UNUSED_TABLES:
-                ctx.log(yellow(' ignore') + ' ~> table %s' % row[0])
-            ctx.current_db.session.execute('''
-                CREATE TABLE %s.%s LIKE %s.%s
-            ''' % (
-                ctx.archive_db_name,
-                row[0],
-                ctx.current_db_name,
-                row[0]
-            ))
-            ctx.current_db.session.execute('ALTER TABLE %s.%s DISABLE KEYS' % (
-                ctx.archive_db_name,
-                row[0]
-            ))
-            ctx.current_db.session.execute('''
-                INSERT INTO %s.%s SELECT * FROM %s.%s
-            ''' % (
-                ctx.archive_db_name,
-                row[0],
-                ctx.current_db_name,
-                row[0]
-            ))
-            ctx.current_db.session.execute('ALTER TABLE %s.%s ENABLE KEYS' % (
-                ctx.archive_db_name,
-                row[0]
-            ))
+            name = row[0]
+            ctx.current_db.session.execute(
+                'CREATE TABLE %s.%s LIKE %s.%s'
+                % (ctx.archive_db_name, name, ctx.current_db_name, name)
+            )
+            if name in IGNORED_TABLES:
+                ctx.log(yellow(' ignore') + ' ~> table %s' % name)
+            ctx.current_db.session.execute(
+                'ALTER TABLE %s.%s DISABLE KEYS' % (ctx.archive_db_name, name)
+            )
+            table = reflect_table(ctx, name)
+            criteria = get_sync_criteria(ctx, table)
+            query = select([table])
+            if criteria:
+                query = query.where(reduce(and_, criteria))
+            raw_sql = render_statement(query, ctx.current_db.engine)
+            raw_sql = raw_sql.replace(";", "").replace("\n", "")
+            matcher = re.compile(r'SELECT(.*?)FROM', re.IGNORECASE | re.DOTALL)
+            result = matcher.search(raw_sql)
+            if result:
+                raw_sql = raw_sql.replace(result.group(1), " * ")
+            ctx.current_db.session.execute(
+                'INSERT INTO %s.%s (%s)' % (ctx.archive_db_name, name, raw_sql)
+            )
+            ctx.current_db.session.execute(
+                'ALTER TABLE %s.%s ENABLE KEYS' % (ctx.archive_db_name, name)
+            )
     else:
         raise NotSupportedDatabase()
 
@@ -137,25 +157,12 @@ def sync_schema(ctx):
             yield Table(table.name, metadata, autoload=True)
 
 
-def get_sync_criteria(ctx, table):
-    # prepare query
-    criteria = []
-    if table.name in jobs_table:
-        for column_name in get_jobs_columns(table.name):
-            column = table.c.get(column_name)
-            criteria.append(column < ctx.max_job_to_sync)
-    if table.name in moldable_jobs_tables:
-        for column_name in get_moldables_columns(table.name):
-            column = table.c.get(column_name)
-            criteria.append(column < ctx.max_moldable_job_to_sync)
-    return criteria
-
 def sync_tables(ctx, tables, delete=False):
     # prepare the connection
     raw_conn = ctx.archive_db.engine.connect()
     # Get the max pk
     for table in tables:
-        if table.name not in UNUSED_TABLES:
+        if table.name not in IGNORED_TABLES:
             criteria = get_sync_criteria(ctx, table)
             if delete and criteria:
                 reverse_criteria = [not_(c) for c in criteria]
@@ -279,5 +286,6 @@ class NotSupportedDatabase(Exception):
     pass
 
 
-def purge_db():
+def purge_db(ctx):
+    # prepare the connection
     pass

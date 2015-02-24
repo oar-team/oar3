@@ -2,6 +2,7 @@
 from __future__ import division, absolute_import, unicode_literals
 import click
 
+from oar.lib import config
 from .. import VERSION
 from .operations import copy_db, purge_db
 from .helpers import pass_context
@@ -13,11 +14,12 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar',
 
 @click.group(context_settings=CONTEXT_SETTINGS, chain=True)
 @click.version_option(version=VERSION)
-@click.option('--force-yes', is_flag=True, default=False,
+@click.option('-y', '--force-yes', is_flag=True, default=False,
               help="Never prompts for user intervention")
 @click.option('--db-suffix', default="archive", help="Archive database suffix")
 @click.option('--ignore-resources', default=["^Dead"], multiple=True)
-@click.option('--ignore-jobs', default=["^Terminated", "^Error"], multiple=True)
+@click.option('--ignore-jobs', default=["^Terminated", "^Error"],
+              multiple=True)
 @click.option('--jobs-older-than', default="1Y")
 @click.option('--debug', is_flag=True, default=False, help="Enable Debug.")
 @pass_context
@@ -30,6 +32,7 @@ def cli(ctx, force_yes, db_suffix, debug, ignore_resources, ignore_jobs,
     ctx.ignore_resources = ignore_resources
     ctx.ignore_jobs = ignore_jobs
     ctx.print_db_info()
+    config["LOG_FORMAT"] = '[%(levelname)s]: %(message)s'
 
 
 @cli.command()
@@ -38,7 +41,8 @@ def cli(ctx, force_yes, db_suffix, debug, ignore_resources, ignore_jobs,
 def sync(ctx, chunk):
     """ Send old resources and jobs to archive database."""
     ctx.chunk = chunk
-    ctx.confirm("Continue to copy data to the archive database?")
+    ctx.confirm("Continue to copy old resources and jobs to the archive "
+                "database?")
     copy_db(ctx)
 
 
