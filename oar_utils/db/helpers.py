@@ -4,6 +4,7 @@ from __future__ import division
 import sys
 import click
 
+from sqlalchemy import func, and_
 from oar.lib import config, Database
 from oar.lib.compat import reraise
 from functools import update_wrapper
@@ -47,6 +48,52 @@ class Context(object):
     @cached_property
     def current_db_name(self):
         return self.current_db.engine.url.database
+
+    @cached_property
+    def ignored_resources_criteria(self):
+        criteria = []
+        exclude = []
+        include = []
+        for raw_state in self.ignore_resources:
+            if raw_state.startswith("^"):
+                exclude.append(raw_state.lstrip("^"))
+            else:
+                include.append(raw_state)
+        if exclude:
+            criteria.append(self.current_db.m.Resource.state.notin_(exclude))
+        if include:
+            criteria.append(self.current_db.m.Resource.state.in_(include))
+        return reduce(and_, criteria)
+
+    @cached_property
+    def ignored_jobs_criteria(self):
+        criteria = []
+        exclude = []
+        include = []
+        for raw_state in self.ignore_jobs:
+            if raw_state.startswith("^"):
+                exclude.append(raw_state.lstrip("^"))
+            else:
+                include.append(raw_state)
+        if exclude:
+            criteria.append(self.current_db.m.Job.state.notin_(exclude))
+        if include:
+            criteria.append(self.current_db.m.Job.state.in_(include))
+        return reduce(and_, criteria)
+
+    @cached_property
+    def max_job_to_sync(self):
+        Job = self.current_db.models.Job
+        return self.current_db.query(func.min(Job.id))\
+                              .filter(self.ignored_jobs_criteria)\
+                              .scalar()
+
+    @cached_property
+    def max_moldable_job_to_sync(self):
+        MoldableJobDescription = self.current_db.models.MoldableJobDescription
+        criteria = MoldableJobDescription.job_id < self.max_job_to_sync
+        return self.current_db.query(func.max(MoldableJobDescription.id))\
+                              .filter(criteria).scalar() + 1
 
     def print_db_info(self):
         self.log("")
