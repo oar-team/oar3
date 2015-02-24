@@ -6,23 +6,23 @@ from oar.lib import get_logger
 
 log = get_logger("oar.kamelot")
 
-def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time):
+def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time, filter_besteffort=True):
 
     jobs_slotsets = {0:[]}
 
     for job in jobs:
+        if not ( filter_besteffort and ("besteffort" in job.types) ):
+            if "container" in job.types:
+                t_e = job.start_time + job.walltime - job_security_time
+                #print "job.res_set, job.start_time, t_e", job.res_set, job.start_time, t_e
+                slots_sets[job.id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
+                jobs_slotsets[job.id] = []
 
-        if "container" in job.types:
-            t_e = job.start_time + job.walltime - job_security_time
-            #print "job.res_set, job.start_time, t_e", job.res_set, job.start_time, t_e
-            slots_sets[job.id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
-            jobs_slotsets[job.id] = []
+            ss_id = 0
+            if "inner" in job.types:
+                ss_id = int(job.types["inner"])
 
-        ss_id = 0
-        if "inner" in job.types:
-            ss_id = int(job.types["inner"])
-
-        jobs_slotsets[ss_id].append(job)
+            jobs_slotsets[ss_id].append(job)
 
     for ss_id,slot_set in slots_sets.iteritems():
         slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )

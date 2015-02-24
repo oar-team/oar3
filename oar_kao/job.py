@@ -77,7 +77,7 @@ def get_jobs_types(jids, jobs):
             job.ph = USE_PLACEHOLDER
             job.ph_name = t_v[1]
         else:
-            if len(tv) == 2:
+            if len(t_v) == 2:
                 v = t_v[1]
             else:
                 v = ""
@@ -109,7 +109,7 @@ def set_jobs_cache_keys(jobs):
                 (mld_id, walltime, hy_res_rqts) = res_rqt
                 job.key_cache[int(mld_id)] = str(walltime) + str(hy_res_rqts)
 
-def get_data_jobs(jobs, jids, resource_set, job_security_time):
+def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_duration=0):
     '''
     oarsub -q test -l "nodes=1+{network_address='node3'}/nodes=1/resource_id=1" sleep
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
@@ -129,13 +129,18 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
             .filter(JobResourceGroup.index == 'CURRENT')\
             .filter(JobResourceDescription.index == 'CURRENT')\
             .filter(Job.id.in_( tuple(jids) ))\
-            .join(MoldableJobDescription)\
-            .join(JobResourceGroup)\
-            .join(JobResourceDescription)\
+            .filter(Job.id == MoldableJobDescription.job_id)\
+            .filter(JobResourceGroup.moldable_id == MoldableJobDescription.id)\
+            .filter(JobResourceDescription.group_id == JobResourceGroup.id)\
             .order_by(MoldableJobDescription.id,
                       JobResourceGroup.id,
                       JobResourceDescription.order)\
             .all()
+    #            .join(MoldableJobDescription)\
+    #            .join(JobResourceGroup)\
+    #            .join(JobResourceDescription)\
+        
+
 
     cache_constraints = {}
 
@@ -177,9 +182,12 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
                 #print "======================"
 
             prev_mld_id = mld_id
-            prev_mld_id_walltime = mld_id_walltime + job_security_time
             prev_j_id = j_id
             job = jobs[j_id]
+            if besteffort_duration:
+                prev_mld_id_walltime = besteffort_duration 
+            else:
+                prev_mld_id_walltime = mld_id_walltime + job_security_time
 
         else:
             #
@@ -192,9 +200,12 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time):
                     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg) )
 
                 prev_mld_id = mld_id
-                prev_mld_id_walltime = mld_id_walltime
                 jrg = []
                 jr_descriptions = []
+                if besteffort_duration:
+                    prev_mld_id_walltime = besteffort_duration 
+                else:
+                    prev_mld_id_walltime = mld_id_walltime + job_security_time
         #
         # new job resources groupe_id
         #

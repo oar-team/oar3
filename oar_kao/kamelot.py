@@ -88,7 +88,11 @@ def schedule_cycle(plt, now, queue = "default"):
         all_slot_sets = {0:initial_slot_set}
         
         if scheduled_jobs != []:
-            set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time) 
+            if queue == "besteffort":
+                filter_besteffort = False
+            else:
+                filter_besteffort = True
+            set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs, job_security_time, filter_besteffort) 
 
         #
         # Scheduled
