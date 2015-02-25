@@ -115,11 +115,12 @@ class Context(object):
 
     def handle_error(self):
         exc_type, exc_value, tb = sys.exc_info()
-        if not self.debug:
+        if self.debug or isinstance(exc_value, (click.ClickException,
+                                                click.Abort)):
+            reraise(exc_type, exc_value, tb.tb_next)
+        else:
             sys.stderr.write(u"\nError: %s\n" % exc_value)
             sys.exit(1)
-        else:
-            reraise(exc_type, exc_value, tb.tb_next)
 
 
 def make_pass_decorator(ensure=False):
