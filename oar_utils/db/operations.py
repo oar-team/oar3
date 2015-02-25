@@ -73,7 +73,8 @@ def get_sync_criteria(ctx, table):
     return criteria
 
 
-def copy_db(ctx):
+
+def sync_db(ctx):
     engine_url = ctx.archive_db.engine.url
     first_iteration = False
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)

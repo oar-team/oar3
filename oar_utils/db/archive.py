@@ -4,7 +4,7 @@ import click
 
 from oar.lib import config
 from .. import VERSION
-from .operations import copy_db, purge_db
+from .operations import sync_db, purge_db
 from .helpers import pass_context
 
 
@@ -39,7 +39,7 @@ def sync(ctx, chunk, ignore_jobs):
     ctx.ignore_jobs = ignore_jobs
     ctx.confirm("Continue to copy old resources and jobs to the archive "
                 "database?")
-    copy_db(ctx)
+    sync_db(ctx)
 
 
 @cli.command('purge')
