@@ -4,7 +4,7 @@ from __future__ import division
 import sys
 import click
 
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, not_
 from oar.lib import config, Database
 from oar.lib.compat import reraise
 from functools import update_wrapper
@@ -94,6 +94,22 @@ class Context(object):
         criteria = MoldableJobDescription.job_id < self.max_job_to_sync
         return (self.current_db.query(func.max(MoldableJobDescription.id))\
                               .filter(criteria).scalar() or 0) + 1
+
+    @cached_property
+    def resources_to_purge(self):
+        AssignedResource = self.current_db.models.AssignedResource
+        Resource = self.current_db.models.Resource
+        max_moldable = self.max_moldable_job_to_sync
+        query = self.current_db.query(Resource.id)
+        excludes = query.filter(not_(self.ignored_resources_criteria))\
+                        .filter(AssignedResource.moldable_id >= max_moldable)\
+                        .join(AssignedResource, 
+                              Resource.id==AssignedResource.resource_id)\
+                        .group_by(Resource.id).all()
+        excludes_set = set([resource_id for resource_id, in excludes])
+        resources = query.filter(not_(self.ignored_resources_criteria)).all()
+        resources_set = set([resource_id for resource_id, in resources])
+        return list(resources_set - excludes_set)
 
     def print_db_info(self):
         self.log("")
