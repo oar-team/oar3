@@ -59,7 +59,7 @@ get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
 get_moldables_columns = partial(get_table_columns, MOLDABLE_JOBS_TABLES)
 
 
-def get_sync_criteria(ctx, table):
+def get_jobs_sync_criteria(ctx, table):
     # prepare query
     criteria = []
     if table.name in jobs_table:
@@ -120,7 +120,7 @@ def clone_db(ctx):
                 'ALTER TABLE %s.%s DISABLE KEYS' % (ctx.archive_db_name, name)
             )
             table = reflect_table(ctx, name)
-            criteria = get_sync_criteria(ctx, table)
+            criteria = get_jobs_sync_criteria(ctx, table)
             query = select([table])
             if criteria:
                 query = query.where(reduce(and_, criteria))
@@ -164,7 +164,7 @@ def sync_tables(ctx, tables, delete=False):
     # Get the max pk
     for table in tables:
         if table.name not in IGNORED_TABLES:
-            criteria = get_sync_criteria(ctx, table)
+            criteria = get_jobs_sync_criteria(ctx, table)
             if delete and criteria:
                 reverse_criteria = [not_(c) for c in criteria]
                 delete_from_table(ctx, table, raw_conn, reverse_criteria)
