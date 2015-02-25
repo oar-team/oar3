@@ -54,7 +54,10 @@ def purge(ctx, ignore_resources, ignore_jobs, jobs_older_than):
     ctx.ignore_resources = ignore_resources
     ctx.ignore_jobs = ignore_jobs
     ctx.jobs_older_than = jobs_older_than
+
     msg = "Continue to purge old resources and jobs "\
           "from your current database?"
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
-    purge_db(ctx)
+    rv = purge_db(ctx)
+    if rv is None:
+        ctx.log("\nNothing to do.")

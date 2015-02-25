@@ -47,8 +47,15 @@ MOLDABLE_JOBS_TABLES = [
     {'moldable_job_descriptions': 'moldable_id'},
 ]
 
+RESOURCES_TABLES = [
+    {'assigned_resources': 'resource_id'},
+    {'resource_logs': 'resource_id'},
+    {'resources': 'resource_id'},
+]
+
 jobs_table = [d.keys()[0] for d in JOBS_TABLES]
 moldable_jobs_tables = [d.keys()[0] for d in MOLDABLE_JOBS_TABLES]
+resources_tables = [d.keys()[0] for d in RESOURCES_TABLES]
 
 
 def get_table_columns(tables, table_name):
@@ -57,6 +64,7 @@ def get_table_columns(tables, table_name):
 
 get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
 get_moldables_columns = partial(get_table_columns, MOLDABLE_JOBS_TABLES)
+get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
 
 
 def get_jobs_sync_criteria(ctx, table):
@@ -72,6 +80,16 @@ def get_jobs_sync_criteria(ctx, table):
             criteria.append(column < ctx.max_moldable_job_to_sync)
     return criteria
 
+
+def get_resources_purge_criteria(ctx, table):
+    # prepare query
+    criteria = []
+    if table.name in resources_tables:
+        for column_name in get_resources_columns(table.name):
+            column = table.c.get(column_name)
+            if ctx.resources_to_purge:
+                criteria.append(column.in_(ctx.resources_to_purge))
+    return criteria
 
 
 def sync_db(ctx):
@@ -198,19 +216,21 @@ def merge_table(ctx, table):
     session.commit()
 
 
-def delete_from_table(ctx, table, raw_conn, criteria=[]):
+def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
     check_query = select([func.count()]).select_from(table)
     if criteria:
         check_query = check_query.where(reduce(and_, criteria))
     count = raw_conn.execute(check_query).scalar()
     if count > 0:
+        if message:
+            ctx.log(message)
         delete_query = table.delete()
-        count_str = blue("%s/%s" % (count, count))
+        count_str = blue("%s" % (count))
         ctx.log(magenta(' delete') + ' ~> table %s (%s)' % (table.name, 
                                                             count_str))
         if criteria:
             delete_query = delete_query.where(reduce(and_, criteria))
-        raw_conn.execute(delete_query)
+        return raw_conn.execute(delete_query)
 
 
 def copy_table(ctx, table, raw_conn, criteria=[]):
@@ -289,4 +309,24 @@ class NotSupportedDatabase(Exception):
 
 def purge_db(ctx):
     # prepare the connection
-    pass
+    raw_conn = ctx.current_db.engine.connect()
+    inspector = Inspector.from_engine(ctx.current_db.engine)
+    tables = [reflect_table(ctx, name) for name in inspector.get_table_names()]
+    rv = None
+    message = "Purge old resources from database :"
+    for table in tables:
+        if table.name in resources_tables:
+            criteria = get_resources_purge_criteria(ctx, table)
+            if criteria:
+                rv = delete_from_table(ctx, table, raw_conn, criteria, message)
+                if message is not None:
+                    message = None
+
+    message = "Purge old jobs from database :"
+    for table in tables:
+        criteria = get_jobs_sync_criteria(ctx, table)
+        if criteria:
+            rv = delete_from_table(ctx, table, raw_conn, criteria, message)
+            if message is not None:
+                message = None
+    return rv
