@@ -86,14 +86,14 @@ class Context(object):
         Job = self.current_db.models.Job
         return self.current_db.query(func.min(Job.id))\
                               .filter(self.ignored_jobs_criteria)\
-                              .scalar()
+                              .scalar() or 0
 
     @cached_property
     def max_moldable_job_to_sync(self):
         MoldableJobDescription = self.current_db.models.MoldableJobDescription
         criteria = MoldableJobDescription.job_id < self.max_job_to_sync
-        return self.current_db.query(func.max(MoldableJobDescription.id))\
-                              .filter(criteria).scalar() + 1
+        return (self.current_db.query(func.max(MoldableJobDescription.id))\
+                              .filter(criteria).scalar() or 0) + 1
 
     def print_db_info(self):
         self.log("")
