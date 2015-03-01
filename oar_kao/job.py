@@ -110,13 +110,14 @@ def set_jobs_cache_keys(jobs):
                 job.key_cache[int(mld_id)] = str(walltime) + str(hy_res_rqts)
 
 def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_duration=0):
-    '''
+    """
     oarsub -q test -l "nodes=1+{network_address='node3'}/nodes=1/resource_id=1" sleep
     job_id: 12 [(16L, 7200, [([(u'network_address', 1)], [(0, 7)]), ([(u'network_address', 1), (u'resource_id', 1)], [(4, 7)])])]
 
-    '''
+    """
 
     req = db.query(Job.id,
+                   Job.properties
                    MoldableJobDescription.id,
                    MoldableJobDescription.walltime,
                    JobResourceGroup.id,
@@ -158,7 +159,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     global job
 
     for x in req:
-        j_id, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
+        j_id, j_properties, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
         #print  x
         #
         # new job
@@ -225,15 +226,15 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
             #
             # determine resource constraints
             #
-            if ( job.properties == "" and ( jrg_grp_property == "" or jrg_grp_property == "type = 'default'" ) ):
+            if ( j_properties == "" and ( jrg_grp_property == "" or jrg_grp_property == "type = 'default'" ) ):
                 res_constraints = resources_set.roid_itvs
             else:
-                if job.properties == "" or  jrg_grp_property == "":
+                if j_properties == "" or  jrg_grp_property == "":
                     and_sql = ""
                 else:
                     and_sql = " AND "
 
-                sql_constraints = job.properties + and_sql + jrg_grp_property
+                sql_constraints = j_properties + and_sql + jrg_grp_property
 
                 if sql_constraints in cache_constraints:
                     res_constraints = cache_constraints[sql_constraints]
@@ -253,10 +254,10 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
 
     job.mld_res_rqts = mld_res_rqts
-    job.key_cache = {}
-    job.deps = []
-    job.ts = False
-    job.ph = NO_PLACEHOLDER
+    #job.key_cache = {}
+    #job.deps = []
+    #job.ts = False
+    #job.ph = NO_PLACEHOLDER
 
     #print "======================"
     #print "job_id:",job.id,  job.mld_res_rqts
