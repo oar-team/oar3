@@ -348,7 +348,7 @@ def purge_db(ctx):
             if not change and rv is not None:
                 change = True
     ## Purge events
-    message = "Purge events from database :"
+    message = "Purge old events from database :"
     event_log_hostnames = tables_dict["event_log_hostnames"]
     event_logs = tables_dict["event_logs"]
     t = select([event_logs.c["event_id"]])
@@ -357,6 +357,16 @@ def purge_db(ctx):
                            criteria, message)
     if not change and rv is not None:
         change = True
+    message = "Purge old resources descriptions from database :"
+    resource_descriptions = tables_dict["job_resource_descriptions"]
+    resource_groups = tables_dict["job_resource_groups"]
+    t = select([resource_groups.c["res_group_id"]])
+    criteria = [resource_descriptions.c.get("res_job_group_id").notin_(t)]
+    rv = delete_from_table(ctx, resource_descriptions, raw_conn,
+                           criteria, message)
+    if not change and rv is not None:
+        change = True
+
     return change
 
 
