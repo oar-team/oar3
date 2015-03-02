@@ -552,3 +552,95 @@ def log_job(job):
                                   .filter(AssignedResource.index == 'CURRENT')\
                                   .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))
     db.commit()
+
+def insert_job( **kwargs ):
+    """ Insert job in database
+
+    #   "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
+    #
+    #   res = "/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=20" type="besteffort, container" 
+    #
+    res = [ ( 60, [("switch=2/nodes=20", ""), ("licence=20", "lic_type = 'mathlab'")] ) ]
+    type = "besteffort, container"
+
+    """
+    kwargs['launching_directory'] = ""
+    kwargs['checkpoint_signal'] = 0
+
+    if 'res' in kwargs:
+        res = kwargs.pop('res')
+    else:
+        res = [ (60, [('resource_id=1', "")]) ]
+    
+    if 'types' in kwargs:
+        types = kwargs.pop('types')
+    else:
+        types = ""
+    ins = Job.__table__.insert().values(**kwargs)
+    result = db.engine.execute(ins)
+    job_id = result.inserted_primary_key[0]
+
+    mld_jid_walltimes = []
+    res_grps = []
+
+    for res_mld in res:
+        w, res_grp = res_mld
+        mld_jid_walltimes.append({'moldable_job_id': job_id, 'moldable_walltime': w})
+        res_grps.append(res_grp)
+
+
+    print "mld_jid_walltimes: ", mld_jid_walltimes
+
+    result = db.engine.execute(MoldableJobDescription.__table__.insert(), mld_jid_walltimes)
+
+    mld_id = result.inserted_primary_key[0]
+
+    print "res_grps: ", res_grps
+
+    for res_grp in res_grps:
+        #job_resource_groups
+        mld_id_property = []
+        res_hys = []
+
+        for r_hy_prop in res_grp:
+            (res_hy, properties)  = r_hy_prop
+            mld_id_property.append({'res_group_moldable_id': mld_id, 'res_group_property': properties})
+            res_hys.append(res_hy)
+
+        result = db.engine.execute(JobResourceGroup.__table__.insert(),  mld_id_property)
+        
+        grp_id = result.inserted_primary_key[0]
+
+        #job_resource_descriptions
+        print 'res_hys: ', res_hys
+        for res_hy in res_hys:
+            res_description = []
+            for idx, val in enumerate( res_hy.split('/') ):
+                tv = val.split('=')
+                res_description.append({'res_job_group_id': grp_id, 'res_job_resource_type': tv[0], 
+                                        'res_job_value': tv[1], 'res_job_order': idx})
+
+            db.engine.execute(JobResourceDescription.__table__.insert(),  res_description)
+            grp_id += 1
+
+        mld_id += 1
+
+    if types:
+        ins = [ {'job_id': job_id, 'type': typ} for typ in types.split(',')]
+        db.engine.execute(JobResourceDescription.__table__.insert(), ins)
+
+def del_accounting():
+    db.engine.execute(Accounting.__table__.delete())
+    db.commit()
+
+def set_accounting(accountings, consumption_type):
+    ins_accountings = []
+    for a in accountings:
+        w_start, w_stop, proj, user, queue, consumption = a
+        ins_accountings.append({'window_start': w_start, 'window_stop': w_stop,
+                                'accounting_project': proj, 'accounting_user': user,
+                                'queue_name': queue, 'consumption_type': consumption_type, 
+                                'consumption': consumption})
+      
+    db.engine.execute(Accounting.__table__.insert(), ins_accountings)
+    db.commit()
