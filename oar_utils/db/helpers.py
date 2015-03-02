@@ -124,9 +124,9 @@ class Context(object):
         for msg in args:
             click.echo(prefix + msg, **kwargs)
 
-    def confirm(self, message):
+    def confirm(self, message, **kwargs):
         if not self.force_yes:
-            if not click.confirm(message):
+            if not click.confirm(message, **kwargs):
                 raise click.Abort()
 
     def handle_error(self):

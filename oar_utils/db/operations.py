@@ -20,6 +20,7 @@ from .helpers import green, magenta, yellow, blue, red
 
 
 IGNORED_TABLES = [
+SYNC_IGNORED_TABLES = [
     'accounting',
     'gantt_jobs_predictions',
     'gantt_jobs_predictions_log',
@@ -45,12 +46,21 @@ MOLDABLE_JOBS_TABLES = [
     {'assigned_resources': 'moldable_job_id'},
     {'job_resource_groups': 'res_group_moldable_id'},
     {'moldable_job_descriptions': 'moldable_id'},
+    {'gantt_jobs_predictions': 'moldable_job_id'},
+    {'gantt_jobs_predictions_log': 'moldable_job_id'},
+    {'gantt_jobs_predictions_visu': 'moldable_job_id'},
+    {'gantt_jobs_resources': 'moldable_job_id'},
+    {'gantt_jobs_resources_log': 'moldable_job_id'},
+    {'gantt_jobs_resources_visu': 'moldable_job_id'},
 ]
 
 RESOURCES_TABLES = [
     {'assigned_resources': 'resource_id'},
     {'resource_logs': 'resource_id'},
     {'resources': 'resource_id'},
+    {'gantt_jobs_resources': 'resource_id'},
+    {'gantt_jobs_resources_log': 'resource_id'},
+    {'gantt_jobs_resources_visu': 'resource_id'},
 ]
 
 jobs_table = [d.keys()[0] for d in JOBS_TABLES]
@@ -106,8 +116,8 @@ def sync_db(ctx):
         fix_sequences(ctx)
 
 
-def reflect_table(ctx, table_name):
-    metadata = MetaData(ctx.current_db.engine)
+def reflect_table(db, table_name):
+    metadata = MetaData(db.engine)
     return Table(table_name, metadata, autoload=True)
 
 
@@ -132,12 +142,13 @@ def clone_db(ctx):
                 'CREATE TABLE %s.%s LIKE %s.%s'
                 % (ctx.archive_db_name, name, ctx.current_db_name, name)
             )
-            if name in IGNORED_TABLES:
+            if name in SYNC_IGNORED_TABLES:
                 ctx.log(yellow(' ignore') + ' ~> table %s' % name)
+                continue
             ctx.current_db.session.execute(
                 'ALTER TABLE %s.%s DISABLE KEYS' % (ctx.archive_db_name, name)
             )
-            table = reflect_table(ctx, name)
+            table = reflect_table(ctx.current_db, name)
             criteria = get_jobs_sync_criteria(ctx, table)
             query = select([table])
             if criteria:
@@ -181,7 +192,7 @@ def sync_tables(ctx, tables, delete=False):
     raw_conn = ctx.archive_db.engine.connect()
     # Get the max pk
     for table in tables:
-        if table.name not in IGNORED_TABLES:
+        if table.name not in SYNC_IGNORED_TABLES:
             criteria = get_jobs_sync_criteria(ctx, table)
             if delete and criteria:
                 reverse_criteria = [not_(c) for c in criteria]
@@ -226,7 +237,7 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
             ctx.log(message)
         delete_query = table.delete()
         count_str = blue("%s" % (count))
-        ctx.log(magenta(' delete') + ' ~> table %s (%s)' % (table.name, 
+        ctx.log(magenta(' delete') + ' ~> table %s (%s)' % (table.name,
                                                             count_str))
         if criteria:
             delete_query = delete_query.where(reduce(and_, criteria))
@@ -249,7 +260,7 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
 
     total_lenght = from_conn.execute(count_query).scalar()
     result = from_conn.execution_options(stream_results=True)\
-                            .execute(select_query)
+                      .execute(select_query)
     if total_lenght > 0:
         message = yellow('\r   copy') + ' ~> table %s (%s)'
         ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
@@ -309,9 +320,12 @@ class NotSupportedDatabase(Exception):
 
 def purge_db(ctx):
     # prepare the connection
-    raw_conn = ctx.current_db.engine.connect()
-    inspector = Inspector.from_engine(ctx.current_db.engine)
-    tables = [reflect_table(ctx, name) for name in inspector.get_table_names()]
+    db = ctx.current_db
+    raw_conn = db.engine.connect()
+    inspector = Inspector.from_engine(db.engine)
+    tables = [reflect_table(db, name) for name in inspector.get_table_names()]
+    tables_dict = dict(((t.name, t) for t in tables))
+    change = False
     rv = None
     message = "Purge old resources from database :"
     for table in tables:
@@ -321,7 +335,8 @@ def purge_db(ctx):
                 rv = delete_from_table(ctx, table, raw_conn, criteria, message)
                 if message is not None:
                     message = None
-
+                if not change and rv is not None:
+                    change = True
     message = "Purge old jobs from database :"
     for table in tables:
         criteria = get_jobs_sync_criteria(ctx, table)
