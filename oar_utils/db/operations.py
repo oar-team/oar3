@@ -108,9 +108,15 @@ def sync_db(ctx):
             and ctx.current_db.dialect in ("postgresql", "mysql")):
         first_iteration = True
         clone_db(ctx)
-    if not first_iteration or ctx.current_db.dialect == "postgresql":
+
+    if not first_iteration:
         tables = sync_schema(ctx)
-        sync_tables(ctx, tables, delete=True)
+        sync_tables(ctx, tables)
+    else:
+        if ctx.current_db.dialect == "postgresql":
+            tables = sync_schema(ctx)
+            sync_tables(ctx, tables, delete=True)
+
     if ctx.current_db.dialect == "postgresql":
         fix_sequences(ctx)
 
