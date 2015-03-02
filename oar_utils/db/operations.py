@@ -13,13 +13,12 @@ from sqlalchemy_utils.functions import (database_exists, create_database,
                                         render_statement)
 from sqlalchemy.ext.declarative import declarative_base
 
-from oar.lib.compat import  itervalues, to_unicode
+from oar.lib.compat import itervalues, to_unicode, iterkeys
 
 
 from .helpers import green, magenta, yellow, blue, red
 
 
-IGNORED_TABLES = [
 SYNC_IGNORED_TABLES = [
     'accounting',
     'gantt_jobs_predictions',
@@ -282,6 +281,7 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
 
 def fix_sequences(ctx):
     engine = ctx.archive_db.engine
+
     def get_sequences_values():
         for model in itervalues(ctx.current_db.models):
             for pk in model.__mapper__.primary_key:
@@ -303,6 +303,7 @@ def fix_sequences(ctx):
 
 def generic_mapper(table):
     Base = declarative_base()
+
     class GenericMapper(Base):
         __table__ = table
     return GenericMapper
@@ -344,4 +345,16 @@ def purge_db(ctx):
             rv = delete_from_table(ctx, table, raw_conn, criteria, message)
             if message is not None:
                 message = None
-    return rv
+            if not change and rv is not None:
+                change = True
+    ## Purge events
+    message = "Purge events from database :"
+    event_log_hostnames = tables_dict["event_log_hostnames"]
+    event_logs = tables_dict["event_logs"]
+    t = select([event_logs.c["event_id"]])
+    criteria = [event_log_hostnames.c.get("event_id").notin_(t)]
+    rv = delete_from_table(ctx, event_log_hostnames, raw_conn,
+                           criteria, message)
+    if not change and rv is not None:
+        change = True
+    return change
