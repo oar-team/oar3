@@ -105,9 +105,9 @@ def sync_db(ctx):
     engine_url = ctx.archive_db.engine.url
     first_iteration = False
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
-        and ctx.current_db.dialect in ("postgresql", "mysql")):
-            first_iteration = True
-            clone_db(ctx)
+            and ctx.current_db.dialect in ("postgresql", "mysql")):
+        first_iteration = True
+        clone_db(ctx)
     if not first_iteration or ctx.current_db.dialect == "postgresql":
         tables = sync_schema(ctx)
         sync_tables(ctx, tables, delete=True)
@@ -358,3 +358,34 @@ def purge_db(ctx):
     if not change and rv is not None:
         change = True
     return change
+
+
+def count_all(db):
+    # prepare the connection
+    raw_conn = db.engine.connect()
+    inspector = Inspector.from_engine(db.engine)
+    tables = [reflect_table(db, name) for name in inspector.get_table_names()]
+    for table in tables:
+        count_query = select([func.count()]).select_from(table)
+        yield table.name, raw_conn.execute(count_query).scalar()
+
+
+def inspect_db(ctx):
+    infos = dict()
+    for table_name, size in count_all(ctx.current_db):
+        infos[table_name] = {"current_db_size": size,
+                             "archive_db_size": 0,
+                             "diff": size}
+    if database_exists(ctx.archive_db.engine.url):
+        for table_name, size in count_all(ctx.archive_db):
+            infos[table_name]["archive_db_size"] = size
+            diff = infos[table_name]["current_db_size"] - size
+            infos[table_name]["diff"] = diff
+
+    headers = ["Table", "Current DB size", "Archive DB size", "Diff"]
+    rows = [(k,
+             to_unicode(infos[k]["current_db_size"]),
+             to_unicode(infos[k]["archive_db_size"]),
+             to_unicode(infos[k]["diff"]))
+            for k in iterkeys(infos)]
+    return sorted(rows, key=lambda x: x[0]), headers

@@ -2,7 +2,10 @@
 from __future__ import division, absolute_import, unicode_literals
 import click
 
+from tabulate import tabulate
+
 from oar.lib import config
+
 from .. import VERSION
 from .operations import sync_db, purge_db, inspect_db
 from .helpers import pass_context
@@ -60,3 +63,11 @@ def purge(ctx, ignore_resources, ignore_jobs, jobs_older_than):
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
     if not purge_db(ctx):
         ctx.log("\nNothing to do.")
+
+
+@cli.command()
+@pass_context
+def inspect(ctx):
+    """ Analyze all databases."""
+    rows, headers = inspect_db(ctx)
+    click.echo(tabulate(rows, headers=headers))

@@ -6,7 +6,8 @@ here = op.abspath(op.dirname(__file__))
 
 requirements = [
     'oar-lib>=0.1-dev',
-    'sqlalchemy-utils'
+    'sqlalchemy-utils',
+    'tabulate',
 ]
 
 def read(fname):
