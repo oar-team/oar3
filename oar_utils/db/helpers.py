@@ -10,6 +10,7 @@ from oar.lib.compat import reraise
 from functools import update_wrapper
 from oar.lib.utils import cached_property
 
+
 magenta = lambda x: click.style("%s" % x, fg="magenta")
 yellow = lambda x: click.style("%s" % x, fg="yellow")
 green = lambda x: click.style("%s" % x, fg="green")
@@ -21,6 +22,7 @@ class Context(object):
 
     def __init__(self):
         self.archive_db_suffix = "archive"
+        self.max_job_id = None
         self.debug = False
         self.force_yes = False
 
@@ -84,16 +86,31 @@ class Context(object):
     @cached_property
     def max_job_to_sync(self):
         Job = self.current_db.models.Job
-        return self.current_db.query(func.min(Job.id))\
-                              .filter(self.ignored_jobs_criteria)\
-                              .scalar() or 0
+        acceptable_max_job_id = self.current_db.query(func.min(Job.id))\
+                                    .filter(self.ignored_jobs_criteria)\
+                                    .scalar()
+        if acceptable_max_job_id is None:
+            if self.max_job_id is None:
+                # returns the real max job id
+                return self.current_db.query(func.max(Job.id)).scalar() or 0
+            else:
+                return self.max_job_id
+        else:
+            if self.max_job_id is not None:
+                if self.max_job_id < acceptable_max_job_id:
+                    return self.max_job_id
+            return acceptable_max_job_id
 
     @cached_property
     def max_moldable_job_to_sync(self):
         MoldableJobDescription = self.current_db.models.MoldableJobDescription
         criteria = MoldableJobDescription.job_id < self.max_job_to_sync
-        return (self.current_db.query(func.max(MoldableJobDescription.id))\
-                              .filter(criteria).scalar() or 0) + 1
+        Job = self.current_db.models.Job
+        query = self.current_db.query(func.max(MoldableJobDescription.id))\
+                               .join(Job,
+                                     MoldableJobDescription.job_id == Job.id)\
+                               .filter(criteria)
+        return query.scalar() or 0
 
     @cached_property
     def resources_to_purge(self):
@@ -102,9 +119,9 @@ class Context(object):
         max_moldable = self.max_moldable_job_to_sync
         query = self.current_db.query(Resource.id)
         excludes = query.filter(not_(self.ignored_resources_criteria))\
+                        .join(AssignedResource,
+                              Resource.id == AssignedResource.resource_id)\
                         .filter(AssignedResource.moldable_id >= max_moldable)\
-                        .join(AssignedResource, 
-                              Resource.id==AssignedResource.resource_id)\
                         .group_by(Resource.id).all()
         excludes_set = set([resource_id for resource_id, in excludes])
         resources = query.filter(not_(self.ignored_resources_criteria)).all()

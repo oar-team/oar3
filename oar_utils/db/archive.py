@@ -3,7 +3,6 @@ from __future__ import division, absolute_import, unicode_literals
 import click
 
 from tabulate import tabulate
-
 from oar.lib import config
 
 from .. import VERSION
@@ -48,16 +47,16 @@ def sync(ctx, chunk, ignore_jobs):
 @cli.command()
 @click.option('--ignore-jobs', default=["^Terminated", "^Error"],
               multiple=True)
-@click.option('--jobs-older-than', default="1Y")
+@click.option('--max-job-id', type=int, default=None,
+              help='Purge only jobs lower than this id')
 @click.option('--ignore-resources', default=["^Dead"], multiple=True)
 @pass_context
-def purge(ctx, ignore_resources, ignore_jobs, jobs_older_than):
+def purge(ctx, ignore_resources, ignore_jobs, max_job_id):
     """ Purge old resources and old jobs from your current database."""
-    ctx._cache = {}  ## reset filters in case of chained commands
+    ctx._cache = {}  # reset filters in case of chained commands
     ctx.ignore_resources = ignore_resources
     ctx.ignore_jobs = ignore_jobs
-    ctx.jobs_older_than = jobs_older_than
-
+    ctx.max_job_id = max_job_id
     msg = "Continue to purge old resources and jobs "\
           "from your current database?"
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
