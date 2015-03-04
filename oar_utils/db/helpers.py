@@ -5,7 +5,7 @@ import sys
 import click
 
 from sqlalchemy import func, and_, not_
-from oar.lib import config, Database
+from oar.lib import Database
 from oar.lib.compat import reraise
 from functools import update_wrapper
 from oar.lib.utils import cached_property
@@ -25,14 +25,6 @@ class Context(object):
         self.max_job_id = None
         self.debug = False
         self.force_yes = False
-
-    @cached_property
-    def current_db_url(self):
-        return config.get_sqlalchemy_uri()
-
-    @cached_property
-    def archive_db_url(self):
-        return "%s_%s" % (self.current_db_url, self.archive_db_suffix)
 
     @cached_property
     def archive_db(self):
@@ -127,12 +119,6 @@ class Context(object):
         resources = query.filter(not_(self.ignored_resources_criteria)).all()
         resources_set = set([resource_id for resource_id, in resources])
         return list(resources_set - excludes_set)
-
-    def print_db_info(self):
-        self.log("")
-        self.log("OAR database: %s" % self.current_db_url)
-        self.log("OAR archive database: %s" % self.archive_db_url)
-        self.log("")
 
     def log(self, *args, **kwargs):
         """Logs a message to stderr."""
