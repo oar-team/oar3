@@ -180,7 +180,7 @@ class JobType(db.Model):
     types_index = db.Column(db.String(7), index=True, server_default='CURRENT')
 
 
-class Job(db.Model):
+class Job(db.DeferredReflection, db.Model):
     __tablename__ = 'jobs'
     __table_args__ = (
         db.Index('state_id', 'state', 'job_id'),
