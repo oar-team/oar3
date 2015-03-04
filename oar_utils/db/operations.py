@@ -218,12 +218,12 @@ def sync_tables(ctx, tables, delete=False):
                         max_pk = raw_conn.execute(max_pk_query).scalar()
                         if max_pk is not None:
                             criteria.append(pk > max_pk)
-                        copy_table(ctx, table, raw_conn, pk, criteria)
+                        copy_table(ctx, table, raw_conn, criteria)
                     else:
                         merge_table(ctx, table)
                 else:
                     delete_from_table(ctx, table, raw_conn)
-                    copy_table(ctx, table, raw_conn, None)
+                    copy_table(ctx, table, raw_conn)
 
 
 def merge_table(ctx, table):
