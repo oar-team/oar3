@@ -183,13 +183,12 @@ def sync_schema(ctx):
             ctx.log(' %s ~> table %s' % (green('create'), table.name))
             try:
                 table.create(bind=ctx.archive_db.engine, checkfirst=True)
-                yield table
             except Exception as ex:
                 ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
-        else:
-            # Make sure we have the good version of the table
-            metadata = MetaData(ctx.current_db.engine)
-            yield Table(table.name, metadata, autoload=True)
+    metadata = MetaData(ctx.current_db.engine)
+    for table in ctx.current_db.metadata.sorted_tables:
+        # Make sure we have the good version of the table
+        yield Table(table.name, metadata, autoload=True)
 
 
 def sync_tables(ctx, tables, delete=False):
