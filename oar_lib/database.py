@@ -211,11 +211,11 @@ class Database(object):
             self.DeferredReflection.prepare(self.engine)
             self._reflected = True
 
-    def create_all(self, bind=None):
+    def create_all(self, bind=None, **kwargs):
         """Creates all tables. """
         if bind is None:
             bind = self.engine
-        self.metadata.create_all(bind=bind)
+        self.metadata.create_all(bind=bind, **kwargs)
 
     def close(self, **kwargs):
         """Proxy for Session.close"""
