@@ -6,7 +6,7 @@ from tabulate import tabulate
 from oar.lib import config
 
 from .. import VERSION
-from .operations import sync_db, purge_db, inspect_db
+from .operations import archive_db, purge_db, inspect_db
 from .helpers import pass_context
 
 
@@ -46,7 +46,6 @@ def cli(ctx, force_yes, debug):
     """Archive OAR database."""
     ctx.force_yes = force_yes
     ctx.debug = debug
-    config["LOG_FORMAT"] = '[%(levelname)s]: %(message)s'
 
 
 @cli.command()
@@ -68,7 +67,7 @@ def sync(ctx, chunk, ignore_jobs, current_db_url, archive_db_url):
     ctx.archive_db_url = archive_db_url
     ctx.confirm("Continue to copy old resources and jobs to the archive "
                 "database?", default=True)
-    sync_db(ctx)
+    archive_db(ctx)
 
 
 @cli.command()

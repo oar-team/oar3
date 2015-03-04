@@ -101,23 +101,18 @@ def get_resources_purge_criteria(ctx, table):
     return criteria
 
 
-def sync_db(ctx):
+def archive_db(ctx):
     engine_url = ctx.archive_db.engine.url
-    first_iteration = False
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
             and ctx.current_db.dialect in ("postgresql", "mysql")):
-        first_iteration = True
-        clone_db(ctx)
-
-    if not first_iteration:
+        clone_db(ctx, ignored_tables=SYNC_IGNORED_TABLES)
+        tables = sync_schema(ctx)
+        sync_tables(ctx, tables, delete=True)
+    else:
         tables = sync_schema(ctx)
         sync_tables(ctx, tables)
-    else:
-        if ctx.current_db.dialect == "postgresql":
-            tables = sync_schema(ctx)
-            sync_tables(ctx, tables, delete=True)
 
-    if ctx.current_db.dialect == "postgresql":
+    if ctx.archive_db.dialect == "postgresql":
         fix_sequences(ctx)
 
 
