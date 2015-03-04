@@ -243,7 +243,7 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
         return raw_conn.execute(delete_query)
 
 
-def copy_table(ctx, table, raw_conn, order_key, criteria=[]):
+def copy_table(ctx, table, raw_conn, criteria=[]):
     # prepare the connection
     from_conn = ctx.current_db.engine.connect()
 
@@ -260,24 +260,14 @@ def copy_table(ctx, table, raw_conn, order_key, criteria=[]):
     total_lenght = from_conn.execute(count_query).scalar()
 
     def fetch_stream():
-        if order_key is not None:
-            q = select_query.limit(ctx.chunk).order_by(order_key.asc())
-            page = 0
-            while True:
-                rows = from_conn.execution_options(stream_results=True)\
-                                .execute(q.offset(page * ctx.chunk)).fetchall()
-                if len(rows) == 0:
-                    break
-                yield rows
-                page = page + 1
-        else:
-            result = from_conn.execution_options(stream_results=True)\
-                              .execute(select_query)
-            while True:
-                rows = result.fetchmany(ctx.chunk)
-                if len(rows) == 0:
-                    break
-                yield rows
+        q = select_query.limit(ctx.chunk)
+        page = 0
+        while True:
+            rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
+            if len(rows) == 0:
+                break
+            yield rows
+            page = page + 1
 
     if total_lenght > 0:
         message = yellow('\r   copy') + ' ~> table %s (%s)'
