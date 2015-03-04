@@ -19,7 +19,7 @@ __all__ = ['Database']
 
 
 def load_all_models():
-    from oar.lib.models import all_models  ## avoid a circular import
+    from oar.lib.models import all_models  # avoid a circular import
     return dict(all_models())
 
 
@@ -165,11 +165,9 @@ class Database(object):
     def m(self):
         return self.models
 
-
     @property
     def t(self):
         return self.tables
-
 
     @cached_property
     def models(self):
@@ -228,7 +226,7 @@ class Database(object):
         engine = None
         if self.connector is not None:
             engine = self.engine
-        return '<%s engine=%r>' % (self.__class__.__name__,  engine)
+        return '<%s engine=%r>' % (self.__class__.__name__, engine)
 
 
 class EngineConnector(object):
@@ -297,6 +295,7 @@ def _include_sqlalchemy(obj):
                 setattr(obj, key, getattr(module, key))
     obj.event = sqlalchemy.event
     # Note: obj.Table does not attempt to be a SQLAlchemy Table class.
+
     def _make_table(obj):
         def _make_table(*args, **kwargs):
             if len(args) > 1 and isinstance(args[1], obj.Column):

@@ -3,9 +3,9 @@ from . import db
 
 
 schema = db.Table('schema',
-    db.Column('version', db.String(255)),
-    db.Column('name', db.String(255))
-)
+                  db.Column('version', db.String(255)),
+                  db.Column('name', db.String(255))
+                  )
 
 
 class Accounting(db.Model):
