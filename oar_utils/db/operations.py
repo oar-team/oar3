@@ -126,7 +126,7 @@ def reflect_table(db, table_name):
     return Table(table_name, metadata, autoload=True)
 
 
-def clone_db(ctx):
+def clone_db(ctx, ignored_tables=()):
     message = ' ~> `%s` to `%s` database' % (ctx.current_db_name,
                                              ctx.archive_db_name)
     ctx.log(green('  clone') + message)
@@ -147,7 +147,7 @@ def clone_db(ctx):
                 'CREATE TABLE %s.%s LIKE %s.%s'
                 % (ctx.archive_db_name, name, ctx.current_db_name, name)
             )
-            if name in SYNC_IGNORED_TABLES:
+            if name in ignored_tables:
                 ctx.log(yellow(' ignore') + ' ~> table %s' % name)
                 continue
             ctx.current_db.session.execute(
