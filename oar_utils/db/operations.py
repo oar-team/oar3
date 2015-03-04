@@ -210,12 +210,12 @@ def sync_tables(ctx, tables, delete=False):
                         max_pk = raw_conn.execute(max_pk_query).scalar()
                         if max_pk is not None:
                             criteria.append(pk > max_pk)
-                        copy_table(ctx, table, raw_conn, criteria)
+                        copy_table(ctx, table, raw_conn, pk, criteria)
                     else:
                         merge_table(ctx, table)
                 else:
                     delete_from_table(ctx, table, raw_conn)
-                    copy_table(ctx, table, raw_conn)
+                    copy_table(ctx, table, raw_conn, None)
 
 
 def merge_table(ctx, table):
@@ -249,7 +249,7 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
         return raw_conn.execute(delete_query)
 
 
-def copy_table(ctx, table, raw_conn, criteria=[]):
+def copy_table(ctx, table, raw_conn, order_key, criteria=[]):
     # prepare the connection
     from_conn = ctx.current_db.engine.connect()
 
@@ -264,24 +264,38 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
         count_query = select_count
 
     total_lenght = from_conn.execute(count_query).scalar()
-    result = from_conn.execution_options(stream_results=True)\
-                      .execute(select_query)
+
+    def fetch_stream():
+        if order_key is not None:
+            q = select_query.limit(ctx.chunk).order_by(order_key.asc())
+            page = 0
+            while True:
+                rows = from_conn.execution_options(stream_results=True)\
+                                .execute(q.offset(page * ctx.chunk)).fetchall()
+                if len(rows) == 0:
+                    break
+                yield rows
+                page = page + 1
+        else:
+            result = from_conn.execution_options(stream_results=True)\
+                              .execute(select_query)
+            while True:
+                rows = result.fetchmany(ctx.chunk)
+                if len(rows) == 0:
+                    break
+                yield rows
+
     if total_lenght > 0:
         message = yellow('\r   copy') + ' ~> table %s (%s)'
         ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
         progress = 0
-        while True:
-            transaction = raw_conn.begin()
-            rows = result.fetchmany(ctx.chunk)
+        for rows in fetch_stream():
             lenght = len(rows)
-            if lenght == 0:
-                break
             progress = lenght + progress
             percentage = blue("%s/%s" % (progress, total_lenght))
             ctx.log(message % (table.name, percentage), nl=False)
             raw_conn.execute(insert_query, rows)
-            del rows
-        transaction.commit()
+
         ctx.log("")
 
 
