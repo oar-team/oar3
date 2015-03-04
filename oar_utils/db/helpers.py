@@ -33,6 +33,7 @@ class Context(object):
     @cached_property
     def current_db(self):
         from oar.lib import db
+        db._cache["uri"] = self.current_db_url
         return db
 
     @cached_property
