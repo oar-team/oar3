@@ -116,6 +116,20 @@ def archive_db(ctx):
         fix_sequences(ctx)
 
 
+def migrate_db(ctx):
+    engine_url = ctx.archive_db.engine.url
+    if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
+            and ctx.current_db.dialect in ("postgresql", "mysql")):
+        clone_db(ctx)
+    else:
+        tables = sync_schema(ctx)
+        raw_conn = ctx.archive_db.engine.connect()
+        for table in tables:
+            copy_table(ctx, table, raw_conn)
+        if ctx.archive_db.dialect == "postgresql":
+            fix_sequences(ctx)
+
+
 def reflect_table(db, table_name):
     metadata = MetaData(db.engine)
     return Table(table_name, metadata, autoload=True)
