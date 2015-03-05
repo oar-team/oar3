@@ -7,6 +7,7 @@
 from __future__ import with_statement
 import pytest
 
+from tempfile import mkstemp
 from contextlib import contextmanager
 
 
@@ -65,3 +66,9 @@ def assert_raises(exception_class, message_part):
         yield
     message = '%s' % exception
     assert message_part.lower() in message.lower()
+
+
+def get_default_config():
+    conf = DEFAULT_CONFIG.copy()
+    _, conf["LOG_FILE"] = mkstemp()
+    return conf
