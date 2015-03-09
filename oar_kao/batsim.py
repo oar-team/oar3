@@ -219,7 +219,8 @@ for j in json_jobs:
                          mld_res_rqts =  [(jid, j["walltime"] , 
                                            [([("resource_id", j["res"])], [(0,nb_res-1)])])],
                          run_time = 0,
-                         key_cache = "",
+                         deps = [],
+                         key_cache = {},
                          ts=False, ph=0)
 
 BatSched(res_set, jobs).run()

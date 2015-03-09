@@ -117,7 +117,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     """
 
     req = db.query(Job.id,
-                   Job.properties
+                   Job.properties,
                    MoldableJobDescription.id,
                    MoldableJobDescription.walltime,
                    JobResourceGroup.id,
@@ -593,54 +593,35 @@ def insert_job( **kwargs ):
 
     result = db.engine.execute(MoldableJobDescription.__table__.insert(), mld_jid_walltimes)
 
-    mld_id = result.inserted_primary_key[0]
+    mld_ids = result.inserted_primary_key
 
     print "res_grps: ", res_grps
 
-    for res_grp in res_grps:
+    for mld_idx, res_grp in enumerate( res_grps ):
         #job_resource_groups
         mld_id_property = []
         res_hys = []
 
         for r_hy_prop in res_grp:
             (res_hy, properties)  = r_hy_prop
-            mld_id_property.append({'res_group_moldable_id': mld_id, 'res_group_property': properties})
+            mld_id_property.append({'res_group_moldable_id': mld_ids[mld_idx], 'res_group_property': properties})
             res_hys.append(res_hy)
 
         result = db.engine.execute(JobResourceGroup.__table__.insert(),  mld_id_property)
         
-        grp_id = result.inserted_primary_key[0]
+        grp_ids = result.inserted_primary_key
 
         #job_resource_descriptions
         print 'res_hys: ', res_hys
-        for res_hy in res_hys:
+        for grp_idx, res_hy in enumarate( res_hys ):
             res_description = []
             for idx, val in enumerate( res_hy.split('/') ):
                 tv = val.split('=')
-                res_description.append({'res_job_group_id': grp_id, 'res_job_resource_type': tv[0], 
+                res_description.append({'res_job_group_id': grp_ids[grp_idx], 'res_job_resource_type': tv[0], 
                                         'res_job_value': tv[1], 'res_job_order': idx})
 
             db.engine.execute(JobResourceDescription.__table__.insert(),  res_description)
-            grp_id += 1
-
-        mld_id += 1
 
     if types:
         ins = [ {'job_id': job_id, 'type': typ} for typ in types.split(',')]
         db.engine.execute(JobResourceDescription.__table__.insert(), ins)
-
-def del_accounting():
-    db.engine.execute(Accounting.__table__.delete())
-    db.commit()
-
-def set_accounting(accountings, consumption_type):
-    ins_accountings = []
-    for a in accountings:
-        w_start, w_stop, proj, user, queue, consumption = a
-        ins_accountings.append({'window_start': w_start, 'window_stop': w_stop,
-                                'accounting_project': proj, 'accounting_user': user,
-                                'queue_name': queue, 'consumption_type': consumption_type, 
-                                'consumption': consumption})
-      
-    db.engine.execute(Accounting.__table__.insert(), ins_accountings)
-    db.commit()
