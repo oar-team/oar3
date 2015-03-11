@@ -2,6 +2,7 @@
 from __future__ import with_statement, absolute_import
 
 import threading
+import contextlib
 
 from collections import OrderedDict
 
@@ -216,6 +217,16 @@ class Database(object):
         if bind is None:
             bind = self.engine
         self.metadata.create_all(bind=bind, **kwargs)
+
+    def drop_all(self, bind=None, **kwargs):
+        """Drop all tables. """
+        if bind is None:
+            bind = self.engine
+        with contextlib.closing(bind.connect()) as con:
+            trans = con.begin()
+            for table in reversed(self.metadata.sorted_tables):
+                con.execute(table.delete())
+            trans.commit()
 
     def close(self, **kwargs):
         """Proxy for Session.close"""
