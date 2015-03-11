@@ -1,14 +1,35 @@
-# -*- coding: utf-8 -*-
-'''
-    oar-lib.tests
-    -------------
-
-'''
-from __future__ import with_statement
 import pytest
-
 from tempfile import mkstemp
-from contextlib import contextmanager
+from oar.lib import config, db
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_config(request):
+    config.clear()
+    config.update(DEFAULT_CONFIG.copy())
+    _, config["LOG_FILE"] = mkstemp()
+
+
+@pytest.fixture(scope='module', autouse=True)
+def setup_db(request):
+    # Create the tables based on the current model
+    db.create_all()
+    # Add base data here
+    # ...
+    db.session.flush()
+    db.session.expunge_all()
+    db.session.commit()
+    def teardown():
+        db.drop_all()
+    request.addfinalizer(teardown)
+
+
+@pytest.fixture(autouse=True)
+def db_session(request, monkeypatch):
+    # Roll back at the end of every test
+    request.addfinalizer(db.session.remove)
+    # Prevent the session from closing (make it a no-op)
+    monkeypatch.setattr(db.session, 'remove', lambda: None)
 
 
 DEFAULT_CONFIG = {
@@ -55,20 +76,3 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
 }
-
-
-@contextmanager
-def assert_raises(exception_class, message_part):
-    """
-    Check that an exception is raised and its message contains some string.
-    """
-    with pytest.raises(exception_class) as exception:
-        yield
-    message = '%s' % exception
-    assert message_part.lower() in message.lower()
-
-
-def get_default_config():
-    conf = DEFAULT_CONFIG.copy()
-    _, conf["LOG_FILE"] = mkstemp()
-    return conf
