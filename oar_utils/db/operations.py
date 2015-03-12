@@ -62,9 +62,9 @@ RESOURCES_TABLES = [
     {'gantt_jobs_resources_visu': 'resource_id'},
 ]
 
-jobs_table = [d.keys()[0] for d in JOBS_TABLES]
-moldable_jobs_tables = [d.keys()[0] for d in MOLDABLE_JOBS_TABLES]
-resources_tables = [d.keys()[0] for d in RESOURCES_TABLES]
+jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
+moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLE_JOBS_TABLES]
+resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
 
 
 def get_table_columns(tables, table_name):
