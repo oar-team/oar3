@@ -218,7 +218,7 @@ class Database(object):
             bind = self.engine
         self.metadata.create_all(bind=bind, **kwargs)
 
-    def drop_all(self, bind=None, **kwargs):
+    def delete_all(self, bind=None, **kwargs):
         """Drop all tables. """
         if bind is None:
             bind = self.engine

@@ -20,7 +20,7 @@ def setup_db(request):
     db.session.expunge_all()
     db.session.commit()
     def teardown():
-        db.drop_all()
+        db.delete_all()
     request.addfinalizer(teardown)
 
 
