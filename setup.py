@@ -8,10 +8,6 @@ requirements = [
     'SimPy',
 ]
 
-dependency_links = [
-    'git+http://github.com/oar-team/python-oar-lib.git#egg=oar-lib',
-]
-
 here = op.abspath(op.dirname(__file__))
 
 def read(fname):
@@ -32,7 +28,6 @@ setup(
     version=get_version(),
     url='https://github.com/oar-team/kao',
     install_requires=requirements,
-    dependency_links=dependency_links,
     packages=['oar_kao'],
     include_package_data=True,
     zip_safe=False,
