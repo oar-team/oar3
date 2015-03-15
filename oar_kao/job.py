@@ -227,7 +227,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
             # determine resource constraints
             #
             if ( j_properties == "" and ( jrg_grp_property == "" or jrg_grp_property == "type = 'default'" ) ):
-                res_constraints = resources_set.roid_itvs
+                res_constraints = resource_set.roid_itvs
             else:
                 if j_properties == "" or  jrg_grp_property == "":
                     and_sql = ""
@@ -254,10 +254,10 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     mld_res_rqts.append( (prev_mld_id, prev_mld_id_walltime, jrg ) )
 
     job.mld_res_rqts = mld_res_rqts
-    #job.key_cache = {}
-    #job.deps = []
-    #job.ts = False
-    #job.ph = NO_PLACEHOLDER
+    job.key_cache = {}
+    job.deps = []
+    job.ts = False
+    job.ph = NO_PLACEHOLDER
 
     #print "======================"
     #print "job_id:",job.id,  job.mld_res_rqts
@@ -560,8 +560,11 @@ def insert_job( **kwargs ):
     #
     #   res = "/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=20" type="besteffort, container" 
     #
-    res = [ ( 60, [("switch=2/nodes=20", ""), ("licence=20", "lic_type = 'mathlab'")] ) ]
-    type = "besteffort, container"
+    insert_job(
+    res = [ ( 60, [("switch=2/nodes=20", ""), ("licence=20", "lic_type = 'mathlab'")] ) ],
+    type = "besteffort, container",
+    job_user= "")
+
 
     """
     kwargs['launching_directory'] = ""
@@ -576,6 +579,10 @@ def insert_job( **kwargs ):
         types = kwargs.pop('types')
     else:
         types = ""
+
+    if not 'queue_name' in kwargs:
+        kwargs['queue_name'] = 'default'
+
     ins = Job.__table__.insert().values(**kwargs)
     result = db.engine.execute(ins)
     job_id = result.inserted_primary_key[0]
@@ -613,7 +620,7 @@ def insert_job( **kwargs ):
 
         #job_resource_descriptions
         print 'res_hys: ', res_hys
-        for grp_idx, res_hy in enumarate( res_hys ):
+        for grp_idx, res_hy in enumerate( res_hys ):
             res_description = []
             for idx, val in enumerate( res_hy.split('/') ):
                 tv = val.split('=')
@@ -625,3 +632,5 @@ def insert_job( **kwargs ):
     if types:
         ins = [ {'job_id': job_id, 'type': typ} for typ in types.split(',')]
         db.engine.execute(JobResourceDescription.__table__.insert(), ins)
+
+    return job_id

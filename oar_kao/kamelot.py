@@ -77,8 +77,9 @@ def schedule_cycle(plt, now, queue = "default"):
         #
         # Karma sorting (Fairsharing) 
         #
-        if config["FAIRSHARING_ENABLED"] == "yes":
-            karma_jobs_sorting(queue, now, jids, jobs, plt)
+        if "FAIRSHARING_ENABLED" in config:
+            if config["FAIRSHARING_ENABLED"] == "yes":
+                karma_jobs_sorting(queue, now, jids, jobs, plt)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues

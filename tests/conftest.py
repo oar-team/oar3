@@ -2,8 +2,7 @@ import pytest
 from tempfile import mkstemp
 from oar.lib import config, db
 
-from . import DEFAULT_CONFIG
-
+from __init__ import DEFAULT_CONFIG
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_config(request):
