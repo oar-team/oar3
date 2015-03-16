@@ -6,7 +6,7 @@ from oar.kao.job import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, Slot
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, \
     schedule_id_jobs_ct 
-
+from oar.kao.karma import karma_jobs_sorting
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
 #config['LOG_FILE'] = '/dev/stdout'
@@ -57,7 +57,7 @@ def schedule_cycle(plt, now, queue = "default"):
         for t_avail_upto in sorted(resource_set.available_upto.keys()):
             itvs = resource_set.available_upto[t_avail_upto]
             j = JobPseudo()
-            print t_avail_upto, max_time - t_avail_upto, itvs
+            #print t_avail_upto, max_time - t_avail_upto, itvs
             j.start_time = t_avail_upto
             j.walltime = max_time - t_avail_upto
             j.res_set = itvs
@@ -79,7 +79,7 @@ def schedule_cycle(plt, now, queue = "default"):
         #
         if "FAIRSHARING_ENABLED" in config:
             if config["FAIRSHARING_ENABLED"] == "yes":
-                karma_jobs_sorting(queue, now, jids, jobs, plt)
+                waiting_jids = karma_jobs_sorting(queue, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues

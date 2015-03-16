@@ -1,6 +1,6 @@
 from oar.lib import config, logging, db, Accounting
+from sqlalchemy import func
 import re
-#from sqlalchemy.sql import func
 
 # convert perl hash 2 dict
 def perl_hash_2_dict(str):
@@ -25,9 +25,9 @@ def get_sum_accounting_window(queue, window_start, window_stop):
 
     for (consumption_type, total_consumption) in req: 
         if consumption_type == "ASKED":
-             karma_sum_time_asked = total_consumption
+             karma_sum_time_asked = float(total_consumption)
         elif consumption_type == "USED":
-             karma_sum_time_used = total_consumption
+             karma_sum_time_used = float(total_consumption)
 
     return (karma_sum_time_asked, karma_sum_time_used)
     
@@ -35,7 +35,7 @@ def get_sum_accounting_window(queue, window_start, window_stop):
 
 def get_sum_accounting_by_project(queue, window_start, window_stop):
 
-    req = db.query( Accountin.accounting_project, Accounting.consumption_type, 
+    req = db.query( Accounting.accounting_project, Accounting.consumption_type, 
                     func.sum(Accounting.consumption) )\
             .filter(Accounting.queue_name == queue)\
             .filter(Accounting.window_start >= window_start)\
@@ -47,31 +47,34 @@ def get_sum_accounting_by_project(queue, window_start, window_stop):
     karma_asked = {}
     
     for (project, consumption_type, total_consumption) in req: 
+        #print "project, consumption_type, total_consumption: ", project, consumption_type, total_consumption
         if consumption_type == "ASKED":
-             karma_asked[project] = total_consumption
+             karma_asked[project] = float(total_consumption)
         elif consumption_type == "USED":
-             karma_used[project] = total_consumption 
+             karma_used[project] = float(total_consumption) 
 
     return (karma_asked, karma_used)
 
 def get_sum_accounting_by_user(queue, window_start, window_stop):
 
-    req = db.query( Accountin.accounting_user, Accounting.consumption_type, 
+    #print " window_start, window_stop", window_start, window_stop
+    req = db.query( Accounting.accounting_user, Accounting.consumption_type, 
                     func.sum(Accounting.consumption) )\
             .filter(Accounting.queue_name == queue)\
             .filter(Accounting.window_start >= window_start)\
-            .filter(Accounting.window_stop < window_stop)\
+            .filter(Accounting.window_stop <= window_stop)\
             .group_by(Accounting.accounting_user, Accounting.consumption_type)\
             .all()
     
     karma_used = {}
     karma_asked = {}
     
-    for (user, consumption_type, total_consumption) in req: 
+    for (user, consumption_type, total_consumption) in req:
+        #print "user, consumption_type, total_consumption:", user, consumption_type, total_consumption
         if consumption_type == "ASKED":
-             karma_asked[user] = total_consumption
+             karma_asked[user] = float(total_consumption)
         elif consumption_type == "USED":
-             karma_used[user] = total_consumption 
+             karma_used[user] = float(total_consumption) 
 
     return (karma_asked, karma_used)
 
@@ -81,7 +84,11 @@ def get_sum_accounting_by_user(queue, window_start, window_stop):
 #                             
 def karma_jobs_sorting(queue, now, jids, jobs, plt): 
 
-    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
+    if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
+        fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
+        #TODO NOT UDSED
+        #fairsharing_nb_job_limit = 100000
+
     karma_window_size =  3600 * 30 * 24 # TODO in conf ???
 
     #Set undefined config value to default one
@@ -93,7 +100,7 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
                    }
     for k,v in default_config.iteritems():
         if not k in config:
-            config[k] = k
+            config[k] = v
 
     # defaults values for fairsharing 
     k_proj_targets = "{default => 21.0}"
@@ -102,11 +109,11 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
     k_coeff_user_consumption = "1"
     k_karma_coeff_user_asked_consumption = "1"
     #get fairsharing config if any
-    karma_proj_targets =  perl_hash_2_dict(conf["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])
-    karma_user_targets = perl_hash_2_dict(conf["SCHEDULER_FAIRSHARING_USER_TARGETS"])
-    karma_coeff_proj_consumption = config["SCHEDULER_FAIRSHARING_COEF_PROJECT"]
-    karma_coeff_user_consumption = config["SCHEDULER_FAIRSHARING_COEF_USER"]
-    karma_coeff_user_asked_consumption = config["SCHEDULER_FAIRSHARING_COEF_USER_ASK"]
+    karma_proj_targets =  perl_hash_2_dict(config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])
+    karma_user_targets = perl_hash_2_dict(config["SCHEDULER_FAIRSHARING_USER_TARGETS"])
+    karma_coeff_proj_consumption = float(config["SCHEDULER_FAIRSHARING_COEF_PROJECT"])
+    karma_coeff_user_consumption = float(config["SCHEDULER_FAIRSHARING_COEF_USER"])
+    karma_coeff_user_asked_consumption = float(config["SCHEDULER_FAIRSHARING_COEF_USER_ASK"])
 
     #
     # Sort jobs accordingly to karma value (fairsharing)  *)
@@ -147,11 +154,20 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
             karma_user_target = karma_user_targets[job.user] / 100.0
         else:
             karma_user_target = 0.0
- 
+
+        #x1 = karma_coeff_proj_consumption * ((karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0))
+        #x2 = karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0))
+        #x3 = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
+        #print "yopypop", x1, x2, x3
         job.karma = ( karma_coeff_proj_consumption * ((karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0)) +
                       karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0)) +
                       karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
                   )
 
+        #print "job.karma", job.karma
+
     # sort jids according to jobs' karma value
-    sorted(jids, key=lambda jid: jobs[jid].karma)
+    #print jids
+    karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma)
+    #print karma_ordered_jids
+    return karma_ordered_jids

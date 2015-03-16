@@ -596,14 +596,12 @@ def insert_job( **kwargs ):
         res_grps.append(res_grp)
 
 
-    print "mld_jid_walltimes: ", mld_jid_walltimes
-
+    #print "mld_jid_walltimes: ", mld_jid_walltimes
     result = db.engine.execute(MoldableJobDescription.__table__.insert(), mld_jid_walltimes)
 
     mld_ids = result.inserted_primary_key
 
-    print "res_grps: ", res_grps
-
+    #print "res_grps: ", res_grps
     for mld_idx, res_grp in enumerate( res_grps ):
         #job_resource_groups
         mld_id_property = []
@@ -619,7 +617,7 @@ def insert_job( **kwargs ):
         grp_ids = result.inserted_primary_key
 
         #job_resource_descriptions
-        print 'res_hys: ', res_hys
+        #print 'res_hys: ', res_hys
         for grp_idx, res_hy in enumerate( res_hys ):
             res_description = []
             for idx, val in enumerate( res_hy.split('/') ):
