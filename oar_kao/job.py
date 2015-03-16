@@ -595,29 +595,38 @@ def insert_job( **kwargs ):
         mld_jid_walltimes.append({'moldable_job_id': job_id, 'moldable_walltime': w})
         res_grps.append(res_grp)
 
-
-    #print "mld_jid_walltimes: ", mld_jid_walltimes
     result = db.engine.execute(MoldableJobDescription.__table__.insert(), mld_jid_walltimes)
+    
+    if len(mld_jid_walltimes) == 1:
+        mld_ids = [result.inserted_primary_key[0]]
+    else:
+        r = db.query(MoldableJobDescription.id)\
+              .filter(MoldableJobDescription.job_id == job_id).all()
+        mld_ids = [ x for e in r for x in e]
 
-    mld_ids = result.inserted_primary_key
-
-    #print "res_grps: ", res_grps
     for mld_idx, res_grp in enumerate( res_grps ):
         #job_resource_groups
         mld_id_property = []
         res_hys = []
 
+        moldable_id = mld_ids[mld_idx]
+
         for r_hy_prop in res_grp:
             (res_hy, properties)  = r_hy_prop
-            mld_id_property.append({'res_group_moldable_id': mld_ids[mld_idx], 'res_group_property': properties})
+            mld_id_property.append({'res_group_moldable_id': moldable_id, 'res_group_property': properties})
             res_hys.append(res_hy)
-
+            
+        #print "mld_id_property: ", mld_id_property
         result = db.engine.execute(JobResourceGroup.__table__.insert(),  mld_id_property)
         
-        grp_ids = result.inserted_primary_key
+        if len(mld_id_property) == 1:
+            grp_ids = [result.inserted_primary_key[0]]
+        else:
+            r = db.query(JobResourceGroup.id)\
+                  .filter(JobResourceGroup.moldable_id == moldable_id).all()
+            grp_ids = [ x for e in r for x in e]
 
         #job_resource_descriptions
-        #print 'res_hys: ', res_hys
         for grp_idx, res_hy in enumerate( res_hys ):
             res_description = []
             for idx, val in enumerate( res_hy.split('/') ):
