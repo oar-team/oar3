@@ -21,7 +21,7 @@ class SimpleNamespace(dict):
         self.__dict__ = self
 
 
-class cached_property(object):
+class CachedProperty(object):
     """ A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
     property """
@@ -38,6 +38,9 @@ class cached_property(object):
         obj.__dict__.setdefault("_cache", {})
         cached_value = obj._cache.get(self.__name__, None)
         if cached_value is None:
-            ## don't cache None value
+            # don't cache None value
             obj._cache[self.__name__] = self.func(obj)
         return obj._cache.get(self.__name__)
+
+
+cached_property = CachedProperty

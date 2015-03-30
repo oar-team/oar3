@@ -8,6 +8,7 @@ def setup():
     from oar_lib.compat import reraise
 
     class ExtensionImporter(object):
+
         """This importer redirects imports from this submodule to other locations.
         This makes it possible to transition from the old oar_name to the
         newer oar.name without people having a hard time.
@@ -20,10 +21,10 @@ def setup():
             self.prefix_cutoff = wrapper_module.count('.') + 1
 
         def __eq__(self, other):
-            return self.__class__.__module__ == other.__class__.__module__ and \
-                   self.__class__.__name__ == other.__class__.__name__ and \
-                   self.wrapper_module == other.wrapper_module and \
-                   self.module_choices == other.module_choices
+            return self.__class__.__module__ == other.__class__.__module__ \
+                and self.__class__.__name__ == other.__class__.__name__ and \
+                self.wrapper_module == other.wrapper_module and \
+                self.module_choices == other.module_choices
 
         def __ne__(self, other):
             return not self.__eq__(other)
@@ -38,7 +39,8 @@ def setup():
         def load_module(self, fullname):
             if fullname in sys.modules:
                 return sys.modules[fullname]
-            modname = fullname.split('.', self.prefix_cutoff)[self.prefix_cutoff]
+            modname = fullname.split(
+                '.', self.prefix_cutoff)[self.prefix_cutoff]
             for path in self.module_choices:
                 realname = path % modname
                 try:
@@ -59,7 +61,8 @@ def setup():
 
                     # If it's an important traceback we reraise it, otherwise
                     # we swallow it and try the next choice.  The skipped frame
-                    # is the one from __import__ above which we don't care about
+                    # is the one from __import__ above which we don't care
+                    # about
                     if self.is_important_traceback(realname, tb):
                         reraise(exc_type, exc_value, tb.tb_next)
                     continue
@@ -71,9 +74,10 @@ def setup():
 
         def is_important_traceback(self, important_module, tb):
             """Walks a traceback's frames and checks if any of the frames
-            originated in the given important module.  If that is the case then we
-            were able to import the module itself but apparently something went
-            wrong when the module was imported.  (Eg: import of an import failed).
+            originated in the given important module.  If that is the case then
+            we were able to import the module itself but apparently something
+            went wrong when the module was imported.  (Eg: import of an import
+            failed).
             """
             while tb is not None:
                 if self.is_important_frame(important_module, tb):
@@ -98,9 +102,10 @@ def setup():
             # module name at that point is no longer set.  Try guessing from
             # the filename then.
             filename = os.path.abspath(tb.tb_frame.f_code.co_filename)
-            test_string = os.path.sep + important_module.replace('.', os.path.sep)
+            test_string = os.path.sep + \
+                important_module.replace('.', os.path.sep)
             return test_string + '.py' in filename or \
-                   test_string + os.path.sep + '__init__.py' in filename
+                test_string + os.path.sep + '__init__.py' in filename
 
     importer = ExtensionImporter(['oar_%s'], __name__)
     importer.install()

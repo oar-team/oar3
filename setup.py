@@ -21,7 +21,6 @@ def get_version():
     return re.compile(r".*__version__ = '(.*?)'", re.S)\
              .match(read(op.join(here, 'oar_lib', '__init__.py'))).group(1)
 
-
 setup(
     name='oar-lib',
     author='Salem Harrache',
@@ -42,7 +41,7 @@ setup(
         'Intended Audience :: Developers',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',  # noqa
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Clustering',
     ]

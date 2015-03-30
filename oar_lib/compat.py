@@ -16,9 +16,14 @@ if PY3:
     from io import StringIO
     from queue import Empty
 
-    iterkeys = lambda d: iter(d.keys())
-    itervalues = lambda d: iter(d.values())
-    iteritems = lambda d: iter(d.items())
+    def iterkeys(d):
+        return iter(d.keys())
+
+    def itervalues(d):
+        return iter(d.values())
+
+    def iteritems(d):
+        return iter(d.items())
 
     def reraise(tp, value, tb=None):
         if value.__traceback__ is not tb:
@@ -29,7 +34,9 @@ if PY3:
         return isinstance(x, (bytes, memoryview, bytearray))
 
     from collections import Callable
-    callable = lambda obj: isinstance(obj, Callable)
+
+    def callable(obj):
+        return isinstance(obj, Callable)
 
     # Simple container
     from types import SimpleNamespace
@@ -42,12 +49,17 @@ else:
     string_types = (unicode, bytes)
     numeric_types = (int, long, float)
 
-    from cStringIO import StringIO
-    from Queue import Empty
+    from cStringIO import StringIO  # noqa
+    from Queue import Empty  # noqa
 
-    iterkeys = lambda d: d.iterkeys()
-    itervalues = lambda d: d.itervalues()
-    iteritems = lambda d: d.iteritems()
+    def iterkeys(d):
+        return d.iterkeys()
+
+    def itervalues(d):
+        return d.itervalues()
+
+    def iteritems(d):
+        return d.iteritems()
 
     exec('def reraise(tp, value, tb=None):\n raise tp, value, tb')
 
@@ -57,8 +69,7 @@ else:
     callable = callable
 
     class SimpleNamespace(object):
-        """
-        A generic container for when multiple values need to be returned
+        """ A generic container for when multiple values need to be returned
         """
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)

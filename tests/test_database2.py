@@ -13,6 +13,7 @@ def test_db_insert():
     assert object_state(r1).persistent is True
     db.commit()
 
+
 def test_db_query():
     res = db.query(Resource).order_by(Resource.id.asc()).first()
     assert res.id == 100

@@ -51,7 +51,7 @@ for module, items in iteritems(all_by_module):
         object_origins[item] = module
 
 
-class module(ModuleType):
+class Module(ModuleType):
     """Automatically import objects from the modules."""
 
     def __getattr__(self, name):
@@ -77,11 +77,11 @@ old_module = sys.modules['oar_lib']
 
 
 # setup the new module and patch it into the dict of loaded modules
-new_module = sys.modules['oar_lib'] = module('oar_lib')
+new_module = sys.modules['oar_lib'] = Module('oar_lib')
 new_module.__dict__.update({
     '__file__': __file__,
     '__package__': 'oar_lib',
-    '__path__': __path__,
+    '__path__': __path__,  # noqa
     '__doc__': __doc__,
     '__version__': __version__,
     '__all__': tuple(object_origins) + tuple(attribute_modules),

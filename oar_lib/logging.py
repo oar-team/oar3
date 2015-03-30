@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
-from logging import getLogger, FileHandler as BaseFileHandler, Formatter, \
-     INFO, ERROR, WARN, DEBUG
+from logging import (getLogger, FileHandler as BaseFileHandler, Formatter,
+                     INFO, ERROR, WARN, DEBUG)
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
@@ -43,7 +43,7 @@ def create_logger():
 def _configure(handler):
     from . import config
     getLogger("oar").setLevel(LEVELS[config['LOG_LEVEL']])
-    ## configure the handler
+    # configure the handler
     if config['LOG_FILE']:
         handler.baseFilename = config['LOG_FILE']
     handler.setLevel(LEVELS[config['LOG_LEVEL']])

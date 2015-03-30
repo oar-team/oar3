@@ -12,11 +12,16 @@ class Accounting(db.Model):
     __tablename__ = 'accounting'
 
     window_start = db.Column(db.Integer, primary_key=True, autoincrement=False)
-    window_stop = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
-    accounting_user = db.Column(db.String(255), primary_key=True, index=True, server_default='')
-    accounting_project = db.Column(db.String(255), primary_key=True, index=True, server_default='')
-    queue_name = db.Column(db.String(100), primary_key=True, index=True, server_default='')
-    consumption_type = db.Column(db.String(5), primary_key=True, index=True, server_default='ASKED')
+    window_stop = db.Column(
+        db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    accounting_user = db.Column(
+        db.String(255), primary_key=True, index=True, server_default='')
+    accounting_project = db.Column(
+        db.String(255), primary_key=True, index=True, server_default='')
+    queue_name = db.Column(
+        db.String(100), primary_key=True, index=True, server_default='')
+    consumption_type = db.Column(
+        db.String(5), primary_key=True, index=True, server_default='ASKED')
     consumption = db.Column(db.Integer, server_default='0')
 
 
@@ -33,15 +38,19 @@ class AdmissionRule(db.Model):
 class AssignedResource(db.Model):
     __tablename__ = 'assigned_resources'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, autoincrement=False, index=True,
+                            server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
-    assigned_resource_index = db.Column(db.String(7), index=True, server_default='CURRENT')
+    assigned_resource_index = db.Column(
+        db.String(7), index=True, server_default='CURRENT')
 
 
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
-    job_id = db.Column(db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
+    job_id = db.Column(db.Integer, primary_key=True,
+                       autoincrement=False, index=True, server_default='0')
     challenge = db.Column(db.String(255), server_default='')
     ssh_private_key = db.Column(db.Text, server_default='')
     ssh_public_key = db.Column(db.Text, server_default='')
@@ -50,8 +59,10 @@ class Challenge(db.Model):
 class EventLogHostname(db.Model):
     __tablename__ = 'event_log_hostnames'
 
-    event_id = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
-    hostname = db.Column(db.String(255), primary_key=True, index=True, server_default='')
+    event_id = db.Column(
+        db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    hostname = db.Column(
+        db.String(255), primary_key=True, index=True, server_default='')
 
 
 class EventLog(db.Model):
@@ -71,10 +82,15 @@ class File(db.Model):
     __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('file_id', db.Integer, primary_key=True)
-    md5sum = db.Column(db.String(255), index=True, nullable=True, server_default=db.text('NULL'))
-    location = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
-    method = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
-    compression = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
+    md5sum = db.Column(
+        db.String(255), index=True, nullable=True,
+        server_default=db.text('NULL'))
+    location = db.Column(
+        db.String(255), nullable=True, server_default=db.text('NULL'))
+    method = db.Column(
+        db.String(255), nullable=True, server_default=db.text('NULL'))
+    compression = db.Column(
+        db.String(255), nullable=True, server_default=db.text('NULL'))
     size = db.Column(db.Integer, server_default='0')
 
 
@@ -82,71 +98,92 @@ class FragJob(db.Model):
     __tablename__ = 'frag_jobs'
     __table_args__ = {'sqlite_autoincrement': True}
 
-    job_id = db.Column('frag_id_job', db.Integer, primary_key=True, server_default='0')
+    job_id = db.Column(
+        'frag_id_job', db.Integer, primary_key=True, server_default='0')
     date = db.Column('frag_date', db.Integer, server_default='0')
-    state = db.Column('frag_state', db.String(16), index=True, server_default="LEON")
+    state = db.Column(
+        'frag_state', db.String(16), index=True, server_default="LEON")
 
 
 class GanttJobsPrediction(db.Model):
     __tablename__ = 'gantt_jobs_predictions'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, autoincrement=False,
+                            server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
 
 class GanttJobsPredictionsLog(db.Model):
     __tablename__ = 'gantt_jobs_predictions_log'
 
-    sched_date = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    sched_date = db.Column(
+        db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column(
+        'moldable_job_id', db.Integer, primary_key=True, server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
 
 class GanttJobsPredictionsVisu(db.Model):
     __tablename__ = 'gantt_jobs_predictions_visu'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, autoincrement=False,
+                            server_default='0')
     start_time = db.Column(db.Integer, server_default='0')
 
 
 class GanttJobsResource(db.Model):
     __tablename__ = 'gantt_jobs_resources'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, autoincrement=False,
+                            server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
 
 class GanttJobsResourcesLog(db.Model):
     __tablename__ = 'gantt_jobs_resources_log'
 
-    sched_date = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, server_default='0')
+    sched_date = db.Column(
+        db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
 
 class GanttJobsResourcesVisu(db.Model):
     __tablename__ = 'gantt_jobs_resources_visu'
 
-    moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    moldable_id = db.Column('moldable_job_id', db.Integer,
+                            primary_key=True, autoincrement=False,
+                            server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
 
 
 class JobDependencie(db.Model):
     __tablename__ = 'job_dependencies'
 
-    job_id = db.Column(db.Integer, primary_key=True, index=True, autoincrement=False, server_default='0')
-    job_id_required = db.Column(db.Integer, primary_key=True, server_default='0')
-    index = db.Column("job_dependency_index", db.String(7), index=True, server_default='CURRENT')
+    job_id = db.Column(db.Integer, primary_key=True,
+                       index=True, autoincrement=False, server_default='0')
+    job_id_required = db.Column(
+        db.Integer, primary_key=True, server_default='0')
+    index = db.Column("job_dependency_index", db.String(
+        7), index=True, server_default='CURRENT')
 
 
 class JobResourceDescription(db.Model):
     __tablename__ = 'job_resource_descriptions'
 
-    group_id = db.Column('res_job_group_id', db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
-    resource_type = db.Column('res_job_resource_type', db.String(255), primary_key=True, server_default='')
+    group_id = db.Column('res_job_group_id', db.Integer, primary_key=True,
+                         autoincrement=False, index=True, server_default='0')
+    resource_type = db.Column('res_job_resource_type', db.String(255),
+                              primary_key=True, server_default='')
     value = db.Column('res_job_value', db.Integer, server_default='0')
-    order = db.Column('res_job_order', db.Integer, primary_key=True, server_default='0')
-    index = db.Column('res_job_index', db.String(7), index=True, server_default='CURRENT')
+    order = db.Column(
+        'res_job_order', db.Integer, primary_key=True, server_default='0')
+    index = db.Column(
+        'res_job_index', db.String(7), index=True, server_default='CURRENT')
 
 
 class JobResourceGroup(db.Model):
@@ -154,9 +191,11 @@ class JobResourceGroup(db.Model):
     __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('res_group_id', db.Integer, primary_key=True)
-    moldable_id = db.Column('res_group_moldable_id', db.Integer, index=True, server_default='0')
+    moldable_id = db.Column(
+        'res_group_moldable_id', db.Integer, index=True, server_default='0')
     property = db.Column('res_group_property', db.Text, nullable=True)
-    index = db.Column('res_group_index', db.String(7), index=True, server_default='CURRENT')
+    index = db.Column(
+        'res_group_index', db.String(7), index=True, server_default='CURRENT')
 
 
 class JobStateLog(db.Model):
@@ -194,7 +233,8 @@ class Job(db.DeferredReflection, db.Model):
     name = db.Column('job_name', db.String(100), nullable=True)
     env = db.Column('job_env', db.Text, nullable=True)
     type = db.Column('job_type', db.String(11), server_default='PASSIVE')
-    info_type = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
+    info_type = db.Column(
+        db.String(255), nullable=True, server_default=db.text('NULL'))
     state = db.Column(db.String(16), index=True, server_default='Waiting')
     reservation = db.Column(db.String(10), index=True, server_default='None')
     message = db.Column(db.String(255), server_default='')
@@ -212,8 +252,10 @@ class Job(db.DeferredReflection, db.Model):
     stop_time = db.Column(db.Integer, server_default='0')
     file_id = db.Column(db.Integer, nullable=True)
     accounted = db.Column(db.String(3), index=True, server_default='NO')
-    notify = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
-    assigned_moldable_job = db.Column(db.Integer, nullable=True, server_default='0')
+    notify = db.Column(
+        db.String(255), nullable=True, server_default=db.text('NULL'))
+    assigned_moldable_job = db.Column(
+        db.Integer, nullable=True, server_default='0')
     checkpoint = db.Column(db.Integer, server_default='0')
     checkpoint_signal = db.Column(db.Integer)
     stdout_file = db.Column(db.Text, nullable=True)
@@ -227,15 +269,18 @@ class MoldableJobDescription(db.Model):
     __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('moldable_id', db.Integer, primary_key=True)
-    job_id = db.Column('moldable_job_id', db.Integer, index=True, server_default='0')
+    job_id = db.Column(
+        'moldable_job_id', db.Integer, index=True, server_default='0')
     walltime = db.Column('moldable_walltime', db.Integer, server_default='0')
-    index = db.Column('moldable_index', db.String(7), index=True, server_default='CURRENT')
+    index = db.Column(
+        'moldable_index', db.String(7), index=True, server_default='CURRENT')
 
 
 class Queue(db.Model):
     __tablename__ = 'queues'
 
-    name = db.Column('queue_name', db.String(100), primary_key=True, server_default='')
+    name = db.Column(
+        'queue_name', db.String(100), primary_key=True, server_default='')
     priority = db.Column(db.Integer, server_default='0')
     scheduler_policy = db.Column(db.String(100), server_default='')
     state = db.Column(db.String(9), server_default='Active')
@@ -262,7 +307,8 @@ class Resource(db.DeferredReflection, db.Model):
     type = db.Column(db.String(100), index=True, server_default='default')
     network_address = db.Column(db.String(100), index=True, server_default='')
     state = db.Column(db.String(9), index=True, server_default='Alive')
-    next_state = db.Column(db.String(9), index=True, server_default='UnChanged')
+    next_state = db.Column(
+        db.String(9), index=True, server_default='UnChanged')
     finaud_decision = db.Column(db.String(3), server_default='NO')
     next_finaud_decision = db.Column(db.String(3), server_default='NO')
     state_num = db.Column(db.Integer, server_default='0')
