@@ -32,4 +32,4 @@ publish:
 	python setup.py bdist_wheel upload
 
 flake8:
-	flake8 --max-complexity 12 .
+	flake8 .
