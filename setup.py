@@ -10,6 +10,7 @@ requirements = [
     'tabulate',
 ]
 
+
 def read(fname):
     ''' Return the file content. '''
     with open(op.join(here, fname)) as fd:

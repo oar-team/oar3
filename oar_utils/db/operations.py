@@ -3,7 +3,7 @@ from __future__ import division, absolute_import, unicode_literals
 
 import re
 from copy import copy
-from functools import partial
+from functools import partial, reduce
 
 from sqlalchemy import func, MetaData, Table, and_, not_
 from sqlalchemy.engine.reflection import Inspector
@@ -227,16 +227,16 @@ def sync_tables(ctx, tables, delete=False):
 
 
 def merge_table(ctx, table):
-    ## Very slow !!
+    # Very slow !!
     session = ctx.archive_db.session
     ctx.log(' %s ~> table %s' % (magenta(' merge'), table.name))
-    Model = generic_mapper(table)
+    model = generic_mapper(table)
     columns = table.columns.keys()
     for record in ctx.current_db.query(table).all():
         data = dict(
             [(str(column), getattr(record, column)) for column in columns]
         )
-        session.merge(Model(**data))
+        session.merge(model(**data))
     session.commit()
 
 
@@ -320,9 +320,7 @@ def fix_sequences(ctx):
 
 
 def generic_mapper(table):
-    Base = declarative_base()
-
-    class GenericMapper(Base):
+    class GenericMapper(declarative_base()):
         __table__ = table
     return GenericMapper
 
@@ -365,7 +363,7 @@ def purge_db(ctx):
                 message = None
             if not change and rv is not None:
                 change = True
-    ## Purge events
+    # Purge events
     message = "Purge old events from database :"
     event_log_hostnames = tables_dict["event_log_hostnames"]
     event_logs = tables_dict["event_logs"]

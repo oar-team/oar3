@@ -4,6 +4,7 @@ from __future__ import division
 import sys
 import click
 
+from functools import reduce
 from sqlalchemy import func, and_, not_
 from oar.lib import Database
 from oar.lib.compat import reraise
@@ -78,14 +79,14 @@ class Context(object):
 
     @cached_property
     def max_job_to_sync(self):
-        Job = self.current_db.models.Job
-        acceptable_max_job_id = self.current_db.query(func.min(Job.id))\
+        model = self.current_db.models.Job
+        acceptable_max_job_id = self.current_db.query(func.min(model.id))\
                                     .filter(self.ignored_jobs_criteria)\
                                     .scalar()
         if acceptable_max_job_id is None:
             if self.max_job_id is None:
                 # returns the real max job id
-                return self.current_db.query(func.max(Job.id)).scalar() or 0
+                return self.current_db.query(func.max(model.id)).scalar() or 0
             else:
                 return self.max_job_id
         else:
@@ -96,26 +97,26 @@ class Context(object):
 
     @cached_property
     def max_moldable_job_to_sync(self):
-        MoldableJobDescription = self.current_db.models.MoldableJobDescription
-        criteria = MoldableJobDescription.job_id < self.max_job_to_sync
-        Job = self.current_db.models.Job
-        query = self.current_db.query(func.max(MoldableJobDescription.id))\
-                               .join(Job,
-                                     MoldableJobDescription.job_id == Job.id)\
+        moldable_model = self.current_db.models.MoldableJobDescription
+        criteria = moldable_model.job_id < self.max_job_to_sync
+        job_model = self.current_db.models.Job
+        query = self.current_db.query(func.max(moldable_model.id))\
+                               .join(job_model,
+                                     moldable_model.job_id == job_model.id)\
                                .filter(criteria)
         return query.scalar() or 0
 
     @cached_property
     def resources_to_purge(self):
-        AssignedResource = self.current_db.models.AssignedResource
-        Resource = self.current_db.models.Resource
+        assigned_model = self.current_db.models.AssignedResource
+        resource_model = self.current_db.models.Resource
         max_moldable = self.max_moldable_job_to_sync
-        query = self.current_db.query(Resource.id)
+        query = self.current_db.query(resource_model.id)
         excludes = query.filter(not_(self.ignored_resources_criteria))\
-                        .join(AssignedResource,
-                              Resource.id == AssignedResource.resource_id)\
-                        .filter(AssignedResource.moldable_id >= max_moldable)\
-                        .group_by(Resource.id).all()
+                        .join(assigned_model,
+                              resource_model.id == assigned_model.resource_id)\
+                        .filter(assigned_model.moldable_id >= max_moldable)\
+                        .group_by(resource_model.id).all()
         excludes_set = set([resource_id for resource_id, in excludes])
         resources = query.filter(not_(self.ignored_resources_criteria)).all()
         resources_set = set([resource_id for resource_id, in resources])
