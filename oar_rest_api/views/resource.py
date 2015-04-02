@@ -18,7 +18,7 @@ def get_links(resource_id, network_address):
             url = url_for('.%s' % endpoint, network_address=network_address)
         else:
             url = url_for('.%s' % endpoint, resource_id=resource_id)
-        yield { 'rel': rel, 'href': url, 'title': endpoint}
+        yield {'rel': rel, 'href': url, 'title': endpoint}
 
 
 @app.route('/', methods=['GET'])

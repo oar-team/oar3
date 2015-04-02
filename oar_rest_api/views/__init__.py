@@ -38,6 +38,7 @@ class Blueprint(FlaskBlueprint):
             rule = (self.root_prefix + partial_rule)
         if self.trailing_slash and len(rule) > 1:
             rule = rule.rstrip("/")
+
         def decorator(f):
             endpoint = options.pop("endpoint", f.__name__)
             if jsonify and not hasattr(f, "decorated_with_jsonify") and args:
@@ -113,7 +114,7 @@ class Blueprint(FlaskBlueprint):
     def _prepare_response(self):
         g.request_params = {}
         g.data = OrderedDict()
-        g.data['api_timezone'] ='UTC'
+        g.data['api_timezone'] = 'UTC'
         g.data['api_timestamp'] = int(time.time())
 
     def _json_dumps(self, obj, **kwargs):

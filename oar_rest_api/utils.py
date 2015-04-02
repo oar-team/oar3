@@ -31,7 +31,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
             return obj.isoformat()
         elif isinstance(obj, (decimal.Decimal)):
-            return unicode(obj)
+            return to_unicode(obj)
         elif hasattr(obj, '_asdict') and callable(getattr(obj, '_asdict')):
             return obj._asdict()
         elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
@@ -91,6 +91,6 @@ class ArgParser(object):
                         exc_type, exc_value, tb = sys.exc_info()
                         exc_value.data = \
                             ("The parameter '%s' specified in the request "
-                            "URI is not supported." % argname)
+                             "URI is not supported." % argname)
                         reraise(exc_type, exc_value, tb.tb_next)
         return kwargs

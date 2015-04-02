@@ -5,7 +5,7 @@ from setuptools import setup
 here = op.abspath(op.dirname(__file__))
 
 requirements = [
-    'oar-lib>=0.1-dev',
+    'oar-lib',
     'flask>=0.10',
 ]
 
@@ -18,7 +18,7 @@ def read(fname):
 
 def get_version():
     return re.compile(r".*__version__ = '(.*?)'", re.S)\
-             .match(read(op.join(here, 'oar_rest_api', '__init__.py'))).group(1)
+             .match(read(op.join('oar_rest_api', '__init__.py'))).group(1)
 
 
 setup(
@@ -32,7 +32,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     description='Python OAR RESTful API',
-    long_description=read('README.rst') + '\n\n' + read('CHANGELOG.rst'),
+    long_description=read('README.rst') + '\n\n' + read('CHANGES'),
     license="GNU GPL",
     classifiers=[
         'Development Status :: 1 - Planning',

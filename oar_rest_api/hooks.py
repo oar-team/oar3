@@ -8,7 +8,7 @@ def shutdown_db_session(response_or_exc):
 
 def register_hooks(app):
     '''Declares all flask application hooks'''
-     # 0.9 and later
+    # 0.9 and later
     if hasattr(app, 'teardown_appcontext'):
         teardown = app.teardown_appcontext
     # 0.7 to 0.8
