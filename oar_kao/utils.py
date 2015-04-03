@@ -1,4 +1,8 @@
-from oar.lib import db
+import time
+import socket
+from oar.lib import db, config, get_logger
+
+log = get_logger("oar.kao.utils")
 
 notification_socket = None
 
@@ -10,7 +14,7 @@ def create_tcp_notification_socket():
     try:
         notification_socket.connect( (server, port) )
     except socket.error, exc:
-        log.error("Connection to " + server + ":" + port + " raised exception socket.error: " + exc)
+        log.error("Connection to " + server + ":" + str(port) + " raised exception socket.error: " + exc)
         sys.exit(1)
 
 # get_date
@@ -18,6 +22,16 @@ def create_tcp_notification_socket():
 def get_date():
     result = db.engine.execute("select EXTRACT(EPOCH FROM current_timestamp)").scalar()
     return int(result)
+
+# local_to_sql
+# converts a date specified in an integer local time format to the format used
+# by the sql database
+# parameters : date integer
+# return value : date string
+# side effects : /
+
+def local_to_sql(local):
+    return time.strftime("%F %T", time.localtime(local))
 
 def notify_user(job, state, msg):
     #TODO see OAR::Modules::Judas::notify_user

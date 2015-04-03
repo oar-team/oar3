@@ -1,11 +1,16 @@
+
+# oar/sources/core/modules/scheduler/oar_meta_sched
+import time
 import os
 import sys
 import subprocess
-from oar.lib import config, Queue
+from oar.lib import config, db, Queue, get_logger, GanttJobsPredictionsVisu, GanttJobsResourcesVisu
 from oar.kao.job import get_current_not_waiting_jobs, get_gantt_jobs_to_launch
+from oar.kao.utils import create_tcp_notification_socket, local_to_sql
 
+config['LOG_FILE'] = '/dev/stdout'
 # Log category
-log = get_logger("oar.kao")
+log = get_logger("oar.kao.meta_sched")
 
 exit_code = 0
 
@@ -16,6 +21,7 @@ exit_code = 0
 ###########################################################################################################
 
 # First get resources that we must add for each reservation jobs
+#oar_debug("[MetaSched] Resources to automatically add to all reservations: @Resources_to_always_add\n");
 #TODO
 
 # Take care of the currently (or nearly) running jobs
@@ -24,13 +30,26 @@ exit_code = 0
 
 #calculate now date with no overlap with other jobs
 
+
+#oar_debug("[MetaSched] Retrieve information for already scheduler reservations from database before flush (keep assign resources)\n");
+
 #Init the gantt chart with all resources
 
+#oar_debug("[MetaSched] Begin processing of already handled reservations\n");
 # Add already scheduled reservations into the gantt
-
-
+# A container job cannot be placeholder or allowed or timesharing. 
+#Fill all other gantts
 
 #oar_debug("[MetaSched] End processing of waiting reservations\n");
+
+#oar_debug("[MetaSched] Begin processing of current jobs\n");
+#
+#
+#oar_debug("[MetaSched] End processing of current jobs\n");
+
+#oar_debug("[MetaSched] Begin processing of accepted reservations which do not have assigned resources yet\n");
+
+#oar_debug("[MetaSched] End processing of accepted reservations which do not have assigned resources yet\n");
 
 ###########################################################################################################
 # End init scheduler                                                                                      #
@@ -39,6 +58,10 @@ exit_code = 0
 # launch right reservation jobs
 # arg : queue name
 # return 1 if there is at least a job to treate, 2 if besteffort jobs must die
+
+#sub treate_waiting_reservation_jobs($){
+#oar_debug("[MetaSched] Queue $queue_name: begin processing of reservations with missing resources\n");
+#oar_debug("[MetaSched] Queue $queue_name: end processing of reservations with missing resources\n");
 
 
 ###########
@@ -81,14 +104,21 @@ def prepare_jobs_to_be_launched():
     
     #notify_to_run_jobs
 
-
+# advance reservation job to launch ?
 def treate_waiting_reservation_jobs(name):
     pass
 
 def check_reservation_jobs(name):
+    #oar_debug("[MetaSched] Queue $queue_name: begin processing of new reservations\n");
+    #big 
+    #oar_debug("[MetaSched] Queue $queue_name: end processing of new reservations\n");
     pass
 
 def check_jobs_to_kill():
+
+    # Detect if there are besteffort jobs to kill
+    # return 1 if there is at least 1 job to frag otherwise 0
+
     log.debug("Begin precessing of besteffort jobs to kill")
     #my %nodes_for_jobs_to_launch;
     #if (defined $redis) {
@@ -96,7 +126,18 @@ def check_jobs_to_kill():
     #}else{
     #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch($base,$current_time_sec);
     #}
+
+    log.debug("End precessing of besteffort jobs to kill\n")
     return 0
+
+# Tell Almighty to run a job
+# sub notify_to_run_job($$){
+def notify_to_run_job():
+    pass
+
+# Prepare a job to be run by bipbip
+def prepare_job_to_be_launched():
+    pass
 
 def check_jobs_to_launch(current_time_sec, current_time_sql):
     log.debug("Begin processing of jobs to launch (start time <= " + current_time_sql)
@@ -139,14 +180,15 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
 
 
 def update_gantt_visualization():
-    sql_queries = ["TRUNCATE TABLE gantt_jobs_predictions_visu",
-                   "TRUNCATE TABLE gantt_jobs_resources_visu",
-                   "INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
+
+    GanttJobsPredictionsVisu.query.delete()
+    GanttJobsResourcesVisu.query.delete()
+    db.commit()
+    sql_queries = ["INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
                    "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
                    ]
     for query in sql_queries:
         result = db.engine.execute(query)
-
 
 def get_current_jobs_not_waiting():
     pass
@@ -160,7 +202,11 @@ def meta_schedule():
     # reservation ??.
     
     initial_time_sec = time.time()
-    initial_time_sql = TODO
+    initial_time_sql = local_to_sql(initial_time_sec)
+
+    current_time_sec = initial_time_sec
+    current_time_sql = initial_time_sql
+
     #my %initial_time = (
     #                "sec" => $current_time_sec,
     #                "sql" => $current_time_sql
@@ -169,29 +215,31 @@ def meta_schedule():
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
     else:
-        log.error("OARDIR env variable must be defined")
-        exit
+        log.warning("OARDIR env variable must be defined")
+        binpath = "/usr/local/lib/oar"
 
-    for queue in Queue.query.order_by("priority ASC").all():
+    for queue in Queue.query.order_by("priority DESC").all():
         
         if queue.state == "Active":
-            log.debug("Queue " + queue.name + ": Launching scheduler $policy at time " 
+            log.debug("Queue " + queue.name + ": Launching scheduler " + queue.scheduler_policy + " at time " 
                       + initial_time_sql)
           
             
-            cmd_schedudler = binpath + "scheduler/" + queue.scheduler_policy 
+            cmd_scheduler = binpath + "scheduler/" + queue.scheduler_policy 
             
             child_launched = True
-
+            #TO CONFIMR
+            sched_exit_code = 0
+            sched_signal_num = 0 
+            sched_dumped_core = 0
             try:
-                child = subprocessPopen([cmd_schedudler, queue.name, initial_time_sec,initial_time_sql]
+                child = subprocess.Popen([cmd_scheduler, queue.name, str(initial_time_sec), initial_time_sql]
                                         ,stdout=subprocess.PIPE)
                                     
                 for line in iter(child.stdout.readline,''):
-                    loq.debug( "Read on the scheduler output:" + line.rstrip() )
+                    log.debug( "Read on the scheduler output:" + line.rstrip() )
                 #TODO SCHEDULER_LAUNCHER_OPTIMIZATION
                 #if ((get_conf_with_default_param("SCHEDULER_LAUNCHER_OPTIMIZATION", "yes") eq "yes") and
-
 
                 child.wait()
                 rc = child.returncode
@@ -199,8 +247,8 @@ def meta_schedule():
 
             except OSError as e:
                 child_launched = False
-                log.warn(e + " Cannot run: " + cmd_schedudler + " " + queue.name  + " " + 
-                         initial_time_sec + " " + initial_time_sql)
+                log.warn(str(e) + " Cannot run: " + cmd_scheduler + " " + queue.name  + " " + 
+                         str(initial_time_sec) + " " + initial_time_sql)
 
 
             if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core !=0 ): 
@@ -216,39 +264,34 @@ def meta_schedule():
                 #stop queue
                 db.query(Queue).filter_by(name=queue.name).update({"state": u"notActive"})
         
-            treate_waiting_reservation_jobs(name)
-            check_reservation_jobs(name)
+            treate_waiting_reservation_jobs(queue.name)
+            check_reservation_jobs(queue.name)
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
         socket_notification.send("ChState")
         exit_code = 2
-    elif check_jobs_to_launch() == 1:
+    elif check_jobs_to_launch(current_time_sec, current_time_sql) == 1:
         exit_code = 0
 
     #Update visu gantt tables
     update_gantt_visualization()
 
-    # Manage dynamic node feature
-    
+    # Manage dynamic node feature    
     # Send CHECK signal to Hulot if needed
 
-    jobids_by_state, current_not_waiting_jobs = get_current_not_waiting_jobs()
-
+    jobs_by_state = get_current_not_waiting_jobs()
 
     # Search jobs to resume
-    
     # Notify oarsub -I when they will be launched
-    
     # Run the decisions
     ## Treate "toError" jobs
-
     ## Treate toAckReservation jobs
 
     ## Treate toLaunch jobs
-    #foreach my $j (OAR::IO::get_jobs_in_state($base,"toLaunch")){
-    #    notify_to_run_job($base, $j->{job_id});
-    #}
+    if "toLaunch" in jobs_by_state:
+        for job in jobs_by_state:
+            notify_to_run_job(job.id)
 
     log.debug("End of Meta Scheduler")
 

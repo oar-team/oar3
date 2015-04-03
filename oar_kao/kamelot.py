@@ -19,7 +19,8 @@ max_time_minus_one = 2147483647 #(* 2**31-1 *)
 besteffort_duration = 300 #TODO conf ???
 
 #Set undefined config value to default one
-default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
+default_config = {"DB_PORT": "5432", 
+                  "HIERARCHY_LABEL": "resource_id,network_address",
                   "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
                   "SCHEDULER_JOB_SECURITY_TIME": "60",
                   "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",

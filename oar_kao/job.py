@@ -377,8 +377,9 @@ def get_current_jobs_dependencies(jobs):
             jobs[j_dep.job_id].deps.append( (j_dep.job_id_required, state, exit_code) )
 
 #TO REMOVE ?
-def get_current_not_waiting_jobs():
-    jobs = Job.query.filter((Job.index == "CURRENT") & (Job.state != "Wainting")).all()
+#TODO
+def get_current_not_waiting_jobs_old():
+    jobs = Job.query.filter(Job.state != "Waiting").all()
     current_not_waiting_jobs = {}
     jobids_by_state = {}
     for job in jobs:
@@ -389,18 +390,26 @@ def get_current_not_waiting_jobs():
 
     return (jobids_by_state, current_not_waiting_jobs)
 
+def get_current_not_waiting_jobs():
+    jobs = Job.query.filter(Job.state != "Waiting").all()
+    jobs_by_state = {}
+    for job in jobs:
+        if not job.state in jobids_by_state:
+            jobs_by_state[job.state] = []
+        jobs_by_state[job.state].append[job]
+    return (jobs_by_state)
 
 def get_gantt_jobs_to_launch(current_time_sec):
     #NOTE1 doesnt use  m.moldable_index = \'CURRENT\' impacts Pg's performance
     #NOTE2 doesnt use   AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
     #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
-    # to limit overhead
+    # to reduce overhead
 
-    req = db.query(Job,MoldableJobDescriptions.moldable_id)\
-            .filter(GanttJobsPredictions.start_time <= data &
-                    Job.state == "Waiting" &
-                    Job.id == MoldableJobDescription.id &
-                    MoldableJobDescriptions.moldable_id == GanttJobsPredictions.moldable_job_id)\
+    req = db.query(Job,MoldableJobDescription.id)\
+            .filter(GanttJobsPrediction.start_time <= current_time_sec)\
+            .filter(Job.state == "Waiting")\
+            .filter(Job.id == MoldableJobDescription.job_id)\
+            .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
             .all()
 
     #    $req = "SELECT DISTINCT(j.job_id)
@@ -418,11 +427,11 @@ def set_jobs_start_time(tuple_jids, start_time):
     db.query(Job).update({Job.start_time: start_time}).filter(Job.job_id.in_( tuple_jids ))
     db.commit()
 
-
 def set_jobs_state(tuple_jids, state): #NOT USED
     #TODO complete to enhance performance by vectorizing operations
-    db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids ))
-    db.commit()
+    #db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids ))
+    #db.commit()
+    pass 
 
 def set_job_state(jid, state):
 
