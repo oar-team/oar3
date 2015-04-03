@@ -26,17 +26,12 @@ def create_logger():
     logger = getLogger("oar")
     logger.setLevel(DEBUG)
 
-    sa_logger = getLogger("sqlalchemy.engine")
-    sa_logger.setLevel(INFO)
-
     # just in case that was not a new logger, get rid of all the handlers
     # already attached to it.
     del logger.handlers[:]
-    del sa_logger.handlers[:]
 
     handler = DeferredFileHandler(callback=_configure)
     logger.addHandler(handler)
-    sa_logger.addHandler(handler)
     return logger
 
 
