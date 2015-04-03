@@ -13,15 +13,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .exceptions import DoesNotExist
-from .utils import SimpleNamespace, cached_property
+from .utils import cached_property
+from .compat import iteritems
 
 
 __all__ = ['Database']
-
-
-def load_all_models():
-    from oar.lib.models import all_models  # avoid a circular import
-    return dict(all_models())
 
 
 class BaseQuery(Query):
@@ -47,6 +43,8 @@ class BaseQuery(Query):
 
 class BaseModel(object):
 
+    query = None
+
     @classmethod
     def create(cls, **kwargs):
         record = cls(**kwargs)
@@ -64,20 +62,13 @@ class BaseModel(object):
             result[key] = getattr(self, key)
         return result
 
+    def __iter__(self):
+        """Returns an iterable that supports .next()"""
+        for (k, v) in iteritems(self.asdict()):
+            yield (k, v)
 
-class QueryProperty(object):
-
-    def __init__(self, db):
-        self._db = db
-
-    def __get__(self, obj, type):
-        session = self._db.session()
-        try:
-            mapper = class_mapper(type)
-            if mapper:
-                return type.query_class(mapper, session=session)
-        except UnmappedClassError:
-            return None
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
 
 
 class SessionProperty(object):
@@ -102,22 +93,19 @@ class SessionProperty(object):
         return self
 
 
-class ModelProperty(object):
+class QueryProperty(object):
 
-    def __init__(self):
-        self._model = None
+    def __init__(self, db):
+        self._db = db
 
     def __get__(self, obj, type):
-        if obj is not None:
-            if self._model is None:
-                class _BaseModel(obj.model_class):
-                    query_class = obj.query_class
-                    query = None
-                self._model = declarative_base(cls=_BaseModel, name='Model')
-                self._model.query = QueryProperty(obj)
-                self._model.db = obj
-            return self._model
-        return self
+        session = self._db.session()
+        try:
+            mapper = class_mapper(type)
+            if mapper:
+                return type.query_class(mapper, session=session)
+        except UnmappedClassError:
+            return None
 
 
 class Database(object):
@@ -126,10 +114,7 @@ class Database(object):
     """
 
     session = SessionProperty()
-    Model = ModelProperty()
-    DeferredReflection = DeferredReflection
     query_class = BaseQuery
-    model_class = BaseModel
 
     def __init__(self, uri=None, session_options=None):
         self.connector = None
@@ -139,6 +124,8 @@ class Database(object):
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
+        self.Model = declarative_base(cls=BaseModel, name='Model')
+        self.Model.query = QueryProperty(self)
 
     @cached_property
     def uri(self):
@@ -161,26 +148,6 @@ class Database(object):
     def metadata(self):
         """Proxy for Model.metadata"""
         return self.Model.metadata
-
-    @property
-    def m(self):
-        return self.models
-
-    @property
-    def t(self):
-        return self.tables
-
-    @cached_property
-    def models(self):
-        """ Return a namespace with all mapping classes"""
-        return SimpleNamespace(load_all_models())
-
-    @cached_property
-    def tables(self):
-        """ Return a namespace with all tables classes"""
-        self.reflect()
-        tables = dict((t.name, t) for t in self.metadata.sorted_tables)
-        return SimpleNamespace(tables)
 
     @property
     def query(self):
@@ -206,7 +173,8 @@ class Database(object):
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         if not self._reflected:
-            self._cache['models'] = SimpleNamespace(load_all_models())
+            # avoid a circular import
+            from oar.lib import models  # noqa
             self.create_all()
             # autoload all tables marked for autoreflect
             self.DeferredReflection.prepare(self.engine)
@@ -325,3 +293,4 @@ def _include_sqlalchemy(obj):
             super(Column, self).__init__(*args, **kwargs)
 
     obj.Column = Column
+    obj.DeferredReflection = DeferredReflection
