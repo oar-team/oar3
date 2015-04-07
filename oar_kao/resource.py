@@ -1,4 +1,4 @@
-from oar.lib import config, Resource
+from oar.lib import config, db, Resource
 from oar.kao.hierarchy import Hierarchy
 from oar.kao.interval import ordered_ids2itvs
 from array import *
@@ -39,7 +39,7 @@ class ResourceSet:
         roids = []
 
         #retreive resource in order from DB
-        self.resources_db = Resource.query.order_by(order_by_clause).all()
+        self.resources_db = db.query(Resource).order_by(order_by_clause).all()
 
         #fill the different structures
         for roid, r in enumerate(self.resources_db):

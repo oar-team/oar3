@@ -5,7 +5,9 @@ import os
 import sys
 import subprocess
 from oar.lib import config, db, Queue, get_logger, GanttJobsPredictionsVisu, GanttJobsResourcesVisu
-from oar.kao.job import get_current_not_waiting_jobs, get_gantt_jobs_to_launch
+from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
+                         set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
+                         set_job_state)
 from oar.kao.utils import create_tcp_notification_socket, local_to_sql
 
 config['LOG_FILE'] = '/dev/stdout'
@@ -70,39 +72,36 @@ exit_code = 0
 
 ###########
 
-
+# Tell Almighty to run a job
+# sub notify_to_run_job($$){
+def notify_to_run_job(jid):
+    log.debug("notify_to_run_job not implemented !!!!!!!!!!!")
+    pass
 
 # Prepare a job to be run by bipbip
-def prepare_jobs_to_be_launched():
-  #      $job_id,
-  #      $moldable_job_id,
-  #      $job_submission_time,
-  #      $resources_array_ref) = @_;
-
+def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
+    jid = job.id
+    
+    #TODO ??? 
     #my $running_date = $current_time_sec;
     #if ($running_date < $job_submission_time){
     #    $running_date = $job_submission_time;
     #}
-    
-    tuple_jids = tuple(jids) 
-    #set start_time for jobs to launch 
-    set_jobs_start_time(tuple_jids, start_time)
 
-    # OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
-    for job in jobs:
-        set_assigned_moldable_job(job)
+    #OAR::IO::set_running_date_arbitrary($base, $job_id, $running_date);
+    #OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
 
+    #set start_time an for jobs to launch 
+    set_job_start_time_assigned_moldable_id(jid, current_time_sec, moldable_id)
         
     #OAR::IO::add_resource_job_pairs($base, $moldable_job_id, $resources_array_ref);
-    #TODO
-    add_resource_jobs(tuple_modable_ids)
-
+    add_resource_job_pairs(moldable_id)
     #OAR::IO::set_job_state($base, $job_id, "toLaunch");
-    # ser
 
-    #set_jobs_state(tuple_jids, "toLaunch")
+    set_job_state(jid, "toLaunch")
     
-    #notify_to_run_jobs
+    notify_to_run_job(jid)
+
 
 # advance reservation job to launch ?
 def treate_waiting_reservation_jobs(name):
@@ -130,59 +129,46 @@ def check_jobs_to_kill():
     log.debug("End precessing of besteffort jobs to kill\n")
     return 0
 
-# Tell Almighty to run a job
-# sub notify_to_run_job($$){
-def notify_to_run_job():
-    pass
-
-# Prepare a job to be run by bipbip
-def prepare_job_to_be_launched():
-    pass
-
 def check_jobs_to_launch(current_time_sec, current_time_sql):
     log.debug("Begin processing of jobs to launch (start time <= " + current_time_sql)
-
+    
     return_code = 0
     #TODO
     #job to launch
     jobs_to_launch_moldable_id_req = get_gantt_jobs_to_launch(current_time_sec)
 
-    #my $return_code = 0;
-    #my %jobs_to_launch = (); 
-    #    %jobs_to_launch = OAR::IO::get_gantt_jobs_to_launch($base,$current_time_sec);
-    #} 
-
     for job_moldable_id in jobs_to_launch_moldable_id_req:
         return_code = 1
-        log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
         job, moldable_id = job_moldable_id
+        log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
-        #TODO
+        #TODO Advance Reservation
         #if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
         #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
         #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);
         #   OAR::IO::set_gantt_job_startTime($base,$jobs_to_launch{$i}->[0],$current_time_sec);
         #   oar_warn("[MetaSched] Reduce walltime of job $i to $max_time (was  $mold->{moldable_walltime})\n");
         #   OAR::IO::add_new_event($base,"REDUCE_RESERVATION_WALLTIME",$i,"Change walltime from $mold->{moldable_walltime} to $max_time");
-    #        my $w = OAR::IO::duration_to_sql($max_time);                                                                            
-    #        if ($job->{message} =~ s/W\=\d+\:\d+\:\d+/W\=$w/g){                                                               
-    #            OAR::IO::set_job_message($base,$i,$job->{message});                                                                  
-    #        }
-    #    }
-
-    if return_code == 1:
-        prepare_jobs_to_be_launched()
-    #    prepare_job_to_be_launched($base, $i, $jobs_to_launch{$i}->[0], $job->{submission_time}, $jobs_to_launch{$i}->[1]);
+        #        my $w = OAR::IO::duration_to_sql($max_time);                                                                            
+        #        if ($job->{message} =~ s/W\=\d+\:\d+\:\d+/W\=$w/g){                                                               
+        #            OAR::IO::set_job_message($base,$i,$job->{message});                                                                  
+        #        }
+        #    }
+        
+        prepare_job_to_be_launched(job, moldable_id, current_time_sec)
 
     log.debug("End processing of jobs to launch");
 
-    return 0
+    return return_code
 
 
 def update_gantt_visualization():
 
-    GanttJobsPredictionsVisu.query.delete()
-    GanttJobsResourcesVisu.query.delete()
+
+    db.query(GanttJobsPredictionsVisu).delete()
+    db.query(GanttJobsResourcesVisu).delete()
+    #GanttJobsPredictionsVisu.query.delete()
+    #GanttJobsResourcesVisu.query.delete()
     db.commit()
     sql_queries = ["INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
                    "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
@@ -215,20 +201,19 @@ def meta_schedule():
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
     else:
-        log.warning("OARDIR env variable must be defined")
-        binpath = "/usr/local/lib/oar"
+        binpath = "/usr/local/lib/oar/"
+        log.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
-    for queue in Queue.query.order_by("priority DESC").all():
+    for queue in db.query(Queue).order_by("priority DESC").all():
         
         if queue.state == "Active":
             log.debug("Queue " + queue.name + ": Launching scheduler " + queue.scheduler_policy + " at time " 
                       + initial_time_sql)
           
-            
-            cmd_scheduler = binpath + "scheduler/" + queue.scheduler_policy 
+            cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy 
             
             child_launched = True
-            #TO CONFIMR
+            #TODO TO CONFIRM
             sched_exit_code = 0
             sched_signal_num = 0 
             sched_dumped_core = 0
@@ -255,14 +240,14 @@ def meta_schedule():
                 log.error("Execution of " + queue.scheduler_policy + 
                           " failed, inactivating queue " + queue.name + " (see `oarnotify')")
                 #stop queue
-                db.query(Queue).filter_by(name=queue.name).update({"state": u"notActive"})
+                db.query(Queue).filter_by(name=queue.name).update({"state": "notActive"})
 
 
-            if sched_exit_code != 1:
-                log.error("Scheduler $policy returned a bad value: " + str(sched_exit_code) + 
+            if sched_exit_code != 0:
+                log.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " + str(sched_exit_code) + 
                           ". Inactivating queue " +  queue.scheduler_policy + " (see `oarnotify')")
                 #stop queue
-                db.query(Queue).filter_by(name=queue.name).update({"state": u"notActive"})
+                db.query(Queue).filter_by(name=queue.name).update({"state": "notActive"})
         
             treate_waiting_reservation_jobs(queue.name)
             check_reservation_jobs(queue.name)
@@ -290,7 +275,7 @@ def meta_schedule():
 
     ## Treate toLaunch jobs
     if "toLaunch" in jobs_by_state:
-        for job in jobs_by_state:
+        for job in jobs_by_state["toLaunch"]:
             notify_to_run_job(job.id)
 
     log.debug("End of Meta Scheduler")

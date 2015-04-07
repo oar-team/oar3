@@ -48,9 +48,9 @@ def get_waiting_jobs(queue):
     waiting_jids = []
     nb_waiting_jobs = 0
 
-    for j in Job.query.filter(Job.state == "Waiting")\
-                      .filter(Job.queue_name == queue)\
-                      .filter(Job.reservation == 'None'):
+    for j in db.query(Job).filter(Job.state == "Waiting")\
+                          .filter(Job.queue_name == queue)\
+                          .filter(Job.reservation == 'None'):
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)
@@ -60,7 +60,7 @@ def get_waiting_jobs(queue):
 
 def get_jobs_types(jids, jobs):
     jobs_types = {}
-    for j_type in JobType.query.filter(JobType.job_id.in_( tuple(jids) )):
+    for j_type in db.query(JobType).filter(JobType.job_id.in_( tuple(jids) )):
         jid = j_type.job_id
         t_v = j_type.type.split("=")
         t = t_v[0]
@@ -270,8 +270,8 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 def get_job_suspended_sum_duration(jid, now):
 
     suspended_duration = 0
-    for j_state_log in JobStateLog.query.filter(JobStateLog.job_id == jid)\
-                                        .filter((JobStateLog.job_state == 'Suspended') | (JobStateLog.job_state == 'Resuming')):
+    for j_state_log in db.query(JobStateLog).filter(JobStateLog.job_id == jid)\
+                                            .filter((JobStateLog.job_state == 'Suspended') | (JobStateLog.job_state == 'Resuming')):
         
         date_stop = j_state_log.date_stop
         date_start = j_state_log.date_start
@@ -379,7 +379,7 @@ def get_current_jobs_dependencies(jobs):
 #TO REMOVE ?
 #TODO
 def get_current_not_waiting_jobs_old():
-    jobs = Job.query.filter(Job.state != "Waiting").all()
+    jobs = db.query(Job).filter(Job.state != "Waiting").all()
     current_not_waiting_jobs = {}
     jobids_by_state = {}
     for job in jobs:
@@ -391,12 +391,12 @@ def get_current_not_waiting_jobs_old():
     return (jobids_by_state, current_not_waiting_jobs)
 
 def get_current_not_waiting_jobs():
-    jobs = Job.query.filter(Job.state != "Waiting").all()
+    jobs = db.query(Job).filter(Job.state != "Waiting").all()
     jobs_by_state = {}
     for job in jobs:
-        if not job.state in jobids_by_state:
+        if not job.state in jobs_by_state:
             jobs_by_state[job.state] = []
-        jobs_by_state[job.state].append[job]
+        jobs_by_state[job.state].append(job)
     return (jobs_by_state)
 
 def get_gantt_jobs_to_launch(current_time_sec):
@@ -423,8 +423,13 @@ def get_gantt_jobs_to_launch(current_time_sec):
     
     return req
 
+def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
+    #db.query(Job).update({Job.start_time: start_time,Job.assigned_moldable_job: moldable_id}).filter(Job.id == jid)
+    db.query(Job).filter(Job.id == jid).update({Job.start_time: start_time,Job.assigned_moldable_job: moldable_id})
+    db.commit()
+
 def set_jobs_start_time(tuple_jids, start_time):
-    db.query(Job).update({Job.start_time: start_time}).filter(Job.job_id.in_( tuple_jids ))
+    db.query(Job).filter(Job.id.in_( tuple_jids )).update({Job.start_time: start_time})
     db.commit()
 
 def set_jobs_state(tuple_jids, state): #NOT USED
@@ -439,27 +444,30 @@ def set_job_state(jid, state):
     # TODO Later: notify_user
     # TODO Later: update_current_scheduler_priority
 
-    result = db.query(Job).update({Job.state: state}).filter(Job.job_id == jid)\
-                                            .filter(Job.state != 'Error')\
-                                            .filter(Job.state != 'Terminated')\
-                                            .filter(Job.state != state)
+    result = db.query(Job).filter(Job.id == jid)\
+                          .filter(Job.state != 'Error')\
+                          .filter(Job.state != 'Terminated')\
+                          .filter(Job.state != state)\
+                          .update({Job.state: state})
     db.commit()
 
-    if result.rowcount==1:
+    #if result.count==1:
+    if 1==1:
         log.debug("Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
         date = get_date()
 
         #TODO: optimize job log
-        db.query(JobStateLog).update({JobStateLog.date_stop: date}).filter(JobStateLog.date_stop == 0)\
-                                                                   .filter(JobStateLog.job_id == jid)
-        req = JobStateLog.insert().values(job_id=jid, job_state=state, date_start=date)
+        db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
+                             .filter(JobStateLog.job_id == jid)\
+                             .update({JobStateLog.date_stop: date})
+        req = db.insert(JobStateLog).values({'job_id': jid, 'job_state' :state, 'date_start': date})
         db.engine.execute(req)
         db.commit()
 
         if state == "Terminated" or state == "Error" or state == "toLaunch" or \
            state == "Running" or state == "Suspended" or state == "Resuming":
-            job = Job.query.where(Job.id == jid).one()
+            job = db.query(Job).filter(Job.id == jid).one()
             #TOREMOVE ? addr, port = job.info_type.split(':')
             if state == "Suspend":
                 notify_user(job, "SUSPENDED", "Job is suspended.")
@@ -471,7 +479,7 @@ def set_job_state(jid, state):
                 update_current_scheduler_priority(job,"+2","START");
             else: # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
-                     db.query(Job).update({Job.stop_time: job.start_time}).filter(Job.job_id == jid)
+                     db.query(Job).filter(Job.job_id == jid).update({Job.stop_time: job.start_time})
                      db.commit()
 
                 if job.assigned_moldable_job != "0":
@@ -487,10 +495,11 @@ def set_job_state(jid, state):
                         r = get_current_resources_with_suspended_job()
 
                         if r != ():
-                            db.query(Resource).update({Resource.suspended_jobs: 'NO'})\
-                                              .filter(~Resource.id.in_(r))
+                            db.query(Resource).filter(~Resource.id.in_(r))\
+                                              .update({Resource.suspended_jobs: 'NO'})
+                                              
                         else:
-                              db.query(Resource).update({Resource.suspended_jobs: 'NO'})
+                            db.query(Resource).update({Resource.suspended_jobs: 'NO'})
                         db.commit()
                     
                     notify_user(job, "ERROR", "Job stopped abnormally or an OAR error occured.")
@@ -505,17 +514,31 @@ def set_job_state(jid, state):
     else:
         log.warning("Job is already termindated or in error or wanted state, job_id: " + str(jid) + ", wanted state: " + state ) 
 
-def add_resource_jobs( tuple_mld_ids ):
-    resources_mld_ids = GanttJobsResource.query\
-                                         .filter(GanttJobsResourcejob_id.in_( tuple_mld_ids ))\
-                                         .al()
+# NO USED upto now
+def add_resource_jobs_pairs( tuple_mld_ids ):
+    resources_mld_ids = db.query(GanttJobsResource)\
+                          .filter(GanttJobsResource.job_id.in_( tuple_mld_ids ))\
+                          .all()
 
     assigned_resources = [ {'moldable_id': res_mld_id.moldable_id, 
                             'resource_id': res_mld_id.resource_id,
                             'index': 'CURRENT'} for  res_mld_id in resources_mld_ids ]
 
     db.engine.execute(AssignedResource.__table__.insert(), assigned_resources )
-    db.flush()
+    db.commit()
+
+
+def add_resource_job_pairs(moldable_id):
+    resources_mld_ids = db.query(GanttJobsResource)\
+                          .filter(GanttJobsResource.moldable_id == moldable_id)\
+                          .all()
+
+    assigned_resources = [ {'moldable_id': res_mld_id.moldable_id, 
+                            'resource_id': res_mld_id.resource_id} for res_mld_id in resources_mld_ids ]
+
+    db.engine.execute(AssignedResource.__table__.insert(), assigned_resources )
+    db.commit()
+
 
 # Return the list of resources where there are Suspended jobs
 # args: base
@@ -533,33 +556,33 @@ def get_current_resources_with_suspended_job():
 # parameters : base, jobid
 # return value : /
 def log_job(job):
-    db.query(MoldableJobDescription).update({MoldableJobDescription.index: 'LOG'})\
-                                    .filter(MoldableJobDescription.index == 'CURRENT')\
-                                    .filter(MoldableJobDescription.job_id == job.id)
-    
-    db.query(JobResourceDescription).update({JobResourceDescription.index: 'LOG'})\
+    db.query(MoldableJobDescription).filter(MoldableJobDescription.index == 'CURRENT')\
                                     .filter(MoldableJobDescription.job_id == job.id)\
-                                    .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
-                                    .filter(JobResourceDescription.group_id == JobResourceGroup.id) 
+                                    .update({MoldableJobDescription.index: 'LOG'})
 
-    db.query(JobResourceGroup).update({JobResourceGroup.index: 'LOG'})\
-                              .filter(JobResourceGroup.index == 'CURRENT')\
+    db.query(JobResourceDescription).filter(MoldableJobDescription.job_id == job.id)\
+                                    .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
+                                    .filter(JobResourceDescription.group_id == JobResourceGroup.id) \
+                                    .update({JobResourceDescription.index: 'LOG'})
+
+    db.query(JobResourceGroup).filter(JobResourceGroup.index == 'CURRENT')\
                               .filter(MoldableJobDescription.index == 'LOG')\
                               .filter(MoldableJobDescription.job_id == job.id)\
-                              .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)
-        
-    db.query(JobType).update({JobType.index: 'LOG'})\
-                      .filter(JobType.index == 'CURRENT')\
-                      .filter(JobType.job_id == job.id)
+                              .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
+                              .update({JobResourceGroup.index: 'LOG'})
 
-    db.query(JobDependencie).update({JobDependencie.index: 'LOG'})\
-                      .filter(JobDependencie.index == 'CURRENT')\
-                      .filter(JobDependencie.job_id == job.id)
- 
+    db.query(JobType).filter(JobType.index == 'CURRENT')\
+                     .filter(JobType.job_id == job.id)\
+                     .update({JobType.index: 'LOG'})
+
+    db.query(JobDependencie).filter(JobDependencie.index == 'CURRENT')\
+                            .filter(JobDependencie.job_id == job.id)\
+                            .update({JobDependencie.index: 'LOG'})
+
     if job.assigned_moldable_job != "0":
-        db.query(AssignedResource).update({AssignedResource.index: 'LOG'})\
-                                  .filter(AssignedResource.index == 'CURRENT')\
-                                  .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))
+        db.query(AssignedResource).filter(AssignedResource.index == 'CURRENT')\
+                                  .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
+                                  .update({AssignedResource.index: 'LOG'})
     db.commit()
 
 def insert_job( **kwargs ):
