@@ -8,13 +8,16 @@ from oar.lib import config, db, Queue, get_logger, GanttJobsPredictionsVisu, Gan
 from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
                          set_job_state)
-from oar.kao.utils import create_tcp_notification_socket, local_to_sql
+from oar.kao.utils import create_tcp_notification_socket, notify_socket, local_to_sql
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
 log = get_logger("oar.kao.meta_sched")
 
 exit_code = 0
+
+# stock the job ids that where already send to almighty
+to_launch_jobs_already_treated = {}
 
 #order_part = config["SCHEDULER_RESOURCE_ORDER"]
 
@@ -75,8 +78,17 @@ exit_code = 0
 # Tell Almighty to run a job
 # sub notify_to_run_job($$){
 def notify_to_run_job(jid):
-    log.debug("notify_to_run_job not implemented !!!!!!!!!!!")
-    pass
+
+    if not jid in to_launch_jobs_already_treated:
+        if 0: #TODO OAR::IO::is_job_desktop_computing
+            log.debug(str(jid) + ": Desktop computing job, I don't handle it!")
+        else:
+            nb_sent = notify_socket("OARRUNJOB_" + str(jid))
+            if nb_sent:
+                to_launch_jobs_already_treated[jid] = 1
+                log.debug("Notify almighty to launch the job" + str(jid))
+            else:
+                log.warn("Not able to notify almighty to launch the job " + str(jid) + " (socket error)")
 
 # Prepare a job to be run by bipbip
 def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
@@ -164,12 +176,10 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
 
 def update_gantt_visualization():
 
-
     db.query(GanttJobsPredictionsVisu).delete()
     db.query(GanttJobsResourcesVisu).delete()
-    #GanttJobsPredictionsVisu.query.delete()
-    #GanttJobsResourcesVisu.query.delete()
     db.commit()
+
     sql_queries = ["INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
                    "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
                    ]
@@ -254,7 +264,7 @@ def meta_schedule():
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
-        socket_notification.send("ChState")
+        notify_socket("ChState")
         exit_code = 2
     elif check_jobs_to_launch(current_time_sec, current_time_sql) == 1:
         exit_code = 0

@@ -33,6 +33,10 @@ def get_date():
 def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
 
+
+def notify_socket(msg):
+    return notification_socket.send(msg)
+
 def notify_user(job, state, msg):
     #TODO see OAR::Modules::Judas::notify_user
     log.info("notify_user not yet implemented !!!! (" + state + ", " + msg + ")" )
@@ -95,7 +99,8 @@ def update_current_scheduler_priority(job, value, state):
 # }
 
 def update_scheduler_last_job_date(date, moldable_id):
-    req = db.query(Resource).update({Resource.last_job_date: date}).filter(AssignedResourcesMoldable_job_id == moldable_id)\
-                                                                   .filter(AssignedResources.Resource_id == Resources.resource_id)
+    req = db.query(Resource).filter(AssignedResourcesMoldable_job_id == moldable_id)\
+                            .filter(AssignedResources.Resource_id == Resources.resource_id)\
+                            .update({Resource.last_job_date: date})
     db.engine.execute(req)
     db.commit()
