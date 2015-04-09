@@ -154,7 +154,9 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         job, moldable_id = job_moldable_id
         log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
+        #
         #TODO Advance Reservation
+        #
         #if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
         #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
         #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);

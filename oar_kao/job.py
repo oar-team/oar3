@@ -451,8 +451,7 @@ def set_job_state(jid, state):
                           .update({Job.state: state})
     db.commit()
 
-    #if result.count==1:
-    if 1==1:
+    if result == 1:
         log.debug("Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
         date = get_date()
