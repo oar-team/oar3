@@ -4,11 +4,13 @@ import time
 import os
 import sys
 import subprocess
-from oar.lib import config, db, Queue, get_logger, GanttJobsPredictionsVisu, GanttJobsResourcesVisu
+from oar.lib import (config, db, Queue, get_logger, 
+                     GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
+                     GanttJobsPrediction, GanttJobsResource)
 from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
-                         set_job_state)
-from oar.kao.utils import create_tcp_notification_socket, notify_socket, local_to_sql
+                         set_job_state, get_gantt_waiting_interactive_prediction_date)
+from oar.kao.utils import create_almighty_socket, notify_almighty, notify_tcp_socket, local_to_sql
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -83,7 +85,7 @@ def notify_to_run_job(jid):
         if 0: #TODO OAR::IO::is_job_desktop_computing
             log.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            nb_sent = notify_socket("OARRUNJOB_" + str(jid))
+            nb_sent = notify_almighty("OARRUNJOB_" + str(jid))
             if nb_sent:
                 to_launch_jobs_already_treated[jid] = 1
                 log.debug("Notify almighty to launch the job" + str(jid))
@@ -188,14 +190,17 @@ def update_gantt_visualization():
     for query in sql_queries:
         result = db.engine.execute(query)
 
-def get_current_jobs_not_waiting():
-    pass
-
 def meta_schedule():
 
     exit_code = 0
 
-    create_tcp_notification_socket()
+    create_almighty_socket()
+
+    #delete previous prediction 
+    db.query(GanttJobsPrediction).delete()
+    db.query(GanttJobsResource).delete()
+    db.commit()
+
 
     # reservation ??.
     
@@ -266,7 +271,7 @@ def meta_schedule():
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
-        notify_socket("ChState")
+        notify_almighty("ChState")
         exit_code = 2
     elif check_jobs_to_launch(current_time_sec, current_time_sql) == 1:
         exit_code = 0
@@ -280,9 +285,34 @@ def meta_schedule():
     jobs_by_state = get_current_not_waiting_jobs()
 
     # Search jobs to resume
+
     # Notify oarsub -I when they will be launched
+    for j_info in get_gantt_waiting_interactive_prediction_date():
+        job_id, job_info_type, job_start_time, job_message = j_info
+        addr, port = job_info_type.split(':')
+        new_start_prediction = local_to_sql(job_start_time)
+        log.debug("[" + str(job_id) + "] Notifying user of the start prediction: " +\
+                  new_start_prediction + "(" + job_message + ")")
+        notify_tcp_socket(addr,port,"[" + initial_time_sql + "] Start prediction: " +\
+                          new_start_prediction + " (" + job_message + ")")
+
     # Run the decisions
     ## Treate "toError" jobs
+    if "toError" in jobs_by_state:
+        for job in jobs_by_state["toError"]:
+            addr, port = job.info_type.split(':')
+            if job.type == "INTERACTIVE" or\
+               (job.type == "PASSIVE" and job.reservation == "Scheduled"):
+                log.debug("Notify oarsub job (num:" + str(job.id) + ") in error; jobInfo=" +\
+                          job.info_type)
+                
+                nb_sent1 = notify_tcp_socket(addr, port, job.message)
+                nb_sent2 = notify_tcp_socket(addr, port, "BAD JOB")
+                if (nb_sent1 == 0) or (nb_sent2 == 0):
+                    log.warnt("Cannot open connection to oarsub client for" + str(job.id))
+            log.debug("Set job " + str(job.id) + " to state Error")
+            set_job_state(job.id, "Error")
+
     ## Treate toAckReservation jobs
 
     ## Treate toLaunch jobs

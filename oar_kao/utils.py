@@ -7,7 +7,7 @@ from oar.lib import db, config, get_logger, Resource, AssignedResource
 
 log = get_logger("oar.kao.utils")
 
-notification_socket = None
+almighty_socket = None
 
 notification_user_socket = None
 
@@ -50,18 +50,34 @@ def notify_user(job, state, msg):
     if nb_sent==0:
         log.error("notify_user: socket error" )
 
-def create_tcp_notification_socket():
-    global notification_socket
-    notification_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def create_almighty_socket():
+    global almighty_socket
+    almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server = config["SERVER_HOSTNAME"]
     port = config["SERVER_PORT"]
     try:
-        notification_socket.connect((server, port))
+        almighty_socket.connect((server, port))
     except socket.error, exc:
-        log.error("Connection to " + server + ":" + str(port) +
+        log.error("Connection to Almighty" + server + ":" + str(port) +
                   " raised exception socket.error: " + exc)
         sys.exit(1)
 
+
+def notify_almighty(message):
+    return almighty_socket.send(message)
+
+
+def notify_tcp_socket(addr, port, message):
+    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        tcp_socket.connect((addr, int(port)))
+    except socket.error, exc:
+        log.error("notify_tcp_socket: Connection to " + addr + ":" + str(port) +
+                  " raised exception socket.error: " + exc)
+        return 0
+    nb_sent = tcp_socket.send(message)
+    tcp_socket.close()
+    return nb_sent
 
 # get_date
 # returns the current time in the format used by the sql database
@@ -78,10 +94,6 @@ def get_date():
 # side effects : /
 def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
-
-
-def notify_socket(msg):
-    return notification_socket.send(msg)
 
 
 def notify_user(job, state, msg):

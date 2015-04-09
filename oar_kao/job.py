@@ -2,7 +2,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType, JobStateLog,
                      JobStateLog, AssignedResource, get_logger)
-from oar.kao.utils import notify_socket, get_date, notify_user, update_current_scheduler_priority
+from oar.kao.utils import notify_almighty, get_date, notify_user, update_current_scheduler_priority
 
 log = get_logger("oar.kamelot")
 
@@ -141,8 +141,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     #            .join(JobResourceGroup)\
     #            .join(JobResourceDescription)\
         
-
-
     cache_constraints = {}
 
     first_job = True
@@ -467,7 +465,6 @@ def set_job_state(jid, state):
         if state == "Terminated" or state == "Error" or state == "toLaunch" or \
            state == "Running" or state == "Suspended" or state == "Resuming":
             job = db.query(Job).filter(Job.id == jid).one()
-            #TOREMOVE ? addr, port = job.info_type.split(':')
             if state == "Suspend":
                 notify_user(job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
@@ -508,7 +505,7 @@ def set_job_state(jid, state):
                 # Here we must not be asynchronously with the scheduler
                 log_job(job);
                 # $dbh is valid so these 2 variables must be defined
-                nb_sent = notify_socket("ChState")
+                nb_sent = notify_almighty("ChState")
                 if nb_sent==0:
                      log.warn("Not able to notify almighty to launch the job " + 
                               str(job.id) + " (socket error)")
@@ -586,6 +583,18 @@ def log_job(job):
                                   .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
                                   .update({AssignedResource.index: 'LOG'})
     db.commit()
+
+
+def get_gantt_waiting_interactive_prediction_date():
+    req = db.query(Job.id, Job.info_type, GanttJobsPrediction.start_time, Job.message)\
+            .filter(Job.state == 'Waiting')\
+            .filter(Job.type == 'INTERACTIVE')\
+            .filter(Job.reservation == 'None')\
+            .filter(MoldableJobDescription.job_id == Job.id)\
+            .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)\
+            .all()
+    return req
+
 
 def insert_job( **kwargs ):
     """ Insert job in database
