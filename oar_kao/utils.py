@@ -3,7 +3,7 @@ import sys
 import time
 import os
 import socket
-from oar.lib import db, config, get_logger, Resource, AssignedResource
+from oar.lib import db, config, get_logger, Resource, AssignedResource, EventLog
 
 log = get_logger("oar.kao.utils")
 
@@ -165,6 +165,17 @@ def update_scheduler_last_job_date(date, moldable_id):
                       .filter(AssignedResource.Resource_id == Resource.resource_id)\
                       .update({Resource.last_job_date: date})
     db.commit()
+
+
+#EVENTS LOG MANAGEMENT
+
+#add a new entry in event_log table
+#args : database ref, event type, job_id , description
+def add_new_event(type, jid, description):
+    event_data = EventLog(type=type, job_id=jid, date=get_date(), description = description[:255])
+    db.add(event_data)
+    db.commit()
+
 
 # to remove
 init_judas_notify_user()

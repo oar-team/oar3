@@ -9,8 +9,10 @@ from oar.lib import (config, db, Queue, get_logger,
                      GanttJobsPrediction, GanttJobsResource)
 from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
-                         set_job_state, get_gantt_waiting_interactive_prediction_date)
-from oar.kao.utils import create_almighty_socket, notify_almighty, notify_tcp_socket, local_to_sql
+                         set_job_state, get_gantt_waiting_interactive_prediction_date,
+                         frag_job)
+from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket, 
+                           local_to_sql, add_new_event)
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -111,11 +113,9 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
     #OAR::IO::add_resource_job_pairs($base, $moldable_job_id, $resources_array_ref);
     add_resource_job_pairs(moldable_id)
     #OAR::IO::set_job_state($base, $job_id, "toLaunch");
-
     set_job_state(jid, "toLaunch")
     
     notify_to_run_job(jid)
-
 
 # advance reservation job to launch ?
 def treate_waiting_reservation_jobs(name):
@@ -196,7 +196,8 @@ def meta_schedule():
 
     create_almighty_socket()
 
-    #delete previous prediction 
+    #delete previous prediction
+    #TODO: to move ?
     db.query(GanttJobsPrediction).delete()
     db.query(GanttJobsResource).delete()
     db.commit()
@@ -209,11 +210,6 @@ def meta_schedule():
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
-
-    #my %initial_time = (
-    #                "sec" => $current_time_sec,
-    #                "sql" => $current_time_sql
-    #              );
     
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
@@ -281,10 +277,13 @@ def meta_schedule():
 
     # Manage dynamic node feature    
     # Send CHECK signal to Hulot if needed
+    # TODO
+
 
     jobs_by_state = get_current_not_waiting_jobs()
 
     # Search jobs to resume
+    # TODO
 
     # Notify oarsub -I when they will be launched
     for j_info in get_gantt_waiting_interactive_prediction_date():
@@ -314,6 +313,29 @@ def meta_schedule():
             set_job_state(job.id, "Error")
 
     ## Treate toAckReservation jobs
+    if "toAckReservation" in jobs_by_state:
+        for job in jobs_by_state["toAckReservation"]:
+            addr, port = job.info_type.split(':')
+            log.debug(" Treate job" + job.id + " in toAckReservation state")
+
+            nb_sent = notify_tcp_socket(addr, port,"GOOD RESERVATION")
+        
+            if nb_sent == 0:
+                log.warn("Frag job " + job.id + ", I cannot notify oarsub for the reservation")
+                add_new_event("CANNOT_NOTIFY_OARSUB", job.id, "Can not notify oarsub for the job " + job.id)
+                
+                #TODO ???
+                #OAR::IO::lock_table($base,["frag_jobs","event_logs","jobs"]);
+                frag_job(job.id)
+                #TODO ???
+                #OAR::IO::unlock_table($base)
+            
+                exit_code = 2
+            else:
+                log.debug("Notify oarsub for a RESERVATION (idJob=" + job.id + ") --> OK; jobInfo=" + job.info_type)
+                set_job_state(job.id, "Waiting")
+                if ((j.start_time-1) <= current_time_sec) and (exit_code == 0):
+                    exit_code = 1
 
     ## Treate toLaunch jobs
     if "toLaunch" in jobs_by_state:

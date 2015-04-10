@@ -2,7 +2,8 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType, JobStateLog,
                      JobStateLog, AssignedResource, get_logger)
-from oar.kao.utils import notify_almighty, get_date, notify_user, update_current_scheduler_priority
+from oar.kao.utils import (notify_almighty, get_date, notify_user, 
+                           update_current_scheduler_priority, add_new_event)
 
 log = get_logger("oar.kamelot")
 
@@ -684,3 +685,45 @@ def insert_job( **kwargs ):
         db.engine.execute(JobResourceDescription.__table__.insert(), ins)
 
     return job_id
+
+
+def get_job(job_id):
+    try:
+        job = db.query(Job).filter(Job.id == job_id).one()
+    except Exception,e:
+        log.warn("get_job(" + str(job_id) + ") raises execption: " + str(e))
+        return None
+    else:
+        return job
+# frag_job
+# sets the flag 'ToFrag' of a job to 'Yes'
+# parameters : base, jobid
+# return value : 0 on success, -1 on error (if the user calling this method
+#                is not the user running the job or oar), -2 if the job was
+#                already killed
+# side effects : changes the field ToFrag of the job in the table Jobs
+
+def frag_job(joid):
+
+    if 'OARDO_USER' in os.environ:
+        luser = os.environ['OARDO_USER']
+    else:
+        luser = os.environ['USER']
+
+    job = get_job(jid)
+
+    if (job is not None) and ((luser == job.user) or (luser == 'oar') or (luser == 'root')):
+        res = db.query(FragJob).filter(FragJob.job_id == jid).all()
+        if len(res) == 0:
+            date = get_date()
+            frajob = FragJob(job_id=jid, date=date)
+            db.add(frajob)
+            db.commit()
+            add_new_event("FRAG_JOB_REQUEST", jid,\
+                          "User " + luser + " requested to frag the job " + str(jid))
+            return 0
+        else:
+            # Job already killed
+            return -2
+    else:
+        return -1
