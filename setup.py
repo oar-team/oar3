@@ -5,7 +5,7 @@ from setuptools import setup
 here = op.abspath(op.dirname(__file__))
 
 requirements = [
-    'oar-lib>=0.1-dev',
+    'oar-lib',
     'sqlalchemy-utils',
     'tabulate',
 ]
@@ -33,7 +33,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     description='Custom scripts and various utility functions for OAR.',
-    long_description=read('README.rst') + '\n\n' + read('CHANGELOG.rst'),
+    long_description=read('README.rst') + '\n\n' + read('CHANGES'),
     license="GNU GPL",
     classifiers=[
         'Development Status :: 1 - Planning',

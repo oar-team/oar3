@@ -301,7 +301,7 @@ def fix_sequences(ctx):
     engine = ctx.archive_db.engine
 
     def get_sequences_values():
-        for model in itervalues(ctx.current_db.models):
+        for model in itervalues(ctx.current_models):
             for pk in model.__mapper__.primary_key:
                 if not pk.autoincrement:
                     continue

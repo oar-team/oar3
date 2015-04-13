@@ -46,6 +46,19 @@ class Context(object):
         return self.current_db.engine.url.database
 
     @cached_property
+    def current_models(self):
+        """ Return a namespace with all mapping classes"""
+        from oar.lib.models import all_models  # avoid a circular import
+        return dict(all_models())
+
+    @cached_property
+    def current_tables(self):
+        """ Return a namespace with all tables classes"""
+        self.current_db.reflect()
+        sorted_tables = self.current_db.metadata.sorted_tables
+        return dict((t.name, t) for t in sorted_tables)
+
+    @cached_property
     def ignored_resources_criteria(self):
         criteria = []
         exclude = []
@@ -56,9 +69,11 @@ class Context(object):
             else:
                 include.append(raw_state)
         if exclude:
-            criteria.append(self.current_db.m.Resource.state.notin_(exclude))
+            criteria.append(self.current_models["Resource"].state
+                                                           .notin_(exclude))
         if include:
-            criteria.append(self.current_db.m.Resource.state.in_(include))
+            criteria.append(self.current_models["Resource"].state
+                                                           .in_(include))
         return reduce(and_, criteria)
 
     @cached_property
@@ -72,14 +87,14 @@ class Context(object):
             else:
                 include.append(raw_state)
         if exclude:
-            criteria.append(self.current_db.m.Job.state.notin_(exclude))
+            criteria.append(self.current_models["Job"].state.notin_(exclude))
         if include:
-            criteria.append(self.current_db.m.Job.state.in_(include))
+            criteria.append(self.current_models["Job"].state.in_(include))
         return reduce(and_, criteria)
 
     @cached_property
     def max_job_to_sync(self):
-        model = self.current_db.models.Job
+        model = self.current_models["Job"]
         acceptable_max_job_id = self.current_db.query(func.min(model.id))\
                                     .filter(self.ignored_jobs_criteria)\
                                     .scalar()
@@ -97,9 +112,9 @@ class Context(object):
 
     @cached_property
     def max_moldable_job_to_sync(self):
-        moldable_model = self.current_db.models.MoldableJobDescription
+        moldable_model = self.current_models["MoldableJobDescription"]
         criteria = moldable_model.job_id < self.max_job_to_sync
-        job_model = self.current_db.models.Job
+        job_model = self.current_models["Job"]
         query = self.current_db.query(func.max(moldable_model.id))\
                                .join(job_model,
                                      moldable_model.job_id == job_model.id)\
@@ -108,8 +123,8 @@ class Context(object):
 
     @cached_property
     def resources_to_purge(self):
-        assigned_model = self.current_db.models.AssignedResource
-        resource_model = self.current_db.models.Resource
+        assigned_model = self.current_models["AssignedResource"]
+        resource_model = self.current_models["Resource"]
         max_moldable = self.max_moldable_job_to_sync
         query = self.current_db.query(resource_model.id)
         excludes = query.filter(not_(self.ignored_resources_criteria))\
