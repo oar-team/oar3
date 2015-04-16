@@ -1,7 +1,9 @@
-OAR lib changelog
+OAR lib changes
+===============
+
+version 0.1.0-dev
 =================
 
-version 0.1
-===========
+**unreleased**
 
-Release date to be announced
+First public release of oar-lib
