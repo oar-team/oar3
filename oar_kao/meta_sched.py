@@ -10,9 +10,17 @@ from oar.lib import (config, db, Queue, get_logger,
 from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
                          set_job_state, get_gantt_waiting_interactive_prediction_date,
-                         frag_job)
+                         frag_job, get_waiting_reservation_jobs_specific_queue,
+                         get_waiting_toSchedule_reservation_jobs_specific_queue)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket, 
                            local_to_sql, add_new_event)
+from oar.kao.platform import Platform
+from oar.kao.job import NO_PLACEHOLDER, JobPseudo
+from oar.kao.slot import SlotSet, Slot
+from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
+
+max_time = 2147483648 #(* 2**31 *)
+max_time_minus_one = 2147483647 #(* 2**31-1 *)
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -28,6 +36,59 @@ to_launch_jobs_already_treated = {}
 ###########################################################################################################
 #Initialize Gantt tables with scheduled reservation jobs, Running jobs, toLaunch jobs and Launching jobs; #
 ###########################################################################################################
+
+
+def slots_init(initial_time_sec):
+
+    job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
+    plt =Platform()
+    #
+    # Determine Global Resource Intervals and Initial Slot
+    #
+    resource_set = plt.resource_set()
+    initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, initial_time_sec, max_time))
+
+    #
+    #  Resource availabilty (Available_upto field) is integrated through pseudo job
+    #
+    pseudo_jobs = []
+    for t_avail_upto in sorted(resource_set.available_upto.keys()):
+        itvs = resource_set.available_upto[t_avail_upto]
+        j = JobPseudo()
+        #print t_avail_upto, max_time - t_avail_upto, itvs
+        j.start_time = t_avail_upto
+        j.walltime = max_time - t_avail_upto
+        j.res_set = itvs
+        j.ts = False
+        j.ph = NO_PLACEHOLDER
+        
+        pseudo_jobs.append(j)
+        
+    if pseudo_jobs != []:
+        initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+
+
+    #
+    # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
+    #
+    scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, initial_time_sec)
+    all_slot_sets = {0:initial_slot_set}
+    if scheduled_jobs != []:
+        filter_besteffort = True
+        set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
+                                           job_security_time, filter_besteffort) 
+
+    #get ressources
+    #get running jobs exclude BE jobs
+    #get sheduled AR jobs
+    #remove resources if there are missing for scheduled AR jobs,
+    #fill slots
+    #delete GanttJobsprediction and GanttJobsResource
+    #set  GanttJobsprediction and GanttJobsResource
+    
+
+    return all_slot_sets
+
 
 # First get resources that we must add for each reservation jobs
 #oar_debug("[MetaSched] Resources to automatically add to all reservations: @Resources_to_always_add\n");
@@ -117,15 +178,36 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
     
     notify_to_run_job(jid)
 
-# advance reservation job to launch ?
-def treate_waiting_reservation_jobs(name):
-    pass
+# launch right reservation jobs
+# arg : queue name
+# return 1 if there is at least a job to treate, 2 if besteffort jobs must die
+def treate_waiting_reservation_jobs(queue_name):
+    log.debug("Queue " + queue_name + ": begin processing of reservations with missing resources")
+    for job in get_waiting_reservation_jobs_specific_queue(queue_name):
+        
+        if (current_time_sec > (job.start_time + walltime)):
+            log.warn("[" + str(job.id) + "] set job state to Error: reservation expired and couldn't be started")
+            set_job_state(job.id, "Error")
+            set_job_message(job.id, "Reservation expired and couldn't be started.")
+            
+    #TOD0
+    #log.warn("[" + job.id + "] reservation is waiting because no resource is present")
 
-def check_reservation_jobs(name):
-    #oar_debug("[MetaSched] Queue $queue_name: begin processing of new reservations\n");
-    #big 
-    #oar_debug("[MetaSched] Queue $queue_name: end processing of new reservations\n");
-    pass
+    #TOFINISH
+
+def check_reservation_jobs(queue_name):
+    log.debug("Queue " + queue_name + ": begin processing of new reservations")
+            
+    # Find jobs to check
+    ar_jobs = get_waiting_toSchedule_reservation_jobs_specific_queue(queue_name)
+    if ar_jobs != []:
+        log.debug("Find resource for Advance Reservation job:" + str(job.id))
+
+        #TODO: test if container is an AR job
+        ss_id = 0
+        if "inner" in job.types:
+            ss_id = int(job.types)
+
 
 def check_jobs_to_kill():
 
@@ -157,8 +239,12 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
         #
-        #TODO Advance Reservation
+        # Advance Reservation
         #
+        #TODO start_time ???
+        if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
+            max_time = jobs_ar[job.id].walltime - (current_time_sec - job.start_time)
+            #TOFINISH
         #if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
         #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
         #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);
@@ -198,10 +284,10 @@ def meta_schedule():
 
     #delete previous prediction
     #TODO: to move ?
+
     db.query(GanttJobsPrediction).delete()
     db.query(GanttJobsResource).delete()
     db.commit()
-
 
     # reservation ??.
     
@@ -210,6 +296,10 @@ def meta_schedule():
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
+
+    all_slot_sets = slots_init(initial_time_sec)
+    
+
     
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"

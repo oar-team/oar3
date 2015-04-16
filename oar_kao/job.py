@@ -399,8 +399,8 @@ def get_current_not_waiting_jobs():
     return (jobs_by_state)
 
 def get_gantt_jobs_to_launch(current_time_sec):
-    #NOTE1 doesnt use  m.moldable_index = \'CURRENT\' impacts Pg's performance
-    #NOTE2 doesnt use   AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
+    #NOTE1 does not use  m.moldable_index = \'CURRENT\' impacts Pg's performance
+    #NOTE2 does not use   AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
     #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
     # to reduce overhead
 
@@ -411,6 +411,7 @@ def get_gantt_jobs_to_launch(current_time_sec):
             .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
             .all()
 
+    #TODO: verify
     #    $req = "SELECT DISTINCT(j.job_id)
     #            FROM gantt_jobs_resources g1, gantt_jobs_predictions g2, jobs j, moldable_job_descriptions m, resources
     #            WHERE
@@ -515,7 +516,7 @@ def set_job_state(jid, state):
         log.warning("Job is already termindated or in error or wanted state, job_id: " +
                     str(jid) + ", wanted state: " + state ) 
 
-# NO USED upto now
+# NO USED
 def add_resource_jobs_pairs( tuple_mld_ids ):
     resources_mld_ids = db.query(GanttJobsResource)\
                           .filter(GanttJobsResource.job_id.in_( tuple_mld_ids ))\
@@ -727,3 +728,31 @@ def frag_job(joid):
             return -2
     else:
         return -1
+
+
+def set_job_message(job_id, message):
+    db.query(Job).filter(Job.id == jid).update({Job.message: message})
+    db.commit()
+
+
+# Get all waiting reservation jobs in the specified queue
+# parameter : database ref, queuename
+# return an array of job informations
+def get_waiting_reservation_jobs_specific_queue(queue_name):
+    waiting_scheduled_ar_jobs = db.query(Job)\
+                                  .filter((Job.state == 'Waiting')|(Job.state == 'toAckReservation'))\
+                                  .filter(Job.reservation == 'Scheduled')\
+                                  .filter(Job.queue_name == queue_name)\
+                                  .order_by(Job.id).all()
+    return waiting_scheduled_ar_jobs
+
+
+# Get all waiting toSchedule reservation jobs in the specified queue
+# parameter : database ref, queuename
+# return an array of job informations
+def get_waiting_toSchedule_reservation_jobs_specific_queue(queue_name):
+    waiting_toscheduled_ar_jobs = db.query(Job).filter(Job.state == 'Waiting')\
+                                    .filter(Job.reservation == 'toScheduled')\
+                                    .filter(Job.queue_name == queue_name)\
+                                    .order_by(Job.id).all()
+    return waiting_toscheduled_ar_jobs

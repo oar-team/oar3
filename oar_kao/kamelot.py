@@ -4,8 +4,8 @@ from oar.lib import config, get_logger, Job
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, Slot
-from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, \
-    schedule_id_jobs_ct 
+from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
+                                schedule_id_jobs_ct )
 from oar.kao.karma import karma_jobs_sorting
 # Initialize some variables to default value or retrieve from oar.conf configuration file *)
 
