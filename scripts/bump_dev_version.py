@@ -3,13 +3,16 @@
 from __future__ import unicode_literals, print_function
 import argparse
 import re
-import fileinput
 import os
-import datetime
 import subprocess
 
 
-def do_next_release(part='patch'):
+def generate_changelog_title(version):
+    version_title = "version %s" % version
+    return version_title + "\n" + "=" * len(version_title)
+
+
+def bump_dev_version(part='patch'):
     """ Increment the version number to the next development version
 
     * (Configurably) bumps the development dev version number
@@ -17,7 +20,7 @@ def do_next_release(part='patch'):
 
     You can run it like::
 
-        $ python scripts/make_release.py
+        $ python scripts/next_release.py
 
     which, by default, will create a 'patch' dev version (0.0.1 => 0.0.2-dev).
 
@@ -36,53 +39,51 @@ def do_next_release(part='patch'):
     bumpver = subprocess.check_output(
         ['bumpversion', part, '--dry-run', '--verbose'],
         stderr=subprocess.STDOUT)
-    m = re.search(r'New version will be \'(\d+\.\d+\.\d+)\'', bumpver)
-    version = m.groups(0)[0]
+    m = re.search(r'Parsing version \'(\d+\.\d+\.\d+)\'', bumpver)
+    current_version = m.groups(0)[0]
+    m = re.search(r'New version will be \'(\d+\.\d+\.\d+)\.dev0\'', bumpver)
+    next_version = m.groups(0)[0] + ".dev0"
 
-    date = datetime.date.today().isoformat()
+    current_version_title = generate_changelog_title(current_version)
+    next_version_title = generate_changelog_title(next_version)
 
-    # Add the new section for this release we're doing
-    # Using the 'fileinput' module to do inplace editing.
+    next_release_template = "%s\n\n**unreleased**\n\n" % next_version_title
 
-    for line in fileinput.input(files=['CHANGES'], inplace=1):
-        # by default pass the lines through
-        print(line, end="")
-        # if we just passed through the '-----' line (after the header),
-        # inject a new section for this new release
+    changes = ""
+    with open('CHANGES') as fd:
+        changes += fd.read()
 
-        if line.startswith('----'):
-            ver_str = "{} ({})".format(version, date)
-            separator = "".join(["+" for _ in ver_str])
-            print("\n{}\n{}\n".format(ver_str, separator))
-            print("* Fill notable features in here\n")
+    changes = changes.replace(current_version_title,
+                              next_release_template + current_version_title)
+
+    with open('CHANGES', "w") as fd:
+            fd.write(changes)
 
     # Tries to load the EDITOR environment variable, else falls back to vim
     editor = os.environ.get('EDITOR', 'vim')
     os.system("{} CHANGES".format(editor))
 
+    subprocess.check_output(['python', 'setup.py', 'sdist'])
+
     # Have to add it so it will be part of the commit
     subprocess.check_output(['git', 'add', 'CHANGES'])
     subprocess.check_output(
-        ['git', 'commit', '-m', 'Changelog for {}'.format(version)])
+        ['git', 'commit', '-m', 'Changelog for {}'.format(next_version)])
 
     # Really run bumpver to set the new release and tag
     bv_args = ['bumpversion', part]
 
-    bv_args += ['--new-version', version]
+    bv_args += ['--new-version', next_version]
 
     subprocess.check_output(bv_args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=do_release.__doc__,
+        description=bump_dev_version.__doc__,
         formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("part",
-                        default="patch",
-                        choices=["patch", "minor", "major"],
-                        help="Specify the new version level "
-                             "(default: %(default)s)")
-
+    parser.add_argument("part", help="Part of the version to be bumped",
+                        choices=["patch", "minor", "major"])
     args = parser.parse_args()
-    # do_release(part=args.part)
+    bump_dev_version(args.part)
