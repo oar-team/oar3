@@ -29,7 +29,7 @@ help:
 
 init:
 	pip install -e .
-	pip install -U setuptools pip tox ipdb jedi pytest pytest-cov flake8
+	pip install -U setuptools pip tox ipdb jedi pytest pytest-cov flake8 wheel
 
 clean:
 	rm -fr build/
@@ -71,6 +71,7 @@ sdist: clean
 release: clean
 	python setup.py register
 	python setup.py sdist upload
+	python setup.py bdist_wheel upload
 
 bumpversion:
 	python scripts/bump-release-version.py
