@@ -8,7 +8,7 @@ import subprocess
 
 
 def generate_changelog_title(version):
-    version_title = "version %s" % version
+    version_title = "Version %s" % version
     return version_title + "\n" + "=" * len(version_title)
 
 
@@ -71,9 +71,7 @@ def bump_dev_version(part='patch'):
         ['git', 'commit', '-m', 'Changelog for {}'.format(next_version)])
 
     # Really run bumpver to set the new release and tag
-    bv_args = ['bumpversion', part]
-
-    bv_args += ['--new-version', next_version]
+    bv_args = ['bumpversion', part, '--no-tag', '--new-version', next_version]
 
     subprocess.check_output(bv_args)
 
