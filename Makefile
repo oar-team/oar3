@@ -13,21 +13,23 @@ open := $(shell { which xdg-open || which open; } 2>/dev/null)
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
-	@echo "  init       to install the project in development mode (using virtualenv is highly recommended)"
-	@echo "  clean      to remove build and Python file (.pyc) artifacts"
-	@echo "  test       to run tests quickly with the default Python"
-	@echo "  testall    to run tests on every Python version with tox"
-	@echo "  ci         to run all tests and get junitxml report for CI (Travis, Jenkins...)"
-	@echo "  coverage   to check code coverage quickly with the default Python"
-	@echo "  docs-init  to install all documentation dependencies"
-	@echo "  docs       to generate Sphinx HTML documentation, including API docs"
-	@echo "  lint       to check style with flake8"
-	@echo "  sdist      to package"
-	@echo "  release    to package and upload a release"
+	@echo "  init        to install the project in development mode (using virtualenv is highly recommended)"
+	@echo "  clean       to remove build and Python file (.pyc) artifacts"
+	@echo "  test        to run tests quickly with the default Python"
+	@echo "  testall     to run tests on every Python version with tox"
+	@echo "  ci          to run all tests and get junitxml report for CI (Travis, Jenkins...)"
+	@echo "  coverage    to check code coverage quickly with the default Python"
+	@echo "  docs-init   to install all documentation dependencies"
+	@echo "  docs        to generate Sphinx HTML documentation, including API docs"
+	@echo "  lint        to check style with flake8"
+	@echo "  sdist       to package"
+	@echo "  release     to package and upload a release"
+	@echo "  bumpversion to bump the release version number"
+	@echo "  newversion  to set the new development version"
 
 init:
 	pip install -e .
-	pip install -U setuptools pip tox ipdb jedi pytest pytest-cov flake8
+	pip install -U setuptools pip tox ipdb jedi pytest pytest-cov flake8 wheel bumpversion
 
 clean:
 	rm -fr build/
@@ -69,3 +71,13 @@ sdist: clean
 release: clean
 	python setup.py register
 	python setup.py sdist upload
+	python setup.py bdist_wheel upload
+
+bumpversion:
+	python scripts/bump-release-version.py
+
+newversion:
+	@python scripts/bump-dev-version.py $(filter-out $@,$(MAKECMDGOALS))
+
+%:
+	@:
