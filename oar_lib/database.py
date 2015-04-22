@@ -103,7 +103,7 @@ class QueryProperty(object):
         try:
             mapper = class_mapper(type)
             if mapper:
-                return type.query_class(mapper, session=session)
+                return self._db.query_class(mapper, session=session)
         except UnmappedClassError:
             return None
 
