@@ -43,7 +43,7 @@ class JobPseudo():
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-def get_waiting_jobs(queue):
+def get_waiting_jobs(queue, reservation = 'None'):
     #TODO  fairsharing_nb_job_limit
     waiting_jobs = {}
     waiting_jids = []
@@ -51,7 +51,7 @@ def get_waiting_jobs(queue):
 
     for j in db.query(Job).filter(Job.state == "Waiting")\
                           .filter(Job.queue_name == queue)\
-                          .filter(Job.reservation == 'None'):
+                          .filter(Job.reservation == reservation):
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)
@@ -109,6 +109,7 @@ def set_jobs_cache_keys(jobs):
             for res_rqt in job.mld_res_rqts:
                 (mld_id, walltime, hy_res_rqts) = res_rqt
                 job.key_cache[int(mld_id)] = str(walltime) + str(hy_res_rqts)
+    
 
 def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_duration=0):
     """
@@ -117,31 +118,31 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 
     """
 
-    req = db.query(Job.id,
-                   Job.properties,
-                   MoldableJobDescription.id,
-                   MoldableJobDescription.walltime,
-                   JobResourceGroup.id,
-                   JobResourceGroup.moldable_id,
-                   JobResourceGroup.property,
-                   JobResourceDescription.group_id,
-                   JobResourceDescription.resource_type,
-                   JobResourceDescription.value)\
-            .filter(MoldableJobDescription.index == 'CURRENT')\
-            .filter(JobResourceGroup.index == 'CURRENT')\
-            .filter(JobResourceDescription.index == 'CURRENT')\
-            .filter(Job.id.in_( tuple(jids) ))\
-            .filter(Job.id == MoldableJobDescription.job_id)\
-            .filter(JobResourceGroup.moldable_id == MoldableJobDescription.id)\
-            .filter(JobResourceDescription.group_id == JobResourceGroup.id)\
-            .order_by(MoldableJobDescription.id,
+    result = db.query(Job.id,
+                      Job.properties,
+                      MoldableJobDescription.id,
+                      MoldableJobDescription.walltime,
                       JobResourceGroup.id,
-                      JobResourceDescription.order)\
-            .all()
+                      JobResourceGroup.moldable_id,
+                      JobResourceGroup.property,
+                      JobResourceDescription.group_id,
+                      JobResourceDescription.resource_type,
+                      JobResourceDescription.value)\
+               .filter(MoldableJobDescription.index == 'CURRENT')\
+               .filter(JobResourceGroup.index == 'CURRENT')\
+               .filter(JobResourceDescription.index == 'CURRENT')\
+               .filter(Job.id.in_( tuple(jids) ))\
+               .filter(Job.id == MoldableJobDescription.job_id)\
+               .filter(JobResourceGroup.moldable_id == MoldableJobDescription.id)\
+               .filter(JobResourceDescription.group_id == JobResourceGroup.id)\
+               .order_by(MoldableJobDescription.id,
+                         JobResourceGroup.id,
+                         JobResourceDescription.order)\
+               .all()
     #            .join(MoldableJobDescription)\
     #            .join(JobResourceGroup)\
     #            .join(JobResourceDescription)\
-        
+ 
     cache_constraints = {}
 
     first_job = True
@@ -157,7 +158,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 
     global job
 
-    for x in req:
+    for x in result:
         j_id, j_properties, mld_id, mld_id_walltime, jrg_id, jrg_mld_id, jrg_grp_property, res_jrg_id, res_type, res_value = x #remove res_order
         #print  x
         #
@@ -258,13 +259,10 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     job.ts = False
     job.ph = NO_PLACEHOLDER
 
-    #print "======================"
-    #print "job_id:",job.id,  job.mld_res_rqts
-    #print "======================"
-
     get_jobs_types(jids, jobs)
     get_current_jobs_dependencies(jobs)
     set_jobs_cache_keys(jobs)
+
 
 def get_job_suspended_sum_duration(jid, now):
 
@@ -336,7 +334,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
         jobs_lst.append(job)
         jids.append(job.id)
         jobs[job.id] = job
-        get_jobs_types(jids,jobs)
+        get_jobs_types(jids, jobs)
 
     return jobs_lst
 
@@ -730,29 +728,29 @@ def frag_job(joid):
         return -1
 
 
+def set_job_resa_state(job_id, state):
+    ''' sets the reservation field of the job of id passed in parameter
+    parameters : base, jobid, state
+    return value : None
+    side effects : changes the field state of the job in the table Jobs
+    '''
+    db.query(Job).filter(Job.id == jid).update({Job.resercation: state})
+    db.commit()
+
+
 def set_job_message(job_id, message):
     db.query(Job).filter(Job.id == jid).update({Job.message: message})
     db.commit()
 
 
-# Get all waiting reservation jobs in the specified queue
-# parameter : database ref, queuename
-# return an array of job informations
 def get_waiting_reservation_jobs_specific_queue(queue_name):
+    '''Get all waiting reservation jobs in the specified queue
+    parameter : database ref, queuename
+    return an array of job informations
+    '''
     waiting_scheduled_ar_jobs = db.query(Job)\
                                   .filter((Job.state == 'Waiting')|(Job.state == 'toAckReservation'))\
                                   .filter(Job.reservation == 'Scheduled')\
                                   .filter(Job.queue_name == queue_name)\
                                   .order_by(Job.id).all()
     return waiting_scheduled_ar_jobs
-
-
-# Get all waiting toSchedule reservation jobs in the specified queue
-# parameter : database ref, queuename
-# return an array of job informations
-def get_waiting_toSchedule_reservation_jobs_specific_queue(queue_name):
-    waiting_toscheduled_ar_jobs = db.query(Job).filter(Job.state == 'Waiting')\
-                                    .filter(Job.reservation == 'toScheduled')\
-                                    .filter(Job.queue_name == queue_name)\
-                                    .order_by(Job.id).all()
-    return waiting_toscheduled_ar_jobs

@@ -180,9 +180,9 @@ class SlotSet:
 #    def split_slots_prev_scheduled_one_job
 
     def split_slots_prev_scheduled_jobs(self, ordered_jobs):
-        ''' function which insert previously occupied slots in slots
-        job must be sorted by start_time
-        used in kamelot for pseudo_jobs_resources_available_upto splitting'''
+        ''' function which insert previously scheduled jobs in slots.
+        Jobs must be sorted by start_time.
+        .used in kamelot for pseudo_jobs_resources_available_upto splitting'''
         slot = self.slots[1] # 1
         left_sid_2_split = 1
         right_sid_2_split = 1

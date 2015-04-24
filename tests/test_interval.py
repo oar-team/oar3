@@ -1,5 +1,6 @@
 import unittest
-from  oar.kao.interval import *
+from  oar.kao.interval import (intersec, extract_n_scattered_block_itv,
+                                ordered_ids2itvs, itvs2ids, add_intervals)
 
 class TestInterval(unittest.TestCase):
 
@@ -15,8 +16,8 @@ class TestInterval(unittest.TestCase):
 
     def test_extract_n_scattered_block_itv_2(self):
         y = [[(1, 4), (10, 17)], [(6, 9), (19, 22)], [(25, 30)]]
-        a = extract_n_scattered_block_itv ([(1,30)], y, 2)
-        self.assertEqual(a,  [(1, 4), (6, 9), (10, 17), (19, 22)])
+        a = extract_n_scattered_block_itv([(1,30)], y, 2)
+        self.assertEqual(a, [(1, 4), (6, 9), (10, 17), (19, 22)])
 
     def test_ordered_ids2itvs(self):
         y = [1,3,4,5,7,10,11,12,23]

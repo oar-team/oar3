@@ -11,13 +11,13 @@ from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
                          set_job_state, get_gantt_waiting_interactive_prediction_date,
                          frag_job, get_waiting_reservation_jobs_specific_queue,
-                         get_waiting_toSchedule_reservation_jobs_specific_queue)
+                         set_job_resa_state)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket, 
-                           local_to_sql, add_new_event)
+                           local_to_sql, add_new_event, init_judas_notify_use)
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, Slot
-from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
+from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots
+from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, get_encompassing_slots
 
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
@@ -38,10 +38,10 @@ to_launch_jobs_already_treated = {}
 ###########################################################################################################
 
 
-def slots_init(initial_time_sec):
+def plt_init_with_running_jobs(initial_time_sec):
 
     job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
-    plt =Platform()
+    plt = Platform()
     #
     # Determine Global Resource Intervals and Initial Slot
     #
@@ -71,6 +71,7 @@ def slots_init(initial_time_sec):
     #
     # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
     #
+    # TODO?: Remove resources of the type specified in SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE
     scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, initial_time_sec)
     all_slot_sets = {0:initial_slot_set}
     if scheduled_jobs != []:
@@ -87,7 +88,7 @@ def slots_init(initial_time_sec):
     #set  GanttJobsprediction and GanttJobsResource
     
 
-    return all_slot_sets
+    return (plt, all_slot_sets, resource_set) 
 
 
 # First get resources that we must add for each reservation jobs
@@ -195,19 +196,82 @@ def treate_waiting_reservation_jobs(queue_name):
 
     #TOFINISH
 
-def check_reservation_jobs(queue_name):
+def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
     log.debug("Queue " + queue_name + ": begin processing of new reservations")
+      
+    
+    #Notes from Perl version
+    # It is a reservation, we take care only of the first moldable job
+    # TODO
+
+    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(queue, 'toScheduled')
+
+    if nb_ar_jobs > 0:
+        plt.get_data_jobs(result, ar_jids, ar_jobs, resource_set, job_security_time)
+
+        log.debug("Try and schedule new reservations")
+        for jid in ar_jids:
+            job = ar_jobs[jid]
+            log.debug("Find resource for Advance Reservation job:" + str(job.id))
+
+            # It is a reservation, we take care only of the first moldable job
+            mld_id, walltime, hy_res_rqts =job.mld_res_rqts[0]
+
+            #test if reservation is too old
+            if current_time_sec >= (job.start_time + walltime):
+                log.warn("[" + str(job.id) + "] Canceling job: reservation is too old")
+                set_job_message(job.id, "Reservation too old")
+                set_job_state(job.id, "toError")
+                continue
+            else:
+                if job.start_time < current_time_sec:
+                    #TODO update to DB ????
+                    job.start_time = current_time_sec
+
+            ss_id = 0
             
-    # Find jobs to check
-    ar_jobs = get_waiting_toSchedule_reservation_jobs_specific_queue(queue_name)
-    if ar_jobs != []:
-        log.debug("Find resource for Advance Reservation job:" + str(job.id))
+            #TODO container
+            #if "inner" in job.types:
+            #    ss_id = int(job.types["inner"])
+                #TODO: test if container is an AR job
 
-        #TODO: test if container is an AR job
-        ss_id = 0
-        if "inner" in job.types:
-            ss_id = int(job.types)
+            slots_set = all_slot_sets[ss_id]
 
+            t_e = job.start_time + walltime - job_security_time
+            sid_left, sid_right = get_encompassing_slots(slots_set, job.start_time, t_e)
+
+            if job.ts or (job.ph == USE_PLACEHOLDER):
+                itvs_avail = intersec_ts_ph_itvs_slots(slots_set, sid_left, sid_right, job)
+            else:
+                itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
+
+            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
+
+            if (itvs == []):
+                #not enough resource avalable
+                log.warn("[" + str(job.id) +\
+                         "] advance reservation cannot be validated, not enough resources")
+                set_job_state(job.id, "toError")
+                set_job_message(job.id, "This advance reservation cannot run")
+            else:
+                # The reservation can be scheduled
+                log.debug("[" + str(job.id) + "] advance reservation is validated")
+                
+                #if "container" in job.types:                
+                #    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
+                #                job.start_time + job.walltime - job_security_time)
+                    #slot.show()
+                #    slots_sets[job.id] = SlotSet(slot)
+
+                # Update database
+                log.debug("[" + str(job.id) + "]  Add job in database")
+                #TODO ressource assignement ???
+                set_job_state(job.id, "toAckReservation")
+
+            set_job_resa_state(job_id, "Scheduled")
+         
+    log.debug("Queue $queue_name: end processing of new reservations")
+    
 
 def check_jobs_to_kill():
 
@@ -280,6 +344,7 @@ def meta_schedule():
 
     exit_code = 0
 
+    init_judas_notify_use()
     create_almighty_socket()
 
     #delete previous prediction
@@ -297,10 +362,8 @@ def meta_schedule():
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    all_slot_sets = slots_init(initial_time_sec)
-    
-
-    
+    plt, all_slot_sets, resource_set = plt_init_with_running_jobs(initial_time_sec)
+        
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
     else:
@@ -353,7 +416,7 @@ def meta_schedule():
                 db.query(Queue).filter_by(name=queue.name).update({"state": "notActive"})
         
             treate_waiting_reservation_jobs(queue.name)
-            check_reservation_jobs(queue.name)
+            check_reservation_jobs(plt, resource_set, queue.name, slots_set)
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs

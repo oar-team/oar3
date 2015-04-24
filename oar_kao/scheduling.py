@@ -45,6 +45,18 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
     return result
 
+def get_encompassing_slots(slots_set, t_begin, t_end):
+    slots = slots_set.slots
+    sid_left = 1
+
+    while slots[sid_left].b < t_begin:
+        sid_left = slots[sid_left].next
+    sid_left = sid_left
+    while slots[sid_right].e < t_end:
+        sid_right = slots[sid_right].next
+
+    return (sid_left, sid_right) 
+
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time):
     '''find first_suitable_contiguous_slot '''
 
@@ -133,8 +145,8 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     prev_start_time = slots[1].b
 
     for res_rqt in job.mld_res_rqts:
-        (mld_id, walltime, hy_res_rqts) = res_rqt
-        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time)
+        mld_id, walltime, hy_res_rqts = res_rqt
+        res_set, sid_left, sid_right = find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time)
         if res_set == []: #no suitable time*resources found
             job.res_set = []
             job.start_time = -1

@@ -50,6 +50,7 @@ def notify_user(job, state, msg):
     if nb_sent==0:
         log.error("notify_user: socket error" )
 
+
 def create_almighty_socket():
     global almighty_socket
     almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,7 +60,7 @@ def create_almighty_socket():
         almighty_socket.connect((server, port))
     except socket.error, exc:
         log.error("Connection to Almighty" + server + ":" + str(port) +
-                  " raised exception socket.error: " + exc)
+                  " raised exception socket.error: " + str(exc))
         sys.exit(1)
 
 
@@ -73,7 +74,7 @@ def notify_tcp_socket(addr, port, message):
         tcp_socket.connect((addr, int(port)))
     except socket.error, exc:
         log.error("notify_tcp_socket: Connection to " + addr + ":" + str(port) +
-                  " raised exception socket.error: " + exc)
+                  " raised exception socket.error: " + str(exc))
         return 0
     nb_sent = tcp_socket.send(message)
     tcp_socket.close()
@@ -176,6 +177,3 @@ def add_new_event(type, jid, description):
     db.add(event_data)
     db.commit()
 
-
-# to remove
-init_judas_notify_user()
