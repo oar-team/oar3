@@ -45,13 +45,15 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
     return result
 
-def get_encompassing_slots(slots_set, t_begin, t_end):
-    slots = slots_set.slots
+def get_encompassing_slots(slots, t_begin, t_end):
+
     sid_left = 1
 
     while slots[sid_left].b < t_begin:
         sid_left = slots[sid_left].next
-    sid_left = sid_left
+
+    sid_right = sid_left
+
     while slots[sid_right].e < t_end:
         sid_right = slots[sid_right].next
 

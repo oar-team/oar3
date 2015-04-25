@@ -49,8 +49,8 @@ class Platform:
      def get_time_default(self):
           return int(time.time())
 	    
-     def get_waiting_jobs_default(self, queue):
-          return get_waiting_jobs(queue)
+     def get_waiting_jobs_default(self, queue, reservation = 'None'):
+          return get_waiting_jobs(queue, reservation)
 
      def get_data_jobs_default(self, *args):
           return get_data_jobs(*args)

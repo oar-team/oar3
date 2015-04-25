@@ -423,7 +423,7 @@ def get_gantt_jobs_to_launch(current_time_sec):
 
 def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
     #db.query(Job).update({Job.start_time: start_time,Job.assigned_moldable_job: moldable_id}).filter(Job.id == jid)
-    db.query(Job).filter(Job.id == jid).update({Job.start_time: start_time,Job.assigned_moldable_job: moldable_id})
+    db.query(Job).filter(Job.id == jid).update({Job.start_time: start_time, Job.assigned_moldable_job: moldable_id})
     db.commit()
 
 def set_jobs_start_time(tuple_jids, start_time):
@@ -475,7 +475,7 @@ def set_job_state(jid, state):
                 update_current_scheduler_priority(job,"+2","START");
             else: # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
-                     db.query(Job).filter(Job.job_id == jid).update({Job.stop_time: job.start_time})
+                     db.query(Job).filter(Job.id == jid).update({Job.stop_time: job.start_time})
                      db.commit()
 
                 if job.assigned_moldable_job != "0":
@@ -734,12 +734,12 @@ def set_job_resa_state(job_id, state):
     return value : None
     side effects : changes the field state of the job in the table Jobs
     '''
-    db.query(Job).filter(Job.id == jid).update({Job.resercation: state})
+    db.query(Job).filter(Job.id == job_id).update({Job.reservation: state})
     db.commit()
 
 
 def set_job_message(job_id, message):
-    db.query(Job).filter(Job.id == jid).update({Job.message: message})
+    db.query(Job).filter(Job.id == job_id).update({Job.message: message})
     db.commit()
 
 
@@ -754,3 +754,12 @@ def get_waiting_reservation_jobs_specific_queue(queue_name):
                                   .filter(Job.queue_name == queue_name)\
                                   .order_by(Job.id).all()
     return waiting_scheduled_ar_jobs
+
+
+def update_scheduler_last_job_date(date, moldable_id):
+    ''' used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)
+    '''
+    db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
+                      .filter(Resource.id == AssignedResource.resource_id)\
+                      .update({Resource.last_job_date: date})
+    db.commit()

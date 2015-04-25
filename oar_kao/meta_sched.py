@@ -1,4 +1,4 @@
-
+import ipdb
 # oar/sources/core/modules/scheduler/oar_meta_sched
 import time
 import os
@@ -11,16 +11,34 @@ from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_start_time_assigned_moldable_id, add_resource_job_pairs,
                          set_job_state, get_gantt_waiting_interactive_prediction_date,
                          frag_job, get_waiting_reservation_jobs_specific_queue,
-                         set_job_resa_state)
+                         set_job_resa_state, set_job_message, update_scheduler_last_job_date,
+                         USE_PLACEHOLDER, SET_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket, 
-                           local_to_sql, add_new_event, init_judas_notify_use)
+                           local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
-from oar.kao.job import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots
-from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, get_encompassing_slots
+from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
+from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
+                                find_resource_hierarchies_job)
+from oar.kao.node import search_idle_nodes
 
 max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
+# Constant duration time of a besteffort job *)
+besteffort_duration = 300 #TODO conf ???
+
+#Set undefined config value to default one
+default_config = {"DB_PORT": "5432", 
+                  "HIERARCHY_LABEL": "resource_id,network_address",
+                  "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
+                  "SCHEDULER_JOB_SECURITY_TIME": "60",
+                  "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
+                  "FAIRSHARING_ENABLED": "no",
+                  "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
+}
+
+for k,v in default_config.iteritems():
+    if not k in config:
+        config[k] = k
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -196,7 +214,7 @@ def treate_waiting_reservation_jobs(queue_name):
 
     #TOFINISH
 
-def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
+def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current_time_sec):
     log.debug("Queue " + queue_name + ": begin processing of new reservations")
       
     
@@ -204,10 +222,12 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
     # It is a reservation, we take care only of the first moldable job
     # TODO
 
-    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(queue, 'toScheduled')
+    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(queue_name, 'toSchedule')
+    log.debug("nb_ar_jobs:" + str(nb_ar_jobs))
 
     if nb_ar_jobs > 0:
-        plt.get_data_jobs(result, ar_jids, ar_jobs, resource_set, job_security_time)
+        job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
+        plt.get_data_jobs(ar_jobs, ar_jids, resource_set, job_security_time)
 
         log.debug("Try and schedule new reservations")
         for jid in ar_jids:
@@ -215,7 +235,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
             log.debug("Find resource for Advance Reservation job:" + str(job.id))
 
             # It is a reservation, we take care only of the first moldable job
-            mld_id, walltime, hy_res_rqts =job.mld_res_rqts[0]
+            mld_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
 
             #test if reservation is too old
             if current_time_sec >= (job.start_time + walltime):
@@ -235,17 +255,17 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
             #    ss_id = int(job.types["inner"])
                 #TODO: test if container is an AR job
 
-            slots_set = all_slot_sets[ss_id]
+            slots = all_slot_sets[ss_id].slots
 
             t_e = job.start_time + walltime - job_security_time
-            sid_left, sid_right = get_encompassing_slots(slots_set, job.start_time, t_e)
+            sid_left, sid_right = get_encompassing_slots(slots, job.start_time, t_e)
 
             if job.ts or (job.ph == USE_PLACEHOLDER):
-                itvs_avail = intersec_ts_ph_itvs_slots(slots_set, sid_left, sid_right, job)
+                itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
             else:
                 itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
 
-            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
+            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
             if (itvs == []):
                 #not enough resource avalable
@@ -264,13 +284,13 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets):
                 #    slots_sets[job.id] = SlotSet(slot)
 
                 # Update database
-                log.debug("[" + str(job.id) + "]  Add job in database")
+                log.debug("[" + str(job.id) + "]  Add ressource job assignement in database")
                 #TODO ressource assignement ???
                 set_job_state(job.id, "toAckReservation")
 
-            set_job_resa_state(job_id, "Scheduled")
+            set_job_resa_state(job.id, "Scheduled")
          
-    log.debug("Queue $queue_name: end processing of new reservations")
+    log.debug("Queue " + queue_name +": end processing of new reservations")
     
 
 def check_jobs_to_kill():
@@ -344,7 +364,7 @@ def meta_schedule():
 
     exit_code = 0
 
-    init_judas_notify_use()
+    init_judas_notify_user()
     create_almighty_socket()
 
     #delete previous prediction
@@ -416,7 +436,7 @@ def meta_schedule():
                 db.query(Queue).filter_by(name=queue.name).update({"state": "notActive"})
         
             treate_waiting_reservation_jobs(queue.name)
-            check_reservation_jobs(plt, resource_set, queue.name, slots_set)
+            check_reservation_jobs(plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
@@ -461,7 +481,7 @@ def meta_schedule():
                 nb_sent1 = notify_tcp_socket(addr, port, job.message)
                 nb_sent2 = notify_tcp_socket(addr, port, "BAD JOB")
                 if (nb_sent1 == 0) or (nb_sent2 == 0):
-                    log.warnt("Cannot open connection to oarsub client for" + str(job.id))
+                    log.warn("Cannot open connection to oarsub client for" + str(job.id))
             log.debug("Set job " + str(job.id) + " to state Error")
             set_job_state(job.id, "Error")
 
