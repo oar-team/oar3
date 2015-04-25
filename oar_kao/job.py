@@ -1,7 +1,8 @@
+import os
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType, JobStateLog,
-                     JobStateLog, AssignedResource, get_logger)
+                     JobStateLog, AssignedResource, FragJob, get_logger)
 from oar.kao.utils import (notify_almighty, get_date, notify_user, 
                            update_current_scheduler_priority, add_new_event)
 
@@ -557,31 +558,31 @@ def get_current_resources_with_suspended_job():
 def log_job(job):
     db.query(MoldableJobDescription).filter(MoldableJobDescription.index == 'CURRENT')\
                                     .filter(MoldableJobDescription.job_id == job.id)\
-                                    .update({MoldableJobDescription.index: 'LOG'})
+                                    .update({MoldableJobDescription.index: 'LOG'}, synchronize_session=False)
 
     db.query(JobResourceDescription).filter(MoldableJobDescription.job_id == job.id)\
                                     .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
                                     .filter(JobResourceDescription.group_id == JobResourceGroup.id) \
-                                    .update({JobResourceDescription.index: 'LOG'})
+                                    .update({JobResourceDescription.index: 'LOG'}, synchronize_session=False)
 
     db.query(JobResourceGroup).filter(JobResourceGroup.index == 'CURRENT')\
                               .filter(MoldableJobDescription.index == 'LOG')\
                               .filter(MoldableJobDescription.job_id == job.id)\
                               .filter(JobResourceGroup.moldable_id ==  MoldableJobDescription.id)\
-                              .update({JobResourceGroup.index: 'LOG'})
+                              .update({JobResourceGroup.index: 'LOG'}, synchronize_session=False)
 
-    db.query(JobType).filter(JobType.index == 'CURRENT')\
+    db.query(JobType).filter(JobType.types_index == 'CURRENT')\
                      .filter(JobType.job_id == job.id)\
-                     .update({JobType.index: 'LOG'})
+                     .update({JobType.types_index: 'LOG'}, synchronize_session=False)
 
     db.query(JobDependencie).filter(JobDependencie.index == 'CURRENT')\
                             .filter(JobDependencie.job_id == job.id)\
-                            .update({JobDependencie.index: 'LOG'})
+                            .update({JobDependencie.index: 'LOG'}, synchronize_session=False)
 
     if job.assigned_moldable_job != "0":
-        db.query(AssignedResource).filter(AssignedResource.index == 'CURRENT')\
+        db.query(AssignedResource).filter(AssignedResource.assigned_resource_index == 'CURRENT')\
                                   .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
-                                  .update({AssignedResource.index: 'LOG'})
+                                  .update({AssignedResource.assigned_resource_index: 'LOG'}, synchronize_session=False)
     db.commit()
 
 
@@ -702,7 +703,7 @@ def get_job(job_id):
 #                already killed
 # side effects : changes the field ToFrag of the job in the table Jobs
 
-def frag_job(joid):
+def frag_job(jid):
 
     if 'OARDO_USER' in os.environ:
         luser = os.environ['OARDO_USER']
@@ -761,5 +762,5 @@ def update_scheduler_last_job_date(date, moldable_id):
     '''
     db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
                       .filter(Resource.id == AssignedResource.resource_id)\
-                      .update({Resource.last_job_date: date})
+                      .update({Resource.last_job_date: date}, synchronize_session=False)
     db.commit()

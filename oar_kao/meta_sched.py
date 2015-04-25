@@ -167,7 +167,7 @@ def notify_to_run_job(jid):
         if 0: #TODO OAR::IO::is_job_desktop_computing
             log.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            nb_sent = notify_almighty("OARRUNJOB_" + str(jid))
+            nb_sent = notify_almighty("OARRUNJOB_" + str(jid) + '\n')
             if nb_sent:
                 to_launch_jobs_already_treated[jid] = 1
                 log.debug("Notify almighty to launch the job" + str(jid))
@@ -200,7 +200,8 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
 # launch right reservation jobs
 # arg : queue name
 # return 1 if there is at least a job to treate, 2 if besteffort jobs must die
-def treate_waiting_reservation_jobs(queue_name):
+def treate_waiting_reservation_jobs(queue_name, current_time_sec):
+    return
     log.debug("Queue " + queue_name + ": begin processing of reservations with missing resources")
     for job in get_waiting_reservation_jobs_specific_queue(queue_name):
         
@@ -265,8 +266,12 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             else:
                 itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
 
+
+            #hy_res_rqts = [([('network_address', 1)], [(0, 11)])]
+
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
+            
             if (itvs == []):
                 #not enough resource avalable
                 log.warn("[" + str(job.id) +\
@@ -435,7 +440,7 @@ def meta_schedule():
                 #stop queue
                 db.query(Queue).filter_by(name=queue.name).update({"state": "notActive"})
         
-            treate_waiting_reservation_jobs(queue.name)
+            treate_waiting_reservation_jobs(queue.name, current_time_sec)
             check_reservation_jobs(plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
     if check_jobs_to_kill() == 1:
@@ -478,8 +483,8 @@ def meta_schedule():
                 log.debug("Notify oarsub job (num:" + str(job.id) + ") in error; jobInfo=" +\
                           job.info_type)
                 
-                nb_sent1 = notify_tcp_socket(addr, port, job.message)
-                nb_sent2 = notify_tcp_socket(addr, port, "BAD JOB")
+                nb_sent1 = notify_tcp_socket(addr, port, job.message+'\n')
+                nb_sent2 = notify_tcp_socket(addr, port, "BAD JOB"+'\n')
                 if (nb_sent1 == 0) or (nb_sent2 == 0):
                     log.warn("Cannot open connection to oarsub client for" + str(job.id))
             log.debug("Set job " + str(job.id) + " to state Error")
@@ -489,13 +494,13 @@ def meta_schedule():
     if "toAckReservation" in jobs_by_state:
         for job in jobs_by_state["toAckReservation"]:
             addr, port = job.info_type.split(':')
-            log.debug(" Treate job" + job.id + " in toAckReservation state")
+            log.debug(" Treate job" + str(job.id) + " in toAckReservation state")
 
-            nb_sent = notify_tcp_socket(addr, port,"GOOD RESERVATION")
+            nb_sent = notify_tcp_socket(addr, port,"GOOD RESERVATION"+'\n')
         
             if nb_sent == 0:
-                log.warn("Frag job " + job.id + ", I cannot notify oarsub for the reservation")
-                add_new_event("CANNOT_NOTIFY_OARSUB", job.id, "Can not notify oarsub for the job " + job.id)
+                log.warn("Frag job " + str(job.id) + ", I cannot notify oarsub for the reservation")
+                add_new_event("CANNOT_NOTIFY_OARSUB", str(job.id), "Can not notify oarsub for the job " + str(job.id))
                 
                 #TODO ???
                 #OAR::IO::lock_table($base,["frag_jobs","event_logs","jobs"]);
@@ -505,9 +510,9 @@ def meta_schedule():
             
                 exit_code = 2
             else:
-                log.debug("Notify oarsub for a RESERVATION (idJob=" + job.id + ") --> OK; jobInfo=" + job.info_type)
+                log.debug("Notify oarsub for a RESERVATION (idJob=" + str(job.id) + ") --> OK; jobInfo=" + job.info_type)
                 set_job_state(job.id, "Waiting")
-                if ((j.start_time-1) <= current_time_sec) and (exit_code == 0):
+                if ((job.start_time-1) <= current_time_sec) and (exit_code == 0):
                     exit_code = 1
 
     ## Treate toLaunch jobs

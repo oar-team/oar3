@@ -49,12 +49,12 @@ def get_encompassing_slots(slots, t_begin, t_end):
 
     sid_left = 1
 
-    while slots[sid_left].b < t_begin:
+    while slots[sid_left].e < t_begin:
         sid_left = slots[sid_left].next
 
     sid_right = sid_left
 
-    while slots[sid_right].e < t_end:
+    while  slots[sid_right].e < t_end:
         sid_right = slots[sid_right].next
 
     return (sid_left, sid_right) 

@@ -70,10 +70,12 @@ def notify_almighty(message):
 
 def notify_tcp_socket(addr, port, message):
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    log.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
     try:
         tcp_socket.connect((addr, int(port)))
     except socket.error, exc:
-        log.error("notify_tcp_socket: Connection to " + addr + ":" + str(port) +
+        log.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                   " raised exception socket.error: " + str(exc))
         return 0
     nb_sent = tcp_socket.send(message)
