@@ -4,6 +4,7 @@ from oar.lib import config, db
 
 from __init__ import DEFAULT_CONFIG
 
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_config(request):
     config.clear()
@@ -20,8 +21,10 @@ def setup_db(request):
     db.session.flush()
     db.session.expunge_all()
     db.session.commit()
+
     def teardown():
         db.delete_all()
+
     request.addfinalizer(teardown)
 
 
