@@ -32,7 +32,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     description='Another Metascheduler for OAR.',
-    long_description=read('README.rst') + '\n\n' + read('CHANGELOG.rst'),
+    long_description=read('README.rst') + '\n\n' + read('CHANGES'),
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
