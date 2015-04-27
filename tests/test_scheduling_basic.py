@@ -1,7 +1,9 @@
 import unittest
-from oar.kao.job import *
-from oar.kao.slot import *
-from oar.kao.scheduling_basic import *
+from oar.kao.job import JobPseudo
+from oar.kao.slot import Slot, SlotSet
+from oar.kao.scheduling_basic import (assign_resources_mld_job_split_slots,
+                                      schedule_id_jobs_ct)
+
 
 class TestScheduling(unittest.TestCase):
 

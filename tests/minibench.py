@@ -1,5 +1,5 @@
-import sys
-from oar.kao.scheduling import *
+from oar.kao.slot import Slot, SlotSet
+from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.job import JobPseudo, set_jobs_cache_keys
 #http://www.huyng.com/posts/python-performance-analysis/
 import time

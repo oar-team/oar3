@@ -1,7 +1,9 @@
 import unittest
-from oar.kao.job import *
-from oar.kao.slot import *
-from oar.kao.scheduling import *
+from oar.kao.job import JobPseudo
+from oar.kao.slot import Slot, SlotSet
+from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
+                                schedule_id_jobs_ct,
+                                set_slots_with_prev_scheduled_jobs)
 from oar.lib import config, get_logger
 
 config['LOG_FILE'] = '/dev/stdout'
