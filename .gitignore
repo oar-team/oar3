@@ -21,4 +21,4 @@ pip-log.txt
 .tox
 *.tar.gz
 env
-
+htmlcov
