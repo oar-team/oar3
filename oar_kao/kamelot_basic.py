@@ -1,26 +1,26 @@
-from oar.lib import config, logging, Job
+from oar.lib import config
 from oar.lib.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, Slot
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
-# Initialize some variables to default value or retrieve from oar.conf configuration file *)
+# Initialize some variables to default value or retrieve from oar.conf
+# configuration file *)
 
-max_time = 2147483648 #(* 2**31 *)
-max_time_minus_one = 2147483647 #(* 2**31-1 *)
+max_time = 2147483648  # (* 2**31 *)
+max_time_minus_one = 2147483647  # (* 2**31-1 *)
 
-#Set undefined config value to default one
-default_config = {"HIERARCHY_LABEL": "resource_id,network_address",
-                  "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
+# Set undefined config value to default one
+default_config = {
+    "HIERARCHY_LABEL": "resource_id,network_address",
+    "SCHEDULER_RESOURCE_ORDER": "resource_id ASC"
+
 }
-for k,v in default_config.iteritems():
-    if not k in config:
-        config[k] = k
-#
-#
-#
 
-def schedule_cycle(plt, queue = "default"):
+config.setdefault_config(default_config)
+
+
+def schedule_cycle(plt, queue="default"):
     now = plt.get_time()
 
     print "Begin scheduling....", now
@@ -39,7 +39,8 @@ def schedule_cycle(plt, queue = "default"):
         # Determine Global Resource Intervals and Initial Slot
         #
         resource_set = plt.resource_set()
-        initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
+        initial_slot_set = SlotSet(
+            Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
 
         #
         #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -73,15 +74,19 @@ def schedule_cycle(plt, queue = "default"):
         if scheduled_jobs != []:
             initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
 
-        #print "after split sched"
+        # print "after split sched"
         initial_slot_set.show_slots()
 
-        all_slot_sets = {0:initial_slot_set}
+        all_slot_sets = {0: initial_slot_set}
 
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets, waiting_jobs , resource_set.hierarchy,  waiting_jids, 0)
+        schedule_id_jobs_ct(all_slot_sets,
+                            waiting_jobs,
+                            resource_set.hierarchy,
+                            waiting_jids,
+                            0)
 
         #
         # Save assignement
@@ -99,4 +104,3 @@ if __name__ == '__main__':
     plt = Platform()
     schedule_cycle(plt)
     print "That's all folks"
-

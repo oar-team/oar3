@@ -1,21 +1,25 @@
-from oar.kao.hierarchy import *
-from oar.kao.job import *
+from oar.kao.hierarchy import find_resource_hierarchies_scattered
+from oar.kao.job import USE_PLACEHOLDER
 from oar.kao.interval import intersec
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib import get_logger
 
 log = get_logger("oar.kamelot")
 
-def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time, filter_besteffort=True):
 
-    jobs_slotsets = {0:[]}
+def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
+                                       filter_besteffort=True):
+
+    jobs_slotsets = {0: []}
 
     for job in jobs:
-        if not ( filter_besteffort and ("besteffort" in job.types) ):
+        if not (filter_besteffort and ("besteffort" in job.types)):
             if "container" in job.types:
                 t_e = job.start_time + job.walltime - job_security_time
-                #print "job.res_set, job.start_time, t_e", job.res_set, job.start_time, t_e
-                slots_sets[job.id] = SlotSet(Slot(1, 0, 0, job.res_set, job.start_time, t_e))
+                # print "job.res_set, job.start_time, t_e", job.res_set,
+                # job.start_time, t_e
+                slots_sets[job.id] = SlotSet(
+                    Slot(1, 0, 0, job.res_set, job.start_time, t_e))
                 jobs_slotsets[job.id] = []
 
             ss_id = 0
@@ -24,8 +28,9 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time, filt
 
             jobs_slotsets[ss_id].append(job)
 
-    for ss_id,slot_set in slots_sets.iteritems():
-        slot_set.split_slots_prev_scheduled_jobs( jobs_slotsets[ss_id] )
+    for ss_id, slot_set in slots_sets.iteritems():
+        slot_set.split_slots_prev_scheduled_jobs(jobs_slotsets[ss_id])
+
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance
@@ -41,9 +46,11 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             hy_nbs.append(n)
 
         itvs_cts_slots = intersec(constraints, itvs_slots)
-        result.extend( find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs) )
+        result.extend(
+            find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs))
 
     return result
+
 
 def get_encompassing_slots(slots, t_begin, t_end):
 
@@ -54,10 +61,11 @@ def get_encompassing_slots(slots, t_begin, t_end):
 
     sid_right = sid_left
 
-    while  slots[sid_right].e < t_end:
+    while slots[sid_right].e < t_end:
         sid_right = slots[sid_right].next
 
-    return (sid_left, sid_right) 
+    return (sid_left, sid_right)
+
 
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time):
     '''find first_suitable_contiguous_slot '''
@@ -69,58 +77,62 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
     slots = slots_set.slots
     cache = slots_set.cache
 
-    #updated_cache = False
+    # updated_cache = False
     sid_left = 1
     if min_start_time < 0:
         # to not always begin by the first slots ( O(n^2) )
-        #TODO cache_by_container/inner + moldable + time_sharing(?)
+        # TODO cache_by_container/inner + moldable + time_sharing(?)
         if job.key_cache and (job.key_cache[mld_id] in cache):
             sid_left = cache[job.key_cache[mld_id]]
-            #print "cache hit...... ", sid_left
-            #else:
-            #print "cache miss :("
-        
+            # print "cache hit...... ", sid_left
+            # else:
+            # print "cache miss :("
+
     else:
         while slots[sid_left].b < min_start_time:
             sid_left = slots[sid_left].next
-        #satisfy job dependencies converted in min start_time
-        
-    #sid_left = 1 # TODO no cache
+        # satisfy job dependencies converted in min start_time
+
+    # sid_left = 1 # TODO no cache
 
     sid_right = sid_left
     slot_e = slots[sid_right].e
 
-    #print 'first sid_left', sid_left
+    # print 'first sid_left', sid_left
 
     while True:
-        #find next contiguous slots_time
-        #print "A: job.id:", job.id, "sid_left:", sid_left, "sid_right:", sid_right
+        # find next contiguous slots_time
+        # print "A: job.id:", job.id, "sid_left:", sid_left, "sid_right:",
+        # sid_right
 
         if sid_left != 0 and sid_right != 0:
             slot_b = slots[sid_left].b
         else:
-            #TODO error
-            #print "TODO error can't schedule job.id:", job.id 
-            log.info( "can't schedule job with id:" + str(job.id) + ", due resources")
+            # TODO error
+            # print "TODO error can't schedule job.id:", job.id
+            log.info(
+                "can't schedule job with id:" + str(job.id) + ", due resources")
             return ([], -1, -1)
 
-        while ( (slot_e-slot_b+1) < walltime):
+        while ((slot_e - slot_b + 1) < walltime):
             sid_right = slots[sid_right].next
             if sid_right != 0:
                 slot_e = slots[sid_right].e
             else:
-                log.info( "can't schedule job with id:" + str(job.id) + ", due time" )
-                return ([], -1, -1)  
-            
+                log.info(
+                    "can't schedule job with id:" + str(job.id) + ", due time")
+                return ([], -1, -1)
+
         #        if not updated_cache and (slots[sid_left].itvs != []):
         #            cache[walltime] = sid_left
         #            updated_cache = True
 
         if job.ts or (job.ph == USE_PLACEHOLDER):
-            itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
+            itvs_avail = intersec_ts_ph_itvs_slots(
+                slots, sid_left, sid_right, job)
         else:
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
-        #print "itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy
+        # print "itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if (itvs != []):
@@ -128,17 +140,18 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
         sid_left = slots[sid_left].next
 
-    if (job.key_cache and min_start_time < 0): #and (not job.deps):
+    if (job.key_cache and min_start_time < 0):  # and (not job.deps):
         cache[job.key_cache[mld_id]] = sid_left
         #        print "cache: update entry ",  job.key_cache[mld_id], " with ", sid_left
-        #else:
-        #print "cache: not updated ", job.key_cache, min_start_time, job.deps
+        # else:
+        # print "cache: not updated ", job.key_cache, min_start_time, job.deps
 
     return (itvs, sid_left, sid_right)
 
+
 def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     '''Assign resources to a job and update by spliting the concerned slots - moldable version'''
-    prev_t_finish = 2**32-1 # large enough
+    prev_t_finish = 2 ** 32 - 1  # large enough
     prev_res_set = []
     prev_res_rqt = []
     prev_id_slots = []
@@ -148,13 +161,14 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 
     for res_rqt in job.mld_res_rqts:
         mld_id, walltime, hy_res_rqts = res_rqt
-        res_set, sid_left, sid_right = find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time)
-        if res_set == []: #no suitable time*resources found
+        res_set, sid_left, sid_right = find_first_suitable_contiguous_slots(
+            slots_set, job, res_rqt, hy, min_start_time)
+        if res_set == []:  # no suitable time*resources found
             job.res_set = []
             job.start_time = -1
             job.moldable_id = -1
             return
-        #print "after find fisrt suitable"
+        # print "after find fisrt suitable"
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
             prev_start_time = slots[sid_left].b
@@ -170,50 +184,53 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     job.start_time = prev_start_time
     job.walltime = walltime
 
-    #Take avantage of job.starttime = slots[prev_sid_left].b
-    #print prev_sid_left, prev_sid_right, job.moldable_id , job.res_set, job.start_time , job.walltime, job.mld_id 
+    # Take avantage of job.starttime = slots[prev_sid_left].b
+    # print prev_sid_left, prev_sid_right, job.moldable_id , job.res_set,
+    # job.start_time , job.walltime, job.mld_id
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
+
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
     #    for k,job in jobs.iteritems():
-    #print "*********j_id:", k, job.mld_res_rqts[0]
+    # print "*********j_id:", k, job.mld_res_rqts[0]
 
     for jid in id_jobs:
         job = jobs[jid]
 
-        min_start_time = -1 
+        min_start_time = -1
         to_skip = False
-        #Dependencies 
+        # Dependencies
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
             if state == "Error":
-                log.info("job(" + str(jid_dep) +") in dependencies for job("
-                         + str(jid) + ") is in error state") 
-                #TODO  set job to ERROR"
+                log.info("job(" + str(jid_dep) + ") in dependencies for job("
+                         + str(jid) + ") is in error state")
+                # TODO  set job to ERROR"
                 to_skip = True
                 break
             elif state == "Waiting":
-                #determine endtime
+                # determine endtime
                 if jid_dep in jobs:
                     job_dep = jobs[jid_dep]
                     job_stop_time = job.start_time + job.walltime
                     if job_stop_time > min_start_time:
                         min_start_tim = job_stop_time
                 else:
-                    #TODO
+                    # TODO
                     to_skip = True
                     break
-            elif state == "Terminated" and exit_code ==0:
+            elif state == "Terminated" and exit_code == 0:
                 next
             else:
                 to_skip = True
                 break
-                    
+
         if to_skip:
-            log.info("job(" + str(jid) + "can't be scheduled due to dependencies")
+            log.info(
+                "job(" + str(jid) + "can't be scheduled due to dependencies")
         else:
             ss_id = 0
             if "inner" in job.types:
@@ -221,10 +238,11 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
             slots_set = slots_sets[ss_id]
 
-            assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)            
+            assign_resources_mld_job_split_slots(
+                slots_set, job, hy, min_start_time)
 
-            if "container" in job.types:                
+            if "container" in job.types:
                 slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
                             job.start_time + job.walltime - job_security_time)
-                #slot.show()
+                # slot.show()
                 slots_sets[job.id] = SlotSet(slot)

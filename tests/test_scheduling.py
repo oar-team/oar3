@@ -11,7 +11,7 @@ config['LOG_FILE'] = '/dev/stdout'
 log = get_logger("oar.test")
 
 
-def compare_slots_val_ref(self, slots, v):
+def compare_slots_val_ref(slots, v):
     sid = 1
     i = 0
     while True:

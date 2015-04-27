@@ -3,7 +3,8 @@ import sys
 import time
 import os
 import socket
-from oar.lib import db, config, get_logger, Resource, AssignedResource, EventLog
+from oar.lib import (db, config, get_logger, Resource, AssignedResource,
+                     EventLog)
 
 log = get_logger("oar.kao.utils")
 
@@ -23,32 +24,35 @@ def init_judas_notify_user():
             binpath = os.environ["OARDIR"] + "/"
         else:
             binpath = "/usr/local/lib/oar/"
-        os.system(binpath +"judas_notify_user.pl &")
-        
+        os.system(binpath + "judas_notify_user.pl &")
+
         while(not os.path.exists(uds_name)):
             time.sleep(0.1)
 
-        notification_user_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        notification_user_socket = socket.socket(
+            socket.AF_UNIX, socket.SOCK_STREAM)
         notification_user_socket.connect(uds_name)
 
 
 def notify_user(job, state, msg):
     global notification_user_socket
-    #Currently it uses a unix domain sockey to communication to a perl script
-    #TODO need to define and develop the next notification system
+    # Currently it uses a unix domain sockey to communication to a perl script
+    # TODO need to define and develop the next notification system
     # see OAR::Modules::Judas::notify_user
-    
-    log.debug("notify_user uses the perl script: judas_notify_user.pl !!! (" + state + ", " + msg + ")")
 
-    #OAR::Modules::Judas::notify_user($base,notify,$addr,$user,$jid,$name,$state,$msg);
-    #OAR::Modules::Judas::notify_user($dbh,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"SUSPENDED","Job is suspended."
+    log.debug("notify_user uses the perl script: judas_notify_user.pl !!! ("
+              + state + ", " + msg + ")")
+
+    # OAR::Modules::Judas::notify_user($base,notify,$addr,$user,$jid,$name,$state,$msg);
+    # OAR::Modules::Judas::notify_user($dbh,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"SUSPENDED","Job
+    # is suspended."
     addr, port = job.info_type.split(':')
     msg_uds = job.notify + "°" + addr + "°" + job.user + "°" + job.id + "°" +\
-              job.name + "°" + state + "°" + msg + "\n"
+        job.name + "°" + state + "°" + msg + "\n"
     nb_sent = notification_user_socket.send(msg_uds)
 
-    if nb_sent==0:
-        log.error("notify_user: socket error" )
+    if nb_sent == 0:
+        log.error("notify_user: socket error")
 
 
 def create_almighty_socket():
@@ -84,8 +88,11 @@ def notify_tcp_socket(addr, port, message):
 
 # get_date
 # returns the current time in the format used by the sql database
+
+
 def get_date():
-    result = db.engine.execute("select EXTRACT(EPOCH FROM current_timestamp)").scalar()
+    result = db.engine.execute(
+        "select EXTRACT(EPOCH FROM current_timestamp)").scalar()
     return int(result)
 
 
@@ -99,17 +106,13 @@ def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
 
 
-def notify_user(job, state, msg):
-    #TODO see OAR::Modules::Judas::notify_user
-    log.info("notify_user not yet implemented !!!! (" + state + ", " + msg + ")")
-
-
 # update_current_scheduler_priority
 # Update the scheduler_priority field of the table resources
 def update_current_scheduler_priority(job, value, state):
-    log.info("update_current_scheduler_priority not yet implemented !!!! job.id: " +
-             str(job.id) + ", state: " + state + ", value: " + str(value))
-#  # code from IO.pm update_current_scheduler_priority
+    log.info("update_current_scheduler_priority not yet implemented !!!!" +
+             " job.id: " + str(job.id) + ", state: " + state + ", value: "
+             + str(value))
+# code from IO.pm update_current_scheduler_priority
 #
 #     my $dbh = shift;
 #     my $job_id = shift;
@@ -170,12 +173,12 @@ def update_scheduler_last_job_date(date, moldable_id):
     db.commit()
 
 
-#EVENTS LOG MANAGEMENT
+# EVENTS LOG MANAGEMENT
 
-#add a new entry in event_log table
-#args : database ref, event type, job_id , description
+# add a new entry in event_log table
+# args : database ref, event type, job_id , description
 def add_new_event(type, jid, description):
-    event_data = EventLog(type=type, job_id=jid, date=get_date(), description = description[:255])
+    event_data = EventLog(
+        type=type, job_id=jid, date=get_date(), description=description[:255])
     db.add(event_data)
     db.commit()
-

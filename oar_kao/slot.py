@@ -1,9 +1,10 @@
 from oar.kao.job import SET_PLACEHOLDER, USE_PLACEHOLDER
 from oar.kao.interval import intersec, sub_intervals, add_intervals
-from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from copy import deepcopy
 
-class Slot:
+
+class Slot(object):
+
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):
         self.id = id
         self.prev = prev
@@ -11,17 +12,24 @@ class Slot:
         self.itvs = itvs
         self.b = b
         self.e = e
-        self.ts_itvs = ts_itvs #timesharing ts_itvs: [user] * [job_name] * itvs
-        self.ph_itvs = ph_itvs #placeholder ph_itvs: [ph_name] * itvs
+        # timesharing ts_itvs: [user] * [job_name] * itvs
+        self.ts_itvs = ts_itvs
+        self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
+
     def show(self):
         print "(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",\
             self.itvs, "b:", self.b, "e:", self.e,\
             "ts_itvs:", self.ts_itvs, "ph_itvs:", self.ph_itvs
 
 # not used TO REMOVE?
+
+
 def intersec_slots(slots):
     'Return intersection of intervals from a slot list'
-    return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs), slots, slots[0].itvs)
+    return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs),
+                  slots,
+                  slots[0].itvs)
+
 
 def intersec_itvs_slots(slots, sid_left, sid_right):
     sid = sid_left
@@ -33,51 +41,54 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
     return itvs_acc
 
+
 def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
-    
+
     sid = sid_left
     itvs_acc = []
     while True:
         slot = slots[sid]
         itvs = slot.itvs
-        
+
         if job.ts:
-            if "*" in slot.ts_itvs: #  slot.ts_itvs[user][name]
+            if "*" in slot.ts_itvs:  # slot.ts_itvs[user][name]
                 if "*" in slot.ts_itvs["*"]:
                     itvs = add_intervals(itvs, slot.ts_itvs["*"]["*"])
-                elif  job.name in slot.ts_itvs["*"]:
+                elif job.name in slot.ts_itvs["*"]:
                     itvs = add_intervals(itvs, slot.ts_itvs["*"][job.name])
             elif job.user in slot.ts_itvs:
                 if "*" in slot.ts_itvs[job.user]:
                     itvs = add_intervals(itvs, slot.ts_itvs[job.user]["*"])
-                elif  job.name in slot.ts_itvs[job.user]:
-                    itvs = add_intervals(itvs, slot.ts_itvs[job.user][job.name])
-                    
+                elif job.name in slot.ts_itvs[job.user]:
+                    itvs = add_intervals(
+                        itvs, slot.ts_itvs[job.user][job.name])
+
         if job.ph == USE_PLACEHOLDER:
             if job.ph_name in slot.ph_itvs:
-                itvs = add_intervals(itvs, slot.ph_itvs[job.ph_name])        
+                itvs = add_intervals(itvs, slot.ph_itvs[job.ph_name])
 
         if not itvs_acc:
             itvs_acc = itvs
         else:
             itvs_acc = intersec(itvs_acc, itvs)
-        
+
         if sid == sid_right:
             break
         sid = slots[sid].next
-        
+
     return itvs_acc
+
 
 class SlotSet:
 
-    def __init__(self, first_slot, slots = {} ):
-        if (first_slot != None):
+    def __init__(self, first_slot, slots={}):
+        if (first_slot is not None):
             self.slots = {1: first_slot}
             self.last_id = 1
         else:
             self.slots = slots
             s = slots[1]
-            while (s.next !=0):
+            while (s.next != 0):
                 s = slots[s.next]
             self.last_id = s.id
 
@@ -106,11 +117,13 @@ class SlotSet:
         s_id = slot.id
         self.last_id += 1
         n_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, n_id, slot.itvs[:], slot.b, job.start_time-1,
-                      deepcopy(slot.ts_itvs), slot.ph_itvs )
+        a_slot = Slot(s_id, slot.prev, n_id, slot.itvs[:],
+                      slot.b, job.start_time - 1,
+                      deepcopy(slot.ts_itvs), slot.ph_itvs)
         slot.prev = s_id
         self.slots[s_id] = a_slot
-        #slot_id is changed so we have always the rightmost slot (min slot.b) w/ sid = 1 r
+        # slot_id is changed so we have always the rightmost slot (min slot.b)
+        # w/ sid = 1 r
         slot.id = n_id
         self.slots[n_id] = slot
 
@@ -120,15 +133,16 @@ class SlotSet:
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         slot.itvs = sub_intervals(slot.itvs, job.res_set)
         if job.ts:
-            if not job.ts_user in slot.ts_itvs:
-                 slot.ts_itvs[job.ts_user] = {}
+            if job.ts_user not in slot.ts_itvs:
+                slot.ts_itvs[job.ts_user] = {}
 
-            if not job.ts_name in slot.ts_itvs[job.ts_user]:
+            if job.ts_name not in slot.ts_itvs[job.ts_user]:
                 slot.ts_itvs[job.ts_user][job.ts_name] = job.res_set[:]
-        
+
         if job.ph == USE_PLACEHOLDER:
             if job.ph_name in slot.ph_itvs:
-                slot.ph_itvs[job.ph_name] = sub_interval(slot.ph_itvs[job.ph_name], job.res_set)
+                slot.ph_itvs[job.ph_name] = \
+                    sub_intervals(slot.ph_itvs[job.ph_name], job.res_set)
 
         if job.ph == SET_PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = job.res_set[:]
@@ -137,20 +151,20 @@ class SlotSet:
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs[:], job.start_time + job.walltime, slot.e,
-                      deepcopy(slot.ts_itvs), slot.ph_itvs )
+        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs[:],
+                      job.start_time + job.walltime, slot.e,
+                      deepcopy(slot.ts_itvs), slot.ph_itvs)
         slot.next = s_id
         self.slots[s_id] = c_slot
 
     def split_slots(self, sid_left, sid_right, job):
-        #        print "yop--->", sid_left, sid_right, job.start_time, job.walltime
         sid = sid_left
         while True:
             slot = self.slots[sid]
-            #print "split", slot.show()
+            # print "split", slot.show()
             if job.start_time > slot.b:
                 # generate AB | ABC
-                if ( job.start_time + job.walltime) > slot.e:
+                if (job.start_time + job.walltime) > slot.e:
                     # generate AB
                     self.slot_before_job(slot, job)
                     self.slot_during_job(slot, job)
@@ -180,24 +194,27 @@ class SlotSet:
 #    def split_slots_prev_scheduled_one_job
 
     def split_slots_prev_scheduled_jobs(self, ordered_jobs):
-        ''' function which insert previously scheduled jobs in slots.
-        Jobs must be sorted by start_time.
-        .used in kamelot for pseudo_jobs_resources_available_upto splitting'''
-        slot = self.slots[1] # 1
+        '''
+        Inserts previously scheduled jobs in slots. Jobs must be sorted by
+        start_time.
+        It used in kamelot for pseudo_jobs_resources_available_upto splitting
+        '''
+        slot = self.slots[1]  # 1
         left_sid_2_split = 1
         right_sid_2_split = 1
 
         for job in ordered_jobs:
             # find_first_slot
-            while not( (slot.b > job.start_time) or ((slot.b <= job.start_time) and (job.start_time <= slot.e)) ):
+            while not ((slot.b > job.start_time)
+                       or ((slot.b <= job.start_time)
+                           and (job.start_time <= slot.e))):
                 left_sid_2_split = slot.next
                 slot = self.slots[slot.next]
 
             right_sid_2_split = left_sid_2_split
             # find_slots_encompass
-            while not (slot.e >=  (job.start_time + job.walltime)):
+            while not (slot.e >= (job.start_time + job.walltime)):
                 right_sid_2_split = slot.next
                 slot = self.slots[slot.next]
 
-            #self.show_slots()
             self.split_slots(left_sid_2_split, right_sid_2_split, job)
