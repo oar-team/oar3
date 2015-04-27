@@ -285,16 +285,16 @@ def get_job_suspended_sum_duration(jid, now):
     return suspended_duration
 
 def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_suspended_res_itvs, now
-    req = db.query(Job,
-                   GanttJobsPrediction.start_time,
-                   MoldableJobDescription.walltime,
-                   GanttJobsResource.resource_id)\
-            .filter(MoldableJobDescription.index == 'CURRENT')\
-            .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
-            .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-            .filter(Job.id == MoldableJobDescription.job_id)\
-            .order_by(Job.start_time, Job.id)\
-            .all()
+    result = db.query(Job,
+                      GanttJobsPrediction.start_time,
+                      MoldableJobDescription.walltime,
+                      GanttJobsResource.resource_id)\
+               .filter(MoldableJobDescription.index == 'CURRENT')\
+               .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+               .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+               .filter(Job.id == MoldableJobDescription.job_id)\
+               .order_by(Job.start_time, Job.id)\
+               .all()
 
     jids = []
     jobs_lst = []
@@ -307,8 +307,8 @@ def get_scheduled_jobs(resource_set, job_security_time, now): #TODO available_su
     #(job, a, b, c) = req[0]
     if req != []:
         for x in req:
-            (j, start_time, walltime, r_id) = x
-            print x
+            j, start_time, walltime, r_id = x
+            #print x
             if j.id != prev_jid:
                 if prev_jid != 0:
                     job.res_set = unordered_ids2itvs(roids)
@@ -764,3 +764,76 @@ def update_scheduler_last_job_date(date, moldable_id):
                       .filter(Resource.id == AssignedResource.resource_id)\
                       .update({Resource.last_job_date: date}, synchronize_session=False)
     db.commit()
+
+
+
+# Get all waiting reservation jobs
+# parameter : database ref
+# return an array of moldable job informations
+def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
+
+    result = db.query(Job,
+                      GanttJobsPrediction.start_time, GanttJobsResource.resource_id,
+                      MoldableJobDescription.walltime, MoldableJobDescription.id)\
+               .filter((Job.state == 'Waiting') | (Job.state == 'toAckReservation'))\
+               .filter(Job.reservation == 'Scheduled')\
+               .filter(Job.id == MoldableJobDescription.job_id)\
+               .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)\
+               .filter(GanttJobsResource.moldable_id == MoldableJobDescription.id)\
+               .all()
+
+    first_job = True
+    jobs = {}
+    jids = []
+
+    prev_jid = 0
+    roids = []
+
+    global job
+
+    for x in result:
+        j, start_time, resource_id, walltime, moldable_id = x
+        
+        if j.id != prev_jid:
+            if first_job:
+                first_job = False
+            else:
+                job.res_set = unordered_ids2itvs(roids)
+                jids.append(job.id)
+                jobs[job.id] = job
+                roids = []
+ 
+            prev_jid = j.id
+            job = j
+            job.start_time = start_time
+            job.walltime = walltime + job_security_time
+               
+        roids.append(resource_set.rid_i2o[r_id])
+
+
+  job.res_set = unordered_ids2itvs(roids)
+ 
+  jids.append(job.id)
+  jobs[job.id] = job
+  get_jobs_types(jids, jobs)
+
+
+  return (jids, jobs)
+
+
+def gantt_flush_tables(reservations_to_keep_mld_ids):
+    '''Flush gantt tables but keep accepted advance reservations'''
+
+    if reservations_to_keep_mld_ids != []:
+        db.query(GanttJobsPrediction)\
+          .filter(~GanttJobsPrediction.moldable_id.in_( tuple(reservations_to_keep_mld_ids) ))\
+          .delete()
+        db.query(GanttJobsResource)\
+          .filter(~GanttJobsResource.moldable_id.in_( tuple(reservations_to_keep_mld_ids) ))\
+          .delete()
+    else:
+        db.query(GanttJobsPrediction).delete()
+        db.query(GanttJobsResource).delete()
+
+    db.commit()
+

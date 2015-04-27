@@ -12,7 +12,8 @@ from oar.kao.job import (get_current_not_waiting_jobs, get_gantt_jobs_to_launch,
                          set_job_state, get_gantt_waiting_interactive_prediction_date,
                          frag_job, get_waiting_reservation_jobs_specific_queue,
                          set_job_resa_state, set_job_message, update_scheduler_last_job_date,
-                         USE_PLACEHOLDER, SET_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo)
+                         USE_PLACEHOLDER, SET_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
+                         save_assigns)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket, 
                            local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
@@ -25,6 +26,13 @@ max_time = 2147483648 #(* 2**31 *)
 max_time_minus_one = 2147483647 #(* 2**31-1 *)
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300 #TODO conf ???
+
+#TODO take into account
+# timeout for validating reservation
+reservation_validation_timeout = 30;
+
+# waiting time when a reservation has not all of its nodes
+reservation_waiting_timeout = 300;
 
 #Set undefined config value to default one
 default_config = {"DB_PORT": "5432", 
@@ -39,6 +47,9 @@ default_config = {"DB_PORT": "5432",
 for k,v in default_config.iteritems():
     if not k in config:
         config[k] = k
+
+#TODO take into account
+resa_admin_waiting_timeout = conf['RESERVATION_WAITING_RESOURCES_TIMEOUT']
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -65,6 +76,10 @@ def plt_init_with_running_jobs(initial_time_sec):
     #
     resource_set = plt.resource_set()
     initial_slot_set = SlotSet(Slot(1, 0, 0, resource_set.roid_itvs, initial_time_sec, max_time))
+
+    accepted_ar_jids, accedpted_ar_jobs = get_waiting_reservations_already_scheduled(resource_set, job_security_time)
+
+    gantt_flush_tables(alccepted_ar_jids)
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -160,7 +175,6 @@ def plt_init_with_running_jobs(initial_time_sec):
 ###########
 
 # Tell Almighty to run a job
-# sub notify_to_run_job($$){
 def notify_to_run_job(jid):
 
     if not jid in to_launch_jobs_already_treated:
@@ -189,10 +203,10 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
 
     #set start_time an for jobs to launch 
     set_job_start_time_assigned_moldable_id(jid, current_time_sec, moldable_id)
-        
-    #OAR::IO::add_resource_job_pairs($base, $moldable_job_id, $resources_array_ref);
+    
+    #fix resource assignement
     add_resource_job_pairs(moldable_id)
-    #OAR::IO::set_job_state($base, $job_id, "toLaunch");
+
     set_job_state(jid, "toLaunch")
     
     notify_to_run_job(jid)
@@ -216,12 +230,11 @@ def treate_waiting_reservation_jobs(queue_name, current_time_sec):
     #TOFINISH
 
 def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current_time_sec):
+    '''Processing of new reservations'''
+
     log.debug("Queue " + queue_name + ": begin processing of new reservations")
-      
-    
-    #Notes from Perl version
-    # It is a reservation, we take care only of the first moldable job
-    # TODO
+
+    ar_jobs_scheduled = {}
 
     ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(queue_name, 'toSchedule')
     log.debug("nb_ar_jobs:" + str(nb_ar_jobs))
@@ -266,13 +279,9 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             else:
                 itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
 
-
-            #hy_res_rqts = [([('network_address', 1)], [(0, 11)])]
-
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, resource_set.hierarchy)
-
             
-            if (itvs == []):
+            if itvs == []:
                 #not enough resource avalable
                 log.warn("[" + str(job.id) +\
                          "] advance reservation cannot be validated, not enough resources")
@@ -281,19 +290,23 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             else:
                 # The reservation can be scheduled
                 log.debug("[" + str(job.id) + "] advance reservation is validated")
-                
+                job.moldable_id = mld_id
+                job.res_set = itvs
+                ar_jobs_scheduled[job.id] = job
                 #if "container" in job.types:                
                 #    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
                 #                job.start_time + job.walltime - job_security_time)
                     #slot.show()
                 #    slots_sets[job.id] = SlotSet(slot)
 
-                # Update database
-                log.debug("[" + str(job.id) + "]  Add ressource job assignement in database")
-                #TODO ressource assignement ???
                 set_job_state(job.id, "toAckReservation")
 
             set_job_resa_state(job.id, "Scheduled")
+
+
+    if ar_jobs_scheduled != []:
+        log.debug("Save AR jobs' assignements in database")
+        save_assigns(ar_jobs_scheduled, resource_set)
          
     log.debug("Queue " + queue_name +": end processing of new reservations")
     
@@ -333,7 +346,12 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         #TODO start_time ???
         if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
             max_time = jobs_ar[job.id].walltime - (current_time_sec - job.start_time)
-            #TOFINISH
+            #TODO TOFINISH
+            set_moldable_job_max_time
+            set_gantt_job_startTime
+            log.warn("Reduce walltime of job " + str(job.id) +  
+                     "to " + str(max_time) + "(was  " + moldable_walltime + " )")
+
         #if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
         #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
         #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);
@@ -375,10 +393,8 @@ def meta_schedule():
     #delete previous prediction
     #TODO: to move ?
 
-    db.query(GanttJobsPrediction).delete()
-    db.query(GanttJobsResource).delete()
-    db.commit()
-
+    log.debug("Retrieve information for already scheduled reservations from database before flush (keep assign resources)")
+    
     # reservation ??.
     
     initial_time_sec = time.time()
