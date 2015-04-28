@@ -182,6 +182,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     prev_mld_id_walltime = 0
 
     global job
+    job = None
 
     for x in result:
         # remove res_order
@@ -341,6 +342,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
     roids = []
 
     global job
+    job = None
 
     # (job, a, b, c) = req[0]
     if result:
@@ -415,9 +417,9 @@ def get_current_jobs_dependencies(jobs):
     for x in req:
         j_dep, state, exit_code = x
         if j_dep.job_id not in jobs:
-            # These facts have no  particular impact
+            # This fact have no particular impact
             log.warning(" during get dependencies for current job " +
-                        str(job_id) + " is not in waiting state")
+                        str(j_dep.job_id) + " is not in waiting state")
         else:
             jobs[j_dep.job_id].deps.append(
                 (j_dep.job_id_required, state, exit_code))
@@ -874,7 +876,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
         .filter(Job.id == MoldableJobDescription.job_id)\
         .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)\
         .filter(GanttJobsResource.moldable_id == MoldableJobDescription.id)\
-        .all()
+        .order_by(Job.id).all()
 
     first_job = True
     jobs = {}
@@ -884,6 +886,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
     roids = []
 
     global job
+    job = None
 
     for x in result:
         j, start_time, resource_id, walltime, moldable_id = x
@@ -902,12 +905,13 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
             job.start_time = start_time
             job.walltime = walltime + job_security_time
 
-        roids.append(resource_set.rid_i2o[r_id])
+        roids.append(resource_set.rid_i2o[resource_id])
 
     job.res_set = unordered_ids2itvs(roids)
 
     jids.append(job.id)
     jobs[job.id] = job
+
     get_jobs_types(jids, jobs)
 
     return (jids, jobs)
@@ -928,3 +932,41 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
         db.query(GanttJobsResource).delete()
 
     db.commit()
+
+
+def get_jobs_in_multiple_states(states, resource_set):
+
+    result = db.query(Job, AssignedResource.resource_id)\
+               .filter(Job.state.in_(tuple(states)))\
+               .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
+               .order_by(Job.id).all()
+
+    first_job = True
+    jobs = {}
+
+    prev_jid = 0
+    roids = []
+
+    global job
+    job = None
+
+    for x in result:
+        j, resource_id = x
+
+        if j.id != prev_jid:
+            if first_job:
+                first_job = False
+            else:
+                job.res_set = unordered_ids2itvs(roids)
+                jobs[job.id] = job
+                roids = []
+
+            prev_jid = j.id
+            job = j
+
+        roids.append(resource_set.rid_i2o[resource_id])
+
+    job.res_set = unordered_ids2itvs(roids)
+    jobs[job.id] = job
+
+    return jobs

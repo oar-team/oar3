@@ -154,7 +154,6 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     prev_t_finish = 2 ** 32 - 1  # large enough
     prev_res_set = []
     prev_res_rqt = []
-    prev_id_slots = []
 
     slots = slots_set.slots
     prev_start_time = slots[1].b
@@ -215,9 +214,9 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                 # determine endtime
                 if jid_dep in jobs:
                     job_dep = jobs[jid_dep]
-                    job_stop_time = job.start_time + job.walltime
-                    if job_stop_time > min_start_time:
-                        min_start_tim = job_stop_time
+                    job_dep_stop_time = job_dep.start_time + job_dep.walltime
+                    if job_dep_stop_time > min_start_time:
+                        min_start_time = job_dep_stop_time
                 else:
                     # TODO
                     to_skip = True

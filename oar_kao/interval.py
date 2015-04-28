@@ -1,3 +1,6 @@
+from itertools import islice
+
+
 def ordered_ids2itvs(ids):
     itvs = []
     if ids:

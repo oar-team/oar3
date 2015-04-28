@@ -94,8 +94,8 @@ def get_sum_accounting_by_user(queue, window_start, window_stop):
 #
 def karma_jobs_sorting(queue, now, jids, jobs, plt):
 
-    if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
-        fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
+    #if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
+    #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
         # TODO NOT UDSED
         # fairsharing_nb_job_limit = 100000
 
@@ -111,12 +111,6 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
     }
     config.setdefault_config(default_config)
 
-    # defaults values for fairsharing
-    k_proj_targets = "{default => 21.0}"
-    k_user_targets = "{default => 22.0}"
-    k_coeff_proj_consumption = "0"
-    k_coeff_user_consumption = "1"
-    k_karma_coeff_user_asked_consumption = "1"
     # get fairsharing config if any
     karma_proj_targets = perl_hash_2_dict(
         config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])

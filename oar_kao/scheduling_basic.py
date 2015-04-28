@@ -93,10 +93,8 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     prev_t_finish = 2 ** 32 - 1  # large enough
     prev_res_set = []
     prev_res_rqt = []
-    prev_id_slots = []
-
+   
     slots = slots_set.slots
-    cache = slots_set.cache
     prev_start_time = slots[1].b
 
     for res_rqt in job.mld_res_rqts:
@@ -150,5 +148,5 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
         assign_resources_mld_job_split_slots(slots_set, job, hy)
 
         if "container" in job.types:
-            slot = Slot(1, 0, 0, job.res_set, job.start_time,
-                        job.start_time + job.walltime - security_time)
+            Slot(1, 0, 0, job.res_set, job.start_time,
+                 job.start_time + job.walltime - security_time)

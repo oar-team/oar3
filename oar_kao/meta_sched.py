@@ -13,7 +13,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          get_waiting_reservations_already_scheduled,
                          USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
-                         gantt_flush_tables)
+                         get_jobs_in_multiple_state, gantt_flush_tables)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
                            local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
@@ -78,11 +78,18 @@ def plt_init_with_running_jobs(initial_time_sec):
     initial_slot_set = SlotSet(
         Slot(1, 0, 0, resource_set.roid_itvs, initial_time_sec, max_time))
 
-    accepted_ar_jids, accedpted_ar_jobs = \
-        get_waiting_reservations_already_scheduled(resource_set,
-                                                   job_security_time)
-
+    log.debug("Processing of processing of already handled reservations")
+    accepted_ar_jids, accepted_ar_jobs = \
+                                         get_waiting_reservations_already_scheduled(resource_set, job_security_time)
     gantt_flush_tables(accepted_ar_jids)
+
+    log.oar("Processing of current jobs")
+    current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching', 
+                                                'Finishing', 'Suspended', 'Resuming'],
+                                               resource_set)
+
+    
+    save_assigns(current_jobs, resource_set)
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -483,9 +490,19 @@ def meta_schedule():
                 db.query(Queue).filter_by(name=queue.name).update(
                     {"state": "notActive"})
 
+
+            
+            #retrieve scheduling decision 
+
             treate_waiting_reservation_jobs(queue.name, current_time_sec)
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
+
+
+
+
+
+
 
     if check_jobs_to_kill() == 1:
         # We must kill besteffort jobs
