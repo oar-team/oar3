@@ -8,6 +8,7 @@ requirements = [
     'oar-lib',
     'sqlalchemy-utils',
     'tabulate',
+    'click',
 ]
 
 
