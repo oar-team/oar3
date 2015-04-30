@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+import oar.lib
 from flask import url_for, g
 
 from . import Blueprint
@@ -24,6 +25,15 @@ def index():
             'href': url_for('%s.index' % endpoint),
             'title': endpoint,
         })
+
+
+@app.route('/version')
+def version():
+    g.data['oar_server'] = '3.0.0 (Big Blue)'
+    g.data['oar_lib'] = oar.lib.VERSION
+    g.data['oar_scheduler'] = 'Kamelot 0.1.0'
+    g.data['api'] = API_VERSION
+    g.data['api_lib'] = VERSION
 
 
 # @api.route('/resources/details')
