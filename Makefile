@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
 # Internal variables.
+PACKAGE=oar_lib
 # these files should pass flakes8
 FLAKE8_WHITELIST=$(shell find . -name "*.py" \
                     ! -path "./docs/*" ! -path "./.tox/*" \
