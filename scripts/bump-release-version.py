@@ -13,7 +13,7 @@ import subprocess
 
 def generate_changelog_title(version):
     version_title = "Version %s" % version
-    return version_title + "\n" + "=" * len(version_title)
+    return version_title + "\n" + "-" * len(version_title)
 
 
 def get_release_date():
