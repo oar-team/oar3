@@ -4,12 +4,6 @@ from setuptools import setup
 
 here = op.abspath(op.dirname(__file__))
 
-requirements = [
-    'sqlalchemy',
-]
-
-dependency_links = []
-
 
 def read(fname):
     ''' Return the file content. '''
@@ -28,12 +22,12 @@ setup(
     version=get_version(),
     url='https://github.com/oar-team/python-oar-lib',
     packages=['oar', 'oar_lib'],
-    install_requires=requirements,
-    dependency_links=dependency_links,
+    install_requires=[
+        'sqlalchemy',
+    ],
     include_package_data=True,
     zip_safe=False,
-    description='Interact with OAR in Python',
-    long_description=read('README.rst') + '\n\n' + read('CHANGES'),
+    description='OAR common lib.',
     license="GNU GPL v2",
     classifiers=[
         'Development Status :: 1 - Planning',

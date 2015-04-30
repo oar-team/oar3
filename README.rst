@@ -1,8 +1,8 @@
 Python OAR Common Library
--------------------------
+=========================
 
-Configuration
-=============
+Read Configuration
+-------------------
 
 ::
 
@@ -16,8 +16,8 @@ Configuration
     {'default_resources': '/resource_id=1', 'force_job_key': 'no', 'nodes_resources': 'network_address'}
 
 
-Query
-=====
+Query the database
+------------------
 
 ::
 
@@ -53,7 +53,7 @@ Query
 
 
 Logger
-======
+------
 
 Logging from the root logger::
 
