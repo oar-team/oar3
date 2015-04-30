@@ -3,6 +3,7 @@ from __future__ import division
 
 from flask import url_for, g
 from oar.lib import db
+from oar.lib.models import Resource
 from oar.lib.compat import iteritems
 
 from . import Blueprint
@@ -25,10 +26,10 @@ def get_links(resource_id, network_address):
 @app.route('/nodes/<string:network_address>', methods=['GET'])
 @app.args({'offset': int, 'limit': int})
 def index(offset=0, limit=None, network_address=None):
-    query = db.query(db.m.Resource.id,
-                     db.m.Resource.state,
-                     db.m.Resource.available_upto,
-                     db.m.Resource.network_address)
+    query = db.query(Resource.id,
+                     Resource.state,
+                     Resource.available_upto,
+                     Resource.network_address)
     if network_address is not None:
         query = query.filter_by(network_address=network_address)
     page = query.paginate(offset, limit)
@@ -45,11 +46,11 @@ def index(offset=0, limit=None, network_address=None):
 
 @app.route('/<int:resource_id>', methods=['GET'])
 def show(resource_id):
-    resource = db.m.Resource.query.get_or_404(resource_id)
+    resource = Resource.query.get_or_404(resource_id)
     g.data.update(resource.asdict())
     g.data['links'] = list(get_links(resource.id, resource.network_address))
 
 
 @app.route('/<int:resource_id>/jobs', methods=['GET'])
 def jobs(resource_id):
-    g.data.update(db.m.Resource.query.get_or_404(resource_id).asdict())
+    g.data.update(Resource.query.get_or_404(resource_id).asdict())
