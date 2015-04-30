@@ -1,44 +1,73 @@
 
 # Internal variables.
 PACKAGE     = oar_utils
+# these files should pass flakes8
+FLAKE8_WHITELIST=$(shell find . -name "*.py" \
+                    ! -path "./docs/*" ! -path "./.tox/*" \
+                    ! -path "./env/*" ! -path "./venv/*" \
+                    ! -path "**/compat.py")
 
-.PHONY: docs dist
+open := $(shell { which xdg-open || which open; } 2>/dev/null)
+
+.PHONY: dist
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
-	@echo "  init       to install the project in development mode (using virtualenv is highly recommended)"
-	@echo "  test       to run all tests with pytest"
-	@echo "  tox-test   to run all tests in multiples versions of python with tox"
-	@echo "  ci-test    to run all tests and get junitxml report for CI (Travis, Jenkins...)"
-	@echo "  docs       to build the documentation in the HTML format"
-	@echo "  dist       to build python sdist and wheel packages"
-	@echo "  publish    to upload packages to Pypi website"
-	@echo "  flake8     to run flake8 code checker"
+	@echo "  init        to install the project in development mode (using virtualenv is highly recommended)"
+	@echo "  clean       to remove build and Python file (.pyc) artifacts"
+	@echo "  test        to run tests quickly with the default Python"
+	@echo "  testall     to run tests on every Python version with tox"
+	@echo "  ci          to run all tests and get junitxml report for CI (Travis, Jenkins...)"
+	@echo "  coverage    to check code coverage quickly with the default Python"
+	@echo "  lint        to check style with flake8"
+	@echo "  dist        to package"
+	@echo "  release     to package and upload a release"
+	@echo "  bumpversion to bump the release version number"
+	@echo "  newversion  to set the new development version"
 
 init:
 	pip install tox ipdb pytest pytest-cov flake8 sphinx==1.1.3
 
-test:
-	py.test --verbose --cov-report term --cov-report html --cov=$(PACKAGE)
+clean:
+	rm -fr build/
+	rm -fr dist/
+	rm -fr *.egg-info
+	find . -name '*.pyc' -type f -exec rm -f {} +
+	find . -name '*.pyo' -type f -exec rm -f {} +
+	find . -name '*~' -type f -exec rm -f {} +
+	find . -name '__pycache__' -type d -exec rm -rf {} +
 
-tox-test:
+test:
+	py.test --verbose
+
+testall:
 	tox
 
-ci-test:
+ci:
 	py.test --junitxml=junit.xml
 
-docs:
-	$(MAKE) -C docs html
-	@echo "\033[95m\n\nBuild successful! View the docs homepage at docs/_build/html/index.html.\n\033[0m"
+coverage:
+	py.test --verbose --cov-report term --cov-report html --cov=${PACKAGE} || true
+	$(open) htmlcov/index.html
+
+lint:
+	flake8 $(FLAKE8_WHITELIST)
 
 dist:
 	python setup.py sdist
 	python setup.py bdist_wheel
+	ls -l dist
 
-publish:
+release: clean
 	python setup.py register
 	python setup.py sdist upload
 	python setup.py bdist_wheel upload
 
-flake8:
-	flake8 .
+bumpversion:
+	python scripts/bump-release-version.py
+
+newversion:
+	@python scripts/bump-dev-version.py $(filter-out $@,$(MAKECMDGOALS))
+
+%:
+	@:
