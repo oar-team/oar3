@@ -63,8 +63,9 @@ docs:
 	$(MAKE) -C docs html
 	$(open) docs/_build/html/index.html
 
-sdist: clean
+dist: clean
 	python setup.py sdist
+	python setup.py bdist_wheel
 	ls -l dist
 
 release: clean
