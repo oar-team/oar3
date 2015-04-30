@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
 # Internal variables.
+PACKAGE=oar_rest_api
 # these files should pass flakes8
 FLAKE8_WHITELIST=$(shell find . -name "*.py" \
                     ! -path "./docs/*" ! -path "./.tox/*" \
@@ -64,8 +65,9 @@ docs:
 	$(MAKE) -C docs html
 	$(open) docs/_build/html/index.html
 
-sdist: clean
+dist: clean
 	python setup.py sdist
+	python setup.py bdist_wheel
 	ls -l dist
 
 release: clean
