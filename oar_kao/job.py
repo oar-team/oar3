@@ -182,7 +182,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     prev_mld_id_walltime = 0
 
     global job
-    job = None
 
     for x in result:
         # remove res_order
@@ -323,17 +322,7 @@ def get_job_suspended_sum_duration(jid, now):
 
 
 # TODO available_suspended_res_itvs, now
-def get_scheduled_jobs(resource_set, job_security_time, now):
-    result = db.query(Job,
-                      GanttJobsPrediction.start_time,
-                      MoldableJobDescription.walltime,
-                      GanttJobsResource.resource_id)\
-        .filter(MoldableJobDescription.index == 'CURRENT')\
-        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
-        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-        .filter(Job.id == MoldableJobDescription.job_id)\
-        .order_by(Job.start_time, Job.id)\
-        .all()
+def extract_scheduled_jobs(result, resource_set, job_security_time, now):
 
     jids = []
     jobs_lst = []
@@ -342,7 +331,6 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
     roids = []
 
     global job
-    job = None
 
     # (job, a, b, c) = req[0]
     if result:
@@ -381,25 +369,60 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
     return jobs_lst
 
 
+# TODO available_suspended_res_itvs, now
+def get_scheduled_jobs(resource_set, job_security_time, now):
+    result = db.query(Job,
+                      GanttJobsPrediction.start_time,
+                      MoldableJobDescription.walltime,
+                      GanttJobsResource.resource_id)\
+        .filter(MoldableJobDescription.index == 'CURRENT')\
+        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+        .filter(Job.id == MoldableJobDescription.job_id)\
+        .order_by(Job.start_time, Job.id)\
+        .all()
+
+    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
+
+
+def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
+    result = db.query(Job,
+                      GanttJobsPrediction.start_time,
+                      MoldableJobDescription.walltime,
+                      GanttJobsResource.resource_id)\
+        .filter(MoldableJobDescription.index == 'CURRENT')\
+        .filter(Job.queue_name == queue_name)\
+        .filter(Job.reservation == 'None')\
+        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+        .filter(Job.id == MoldableJobDescription.job_id)\
+        .order_by(Job.start_time, Job.id)\
+        .all()
+
+    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
+
+   
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
-    mld_id_start_time_s = []
-    mld_id_rid_s = []
-    for j in jobs.itervalues():
-        mld_id_start_time_s.append(
-            {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
-        riods = itvs2ids(j.res_set)
-        mld_id_rid_s.extend(
-            [{'moldable_job_id': j.moldable_id,
-              'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
+    if len(jobs) > 0: 
+        #log.debug("nb job to save: " + str(len(jobs)))
+        mld_id_start_time_s = []
+        mld_id_rid_s = []
+        for j in jobs.itervalues():
+            mld_id_start_time_s.append(
+                {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
+            riods = itvs2ids(j.res_set)
+            mld_id_rid_s.extend(
+                [{'moldable_job_id': j.moldable_id,
+                  'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
 
-    log.info("save assignements")
+        log.info("save assignements")
 
-    db.engine.execute(
-        GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
-    db.engine.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        db.engine.execute(
+            GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
+        db.engine.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
 
-    db.commit()
+        db.commit()
 
     # INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES
     # INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES
@@ -457,12 +480,12 @@ def get_gantt_jobs_to_launch(current_time_sec):
     #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
     # to reduce overhead
 
-    req = db.query(Job, MoldableJobDescription.id)\
-            .filter(GanttJobsPrediction.start_time <= current_time_sec)\
-            .filter(Job.state == "Waiting")\
-            .filter(Job.id == MoldableJobDescription.job_id)\
-            .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-            .all()
+    result = db.query(Job, MoldableJobDescription.id)\
+               .filter(GanttJobsPrediction.start_time <= current_time_sec)\
+               .filter(Job.state == "Waiting")\
+               .filter(Job.id == MoldableJobDescription.job_id)\
+               .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+               .all()
 
     # TODO: verify
     #    $req = "SELECT DISTINCT(j.job_id)
@@ -475,7 +498,7 @@ def get_gantt_jobs_to_launch(current_time_sec):
     #               AND g2.start_time <= $date
     #               AND j.state = \'Waiting\'
 
-    return req
+    return result
 
 
 def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
@@ -513,7 +536,18 @@ def set_job_state(jid, state):
                           .update({Job.state: state})
     db.commit()
 
-    if result == 1:
+    flag_sqlite = False 
+    if db.dialect == 'sqlite':
+        # sqlite does not have rowcount
+         r = db.query(Job).filter(Job.id == jid)\
+                          .filter(Job.state != 'Error')\
+                          .filter(Job.state != 'Terminated')\
+                          .filter(Job.state != state).all()
+         if r:
+             flag_sqlite = True
+             
+
+    if (result.rowcount == 1) or flag_sqlite:
         log.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
@@ -886,33 +920,32 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
     roids = []
 
     global job
-    job = None
+    if result:
+        for x in result:
+            j, start_time, resource_id, walltime, moldable_id = x
 
-    for x in result:
-        j, start_time, resource_id, walltime, moldable_id = x
+            if j.id != prev_jid:
+                if first_job:
+                    first_job = False
+                else:
+                    job.res_set = unordered_ids2itvs(roids)
+                    jids.append(job.id)
+                    jobs[job.id] = job
+                    roids = []
 
-        if j.id != prev_jid:
-            if first_job:
-                first_job = False
-            else:
-                job.res_set = unordered_ids2itvs(roids)
-                jids.append(job.id)
-                jobs[job.id] = job
-                roids = []
+                prev_jid = j.id
+                job = j
+                job.start_time = start_time
+                job.walltime = walltime + job_security_time
 
-            prev_jid = j.id
-            job = j
-            job.start_time = start_time
-            job.walltime = walltime + job_security_time
+            roids.append(resource_set.rid_i2o[resource_id])
 
-        roids.append(resource_set.rid_i2o[resource_id])
+        job.res_set = unordered_ids2itvs(roids)
+        
+        jids.append(job.id)
+        jobs[job.id] = job
 
-    job.res_set = unordered_ids2itvs(roids)
-
-    jids.append(job.id)
-    jobs[job.id] = job
-
-    get_jobs_types(jids, jobs)
+        get_jobs_types(jids, jobs)
 
     return (jids, jobs)
 
@@ -921,12 +954,13 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
     '''Flush gantt tables but keep accepted advance reservations'''
 
     if reservations_to_keep_mld_ids != []:
+        log.debug("reservations_to_keep_mld_ids[0]: " + str(reservations_to_keep_mld_ids[0]))
         db.query(GanttJobsPrediction)\
           .filter(~GanttJobsPrediction.moldable_id.in_(tuple(reservations_to_keep_mld_ids)))\
-          .delete()
+          .delete(synchronize_session=False)
         db.query(GanttJobsResource)\
           .filter(~GanttJobsResource.moldable_id.in_(tuple(reservations_to_keep_mld_ids)))\
-          .delete()
+          .delete(synchronize_session=False)
     else:
         db.query(GanttJobsPrediction).delete()
         db.query(GanttJobsResource).delete()
@@ -948,25 +982,25 @@ def get_jobs_in_multiple_states(states, resource_set):
     roids = []
 
     global job
-    job = None
 
-    for x in result:
-        j, resource_id = x
+    if result:
+        for x in result:
+            j, resource_id = x
 
-        if j.id != prev_jid:
-            if first_job:
-                first_job = False
-            else:
-                job.res_set = unordered_ids2itvs(roids)
-                jobs[job.id] = job
-                roids = []
+            if j.id != prev_jid:
+                if first_job:
+                    first_job = False
+                else:
+                    job.res_set = unordered_ids2itvs(roids)
+                    jobs[job.id] = job
+                    roids = []
 
-            prev_jid = j.id
-            job = j
+                prev_jid = j.id
+                job = j
 
-        roids.append(resource_set.rid_i2o[resource_id])
+            roids.append(resource_set.rid_i2o[resource_id])
 
-    job.res_set = unordered_ids2itvs(roids)
-    jobs[job.id] = job
+        job.res_set = unordered_ids2itvs(roids)
+        jobs[job.id] = job
 
     return jobs

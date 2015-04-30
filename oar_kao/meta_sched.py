@@ -1,3 +1,4 @@
+import ipdb
 import time
 import os
 import subprocess
@@ -13,7 +14,8 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          get_waiting_reservations_already_scheduled,
                          USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
-                         get_jobs_in_multiple_state, gantt_flush_tables)
+                         get_jobs_in_multiple_states, gantt_flush_tables,
+                         get_scheduled_no_AR_jobs)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
                            local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
@@ -43,6 +45,7 @@ default_config = {
     "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
     "FAIRSHARING_ENABLED": "no",
     "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
+    "RESERVATION_WAITING_RESOURCES_TIMEOUT": "300"
 }
 
 config.setdefault_config(default_config)
@@ -67,9 +70,8 @@ to_launch_jobs_already_treated = {}
 ##########################################################################
 
 
-def plt_init_with_running_jobs(initial_time_sec):
+def plt_init_with_running_jobs(initial_time_sec, job_security_time):
 
-    job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
     plt = Platform()
     #
     # Determine Global Resource Intervals and Initial Slot
@@ -83,12 +85,11 @@ def plt_init_with_running_jobs(initial_time_sec):
                                          get_waiting_reservations_already_scheduled(resource_set, job_security_time)
     gantt_flush_tables(accepted_ar_jids)
 
-    log.oar("Processing of current jobs")
+    log.debug("Processing of current jobs")
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching', 
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
 
-    
     save_assigns(current_jobs, resource_set)
 
     #
@@ -132,53 +133,6 @@ def plt_init_with_running_jobs(initial_time_sec):
     # set  GanttJobsprediction and GanttJobsResource
 
     return (plt, all_slot_sets, resource_set)
-
-
-# First get resources that we must add for each reservation jobs
-# oar_debug("[MetaSched] Resources to automatically add to all reservations: @Resources_to_always_add\n");
-# TODO
-
-# Take care of the currently (or nearly) running jobs
-# Lock to prevent bipbip update in same time
-# OAR::IO::lock_table($base,["jobs","assigned_resources","gantt_jobs_predictions","gantt_jobs_resources","job_types","moldable_job_descriptions","resources","job_state_logs","gantt_jobs_predictions_log","gantt_jobs_resources_log"]);
-
-# calculate now date with no overlap with other jobs
-
-
-# oar_debug("[MetaSched] Retrieve information for already scheduler reservations from database before flush (keep assign resources)\n");
-
-# Init the gantt chart with all resources
-
-# oar_debug("[MetaSched] Begin processing of already handled reservations\n");
-# Add already scheduled reservations into the gantt
-# A container job cannot be placeholder or allowed or timesharing.
-# Fill all other gantts
-
-# oar_debug("[MetaSched] End processing of waiting reservations\n");
-
-# oar_debug("[MetaSched] Begin processing of current jobs\n");
-#
-#
-# oar_debug("[MetaSched] End processing of current jobs\n");
-
-# oar_debug("[MetaSched] Begin processing of accepted reservations which do not have assigned resources yet\n");
-
-# oar_debug("[MetaSched] End processing of accepted reservations which do not have assigned resources yet\n");
-
-##########################################################################
-# End init scheduler                                                                                      #
-##########################################################################
-
-# launch right reservation jobs
-# arg : queue name
-# return 1 if there is at least a job to treate, 2 if besteffort jobs must die
-
-# sub treate_waiting_reservation_jobs($){
-# oar_debug("[MetaSched] Queue $queue_name: begin processing of reservations with missing resources\n");
-# oar_debug("[MetaSched] Queue $queue_name: end processing of reservations with missing resources\n");
-
-
-###########
 
 
 ###########
@@ -415,6 +369,9 @@ def meta_schedule():
 
     exit_code = 0
 
+    job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
+
+
     init_judas_notify_user()
     create_almighty_socket()
 
@@ -433,7 +390,7 @@ def meta_schedule():
     current_time_sql = initial_time_sql
 
     plt, all_slot_sets, resource_set = plt_init_with_running_jobs(
-        initial_time_sec)
+        initial_time_sec, job_security_time)
 
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
@@ -492,15 +449,26 @@ def meta_schedule():
 
 
             
-            #retrieve scheduling decision 
+            #retrieve job and assignement decision from previous scheduling step
+            scheduled_jobs = get_scheduled_no_AR_jobs(queue.name, resource_set, 
+                                                      job_security_time, initial_time_sec)
+
+
+            if scheduled_jobs != []:
+                if queue == "besteffort":
+                    filter_besteffort = False
+                else:
+                    filter_besteffort = True
+                    set_slots_with_prev_scheduled_jobs(all_slot_sets,
+                                                       scheduled_jobs,
+                                                       job_security_time,
+                                                       filter_besteffort)
+
 
             treate_waiting_reservation_jobs(queue.name, current_time_sec)
+
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
-
-
-
-
 
 
 
