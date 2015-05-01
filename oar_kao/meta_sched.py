@@ -192,7 +192,7 @@ def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                                 
     for job in ar_jobs:
 
-        moldable_id = job.mld_id
+        moldable_id = job.moldable_id
         walltime = job.walltime
 
         # Test if AR job is expired and handle it
@@ -265,7 +265,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 "Find resource for Advance Reservation job:" + str(job.id))
 
             # It is a reservation, we take care only of the first moldable job
-            mld_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
+            moldable_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
 
             # test if reservation is too old
             if current_time_sec >= (job.start_time + walltime):
@@ -311,7 +311,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 # The reservation can be scheduled
                 log.debug(
                     "[" + str(job.id) + "] advance reservation is validated")
-                job.moldable_id = mld_id
+                job.moldable_id = moldable_id
                 job.res_set = itvs
                 ar_jobs_scheduled[job.id] = job
                 # if "container" in job.types:
@@ -369,8 +369,8 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
             max_time = walltime - (current_time_sec - job.start_time)
             # TODO TOFINISH
-            set_moldable_job_max_time(job.mld_id, max_time)
-            set_gantt_job_startTime(job.mld_id, current_time_sec)
+            set_moldable_job_max_time(job.moldable_id, max_time)
+            set_gantt_job_startTime(job.moldable_id, current_time_sec)
             log.warn("Reduce walltime of job " + str(job.id) +
                      "to " + str(max_time) + "(was  " + str(walltime) + " )")
 

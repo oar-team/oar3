@@ -117,8 +117,8 @@ def set_jobs_cache_keys(jobs):
     for job_id, job in jobs.iteritems():
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
             for res_rqt in job.mld_res_rqts:
-                (mld_id, walltime, hy_res_rqts) = res_rqt
-                job.key_cache[int(mld_id)] = str(walltime) + str(hy_res_rqts)
+                (moldable_id, walltime, hy_res_rqts) = res_rqt
+                job.key_cache[int(moldable_id)] = str(walltime) + str(hy_res_rqts)
 
 
 def get_data_jobs(jobs, jids, resource_set, job_security_time,
@@ -186,7 +186,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     for x in result:
         # remove res_order
         (j_id, j_properties,
-         mld_id,
+         moldable_id,
          mld_id_walltime,
          jrg_id,
          jrg_mld_id,
@@ -216,7 +216,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                 # print "job_id:",job.id,  job.mld_res_rqts
                 # print "======================"
 
-            prev_mld_id = mld_id
+            prev_mld_id = moldable_id
             prev_j_id = j_id
             job = jobs[j_id]
             if besteffort_duration:
@@ -229,13 +229,13 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
             # new moldable_id
             #
 
-            if mld_id != prev_mld_id:
+            if moldable_id != prev_mld_id:
                 if jrg != []:
                     jrg.append((jr_descriptions, res_constraints))
                     mld_res_rqts.append(
                         (prev_mld_id, prev_mld_id_walltime, jrg))
 
-                prev_mld_id = mld_id
+                prev_mld_id = moldable_id
                 jrg = []
                 jr_descriptions = []
                 if besteffort_duration:
@@ -349,7 +349,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime + job_security_time
-                job.mld_id = moldable_id
+                job.moldable_id = moldable_id
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
                 if job.suspended == "YES":
@@ -426,10 +426,11 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0: 
-        #log.debug("nb job to save: " + str(len(jobs)))
+        log.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in jobs.itervalues():
+            log.debug("first job_id  to save: " + str(j.id))
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
             riods = itvs2ids(j.res_set)
@@ -980,7 +981,7 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
 
 def get_jobs_in_multiple_states(states, resource_set):
 
-    result = db.query(Job, AssignedResource.resource_id)\
+    result = db.query(Job, AssignedResource.moldable_id, AssignedResource.resource_id)\
                .filter(Job.state.in_(tuple(states)))\
                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
                .order_by(Job.id).all()
@@ -995,18 +996,20 @@ def get_jobs_in_multiple_states(states, resource_set):
 
     if result:
         for x in result:
-            j, resource_id = x
+            j, moldable_id, resource_id = x
 
             if j.id != prev_jid:
                 if first_job:
                     first_job = False
                 else:
+
                     job.res_set = unordered_ids2itvs(roids)
                     jobs[job.id] = job
                     roids = []
 
                 prev_jid = j.id
                 job = j
+                job.moldable_id = moldable_id
 
             roids.append(resource_set.rid_i2o[resource_id])
 
