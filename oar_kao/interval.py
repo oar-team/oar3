@@ -71,6 +71,10 @@ def equal_itvs(itvs1, itvs2):
 
     lx = len(itvs1)
     ly = len(itvs2)
+
+    if (lx == 0) and (lx == 0):
+        return True
+
     ix = 0
     iy = 0
     next_x = True

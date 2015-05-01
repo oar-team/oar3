@@ -67,3 +67,6 @@ def test_equal_itvs2():
     x = [(1,10), (11,15), (16,20)]
     y = [(1,10), (11,20)]
     equal_itvs(x,y)
+
+def test_equal_itvs3():
+    equal_itvs([],[])
