@@ -401,6 +401,23 @@ def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
 
     return extract_scheduled_jobs(result, resource_set, job_security_time, now)
 
+def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, now):
+    result = db.query(Job,
+                      GanttJobsPrediction.start_time,
+                      MoldableJobDescription.walltime,
+                      GanttJobsResource.resource_id)\
+        .filter(MoldableJobDescription.index == 'CURRENT')\
+        .filter(Job.queue_name == queue_name)\
+        .filter(Job.reservation == 'Scheduled')\
+        .filter(Job.state == 'Waiting')\
+        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+        .filter(Job.id == MoldableJobDescription.job_id)\
+        .order_by(Job.start_time, Job.id)\
+        .all()
+
+    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
+
    
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
@@ -480,7 +497,7 @@ def get_gantt_jobs_to_launch(current_time_sec):
     #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
     # to reduce overhead
 
-    result = db.query(Job, MoldableJobDescription.id)\
+    result = db.query(Job, MoldableJobDescription.id, MoldableJobDescription.walltime)\
                .filter(GanttJobsPrediction.start_time <= current_time_sec)\
                .filter(Job.state == "Waiting")\
                .filter(Job.id == MoldableJobDescription.job_id)\
@@ -536,18 +553,7 @@ def set_job_state(jid, state):
                           .update({Job.state: state})
     db.commit()
 
-    flag_sqlite = False 
-    if db.dialect == 'sqlite':
-        # sqlite does not have rowcount
-         r = db.query(Job).filter(Job.id == jid)\
-                          .filter(Job.state != 'Error')\
-                          .filter(Job.state != 'Terminated')\
-                          .filter(Job.state != state).all()
-         if r:
-             flag_sqlite = True
-             
-
-    if (result.rowcount == 1) or flag_sqlite:
+    if result == 1:  #OK for sqlite
         log.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
@@ -1004,3 +1010,23 @@ def get_jobs_in_multiple_states(states, resource_set):
         jobs[job.id] = job
 
     return jobs
+
+
+# set walltime for a moldable job
+def set_moldable_job_max_time(moldable_id, walltime):
+
+    db.query(MoldableJobDescription)\
+      .filter(MoldableJobDescription.id == moldable_id)\
+      .update({MoldableJobDescription.walltime: walltime})
+
+    db.commit()
+
+
+# Update start_time in gantt for a specified job
+def set_gantt_job_startTime(moldable_id, current_time_sec):
+
+    db.query(GanttJobsPrediction)\
+      .filter(GanttJobsPrediction.moldable_id == moldable_id)\
+      .update({GanttJobsPrediction.start_time: current_time_sec})
+
+    db.commit()

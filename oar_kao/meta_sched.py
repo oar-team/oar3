@@ -1,7 +1,9 @@
 import ipdb
 import time
 import os
+import re
 import subprocess
+
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
 
@@ -15,7 +17,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
                          get_jobs_in_multiple_states, gantt_flush_tables,
-                         get_scheduled_no_AR_jobs)
+                         get_scheduled_no_AR_jobs, get_waiting_scheduled_AR_jobs)
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
                            local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
@@ -181,19 +183,44 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
 # arg : queue name
 # return 1 if there is at least a job to treate, 2 if besteffort jobs must die
 
-
-def treate_waiting_reservation_jobs(queue_name, current_time_sec):
-    return
+def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time, current_time_sec):
+    
     log.debug("Queue " + queue_name +
-              ": begin processing of reservations with missing resources")
-    for job in get_waiting_reservation_jobs_specific_queue(queue_name):
+              ": begin processing of accepted advance reservations")
 
-        if (current_time_sec > (job.start_time + job.walltime)):
-            log.warn(
-                "[" + str(job.id) + "] set job state to Error: reservation expired and couldn't be started")
+    ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
+                                
+    for job in ar_jobs:
+        # It is a reservation, we use only the first moldable description
+        mld_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
+        # Test if AR job is expired and handle it
+        if (current_time_sec > (job.start_time + walltime)):
+            log.warn("[" + str(job.id) + 
+                     "] set job state to Error: avdance reservation expired and couldn't be started")
             set_job_state(job.id, "Error")
-            set_job_message(
-                job.id, "Reservation expired and couldn't be started.")
+            set_job_message(job.id, "Reservation expired and couldn't be started.")
+        else:
+            
+
+            # Determine current available ressources
+            avail_res = intersec(resource_set.roid_itvs, job.res_set)
+        
+            # Test if the AR job is waiting to be launched due to nodes' unavailabilies 
+            if (avail_res != []) and (job.start_time < current_time_sec):
+                log.warn("[" + str(job.id) + 
+                     "] advance reservation is waiting because no resource is present")
+
+                # Delay launching time
+                set_gantt_job_startTime($base,$moldable->[2],$current_time_sec + 1);
+            elif (job.start_time < current_time_sec):
+                if (job.start_time + reservation_waiting_timeout) > $current_time_sec:
+                    if equal_itvs2ids(avail_res, job.res_set
+                     # we have not the expected than in the query --> wait the specified timeout
+
+        # Some ressouces assigned at acceptation are missing  --> wait the specified timeout
+
+#Check if resources are in Alive state otherwise remove them, the job is going to be launched
+remove_gantt_resource_job
 
     # TOD0
     # log.warn("[" + job.id + "] reservation is waiting because no resource is present")
@@ -317,7 +344,7 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
 
     for job_moldable_id in jobs_to_launch_moldable_id_req:
         return_code = 1
-        job, moldable_id = job_moldable_id
+        job, moldable_id, walltime = job_moldable_id
         log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
         #
@@ -325,19 +352,23 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         #
         # TODO start_time ???
         if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
-            max_time = jobs_ar[job.id].walltime - \
-                (current_time_sec - job.start_time)
+            max_time = walltime - (current_time_sec - job.start_time)
             # TODO TOFINISH
-            set_moldable_job_max_time
-            set_gantt_job_startTime
+            set_moldable_job_max_time(job.mld_id, max_time))
+            set_gantt_job_startTime(job.mld_id, current_time_sec)
             log.warn("Reduce walltime of job " + str(job.id) +
-                     "to " + str(max_time) + "(was  " + moldable_walltime + " )")
+                     "to " + str(max_time) + "(was  " + walltime + " )")
 
-        # if (($job->{reservation} eq "Scheduled") and ($job->{start_time} < $current_time_sec)){
-        #   my $max_time = $mold->{moldable_walltime} - ($current_time_sec - $job->{start_time});
-        #   OAR::IO::set_moldable_job_max_time($base,$jobs_to_launch{$i}->[0], $max_time);
-        #   OAR::IO::set_gantt_job_startTime($base,$jobs_to_launch{$i}->[0],$current_time_sec);
-        #   oar_warn("[MetaSched] Reduce walltime of job $i to $max_time (was  $mold->{moldable_walltime})\n");
+            add_new_event("REDUCE_RESERVATION_WALLTIME", job.id, 
+                          "Change walltime from " + str(walltime) + " to "
+                          + str(max_time))
+                          
+            w_max_time = duration_to_sql(max_time)
+            #TODO
+            #if re.match(s/W\=\d+\:\d+\:\d+/W\=$w/, content) is not None:
+                          
+W\=\d+\:\d+\:\d
+
         #   OAR::IO::add_new_event($base,"REDUCE_RESERVATION_WALLTIME",$i,"Change walltime from $mold->{moldable_walltime} to $max_time");
         #        my $w = OAR::IO::duration_to_sql($max_time);
         #        if ($job->{message} =~ s/W\=\d+\:\d+\:\d+/W\=$w/g){
@@ -375,8 +406,6 @@ def meta_schedule():
     init_judas_notify_user()
     create_almighty_socket()
 
-    # delete previous prediction
-    # TODO: to move ?
 
     log.debug(
         "Retrieve information for already scheduled reservations from database before flush (keep assign resources)")
@@ -447,7 +476,6 @@ def meta_schedule():
                 db.query(Queue).filter_by(name=queue.name).update(
                     {"state": "notActive"})
 
-
             
             #retrieve job and assignement decision from previous scheduling step
             scheduled_jobs = get_scheduled_no_AR_jobs(queue.name, resource_set, 
@@ -465,8 +493,10 @@ def meta_schedule():
                                                        filter_besteffort)
 
 
-            treate_waiting_reservation_jobs(queue.name, current_time_sec)
+            treate_waiting_reservation_jobs(queue.name, resource_set, 
+                                            job_security_time, current_time_sec)
 
+            #handle_new_AR_jobs
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 

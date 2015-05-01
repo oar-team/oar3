@@ -1,5 +1,6 @@
 from oar.kao.interval import (intersec, extract_n_scattered_block_itv,
-                              ordered_ids2itvs, itvs2ids, add_intervals)
+                              ordered_ids2itvs, itvs2ids, add_intervals,
+                              equal_itvs)
 
 
 def test_intersec():
@@ -56,3 +57,13 @@ def test_add_intervals3():
     y = [(1, 10), (15, 20), (22, 24)]
     a = add_intervals(x, y)
     a == r
+
+def test_equal_itvs1():
+    x = [(1,10), (11,15), (16,20)]
+    y = [(1,10), (11,15), (16,20)]
+    equal_itvs(x,y)
+
+def test_equal_itvs2():
+    x = [(1,10), (11,15), (16,20)]
+    y = [(1,10), (11,20)]
+    equal_itvs(x,y)
