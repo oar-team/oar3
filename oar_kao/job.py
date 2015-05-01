@@ -335,7 +335,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
     # (job, a, b, c) = req[0]
     if result:
         for x in result:
-            j, start_time, walltime, r_id = x
+            j, moldable_id, start_time, walltime, r_id = x
             # print x
             if j.id != prev_jid:
                 if prev_jid != 0:
@@ -349,6 +349,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 job = j
                 job.start_time = start_time
                 job.walltime = walltime + job_security_time
+                job.mld_id = moldable_id
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
                 if job.suspended == "YES":
@@ -372,6 +373,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
 # TODO available_suspended_res_itvs, now
 def get_scheduled_jobs(resource_set, job_security_time, now):
     result = db.query(Job,
+                      GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
                       MoldableJobDescription.walltime,
                       GanttJobsResource.resource_id)\
@@ -387,6 +389,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
 
 def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
     result = db.query(Job,
+                      GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
                       MoldableJobDescription.walltime,
                       GanttJobsResource.resource_id)\
@@ -403,6 +406,7 @@ def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
 
 def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, now):
     result = db.query(Job,
+                      GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
                       MoldableJobDescription.walltime,
                       GanttJobsResource.resource_id)\
@@ -1028,5 +1032,18 @@ def set_gantt_job_startTime(moldable_id, current_time_sec):
     db.query(GanttJobsPrediction)\
       .filter(GanttJobsPrediction.moldable_id == moldable_id)\
       .update({GanttJobsPrediction.start_time: current_time_sec})
+
+    db.commit()
+
+
+def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
+
+    riods = itvs2ids(job_res_set)
+    resource_ids = [ resource_set.rid_o2i[rid] for rid in riods ]
+
+    db.query(GanttJobsResource)\
+      .filter(GanttJobsResource.moldable_id == moldable_id)\
+      .filter(~GanttJobsResource.resource_id.in_(tuple(resource_ids)))\
+      .delete(synchronize_session=False)
 
     db.commit()

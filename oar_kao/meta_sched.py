@@ -17,7 +17,10 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
                          get_jobs_in_multiple_states, gantt_flush_tables,
-                         get_scheduled_no_AR_jobs, get_waiting_scheduled_AR_jobs)
+                         get_scheduled_no_AR_jobs, get_waiting_scheduled_AR_jobs,
+                         remove_gantt_resource_job, set_moldable_job_max_time,
+                         set_gantt_job_startTime)
+
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
                            local_to_sql, add_new_event, init_judas_notify_user)
 from oar.kao.platform import Platform
@@ -25,18 +28,17 @@ from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
                                 find_resource_hierarchies_job)
 
+from oar.kao.interval import (intersec, equal_itvs,sub_intervals)
+
 
 max_time = 2147483648  # (* 2**31 *)
 max_time_minus_one = 2147483647  # (* 2**31-1 *)
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
-# TODO take into account
+# TODO : not used, to confirm
 # timeout for validating reservation
-reservation_validation_timeout = 30
-
-# waiting time when a reservation has not all of its nodes
-reservation_waiting_timeout = 300
+#reservation_validation_timeout = 30
 
 # Set undefined config value to default one
 default_config = {
@@ -52,8 +54,8 @@ default_config = {
 
 config.setdefault_config(default_config)
 
-# TODO take into account
-resa_admin_waiting_timeout = config['RESERVATION_WAITING_RESOURCES_TIMEOUT']
+# waiting time when a reservation has not all of its nodes
+reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
 
 config['LOG_FILE'] = '/dev/stdout'
 # Log category
@@ -137,8 +139,6 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     return (plt, all_slot_sets, resource_set)
 
 
-###########
-
 # Tell Almighty to run a job
 def notify_to_run_job(jid):
 
@@ -191,8 +191,10 @@ def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
     ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
                                 
     for job in ar_jobs:
-        # It is a reservation, we use only the first moldable description
-        mld_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
+
+        moldable_id = job.mld_id
+        walltime = job.walltime
+
         # Test if AR job is expired and handle it
         if (current_time_sec > (job.start_time + walltime)):
             log.warn("[" + str(job.id) + 
@@ -200,32 +202,45 @@ def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
             set_job_state(job.id, "Error")
             set_job_message(job.id, "Reservation expired and couldn't be started.")
         else:
-            
 
             # Determine current available ressources
             avail_res = intersec(resource_set.roid_itvs, job.res_set)
         
-            # Test if the AR job is waiting to be launched due to nodes' unavailabilies 
-            if (avail_res != []) and (job.start_time < current_time_sec):
+            # Test if the AR job is waiting to be launched due to nodes' unavailabilities 
+            if (avail_res == []) and (job.start_time < current_time_sec):
                 log.warn("[" + str(job.id) + 
                      "] advance reservation is waiting because no resource is present")
 
                 # Delay launching time
-                set_gantt_job_startTime($base,$moldable->[2],$current_time_sec + 1);
+                set_gantt_job_startTime(moldable_id, current_time_sec + 1);
             elif (job.start_time < current_time_sec):
-                if (job.start_time + reservation_waiting_timeout) > $current_time_sec:
-                    if equal_itvs2ids(avail_res, job.res_set
-                     # we have not the expected than in the query --> wait the specified timeout
+                if (job.start_time + reservation_waiting_timeout) > current_time_sec:
+                    if not equal_itvs(avail_res, job.res_set):
+                        # The expected ressources are not all available, 
+                        # wait the specified timeout
+                        log.warn("[" + str(job.id) +
+                                 "] advance reservation is waiting because not all \
+                                  resources are available yet")
+                        set_gantt_job_startTime(moldable_id, current_time_sec + 1)
+                else:
+                    #It's time to launch the AR job, remove missing ressources
+                    missing_resources_itvs = sub_intervals(job.res_set, avail_res)
+                    remove_gantt_resource_job(moldable_id, missing_resources_itvs,
+                                              resource_set)
+                    log.warn("[" + str(job.id) + 
+                             "remove some resources assigned to this advance reservation, \
+                              because there are not Alive")
+                            
+                    add_new_event("SCHEDULER_REDUCE_NB_RESSOURCES_FOR_ADVANCE_RESERVATION", 
+                                  job.id, 
+                                  "[MetaSched] Reduce the number of resources for the job "
+                                  + str(job.id))
+                    #TODO 
+                    #if ($job->{message} =~ s/R\=\d+/R\=$n/g) {
+                    #set_job_message($base,$job->{job_id},$job->{message});
 
-        # Some ressouces assigned at acceptation are missing  --> wait the specified timeout
-
-#Check if resources are in Alive state otherwise remove them, the job is going to be launched
-remove_gantt_resource_job
-
-    # TOD0
-    # log.warn("[" + job.id + "] reservation is waiting because no resource is present")
-
-    # TOFINISH
+    log.debug("Queue " + queue_name +
+              ": end processing of reservations with missing resources")
 
 
 def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current_time_sec):
@@ -354,20 +369,18 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
         if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
             max_time = walltime - (current_time_sec - job.start_time)
             # TODO TOFINISH
-            set_moldable_job_max_time(job.mld_id, max_time))
+            set_moldable_job_max_time(job.mld_id, max_time)
             set_gantt_job_startTime(job.mld_id, current_time_sec)
             log.warn("Reduce walltime of job " + str(job.id) +
-                     "to " + str(max_time) + "(was  " + walltime + " )")
+                     "to " + str(max_time) + "(was  " + str(walltime) + " )")
 
             add_new_event("REDUCE_RESERVATION_WALLTIME", job.id, 
                           "Change walltime from " + str(walltime) + " to "
                           + str(max_time))
-                          
-            w_max_time = duration_to_sql(max_time)
-            #TODO
+            #TODO             
+            #w_max_time = duration_to_sql(max_time)
             #if re.match(s/W\=\d+\:\d+\:\d+/W\=$w/, content) is not None:
-                          
-W\=\d+\:\d+\:\d
+            #W\=\d+\:\d+\:\d
 
         #   OAR::IO::add_new_event($base,"REDUCE_RESERVATION_WALLTIME",$i,"Change walltime from $mold->{moldable_walltime} to $max_time");
         #        my $w = OAR::IO::duration_to_sql($max_time);
