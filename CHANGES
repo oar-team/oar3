@@ -1,10 +1,12 @@
 OAR utils changelog
 ===================
 
-Version 0.1.1.dev0
-------------------
+Version 0.1.1
+-------------
 
-**unreleased**
+Released on May 04th 2015
+
+- Fixed pypi package
 
 Version 0.1.0
 -------------
