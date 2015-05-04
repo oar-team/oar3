@@ -1,6 +1,6 @@
 import re
 import os.path as op
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = op.abspath(op.dirname(__file__))
 
@@ -29,7 +29,7 @@ setup(
     author_email='salem.harrache@inria.fr',
     version=get_version(),
     url='https://github.com/oar-team/python-oar-utils',
-    packages=['oar_utils'],
+    packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
