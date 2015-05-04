@@ -15,10 +15,10 @@ def search_idle_nodes(date):
                .group_by(Resource.network_address)\
                .all()
 
-    nodes_occupied = {}
+    busy_nodes = {}
     for network_address in result:
         if network_address not in nodes_occupied:
-            nodes_occupied[network_address] = True
+            busy_nodes[network_address] = True
 
     result = db.query(Resource.network_address,
                       func.max(Resource.last_job_date))\
@@ -33,7 +33,7 @@ def search_idle_nodes(date):
     idle_nodes = {}
     for x in result:
         network_address, last_job_date = x
-        if network_address not in nodes_occupied:
+        if network_address not in busy_nodes:
             idle_nodes[network_address] = last_job_date
 
     return idle_nodes

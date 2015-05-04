@@ -102,16 +102,67 @@ def get_date():
 # parameters : date integer
 # return value : date string
 # side effects : /
+
+
 def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
 
 
+# hms_to_sql
+# converts a date specified in hours, minutes, secondes values to the format
+# used by the sql database
+# parameters : hours, minutes, secondes
+# return value : date string
+# side effects : /
+
+
+def hms_to_sql(hour, min, sec):
+
+    return  str(hour) + ":" + str(min) + ":" + str(sec)
+
+
+
+# duration_to_hms
+# converts a date specified as a duration in seconds to hours, minutes,
+# secondes values
+# parameters : duration
+# return value : hours, minutes, secondes
+# side effects : /
+
+
+def duration_to_hms(t):
+
+    sec = t % 60
+    t /= 60
+    min = t % 60 
+    hour  = int(t / 60)
+
+    return (hour, min , sec)
+
+
+
+# duration_to_sql
+# converts a date specified as a duration in seconds to the format used by the
+# sql database
+# parameters : duration
+# return value : date string
+# side effects : /
+def duration_to_sql(t):
+
+    hour, min, sec = duration_to_hms(t)
+
+    return hms_to_sql( hour, min, sec)
+
+
 # update_current_scheduler_priority
 # Update the scheduler_priority field of the table resources
+
+
 def update_current_scheduler_priority(job, value, state):
     log.info("update_current_scheduler_priority not yet implemented !!!!" +
              " job.id: " + str(job.id) + ", state: " + state + ", value: "
              + str(value))
+
 # code from IO.pm update_current_scheduler_priority
 #
 #     my $dbh = shift;

@@ -351,3 +351,10 @@ def intersec(itvs1, itvs2):
                         i += 1
 
     return itvs
+
+
+def itvs_size(itvs):
+    size = 0
+    for itv in itvs:
+        size += itv[1] - itv[0] + 1
+    return size

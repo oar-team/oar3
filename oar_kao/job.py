@@ -1050,3 +1050,27 @@ def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
       .delete(synchronize_session=False)
 
     db.commit()
+
+
+def get_gantt_resources_for_jobs_to_launch(current_time_sec, resource_set):
+
+    result = db.query(GanttJobsResource.id, Job.id)\
+               .filter(MoldableJobDescription.index == 'CURRENT')\
+               .filter(GanttJobsResource.moldable_id == MoldableJobDescription.id)\
+               .filter(MoldableJobDescription.job_id == Job.id)\
+               .filter(GanttJobsPrediction.start_time <= current_time_sec)\
+               .filter(Job.state == 'Waiting')
+
+    rids_for_jobs_to_launch = {}
+
+    for x in result:
+        rid, job_id = x
+        #TODO TOVERIFY
+        rids_for_jobs_to_launch[resouces_set.rid_i2o[rid]] = job_id
+ 
+    return rids_for_jobs_to_launch
+
+
+def is_timesharing_for_2_jobs(job_id, be_job_id):
+    #TODO
+    return False

@@ -22,13 +22,15 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          set_gantt_job_startTime)
 
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
-                           local_to_sql, add_new_event, init_judas_notify_user)
+                           local_to_sql, add_new_event, init_judas_notify_user,
+                           duration_to_sql)
+
 from oar.kao.platform import Platform
 from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
                                 find_resource_hierarchies_job)
 
-from oar.kao.interval import (intersec, equal_itvs,sub_intervals)
+from oar.kao.interval import (intersec, equal_itvs,sub_intervals, itvs2ids, itvs_size)
 
 
 max_time = 2147483648  # (* 2**31 *)
@@ -93,7 +95,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching', 
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
-
+    
     save_assigns(current_jobs, resource_set)
 
     #
@@ -122,21 +124,23 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     # SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE
     scheduled_jobs = plt.get_scheduled_jobs(
         resource_set, job_security_time, initial_time_sec)
+
+
+    # retrieve ressources used by besteffort jobs
+    besteffort_rid2job = {}
+    for job in scheduled_jobs:
+        if 'besteffort' in job.types:
+             for r_id in itvs2ids(job.res_set):
+                 besteffort_rid2job[r_id] = job
+
+    # Create and fill gantt
     all_slot_sets = {0: initial_slot_set}
     if scheduled_jobs != []:
         filter_besteffort = True
         set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
                                            job_security_time, filter_besteffort)
 
-    # get ressources
-    # get running jobs exclude BE jobs
-    # get sheduled AR jobs
-    # remove resources if there are missing for scheduled AR jobs,
-    # fill slots
-    # delete GanttJobsprediction and GanttJobsResource
-    # set  GanttJobsprediction and GanttJobsResource
-
-    return (plt, all_slot_sets, resource_set)
+    return (plt, all_slot_sets, resource_set, besteffort_rid2job)
 
 
 # Tell Almighty to run a job
@@ -235,9 +239,11 @@ def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                                   job.id, 
                                   "[MetaSched] Reduce the number of resources for the job "
                                   + str(job.id))
-                    #TODO 
-                    #if ($job->{message} =~ s/R\=\d+/R\=$n/g) {
-                    #set_job_message($base,$job->{job_id},$job->{message});
+
+                    nb_res = itvs_size(job.res_set) - itvs_size(missing_resources_itvs)
+                    new_message = re.sub(r'R=\d+','R=' + str(nb_res), job.message)
+                    if new_message != job.message:
+                        set_job_message(job.id,new_message)
 
     log.debug("Queue " + queue_name +
               ": end processing of reservations with missing resources")
@@ -331,18 +337,37 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
     log.debug("Queue " + queue_name + ": end processing of new reservations")
 
 
-def check_jobs_to_kill():
-
+def check_besteffort_jobs_to_kill(current_time_sec, besteffort_rid2job, resource_set):
+    return 0
     # Detect if there are besteffort jobs to kill
     # return 1 if there is at least 1 job to frag otherwise 0
 
-    log.debug("Begin precessing of besteffort jobs to kill")
-    # my %nodes_for_jobs_to_launch;
+    log.debug("Begin processing of besteffort jobs to kill")
+    ressouces_jobs_to_launch = get_gantt_resources_jobs_to_launch(current_time_sec, resource_set)
+    
+    fragged_jobs = []
+# my %nodes_for_jobs_to_launch;
     # if (defined $redis) {
     #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch_redis($base,$redis,$current_time_sec);
     # }else{
     #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch($base,$current_time_sec);
     # }
+
+    for rid, job_id in ressouces_jobs_to_launch.iteritems():
+        if rid in besteffort_rid2job:
+            be_job = besteffort_rid2job[rid]
+            if is_timesharing_for_2_jobs(job_id, be_job.id):
+                log.debug("Resource " + str(rid) +
+                          " is needed for  job " + str(job_id) +
+                          ", but besteffort job  " + str(be_job.id) +
+                          " can live, because timesharing compatible")
+            else:
+                if be_job.id not in fragged_jobs:
+                    skip_kill = 0;
+                    # Check if we must checkpoint the besteffort job
+                    if be_job.checkpoint > 0:
+                        pass
+
 
     log.debug("End precessing of besteffort jobs to kill\n")
     return 0
@@ -377,17 +402,12 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
             add_new_event("REDUCE_RESERVATION_WALLTIME", job.id, 
                           "Change walltime from " + str(walltime) + " to "
                           + str(max_time))
-            #TODO             
-            #w_max_time = duration_to_sql(max_time)
-            #if re.match(s/W\=\d+\:\d+\:\d+/W\=$w/, content) is not None:
-            #W\=\d+\:\d+\:\d
 
-        #   OAR::IO::add_new_event($base,"REDUCE_RESERVATION_WALLTIME",$i,"Change walltime from $mold->{moldable_walltime} to $max_time");
-        #        my $w = OAR::IO::duration_to_sql($max_time);
-        #        if ($job->{message} =~ s/W\=\d+\:\d+\:\d+/W\=$w/g){
-        #            OAR::IO::set_job_message($base,$i,$job->{message});
-        #        }
-        #    }
+            w_max_time = duration_to_sql(max_time)
+            new_message = re.sub(r'W=\d+:\d+:\d+','W=' + w_max_time, job.message)
+
+            if new_message != job.message:
+                set_job_message(job.id,new_message)
 
         prepare_job_to_be_launched(job, moldable_id, current_time_sec)
 
@@ -431,7 +451,7 @@ def meta_schedule():
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt, all_slot_sets, resource_set = plt_init_with_running_jobs(
+    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(
         initial_time_sec, job_security_time)
 
     if "OARDIR" in os.environ:
@@ -515,8 +535,8 @@ def meta_schedule():
 
 
 
-    if check_jobs_to_kill() == 1:
-        # We must kill besteffort jobs
+    if check_besteffort_jobs_to_kill(current_time_sec, besteffort_rid2jid, resource_set) == 1:
+        # We must kill some besteffort jobs
         notify_almighty("ChState")
         exit_code = 2
     elif check_jobs_to_launch(current_time_sec, current_time_sql) == 1:
