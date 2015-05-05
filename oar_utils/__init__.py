@@ -6,5 +6,5 @@
     Custom scripts and various utility functions for OAR
 
 """
-__version__ = '0.1.2.dev0'
+__version__ = '0.1.2'
 VERSION = __version__
