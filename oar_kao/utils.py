@@ -228,8 +228,22 @@ def update_scheduler_last_job_date(date, moldable_id):
 
 # add a new entry in event_log table
 # args : database ref, event type, job_id , description
-def add_new_event(type, jid, description):
+def add_new_event(type, job_id, description):
     event_data = EventLog(
-        type=type, job_id=jid, date=get_date(), description=description[:255])
+        type=type, job_id=job_id, date=get_date(), description=description[:255])
     db.add(event_data)
     db.commit()
+
+def get_job_events(job_id):
+    '''Get events for the specified job
+    '''
+
+    result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
+    
+    return result
+
+
+def send_checkpoint_signal(job):
+    log.debug("Send checkpoint signal to the job " + str(be_job.id))
+    log.warn("Send checkpoint signal NOT YET IMPLEMENTED " )
+    #Have a look to  check_jobs_to_kill/oar_meta_sched.pl

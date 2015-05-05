@@ -23,7 +23,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
 
 from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
                            local_to_sql, add_new_event, init_judas_notify_user,
-                           duration_to_sql)
+                           duration_to_sql, get_job_events, send_checkpoint_signal)
 
 from oar.kao.platform import Platform
 from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
@@ -161,8 +161,7 @@ def notify_to_run_job(jid):
 # Prepare a job to be run by bipbip
 
 
-def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
-    jid = job.id
+def prepare_job_to_be_launched(job, current_time_sec):
 
     # TODO ???
     # my $running_date = $current_time_sec;
@@ -174,20 +173,22 @@ def prepare_job_to_be_launched(job, moldable_id, current_time_sec):
     # OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
 
     # set start_time an for jobs to launch
-    set_job_start_time_assigned_moldable_id(jid, current_time_sec, moldable_id)
+    set_job_start_time_assigned_moldable_id(job.id, 
+                                            current_time_sec, 
+                                            job.moldable_id)
 
     # fix resource assignement
-    add_resource_job_pairs(moldable_id)
+    add_resource_job_pairs(job.moldable_id)
 
-    set_job_state(jid, "toLaunch")
+    set_job_state(job.id, "toLaunch")
 
-    notify_to_run_job(jid)
+    notify_to_run_job(job.id)
 
 # launch right reservation jobs
 # arg : queue name
 # return 1 if there is at least a job to treate, 2 if besteffort jobs must die
 
-def treate_waiting_reservation_jobs(queue_name, resource_set, job_security_time, current_time_sec):
+def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time, current_time_sec):
     
     log.debug("Queue " + queue_name +
               ": begin processing of accepted advance reservations")
@@ -337,26 +338,25 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
     log.debug("Queue " + queue_name + ": end processing of new reservations")
 
 
-def check_besteffort_jobs_to_kill(current_time_sec, besteffort_rid2job, resource_set):
-    return 0
-    # Detect if there are besteffort jobs to kill
-    # return 1 if there is at least 1 job to frag otherwise 0
+def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time_sec, 
+                                  besteffort_rid2job, resource_set):
+    
+    '''Detect if there are besteffort jobs to kill
+    return 1 if there is at least 1 job to frag otherwise 0
+    '''
+
+    return_code = 0
 
     log.debug("Begin processing of besteffort jobs to kill")
-    ressouces_jobs_to_launch = get_gantt_resources_jobs_to_launch(current_time_sec, resource_set)
     
     fragged_jobs = []
-# my %nodes_for_jobs_to_launch;
-    # if (defined $redis) {
-    #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch_redis($base,$redis,$current_time_sec);
-    # }else{
-    #    %nodes_for_jobs_to_launch = OAR::IO::get_gantt_resources_for_jobs_to_launch($base,$current_time_sec);
-    # }
 
-    for rid, job_id in ressouces_jobs_to_launch.iteritems():
+    for rid, job_id in rid2jid_to_launch.iteritems():
         if rid in besteffort_rid2job:
             be_job = besteffort_rid2job[rid]
-            if is_timesharing_for_2_jobs(job_id, be_job.id):
+            job_toLaunch = jobs_to_launch[job_id] 
+
+            if is_timesharing_for_2_jobs(be_job, job_toLaunch):
                 log.debug("Resource " + str(rid) +
                           " is needed for  job " + str(job_id) +
                           ", but besteffort job  " + str(be_job.id) +
@@ -364,36 +364,56 @@ def check_besteffort_jobs_to_kill(current_time_sec, besteffort_rid2job, resource
             else:
                 if be_job.id not in fragged_jobs:
                     skip_kill = 0;
+                    checkpoint_first_date = sys.maxsize
                     # Check if we must checkpoint the besteffort job
                     if be_job.checkpoint > 0:
-                        pass
+                        for ev in get_job_events(be_job.id):
+                            if ev.type == 'CHECKPOINT':
+                                if checkpoint_first_date > ev.date:
+                                     checkpoint_first_date = ev.date
+                    if (checkpoint_first_date == sys.maxsize) or\
+                       (current_time_sec <= (checkpoint_first_date + be_job.checkpoint)):
+                        skip_kill = 1
+                        send_checkpoint_signal(be_job)
+
+                        log.debug("Send checkpoint signal to the job " + str(be_job.id))
+                        
+                    if skip_kill == 0:
+
+                        log.debug("Resource " + str(rid) + 
+                                  "need to be freed for job " + str(be_job.id) + 
+                                  ": killing besteffort job " + str(job_toLaunch.id))
+
+                        add_new_event("BESTEFFORT_KILL",be_job.id,
+                                      "kill the besteffort job " + str(be_job.id))
+                        frag_job(be_job_id)
+                        
+                    fragged_jobs[be_job.id] = 1
+                    return_code = 1
+
 
 
     log.debug("End precessing of besteffort jobs to kill\n")
-    return 0
+
+    return return_code
 
 
-def check_jobs_to_launch(current_time_sec, current_time_sql):
+def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
     log.debug(
         "Begin processing of jobs to launch (start time <= " + current_time_sql)
 
     return_code = 0
-    # TODO
-    # job to launch
-    jobs_to_launch_moldable_id_req = get_gantt_jobs_to_launch(current_time_sec)
-
-    for job_moldable_id in jobs_to_launch_moldable_id_req:
+    
+    for job in jobs_to_launch:
         return_code = 1
-        job, moldable_id, walltime = job_moldable_id
         log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
         #
         # Advance Reservation
         #
-        # TODO start_time ???
         if ((job.reservation == "Scheduled") and (job.start_time < current_time_sec)):
             max_time = walltime - (current_time_sec - job.start_time)
-            # TODO TOFINISH
+         
             set_moldable_job_max_time(job.moldable_id, max_time)
             set_gantt_job_startTime(job.moldable_id, current_time_sec)
             log.warn("Reduce walltime of job " + str(job.id) +
@@ -409,7 +429,7 @@ def check_jobs_to_launch(current_time_sec, current_time_sql):
             if new_message != job.message:
                 set_job_message(job.id,new_message)
 
-        prepare_job_to_be_launched(job, moldable_id, current_time_sec)
+        prepare_job_to_be_launched(job, current_time_sec)
 
     log.debug("End processing of jobs to launch")
 
@@ -526,7 +546,7 @@ def meta_schedule():
                                                        filter_besteffort)
 
 
-            treate_waiting_reservation_jobs(queue.name, resource_set, 
+            handle_waiting_reservation_jobs(queue.name, resource_set, 
                                             job_security_time, current_time_sec)
 
             #handle_new_AR_jobs
@@ -534,12 +554,17 @@ def meta_schedule():
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
 
+            jobs_toL, rid2jid_toL = get_gantt_jobs_to_launch(resource_set, 
+                                                             job_security_time, 
+                                                             current_time_sec)
 
-    if check_besteffort_jobs_to_kill(current_time_sec, besteffort_rid2jid, resource_set) == 1:
+    if check_besteffort_jobs_to_kill(jobs_toL, rid2jid_toL,
+                                     current_time_sec, besteffort_rid2jid, 
+                                     resource_set) == 1:
         # We must kill some besteffort jobs
         notify_almighty("ChState")
         exit_code = 2
-    elif check_jobs_to_launch(current_time_sec, current_time_sql) == 1:
+    elif handle_jobs_to_launch(jobs_toL, current_time_sec, current_time_sql) == 1:
         exit_code = 0
 
     # Update visu gantt tables
@@ -565,7 +590,7 @@ def meta_schedule():
                           new_start_prediction + " (" + job_message + ")")
 
     # Run the decisions
-    # Treate "toError" jobs
+    # Process "toError" jobs
     if "toError" in jobs_by_state:
         for job in jobs_by_state["toError"]:
             addr, port = job.info_type.split(':')
@@ -582,7 +607,7 @@ def meta_schedule():
             log.debug("Set job " + str(job.id) + " to state Error")
             set_job_state(job.id, "Error")
 
-    # Treate toAckReservation jobs
+    # Process toAckReservation jobs
     if "toAckReservation" in jobs_by_state:
         for job in jobs_by_state["toAckReservation"]:
             addr, port = job.info_type.split(':')
@@ -611,7 +636,7 @@ def meta_schedule():
                 if ((job.start_time - 1) <= current_time_sec) and (exit_code == 0):
                     exit_code = 1
 
-    # Treate toLaunch jobs
+    # Process toLaunch jobs
     if "toLaunch" in jobs_by_state:
         for job in jobs_by_state["toLaunch"]:
             notify_to_run_job(job.id)

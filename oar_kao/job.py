@@ -329,6 +329,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
     jobs = {}
     prev_jid = 0
     roids = []
+    rid2jid = {}
 
     global job
 
@@ -355,7 +356,9 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 if job.suspended == "YES":
                     job.walltime += get_job_suspended_sum_duration(job.id, now)
 
-            roids.append(resource_set.rid_i2o[r_id])
+            roid = resource_set.rid_i2o[r_id]
+            roids.append(roid)
+            rid2jid[roid] = j.id
 
         job.res_set = unordered_ids2itvs(roids)
         if job.state == "Suspended":
@@ -367,7 +370,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
         jobs[job.id] = job
         get_jobs_types(jids, jobs)
 
-    return jobs_lst
+    return (jobs, jobs_lst, jids, rid2jid)
 
 
 # TODO available_suspended_res_itvs, now
@@ -384,8 +387,12 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
 
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+                                                           job_security_time, now)
+
+    return jobs_lst
+    
 
 def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
     result = db.query(Job,
@@ -402,7 +409,11 @@ def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+                                                           job_security_time, now)
+
+    return jobs_lst
+
 
 def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, now):
     result = db.query(Job,
@@ -420,8 +431,29 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    return extract_scheduled_jobs(result, resource_set, job_security_time, now)
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+                                                           job_security_time, now)
 
+    return jobs_lst
+
+
+def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
+    result = db.query(Job, 
+                      GanttJobsPrediction.moldable_id,
+                      GanttJobsPrediction.start_time,
+                      MoldableJobDescription.walltime,
+                      GanttJobsResource.resource_id)\
+               .filter(GanttJobsPrediction.start_time <= now)\
+               .filter(Job.state == "Waiting")\
+               .filter(Job.id == MoldableJobDescription.job_id)\
+               .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+               .all()
+
+
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+                                                           job_security_time, now)
+
+    return (jobs, rid2jid)
    
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
@@ -469,23 +501,6 @@ def get_current_jobs_dependencies(jobs):
             jobs[j_dep.job_id].deps.append(
                 (j_dep.job_id_required, state, exit_code))
 
-# TO REMOVE ?
-# TODO
-
-
-def get_current_not_waiting_jobs_old():
-    jobs = db.query(Job).filter(Job.state != "Waiting").all()
-    current_not_waiting_jobs = {}
-    jobids_by_state = {}
-    for job in jobs:
-        current_not_waiting_jobs[job.id] = job
-        if job.state not in jobids_by_state:
-            jobids_by_state[job.state] = []
-        jobids_by_state[job.state].append[job.id]
-
-    return (jobids_by_state, current_not_waiting_jobs)
-
-
 def get_current_not_waiting_jobs():
     jobs = db.query(Job).filter(Job.state != "Waiting").all()
     jobs_by_state = {}
@@ -496,31 +511,6 @@ def get_current_not_waiting_jobs():
     return (jobs_by_state)
 
 
-def get_gantt_jobs_to_launch(current_time_sec):
-    # NOTE1 does not use  m.moldable_index = \'CURRENT\' impacts Pg's performance
-    # NOTE2 does not use   AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
-    #                    OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
-    # to reduce overhead
-
-    result = db.query(Job, MoldableJobDescription.id, MoldableJobDescription.walltime)\
-               .filter(GanttJobsPrediction.start_time <= current_time_sec)\
-               .filter(Job.state == "Waiting")\
-               .filter(Job.id == MoldableJobDescription.job_id)\
-               .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-               .all()
-
-    # TODO: verify
-    #    $req = "SELECT DISTINCT(j.job_id)
-    #            FROM gantt_jobs_resources g1, gantt_jobs_predictions g2,
-    #                 jobs j, moldable_job_descriptions m, resources
-    #            WHERE
-    #               g1.moldable_job_id = g2.moldable_job_id
-    #               AND m.moldable_id = g1.moldable_job_id
-    #               AND j.job_id = m.moldable_job_id
-    #               AND g2.start_time <= $date
-    #               AND j.state = \'Waiting\'
-
-    return result
 
 
 def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
@@ -831,6 +821,8 @@ def get_job(job_id):
         return None
     else:
         return job
+
+
 # frag_job
 # sets the flag 'ToFrag' of a job to 'Yes'
 # parameters : base, jobid
@@ -1052,25 +1044,23 @@ def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
     db.commit()
 
 
-def get_gantt_resources_for_jobs_to_launch(current_time_sec, resource_set):
+def  is_timesharing_for_2_jobs(j1,j2):
+    if  ('timesharing' in j1.types) and ('timesharing' in j2.types):
+        t1 = j1.types['timesharing'] 
+        t2 = j2.types['timesharing']
+        
+        if (t1 == '*,*') and (t2 == '*,*'):
+            return True
 
-    result = db.query(GanttJobsResource.id, Job.id)\
-               .filter(MoldableJobDescription.index == 'CURRENT')\
-               .filter(GanttJobsResource.moldable_id == MoldableJobDescription.id)\
-               .filter(MoldableJobDescription.job_id == Job.id)\
-               .filter(GanttJobsPrediction.start_time <= current_time_sec)\
-               .filter(Job.state == 'Waiting')
+        if (j1.user == j2.user) and  (j1.name == j2.name):
+            return True
 
-    rids_for_jobs_to_launch = {}
+        if  (j1.user == j2.user) and  (t1 == 'user,*') and (t2 == 'user,*'):
+            return True
 
-    for x in result:
-        rid, job_id = x
-        #TODO TOVERIFY
-        rids_for_jobs_to_launch[resouces_set.rid_i2o[rid]] = job_id
- 
-    return rids_for_jobs_to_launch
+        if  (j1.name == j2.name) and  (t1 == '*,name') and (t1 == '*,name'):
+            return True
 
-
-def is_timesharing_for_2_jobs(job_id, be_job_id):
-    #TODO
     return False
+
+
