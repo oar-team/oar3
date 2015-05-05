@@ -63,6 +63,8 @@ class Context(object):
         criteria = []
         exclude = []
         include = []
+        if "all" in self.ignore_resources:
+            return
         for raw_state in self.ignore_resources:
             if raw_state.startswith("^"):
                 exclude.append(raw_state.lstrip("^"))
@@ -123,6 +125,8 @@ class Context(object):
 
     @cached_property
     def resources_to_purge(self):
+        if self.ignored_resources_criteria is None:
+            return []
         assigned_model = self.current_models["AssignedResource"]
         resource_model = self.current_models["Resource"]
         max_moldable = self.max_moldable_job_to_sync
