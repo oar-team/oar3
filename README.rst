@@ -3,11 +3,39 @@ Python OAR Utils
 
 Custom scripts and various utility functions for OAR.
 
+
+Installation
+------------
+
+Requirements:
+  - python >= 2.7
+  - python-mysqldb/python-psycopg2 (for oar database archive)
+
+You can install, upgrade, uninstall oar-utils with these commands::
+
+  $ pip install [--user] oar-utils
+  $ pip install [--user] --upgrade oar-utils
+  $ pip uninstall oar-utils
+
+Or from git (last development version)::
+
+  $ pip install git+https://github.com/oar-team/python-oar-utils.git
+
+Or if you already pulled the sources::
+
+  $ pip install path/to/sources
+
+Or if you don't have pip::
+
+  $ easy_install oar-utils
+
+
 OAR Database archive
 --------------------
 
 This script allow you to copy your OAR database to another database for
 archiving purposes.
+
 
 Usage
 ~~~~~
