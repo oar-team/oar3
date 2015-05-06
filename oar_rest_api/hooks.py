@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
+from flask import g, request
 from oar.lib import db
-
-
-def shutdown_db_session(response_or_exc):
-    db.session.remove()
 
 
 def register_hooks(app):
@@ -18,4 +15,10 @@ def register_hooks(app):
     else:
         teardown = app.after_request
 
-    teardown(shutdown_db_session)
+    @teardown
+    def shutdown_db_session(response_or_exc):
+        db.session.remove()
+
+    @app.before_request
+    def authenticate():
+        g.current_user = request.environ.get('USER', None)

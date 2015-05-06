@@ -15,7 +15,7 @@ class WSGIProxyFix(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        user = environ.pop('X_REMOTE_IDENT', None)
+        user = environ.pop('HTTP_X_REMOTE_IDENT', None)
         environ['USER'] = user
         return self.app(environ, start_response)
 

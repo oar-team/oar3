@@ -36,9 +36,9 @@ def version():
     g.data['api_lib'] = VERSION
 
 
-# @api.route('/resources/details')
-# def full_resources():
-#     pass
+@app.route('/whoami')
+def whoami():
+    g.data['authenticated_user'] = g.current_user
 
 
 # @api.route('/jobs')
