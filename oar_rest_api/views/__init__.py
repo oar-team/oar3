@@ -7,8 +7,9 @@ import time
 from collections import OrderedDict
 from functools import wraps
 
-from flask import Blueprint as FlaskBlueprint, Response, g
+from flask import Blueprint as FlaskBlueprint, Response, g, abort
 
+from oar.lib import config
 from oar.lib.database import BaseModel
 
 from ..utils import JSONEncoder, ArgParser
@@ -108,6 +109,20 @@ class Blueprint(FlaskBlueprint):
                 proxy_kwargs.update(parsed_kwargs)
                 g.request_params.update(proxy_kwargs)
                 return func(*proxy_args, **proxy_kwargs)
+            return decorated
+        return decorator
+
+    def need_authentication(self):
+        """Decorator that check is user is authenticate
+        """
+        def decorator(func):
+            @wraps(func)
+            def decorated(*proxy_args, **proxy_kwargs):
+                if (config.get('API_TRUST_IDENT') or
+                        g.current_user is not None):
+                    return func(*proxy_args, **proxy_kwargs)
+                else:
+                    abort(403)
             return decorated
         return decorator
 
