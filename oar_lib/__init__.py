@@ -11,7 +11,7 @@ import sys
 
 from .compat import iteritems
 
-__version__ = '0.1.1'
+__version__ = '0.2.0.dev0'
 
 # The implementation of a lazy-loading module in this file replaces the
 # oar package when imported from within.  Attribute access to the oar
