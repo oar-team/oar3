@@ -449,7 +449,11 @@ def update_gantt_visualization():
         db.engine.execute(query)
 
 
-def meta_schedule():
+def legacy_schedule_step():
+    pass
+
+
+def meta_schedule(mode='legacy'):
 
     exit_code = 0
 

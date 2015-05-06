@@ -86,7 +86,7 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
 
 
 def test_db_fairsharing():
-    # setup_db(True)
+    setup_db(True)
     generate_accountings()
 
     # add some resources
