@@ -41,6 +41,11 @@ def whoami():
     g.data['authenticated_user'] = g.current_user
 
 
+@app.route('/timezone')
+def timezone():
+    pass
+
+
 # @api.route('/jobs')
 # def jobs():
 #     pass
