@@ -7,6 +7,7 @@ from oar.lib.models import Resource
 from oar.lib.compat import iteritems
 
 from . import Blueprint
+from ..utils import Arg
 
 
 app = Blueprint('resources', __name__, url_prefix="/resources")
@@ -26,8 +27,9 @@ def get_links(resource_id, network_address):
 @app.route('/details', methods=['GET'], endpoint="details")
 @app.route('/nodes/<string:network_address>', methods=['GET'])
 @app.route('/nodes/<string:network_address>/details', methods=['GET'])
-@app.args({'offset': int, 'limit': int})
-def index(offset=0, limit=None, network_address=None):
+@app.args({'offset': Arg(int, default=0),
+           'limit': Arg(int)})
+def index(offset, limit, network_address=None):
     if request.path.endswith('/details'):
         query = Resource.query
     else:

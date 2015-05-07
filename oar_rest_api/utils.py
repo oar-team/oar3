@@ -40,32 +40,61 @@ class JSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
+class Arg(object):
+    """A request argument."""
+
+    DEFAULT_LOCATIONS = ('querystring', 'form', 'json')
+
+    def __init__(self, type_=None, default=None, required=False,
+                 multiple=False, error=None, locations=None):
+        if type_:
+            self.type = type_
+        else:
+            self.type = lambda x: x  # default to no type conversion
+        if multiple and default is None:
+            self.default = []
+        else:
+            self.default = default
+        self.required = required
+        self.error = error
+        self.multiple = multiple
+        self.locations = locations or self.DEFAULT_LOCATIONS
+
+
 class ArgParser(object):
     """Flask request argument parser."""
-
-    DEFAULT_TARGETS = ('querystring', 'form', 'json')
 
     MISSING = object()
 
     def __init__(self, argmap):
         self.argmap = argmap
 
-    def get_value(self, data, name):
-        return data.get(name, self.MISSING)
+    def get_value(self, data, name, multiple):
+        value = data.get(name, self.MISSING)
+        if multiple and value is not self.MISSING:
+            if hasattr(data, 'getlist'):
+                return data.getlist(name)
+            elif hasattr(data, 'getall'):
+                return data.getall(name)
+            elif isinstance(value, (list, tuple)):
+                return value
+            else:
+                return [value]
+        return value
 
-    def parse_value(self, name):
+    def parse_arg(self, argname, argobj):
         """Pull a form value from the request."""
-        for target in self.DEFAULT_TARGETS:
-            if target == "querystring":
-                value = self.get_value(request.args, name)
-            elif target == "json":
+        for location in argobj.locations:
+            if location == "querystring":
+                value = self.get_value(request.args, argname, argobj.multiple)
+            elif location == "json":
                 json_data = request.get_json(silent=True, force=True)
                 if json_data:
-                    value = self.get_value(json_data, name)
+                    value = self.get_value(json_data, argname, argobj.multiple)
                 else:
                     value = self.MISSING
-            elif target == "form":
-                value = self.get_value(request.form, name)
+            elif location == "form":
+                value = self.get_value(request.form, argname, argobj.multiple)
             if value is not self.MISSING:
                 return value
         return self.MISSING
@@ -79,11 +108,11 @@ class ArgParser(object):
     def parse(self):
         """Parses the request arguments."""
         kwargs = {}
-        for argname, argtype in iteritems(self.argmap):
-            value = self.parse_value(argname)
-            if value is not self.MISSING:
+        for argname, argobj in iteritems(self.argmap):
+            parsed_value = self.parse_arg(argname, argobj)
+            if parsed_value is not self.MISSING:
                 try:
-                    kwargs[argname] = self.convert(value, argtype)
+                    kwargs[argname] = self.convert(parsed_value, argobj)
                 except:
                     try:
                         abort(400)
@@ -93,4 +122,6 @@ class ArgParser(object):
                             ("The parameter '%s' specified in the request "
                              "URI is not supported." % argname)
                         reraise(exc_type, exc_value, tb.tb_next)
+            else:
+                kwargs[argname] = argobj.default
         return kwargs
