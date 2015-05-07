@@ -7,7 +7,7 @@ import decimal
 import datetime
 
 from flask import request, abort
-from oar.lib.compat import reraise, to_unicode, iteritems
+from oar.lib.compat import reraise, to_unicode, iteritems, integer_types
 
 
 class WSGIProxyFix(object):
@@ -46,18 +46,23 @@ class Arg(object):
     DEFAULT_LOCATIONS = ('querystring', 'form', 'json')
 
     def __init__(self, type_=None, default=None, required=False,
-                 multiple=False, error=None, locations=None):
-        if type_:
-            self.type = type_
-        else:
+                 error=None, locations=None, dest=None):
+        if isinstance(type_, tuple):
+            if len(type_) >= 2:
+                self.type = ListArg(type_[0], type_[1])
+            elif len(type_):
+                self.type = ListArg(type_[0])
+            else:
+                self.type = ListArg()
+        elif type_ == list:
+            self.type = ListArg()
+        elif type_ is None:
             self.type = lambda x: x  # default to no type conversion
-        if multiple and default is None:
-            self.default = []
         else:
-            self.default = default
+            self.type = type_
+        self.default = default
         self.required = required
         self.error = error
-        self.multiple = multiple
         self.locations = locations or self.DEFAULT_LOCATIONS
 
 
@@ -82,39 +87,56 @@ class ArgParser(object):
     def __init__(self, argmap):
         self.argmap = argmap
 
-    def get_value(self, data, name, multiple):
-        value = data.get(name, self.MISSING)
-        if multiple and value is not self.MISSING:
-            if hasattr(data, 'getlist'):
-                return data.getlist(name)
-            elif hasattr(data, 'getall'):
-                return data.getall(name)
-            elif isinstance(value, (list, tuple)):
-                return value
-            else:
-                return [value]
-        return value
+    def get_value(self, data, name):
+        return data.get(name, self.MISSING)
 
     def parse_arg(self, argname, argobj):
         """Pull a form value from the request."""
         for location in argobj.locations:
             if location == "querystring":
-                value = self.get_value(request.args, argname, argobj.multiple)
+                value = self.get_value(request.args, argname)
             elif location == "json":
                 json_data = request.get_json(silent=True, force=True)
                 if json_data:
-                    value = self.get_value(json_data, argname, argobj.multiple)
+                    value = self.get_value(json_data, argname)
                 else:
                     value = self.MISSING
             elif location == "form":
-                value = self.get_value(request.form, argname, argobj.multiple)
+                value = self.get_value(request.form, argname)
             if value is not self.MISSING:
                 return value
         return self.MISSING
 
+    def convert_bool(self, value):
+        """ Try to convert ``value`` to a Boolean."""
+        if value.lower() in ('True', 'yes', '1'):
+            return True
+        if value.lower() in ('false', 'no', '0'):
+            return False
+        raise ValueError("Cannot convert '%s' to a Boolean value" % value)
+
+    def convert_int(self, value):
+        """ Try to convert ``value`` to a Integer."""
+        try:
+            value = float(value)
+        except:
+            pass
+        for _type in integer_types:
+            try:
+                return _type(value)
+            except:
+                pass
+        raise ValueError("Cannot convert '%s' to a Integer value" % value)
+
     def convert(self, value, argtype):
         if argtype == str:
             return to_unicode(value)
+        elif argtype == bool:
+            return self.convert_bool(value)
+        elif argtype in integer_types:
+            return self.convert_int(value)
+        if isinstance(argtype, ListArg):
+            return argtype(value, self.convert)
         else:
             return argtype(value)
 
@@ -125,8 +147,9 @@ class ArgParser(object):
             parsed_value = self.parse_arg(argname, argobj)
             if parsed_value is not self.MISSING:
                 try:
-                    kwargs[argname] = self.convert(parsed_value, argobj)
+                    kwargs[argname] = self.convert(parsed_value, argobj.type)
                 except:
+                    raise
                     try:
                         abort(400)
                     except:

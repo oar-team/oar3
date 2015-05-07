@@ -24,7 +24,7 @@ def get_links(resource_id, network_address):
 
 
 @app.route('/', methods=['GET'])
-@app.route('/details', methods=['GET'], endpoint="details")
+@app.route('/details', methods=['GET'])
 @app.route('/nodes/<string:network_address>', methods=['GET'])
 @app.route('/nodes/<string:network_address>/details', methods=['GET'])
 @app.args({'offset': Arg(int, default=0),
