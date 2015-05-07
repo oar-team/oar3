@@ -86,7 +86,10 @@ class Pagination(object):
 
     def __iter__(self):
         for item in self.items:
-            result = OrderedDict()
-            for key in item.keys():
-                result[key] = getattr(item, key)
-            yield result
+            if hasattr(item, 'keys') and callable(getattr(item, 'keys')):
+                result = OrderedDict()
+                for key in item.keys():
+                    result[key] = getattr(item, key)
+                yield result
+            else:
+                yield item
