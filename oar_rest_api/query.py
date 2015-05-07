@@ -72,7 +72,7 @@ class Pagination(object):
         """Returns the next url for the current endpoint."""
         if self.has_next:
             kwargs = {'offset': self.offset + self.limit, 'limit': self.limit}
-            kwargs.update(g.request_params)
+            kwargs.update(g.request_args)
             return url_for(request.endpoint, **kwargs)
 
     @property
@@ -81,7 +81,7 @@ class Pagination(object):
         kwargs = {'offset': self.offset}
         if self.limit > 0:
             kwargs['limit'] = self.limit
-        kwargs.update(g.request_params)
+        kwargs.update(g.request_args)
         return url_for(request.endpoint, **kwargs)
 
     def __iter__(self):

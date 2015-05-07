@@ -107,7 +107,7 @@ class Blueprint(FlaskBlueprint):
                 parser = ArgParser(argmap)
                 parsed_kwargs = parser.parse()
                 proxy_kwargs.update(parsed_kwargs)
-                g.request_params.update(proxy_kwargs)
+                g.request_args.update(proxy_kwargs)
                 return func(*proxy_args, **proxy_kwargs)
             return decorated
         return decorator
@@ -127,7 +127,7 @@ class Blueprint(FlaskBlueprint):
         return decorator
 
     def _prepare_response(self):
-        g.request_params = {}
+        g.request_args = {}
         g.data = OrderedDict()
         g.data['api_timezone'] = 'UTC'
         g.data['api_timestamp'] = int(time.time())
