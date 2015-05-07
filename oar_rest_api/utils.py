@@ -61,6 +61,19 @@ class Arg(object):
         self.locations = locations or self.DEFAULT_LOCATIONS
 
 
+class ListArg(object):
+    def __init__(self, type_=str, sep=":"):
+        self.type = type_
+        self.sep = sep
+
+    def __call__(self, value, callback):
+        def convert():
+            string = to_unicode(value)
+            for item in string.split(self.sep):
+                yield callback(item, self.type)
+        return list(convert())
+
+
 class ArgParser(object):
     """Flask request argument parser."""
 
