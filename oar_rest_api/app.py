@@ -6,6 +6,7 @@ from .query import APIBaseQuery
 from .utils import WSGIProxyFix
 from .views import register_blueprints
 from .errors import register_error_handlers
+from .extensions import register_extensions
 from .hooks import register_hooks
 
 
@@ -25,5 +26,6 @@ def create_app():
     db.query_class = APIBaseQuery
     register_error_handlers(app)
     register_hooks(app)
+    register_extensions(app)
     register_blueprints(app)
     return app
