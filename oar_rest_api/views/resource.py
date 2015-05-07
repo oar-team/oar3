@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-from flask import url_for, g
+from flask import url_for, g, request
 from oar.lib import db
 from oar.lib.models import Resource
 from oar.lib.compat import iteritems
@@ -23,15 +23,22 @@ def get_links(resource_id, network_address):
 
 
 @app.route('/', methods=['GET'])
+@app.route('/details', methods=['GET'], endpoint="details")
 @app.route('/nodes/<string:network_address>', methods=['GET'])
+@app.route('/nodes/<string:network_address>/details', methods=['GET'])
 @app.args({'offset': int, 'limit': int})
 def index(offset=0, limit=None, network_address=None):
-    query = db.query(Resource.id,
-                     Resource.state,
-                     Resource.available_upto,
-                     Resource.network_address)
+    if request.path.endswith('/details'):
+        query = Resource.query
+    else:
+        query = db.query(Resource.id,
+                         Resource.state,
+                         Resource.available_upto,
+                         Resource.network_address)
+
     if network_address is not None:
         query = query.filter_by(network_address=network_address)
+
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = [{'rel': 'self', 'href': page.url}]
