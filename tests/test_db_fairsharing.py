@@ -15,8 +15,7 @@ from __init__ import DEFAULT_CONFIG
 # DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
 DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
 
-
-def setup_db(fs=False):
+def setup_db1(fs=False):
     config.clear()
     DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
     if fs:
@@ -24,7 +23,11 @@ def setup_db(fs=False):
 
     config.update(DEFAULT_CONFIG.copy())
     config["LOG_FILE"] = '/tmp/oar.log'
+
+    print ("db.create_all()")
+    
     db.create_all()
+    
 
 
 def db_flush():
@@ -86,7 +89,10 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
 
 
 def test_db_fairsharing():
-    setup_db(True)
+
+    print "OKOK test_db_fairsharing"
+
+    setup_db1(True)
     generate_accountings()
 
     # add some resources
@@ -98,7 +104,7 @@ def test_db_fairsharing():
 
     users = [str(x) for x in sample(range(nb_users), nb_users)]
 
-    # print "users:", users
+    print "users:", users
     jid_2_u = {}
     for i, user in enumerate(users):
         insert_job(
@@ -113,7 +119,7 @@ def test_db_fairsharing():
     plt = Platform()
     r = plt.resource_set()
 
-    # print "r.roid_itvs: ", r.roid_itvs
+    print "r.roid_itvs: ", r.roid_itvs
 
     schedule_cycle(plt, plt.get_time())
 
@@ -121,12 +127,13 @@ def test_db_fairsharing():
         GanttJobsPrediction.start_time).all()
     flag = True
 
-    # print jid_2_u
+    print jid_2_u
 
     for i, r in enumerate(req):
-        # print r.moldable_id, jid_2_u[r.moldable_id], i
+        print "req:", r.moldable_id, jid_2_u[r.moldable_id], i
         if jid_2_u[r.moldable_id] != i:
             flag = False
             break
 
     assert flag
+

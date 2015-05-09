@@ -21,9 +21,10 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          remove_gantt_resource_job, set_moldable_job_max_time,
                          set_gantt_job_startTime)
 
-from oar.kao.utils import (create_almighty_socket, notify_almighty, notify_tcp_socket,
-                           local_to_sql, add_new_event, init_judas_notify_user,
-                           duration_to_sql, get_job_events, send_checkpoint_signal)
+from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql, get_date,
+                           get_job_events, send_checkpoint_signal)
+
+import oar.kao.utils as utils
 
 from oar.kao.platform import Platform
 from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
@@ -31,7 +32,6 @@ from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompas
                                 find_resource_hierarchies_job)
 
 from oar.kao.interval import (intersec, equal_itvs,sub_intervals, itvs2ids, itvs_size)
-
 
 max_time = 2147483648  # (* 2**31 *)
 max_time_minus_one = 2147483647  # (* 2**31-1 *)
@@ -55,6 +55,9 @@ default_config = {
 }
 
 config.setdefault_config(default_config)
+
+# for key, value in config.iteritems():
+#        print key, value
 
 # waiting time when a reservation has not all of its nodes
 reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
@@ -150,7 +153,7 @@ def notify_to_run_job(jid):
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             log.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            nb_sent = notify_almighty("OARRUNJOB_" + str(jid) + '\n')
+            nb_sent = utils.notify_almighty("OARRUNJOB_" + str(jid) + '\n')
             if nb_sent:
                 to_launch_jobs_already_treated[jid] = 1
                 log.debug("Notify almighty to launch the job" + str(jid))
@@ -449,19 +452,21 @@ def update_gantt_visualization():
         db.engine.execute(query)
 
 
-def legacy_schedule_step():
+def call_extern_scheduler():
+    pass
+
+def call_intern_scheduler():
     pass
 
 
-def meta_schedule(mode='legacy'):
+def meta_schedule(mode='extern'):
 
     exit_code = 0
 
     job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
-
-
-    init_judas_notify_user()
-    create_almighty_socket()
+        
+    utils.init_judas_notify_user()
+    utils.create_almighty_socket()
 
 
     log.debug(
@@ -469,7 +474,7 @@ def meta_schedule(mode='legacy'):
 
     # reservation ??.
 
-    initial_time_sec = time.time()
+    initial_time_sec = get_date() #time.time()
     initial_time_sql = local_to_sql(initial_time_sec)
 
     current_time_sec = initial_time_sec
@@ -558,15 +563,16 @@ def meta_schedule(mode='legacy'):
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
 
-            jobs_toL, rid2jid_toL = get_gantt_jobs_to_launch(resource_set, 
-                                                             job_security_time, 
-                                                             current_time_sec)
+
+    jobs_toL, rid2jid_toL = get_gantt_jobs_to_launch(resource_set, 
+                                                     job_security_time, 
+                                                     current_time_sec)
 
     if check_besteffort_jobs_to_kill(jobs_toL, rid2jid_toL,
                                      current_time_sec, besteffort_rid2jid, 
                                      resource_set) == 1:
         # We must kill some besteffort jobs
-        notify_almighty("ChState")
+        utils.notify_almighty("ChState")
         exit_code = 2
     elif handle_jobs_to_launch(jobs_toL, current_time_sec, current_time_sql) == 1:
         exit_code = 0
@@ -590,7 +596,7 @@ def meta_schedule(mode='legacy'):
         new_start_prediction = local_to_sql(job_start_time)
         log.debug("[" + str(job_id) + "] Notifying user of the start prediction: " +
                   new_start_prediction + "(" + job_message + ")")
-        notify_tcp_socket(addr, port, "[" + initial_time_sql + "] Start prediction: " +
+        utils.notify_tcp_socket(addr, port, "[" + initial_time_sql + "] Start prediction: " +
                           new_start_prediction + " (" + job_message + ")")
 
     # Run the decisions
@@ -603,8 +609,8 @@ def meta_schedule(mode='legacy'):
                 log.debug("Notify oarsub job (num:" + str(job.id) + ") in error; jobInfo=" +
                           job.info_type)
 
-                nb_sent1 = notify_tcp_socket(addr, port, job.message + '\n')
-                nb_sent2 = notify_tcp_socket(addr, port, "BAD JOB" + '\n')
+                nb_sent1 = utils.notify_tcp_socket(addr, port, job.message + '\n')
+                nb_sent2 = utils.notify_tcp_socket(addr, port, "BAD JOB" + '\n')
                 if (nb_sent1 == 0) or (nb_sent2 == 0):
                     log.warn(
                         "Cannot open connection to oarsub client for" + str(job.id))
@@ -618,7 +624,7 @@ def meta_schedule(mode='legacy'):
             log.debug(
                 " Treate job" + str(job.id) + " in toAckReservation state")
 
-            nb_sent = notify_tcp_socket(addr, port, "GOOD RESERVATION" + '\n')
+            nb_sent = utils.notify_tcp_socket(addr, port, "GOOD RESERVATION" + '\n')
 
             if nb_sent == 0:
                 log.warn(

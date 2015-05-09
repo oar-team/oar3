@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import os
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
@@ -7,12 +8,13 @@ from oar.kao.slot import SlotSet, Slot
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
                                 schedule_id_jobs_ct)
 from oar.kao.karma import karma_jobs_sorting
+
+from oar.lib import db, Job
+
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
 
-# config['LOG_FILE'] = '/dev/stdout'
-
-log = get_logger("oar.kamelot")
+#config['LOG_FILE'] = '/dev/stdout'
 
 max_time = 2147483648  # (* 2**31 *)
 max_time_minus_one = 2147483647  # (* 2**31-1 *)
@@ -28,11 +30,21 @@ default_config = {
     "SCHEDULER_JOB_SECURITY_TIME": "60",
     "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
     "FAIRSHARING_ENABLED": "no",
-    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
+    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30"
 }
 
-config.setdefault_config(default_config)
+#config.setdefault_config(default_config)
 
+#if 'OARCONFFILE' in os.environ:
+#    config.load_file(os.environ['OARCONFILE'])
+
+#config.load_file(os.environ['OARCONFILE'])
+
+#config.load_file("/etc/oar/oar.conf", "#", True)
+
+config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+log = get_logger("oar.kamelot")
+config.load_file("/etc/oar/oar.conf")
 
 def schedule_cycle(plt, now, queue="default"):
 
@@ -129,6 +141,23 @@ def schedule_cycle(plt, now, queue="default"):
 #
 
 if __name__ == '__main__':
+
+    log.info("-------------------\n")
+    print "yop"
+    config.__str__()
+    for key, value in config.iteritems():
+        print "*",key,"*", value, "*"
+        #log.info(key + '=' + str(value))
+
+    print "rrrrrrrrrrrrrrrrrrrrrrrr"
+    print  db._cache
+    print "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    print config['DB_TYPE']
+
+    for job in db.query(Job).all():
+        print job
+
+
     plt = Platform()
     log.info("argv..." + str(sys.argv))
     if len(sys.argv) > 2:

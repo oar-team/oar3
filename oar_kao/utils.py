@@ -12,7 +12,6 @@ almighty_socket = None
 
 notification_user_socket = None
 
-
 def init_judas_notify_user():
 
     log.debug("init judas_notify_user (launch judas_notify_user.pl)")
@@ -91,8 +90,13 @@ def notify_tcp_socket(addr, port, message):
 
 
 def get_date():
-    result = db.engine.execute(
-        "select EXTRACT(EPOCH FROM current_timestamp)").scalar()
+
+    if db.engine.dialect.name == 'sqlite':
+        req =  "SELECT strftime('%s','now')"
+    else:
+        req ="SELECT EXTRACT(EPOCH FROM current_timestamp)"
+    
+    result = db.engine.execute(req).scalar()
     return int(result)
 
 

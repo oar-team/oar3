@@ -4,8 +4,11 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
                      JobStateLog, AssignedResource, FragJob, get_logger)
-from oar.kao.utils import (notify_almighty, get_date, notify_user,
-                           update_current_scheduler_priority, add_new_event)
+
+from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
+                           get_date)
+
+import oar.kao.utils as utils
 
 log = get_logger("oar.kamelot")
 
@@ -453,7 +456,7 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
                                                            job_security_time, now)
 
-    return (jobs, rid2jid)
+    return (jobs_lst, rid2jid)
    
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
@@ -558,6 +561,7 @@ def set_job_state(jid, state):
         db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
                              .filter(JobStateLog.job_id == jid)\
                              .update({JobStateLog.date_stop: date})
+        db.commit()
         req = db.insert(JobStateLog).values(
             {'job_id': jid, 'job_state': state, 'date_start': date})
         db.engine.execute(req)
@@ -567,11 +571,11 @@ def set_job_state(jid, state):
            state == "Running" or state == "Suspended" or state == "Resuming":
             job = db.query(Job).filter(Job.id == jid).one()
             if state == "Suspend":
-                notify_user(job, "SUSPENDED", "Job is suspended.")
+                utils.notify_user(job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
-                notify_user(job, "RESUMING", "Job is resuming.")
+                utils.notify_user(job, "RESUMING", "Job is resuming.")
             elif state == "Running":
-                notify_user(job, "RUNNING", "Job is running.")
+                utils.notify_user(job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
                 update_current_scheduler_priority(job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
@@ -586,7 +590,7 @@ def set_job_state(jid, state):
                         date, int(job.assigned_moldable_job))
 
                 if state == "Terminated":
-                    notify_user(job, "END", "Job stopped normally.")
+                    utils.notify_user(job, "END", "Job stopped normally.")
                 else:
                     # Verify if the job was suspended and if the resource
                     # property suspended is updated
@@ -602,7 +606,7 @@ def set_job_state(jid, state):
                                 {Resource.suspended_jobs: 'NO'})
                         db.commit()
 
-                    notify_user(
+                    utils.notify_user(
                         job, "ERROR", "Job stopped abnormally or an OAR error occured.")
 
                 update_current_scheduler_priority(job, "-2", "STOP")
@@ -610,7 +614,7 @@ def set_job_state(jid, state):
                 # Here we must not be asynchronously with the scheduler
                 log_job(job)
                 # $dbh is valid so these 2 variables must be defined
-                nb_sent = notify_almighty("ChState")
+                nb_sent = utils.notify_almighty("ChState")
                 if nb_sent == 0:
                     log.warn("Not able to notify almighty to launch the job " +
                              str(job.id) + " (socket error)")

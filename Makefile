@@ -42,6 +42,10 @@ clean:
 test:
 	py.test --verbose
 
+test_db:
+	py.test --verbose tests/test_db*py
+
+
 testall:
 	tox
 
