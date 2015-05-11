@@ -33,6 +33,10 @@ from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompas
 
 from oar.kao.interval import (intersec, equal_itvs,sub_intervals, itvs2ids, itvs_size)
 
+from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
+                          get_next_job_date_on_node, get_last_wake_up_date_of_node)
+
+
 max_time = 2147483648  # (* 2**31 *)
 max_time_minus_one = 2147483647  # (* 2**31-1 *)
 # Constant duration time of a besteffort job *)
@@ -47,11 +51,14 @@ default_config = {
     "DB_PORT": "5432",
     "HIERARCHY_LABEL": "resource_id,network_address",
     "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
-    "SCHEDULER_JOB_SECURITY_TIME": "60",
+    "SCHEDULER_JOB_SECURITY_TIME": 60,
     "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
     "FAIRSHARING_ENABLED": "no",
-    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
-    "RESERVATION_WAITING_RESOURCES_TIMEOUT": "300"
+    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": 30,
+    "RESERVATION_WAITING_RESOURCES_TIMEOUT": 300,
+    "SCHEDULER_TIMEOUT": 10,
+    "ENERGY_SAVING_INTERNAL": "no",
+    "SCHEDULER_NODE_MANAGER_WAKEUP_TIME": 1
 }
 
 config.setdefault_config(default_config)
@@ -581,8 +588,96 @@ def meta_schedule(mode='extern'):
     update_gantt_visualization()
 
     # Manage dynamic node feature
+    flagHulot = False
+    timeout_cmd = config['SCHEDULER_TIMEOUT']
+
+    if ((("SCHEDULER_NODE_MANAGER_SLEEP_CMD" in config) or  
+        ((config["ENERGY_SAVING_INTERNAL"] == "yes") and 
+         ("ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD" in config))) and
+        (("SCHEDULER_NODE_MANAGER_SLEEP_TIME" in config) 
+         and ("SCHEDULER_NODE_MANAGER_IDLE_TIME" in config))):
+
+
+        # Look at nodes that are unused for a duration
+        idle_duration = config["SCHEDULER_NODE_MANAGER_IDLE_TIME"]
+        sleep_duration = config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"]
+    
+        idle_nodes = search_idle_nodes(current_time_sec)
+        tmp_time = current_time_sec - idle_duration
+
+        node_halt = []
+
+        for node, idle_duration in idle_nodes.iteritems():
+            if idle_duration < tmp_time:
+                # Search if the node has enough time to sleep
+                tmp = get_next_job_date_on_node(node);
+                if  (tmp is None) or (tmp - sleep_duration > current_time_sec):
+                    # Search if node has not been woken up recently
+                    wakeup_date = get_last_wake_up_date_of_node(node)
+                    if (wakeup_date is None) or (wakeup_date < tmp_time):
+                        node_halt.append(node)
+
+
+        if node_halt != []:
+            log.debug("Powering off some nodes (energy saving): " + str(node_halt))
+            # Using the built-in energy saving module to shut down nodes
+            if config["ENERGY_SAVING_INTERNAL"] == "yes":
+                log.error("OAR::Modules::Hulot::halt NOT YET IMPLEMENTED")
+                #if Hulot::halt_nodes(\@node_halt) 
+                #    log.error("Communication problem with the energy saving module (Hulot)\n")
+            
+                flagHulot = 1
+            else:
+                # Not using the built-in energy saving module to shut down nodes
+                cmd = config["SCHEDULER_NODE_MANAGER_SLEEP_CMD"]
+                log.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
+                #if (! defined(OAR::Tools::fork_and_feed_stdin($cmd, $timeout_cmd, \@node_halt))){
+                #    log.error("Command $cmd timeouted ( +
+                #   ${timeout_cmd}s) while trying to poweroff some nodes\n")
+    
+    if (("SCHEDULER_NODE_MANAGER_SLEEP_CMD" in config) or 
+        ((config["ENERGY_SAVING_INTERNAL"] == "yes") and 
+         ("ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD" in config))):
+        # Get nodes which the scheduler wants to schedule jobs to, 
+        # but which are in the Absent state, to wake them up
+        wakeup_time = config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"]
+        nodes = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
+
+        if nodes != []:
+            log.debug("Awaking some nodes: " + str(nodes))        
+            # Using the built-in energy saving module to wake up nodes
+            if config["ENERGY_SAVING_INTERNAL"] == "yes":
+                #
+                #TODO
+                #
+                log.error("OAR::Modules::Hulot::wake_up_nodes NOT YET IMPLEMENTED")
+                #if (OAR::Modules::Hulot::wake_up_nodes(\@nodes) ) {
+                #    oar_error("[MetaSched] Error: Communication problem 
+                #with the energy saving module (Hulot)\n");
+                #}
+                #$flagHulot=1;
+                #}
+            else:
+                # Not using the built-in energy saving module to wake up nodes
+                cmd = config["SCHEDULER_NODE_MANAGER_WAKE_UP_CMD"]
+                #
+                #TODO
+                #
+                log.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
+                #if (! defined(OAR::Tools::fork_and_feed_stdin($cmd, $timeout_cmd, \@nodes))){
+                # oar_error("[MetaSched] Error: command $cmd timeouted (${timeout_cmd}s) 
+                #while trying to wake-up some nodes\n");
+
+
     # Send CHECK signal to Hulot if needed
     # TODO
+    if not flagHulot and (config["ENERGY_SAVING_INTERNAL"] == "yes"):
+        #
+        # TODO
+        #
+        log.error("OAR::Modules::Hulot::check NOT YET IMPLEMENTED")
+        #if (OAR::Modules::Hulot::check() ) {
+        #log.error("Communication problem with the energy saving module (Hulot)")
 
     jobs_by_state = get_current_not_waiting_jobs()
 
