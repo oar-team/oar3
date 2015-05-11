@@ -1068,3 +1068,41 @@ def  is_timesharing_for_2_jobs(j1,j2):
     return False
 
 
+def get_jobs_on_resuming_job_resources(job_id):
+    '''Return the list of jobs running on resources allocated to another given job'''
+    j1 = aliased(Job)
+    j2 = aliased(Job)
+    a1 = aliased(AssignedResource)
+    a2 = aliased(AssignedResource)
+    
+    states = ('toLaunch', 'toError', 'toAckReservation', 'Launching', 'Running ', 'Finishing')
+ 
+    result = db.query(distinct(j2.id))\
+               .filter(a1.assigned_resource_index == 'CURRENT')\
+               .filter(a2.assigned_resource_index == 'CURRENT')\
+               .filter(j1.id == job_id)\
+               .filter(j1.id != j2.id)\
+               .filter(a1.moldable_id == j1.assigned_moldable_job)\
+               .filter(a2.resource_id == a1.resource_id)\
+               .filter(j2.state.in_(states))\
+               .all()
+
+    return result
+
+
+def resume_job_action(job_id):
+    '''resume_job_action performs all action when a job is suspended'''
+
+    set_job_state(job_id, "Running")
+
+    resources = get_current_resources_with_suspended_job();
+    if resources != ():
+        db.query(Resource)\
+          .filter(~Resource.id.in_(resources))\
+          .update({Resouce.suspended_jobs: 'NO'}, synchronize_session=False)
+
+    else:
+        db.query(Resource)\
+          .update({Resouce.suspended_jobs: 'NO'}, synchronize_session=False)
+
+    db.commit()

@@ -142,28 +142,15 @@ def schedule_cycle(plt, now, queue="default"):
 
 if __name__ == '__main__':
 
-    log.info("-------------------\n")
-    print "yop"
-    config.__str__()
-    for key, value in config.iteritems():
-        print "*",key,"*", value, "*"
-        #log.info(key + '=' + str(value))
-
-    print "rrrrrrrrrrrrrrrrrrrrrrrr"
-    print  db._cache
-    print "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-    print config['DB_TYPE']
-
-    for job in db.query(Job).all():
-        print job
-
-
     plt = Platform()
+
     log.info("argv..." + str(sys.argv))
+
     if len(sys.argv) > 2:
         schedule_cycle(plt, int(float(sys.argv[2])), sys.argv[1])
     elif (sys.argv) == 2:
         schedule_cycle(plt, plt.get_time(), sys.argv[1])
     else:
         schedule_cycle(plt, plt.get_time())
+
     log.info("That's all folks")

@@ -19,12 +19,15 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          get_jobs_in_multiple_states, gantt_flush_tables,
                          get_scheduled_no_AR_jobs, get_waiting_scheduled_AR_jobs,
                          remove_gantt_resource_job, set_moldable_job_max_time,
-                         set_gantt_job_startTime)
+                         set_gantt_job_startTime, get_jobs_on_resuming_job_resources,
+                         resume_job_action)
 
 from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql, get_date,
                            get_job_events, send_checkpoint_signal)
 
 import oar.kao.utils as utils
+
+import oar.kao.tools as tools
 
 from oar.kao.platform import Platform
 from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
@@ -36,6 +39,7 @@ from oar.kao.interval import (intersec, equal_itvs,sub_intervals, itvs2ids, itvs
 from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
+from oar.kao.hulot import (halt_nodes, wake_up_nodes, check_signal)
 
 max_time = 2147483648  # (* 2**31 *)
 max_time_minus_one = 2147483647  # (* 2**31-1 *)
@@ -194,12 +198,10 @@ def prepare_job_to_be_launched(job, current_time_sec):
 
     notify_to_run_job(job.id)
 
-# launch right reservation jobs
-# arg : queue name
-# return 1 if there is at least a job to treate, 2 if besteffort jobs must die
+
 
 def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time, current_time_sec):
-    
+
     log.debug("Queue " + queue_name +
               ": begin processing of accepted advance reservations")
 
@@ -400,7 +402,6 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time
                         
                     fragged_jobs[be_job.id] = 1
                     return_code = 1
-
 
 
     log.debug("End precessing of besteffort jobs to kill\n")
@@ -622,18 +623,17 @@ def meta_schedule(mode='extern'):
             log.debug("Powering off some nodes (energy saving): " + str(node_halt))
             # Using the built-in energy saving module to shut down nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                log.error("OAR::Modules::Hulot::halt NOT YET IMPLEMENTED")
-                #if Hulot::halt_nodes(\@node_halt) 
-                #    log.error("Communication problem with the energy saving module (Hulot)\n")
+                if halt_nodes(node_halt):
+                        log.error("Communication problem with the energy saving module (Hulot)\n")
             
                 flagHulot = 1
             else:
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config["SCHEDULER_NODE_MANAGER_SLEEP_CMD"]
-                log.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
-                #if (! defined(OAR::Tools::fork_and_feed_stdin($cmd, $timeout_cmd, \@node_halt))){
-                #    log.error("Command $cmd timeouted ( +
-                #   ${timeout_cmd}s) while trying to poweroff some nodes\n")
+                if tools.fork_and_feed_stdin(cmd, timeout_cmd, node_halt):
+                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd) 
+                              + "s) while trying to  poweroff some nodes") 
+
     
     if (("SCHEDULER_NODE_MANAGER_SLEEP_CMD" in config) or 
         ((config["ENERGY_SAVING_INTERNAL"] == "yes") and 
@@ -647,42 +647,40 @@ def meta_schedule(mode='extern'):
             log.debug("Awaking some nodes: " + str(nodes))        
             # Using the built-in energy saving module to wake up nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                #
-                #TODO
-                #
-                log.error("OAR::Modules::Hulot::wake_up_nodes NOT YET IMPLEMENTED")
-                #if (OAR::Modules::Hulot::wake_up_nodes(\@nodes) ) {
-                #    oar_error("[MetaSched] Error: Communication problem 
-                #with the energy saving module (Hulot)\n");
-                #}
-                #$flagHulot=1;
-                #}
+                if wake_up_nodes(nodes):
+                    log.error("Communication problem with the energy saving module (Hulot)")
+                flagHulot = 1
             else:
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config["SCHEDULER_NODE_MANAGER_WAKE_UP_CMD"]
-                #
-                #TODO
-                #
-                log.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
-                #if (! defined(OAR::Tools::fork_and_feed_stdin($cmd, $timeout_cmd, \@nodes))){
-                # oar_error("[MetaSched] Error: command $cmd timeouted (${timeout_cmd}s) 
-                #while trying to wake-up some nodes\n");
+                if tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes):
+                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd) 
+                              + "s) while trying to wake-up some nodes ") 
+                    
 
-
-    # Send CHECK signal to Hulot if needed
-    # TODO
+    # Send CHECK signal to Hulot if needed                
     if not flagHulot and (config["ENERGY_SAVING_INTERNAL"] == "yes"):
-        #
-        # TODO
-        #
-        log.error("OAR::Modules::Hulot::check NOT YET IMPLEMENTED")
-        #if (OAR::Modules::Hulot::check() ) {
-        #log.error("Communication problem with the energy saving module (Hulot)")
+        if check_signal():
+            log.error("Communication problem with the energy saving module (Hulot)")
 
+        
+    # Retrieve jobs according to their state and excluding job in 'Waiting' state.        
     jobs_by_state = get_current_not_waiting_jobs()
 
     # Search jobs to resume
-    # TODO
+    if "Resuming" in jobs_by_state:
+        for job in jobs_by_state["Resuming"]:
+            other_jobs = get_jobs_on_resuming_job_resources(job.id)
+            # TODO : look for timesharing other jobs. What do we do?????
+            if other_jobs == []:
+                # We can resume the job
+                log.debug("[" + str(job.id) +"] Resuming job")
+                if 'noop' in job.types:
+                    resume_job_action(job.id)
+                    log.debug("[" + str(job_id) + "] Resume NOOP job OK")
+                else:
+                    tools.resume_job(job)
+
 
     # Notify oarsub -I when they will be launched
     for j_info in get_gantt_waiting_interactive_prediction_date():
@@ -728,10 +726,8 @@ def meta_schedule(mode='extern'):
                     job.id), "Can not notify oarsub for the job " + str(job.id))
 
                 # TODO ???
-                # OAR::IO::lock_table($base,["frag_jobs","event_logs","jobs"]);
+                # OAR::IO::lock_table / OAR::IO::unlock_table($base)
                 frag_job(job.id)
-                # TODO ???
-                # OAR::IO::unlock_table($base)
 
                 exit_code = 2
             else:
