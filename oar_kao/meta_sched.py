@@ -321,7 +321,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
             if itvs == []:
-                # not enough resource avalable
+                # not enough resource available
                 log.warn("[" + str(job.id) +
                          "] advance reservation cannot be validated, not enough resources")
                 set_job_state(job.id, "toError")
