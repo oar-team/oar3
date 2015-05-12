@@ -239,8 +239,8 @@ def add_new_event(type, job_id, description):
     db.commit()
 
 def get_job_events(job_id):
-    '''Get events for the specified job
-    '''
+    """Get events for the specified job
+    """
 
     result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
     
