@@ -162,63 +162,53 @@ def duration_to_sql(t):
 # Update the scheduler_priority field of the table resources
 
 
+
 def update_current_scheduler_priority(job, value, state):
-    log.info("update_current_scheduler_priority not yet implemented !!!!" +
+    """Update the scheduler_priority field of the table resources
+    """
+    
+    # TODO: MOVE TO resource.py ???
+
+    log.info("update_current_scheduler_priority " +
              " job.id: " + str(job.id) + ", state: " + state + ", value: "
              + str(value))
 
-# code from IO.pm update_current_scheduler_priority
-#
-#     my $dbh = shift;
-#     my $job_id = shift;
-#     my $moldable_id = shift;
-#     my $value = shift;
-#     my $state = shift;
-#
-#     $state = "STOP" if ($state ne "START");
-#
-#     if (is_conf("SCHEDULER_PRIORITY_HIERARCHY_ORDER")){
-#         my $types = OAR::IO::get_job_types_hash($dbh,$job_id);
-#         if (((defined($types->{besteffort})) or (defined($types->{timesharing})))
-#             and (($state eq "START" and (is_an_event_exists($dbh,$job_id,"SCHEDULER_PRIORITY_UPDATED_START") <= 0))
-#                 or (($state eq "STOP") and (is_an_event_exists($dbh,$job_id,"SCHEDULER_PRIORITY_UPDATED_START") > 0)))
-#            ){
-#             my $coeff = 1;
-#             if ((defined($types->{timesharing})) and !(defined($types->{besteffort}))){
-#                 $coeff = 10;
-#             }
-#             my $index = 0;
-#             foreach my $f (split('/',get_conf("SCHEDULER_PRIORITY_HIERARCHY_ORDER"))){
-#                 next if ($f eq "");
-#                 $index++;
+    if "SCHEDULER_PRIORITY_HIERARCHY_ORDER" in config:
+        sched_priority = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
+        if ((('besteffort' in job.types) or ('timesharing' in job.types)) and
+           (((state == 'START') and 
+            is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
+           ((state == 'STOP') and 
+            is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") > 0))):
+            
+            coeff = 1
+            if ('besteffort' in job.types) and (not ('timesharing' in job.types)):
+                coeff = 10
+            
+            index = 0
+            for f in sched_priority.split('/'):
+                if f == "":
+                    continue
+                index += 1
+                
+                resources = db.query(distinct(getattr(Resource, f)))\
+                              .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
+                              .filter(AssignedResource.moldable_id == job.assigned_moldable_job)\
+                              .filter(AssignedResource.resource_id == Resource.id)\
+                              .all()
+                                                  
+                if resources == []:
+                    return
+                    
+                db.query(Resource)\
+                  .filter(Resource.id.in_(tuple(resources)))\
+                  .update({Resource.scheduler_priority: Resource.scheduler_priority + (value * index * coeff)}, 
+                          synchronize_session=False)
+                db.commit()
 
-#                 my $sth = $dbh->prepare("   SELECT distinct(resources.$f)
-#                                             FROM assigned_resources, resources
-#                                             WHERE
-#                                                 assigned_resource_index = \'CURRENT\' AND
-#                                                 moldable_job_id = $moldable_id AND
-#                                                 assigned_resources.resource_id = resources.resource_id
-#                                         ");
-#                 $sth->execute();
-#                 my $value_str;
-#                 while (my @ref = $sth->fetchrow_array()){
-#                     $value_str .= $dbh->quote($ref[0]);
-#                     $value_str .= ',';
-#                 }
-#                 $sth->finish();
-#                 return if (!defined($value_str));
-#                 chop($value_str);
-#                 my $req =  "UPDATE resources
-#                             SET scheduler_priority = scheduler_priority + ($value * $index * $coeff)
-#                             WHERE
-#                                 $f IN (".$value_str.")
-#                            ";
-#                 $dbh->do($req);
-#             }
-#             add_new_event($dbh,"SCHEDULER_PRIORITY_UPDATED_$state",$job_id,"Scheduler priority for job $job_id updated (".get_conf("SCHEDULER_PRIORITY_HIERARCHY_ORDER").")");
-#         }
-#     }
-# }
+ 
+            add_new_event("SCHEDULER_PRIORITY_UPDATED_$state", job.id,
+                          "Scheduler priority for job $job_id updated (" + sched_priority +")")
 
 
 def update_scheduler_last_job_date(date, moldable_id):
