@@ -75,8 +75,9 @@ class ListArg(object):
     def __call__(self, value, callback):
         def convert():
             string = to_unicode(value)
-            for item in string.split(self.sep):
-                yield callback(item, self.type)
+            if string:
+                for item in string.split(self.sep):
+                    yield callback(item, self.type)
         return list(convert())
 
 
