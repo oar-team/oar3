@@ -41,13 +41,13 @@ class JSONEncoder(json.JSONEncoder):
 
 
 class Arg(object):
-    """A request argument."""
+    """Request argument type."""
 
     DEFAULT_LOCATIONS = ('querystring', 'form', 'json')
 
     def __init__(self, type_=None, default=None, required=False,
                  error=None, locations=None, dest=None):
-        if isinstance(type_, tuple):
+        if isinstance(type_, (tuple, list)):
             if len(type_) >= 2:
                 self.type = ListArg(type_[0], type_[1])
             elif len(type_):
@@ -62,6 +62,7 @@ class Arg(object):
             self.type = type_
         self.default = default
         self.required = required
+        self.dest = dest
         self.error = error
         self.locations = locations or self.DEFAULT_LOCATIONS
 
@@ -116,7 +117,7 @@ class ArgParser(object):
         raise ValueError("Cannot convert '%s' to a Boolean value" % value)
 
     def convert_int(self, value):
-        """ Try to convert ``value`` to a Integer."""
+        """ Try to convert ``value`` to an Integer."""
         try:
             value = float(value)
         except:
@@ -144,20 +145,20 @@ class ArgParser(object):
         """Parses the request arguments."""
         kwargs = {}
         for argname, argobj in iteritems(self.argmap):
+            dest = argobj.dest if argobj.dest is not None else argname
             parsed_value = self.parse_arg(argname, argobj)
             if parsed_value is not self.MISSING:
                 try:
-                    kwargs[argname] = self.convert(parsed_value, argobj.type)
-                except:
-                    raise
+                    kwargs[dest] = self.convert(parsed_value, argobj.type)
+                except Exception as e:
+                    msg = ("The parameter '%s' specified in the request "
+                           "URI is not supported. %s" % (argname, e))
                     try:
                         abort(400)
                     except:
                         exc_type, exc_value, tb = sys.exc_info()
-                        exc_value.data = \
-                            ("The parameter '%s' specified in the request "
-                             "URI is not supported." % argname)
+                        exc_value.data = msg
                         reraise(exc_type, exc_value, tb.tb_next)
             else:
-                kwargs[argname] = argobj.default
+                kwargs[dest] = argobj.default
         return kwargs
