@@ -11,7 +11,8 @@ if PY3:
     bytes = bytes
     basestring = (str, bytes)
     string_types = (str,)
-    numeric_types = (int, float)
+    integer_types = (int, )
+    numeric_types = integer_types + (float, )
 
     from io import StringIO
     from queue import Empty
@@ -47,7 +48,8 @@ else:
     str = unicode
     basestring = basestring
     string_types = (unicode, bytes)
-    numeric_types = (int, long, float)
+    integer_types = (int, long)
+    numeric_types = integer_types + (float, )
 
     from cStringIO import StringIO  # noqa
     from Queue import Empty  # noqa
