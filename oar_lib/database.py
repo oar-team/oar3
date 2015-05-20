@@ -9,7 +9,7 @@ from collections import OrderedDict
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
-from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
+from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
 from .utils import cached_property
@@ -59,6 +59,9 @@ class SessionProperty(object):
         options.setdefault('autoflush', True)
         options.setdefault('autocommit', False)
         options.setdefault('bind', db.engine)
+        if db.query_class is None:
+            from .query import BaseQuery
+            db.query_class = BaseQuery
         options.setdefault('query_cls', db.query_class)
         return scoped_session(sessionmaker(**options))
 
@@ -92,7 +95,7 @@ class Database(object):
     """
 
     session = SessionProperty()
-    query_class = Query
+    query_class = None
 
     def __init__(self, uri=None, session_options=None):
         self.connector = None
