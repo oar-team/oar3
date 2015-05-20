@@ -6,7 +6,6 @@ from math import ceil
 
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
-from oar.lib.models import (db, Job)
 
 
 class APIQuery(BaseQuery):
@@ -97,19 +96,4 @@ class Pagination(object):
 
 
 class APIQueryCollection(BaseQueryCollection):
-
-    def get_jobs_for_user(self, states, from_, to, ids, details=False):
-        if not states:
-            states = ['Finishing', 'Running', 'Resuming', 'Suspended',
-                      'Launching', 'toLaunch', 'Waiting',
-                      'toAckReservation', 'Hold']
-        if details:
-            query = db.query(Job)
-        else:
-            query = db.query(Job.name,
-                             Job.user.label('owner'),
-                             Job.queue_name,
-                             Job.state,
-                             Job.submission_time.label('submission'))
-
-        return query.filter(Job.state.in_(states))
+    pass
