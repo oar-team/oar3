@@ -12,33 +12,11 @@ from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, Query, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
-from .exceptions import DoesNotExist
 from .utils import cached_property
 from .compat import iteritems
 
 
 __all__ = ['Database']
-
-
-class BaseQuery(Query):
-
-    def get_or_error(self, uid):
-        """Like :meth:`get` but raises an error if not found instead of
-        returning `None`.
-        """
-        rv = self.get(uid)
-        if rv is None:
-            raise DoesNotExist()
-        return rv
-
-    def first_or_error(self):
-        """Like :meth:`first` but raises an error if not found instead of
-        returning `None`.
-        """
-        rv = self.first()
-        if rv is None:
-            raise DoesNotExist()
-        return rv
 
 
 class BaseModel(object):
@@ -114,7 +92,7 @@ class Database(object):
     """
 
     session = SessionProperty()
-    query_class = BaseQuery
+    query_class = Query
 
     def __init__(self, uri=None, session_options=None):
         self.connector = None
