@@ -33,6 +33,6 @@ class BaseQuery(Query):
 
 
 class BaseQueryCollection(object):
-
-    def get_jobs_for_user(self, user, states, from_, to, ids):
-        return db.query(Job).all()
+    """ Queries collection. """
+    def get_all_jobs(self):
+        db.query(Job)
