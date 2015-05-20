@@ -41,7 +41,7 @@ def test_set_slots_with_prev_scheduled_jobs_1():
                    (5, 15), (20, 28)], types={}, ts=False, ph=0)
 
     ss = SlotSet(Slot(1, 0, 0, [(1, 32)], 1, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 10)
 
@@ -75,7 +75,7 @@ def test_schedule_id_jobs_ct_1():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
@@ -94,7 +94,7 @@ def test_schedule_container1():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
@@ -115,7 +115,7 @@ def test_schedule_container_error1():
     res = [(1, 32)]
     res2 = [(17, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
@@ -137,7 +137,7 @@ def test_schedule_container_error2():
     res = [(1, 32)]
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
@@ -159,7 +159,7 @@ def test_schedule_container_error3():
     res = [(1, 32)]
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
@@ -179,7 +179,7 @@ def test_schedule_container_prev_sched():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
@@ -212,7 +212,7 @@ def test_schedule_container_recursif():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1,
@@ -245,7 +245,7 @@ def test_schedule_container_prev_sched_recursif():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1,
@@ -277,10 +277,48 @@ def test_schedule_container_prev_sched_recursif():
     assert j3.res_set == [(17, 24)]
 
 
+def test_schedule_w_temporally_fragmented_container():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 5000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1,
+                   types={"container": "yop"},
+                   deps=[], key_cache={},
+                   res_set=[(7, 32)],
+                   start_time=200,
+                   walltime=50,
+                   ts=False, ph=0)
+
+    j2 = JobPseudo(id=2,
+                   types={"container": "yop"},
+                   deps=[],
+                   key_cache={},
+                   res_set=[(15, 25)],
+                   start_time=1000,
+                   walltime=200,
+                   ts=False, ph=0)
+
+    j3 = JobPseudo(id=3, types={"inner": "yop"}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 100, [([("node", 1)], res[:])])],
+                   ts=False, ph=0)
+
+    set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 20)
+    all_ss['yop'].show_slots()
+
+    schedule_id_jobs_ct(all_ss, {3: j3}, hy, [3], 20)
+
+    all_ss['yop'].show_slots()
+
+    assert j3.start_time == 1000
+    assert j3.res_set == [(17, 24)]
+
+
 def test_schedule_timesharing1():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
-    all_ss = {0: ss}
+    all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},

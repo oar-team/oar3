@@ -30,7 +30,8 @@ import oar.kao.utils as utils
 import oar.kao.tools as tools
 
 from oar.kao.platform import Platform
-from oar.kao.slot import SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots
+from oar.kao.slot import (SlotSet, Slot, intersec_ts_ph_itvs_slots, intersec_itvs_slots,
+                          MAX_TIME)
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
                                 find_resource_hierarchies_job)
 
@@ -41,8 +42,6 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 
 from oar.kao.hulot import (halt_nodes, wake_up_nodes, check_signal)
 
-max_time = 2147483648  # (* 2**31 *)
-max_time_minus_one = 2147483647  # (* 2**31-1 *)
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
@@ -97,8 +96,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     # Determine Global Resource Intervals and Initial Slot
     #
     resource_set = plt.resource_set()
-    initial_slot_set = SlotSet(
-        Slot(1, 0, 0, resource_set.roid_itvs, initial_time_sec, max_time))
+    initial_slot_set = SlotSet((resource_set.roid_itvs, initial_time_sec))
 
     log.debug("Processing of processing of already handled reservations")
     accepted_ar_jids, accepted_ar_jobs = \
@@ -121,7 +119,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
         j = JobPseudo()
         # print t_avail_upto, max_time - t_avail_upto, itvs
         j.start_time = t_avail_upto
-        j.walltime = max_time - t_avail_upto
+        j.walltime = MAX_TIME- t_avail_upto
         j.res_set = itvs
         j.ts = False
         j.ph = NO_PLACEHOLDER
@@ -129,7 +127,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
         pseudo_jobs.append(j)
 
     if pseudo_jobs != []:
-        initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+        initial_slot_set.split_slots_jobs(pseudo_jobs)
 
     #
     # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
@@ -148,7 +146,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
                  besteffort_rid2job[r_id] = job
 
     # Create and fill gantt
-    all_slot_sets = {0: initial_slot_set}
+    all_slot_sets = {'default': initial_slot_set}
     if scheduled_jobs != []:
         filter_besteffort = True
         set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
@@ -298,14 +296,14 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                     # TODO update to DB ????
                     job.start_time = current_time_sec
 
-            ss_id = 0
+            ss_name = 'default'
 
             # TODO container
             # if "inner" in job.types:
-            #    ss_id = int(job.types["inner"])
+            #    ss_name = job.types["inner"]
             # TODO: test if container is an AR job
 
-            slots = all_slot_sets[ss_id].slots
+            slots = all_slot_sets[ss_name].slots
 
             t_e = job.start_time + walltime - job_security_time
             sid_left, sid_right = get_encompassing_slots(

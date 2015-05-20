@@ -162,7 +162,6 @@ def duration_to_sql(t):
 # Update the scheduler_priority field of the table resources
 
 
-
 def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources
     """

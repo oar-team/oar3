@@ -1,14 +1,11 @@
 from oar.lib import config
 from oar.lib.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, Slot
+from oar.kao.slot import SlotSet, Slot, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
-
-max_time = 2147483648  # (* 2**31 *)
-max_time_minus_one = 2147483647  # (* 2**31-1 *)
 
 # Set undefined config value to default one
 default_config = {
@@ -39,8 +36,7 @@ def schedule_cycle(plt, queue="default"):
         # Determine Global Resource Intervals and Initial Slot
         #
         resource_set = plt.resource_set()
-        initial_slot_set = SlotSet(
-            Slot(1, 0, 0, resource_set.roid_itvs, now, max_time))
+        initial_slot_set = SlotSet((resource_set.roid_itvs, now))
 
         #
         #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -49,9 +45,9 @@ def schedule_cycle(plt, queue="default"):
         for t_avail_upto in sorted(resource_set.available_upto.keys()):
             itvs = resource_set.available_upto[t_avail_upto]
             j = JobPseudo()
-            print t_avail_upto, max_time - t_avail_upto, itvs
+            #print t_avail_upto, MAX_TIME - t_avail_upto, itvs
             j.start_time = t_avail_upto
-            j.walltime = max_time - t_avail_upto
+            j.walltime = MAX_TIME - t_avail_upto
             j.res_set = itvs
             j.ts = False
             j.ph = NO_PLACEHOLDER
@@ -59,7 +55,7 @@ def schedule_cycle(plt, queue="default"):
             pseudo_jobs.append(j)
 
         if pseudo_jobs != []:
-            initial_slot_set.split_slots_prev_scheduled_jobs(pseudo_jobs)
+            initial_slot_set.split_slots_jobs(pseudo_jobs)
 
         #
         # Get  additional waiting jobs' data
@@ -72,12 +68,12 @@ def schedule_cycle(plt, queue="default"):
         scheduled_jobs = plt.get_scheduled_jobs(resource_set)
 
         if scheduled_jobs != []:
-            initial_slot_set.split_slots_prev_scheduled_jobs(scheduled_jobs)
+            initial_slot_set.split_slots_jobs(scheduled_jobs)
 
         # print "after split sched"
         initial_slot_set.show_slots()
 
-        all_slot_sets = {0: initial_slot_set}
+        all_slot_sets = {"default": initial_slot_set}
 
         #
         # Scheduled
