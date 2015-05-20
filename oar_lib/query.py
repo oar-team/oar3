@@ -5,9 +5,10 @@ from __future__ import with_statement, absolute_import
 from sqlalchemy.orm import Query
 
 from .exceptions import DoesNotExist
+from .models import Job
+from . import db
 
-
-__all__ = ['BaseQuery']
+__all__ = ['BaseQuery', 'BaseQueryCollection']
 
 
 class BaseQuery(Query):
@@ -29,3 +30,9 @@ class BaseQuery(Query):
         if rv is None:
             raise DoesNotExist()
         return rv
+
+
+class BaseQueryCollection(object):
+
+    def get_jobs_for_user(self, user, states, from_, to, ids):
+        return db.query(Job).all()

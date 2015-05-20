@@ -96,6 +96,7 @@ class Database(object):
 
     session = SessionProperty()
     query_class = None
+    query_collection_class = None
 
     def __init__(self, uri=None, session_options=None):
         self.connector = None
@@ -112,6 +113,13 @@ class Database(object):
     def uri(self):
         from oar.lib import config
         return config.get_sqlalchemy_uri()
+
+    @cached_property
+    def queries(self):
+        if self.query_collection_class is None:
+            from .query import BaseQueryCollection
+            self.query_collection_class = BaseQueryCollection
+        return self.query_collection_class()
 
     @property
     def engine(self):
