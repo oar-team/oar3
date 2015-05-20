@@ -8,11 +8,12 @@ log = get_logger("oar.kamelot")
 
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
-                                       filter_besteffort=True):
+                                       filter_besteffort=True, jobs_slotsets = {'default': []}):
 
-    jobs_slotsets = {'default': []}
+    #jobs_slotsets = {'default': []}
 
     for job in jobs:
+        #print "job.id:", job.id 
         if not (filter_besteffort and ("besteffort" in job.types)):
             if "container" in job.types:
                 t_e = job.start_time + job.walltime - job_security_time
@@ -23,10 +24,8 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                     ss_name = job.types["container"]
                 else:
                     ss_name = str(job.id)
-                    
-                print "container: " + ss_name
                 
-                if  ss_name not in slots_sets:
+                if ss_name not in slots_sets:
                     slots_sets[ss_name] = SlotSet(([],1))
                     jobs_slotsets[ss_name] = []
 
@@ -43,9 +42,9 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
             jobs_slotsets[ss_name].append(job)
 
     for ss_name, slot_set in slots_sets.iteritems():
-        print "\nss_name: ", ss_name
         slot_set.split_slots_jobs(jobs_slotsets[ss_name])
 
+    return jobs_slotsets
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable instance

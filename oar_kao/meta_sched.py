@@ -17,7 +17,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
                          get_jobs_in_multiple_states, gantt_flush_tables,
-                         get_scheduled_no_AR_jobs, get_waiting_scheduled_AR_jobs,
+                         get_after_sched_no_AR_jobs, get_waiting_scheduled_AR_jobs,
                          remove_gantt_resource_job, set_moldable_job_max_time,
                          set_gantt_job_startTime, get_jobs_on_resuming_job_resources,
                          resume_job_action)
@@ -149,10 +149,12 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     all_slot_sets = {'default': initial_slot_set}
     if scheduled_jobs != []:
         filter_besteffort = True
-        set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
-                                           job_security_time, filter_besteffort)
+        jobs_slotsets = set_slots_with_prev_scheduled_jobs(all_slot_sets, 
+                                                           scheduled_jobs,
+                                                           job_security_time, 
+                                                           filter_besteffort)
 
-    return (plt, all_slot_sets, resource_set, besteffort_rid2job)
+    return (plt, all_slot_sets, resource_set, besteffort_rid2job, jobs_slotsets)
 
 
 # Tell Almighty to run a job
@@ -201,7 +203,7 @@ def prepare_job_to_be_launched(job, current_time_sec):
 def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time, current_time_sec):
 
     log.debug("Queue " + queue_name +
-              ": begin processing of accepted advance reservations")
+              ": begin processing accepted Advance Reservations")
 
     ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
                                 
@@ -261,7 +263,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
 
 def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current_time_sec):
-    '''Processing of new reservations'''
+    """Processing of new Advance Reservations"""
 
     log.debug("Queue " + queue_name + ": begin processing of new reservations")
 
@@ -299,8 +301,9 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             ss_name = 'default'
 
             # TODO container
-            # if "inner" in job.types:
+            #if "inner" in job.types:
             #    ss_name = job.types["inner"]
+                
             # TODO: test if container is an AR job
 
             slots = all_slot_sets[ss_name].slots
@@ -486,8 +489,8 @@ def meta_schedule(mode='extern'):
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(
-        initial_time_sec, job_security_time)
+    plt, all_slot_sets, resource_set, besteffort_rid2jid,  jobs_slotsets =\
+                        plt_init_with_running_jobs(initial_time_sec, job_security_time)
 
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
@@ -545,9 +548,9 @@ def meta_schedule(mode='extern'):
                     {"state": "notActive"})
 
             
-            #retrieve job and assignement decision from previous scheduling step
-            scheduled_jobs = get_scheduled_no_AR_jobs(queue.name, resource_set, 
-                                                      job_security_time, initial_time_sec)
+            #retrieve jobs and assignement decision from previous scheduling step
+            scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set, 
+                                                        job_security_time, initial_time_sec)
 
 
             if scheduled_jobs != []:
@@ -555,10 +558,12 @@ def meta_schedule(mode='extern'):
                     filter_besteffort = False
                 else:
                     filter_besteffort = True
+                    print "poy..........", all_slot_sets.keys()
                     set_slots_with_prev_scheduled_jobs(all_slot_sets,
                                                        scheduled_jobs,
                                                        job_security_time,
-                                                       filter_besteffort)
+                                                       filter_besteffort,
+                                                       jobs_slotsets)
 
 
             handle_waiting_reservation_jobs(queue.name, resource_set, 

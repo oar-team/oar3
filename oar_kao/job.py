@@ -397,7 +397,9 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
     return jobs_lst
     
 
-def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
+def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now):
+    """ Get waiting jobs which are not AR and after scheduler round
+    """
     result = db.query(Job,
                       GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
@@ -405,6 +407,7 @@ def get_scheduled_no_AR_jobs(queue_name, resource_set, job_security_time, now):
                       GanttJobsResource.resource_id)\
         .filter(MoldableJobDescription.index == 'CURRENT')\
         .filter(Job.queue_name == queue_name)\
+        .filter(Job.state == 'Waiting')\
         .filter(Job.reservation == 'None')\
         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
