@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import sys
+import warnings
 import pprint
 
 from io import open
 
-from .compat import iteritems
+from .compat import iteritems, reraise
 from .utils import try_convert_decimal
 from .exceptions import InvalidConfiguration
 
@@ -25,6 +27,7 @@ class Configuration(dict):
         'SQLALCHEMY_POOL_RECYCLE': None,
         'SQLALCHEMY_MAX_OVERFLOW': None,
         'LOG_LEVEL': 1,
+        'LOG_FILE': None,
         'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s'
     }
 
@@ -32,8 +35,10 @@ class Configuration(dict):
         defaults = dict(self.DEFAULT_CONFIG)
         defaults.update(defaults or {})
         dict.__init__(self, defaults)
+
+    def load_default_config(self, silent=True):
         for config_file in self.DEFAULT_CONFIG_FILES:
-            self.load_file(config_file, silent=True)
+            self.load_file(config_file, silent=silent)
 
     def load_file(self, filename, comment_char="#", strip_quotes=True,
                   silent=False):
@@ -58,10 +63,16 @@ class Configuration(dict):
                         value = try_convert_decimal(value)
                         self[key] = value
         except IOError as e:
-            if silent:
-                return False
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
-            raise
+            if silent:
+                from . import logger
+                logger.warn(e.strerror)
+                warnings.warn(e.strerror)
+                return False
+            else:
+                exc_type, exc_value, tb = sys.exc_info()
+                reraise(exc_type, exc_value, tb.tb_next)
+
         return True
 
     def get_sqlalchemy_uri(self, read_only=False):
