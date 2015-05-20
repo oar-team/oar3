@@ -5,10 +5,11 @@ from collections import OrderedDict
 from math import ceil
 
 from flask import abort, current_app, request, url_for, g
-from oar.lib.database import BaseQuery
+from oar.lib.basequery import BaseQuery, BaseQueryCollection
+from oar.lib.models import (db, Job)
 
 
-class APIBaseQuery(BaseQuery):
+class APIQuery(BaseQuery):
 
     def get_or_404(self, ident):
         try:
@@ -93,3 +94,14 @@ class Pagination(object):
                 yield result
             else:
                 yield item
+
+
+class APIQueryCollection(BaseQueryCollection):
+
+    def get_jobs_for_user(self, user, states, from_, to, ids):
+        if not states:
+            states = ['Finishing', 'Running', 'Resuming', 'Suspended',
+                      'Launching', 'toLaunch', 'Waiting',
+                      'toAckReservation', 'Hold']
+
+        return db.query(Job).filter(Job.state.in_(states))
