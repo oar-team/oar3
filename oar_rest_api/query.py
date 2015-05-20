@@ -98,10 +98,18 @@ class Pagination(object):
 
 class APIQueryCollection(BaseQueryCollection):
 
-    def get_jobs_for_user(self, user, states, from_, to, ids):
+    def get_jobs_for_user(self, states, from_, to, ids, details=False):
         if not states:
             states = ['Finishing', 'Running', 'Resuming', 'Suspended',
                       'Launching', 'toLaunch', 'Waiting',
                       'toAckReservation', 'Hold']
+        if details:
+            query = db.query(Job)
+        else:
+            query = db.query(Job.name,
+                             Job.user.label('owner'),
+                             Job.queue_name,
+                             Job.state,
+                             Job.submission_time.label('submission'))
 
-        return db.query(Job).filter(Job.state.in_(states))
+        return query.filter(Job.state.in_(states))
