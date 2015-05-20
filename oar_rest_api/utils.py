@@ -60,11 +60,22 @@ class Arg(object):
             self.type = lambda x: x  # default to no type conversion
         else:
             self.type = type_
-        self.default = default
+        if isinstance(self.type, ListArg) and default is None:
+            self.default = []
+        else:
+            self.default = default
         self.required = required
         self.dest = dest
         self.error = error
         self.locations = locations or self.DEFAULT_LOCATIONS
+
+    def raw_value(self, value):
+        if value is not None:
+            if isinstance(self.type, ListArg):
+                if len(value) > 0:
+                    return self.type.raw_value(value)
+            else:
+                return to_unicode(value)
 
 
 class ListArg(object):
@@ -79,6 +90,9 @@ class ListArg(object):
                 for item in string.split(self.sep):
                     yield callback(item, self.type)
         return list(convert())
+
+    def raw_value(self, values):
+        return to_unicode(self.sep.join(("%s" % v for v in values)))
 
 
 class ArgParser(object):
@@ -144,13 +158,15 @@ class ArgParser(object):
 
     def parse(self):
         """Parses the request arguments."""
-        kwargs = {}
+        parsed_kwargs = {}
+        raw_kwargs = {}
         for argname, argobj in iteritems(self.argmap):
             dest = argobj.dest if argobj.dest is not None else argname
             parsed_value = self.parse_arg(argname, argobj)
             if parsed_value is not self.MISSING:
                 try:
-                    kwargs[dest] = self.convert(parsed_value, argobj.type)
+                    parsed_kwargs[dest] = self.convert(parsed_value,
+                                                       argobj.type)
                 except Exception as e:
                     msg = ("The parameter '%s' specified in the request "
                            "URI is not supported. %s" % (argname, e))
@@ -161,5 +177,8 @@ class ArgParser(object):
                         exc_value.data = msg
                         reraise(exc_type, exc_value, tb.tb_next)
             else:
-                kwargs[dest] = argobj.default
-        return kwargs
+                parsed_kwargs[dest] = argobj.default
+            raw_value = argobj.raw_value(parsed_kwargs[dest])
+            if raw_value is not None:
+                raw_kwargs[argname] = raw_value
+        return parsed_kwargs, raw_kwargs

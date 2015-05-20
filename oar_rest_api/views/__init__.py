@@ -105,9 +105,9 @@ class Blueprint(FlaskBlueprint):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
                 parser = ArgParser(argmap)
-                parsed_kwargs = parser.parse()
+                parsed_kwargs, raw_kwargs = parser.parse()
                 proxy_kwargs.update(parsed_kwargs)
-                g.request_args.update(proxy_kwargs)
+                g.request_args.update(raw_kwargs)
                 return func(*proxy_args, **proxy_kwargs)
             return decorated
         return decorator
