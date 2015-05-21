@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-from flask import url_for, g, request
+from flask import url_for, g
 from oar.lib import db
 from oar.lib.models import Resource
-from oar.lib.compat import iteritems
 
 from . import Blueprint
 from ..utils import Arg
@@ -14,13 +13,17 @@ app = Blueprint('resources', __name__, url_prefix="/resources")
 
 
 def get_links(resource_id, network_address):
-    rel_map = {"member": "index", "self": "show", "jobs": "jobs"}
-    for rel, endpoint in iteritems(rel_map):
-        if rel == "member":
+    rel_map = (
+        ("node", "member", "index"),
+        ("show", "self", "show"),
+        ("jobs", "collection", "jobs"),
+    )
+    for title, rel, endpoint in rel_map:
+        if title == "node":
             url = url_for('.%s' % endpoint, network_address=network_address)
         else:
             url = url_for('.%s' % endpoint, resource_id=resource_id)
-        yield {'rel': rel, 'href': url, 'title': endpoint}
+        yield {'rel': rel, 'href': url, 'title': title}
 
 
 @app.route('/', methods=['GET'])
@@ -34,9 +37,7 @@ def index(offset, limit, network_address=None, details=None):
     query = db.queries.get_resources(network_address, details)
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
-    g.data['links'] = [{'rel': 'self', 'href': page.url}]
-    if page.has_next:
-        g.data['links'].append({'rel': 'next', 'href': page.next_url})
+    g.data['links'] = page.links
     g.data['offset'] = offset
     g.data['items'] = []
     for item in page:
