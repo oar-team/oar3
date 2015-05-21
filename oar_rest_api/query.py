@@ -118,6 +118,8 @@ class Pagination(object):
                 for key in item.keys():
                     result[key] = getattr(item, key)
                 yield result
+            elif hasattr(item, 'asdict') and callable(getattr(item, 'asdict')):
+                yield item.asdict()
             else:
                 yield item
 
