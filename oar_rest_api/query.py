@@ -7,6 +7,7 @@ from math import ceil
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 from oar.lib.models import (db, Job)
+from oar.lib.utils import cached_property
 
 
 class APIQuery(BaseQuery):
@@ -49,41 +50,66 @@ class Pagination(object):
         self.total = total
         self.items = items
 
-    @property
+    @cached_property
     def current_page(self):
         """The number of the current page (1 indexed)"""
         if self.limit > 0 and self.offset > 0:
             return int(ceil(self.offset / float(self.limit))) + 1
         return 1
 
-    @property
+    @cached_property
     def pages(self):
         """The total number of pages"""
         if self.total > 0 and self.limit > 0:
             return int(ceil(self.total / float(self.limit)))
         return 1
 
-    @property
+    @cached_property
     def has_next(self):
         """True if a next page exists."""
         return self.current_page < self.pages
 
-    @property
+    @cached_property
+    def has_previous(self):
+        """True if a previous page exists."""
+        return self.current_page > 1
+
+    @cached_property
     def next_url(self):
         """Returns the next url for the current endpoint."""
         if self.has_next:
-            kwargs = {'offset': self.offset + self.limit, 'limit': self.limit}
-            kwargs.update(g.request_args)
+            kwargs = g.request_args.copy()
+            kwargs['offset'] = self.offset + self.limit
+            kwargs['limit'] = self.limit
             return url_for(request.endpoint, **kwargs)
 
-    @property
-    def url(self):
+    @cached_property
+    def previous_url(self):
+        """Returns the next previous for the current endpoint."""
+        if self.has_previous:
+            kwargs = g.request_args.copy()
+            kwargs['offset'] = self.offset - self.limit
+            kwargs['limit'] = self.limit
+            return url_for(request.endpoint, **kwargs)
+
+    @cached_property
+    def current_url(self):
         """Returns the url for the current endpoint."""
-        kwargs = {'offset': self.offset}
+        kwargs = g.request_args.copy()
+        kwargs['offset'] = self.offset
         if self.limit > 0:
             kwargs['limit'] = self.limit
-        kwargs.update(g.request_args)
         return url_for(request.endpoint, **kwargs)
+
+    @cached_property
+    def links(self):
+        links = []
+        if self.has_previous:
+            links.append({'rel': 'previous', 'href': self.previous_url})
+        links.append({'rel': 'self', 'href': self.current_url})
+        if self.has_next:
+            links.append({'rel': 'next', 'href': self.next_url})
+        return links
 
     def __iter__(self):
         for item in self.items:
