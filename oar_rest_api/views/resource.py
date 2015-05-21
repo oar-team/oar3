@@ -30,9 +30,7 @@ def get_items_links(resource_id, network_address):
 
 @app.route('/', methods=['GET'])
 @app.route('/<any(details, full):detailed>', methods=['GET'])
-@app.route('/details', methods=['GET'])
 @app.route('/nodes/<string:network_address>', methods=['GET'])
-@app.route('/nodes/<string:network_address>/details', methods=['GET'])
 @app.args({'offset': Arg(int, default=0),
            'limit': Arg(int)})
 def index(offset, limit, network_address=None, detailed=False):
