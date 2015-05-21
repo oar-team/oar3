@@ -91,5 +91,18 @@ class BaseQuery(Query):
 
 class BaseQueryCollection(object):
     """ Queries collection. """
-    def get_all_jobs(self):
-        db.query(Job)
+    def get_jobs_for_user(self, user, start_time, stop_time, states, job_ids,
+                          array_id, detailed=True):
+        """ Get all distinct jobs for a user query. """
+        if detailed:
+            query = db.query(Job)
+        else:
+            query = db.query(Job.id,
+                             Job.name,
+                             Job.queue_name,
+                             Job.user,
+                             Job.submission_time)
+        return query.order_by(Job.id)\
+                    .filter_jobs_for_user(user, start_time,
+                                          stop_time, states,
+                                          job_ids, array_id)
