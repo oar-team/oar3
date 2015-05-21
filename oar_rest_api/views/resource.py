@@ -24,23 +24,14 @@ def get_links(resource_id, network_address):
 
 
 @app.route('/', methods=['GET'])
+@app.route('/<any(details, full):details>', methods=['GET'])
 @app.route('/details', methods=['GET'])
 @app.route('/nodes/<string:network_address>', methods=['GET'])
 @app.route('/nodes/<string:network_address>/details', methods=['GET'])
 @app.args({'offset': Arg(int, default=0),
            'limit': Arg(int)})
-def index(offset, limit, network_address=None):
-    if request.path.endswith('/details'):
-        query = Resource.query
-    else:
-        query = db.query(Resource.id,
-                         Resource.state,
-                         Resource.available_upto,
-                         Resource.network_address)
-
-    if network_address is not None:
-        query = query.filter_by(network_address=network_address)
-
+def index(offset, limit, network_address=None, details=None):
+    query = db.queries.get_resources(network_address, details)
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = [{'rel': 'self', 'href': page.url}]

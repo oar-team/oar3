@@ -6,7 +6,7 @@ from math import ceil
 
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
-from oar.lib.models import (db, Job)
+from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property
 
 
@@ -139,3 +139,15 @@ class APIQueryCollection(BaseQueryCollection):
                              Job.submission_time.label('submission'))
 
         return query.filter(Job.state.in_(states))
+
+    def get_resources(self, network_address, details):
+        if details:
+            query = db.query(Resource)
+        else:
+            query = db.query(Resource.id,
+                             Resource.state,
+                             Resource.available_upto,
+                             Resource.network_address)
+        if network_address is not None:
+            query = query.filter_by(network_address=network_address)
+        return query.order_by(Resource.id.asc())
