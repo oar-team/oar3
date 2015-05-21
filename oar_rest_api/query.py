@@ -6,7 +6,7 @@ from math import ceil
 
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
-from oar.lib.models import (db, Job, Resource)
+# from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property
 
 
@@ -123,31 +123,4 @@ class Pagination(object):
 
 
 class APIQueryCollection(BaseQueryCollection):
-
-    def get_jobs_for_user(self, states, from_, to, ids, details=False):
-        if not states:
-            states = ['Finishing', 'Running', 'Resuming', 'Suspended',
-                      'Launching', 'toLaunch', 'Waiting',
-                      'toAckReservation', 'Hold']
-        if details:
-            query = db.query(Job)
-        else:
-            query = db.query(Job.name,
-                             Job.user.label('owner'),
-                             Job.queue_name,
-                             Job.state,
-                             Job.submission_time.label('submission'))
-
-        return query.filter(Job.state.in_(states))
-
-    def get_resources(self, network_address, details):
-        if details:
-            query = db.query(Resource)
-        else:
-            query = db.query(Resource.id,
-                             Resource.state,
-                             Resource.available_upto,
-                             Resource.network_address)
-        if network_address is not None:
-            query = query.filter_by(network_address=network_address)
-        return query.order_by(Resource.id.asc())
+    pass

@@ -28,20 +28,6 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
            'ids': Arg([int, ':'])})
 @app.need_authentication()
 def index(offset, limit, user, from_, to, states, array_id, ids, details=None):
-    states = states or ['Finishing', 'Running', 'Resuming', 'Suspended',
-                        'Launching', 'toLaunch', 'Waiting',
-                        'toAckReservation', 'Hold']
-    if details:
-        query = Job.query
-    else:
-        query = db.query(Job.id,
-                         Job.name,
-                         Job.queue_name,
-                         Job.user,
-                         Job.submission_time)
-
-    page = query.filter_jobs_for_user(user, from_, to, states, array_id, ids)\
-                .paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = [{'rel': 'self', 'href': page.url}]
     if page.has_next:
