@@ -7,7 +7,9 @@ from sqlalchemy.orm import Query
 from .exceptions import DoesNotExist
 from . import db
 from .models import (Job, MoldableJobDescription, AssignedResource,
-                     GanttJobsPredictionsVisu, GanttJobsResourcesVisu)
+                     GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
+                     Resource)
+
 
 __all__ = ['BaseQuery', 'BaseQueryCollection']
 
@@ -106,3 +108,15 @@ class BaseQueryCollection(object):
                     .filter_jobs_for_user(user, start_time,
                                           stop_time, states,
                                           job_ids, array_id)
+
+    def get_resources(self, network_address, detailed=True):
+        if detailed:
+            query = db.query(Resource)
+        else:
+            query = db.query(Resource.id,
+                             Resource.state,
+                             Resource.available_upto,
+                             Resource.network_address)
+        if network_address is not None:
+            query = query.filter_by(network_address=network_address)
+        return query.order_by(Resource.id.asc())
