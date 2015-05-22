@@ -1,4 +1,4 @@
-import ipdb
+#import ipdb
 import time
 import os
 import re
@@ -39,8 +39,6 @@ from oar.kao.interval import (intersec, equal_itvs,sub_intervals, itvs2ids, itvs
 
 from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
-
-from oar.kao.hulot import (halt_nodes, wake_up_nodes, check_signal)
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -149,12 +147,10 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     all_slot_sets = {'default': initial_slot_set}
     if scheduled_jobs != []:
         filter_besteffort = True
-        jobs_slotsets = set_slots_with_prev_scheduled_jobs(all_slot_sets, 
-                                                           scheduled_jobs,
-                                                           job_security_time, 
-                                                           filter_besteffort)
+        set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
+                                           job_security_time, filter_besteffort)
 
-    return (plt, all_slot_sets, resource_set, besteffort_rid2job, jobs_slotsets)
+    return (plt, all_slot_sets, resource_set, besteffort_rid2job)
 
 
 # Tell Almighty to run a job
@@ -392,7 +388,6 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time
                         log.debug("Send checkpoint signal to the job " + str(be_job.id))
                         
                     if skip_kill == 0:
-
                         log.debug("Resource " + str(rid) + 
                                   "need to be freed for job " + str(be_job.id) + 
                                   ": killing besteffort job " + str(job_toLaunch.id))
@@ -489,8 +484,8 @@ def meta_schedule(mode='extern'):
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt, all_slot_sets, resource_set, besteffort_rid2jid,  jobs_slotsets =\
-                        plt_init_with_running_jobs(initial_time_sec, job_security_time)
+    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(initial_time_sec, 
+                                                                                      job_security_time)
 
     if "OARDIR" in os.environ:
         binpath = os.environ["OARDIR"] + "/"
@@ -558,12 +553,8 @@ def meta_schedule(mode='extern'):
                     filter_besteffort = False
                 else:
                     filter_besteffort = True
-                    print "poy..........", all_slot_sets.keys()
-                    set_slots_with_prev_scheduled_jobs(all_slot_sets,
-                                                       scheduled_jobs,
-                                                       job_security_time,
-                                                       filter_besteffort,
-                                                       jobs_slotsets)
+                    set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
+                                                       job_security_time, filter_besteffort)
 
 
             handle_waiting_reservation_jobs(queue.name, resource_set, 
@@ -601,7 +592,6 @@ def meta_schedule(mode='extern'):
         (("SCHEDULER_NODE_MANAGER_SLEEP_TIME" in config) 
          and ("SCHEDULER_NODE_MANAGER_IDLE_TIME" in config))):
 
-
         # Look at nodes that are unused for a duration
         idle_duration = config["SCHEDULER_NODE_MANAGER_IDLE_TIME"]
         sleep_duration = config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"]
@@ -626,9 +616,8 @@ def meta_schedule(mode='extern'):
             log.debug("Powering off some nodes (energy saving): " + str(node_halt))
             # Using the built-in energy saving module to shut down nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                if halt_nodes(node_halt):
-                        log.error("Communication problem with the energy saving module (Hulot)\n")
-            
+                if tools.send_to_hulot('HALT', node_halt.join( )):
+                    log.error("Communication problem with the energy saving module (Hulot)\n")
                 flagHulot = 1
             else:
                 # Not using the built-in energy saving module to shut down nodes
@@ -650,7 +639,7 @@ def meta_schedule(mode='extern'):
             log.debug("Awaking some nodes: " + str(nodes))        
             # Using the built-in energy saving module to wake up nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                if wake_up_nodes(nodes):
+                if tools.send_to_hulot('WAKEUP', nodes.join( )):
                     log.error("Communication problem with the energy saving module (Hulot)")
                 flagHulot = 1
             else:
@@ -663,10 +652,9 @@ def meta_schedule(mode='extern'):
 
     # Send CHECK signal to Hulot if needed                
     if not flagHulot and (config["ENERGY_SAVING_INTERNAL"] == "yes"):
-        if check_signal():
+        if tools.send_to_hulot('CHECK', []):
             log.error("Communication problem with the energy saving module (Hulot)")
 
-        
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.        
     jobs_by_state = get_current_not_waiting_jobs()
 
