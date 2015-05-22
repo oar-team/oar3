@@ -117,7 +117,7 @@ class Database(object):
     @cached_property
     def queries(self):
         if self.query_collection_class is None:
-            from .query import BaseQueryCollection
+            from .basequery import BaseQueryCollection
             self.query_collection_class = BaseQueryCollection
         return self.query_collection_class()
 
