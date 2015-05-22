@@ -60,7 +60,7 @@ class SessionProperty(object):
         options.setdefault('autocommit', False)
         options.setdefault('bind', db.engine)
         if db.query_class is None:
-            from .query import BaseQuery
+            from .basequery import BaseQuery
             db.query_class = BaseQuery
         options.setdefault('query_cls', db.query_class)
         return scoped_session(sessionmaker(**options))
