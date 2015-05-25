@@ -114,7 +114,8 @@ def schedule_cycle(plt, now, queue="default"):
             set_slots_with_prev_scheduled_jobs(all_slot_sets,
                                                scheduled_jobs,
                                                job_security_time,
-                                               filter_besteffort)
+                                               filter_besteffort,
+                                               now)
 
         #
         # Scheduled

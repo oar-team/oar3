@@ -8,7 +8,7 @@ log = get_logger("oar.kamelot")
 
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
-                                       filter_besteffort=True):
+                                       filter_besteffort=True, now=0):
 
     jobs_slotsets = {'default': []}
     
@@ -31,13 +31,10 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                 if ss_name not in slots_sets:
                     slots_sets[ss_name] = SlotSet(([],1))
 
-                #now = 0
-                #if job.start_time < now:
-                #    start_time = now
-                #else:
-                #    start_time = job.start_time
-
-                start_time = job.start_time
+                if job.start_time < now:
+                    start_time = now
+                else:
+                    start_time = job.start_time
                 
                 j = JobPseudo(id=0, start_time=start_time,
                               walltime=job.walltime - job_security_time,
