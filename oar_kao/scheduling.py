@@ -11,25 +11,35 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                                        filter_besteffort=True):
 
     jobs_slotsets = {'default': []}
-
+    
     for job in jobs:
-        #print "job.id:", job.id 
+        log.debug("job.id:" + str(job.id))
+        #print "job.id:", str(job.id)
         if not (filter_besteffort and ("besteffort" in job.types)):
             if "container" in job.types:
                 t_e = job.start_time + job.walltime - job_security_time
-                # print "job.res_set, job.start_time, t_e", job.res_set,
+                #t "job.res_set, job.start_time, t_e", job.res_set,
                 # job.start_time, t_e
                 
                 if job.types["container"] != "":
                     ss_name = job.types["container"]
                 else:
                     ss_name = str(job.id)
-                
+
+                log.debug("container:" + ss_name)
+                    
                 if ss_name not in slots_sets:
                     slots_sets[ss_name] = SlotSet(([],1))
-                    jobs_slotsets[ss_name] = []
 
-                j = JobPseudo(id=0, start_time=job.start_time,
+                #now = 0
+                #if job.start_time < now:
+                #    start_time = now
+                #else:
+                #    start_time = job.start_time
+
+                start_time = job.start_time
+                
+                j = JobPseudo(id=0, start_time=start_time,
                               walltime=job.walltime - job_security_time,
                               res_set=job.res_set,
                               ts=job.ts, ph=job.ts)
@@ -38,10 +48,15 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
             ss_name = 'default'
             if "inner" in job.types:
                 ss_name = job.types["inner"]
-
+                
+            if ss_name not in jobs_slotsets:
+                jobs_slotsets[ss_name] = []
+                
             jobs_slotsets[ss_name].append(job)
 
     for ss_name, slot_set in slots_sets.iteritems():
+        log.debug(" slots_sets.iteritems():" + ss_name)
+        print "slots_sets.iteritems():", ss_name
         if ss_name in jobs_slotsets:
             slot_set.split_slots_jobs(jobs_slotsets[ss_name])
 
@@ -210,6 +225,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     # print "*********j_id:", k, job.mld_res_rqts[0]
 
     for jid in id_jobs:
+        log.debug("Schedule job:" + str(jid))
         job = jobs[jid]
 
         min_start_time = -1
@@ -242,15 +258,18 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
         if to_skip:
             log.info(
-                "job(" + str(jid) + "can't be scheduled due to dependencies")
+                "job(" + str(jid) + ") can't be scheduled due to dependencies")
         else:
             ss_name = "default"
             if "inner" in job.types:
                 ss_name = job.types["inner"]
 
             if ss_name not in slots_sets:
-                log.error("slots set '" + ss_name + "' is missing")
-
+                log.error("job(" + str(jid) +
+                          ") can't be scheduled, slots set '" + 
+                          ss_name + "' is missing. Skip it for this round.")
+                next
+        
             slots_set = slots_sets[ss_name]
 
             assign_resources_mld_job_split_slots(
@@ -263,10 +282,12 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     ss_name = job.types["container"]
                 
                 if ss_name in slots_sets:
-                    ss = slots_sets[ss_name].add_slot(job.start_time,
-                                                      job.start_time + 
-                                                      job.walltime - job_security_time)
-                    slots_sets[ss_name] = ss
+                    j = JobPseudo(id=0, start_time=job.start_time,
+                              walltime=job.walltime - job_security_time,
+                              res_set=job.res_set,
+                              ts=job.ts, ph=job.ts)
+                    slots_sets[ss_name].split_slots_jobs([j], False) 
+
                 else: 
                     slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
                                 job.start_time + job.walltime - job_security_time)

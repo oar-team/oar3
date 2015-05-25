@@ -39,9 +39,9 @@ default_config = {
 
 #config.load_file("/etc/oar/oar.conf", "#", True)
 
-config['LOG_FILE'] = '/tmp/oar_kamelot.log'
 log = get_logger("oar.kamelot")
 config.load_file("/etc/oar/oar.conf")
+#config['LOG_FILE'] = '/tmp/oar_kamelot.log'
 
 def schedule_cycle(plt, now, queue="default"):
 
@@ -54,6 +54,9 @@ def schedule_cycle(plt, now, queue="default"):
 
     if nb_waiting_jobs > 0:
         log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        for jid in waiting_jids:
+             log.info("waiting_jid: " + str(jid))
+             
         job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
 
         #

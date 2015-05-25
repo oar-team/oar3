@@ -60,7 +60,8 @@ def get_waiting_jobs(queue, reservation='None'):
 
     for j in db.query(Job).filter(Job.state == "Waiting")\
                           .filter(Job.queue_name == queue)\
-                          .filter(Job.reservation == reservation):
+                          .filter(Job.reservation == reservation)\
+                          .order_by(Job.id).all():
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)
