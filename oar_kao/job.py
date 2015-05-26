@@ -1110,3 +1110,37 @@ def resume_job_action(job_id):
           .update({Resouce.suspended_jobs: 'NO'}, synchronize_session=False)
 
     db.commit()
+
+
+# get_cpuset_values_for_a_moldable_job
+# get cpuset values for each nodes of a MJob
+def  get_cpuset_values(cpuset_field, moldable_id):
+    #TODO TOFINISH
+    oar.warn("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
+    sql_where_string = "\'0\'"
+    if "SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE" in config:
+        resources_to_always_add_type = config["SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE"]
+    else:
+        resources_to_always_add_type = ""
+        
+    #TODO
+    if resources_to_always_add_type != "":
+        sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
+
+    result = db.query(Resources)\
+               .filter(AssignedResource.moldable_id == moldable_id)\
+               .filter(AssignedResource.resource_id == Resource.id)\
+               
+        
+    #my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field
+    #                            FROM resources, assigned_resources
+    #                            WHERE
+    #                                assigned_resources.moldable_job_id = $moldable_job_id AND
+    #                                assigned_resources.resource_id = resources.resource_id AND
+    #                                resources.network_address != \'\' AND
+    #                                (resources.type = \'default\' OR
+    #                                 $sql_where_string)
+    #                            GROUP BY resources.network_address, resources.$cpuset_field
+    #                        ");
+
+    return results 

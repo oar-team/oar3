@@ -663,7 +663,12 @@ def meta_schedule(mode='extern'):
     #
     # Search jobs to resume
     #
+
+    #
+    # TODO: TOFINISH
+    #
     if "Resuming" in jobs_by_state:
+        log.warn("Resuming job is NOT ENTIRELY IMPLEMENTED")
         for job in jobs_by_state["Resuming"]:
             other_jobs = get_jobs_on_resuming_job_resources(job.id)
             # TODO : look for timesharing other jobs. What do we do?????
@@ -681,32 +686,48 @@ def meta_schedule(mode='extern'):
                     skip = 0
                     log.debug("[" + str(job.id) + "] Running post suspend script: `" +
                               script +  " " + str(job.id) + "'")
-                    cmd =  script + str(job.id)
-                    error, error_code = tools.exec_w_timeout(cmd, timeout)
+                    cmd_str =  script + str(job.id)
+                    cmd = tools.Command(cmd_str)
+                    error, error_code = cmd.run(timeout)
                     
                     if error or (script_error):
                         str_error = "[" + str(job.id) + "] Suspend script error:" +\
                                     error +";  return code = " + str(error_code)
-                        oar.error(str_error)
+                        log.error(str_error)
                         add_new_event("RESUME_SCRIPT_ERROR", job.id, str_error)
                         frag_job(job.id)
-                        utils.notify_tcp_socket("Qdel") ?????
+                        utils.notify_almighty("Qdel")
                     skip =1
 
                 cpuset_nodes = None
+                if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config:
+                    cpuset_field = config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
+                else:
+                    cpuset_field = ""
                 if cpuset_field and (skip == 0):
-                    cpuset_name = get_job_cpuset_name(job.id)
+                    # 
+                    cpuset_name = job.user + "_" + str(job.id)
                     cpuset_nodes = get_cpuset_values(cpuset_field,
                                                      job.assigned_moldable_id)
 
                     suspend_data_hash = {'name': cpuset_name,
                                          'job_id': job.id,
                                          'oarexec_pid_file':\
-                                         tools.get_oar_pid_file_name(job.i)}
+                                         tools.get_oar_pid_file_name(job.id)}
                 if cpuset_nodes:
-                    taktuk_cmd = config["TAKTUk_CMD"]
-                    suspend_file = config["SUSPEND_RESUME_FILE"]
-                    
+                    taktuk_cmd = config["TAKTUK_CMD"]
+                    if "SUSPEND_RESUME_FILE" in config:
+                        suspend_file = config["SUSPEND_RESUME_FILE"]
+                    else:
+                        suspend_file = tools.get_default_suspend_resume_file()
+                
+    #
+    # TODO: TOFINISH
+    #
+                
+                
+
+                        
     # Notify oarsub -I when they will be launched
     for j_info in get_gantt_waiting_interactive_prediction_date():
         job_id, job_info_type, job_start_time, job_message = j_info
