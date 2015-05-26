@@ -101,13 +101,15 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
                                          get_waiting_reservations_already_scheduled(resource_set, job_security_time)
     gantt_flush_tables(accepted_ar_jids)
 
+    #TODO Can we remove this step, below ???
+    #  why don't use: assigned_resources and job start_time ??? in get_scheduled_jobs ???
     log.debug("Processing of current jobs")
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching', 
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
-    
     save_assigns(current_jobs, resource_set)
 
+    
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
     #
@@ -658,7 +660,9 @@ def meta_schedule(mode='extern'):
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.        
     jobs_by_state = get_current_not_waiting_jobs()
 
+    #
     # Search jobs to resume
+    #
     if "Resuming" in jobs_by_state:
         for job in jobs_by_state["Resuming"]:
             other_jobs = get_jobs_on_resuming_job_resources(job.id)
@@ -670,9 +674,39 @@ def meta_schedule(mode='extern'):
                     resume_job_action(job.id)
                     log.debug("[" + str(job_id) + "] Resume NOOP job OK")
                 else:
-                    tools.resume_job(job)
+                    script = config["JUST_BEFORE_RESUME_EXEC_FILE"]
+                    timeout = config["SUSPEND_RESUME_SCRIPT_TIMEOUT"]
+                    if timeout == None:
+                        timeout = tools.get_default_suspend_resume_script_timeout()
+                    skip = 0
+                    log.debug("[" + str(job.id) + "] Running post suspend script: `" +
+                              script +  " " + str(job.id) + "'")
+                    cmd =  script + str(job.id)
+                    error, error_code = tools.exec_w_timeout(cmd, timeout)
+                    
+                    if error or (script_error):
+                        str_error = "[" + str(job.id) + "] Suspend script error:" +\
+                                    error +";  return code = " + str(error_code)
+                        oar.error(str_error)
+                        add_new_event("RESUME_SCRIPT_ERROR", job.id, str_error)
+                        frag_job(job.id)
+                        utils.notify_tcp_socket("Qdel") ?????
+                    skip =1
 
+                cpuset_nodes = None
+                if cpuset_field and (skip == 0):
+                    cpuset_name = get_job_cpuset_name(job.id)
+                    cpuset_nodes = get_cpuset_values(cpuset_field,
+                                                     job.assigned_moldable_id)
 
+                    suspend_data_hash = {'name': cpuset_name,
+                                         'job_id': job.id,
+                                         'oarexec_pid_file':\
+                                         tools.get_oar_pid_file_name(job.i)}
+                if cpuset_nodes:
+                    taktuk_cmd = config["TAKTUk_CMD"]
+                    suspend_file = config["SUSPEND_RESUME_FILE"]
+                    
     # Notify oarsub -I when they will be launched
     for j_info in get_gantt_waiting_interactive_prediction_date():
         job_id, job_info_type, job_start_time, job_message = j_info
