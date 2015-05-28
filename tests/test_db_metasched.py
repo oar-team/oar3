@@ -1,4 +1,4 @@
-#import ipdb
+import pdb
 import pytest
 import os.path
 import re
@@ -85,6 +85,8 @@ def test_db_metasched_simple_1(monkeypatch):
     
     plt = Platform()
     r = plt.resource_set()
+
+    #pdb.set_trace()
 
     meta_schedule()
 

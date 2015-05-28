@@ -6,13 +6,30 @@ import os
 import json
 from sets import Set
 
+from oar.lib import config, get_logger
 from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.interval import itvs2ids
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import config, get_logger
 
+
+DEFAULT_CONFIG = {
+    'LOG_CATEGORIES': 'all',
+    'LOG_FILE': '',
+    'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
+    'LOG_LEVEL': 3,
+    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
+    'SCHEDULER_JOB_SECURITY_TIME': '60',
+    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
+    'FAIRSHARING_ENABLED': 'no',
+    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '3'
+}
+
+config.clear()
+config.update(DEFAULT_CONFIG)
 config['LOG_FILE'] = '/tmp/yop'
+
 log = get_logger("oar.batsim")
 
 jobs = {}
@@ -234,5 +251,5 @@ for j in json_jobs:
                         deps=[],
                         key_cache={},
                         ts=False, ph=0)
-
+    
 BatSched(res_set, jobs).run()

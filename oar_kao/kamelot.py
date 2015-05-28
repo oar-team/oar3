@@ -20,28 +20,28 @@ from oar.lib import db, Job
 besteffort_duration = 300  # TODO conf ???
 
 # Set undefined config value to default one
-default_config = {
-    "DB_PORT": "5432",
-    "HIERARCHY_LABEL": "resource_id,network_address",
-    "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
-    "SCHEDULER_JOB_SECURITY_TIME": "60",
-    "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
-    "FAIRSHARING_ENABLED": "no",
-    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30"
+DEFAULT_CONFIG = {
+    'DB_PORT': '5432',
+    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
+    'SCHEDULER_JOB_SECURITY_TIME': '60',
+    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
+    'FAIRSHARING_ENABLED': 'no',
+    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30'
 }
 
-#config.setdefault_config(default_config)
+#config.update(DEFAULT_CONFIG)
+
+config.setdefault_config(DEFAULT_CONFIG)
 
 #if 'OARCONFFILE' in os.environ:
 #    config.load_file(os.environ['OARCONFILE'])
 
 #config.load_file(os.environ['OARCONFILE'])
 
-#config.load_file("/etc/oar/oar.conf", "#", True)
-
 log = get_logger("oar.kamelot")
-config.load_file("/etc/oar/oar.conf")
-#config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+#config.load_file("/etc/oar/oar.conf")
+config['LOG_FILE'] = '/tmp/oar_kamelot.log'
 
 def schedule_cycle(plt, now, queue="default"):
 
@@ -57,7 +57,7 @@ def schedule_cycle(plt, now, queue="default"):
         for jid in waiting_jids:
              log.info("waiting_jid: " + str(jid))
              
-        job_security_time = config["SCHEDULER_JOB_SECURITY_TIME"]
+        job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
         #
         # Determine Global Resource Intervals and Initial Slot
@@ -93,6 +93,7 @@ def schedule_cycle(plt, now, queue="default"):
         #
         # Karma sorting (Fairsharing)
         #
+        
         if "FAIRSHARING_ENABLED" in config:
             if config["FAIRSHARING_ENABLED"] == "yes":
                 waiting_jids = karma_jobs_sorting(

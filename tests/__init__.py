@@ -39,9 +39,10 @@ DEFAULT_CONFIG = {
     'SCHEDULER_JOB_SECURITY_TIME': 60,
     'SCHEDULER_NB_PROCESSES': 1,
     'SCHEDULER_PRIORITY_HIERARCHY_ORDER': 'network_address/resource_id',
-    'SCHEDULER_RESOURCE_ORDER':
-        'scheduler_priority ASC, state_num ASC, available_upto DESC, '
-        'suspended_jobs ASC, network_address ASC, resource_id ASC',
+    #    'SCHEDULER_RESOURCE_ORDER':
+    #    'scheduler_priority ASC, state_num ASC, available_upto DESC, '
+    #    'suspended_jobs ASC, network_address ASC, resource_id ASC',
+    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
     'SCHEDULER_TIMEOUT': 30,
     'SERVER_HOSTNAME': 'server',
     'SERVER_PORT': 6666,
