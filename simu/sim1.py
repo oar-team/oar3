@@ -48,6 +48,9 @@ for i in range(1, nb_jobs + 1):
 # submission_time_jids= [(10, [1,2,3,4])]
 # submission_time_jids= [(10, [1,2]), (10, [3])]
 
+
+print submission_time_jids
+
 simsched = SimSched(res_set, jobs, submission_time_jids)
 simsched.run()
 

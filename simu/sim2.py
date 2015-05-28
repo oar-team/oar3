@@ -1,4 +1,4 @@
-from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched, gene_jobsim_sub_time
+from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched
 
 swf_wkld = SWFWorkload("gofree_sample.swf")
 

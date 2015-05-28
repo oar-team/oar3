@@ -1,3 +1,4 @@
+import ipdb
 import re
 from sets import Set
 import simpy
@@ -47,14 +48,13 @@ class SimSched(object):
 
             events = list(self.evt_running_jobs)
             if next_job_arrival is not None:
+                print "append next_job_arrival evt"
                 events.append(next_job_arrival)
             any_of_events = AnyOf(self.env, events)
             ev = yield any_of_events
-
-            # print ev
-
-            for k, v in ev.iteritems():
-                # print "event:..... ", k
+            
+            for k, v in ev.todict().iteritems():
+                #print "event:..... ", k
                 if k == next_job_arrival:
                     print "job arrives !", v
                     for jid in v:
@@ -62,21 +62,21 @@ class SimSched(object):
                     next_job_arrival = self.job_arrival()
 
                 else:
-                    print "job endings !", k, v
+                    print "job endings !" , k, v
                     # if k in self.evt_running_jobs:
                     # print "remove ev: ", k
                     self.evt_running_jobs.remove(k)
                     self.jobs[v].state = "Terminated"
                     self.platform.completed_jids.append(v)
                     self.platform.running_jids.remove(v)
-
+                    
+                    
             now = self.env.now
 
             if ((next_job_arrival is None)
                     and not self.waiting_jids
                     and not self.evt_running_jobs):
-                print("All job submitted, no more waiting or running jobs ..."
-                      + now)
+                print "All job submitted, no more waiting or running jobs ...", now
                 self.env.exit()
 
             print "call schedule_cycle.... ", now
@@ -98,6 +98,7 @@ class SimSched(object):
         if self.sub_time_idx < self.sub_time_len:
             t, jids = self.sub_time_jids[self.sub_time_idx]
             self.sub_time_idx += 1
+            print "next jobs ", jids , "submitted in:", t, " sec" 
             return self.env.timeout(t, jids)
         else:
             return None
