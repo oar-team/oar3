@@ -21,6 +21,7 @@ __all__ = ['Database']
 
 class BaseModel(object):
 
+    __table_args__ = {'extend_existing': True, 'sqlite_autoincrement': True}
     query = None
 
     @classmethod
@@ -47,6 +48,12 @@ class BaseModel(object):
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
+
+    @classmethod
+    def __declare_last__(cls):
+        if '__extra_table_args__' in cls.__dict__:
+            cls.__table__._init_items(*cls.__extra_table_args__)
+            del cls.__extra_table_args__
 
 
 class SessionProperty(object):
@@ -268,6 +275,7 @@ def _include_sqlalchemy(obj):
         def _make_table(*args, **kwargs):
             if len(args) > 1 and isinstance(args[1], obj.Column):
                 args = (args[0], obj.metadata) + args[1:]
+            kwargs.setdefault('extend_existing', True)
             info = kwargs.pop('info', None) or {}
             info.setdefault('autoreflect', False)
             kwargs['info'] = info

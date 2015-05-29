@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import db
+from sqlalchemy.orm import configure_mappers
 
 
 schema = db.Table('schema',
@@ -27,7 +28,6 @@ class Accounting(db.Model):
 
 class AdmissionRule(db.Model):
     __tablename__ = 'admission_rules'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column(db.Integer, primary_key=True)
     priority = db.Column(db.Integer, server_default='0')
@@ -67,7 +67,6 @@ class EventLogHostname(db.Model):
 
 class EventLog(db.Model):
     __tablename__ = 'event_logs'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('event_id', db.Integer, primary_key=True)
     type = db.Column(db.String(50), index=True, server_default='')
@@ -79,7 +78,6 @@ class EventLog(db.Model):
 
 class File(db.Model):
     __tablename__ = 'files'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('file_id', db.Integer, primary_key=True)
     md5sum = db.Column(
@@ -96,7 +94,6 @@ class File(db.Model):
 
 class FragJob(db.Model):
     __tablename__ = 'frag_jobs'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     job_id = db.Column(
         'frag_id_job', db.Integer, primary_key=True, server_default='0')
@@ -188,7 +185,6 @@ class JobResourceDescription(db.Model):
 
 class JobResourceGroup(db.Model):
     __tablename__ = 'job_resource_groups'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('res_group_id', db.Integer, primary_key=True)
     moldable_id = db.Column(
@@ -200,7 +196,6 @@ class JobResourceGroup(db.Model):
 
 class JobStateLog(db.Model):
     __tablename__ = 'job_state_logs'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('job_state_log_id', db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, index=True, server_default='0')
@@ -211,7 +206,6 @@ class JobStateLog(db.Model):
 
 class JobType(db.Model):
     __tablename__ = 'job_types'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('job_type_id', db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, index=True, server_default='0')
@@ -221,10 +215,7 @@ class JobType(db.Model):
 
 class Job(db.DeferredReflection, db.Model):
     __tablename__ = 'jobs'
-    __table_args__ = (
-        db.Index('state_id', 'state', 'job_id'),
-        {'sqlite_autoincrement': True}
-    )
+    __extra_table_args__ = (db.Index('state_id', 'state', 'job_id'), )
 
     id = db.Column('job_id', db.Integer, primary_key=True)
     array_id = db.Column(db.Integer, index=True, server_default='0')
@@ -266,7 +257,6 @@ class Job(db.DeferredReflection, db.Model):
 
 class MoldableJobDescription(db.Model):
     __tablename__ = 'moldable_job_descriptions'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('moldable_id', db.Integer, primary_key=True)
     job_id = db.Column(
@@ -288,7 +278,6 @@ class Queue(db.Model):
 
 class ResourceLog(db.Model):
     __tablename__ = 'resource_logs'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('resource_log_id', db.Integer, primary_key=True)
     resource_id = db.Column(db.Integer, index=True, server_default='0')
@@ -301,7 +290,6 @@ class ResourceLog(db.Model):
 
 class Resource(db.DeferredReflection, db.Model):
     __tablename__ = 'resources'
-    __table_args__ = {'sqlite_autoincrement': True}
 
     id = db.Column('resource_id', db.Integer, primary_key=True)
     type = db.Column(db.String(100), index=True, server_default='default')
@@ -331,6 +319,9 @@ class Scheduler(db.Model):
     name = db.Column(db.String(100), primary_key=True)
     script = db.Column(db.String(100))
     description = db.Column(db.String(255))
+
+
+configure_mappers()
 
 
 def all_models():
