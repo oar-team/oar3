@@ -120,3 +120,15 @@ class BaseQueryCollection(object):
         if network_address is not None:
             query = query.filter_by(network_address=network_address)
         return query.order_by(Resource.id.asc())
+
+    def get_job_resources(self, moldable_id, detailed=False):
+        """ Returns the list of resources associated to the job passed in
+        parameter """
+        if detailed:
+            query = db.query(Resource)
+        else:
+            query = db.query(Resource.id)
+        query = query.join(AssignedResource,
+                           AssignedResource.resource_id == Resource.id)\
+                     .filter(AssignedResource.moldable_id == moldable_id)
+        return query.order_by(Resource.id.asc())
