@@ -33,7 +33,9 @@ For example:
 PostgreSQL: postgresql://scott:tiger@localhost/foo
 MySQL: mysql://scott:tiger@localhost/bar
 
-OAR database URL"""
+For more information, see : http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls
+
+OAR database URL"""  # noqa
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, chain=True)
