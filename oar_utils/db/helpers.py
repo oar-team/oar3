@@ -2,21 +2,27 @@
 from __future__ import division
 
 import sys
+import re
 import click
+import time
+import logging
 
 from functools import reduce
 from sqlalchemy import func, and_, not_
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 from oar.lib import Database
 from oar.lib.compat import reraise
 from functools import update_wrapper
 from oar.lib.utils import cached_property
 
 
-magenta = lambda x: click.style("%s" % x, fg="magenta")
-yellow = lambda x: click.style("%s" % x, fg="yellow")
-green = lambda x: click.style("%s" % x, fg="green")
-blue = lambda x: click.style("%s" % x, fg="blue")
-red = lambda x: click.style("%s" % x, fg="red")
+magenta = lambda x, **kwargs: click.style("%s" % x, fg="magenta", **kwargs)
+yellow = lambda x, **kwargs: click.style("%s" % x, fg="yellow", **kwargs)
+green = lambda x, **kwargs: click.style("%s" % x, fg="green", **kwargs)
+cyan = lambda x, **kwargs: click.style("%s" % x, fg="cyan", **kwargs)
+blue = lambda x, **kwargs: click.style("%s" % x, fg="blue", **kwargs)
+red = lambda x, **kwargs: click.style("%s" % x, fg="red", **kwargs)
 
 
 class Context(object):
@@ -27,6 +33,32 @@ class Context(object):
         self.enable_pagination = False
         self.debug = False
         self.force_yes = False
+
+    def configure_log(self):
+        logging.basicConfig()
+        self.logger = logging.getLogger("oar.database")
+
+        if not self.debug:
+            self.logger.setLevel(logging.INFO)
+            return
+
+        self.logger.setLevel(logging.DEBUG)
+
+        for handler in self.logger.root.handlers:
+            handler.setFormatter(AnsiColorFormatter())
+
+        @event.listens_for(Engine, "before_cursor_execute")
+        def before_cursor_execute(conn, cursor, statement,
+                                  parameters, context, executemany):
+            conn.info.setdefault('query_start_time', []).append(time.time())
+            self.logger.debug("Start Query: \n%s\n" % statement)
+
+        @event.listens_for(Engine, "after_cursor_execute")
+        def after_cursor_execute(conn, cursor, statement,
+                                 parameters, context, executemany):
+            total = time.time() - conn.info['query_start_time'].pop(-1)
+            self.logger.debug("Query Complete!")
+            self.logger.debug("Total Time: %f" % total)
 
     @cached_property
     def archive_db(self):
@@ -147,7 +179,11 @@ class Context(object):
         kwargs.setdefault("file", sys.stderr)
         prefix = kwargs.pop("prefix", "")
         for msg in args:
-            click.echo(prefix + msg, **kwargs)
+            message = prefix + msg
+            if self.debug:
+                message = message.replace('\r', '')
+                kwargs['nl'] = True
+            click.echo(message, **kwargs)
 
     def confirm(self, message, **kwargs):
         if not self.force_yes:
@@ -182,3 +218,48 @@ def make_pass_decorator(ensure=False):
 
 
 pass_context = make_pass_decorator(ensure=True)
+
+re_color_codes = re.compile(r'\033\[(\d;)?\d+m')
+
+LEVELS = {
+    'WARNING': red(' WARN'),
+    'INFO': blue(' INFO'),
+    'DEBUG': blue('DEBUG'),
+    'CRITICAL': magenta(' CRIT'),
+    'ERROR': red('ERROR'),
+}
+
+
+class AnsiColorFormatter(logging.Formatter):
+
+    def __init__(self, msgfmt=None, datefmt=None):
+        logging.Formatter.__init__(self, None, '%H:%M:%S')
+
+    def format(self, record):
+        """
+        Format the specified record as text.
+
+        The record's attribute dictionary is used as the operand to a
+        string formatting operation which yields the returned string.
+        Before formatting the dictionary, a couple of preparatory steps
+        are carried out. The message attribute of the record is computed
+        using LogRecord.getMessage(). If the formatting string contains
+        "%(asctime)", formatTime() is called to format the event time.
+        If there is exception information, it is formatted using
+        formatException() and appended to the message.
+        """
+        message = record.getMessage()
+        asctime = self.formatTime(record, self.datefmt)
+        name = yellow(record.name)
+
+        s = '%(timestamp)s %(levelname)s %(name)s ' % {
+            'timestamp': green('%s,%03d' % (asctime, record.msecs), bold=True),
+            'levelname': LEVELS[record.levelname],
+            'name': name,
+        }
+
+        if "\n" in message:
+            indent_length = len(re_color_codes.sub('', s))
+            message = message.replace("\n", "\n" + ' ' * indent_length)
+
+        s += message

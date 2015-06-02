@@ -48,6 +48,7 @@ def cli(ctx, force_yes, debug):
     """Archive OAR database."""
     ctx.force_yes = force_yes
     ctx.debug = debug
+    ctx.configure_log()
 
 
 @cli.command()
