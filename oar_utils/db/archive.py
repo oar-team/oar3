@@ -61,13 +61,17 @@ def cli(ctx, force_yes, debug):
 @click.option('--archive-db-url', prompt="OAR archive database URL",
               default=get_default_archive_database_url(), show_default=True,
               help='The url for your archive OAR database.')
+@click.option('--enable-pagination', is_flag=True, default=False,
+              help='Enable query pagination during copy.')
 @pass_context
-def sync(ctx, chunk, ignore_jobs, current_db_url, archive_db_url):
+def sync(ctx, chunk, ignore_jobs, current_db_url, archive_db_url,
+         enable_pagination):
     """ Send all resources and finished jobs to archive database."""
     ctx.chunk = chunk
     ctx.ignore_jobs = ignore_jobs
     ctx.current_db_url = current_db_url
     ctx.archive_db_url = archive_db_url
+    ctx.enable_pagination = enable_pagination
     ctx.confirm("Continue to copy old resources and jobs to the archive "
                 "database?", default=True)
     archive_db(ctx)

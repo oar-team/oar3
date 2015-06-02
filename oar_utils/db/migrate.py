@@ -39,14 +39,18 @@ OAR database URL"""
               help='the url for your current OAR database.')
 @click.option('--new-db-url', prompt="new OAR database URL",
               help='the url for your new OAR database.')
+@click.option('--enable-pagination', is_flag=True, default=False,
+              help='Enable query pagination during copy.')
 @click.option('--debug', is_flag=True, default=False, help="Enable Debug.")
 @pass_context
-def cli(ctx, force_yes, chunk, current_db_url, new_db_url, debug):
+def cli(ctx, force_yes, chunk, current_db_url, new_db_url, enable_pagination,
+        debug):
     """Archive OAR database."""
     ctx.force_yes = force_yes
     ctx.chunk = chunk
     ctx.debug = debug
     ctx.current_db_url = current_db_url
     ctx.archive_db_url = new_db_url
+    ctx.enable_pagination = enable_pagination
     ctx.confirm("Continue to migrate your database?", default=True)
     migrate_db(ctx)
