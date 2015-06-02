@@ -274,11 +274,12 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
     total_lenght = from_conn.execute(count_query).scalar()
 
     def fetch_stream():
-        q = select_query.limit(ctx.chunk)
+        q = select_query.execution_options(stream_results=True)
         page = 0
+        result = from_conn.execute(q)
         while True:
-            rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
-            if len(rows) == 0:
+            rows = result.fetchmany(ctx.chunk)
+            if not rows:
                 break
             yield rows
             page = page + 1
@@ -288,8 +289,8 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
         ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
         progress = 0
         for rows in fetch_stream():
-            lenght = len(rows)
-            progress = lenght + progress
+            progress = ctx.chunk + progress
+            progress = total_lenght if progress > total_lenght else progress
             percentage = blue("%s/%s" % (progress, total_lenght))
             ctx.log(message % (table.name, percentage), nl=False)
             raw_conn.execute(insert_query, rows)
