@@ -49,15 +49,16 @@ def cli(ctx, force_yes, debug):
 
 
 @cli.command()
-@click.option('--chunk', type=int, default=10000, help="Chunk size")
+@click.option('--chunk', type=int, default=10000, show_default=True,
+              help="Chunk size")
 @click.option('--ignore-jobs', default=["^Terminated", "^Error"],
-              multiple=True)
+              show_default=True, multiple=True, help='Ignore job state')
 @click.option('--current-db-url', prompt=DATABASE_PROMPT,
-              default=get_default_database_url(),
-              help='the url for your current OAR database.')
+              default=get_default_database_url(), show_default=True,
+              help='The url for your current OAR database.')
 @click.option('--archive-db-url', prompt="OAR archive database URL",
-              default=get_default_archive_database_url(),
-              help='the url for your archive OAR database.')
+              default=get_default_archive_database_url(), show_default=True,
+              help='The url for your archive OAR database.')
 @pass_context
 def sync(ctx, chunk, ignore_jobs, current_db_url, archive_db_url):
     """ Send all resources and finished jobs to archive database."""
@@ -72,13 +73,14 @@ def sync(ctx, chunk, ignore_jobs, current_db_url, archive_db_url):
 
 @cli.command()
 @click.option('--ignore-jobs', default=["^Terminated", "^Error"],
-              multiple=True)
-@click.option('--max-job-id', type=int, default=None,
+              show_default=True, multiple=True, help='Ignore job state')
+@click.option('--max-job-id', type=int, default=None, show_default=True,
               help='Purge only jobs lower than this id')
-@click.option('--ignore-resources', default=["^Dead"], multiple=True)
+@click.option('--ignore-resources', default=["^Dead"], show_default=True,
+              help='Ignore resource state', multiple=True)
 @click.option('--current-db-url', prompt=DATABASE_PROMPT,
-              default=get_default_database_url(),
-              help='the url for your current OAR database.')
+              default=get_default_database_url(), show_default=True,
+              help='The url for your current OAR database.')
 @pass_context
 def purge(ctx, ignore_resources, ignore_jobs, max_job_id, current_db_url):
     """ Purge old resources and old jobs from your current database."""
@@ -97,10 +99,10 @@ def purge(ctx, ignore_resources, ignore_jobs, max_job_id, current_db_url):
 @cli.command()
 @click.option('--current-db-url', prompt=DATABASE_PROMPT,
               default=get_default_database_url(),
-              help='the url for your current OAR database.')
+              help='The url for your current OAR database.')
 @click.option('--archive-db-url', prompt="OAR archive database URL",
               default=get_default_archive_database_url(),
-              help='the url for your archive OAR database.')
+              help='The url for your archive OAR database.')
 @pass_context
 def inspect(ctx, current_db_url, archive_db_url):
     """ Analyze all databases."""
