@@ -7,13 +7,15 @@ import click
 import time
 import logging
 
-from functools import reduce
+from functools import reduce, update_wrapper
 from sqlalchemy import func, and_, not_
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Query
+from sqlalchemy_utils.functions.render import render_statement
+
 from oar.lib import Database
 from oar.lib.compat import reraise
-from functools import update_wrapper
 from oar.lib.utils import cached_property
 
 
@@ -33,6 +35,7 @@ class Context(object):
         self.enable_pagination = False
         self.debug = False
         self.force_yes = False
+        self._current_compiled_query = None
 
     def configure_log(self):
         logging.basicConfig()
@@ -47,10 +50,20 @@ class Context(object):
         for handler in self.logger.root.handlers:
             handler.setFormatter(AnsiColorFormatter())
 
+        @event.listens_for(Query, "before_compile")
+        def before_compile(query):
+            if self._current_compiled_query is None:
+                self._current_compiled_query = ""
+                self._current_compiled_query = render_statement(query)
+            return query
+
         @event.listens_for(Engine, "before_cursor_execute")
         def before_cursor_execute(conn, cursor, statement,
                                   parameters, context, executemany):
             conn.info.setdefault('query_start_time', []).append(time.time())
+            if self._current_compiled_query is not None:
+                statement = self._current_compiled_query
+                self._current_compiled_query = None
             self.logger.debug("Start Query: \n%s\n" % statement)
 
         @event.listens_for(Engine, "after_cursor_execute")
@@ -263,3 +276,4 @@ class AnsiColorFormatter(logging.Formatter):
             message = message.replace("\n", "\n" + ' ' * indent_length)
 
         s += message
+        return s
