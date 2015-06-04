@@ -261,8 +261,6 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
         delete_query = delete_query.where(reduce(and_, criteria))
     ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % table.name,
             nl=False)
-    if criteria:
-        delete_query = delete_query.where(reduce(and_, criteria))
     count = raw_conn.execute(delete_query).rowcount
     ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (table.name,
                                                                  blue(count)))
