@@ -268,6 +268,23 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
                                                                  blue(count)))
 
 
+def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
+    if message:
+        ctx.log(message)
+    raw_query = """
+DELETE a
+FROM {f_table} a
+LEFT JOIN {p_table} b
+ON a.{f_key} = b.{p_key}
+WHERE b.{p_key} IS NULL
+""".format(**locals())
+    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % f_table,
+            nl=False)
+    count = raw_conn.execute(raw_query).rowcount
+    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (f_table,
+                                                                 blue(count)))
+
+
 def copy_table(ctx, table, raw_conn, criteria=[]):
     # prepare the connection
     from_conn = ctx.current_db.engine.connect()
@@ -359,7 +376,6 @@ def purge_db(ctx):
     raw_conn = db.engine.connect()
     inspector = Inspector.from_engine(db.engine)
     tables = [reflect_table(db, name) for name in inspector.get_table_names()]
-    tables_dict = dict(((t.name, t) for t in tables))
     change = False
     rv = None
     message = "Purge old resources from database :"
@@ -382,22 +398,18 @@ def purge_db(ctx):
             if not change and rv is not None:
                 change = True
     # Purge events
-    message = "Purge old events from database :"
-    event_log_hostnames = tables_dict["event_log_hostnames"]
-    event_logs = tables_dict["event_logs"]
-    t = select([event_logs.c["event_id"]])
-    criteria = [event_log_hostnames.c.get("event_id").notin_(t)]
-    rv = delete_from_table(ctx, event_log_hostnames, raw_conn,
-                           criteria, message)
+    message = "Purge orphan events from database :"
+    rv = delete_orphan(ctx,
+                       "event_logs", "event_id",
+                       "event_log_hostnames", "event_id",
+                       raw_conn, message)
     if not change and rv is not None:
         change = True
-    message = "Purge old resources descriptions from database :"
-    resource_descriptions = tables_dict["job_resource_descriptions"]
-    resource_groups = tables_dict["job_resource_groups"]
-    t = select([resource_groups.c["res_group_id"]])
-    criteria = [resource_descriptions.c.get("res_job_group_id").notin_(t)]
-    rv = delete_from_table(ctx, resource_descriptions, raw_conn,
-                           criteria, message)
+    message = "Purge orphan resources descriptions from database :"
+    rv = delete_orphan(ctx,
+                       "job_resource_groups", "res_group_id",
+                       "job_resource_descriptions", "res_job_group_id",
+                       raw_conn, message)
     if not change and rv is not None:
         change = True
 
