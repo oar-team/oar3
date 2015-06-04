@@ -241,20 +241,18 @@ def merge_table(ctx, table):
 
 
 def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
-    check_query = select([func.count()]).select_from(table)
+    if message:
+        ctx.log(message)
+    delete_query = table.delete()
     if criteria:
-        check_query = check_query.where(reduce(and_, criteria))
-    count = raw_conn.execute(check_query).scalar()
-    if count > 0:
-        if message:
-            ctx.log(message)
-        delete_query = table.delete()
-        count_str = blue("%s" % (count))
-        ctx.log(magenta(' delete') + ' ~> table %s (%s)' % (table.name,
-                                                            count_str))
-        if criteria:
-            delete_query = delete_query.where(reduce(and_, criteria))
-        return raw_conn.execute(delete_query)
+        delete_query = delete_query.where(reduce(and_, criteria))
+    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % table.name,
+            nl=False)
+    if criteria:
+        delete_query = delete_query.where(reduce(and_, criteria))
+    count = raw_conn.execute(delete_query).rowcount
+    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (table.name,
+                                                                 blue(count)))
 
 
 def copy_table(ctx, table, raw_conn, criteria=[]):
