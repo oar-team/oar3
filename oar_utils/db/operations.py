@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, absolute_import, unicode_literals
 
+import sys
 import re
 from copy import copy
 from functools import partial, reduce
@@ -12,9 +13,9 @@ from sqlalchemy.sql.expression import select
 from sqlalchemy_utils.functions import (database_exists, create_database,
                                         render_statement)
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import IntegrityError
 
-from oar.lib.compat import itervalues, to_unicode, iterkeys
-
+from oar.lib.compat import itervalues, to_unicode, iterkeys, reraise
 
 from .helpers import green, magenta, yellow, blue, red
 
@@ -215,10 +216,22 @@ def sync_tables(ctx, tables, delete=False):
                     pk = table.primary_key.columns.values()[0]
                     if isinstance(pk.type, Integer):
                         max_pk_query = select([func.max(pk)])
-                        max_pk = raw_conn.execute(max_pk_query).scalar()
-                        if max_pk is not None:
-                            criteria.append(pk > max_pk)
-                        copy_table(ctx, table, raw_conn, criteria)
+                        errors_integrity = {}
+                        while True:
+                            criterion = criteria[:]
+                            max_pk = raw_conn.execute(max_pk_query).scalar()
+                            if max_pk is not None:
+                                criterion.append(pk > max_pk)
+                            try:
+                                copy_table(ctx, table, raw_conn, criterion)
+                            except IntegrityError:
+                                exc_type, exc_value, tb = sys.exc_info()
+                                if max_pk in errors_integrity:
+                                    reraise(exc_type, exc_value, tb.tb_next)
+                                else:
+                                    errors_integrity[max_pk] = True
+                                    continue
+                            break
                     else:
                         merge_table(ctx, table)
                 else:
