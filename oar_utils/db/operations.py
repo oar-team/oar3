@@ -315,16 +315,16 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
 
     def fetch_stream():
         q = select_query.execution_options(stream_results=True)
-        if ctx.enable_pagination:
-            q = q.limit(ctx.chunk)
-        else:
+        if ctx.disable_pagination:
             result = from_conn.execute(q)
+        else:
+            q = q.limit(ctx.chunk)
         page = 0
         while True:
-            if ctx.enable_pagination:
-                rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
-            else:
+            if ctx.disable_pagination:
                 rows = result.fetchmany(ctx.chunk)
+            else:
+                rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
             if not rows:
                 break
             yield rows

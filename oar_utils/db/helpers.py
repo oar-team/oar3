@@ -32,7 +32,7 @@ class Context(object):
     def __init__(self):
         self.archive_db_suffix = "archive"
         self.max_job_id = None
-        self.enable_pagination = False
+        self.disable_pagination = False
         self.debug = False
         self.force_yes = False
         self._current_compiled_query = None
