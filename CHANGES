@@ -1,10 +1,22 @@
 OAR utils changelog
 ===================
 
-Version 0.2.0.dev0
-------------------
+Version 0.2.0
+-------------
 
-**unreleased**
+Released on June 05th 2015
+
+Database Archive
+~~~~~~~~~~~~~~~~
+
+    - Made deterministic order_by to sync queries in order to avoid IntegrityError during copy (Fixed #1)
+    - Handled IntegrityError during bulk INSERT (Fixed #1)
+    - Used Postgresql DELETE with the USING clause to improve performance (Fixed #2)
+    - Made the delete orphan queries faster with LEFT JOIN in Mysql (Fixed #2)
+    - Removed count query when performing a bulk delete query (Fixed #2)
+    - Configured debug logging to displayed SQL queries
+    - Added option to disable pagination during sync operation
+    - Displayed default values in the CLI
 
 Version 0.1.2
 -------------
