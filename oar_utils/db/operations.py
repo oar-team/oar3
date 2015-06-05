@@ -6,7 +6,7 @@ import re
 from copy import copy
 from functools import partial, reduce
 
-from sqlalchemy import func, MetaData, Table, and_, not_
+from sqlalchemy import func, MetaData, Table, and_, not_, asc as order_by_func
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.types import Integer
 from sqlalchemy.sql.expression import select
@@ -308,6 +308,10 @@ def copy_table(ctx, table, raw_conn, criteria=[]):
         count_query = select_count
 
     total_lenght = from_conn.execute(count_query).scalar()
+
+    select_query = select_query.order_by(
+        *(order_by_func(c) for c in table.c if c.primary_key)
+    )
 
     def fetch_stream():
         q = select_query.execution_options(stream_results=True)
