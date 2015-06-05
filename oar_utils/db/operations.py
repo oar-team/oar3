@@ -270,13 +270,21 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
 def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
     if message:
         ctx.log(message)
-    raw_query = """
-DELETE a
-FROM {f_table} a
-LEFT JOIN {p_table} b
-ON a.{f_key} = b.{p_key}
-WHERE b.{p_key} IS NULL
-""".format(**locals())
+    dialect = raw_conn.engine.dialect.name
+    if dialect == 'mysql':
+        raw_query = 'DELETE a FROM {f_table} a\n' \
+                    'LEFT JOIN {p_table} b\n' \
+                    'ON a.{f_key} = b.{p_key}\n' \
+                    'WHERE b.{p_key} IS NULL'.format(**locals())
+    elif dialect == 'postgresql':
+        raw_query = 'DELETE FROM {f_table} a\n' \
+                    'USING {p_table} b\n' \
+                    'WHERE a.{f_key} = b.{p_key}\n' \
+                    'AND b.{p_key} IS NULL'.format(**locals())
+    else:
+        raw_query = 'DELETE FROM {f_table} a\n' \
+                    'WHERE a.{f_key} NOT IN = ' \
+                    '(SELECT {p_key} from {p_table})'.format(**locals())
     ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % f_table,
             nl=False)
     count = raw_conn.execute(raw_query).rowcount
