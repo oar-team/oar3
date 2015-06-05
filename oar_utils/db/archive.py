@@ -99,7 +99,7 @@ def purge(ctx, ignore_resources, ignore_jobs, max_job_id, current_db_url):
     msg = "Continue to purge old resources and jobs "\
           "from your current database?"
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
-    if not purge_db(ctx):
+    if purge_db(ctx) == 0:
         ctx.log("\nNothing to do.")
 
 

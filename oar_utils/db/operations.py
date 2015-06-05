@@ -264,6 +264,7 @@ def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
     count = raw_conn.execute(delete_query).rowcount
     ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (table.name,
                                                                  blue(count)))
+    return count
 
 
 def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
@@ -281,6 +282,7 @@ WHERE b.{p_key} IS NULL
     count = raw_conn.execute(raw_query).rowcount
     ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (f_table,
                                                                  blue(count)))
+    return count
 
 
 def copy_table(ctx, table, raw_conn, criteria=[]):
@@ -374,7 +376,7 @@ def purge_db(ctx):
     raw_conn = db.engine.connect()
     inspector = Inspector.from_engine(db.engine)
     tables = [reflect_table(db, name) for name in inspector.get_table_names()]
-    change = False
+    count = 0
     rv = None
     message = "Purge old resources from database :"
     for table in tables:
@@ -384,8 +386,7 @@ def purge_db(ctx):
                 rv = delete_from_table(ctx, table, raw_conn, criteria, message)
                 if message is not None:
                     message = None
-                if not change and rv is not None:
-                    change = True
+                count += rv
     message = "Purge old jobs from database :"
     for table in tables:
         criteria = get_jobs_sync_criteria(ctx, table)
@@ -393,25 +394,22 @@ def purge_db(ctx):
             rv = delete_from_table(ctx, table, raw_conn, criteria, message)
             if message is not None:
                 message = None
-            if not change and rv is not None:
-                change = True
+            count += rv
     # Purge events
     message = "Purge orphan events from database :"
     rv = delete_orphan(ctx,
                        "event_logs", "event_id",
                        "event_log_hostnames", "event_id",
                        raw_conn, message)
-    if not change and rv is not None:
-        change = True
+    count += rv
     message = "Purge orphan resources descriptions from database :"
     rv = delete_orphan(ctx,
                        "job_resource_groups", "res_group_id",
                        "job_resource_descriptions", "res_job_group_id",
                        raw_conn, message)
-    if not change and rv is not None:
-        change = True
+    count += rv
 
-    return change
+    return count
 
 
 def count_all(db):
