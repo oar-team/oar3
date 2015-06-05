@@ -282,8 +282,8 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
                     'WHERE a.{f_key} = b.{p_key}\n' \
                     'AND b.{p_key} IS NULL'.format(**locals())
     else:
-        raw_query = 'DELETE FROM {f_table} a\n' \
-                    'WHERE a.{f_key} NOT IN = ' \
+        raw_query = 'DELETE FROM {f_table}\n' \
+                    'WHERE {f_key} NOT IN ' \
                     '(SELECT {p_key} from {p_table})'.format(**locals())
     ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % f_table,
             nl=False)
