@@ -77,29 +77,29 @@ get_moldables_columns = partial(get_table_columns, MOLDABLE_JOBS_TABLES)
 get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
 
 
-def get_jobs_sync_criteria(ctx, table):
+def get_jobs_sync_criterion(ctx, table):
     # prepare query
-    criteria = []
+    criterion = []
     if table.name in jobs_table:
         for column_name in get_jobs_columns(table.name):
             column = table.c.get(column_name)
-            criteria.append(column < ctx.max_job_to_sync)
+            criterion.append(column < ctx.max_job_to_sync)
     if table.name in moldable_jobs_tables:
         for column_name in get_moldables_columns(table.name):
             column = table.c.get(column_name)
-            criteria.append(column < ctx.max_moldable_job_to_sync)
-    return criteria
+            criterion.append(column < ctx.max_moldable_job_to_sync)
+    return criterion
 
 
-def get_resources_purge_criteria(ctx, table):
+def get_resources_purge_criterion(ctx, table):
     # prepare query
-    criteria = []
+    criterion = []
     if table.name in resources_tables:
         for column_name in get_resources_columns(table.name):
             column = table.c.get(column_name)
             if ctx.resources_to_purge:
-                criteria.append(column.in_(ctx.resources_to_purge))
-    return criteria
+                criterion.append(column.in_(ctx.resources_to_purge))
+    return criterion
 
 
 def archive_db(ctx):
@@ -164,10 +164,10 @@ def clone_db(ctx, ignored_tables=()):
                 'ALTER TABLE %s.%s DISABLE KEYS' % (ctx.archive_db_name, name)
             )
             table = reflect_table(ctx.current_db, name)
-            criteria = get_jobs_sync_criteria(ctx, table)
+            criterion = get_jobs_sync_criterion(ctx, table)
             query = select([table])
-            if criteria:
-                query = query.where(reduce(and_, criteria))
+            if criterion:
+                query = query.where(reduce(and_, criterion))
             raw_sql = render_statement(query, ctx.current_db.engine)
             raw_sql = raw_sql.replace(";", "").replace("\n", "")
             matcher = re.compile(r'SELECT(.*?)FROM', re.IGNORECASE | re.DOTALL)
@@ -207,10 +207,10 @@ def sync_tables(ctx, tables, delete=False):
     # Get the max pk
     for table in tables:
         if table.name not in SYNC_IGNORED_TABLES:
-            criteria = get_jobs_sync_criteria(ctx, table)
-            if delete and criteria:
-                reverse_criteria = [not_(c) for c in criteria]
-                delete_from_table(ctx, table, raw_conn, reverse_criteria)
+            criterion = get_jobs_sync_criterion(ctx, table)
+            if delete and criterion:
+                reverse_criterion = not_(reduce(and_, criterion))
+                delete_from_table(ctx, table, raw_conn, reverse_criterion)
             else:
                 if table.primary_key:
                     pk = table.primary_key.columns.values()[0]
@@ -218,12 +218,12 @@ def sync_tables(ctx, tables, delete=False):
                         max_pk_query = select([func.max(pk)])
                         errors_integrity = {}
                         while True:
-                            criterion = criteria[:]
+                            criterion_c = criterion[:]
                             max_pk = raw_conn.execute(max_pk_query).scalar()
                             if max_pk is not None:
-                                criterion.append(pk > max_pk)
+                                criterion_c.append(pk > max_pk)
                             try:
-                                copy_table(ctx, table, raw_conn, criterion)
+                                copy_table(ctx, table, raw_conn, criterion_c)
                             except IntegrityError:
                                 exc_type, exc_value, tb = sys.exc_info()
                                 if max_pk in errors_integrity:
@@ -253,12 +253,12 @@ def merge_table(ctx, table):
     session.commit()
 
 
-def delete_from_table(ctx, table, raw_conn, criteria=[], message=None):
+def delete_from_table(ctx, table, raw_conn, criterion=[], message=None):
     if message:
         ctx.log(message)
     delete_query = table.delete()
-    if criteria:
-        delete_query = delete_query.where(reduce(and_, criteria))
+    if criterion:
+        delete_query = delete_query.where(reduce(and_, criterion))
     ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % table.name,
             nl=False)
     count = raw_conn.execute(delete_query).rowcount
@@ -293,16 +293,16 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
     return count
 
 
-def copy_table(ctx, table, raw_conn, criteria=[]):
+def copy_table(ctx, table, raw_conn, criterion=[]):
     # prepare the connection
     from_conn = ctx.current_db.engine.connect()
 
     insert_query = table.insert()
     select_table = select([table])
     select_count = select([func.count()]).select_from(table)
-    if criteria:
-        select_query = select_table.where(reduce(and_, criteria))
-        count_query = select_count.where(reduce(and_, criteria))
+    if criterion:
+        select_query = select_table.where(reduce(and_, criterion))
+        count_query = select_count.where(reduce(and_, criterion))
     else:
         select_query = select_table
         count_query = select_count
@@ -393,17 +393,18 @@ def purge_db(ctx):
     message = "Purge old resources from database :"
     for table in tables:
         if table.name in resources_tables:
-            criteria = get_resources_purge_criteria(ctx, table)
-            if criteria:
-                rv = delete_from_table(ctx, table, raw_conn, criteria, message)
+            criterion = get_resources_purge_criterion(ctx, table)
+            if criterion:
+                rv = delete_from_table(ctx, table, raw_conn, criterion,
+                                       message)
                 if message is not None:
                     message = None
                 count += rv
     message = "Purge old jobs from database :"
     for table in tables:
-        criteria = get_jobs_sync_criteria(ctx, table)
-        if criteria:
-            rv = delete_from_table(ctx, table, raw_conn, criteria, message)
+        criterion = get_jobs_sync_criterion(ctx, table)
+        if criterion:
+            rv = delete_from_table(ctx, table, raw_conn, criterion, message)
             if message is not None:
                 message = None
             count += rv
