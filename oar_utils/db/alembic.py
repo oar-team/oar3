@@ -29,13 +29,16 @@ def alembic_generate_diff(from_engine, to_engine):
     from_metadata = MetaData()
     from_metadata.reflect(bind=from_engine)
 
-    for diff in compare_metadata(mc, from_metadata):
-        if isinstance(diff[0], tuple):
-            op_name = diff[0][0]
-        else:
-            op_name = diff[0]
-        if op_name in SUPPORTED_ALEMBIC_OPERATIONS:
-            yield op_name, diff
+    def all_diffs():
+        for diff in compare_metadata(mc, from_metadata):
+            if isinstance(diff[0], tuple):
+                op_name = diff[0][0]
+            else:
+                op_name = diff[0]
+            if op_name in SUPPORTED_ALEMBIC_OPERATIONS:
+                yield op_name, diff
+    # return remove operations first
+    return sorted(all_diffs(), key=lambda x: 'remove' not in x[0])
 
 
 def alembic_apply_diff(ctx, op, op_name, diff):
