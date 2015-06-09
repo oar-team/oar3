@@ -6,7 +6,8 @@ import re
 from copy import copy
 from functools import partial, reduce
 
-from sqlalchemy import func, MetaData, Table, and_, not_, asc as order_by_func
+from sqlalchemy import (func, MetaData, Table, and_, not_,
+                        asc as order_by_func, create_engine)
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.types import Integer
 from sqlalchemy.sql.expression import select
@@ -15,9 +16,10 @@ from sqlalchemy_utils.functions import (database_exists, create_database,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 
-from oar.lib.compat import itervalues, to_unicode, iterkeys, reraise
+from oar.lib.compat import to_unicode, iterkeys, reraise
 
 from .helpers import green, magenta, yellow, blue, red
+from .alembic import alembic_sync_schema
 
 
 ARCHIVE_IGNORED_TABLES = [
@@ -111,11 +113,13 @@ def archive_db(ctx):
         sync_tables(ctx, tables, delete=True,
                     ignored_tables=ARCHIVE_IGNORED_TABLES)
     else:
+        if not database_exists(engine_url):
+            create_database(engine_url)
         tables = sync_schema(ctx)
-        sync_tables(ctx, tables)
 
-    if ctx.archive_db.dialect == "postgresql":
-        fix_sequences(ctx)
+        sync_tables(ctx, tables, ignored_tables=ARCHIVE_IGNORED_TABLES)
+
+    fix_sequences(ctx)
 
 
 def migrate_db(ctx):
@@ -124,12 +128,24 @@ def migrate_db(ctx):
             and ctx.current_db.dialect in ("postgresql", "mysql")):
         clone_db(ctx)
     else:
-        tables = sync_schema(ctx)
-        raw_conn = ctx.archive_db.engine.connect()
-        for table in tables:
-            copy_table(ctx, table, raw_conn)
-        if ctx.archive_db.dialect == "postgresql":
-            fix_sequences(ctx)
+        from oar.lib import models
+
+        from_engine = create_engine(ctx.current_db.engine.url)
+        to_engine = create_engine(ctx.archive_db.engine.url)
+
+        # Create databases
+        if not database_exists(to_engine.url):
+            ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
+            create_database(to_engine.url)
+
+        # Create
+        tables = [table for name, table in models.all_tables()]
+        tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+
+        alembic_sync_schema(ctx, from_engine, to_engine)
+        fix_sequences(ctx, to_engine)
+
+        sync_tables(ctx, tables, from_engine=from_engine, to_engine=to_engine)
 
 
 def reflect_table(db, table_name):
@@ -185,19 +201,25 @@ def clone_db(ctx, ignored_tables=()):
         raise NotSupportedDatabase()
 
 
-def sync_schema(ctx):
-    ctx.current_db.reflect()
+def sync_schema(ctx, tables=None, from_engine=None, to_engine=None):
     inspector = Inspector.from_engine(ctx.archive_db.engine)
     existing_tables = inspector.get_table_names()
-    for table in ctx.current_db.metadata.sorted_tables:
+    if tables is None:
+        ctx.current_db.reflect()
+        tables = ctx.current_db.metadata.sorted_tables
+    if to_engine is None:
+        to_engine = ctx.archive_db.engine
+    if from_engine is None:
+        from_engine = ctx.current_db.engine
+    for table in tables:
         if table.name not in existing_tables:
             ctx.log(' %s ~> table %s' % (green('create'), table.name))
             try:
-                table.create(bind=ctx.archive_db.engine, checkfirst=True)
+                table.create(bind=to_engine, checkfirst=True)
             except Exception as ex:
                 ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
-    metadata = MetaData(ctx.current_db.engine)
-    for table in ctx.current_db.metadata.sorted_tables:
+    metadata = MetaData(from_engine)
+    for table in tables:
         # Make sure we have the good version of the table
         yield Table(table.name, metadata, autoload=True)
 
@@ -218,7 +240,7 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
             criterion = get_jobs_sync_criterion(ctx, table)
             if delete and criterion:
                 reverse_criterion = not_(reduce(and_, criterion))
-                delete_from_table(ctx, table, raw_conn, reverse_criterion)
+                delete_from_table(ctx, table, to_conn, reverse_criterion)
             else:
                 if table.primary_key:
                     pk = table.primary_key.columns.values()[0]
@@ -227,11 +249,12 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                         errors_integrity = {}
                         while True:
                             criterion_c = criterion[:]
-                            max_pk = raw_conn.execute(max_pk_query).scalar()
+                            max_pk = to_conn.execute(max_pk_query).scalar()
                             if max_pk is not None:
                                 criterion_c.append(pk > max_pk)
                             try:
-                                copy_table(ctx, table, raw_conn, criterion_c)
+                                copy_table(ctx, table, from_conn, to_conn,
+                                           criterion_c)
                             except IntegrityError:
                                 exc_type, exc_value, tb = sys.exc_info()
                                 if max_pk in errors_integrity:
@@ -243,8 +266,8 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                     else:
                         merge_table(ctx, table)
                 else:
-                    delete_from_table(ctx, table, raw_conn)
-                    copy_table(ctx, table, raw_conn)
+                    delete_from_table(ctx, table, to_conn)
+                    copy_table(ctx, table, from_conn, to_conn)
 
 
 def merge_table(ctx, table):
@@ -301,10 +324,7 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
     return count
 
 
-def copy_table(ctx, table, raw_conn, criterion=[]):
-    # prepare the connection
-    from_conn = ctx.current_db.engine.connect()
-
+def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
     insert_query = table.insert()
     select_table = select([table])
     select_count = select([func.count()]).select_from(table)
@@ -347,7 +367,7 @@ def copy_table(ctx, table, raw_conn, criterion=[]):
             progress = total_lenght if progress > total_lenght else progress
             percentage = blue("%s/%s" % (progress, total_lenght))
             ctx.log(message % (table.name, percentage), nl=False)
-            raw_conn.execute(insert_query, rows)
+            to_conn.execute(insert_query, rows)
 
         ctx.log("")
 
