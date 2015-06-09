@@ -24,6 +24,8 @@ setup(
     packages=['oar', 'oar_lib'],
     install_requires=[
         'sqlalchemy',
+        'sqlalchemy-utils',
+        'alembic',
     ],
     include_package_data=True,
     zip_safe=False,
