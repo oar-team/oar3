@@ -31,11 +31,12 @@ class Context(object):
 
     def __init__(self):
         self.archive_db_suffix = "archive"
-        self.max_job_id = None
         self.disable_pagination = False
         self.debug = False
         self.force_yes = False
         self._current_compiled_query = None
+        self.max_job_id = None
+        self.ignore_jobs = []
 
     def configure_log(self):
         logging.basicConfig()
@@ -138,14 +139,17 @@ class Context(object):
             criteria.append(self.current_models["Job"].state.notin_(exclude))
         if include:
             criteria.append(self.current_models["Job"].state.in_(include))
-        return reduce(and_, criteria)
+        if criteria:
+            return reduce(and_, criteria)
 
     @cached_property
     def max_job_to_sync(self):
         model = self.current_models["Job"]
-        acceptable_max_job_id = self.current_db.query(func.min(model.id))\
-                                    .filter(self.ignored_jobs_criteria)\
-                                    .scalar()
+        acceptable_max_job_id = None
+        if self.ignored_jobs_criteria is not None:
+            acceptable_max_job_id = self.current_db.query(func.min(model.id))\
+                                        .filter(self.ignored_jobs_criteria)\
+                                        .scalar()
         if acceptable_max_job_id is None:
             if self.max_job_id is None:
                 # returns the real max job id
