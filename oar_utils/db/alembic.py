@@ -19,6 +19,8 @@ SUPPORTED_ALEMBIC_OPERATIONS = [
     'remove_column',
     'modify_nullable',
     'modify_type',
+    # 'add_index',
+    # 'remove_index',
 ]
 
 
@@ -57,6 +59,22 @@ def alembic_apply_diff(ctx, op, op_name, diff):
             table_name = 'from table %s' % diff[2]
             op_callback = lambda: op.drop_column(diff[2], column.name)
         msg = '%s %s %s' % (op_name, column.name, table_name)
+    elif op_name in ('remove_index', 'add_index'):
+        index = diff[1]
+        columns = [i for i in index.columns]
+        table_name = index.table.name
+        index_colums = ()
+        for column in columns:
+            index_colums += ("%s.%s" % (column.table.name, column.name),)
+        #import ipdb; ipdb.set_trace()  # noqa
+        if 'add' in op_name:
+            args = (index.name, table_name, [c.name for c in columns],)
+            kwargs = {'unique': index.unique}
+            op_callback = lambda: op.create_index(*args, **kwargs)
+        else:
+            op_callback = lambda: op.drop_index(index.name)
+        msg = '%s %s for columns (%s)' % (op_name, index.name,
+                                          ",".join(index_colums))
     elif op_name in ('modify_nullable',):
         table_name = diff[0][2]
         column_name = diff[0][3]
