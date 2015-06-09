@@ -53,5 +53,5 @@ def cli(ctx, force_yes, chunk, current_db_url, new_db_url, disable_pagination,
     ctx.archive_db_url = new_db_url
     ctx.disable_pagination = disable_pagination
     ctx.confirm("Continue to migrate your database?", default=True)
-    migrate_db(ctx)
     ctx.configure_log()
+    migrate_db(ctx)

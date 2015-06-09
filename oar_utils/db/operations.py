@@ -144,7 +144,6 @@ def migrate_db(ctx):
 
         alembic_sync_schema(ctx, from_engine, to_engine)
         fix_sequences(ctx, to_engine)
-
         sync_tables(ctx, tables, from_engine=from_engine, to_engine=to_engine)
 
 
