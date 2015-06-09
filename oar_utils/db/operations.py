@@ -20,7 +20,7 @@ from oar.lib.compat import itervalues, to_unicode, iterkeys, reraise
 from .helpers import green, magenta, yellow, blue, red
 
 
-SYNC_IGNORED_TABLES = [
+ARCHIVE_IGNORED_TABLES = [
     'accounting',
     'gantt_jobs_predictions',
     'gantt_jobs_predictions_log',
@@ -106,9 +106,10 @@ def archive_db(ctx):
     engine_url = ctx.archive_db.engine.url
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
             and ctx.current_db.dialect in ("postgresql", "mysql")):
-        clone_db(ctx, ignored_tables=SYNC_IGNORED_TABLES)
+        clone_db(ctx, ignored_tables=ARCHIVE_IGNORED_TABLES)
         tables = sync_schema(ctx)
-        sync_tables(ctx, tables, delete=True)
+        sync_tables(ctx, tables, delete=True,
+                    ignored_tables=ARCHIVE_IGNORED_TABLES)
     else:
         tables = sync_schema(ctx)
         sync_tables(ctx, tables)
@@ -201,12 +202,19 @@ def sync_schema(ctx):
         yield Table(table.name, metadata, autoload=True)
 
 
-def sync_tables(ctx, tables, delete=False):
+def sync_tables(ctx, tables, delete=False, ignored_tables=(),
+                from_engine=None, to_engine=None):
     # prepare the connection
-    raw_conn = ctx.archive_db.engine.connect()
+    if to_engine is None:
+        to_engine = ctx.archive_db.engine
+    if from_engine is None:
+        from_engine = ctx.current_db.engine
+
+    from_conn = from_engine.connect()
+    to_conn = to_engine.connect()
     # Get the max pk
     for table in tables:
-        if table.name not in SYNC_IGNORED_TABLES:
+        if table.name not in ignored_tables:
             criterion = get_jobs_sync_criterion(ctx, table)
             if delete and criterion:
                 reverse_criterion = not_(reduce(and_, criterion))
