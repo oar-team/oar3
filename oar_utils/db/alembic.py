@@ -48,25 +48,20 @@ def alembic_apply_diff(ctx, op, op_name, diff):
         msg = "create table %s" % table_name
         op_callback = lambda: op.create_table(table_name, *columns)
     elif op_name in ('add_column', 'remove_column'):
-        offset = 0
-        if len(diff) == 4:
-            offset = 1
-        column = diff[2 + offset]
+        column = diff[3]
         column.table = None
         if 'add' in op_name:
-            table_name = 'to table %s' % diff[1 + offset]
-            op_func = getattr(op, op_name)
-            op_callback = lambda: op_func(diff[1 + offset], column)
+            table_name = 'to table %s' % diff[2]
+            op_callback = lambda: op.add_column(diff[2], column)
         else:
-            table_name = 'from table %s' % diff[1 + offset]
-            op_func = getattr(op, 'drop_column')
-            op_callback = lambda: op_func(diff[1 + offset], column.name)
+            table_name = 'from table %s' % diff[2]
+            op_callback = lambda: op.drop_column(diff[2], column.name)
         msg = '%s %s %s' % (op_name, column.name, table_name)
     elif op_name in ('modify_nullable',):
-        table_name = diff[0][1]
-        column_name = diff[0][2]
-        kwargs = diff[0][3]
-        nullable = diff[0][5]
+        table_name = diff[0][2]
+        column_name = diff[0][3]
+        kwargs = diff[0][4]
+        nullable = diff[0][6]
 
         def op_callback():
             op.alter_column(table_name, column_name,
