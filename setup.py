@@ -6,7 +6,6 @@ here = op.abspath(op.dirname(__file__))
 
 requirements = [
     'oar-lib',
-    'sqlalchemy-utils',
     'tabulate',
     'click',
 ]
