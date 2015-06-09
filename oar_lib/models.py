@@ -16,13 +16,13 @@ schema = db.Table('schema',
 class Accounting(db.Model):
     __tablename__ = 'accounting'
 
-    window_start = db.Column(db.Integer, primary_key=True, autoincrement=False)
-    window_stop = db.Column(db.Integer, primary_key=True, autoincrement=False, server_default='0')
+    window_start = db.Column(db.BigInteger, primary_key=True, autoincrement=False)
+    window_stop = db.Column(db.BigInteger, primary_key=True, autoincrement=False, server_default='0')
     user = db.Column('accounting_user', db.String(255), primary_key=True, index=True, server_default='')
     project = db.Column('accounting_project', db.String(255), primary_key=True, index=True, server_default='')
     queue_name = db.Column(db.String(100), primary_key=True, index=True, server_default='')
     consumption_type = db.Column(db.String(5), primary_key=True, index=True, server_default='ASKED')
-    consumption = db.Column(db.Integer, server_default='0')
+    consumption = db.Column(db.BigInteger, server_default='0')
 
 
 class AdmissionRule(db.Model):
