@@ -308,9 +308,9 @@ def copy_table(ctx, table, raw_conn, criterion=[]):
         count_query = select_count
 
     total_lenght = from_conn.execute(count_query).scalar()
-
+    pks = sorted((c for c in table.c if c.primary_key), key=lambda x: x.name)
     select_query = select_query.order_by(
-        *(order_by_func(c) for c in table.c if c.primary_key)
+        *(order_by_func(pk) for pk in pks)
     )
 
     def fetch_stream():
