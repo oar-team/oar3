@@ -344,23 +344,30 @@ def copy_table(ctx, table, raw_conn, criterion=[]):
         ctx.log("")
 
 
-def fix_sequences(ctx):
-    engine = ctx.archive_db.engine
+def fix_sequences(ctx, to_engine=None, tables=[]):
+    if to_engine is None:
+        to_engine = ctx.archive_db.engine
+    if not tables:
+        tables = ctx.current_db.metadata.sorted_tables
+
+    if not to_engine.dialect.name == "postgresql":
+        return
 
     def get_sequences_values():
-        for model in itervalues(ctx.current_models):
-            for pk in model.__mapper__.primary_key:
+        for table in tables:
+            pks = [c for c in table.c if c.primary_key]
+            for pk in pks:
                 if not pk.autoincrement:
                     continue
-                sequence_name = "%s_%s_seq" % (pk.table.name, pk.name)
-                if engine.dialect.has_sequence(engine, sequence_name):
+                sequence_name = "%s_%s_seq" % (table.name, pk.name)
+                if to_engine.dialect.has_sequence(to_engine, sequence_name):
                     yield sequence_name, pk.name, pk.table.name
 
     for sequence_name, pk_name, table_name in get_sequences_values():
         ctx.log(green('\r    fix') + ' ~> sequence %s' % sequence_name)
         query = "select setval('%s', max(%s)) from %s"
         try:
-            engine.execute(query % (sequence_name, pk_name, table_name))
+            to_engine.execute(query % (sequence_name, pk_name, table_name))
         except Exception as ex:
             ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
     ctx.archive_db.commit()
