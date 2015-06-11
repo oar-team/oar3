@@ -33,25 +33,29 @@ OAR database URL"""
 @click.version_option(version=VERSION)
 @click.option('-y', '--force-yes', is_flag=True, default=False,
               help="Never prompts for user intervention")
-@click.option('--chunk', type=int, default=10000, help="Chunk size")
+@click.option('--chunk', type=int, default=100000, help="Chunk size")
+@click.option('--data-only', is_flag=True, default=False)
+@click.option('--schema-only', is_flag=True, default=False)
 @click.option('--current-db-url', prompt=DATABASE_PROMPT,
               default=get_default_database_url(),
               help='the url for your current OAR database.')
 @click.option('--new-db-url', prompt="new OAR database URL",
               help='the url for your new OAR database.')
 @click.option('--disable-pagination', is_flag=True, default=False,
-              help='Enable query pagination during copy.')
+              help='Split the query in small SQL queries during copy.')
 @click.option('--debug', is_flag=True, default=False, help="Enable Debug.")
 @pass_context
-def cli(ctx, force_yes, chunk, current_db_url, new_db_url, disable_pagination,
-        debug):
+def cli(ctx, force_yes, chunk, data_only, schema_only, current_db_url,
+        new_db_url, disable_pagination, debug):
     """Archive OAR database."""
     ctx.force_yes = force_yes
     ctx.chunk = chunk
-    ctx.debug = debug
+    ctx.data_only = data_only
+    ctx.schema_only = schema_only
     ctx.current_db_url = current_db_url
     ctx.archive_db_url = new_db_url
     ctx.disable_pagination = disable_pagination
+    ctx.debug = debug
     ctx.confirm("Continue to migrate your database?", default=True)
     ctx.configure_log()
     migrate_db(ctx)
