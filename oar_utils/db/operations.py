@@ -339,6 +339,11 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
 
 
 def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
+    use_pg_copy = False
+    if ctx.enable_pg_copy:
+        if hasattr(to_conn.dialect, 'psycopg2_version'):
+            use_pg_copy = True
+
     insert_query = table.insert()
     select_table = select([table])
     select_count = select([func.count()]).select_from(table)
@@ -350,6 +355,9 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
         count_query = select_count
 
     total_lenght = from_conn.execute(count_query).scalar()
+    if total_lenght == 0:
+        return
+
     select_query = select_query.order_by(
         *(order_by_func(pk) for pk in get_primary_keys(table))
     )
@@ -371,17 +379,26 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             yield rows
             page = page + 1
 
-    if total_lenght > 0:
-        message = yellow('\r   copy') + ' ~> table %s (%s)'
-        ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
-        progress = 0
-        for rows in fetch_stream():
-            progress = ctx.chunk + progress
-            progress = total_lenght if progress > total_lenght else progress
-            percentage = blue("%s/%s" % (progress, total_lenght))
-            ctx.log(message % (table.name, percentage), nl=False)
+    message = yellow('\r   copy') + ' ~> table %s (%s)'
+    ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
+    progress = 0
+    for rows in fetch_stream():
+        progress = ctx.chunk + progress
+        progress = total_lenght if progress > total_lenght else progress
+        percentage = blue("%s/%s" % (progress, total_lenght))
+        ctx.log(message % (table.name, percentage), nl=False)
+        if not use_pg_copy:
             to_conn.execute(insert_query, rows)
-
+        else:
+            from .psycopg2 import pg_bulk_insert
+            columns = ["%s" % k for k in rows[0].keys()]
+            try:
+                with to_conn.begin():
+                    cursor = to_conn.connection.cursor()
+                    pg_bulk_insert(cursor, table, rows, columns)
+            except:
+                exc_type, exc_value, tb = sys.exc_info()
+                reraise(exc_type, exc_value, tb.tb_next)
         ctx.log("")
 
 

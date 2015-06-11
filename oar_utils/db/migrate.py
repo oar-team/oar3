@@ -43,10 +43,13 @@ OAR database URL"""
               help='the url for your new OAR database.')
 @click.option('--disable-pagination', is_flag=True, default=False,
               help='Split the query in small SQL queries during copy.')
+@click.option('--pg-copy', is_flag=True, default=False,
+              help='Use postgresql COPY clause to make the data transfert '
+                   'faster')
 @click.option('--debug', is_flag=True, default=False, help="Enable Debug.")
 @pass_context
 def cli(ctx, force_yes, chunk, data_only, schema_only, current_db_url,
-        new_db_url, disable_pagination, debug):
+        new_db_url, disable_pagination, pg_copy, debug):
     """Archive OAR database."""
     ctx.force_yes = force_yes
     ctx.chunk = chunk
@@ -55,6 +58,7 @@ def cli(ctx, force_yes, chunk, data_only, schema_only, current_db_url,
     ctx.current_db_url = current_db_url
     ctx.archive_db_url = new_db_url
     ctx.disable_pagination = disable_pagination
+    ctx.enable_pg_copy = pg_copy
     ctx.debug = debug
     ctx.confirm("Continue to migrate your database?", default=True)
     ctx.configure_log()
