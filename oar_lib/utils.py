@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import os
+import tempfile
+
+from contextlib import contextmanager
+
 from .compat import numeric_types
 
 
 def try_convert_decimal(value):
-    """ Try to convert ``value`` to a decimal."""
+    """Try to convert ``value`` to a decimal."""
     if value.isdecimal():
         for _type in numeric_types:
             try:
@@ -22,10 +27,9 @@ class SimpleNamespace(dict):
 
 
 class CachedProperty(object):
-    """ A property that is only computed once per instance and then replaces
+    """A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
-    property """
-
+    property."""
     def __init__(self, func):
         self.__name__ = func.__name__
         self.__module__ = func.__module__
@@ -44,3 +48,15 @@ class CachedProperty(object):
 
 
 cached_property = CachedProperty
+
+
+@contextmanager
+def make_temp_fifo(name, prefix='tmp'):
+    tmpdir = tempfile.mkdtemp(prefix=prefix)
+    filename = os.path.join(tmpdir, '%s.fifo' % name)
+    os.mkfifo(filename)
+    yield filename
+    if os.path.exists(filename):
+        os.remove(filename)
+    if os.path.isdir(tmpdir):
+        os.rmdir(tmpdir)
