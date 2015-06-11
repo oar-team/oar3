@@ -223,6 +223,18 @@ def sync_schema(ctx, tables=None, from_engine=None, to_engine=None):
         yield Table(table.name, metadata, autoload=True)
 
 
+def get_primary_keys(table):
+    # Deterministic order
+    # Order by name and Integer type first
+    pks = sorted((c for c in table.c if c.primary_key), key=lambda c: c.name)
+    return sorted(pks, key=lambda x: not isinstance(x.type, Integer))
+
+
+def get_first_primary_key(table):
+    for pk in get_primary_keys(table):
+        return pk
+
+
 def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                 from_engine=None, to_engine=None):
     # prepare the connection
@@ -242,7 +254,7 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                 delete_from_table(ctx, table, to_conn, reverse_criterion)
             else:
                 if table.primary_key:
-                    pk = table.primary_key.columns.values()[0]
+                    pk = get_first_primary_key(table)
                     if isinstance(pk.type, Integer):
                         max_pk_query = select([func.max(pk)])
                         errors_integrity = {}
