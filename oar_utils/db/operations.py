@@ -243,10 +243,8 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
     if from_engine is None:
         from_engine = ctx.current_db.engine
 
-    from_conn = from_engine.connect()
-    to_conn = to_engine.connect()
     # Get the max pk
-    for table in tables:
+    def do_sync(table, from_conn, to_conn):
         if table.name not in ignored_tables:
             criterion = get_jobs_sync_criterion(ctx, table)
             if delete and criterion:
@@ -279,6 +277,11 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                 else:
                     delete_from_table(ctx, table, to_conn)
                     copy_table(ctx, table, from_conn, to_conn)
+
+    with from_engine.connect() as from_conn:
+        with to_engine.connect() as to_conn:
+            for table in tables:
+                do_sync(table, from_conn, to_conn)
 
 
 def merge_table(ctx, table):
