@@ -350,17 +350,16 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
         count_query = select_count
 
     total_lenght = from_conn.execute(count_query).scalar()
-    pks = sorted((c for c in table.c if c.primary_key), key=lambda x: x.name)
     select_query = select_query.order_by(
-        *(order_by_func(pk) for pk in pks)
+        *(order_by_func(pk) for pk in get_primary_keys(table))
     )
+    select_query = select_query.execution_options(stream_results=True)
 
     def fetch_stream():
-        q = select_query.execution_options(stream_results=True)
         if ctx.disable_pagination:
-            result = from_conn.execute(q)
+            result = from_conn.execute(select_query)
         else:
-            q = q.limit(ctx.chunk)
+            q = select_query.limit(ctx.chunk)
         page = 0
         while True:
             if ctx.disable_pagination:
