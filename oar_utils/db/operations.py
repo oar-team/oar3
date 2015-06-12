@@ -143,8 +143,8 @@ def migrate_db(ctx):
         tables = list(sync_schema(ctx, tables, from_engine, to_engine))
 
         alembic_sync_schema(ctx, from_engine, to_engine)
-        fix_sequences(ctx, to_engine)
         sync_tables(ctx, tables, from_engine=from_engine, to_engine=to_engine)
+        fix_sequences(ctx, to_engine)
 
 
 def reflect_table(db, table_name):
