@@ -170,9 +170,8 @@ def notify_to_run_job(jid):
                 log.warn(
                     "Not able to notify almighty to launch the job " + str(jid) + " (socket error)")
 
+
 # Prepare a job to be run by bipbip
-
-
 def prepare_job_to_be_launched(job, current_time_sec):
 
     # TODO ???
@@ -409,7 +408,7 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time
 
 def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
     log.debug(
-        "Begin processing of jobs to launch (start time <= " + current_time_sql)
+        "Begin processing jobs to launch (start time <= " + current_time_sql)
 
     return_code = 0
     

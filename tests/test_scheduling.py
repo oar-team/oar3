@@ -315,6 +315,57 @@ def test_schedule_w_temporally_fragmented_container():
     assert j3.res_set == [(17, 24)]
 
 
+def test_depencie_simple():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    j2 = JobPseudo(id=2, types={}, deps=[(1,"Waiting",0)], key_cache={},
+                   mld_res_rqts=[(1, 80, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+    
+    assert j2.start_time == 60
+
+    
+def test_depencie_error():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    j2 = JobPseudo(id=2, types={}, deps=[(1,"Error",0)], key_cache={},
+                   mld_res_rqts=[(1, 80, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+
+    assert (not hasattr(j2, "start_time"))
+    
+def test_depencie_terminated():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j2 = JobPseudo(id=2, types={}, deps=[(1,"Terminated",0)], key_cache={},
+                   mld_res_rqts=[(1, 80, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    schedule_id_jobs_ct(all_ss, {2: j2}, hy, [2], 20)
+
+    assert j2.start_time == 0
+    
 def test_schedule_timesharing1():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
@@ -336,7 +387,6 @@ def test_schedule_timesharing1():
     print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
 
     assert j1.start_time == j2.start_time
-
 
 def test_schedule_timesharing2():
     pass

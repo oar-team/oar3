@@ -832,14 +832,6 @@ def get_job(job_id):
 
 
 # frag_job
-# sets the flag 'ToFrag' of a job to 'Yes'
-# parameters : base, jobid
-# return value : 0 on success, -1 on error (if the user calling this method
-#                is not the user running the job or oar), -2 if the job was
-#                already killed
-# side effects : changes the field ToFrag of the job in the table Jobs
-
-
 def frag_job(jid):
 
     if 'OARDO_USER' in os.environ:
