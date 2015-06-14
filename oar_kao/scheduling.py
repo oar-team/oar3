@@ -1,5 +1,5 @@
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.job import USE_PLACEHOLDER, JobPseudo
+from oar.kao.job import ALLOW, JobPseudo
 from oar.kao.interval import intersec
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib import get_logger
@@ -152,7 +152,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         #            cache[walltime] = sid_left
         #            updated_cache = True
 
-        if job.ts or (job.ph == USE_PLACEHOLDER):
+        if job.ts or (job.ph == ALLOW):
             itvs_avail = intersec_ts_ph_itvs_slots(
                 slots, sid_left, sid_right, job)
         else:

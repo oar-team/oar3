@@ -37,12 +37,12 @@ from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 '''
 
 global NO_PLACEHOLDER
-global SET_PLACEHOLDER
-global USE_PLACEHOLDER
+global PLACEHOLDER
+global ALLOW
 
 NO_PLACEHOLDER = 0
-SET_PLACEHOLDER = 1
-USE_PLACEHOLDER = 2
+PLACEHOLDER = 1
+ALLOW = 2
 
 
 class JobPseudo(object):
@@ -80,13 +80,13 @@ def get_jobs_types(jids, jobs):
             job = jobs[jid]
             job.ts = True
             job.ts_user, job.ts_jobname = t_v[1].split(',')
-        elif t == "set_placeholder":
+        elif t == "placeholder":
             job = jobs[jid]
-            job.ph = SET_PLACEHOLDER
+            job.ph = PLACEHOLDER
             job.ph_name = t_v[1]
-        elif t == "use_placeholder":
+        elif t == "allow":
             job = jobs[jid]
-            job.ph = USE_PLACEHOLDER
+            job.ph = ALLOW
             job.ph_name = t_v[1]
         else:
             if len(t_v) == 2:

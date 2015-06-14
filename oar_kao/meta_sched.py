@@ -14,7 +14,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          frag_job, get_waiting_reservation_jobs_specific_queue,
                          set_job_resa_state, set_job_message,
                          get_waiting_reservations_already_scheduled,
-                         USE_PLACEHOLDER, NO_PLACEHOLDER, JobPseudo,
+                         ALLOW, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
                          get_jobs_in_multiple_states, gantt_flush_tables,
                          get_after_sched_no_AR_jobs, get_waiting_scheduled_AR_jobs,
@@ -309,7 +309,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             sid_left, sid_right = get_encompassing_slots(
                 slots, job.start_time, t_e)
 
-            if job.ts or (job.ph == USE_PLACEHOLDER):
+            if job.ts or (job.ph == ALLOW):
                 itvs_avail = intersec_ts_ph_itvs_slots(
                     slots, sid_left, sid_right, job)
             else:

@@ -1,4 +1,4 @@
-from oar.kao.job import NO_PLACEHOLDER, SET_PLACEHOLDER, USE_PLACEHOLDER
+from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
 from copy import deepcopy
 
@@ -64,7 +64,7 @@ def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
                     itvs = add_intervals(
                         itvs, slot.ts_itvs[job.user][job.name])
 
-        if job.ph == USE_PLACEHOLDER:
+        if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
                 itvs = add_intervals(itvs, slot.ph_itvs[job.ph_name])
 
@@ -145,12 +145,12 @@ class SlotSet:
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
                 slot.ts_itvs[job.ts_user][job.ts_name] = job.res_set[:]
 
-        if job.ph == USE_PLACEHOLDER:
+        if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
                 slot.ph_itvs[job.ph_name] = \
                     sub_intervals(slot.ph_itvs[job.ph_name], job.res_set)
 
-        if job.ph == SET_PLACEHOLDER:
+        if job.ph == PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = job.res_set[:]
 
     # Generate B slot
@@ -168,14 +168,14 @@ class SlotSet:
                 itvs = slot.ts_itvs[job.ts_user][job.ts_name]
                 slot.ts_itvs[job.ts_user][job.ts_name] = add_intervals(itvs, job.res_set[:])
 
-        if job.ph == SET_PLACEHOLDER: #PLACEHOLDER
+        if job.ph == PLACEHOLDER:
             if job.ph_name in slot.ph_itvs:
                 slot.ph_itvs[job.ph_name] = \
                     add_intervals(slot.ph_itvs[job.ph_name], job.res_set)
             else:
                 slot.ph_itvs[job.ph_name] = job.res_set[:]
 
-        # USE_PLACEHOLDER / ALLOWED need not to considered in this case
+        #PLACEHOLDER / ALLOWED need not to considered in this case
 
 
 
