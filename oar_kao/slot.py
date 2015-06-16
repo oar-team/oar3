@@ -125,7 +125,7 @@ class SlotSet:
         n_id = self.last_id
         a_slot = Slot(s_id, slot.prev, n_id, slot.itvs[:],
                       slot.b, job.start_time - 1,
-                      deepcopy(slot.ts_itvs), slot.ph_itvs)
+                      deepcopy(slot.ts_itvs), deepcopy(slot.ph_itvs))
         slot.prev = s_id
         self.slots[s_id] = a_slot
         # slot_id is changed so we have always the rightmost slot (min slot.b)
@@ -185,7 +185,7 @@ class SlotSet:
         s_id = self.last_id
         c_slot = Slot(s_id, slot.id, slot.next, slot.itvs[:],
                       job.start_time + job.walltime, slot.e,
-                      deepcopy(slot.ts_itvs), slot.ph_itvs)
+                      deepcopy(slot.ts_itvs), deepcopy(slot.ph_itvs))
         slot.next = s_id
         self.slots[s_id] = c_slot
 

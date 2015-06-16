@@ -6,6 +6,7 @@ from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
                                 set_slots_with_prev_scheduled_jobs)
 from oar.lib import config, get_logger
 
+import pdb
 
 config['LOG_FILE'] = '/dev/stdout'
 log = get_logger("oar.test")
@@ -315,7 +316,7 @@ def test_schedule_w_temporally_fragmented_container():
     assert j3.res_set == [(17, 24)]
 
 
-def test_depencie_simple():
+def test_simple_dependency():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}
@@ -334,7 +335,7 @@ def test_depencie_simple():
     assert j2.start_time == 60
 
     
-def test_depencie_error():
+def test_error_dependency():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}
@@ -352,7 +353,7 @@ def test_depencie_error():
 
     assert (not hasattr(j2, "start_time"))
     
-def test_depencie_terminated():
+def test_terminated_dependency():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}
@@ -366,6 +367,98 @@ def test_depencie_terminated():
 
     assert j2.start_time == 0
     
+
+def test_schedule_placeholder1():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    #job type: placeholder="yop"
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 80, [([("node", 4)], res[:])])],
+                   ts=False, ph=1, ph_name="yop")
+
+    j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 50, [([("node", 4)], res[:])])],
+                   ts=False, ph=0)
+    
+    #Allow type: allow="yop"
+    j3 = JobPseudo(id=3, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60, [([("node", 4)], res[:])])],
+                   ts=False, ph=2, ph_name="yop")
+
+    
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2, 3: j3}, hy, [1, 2, 3], 20)
+
+    print "Placeholder: j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time,\
+        " j3.start_time:", j3.start_time
+        
+    
+    assert (j2.start_time == 80) and (j3.start_time == 0)
+   
+
+def test_schedule_placeholder2():
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60, [([("node", 2)], res[:])])],
+                   ts=False, ph=0)
+
+    #job type: allow="yop"
+    j2 = JobPseudo(id=2, types={}, deps=[(1,"Waiting",0)], key_cache={},
+                   mld_res_rqts=[(1, 80, [([("node", 2)], res[:])])],
+                   ts=False, ph=2, ph_name="yop")
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+    
+    print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
+
+    assert  j2.start_time == 60
+
+def test_schedule_placeholder_prev_sched():
+
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   res_set=[(7, 27)],
+                   start_time=200,
+                   walltime=150,
+                   mld_res_rqts=[(1, 60, [([("node", 2)], res[:])])],
+                   ts=False, ph=1, ph_name="yop")
+
+    j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 150, [([("node", 4)], res[:])])],
+                   ts=False, ph=0)
+
+    j3 = JobPseudo(id=3, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 500, [([("node", 2)], res[:])])],
+                   ts=False, ph=2, ph_name="yop")
+
+    #pdb.set_trace()
+    set_slots_with_prev_scheduled_jobs(all_ss, [j1], 20)
+
+    all_ss['default'].show_slots()
+    #pdb.set_trace()
+
+    schedule_id_jobs_ct(all_ss, {2: j2, 3: j3}, hy, [2,3], 20)
+
+    print "j1.start_time:", j1.start_time, "j2.start_time:", j2.start_time,\
+        " j3.start_time:", j3.start_time
+    
+    all_ss['default'].show_slots()
+    #pdb.set_trace()
+    
+    #assert j3.start_time == 150
+    assert j3.res_set == [(1, 16)]
+
+
 def test_schedule_timesharing1():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
@@ -387,22 +480,10 @@ def test_schedule_timesharing1():
     print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
 
     assert j1.start_time == j2.start_time
-
+    
 def test_schedule_timesharing2():
     pass
 
 
 def test_schedule_timesharing_prev_sched():
-    pass
-
-
-def test_schedule_placeholder1():
-    pass
-
-
-def test_schedule_placeholder2():
-    pass
-
-
-def test_schedule_placeholder_prev_sched():
     pass
