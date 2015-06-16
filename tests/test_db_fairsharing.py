@@ -35,7 +35,6 @@ def db_flush():
     db.session.expunge_all()
     db.session.commit()
 
-
 def del_accounting():
     db.engine.execute(Accounting.__table__.delete())
     db.commit()
@@ -92,7 +91,7 @@ def test_db_fairsharing():
 
     print "OKOK test_db_fairsharing"
 
-    setup_db1(True)
+    #setup_db1(True)
     generate_accountings()
 
     # add some resources
