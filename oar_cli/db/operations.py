@@ -17,6 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 
 from oar.lib.compat import to_unicode, iterkeys, reraise
+from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
 
 from .helpers import green, magenta, yellow, blue, red
 from .alembic import alembic_sync_schema
@@ -32,41 +33,9 @@ ARCHIVE_IGNORED_TABLES = [
     'gantt_jobs_resources_visu',
 ]
 
-JOBS_TABLES = [
-    {'challenges': 'job_id'},
-    {'event_logs': 'job_id'},
-    {'frag_jobs': 'frag_id_job'},
-    {'job_dependencies': 'job_id'},
-    {'job_dependencies': 'job_id_required'},
-    {'job_state_logs': 'job_id'},
-    {'job_types': 'job_id'},
-    {'jobs': 'job_id'},
-    {'moldable_job_descriptions': 'moldable_job_id'},
-]
-
-MOLDABLE_JOBS_TABLES = [
-    {'assigned_resources': 'moldable_job_id'},
-    {'job_resource_groups': 'res_group_moldable_id'},
-    {'moldable_job_descriptions': 'moldable_id'},
-    {'gantt_jobs_predictions': 'moldable_job_id'},
-    {'gantt_jobs_predictions_log': 'moldable_job_id'},
-    {'gantt_jobs_predictions_visu': 'moldable_job_id'},
-    {'gantt_jobs_resources': 'moldable_job_id'},
-    {'gantt_jobs_resources_log': 'moldable_job_id'},
-    {'gantt_jobs_resources_visu': 'moldable_job_id'},
-]
-
-RESOURCES_TABLES = [
-    {'assigned_resources': 'resource_id'},
-    {'resource_logs': 'resource_id'},
-    {'resources': 'resource_id'},
-    {'gantt_jobs_resources': 'resource_id'},
-    {'gantt_jobs_resources_log': 'resource_id'},
-    {'gantt_jobs_resources_visu': 'resource_id'},
-]
 
 jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
-moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLE_JOBS_TABLES]
+moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
 resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
 
 
@@ -75,7 +44,7 @@ def get_table_columns(tables, table_name):
 
 
 get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
-get_moldables_columns = partial(get_table_columns, MOLDABLE_JOBS_TABLES)
+get_moldables_columns = partial(get_table_columns, MOLDABLES_JOBS_TABLES)
 get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
 
 
@@ -123,28 +92,30 @@ def archive_db(ctx):
 
 
 def migrate_db(ctx):
-    engine_url = ctx.archive_db.engine.url
-    if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
-            and ctx.current_db.dialect in ("postgresql", "mysql")):
-        clone_db(ctx)
-    else:
-        from oar.lib import models
+    from oar.lib import models
 
-        from_engine = create_engine(ctx.current_db.engine.url)
-        to_engine = create_engine(ctx.archive_db.engine.url)
+    from_engine = create_engine(ctx.current_db.engine.url)
+    to_engine = create_engine(ctx.archive_db.engine.url)
 
-        # Create databases
-        if not database_exists(to_engine.url):
-            ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
-            create_database(to_engine.url)
+    # Create databases
+    if not database_exists(to_engine.url):
+        ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
+        create_database(to_engine.url)
 
-        # Create
-        tables = [table for name, table in models.all_tables()]
-        tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+    # Create
+    tables = [table for name, table in models.all_tables()]
+    tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+    alembic_sync_schema(ctx, from_engine, to_engine)
 
-        alembic_sync_schema(ctx, from_engine, to_engine)
-        sync_tables(ctx, tables, from_engine=from_engine, to_engine=to_engine)
-        fix_sequences(ctx, to_engine)
+    new_tables = []
+    for table in tables:
+        new_tables.append(reflect_table(to_engine, table.name))
+
+    sync_tables(ctx, new_tables,
+                from_engine=from_engine,
+                to_engine=to_engine)
+
+    fix_sequences(ctx, to_engine, new_tables)
 
 
 def reflect_table(db, table_name):
@@ -179,7 +150,7 @@ def clone_db(ctx, ignored_tables=()):
             ctx.current_db.session.execute(
                 'ALTER TABLE %s.%s DISABLE KEYS' % (ctx.archive_db_name, name)
             )
-            table = reflect_table(ctx.current_db, name)
+            table = reflect_table(ctx.current_db.engine, name)
             criterion = get_jobs_sync_criterion(ctx, table)
             query = select([table])
             if criterion:
@@ -386,11 +357,10 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
         progress = ctx.chunk + progress
         progress = total_lenght if progress > total_lenght else progress
         percentage = blue("%s/%s" % (progress, total_lenght))
-        ctx.log(message % (table.name, percentage), nl=False)
         if not use_pg_copy:
             to_conn.execute(insert_query, rows)
         else:
-            from .psycopg2 import pg_bulk_insert
+            from oar.lib.psycopg2 import pg_bulk_insert
             columns = ["%s" % k for k in rows[0].keys()]
             try:
                 with to_conn.begin():
@@ -399,7 +369,8 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             except:
                 exc_type, exc_value, tb = sys.exc_info()
                 reraise(exc_type, exc_value, tb.tb_next)
-        ctx.log("")
+        ctx.log(message % (table.name, percentage), nl=False)
+    ctx.log("")
 
 
 def fix_sequences(ctx, to_engine=None, tables=[]):
@@ -452,7 +423,8 @@ def purge_db(ctx):
     db = ctx.current_db
     raw_conn = db.engine.connect()
     inspector = Inspector.from_engine(db.engine)
-    tables = [reflect_table(db, name) for name in inspector.get_table_names()]
+    tables = [reflect_table(db.engine, name)
+              for name in inspector.get_table_names()]
     count = 0
     rv = None
     message = "Purge old resources from database :"

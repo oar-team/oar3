@@ -1,8 +1,8 @@
-================
-Python OAR Utils
-================
+==============
+Python OAR CLI
+==============
 
-Custom scripts and various utility functions for OAR.
+OAR Command line interface
 
 Installation
 ============
@@ -11,15 +11,15 @@ Requirements:
   - python >= 2.7
   - python-mysqldb/python-psycopg2 (for oar database archive)
 
-You can install, upgrade, uninstall oar-utils with these commands::
+You can install, upgrade, uninstall oar-cli with these commands::
 
-  $ pip install [--user] oar-utils
-  $ pip install [--user] --upgrade oar-utils
-  $ pip uninstall oar-utils
+  $ pip install [--user] oar-cli
+  $ pip install [--user] --upgrade oar-cli
+  $ pip uninstall oar-cli
 
 Or from git (last development version)::
 
-  $ pip install git+https://github.com/oar-team/python-oar-utils.git
+  $ pip install git+https://github.com/oar-team/python-oar-cli.git
 
 Or if you already pulled the sources::
 
@@ -27,7 +27,7 @@ Or if you already pulled the sources::
 
 Or if you don't have pip::
 
-  $ easy_install oar-utils
+  $ easy_install oar-cli
 
 
 OAR Database archive

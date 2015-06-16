@@ -19,15 +19,15 @@ def read(fname):
 
 def get_version():
     return re.compile(r".*__version__ = '(.*?)'", re.S)\
-             .match(read(op.join(here, 'oar_utils', '__init__.py'))).group(1)
+             .match(read(op.join(here, 'oar_cli', '__init__.py'))).group(1)
 
 
 setup(
-    name='oar-utils',
+    name='oar-cli',
     author='Salem Harrache',
     author_email='salem.harrache@inria.fr',
     version=get_version(),
-    url='https://github.com/oar-team/python-oar-utils',
+    url='https://github.com/oar-team/python-oar-cli',
     packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
@@ -48,7 +48,7 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    oar-database-migrate=oar_utils.db.migrate:cli
-    oar-database-archive=oar_utils.db.archive:cli
+    oar-database-migrate=oar_cli.db.commands.migrate:cli
+    oar-database-archive=oar_cli.db.commands.archive:cli
     ''',
 )

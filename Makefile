@@ -1,6 +1,6 @@
 
 # Internal variables.
-PACKAGE     = oar_utils
+PACKAGE     = oar_cli
 # these files should pass flakes8
 FLAKE8_WHITELIST=$(shell find . -name "*.py" \
                     ! -path "./docs/*" ! -path "./.tox/*" \
