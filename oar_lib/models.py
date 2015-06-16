@@ -7,6 +7,39 @@ from sqlalchemy import Table
 from . import db
 
 
+JOBS_TABLES = [
+    {'jobs': 'job_id'},
+    {'challenges': 'job_id'},
+    {'event_logs': 'job_id'},
+    {'frag_jobs': 'frag_id_job'},
+    {'job_dependencies': 'job_id'},
+    {'job_dependencies': 'job_id_required'},
+    {'job_state_logs': 'job_id'},
+    {'job_types': 'job_id'},
+    {'moldable_job_descriptions': 'moldable_job_id'},
+]
+
+MOLDABLES_JOBS_TABLES = [
+    {'moldable_job_descriptions': 'moldable_id'},
+    {'assigned_resources': 'moldable_job_id'},
+    {'job_resource_groups': 'res_group_moldable_id'},
+    {'gantt_jobs_predictions': 'moldable_job_id'},
+    {'gantt_jobs_predictions_log': 'moldable_job_id'},
+    {'gantt_jobs_predictions_visu': 'moldable_job_id'},
+    {'gantt_jobs_resources': 'moldable_job_id'},
+    {'gantt_jobs_resources_log': 'moldable_job_id'},
+    {'gantt_jobs_resources_visu': 'moldable_job_id'},
+]
+
+RESOURCES_TABLES = [
+    {'resources': 'resource_id'},
+    {'assigned_resources': 'resource_id'},
+    {'resource_logs': 'resource_id'},
+    {'gantt_jobs_resources': 'resource_id'},
+    {'gantt_jobs_resources_log': 'resource_id'},
+    {'gantt_jobs_resources_visu': 'resource_id'},
+]
+
 schema = db.Table('schema',
                   db.Column('version', db.String(255)),
                   db.Column('name', db.String(255))
