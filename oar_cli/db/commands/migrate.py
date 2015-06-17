@@ -83,5 +83,6 @@ pass_context = make_pass_decorator(MigrationContext)
 def cli(ctx, **kwargs):
     """Archive OAR database."""
     ctx.update_options(**kwargs)
+    ctx.configure_log()
     ctx.confirm("Continue to migrate your database?", default=True)
     migrate_db(ctx)

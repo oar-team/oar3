@@ -100,22 +100,26 @@ def migrate_db(ctx):
     to_engine = create_engine(ctx.new_db.engine.url)
 
     # Create databases
-    if not database_exists(to_engine.url):
-        ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
-        create_database(to_engine.url)
+    if not ctx.data_only:
+        if not database_exists(to_engine.url):
+            ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
+            create_database(to_engine.url)
 
-    # Create
     tables = [table for name, table in models.all_tables()]
-    tables = list(sync_schema(ctx, tables, from_engine, to_engine))
-    alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
 
-    new_tables = []
-    for table in tables:
-        new_tables.append(reflect_table(to_engine, table.name))
+    if not ctx.data_only:
+        # Create
+        tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+        alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
 
-    sync_tables(ctx, new_tables, ctx.current_db, ctx.new_db)
+    if not ctx.schema_only:
+        new_tables = []
+        for table in tables:
+            new_tables.append(reflect_table(to_engine, table.name))
 
-    fix_sequences(ctx, to_engine, new_tables)
+        sync_tables(ctx, new_tables, ctx.current_db, ctx.new_db)
+
+        fix_sequences(ctx, to_engine, new_tables)
 
 
 def reflect_table(db, table_name):
