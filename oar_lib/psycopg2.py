@@ -76,8 +76,7 @@ def serialize_rows_to_binary(rows, columns_obj):
     yield pack(b'!h', -1)
 
 
-def pg_bulk_insert(cursor, table, rows, columns, binary=True):
-
+def pg_bulk_insert(cursor, table, rows, columns, binary=False):
     if binary:
         columns_obj = [table.columns[key] for key in columns]
         binary_stream = IterStream(serialize_rows_to_binary(rows, columns_obj))
