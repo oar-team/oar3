@@ -4,6 +4,8 @@ import os
 import re
 import subprocess
 
+from sqlalchemy import text
+
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
 
@@ -495,7 +497,7 @@ def meta_schedule(mode='extern'):
         log.warning(
             "OARDIR env variable must be defined, " + binpath + " is used by default")
 
-    for queue in db.query(Queue).order_by('priority DESC').all():
+    for queue in db.query(Queue).order_by(text('priority DESC')).all():
 
         if queue.state == 'Active':
             log.debug("Queue " + queue.name + ": Launching scheduler " + queue.scheduler_policy + " at time "

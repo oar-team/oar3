@@ -42,12 +42,12 @@ def get_sum_accounting_window(queue, window_start, window_stop):
 
 def get_sum_accounting_by_project(queue, window_start, window_stop):
 
-    req = db.query(Accounting.accounting_project, Accounting.consumption_type,
+    req = db.query(Accounting.project, Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
         .filter(Accounting.queue_name == queue)\
         .filter(Accounting.window_start >= window_start)\
         .filter(Accounting.window_stop < window_stop)\
-        .group_by(Accounting.accounting_project, Accounting.consumption_type)\
+        .group_by(Accounting.project, Accounting.consumption_type)\
         .all()
 
     karma_used = {}
@@ -67,12 +67,12 @@ def get_sum_accounting_by_project(queue, window_start, window_stop):
 def get_sum_accounting_by_user(queue, window_start, window_stop):
 
     # print " window_start, window_stop", window_start, window_stop
-    req = db.query(Accounting.accounting_user, Accounting.consumption_type,
+    req = db.query(Accounting.user, Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
         .filter(Accounting.queue_name == queue)\
         .filter(Accounting.window_start >= window_start)\
         .filter(Accounting.window_stop <= window_stop)\
-        .group_by(Accounting.accounting_user, Accounting.consumption_type)\
+        .group_by(Accounting.user, Accounting.consumption_type)\
         .all()
 
     karma_used = {}

@@ -12,12 +12,14 @@ from random import sample
 from oar.lib import config
 from __init__ import DEFAULT_CONFIG
 
-# DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+#DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
 DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
-
+#db.create_all()
+ 
 def setup_db1(fs=False):
+    print "setup db for fair sharing"
     config.clear()
-    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
     if fs:
         DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
 
@@ -91,7 +93,8 @@ def test_db_fairsharing():
 
     print "OKOK test_db_fairsharing"
 
-    #setup_db1(True)
+    print "DB_BASE_FILE: ", config["DB_BASE_FILE"]
+    #setup_db1(False)
     generate_accountings()
 
     # add some resources

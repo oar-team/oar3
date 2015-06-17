@@ -16,20 +16,11 @@ from random import sample
 
 from oar.lib import config
 from __init__ import DEFAULT_CONFIG
-
-def update_conf(fs=False):
-    if fs:
-        DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
-    config.update(DEFAULT_CONFIG.copy())
-
-
-@pytest.fixture(scope='module', autouse=True)
-def setup_db_file(request):
-    print "db.create_all()"    
-    db_file = DEFAULT_CONFIG['DB_BASE_FILE']
-    if os.path.isfile( db_file): 
-        db.delete_all()
-    db.create_all()
+import pdb
+#def update_conf(fs=False):
+#    if fs:
+#        DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
+#    config.update(DEFAULT_CONFIG.copy())
 
 @pytest.fixture(scope='module', autouse=True)
 def generate_oar_conf():
@@ -39,6 +30,7 @@ def generate_oar_conf():
     DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
     DEFAULT_CONFIG['LOG_FILE'] = '/tmp/oar.log'
     #DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
+    
     config.update(DEFAULT_CONFIG.copy())
 
     file = open("/etc/oar/oar.conf", 'w')
@@ -48,9 +40,20 @@ def generate_oar_conf():
             file.write(key + '="' + str(value) + '"\n')
     file.close()
     
+@pytest.fixture(scope='module', autouse=True)
+def setup_db_file(request):
+    #DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+    db_file = config['DB_BASE_FILE']
+    #config.update(DEFAULT_CONFIG.copy())
+    #db.delete_all()
+    #print "db.create_all(): ", db_file    
+    if os.path.isfile( db_file): 
+        db.delete_all()
+    db.create_all()
+
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_intialization(request):
-   
+    #pdb.set_trace()
     print "set default queue"
     db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
 
@@ -58,7 +61,9 @@ def minimal_db_intialization(request):
     # add some resources
     for i in range(5):
         db.add(Resource(network_address="localhost"))
- 
+
+    db_flush();
+    #pdb.set_trace()
     def teardown():
         db.delete_all()
         
@@ -69,6 +74,7 @@ def db_flush():
     db.session.expunge_all()
     db.session.commit()
 
+    
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda : None)
@@ -80,6 +86,7 @@ def monkeypatch_utils(request, monkeypatch):
 
 def test_db_metasched_simple_1(monkeypatch):
 
+    print "DB_BASE_FILE: ", config["DB_BASE_FILE"] 
     insert_job( res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
     
@@ -87,16 +94,18 @@ def test_db_metasched_simple_1(monkeypatch):
     r = plt.resource_set()
 
     #pdb.set_trace()
-
+    
     meta_schedule()
 
     #retrieve jobs
     #jobs = {job.id: job for job in db.query(Job).all()}
 
+    #pdb.set_trace()
+    
     for i in db.query(GanttJobsPrediction).all():
         print "moldable_id: ", i.moldable_id, ' start_time: ', i.start_time
 
-    #ipdb.set_trace()
+    #pdb.set_trace()
     job = db.query(Job).one()
     print job.state
     assert job.state == 'toLaunch'

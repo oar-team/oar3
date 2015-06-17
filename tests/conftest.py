@@ -19,7 +19,7 @@ def setup_config(request):
 def setup_db(request):
 
     if re.search(r'test_db',request.node.name):
-        print "\nsetup_db"
+        print "\nsetup_db#########################################@@"
         # Create the tables based on the current model
         db.create_all()
         # Add base data here
