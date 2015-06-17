@@ -67,11 +67,11 @@ pass_context = make_pass_decorator(MigrationContext)
               help='the url for your new OAR database.')
 @click.option('--chunk', type=int, default=50000,
               help="Defines the chunk size")
-@click.option('--disable-pagination', is_flag=True, default=False,
+@click.option('--pagination/--no-pagination', is_flag=True, default=True,
               help='Disable queries pagination during copy.')
-@click.option('--pg-copy', is_flag=True, default=False,
+@click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
-@click.option('--pg-copy-binary', is_flag=True, default=False,
+@click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
               help='Use postgresql COPY with binary-format. '
                    'It is somewhat faster than the text and CSV formats, but '
                    'a binary-format file is less portable')

@@ -303,7 +303,7 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
 
 def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
     use_pg_copy = False
-    if ctx.enable_pg_copy:
+    if hasattr(ctx, 'pg_copy') and ctx.pg_copy:
         if hasattr(to_conn.dialect, 'psycopg2_version'):
             use_pg_copy = True
 
@@ -327,13 +327,13 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
     select_query = select_query.execution_options(stream_results=True)
 
     def fetch_stream():
-        if ctx.disable_pagination:
+        if ctx.pagination:
             result = from_conn.execute(select_query)
         else:
             q = select_query.limit(ctx.chunk)
         page = 0
         while True:
-            if ctx.disable_pagination:
+            if ctx.pagination:
                 rows = result.fetchmany(ctx.chunk)
             else:
                 rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
@@ -357,7 +357,8 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             try:
                 with to_conn.begin():
                     cursor = to_conn.connection.cursor()
-                    pg_bulk_insert(cursor, table, rows, columns)
+                    pg_bulk_insert(cursor, table, rows, columns,
+                                   binary=ctx.pg_copy_binary)
             except:
                 exc_type, exc_value, tb = sys.exc_info()
                 reraise(exc_type, exc_value, tb.tb_next)
