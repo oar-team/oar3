@@ -68,11 +68,12 @@ def get_jobs_sync_criterion(ctx, table):
 def get_resources_purge_criterion(ctx, table):
     # prepare query
     criterion = []
-    if table.name in resources_tables:
-        for column_name in get_resources_columns(table.name):
-            column = table.c.get(column_name)
-            if ctx.resources_to_purge:
-                criterion.append(column.in_(ctx.resources_to_purge))
+    if hasattr(ctx, 'resources_to_purge'):
+        if table.name in resources_tables:
+            for column_name in get_resources_columns(table.name):
+                column = table.c.get(column_name)
+                if ctx.resources_to_purge:
+                    criterion.append(column.in_(ctx.resources_to_purge))
     return criterion
 
 
@@ -82,7 +83,8 @@ def archive_db(ctx):
             and ctx.current_db.dialect in ("postgresql", "mysql")):
         clone_db(ctx, ignored_tables=ARCHIVE_IGNORED_TABLES)
         tables = sync_schema(ctx)
-        sync_tables(ctx, tables, ctx.current_db, ctx.archive_db, delete=True,
+        sync_tables(ctx, tables, ctx.current_db,
+                    ctx.archive_db, delete=True,
                     ignored_tables=ARCHIVE_IGNORED_TABLES)
     else:
         if not database_exists(engine_url):
@@ -310,7 +312,6 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
     if hasattr(ctx, 'pg_copy') and ctx.pg_copy:
         if hasattr(to_conn.dialect, 'psycopg2_version'):
             use_pg_copy = True
-
     insert_query = table.insert()
     select_table = select([table])
     select_count = select([func.count()]).select_from(table)
@@ -332,15 +333,15 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
 
     def fetch_stream():
         if ctx.pagination:
-            result = from_conn.execute(select_query)
-        else:
             q = select_query.limit(ctx.chunk)
+        else:
+            result = from_conn.execute(select_query)
         page = 0
         while True:
             if ctx.pagination:
-                rows = result.fetchmany(ctx.chunk)
-            else:
                 rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
+            else:
+                rows = result.fetchmany(ctx.chunk)
             if not rows:
                 break
             yield rows
