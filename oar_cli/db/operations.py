@@ -105,7 +105,7 @@ def migrate_db(ctx):
     # Create
     tables = [table for name, table in models.all_tables()]
     tables = list(sync_schema(ctx, tables, from_engine, to_engine))
-    alembic_sync_schema(ctx, from_engine, to_engine)
+    alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
 
     new_tables = []
     for table in tables:
