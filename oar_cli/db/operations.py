@@ -16,6 +16,7 @@ from sqlalchemy_utils.functions import (database_exists, create_database,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 
+from oar.lib import models
 from oar.lib.compat import to_unicode, iterkeys, reraise
 from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
 
@@ -51,14 +52,16 @@ get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
 def get_jobs_sync_criterion(ctx, table):
     # prepare query
     criterion = []
-    if table.name in jobs_table:
-        for column_name in get_jobs_columns(table.name):
-            column = table.c.get(column_name)
-            criterion.append(column < ctx.max_job_to_sync)
-    if table.name in moldable_jobs_tables:
-        for column_name in get_moldables_columns(table.name):
-            column = table.c.get(column_name)
-            criterion.append(column < ctx.max_moldable_job_to_sync)
+    if hasattr(ctx, 'max_job_to_sync'):
+        if table.name in jobs_table:
+            for column_name in get_jobs_columns(table.name):
+                column = table.c.get(column_name)
+                criterion.append(column < ctx.max_job_to_sync)
+    if hasattr(ctx, 'max_moldable_job_to_sync'):
+        if table.name in moldable_jobs_tables:
+            for column_name in get_moldables_columns(table.name):
+                column = table.c.get(column_name)
+                criterion.append(column < ctx.max_moldable_job_to_sync)
     return criterion
 
 
@@ -79,23 +82,22 @@ def archive_db(ctx):
             and ctx.current_db.dialect in ("postgresql", "mysql")):
         clone_db(ctx, ignored_tables=ARCHIVE_IGNORED_TABLES)
         tables = sync_schema(ctx)
-        sync_tables(ctx, tables, delete=True,
+        sync_tables(ctx, tables, ctx.current_db, ctx.archive_db, delete=True,
                     ignored_tables=ARCHIVE_IGNORED_TABLES)
     else:
         if not database_exists(engine_url):
             create_database(engine_url)
         tables = sync_schema(ctx)
 
-        sync_tables(ctx, tables, ignored_tables=ARCHIVE_IGNORED_TABLES)
+        sync_tables(ctx, tables, ctx.current_db, ctx.archive_db,
+                    ignored_tables=ARCHIVE_IGNORED_TABLES)
 
     fix_sequences(ctx)
 
 
 def migrate_db(ctx):
-    from oar.lib import models
-
     from_engine = create_engine(ctx.current_db.engine.url)
-    to_engine = create_engine(ctx.archive_db.engine.url)
+    to_engine = create_engine(ctx.new_db.engine.url)
 
     # Create databases
     if not database_exists(to_engine.url):
@@ -111,9 +113,7 @@ def migrate_db(ctx):
     for table in tables:
         new_tables.append(reflect_table(to_engine, table.name))
 
-    sync_tables(ctx, new_tables,
-                from_engine=from_engine,
-                to_engine=to_engine)
+    sync_tables(ctx, new_tables, ctx.current_db, ctx.new_db)
 
     fix_sequences(ctx, to_engine, new_tables)
 
@@ -171,8 +171,8 @@ def clone_db(ctx, ignored_tables=()):
         raise NotSupportedDatabase()
 
 
-def sync_schema(ctx, tables=None, from_engine=None, to_engine=None):
-    inspector = Inspector.from_engine(ctx.archive_db.engine)
+def sync_schema(ctx, tables, from_engine, to_engine):
+    inspector = Inspector.from_engine(to_engine)
     existing_tables = inspector.get_table_names()
     if tables is None:
         ctx.current_db.reflect()
@@ -206,14 +206,7 @@ def get_first_primary_key(table):
         return pk
 
 
-def sync_tables(ctx, tables, delete=False, ignored_tables=(),
-                from_engine=None, to_engine=None):
-    # prepare the connection
-    if to_engine is None:
-        to_engine = ctx.archive_db.engine
-    if from_engine is None:
-        from_engine = ctx.current_db.engine
-
+def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
     # Get the max pk
     def do_sync(table, from_conn, to_conn):
         if table.name not in ignored_tables:
@@ -244,29 +237,28 @@ def sync_tables(ctx, tables, delete=False, ignored_tables=(),
                                     continue
                             break
                     else:
-                        merge_table(ctx, table)
+                        merge_table(ctx, table, from_db, to_db)
                 else:
                     delete_from_table(ctx, table, to_conn)
                     copy_table(ctx, table, from_conn, to_conn)
 
-    with from_engine.connect() as from_conn:
-        with to_engine.connect() as to_conn:
+    with from_db.engine.connect() as from_conn:
+        with to_db.engine.connect() as to_conn:
             for table in tables:
                 do_sync(table, from_conn, to_conn)
 
 
-def merge_table(ctx, table):
+def merge_table(ctx, table, from_db, to_db):
     # Very slow !!
-    session = ctx.archive_db.session
     ctx.log(' %s ~> table %s' % (magenta(' merge'), table.name))
     model = generic_mapper(table)
     columns = table.columns.keys()
-    for record in ctx.current_db.query(table).all():
+    for record in from_db.query(table).all():
         data = dict(
             [(str(column), getattr(record, column)) for column in columns]
         )
-        session.merge(model(**data))
-    session.commit()
+        to_db.session.merge(model(**data))
+    to_db.session.commit()
 
 
 def delete_from_table(ctx, table, raw_conn, criterion=[], message=None):
@@ -399,7 +391,6 @@ def fix_sequences(ctx, to_engine=None, tables=[]):
             to_engine.execute(query % (sequence_name, pk_name, table_name))
         except Exception as ex:
             ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
-    ctx.archive_db.commit()
 
 
 def generic_mapper(table):
