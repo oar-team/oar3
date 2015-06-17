@@ -42,14 +42,23 @@ def generate_oar_conf():
     
 @pytest.fixture(scope='module', autouse=True)
 def setup_db_file(request):
-    #DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+    print "setup_db_file"
+    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
     db_file = config['DB_BASE_FILE']
-    #config.update(DEFAULT_CONFIG.copy())
+    config.update(DEFAULT_CONFIG.copy())
+
     #db.delete_all()
-    #print "db.create_all(): ", db_file    
+    #print "db.create_all(): ", db_file
+    #del db._cache
+    #del db._cache["uri"]
+    #db._cache["uri"] = "sqlite:////tmp/oar.sqlite"
+    
+    #db.delete_all()
     if os.path.isfile( db_file): 
         db.delete_all()
+        
     db.create_all()
+    print "setup_db_file: end"
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_intialization(request):
