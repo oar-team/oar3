@@ -2,14 +2,15 @@
 from __future__ import division, absolute_import, unicode_literals
 
 import random
+
 from struct import pack
+from io import BytesIO
 
 from sqlalchemy import types as sa_types
-from oar.lib.compat import is_bytes, str
-from oar.lib.utils import IterStream
+from oar.lib.compat import is_bytes, str, StringIO, basestring, izip
 
 
-def serialize_rows_to_csv(rows, null_value):
+def serialize_rows_to_csv(rows, null_value, output):
     def escape_row(row):
         for value in row:
             if value is None:
@@ -25,7 +26,7 @@ def serialize_rows_to_csv(rows, null_value):
                 yield value.__str__()
 
     for row in rows:
-        yield "\t".join(escape_row(row)) + "\n"
+        output.write("\t".join(escape_row(row)) + "\n")
 
 
 def sqlalchemy_struct_mapper_type(columns):
@@ -50,16 +51,17 @@ def sqlalchemy_struct_mapper_type(columns):
             fmt_and_size = None
 
 
-def serialize_rows_to_binary(rows, columns_obj):
-    yield pack(b'!11sii', b'PGCOPY\n\377\r\n\0', 0, 0)
+def serialize_rows_to_binary(rows, columns_obj, output):
+    output.write(pack(b'!11sii', b'PGCOPY\n\377\r\n\0', 0, 0))
 
     formats = list(sqlalchemy_struct_mapper_type(columns_obj))
+    num_columns = pack(b'!h', len(columns_obj))
     for row in rows:
-        yield pack(b'!h', len(columns_obj))
-        for (fmt, size), value in zip(formats, row):
+        output.write(num_columns)
+        for (fmt, size), value in izip(formats, row):
             if value is None:
                 size = -1
-                yield pack(b'!i', size)
+                output.write(pack(b'!i', size))
             else:
                 if fmt is None:
                     if is_bytes(value):
@@ -71,21 +73,25 @@ def serialize_rows_to_binary(rows, columns_obj):
                         value = ("%s" % value).encode('utf-8')
                         size = len(value)
                     fmt = ("%ds" % size).encode('utf-8')
-                yield pack(b'!i' + fmt, size, value)
+                output.write(pack(b'!i' + fmt, size, value))
 
-    yield pack(b'!h', -1)
+    output.write(pack(b'!h', -1))
 
 
 def pg_bulk_insert(cursor, table, rows, columns, binary=False):
     if binary:
         columns_obj = [table.columns[key] for key in columns]
-        binary_stream = IterStream(serialize_rows_to_binary(rows, columns_obj))
+        binary_stream = BytesIO()
+        serialize_rows_to_binary(rows, columns_obj, binary_stream)
+        binary_stream.seek(0)
         query = "COPY %s(%s) FROM STDIN WITH BINARY" % (table.name,
                                                         ", ".join(columns))
         cursor.copy_expert(query, binary_stream)
     else:
         null_value = 'None_%x' % random.getrandbits(32)
-        csv_stream = IterStream(serialize_rows_to_csv(rows, null_value))
+        csv_stream = StringIO()
+        serialize_rows_to_csv(rows, null_value, csv_stream)
+        csv_stream.seek(0)
         cursor.copy_from(csv_stream,
                          "%s" % table.name,
                          columns=columns,
