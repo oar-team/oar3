@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 
-
 PY3 = sys.version_info[0] == 3
 
 
@@ -10,7 +9,6 @@ if PY3:
     str = str
     bytes = bytes
     basestring = (str, bytes)
-    string_types = (str,)
     integer_types = (int, )
     numeric_types = integer_types + (float, )
 
@@ -47,7 +45,6 @@ else:
     bytes = str
     str = unicode
     basestring = basestring
-    string_types = (unicode, bytes)
     integer_types = (int, long)
     numeric_types = integer_types + (float, )
 
