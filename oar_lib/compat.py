@@ -15,7 +15,8 @@ if PY3:
     from io import StringIO
     from queue import Empty
 
-    izip = zip
+    range = range
+    zip = zip
 
     def iterkeys(d):
         return iter(d.keys())
@@ -51,6 +52,9 @@ else:
     numeric_types = integer_types + (float, )
 
     from itertools import izip  # noqa
+
+    zip = izip
+    range = xrange
 
     from cStringIO import StringIO  # noqa
     from Queue import Empty  # noqa
