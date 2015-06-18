@@ -91,7 +91,7 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
 
 def test_db_fairsharing():
 
-    print "OKOK test_db_fairsharing"
+    print "Test_db_fairsharing"
 
     print "DB_BASE_FILE: ", config["DB_BASE_FILE"]
     #setup_db1(False)

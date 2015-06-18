@@ -1,23 +1,34 @@
 #!/usr/bin/env python
-from oar.lib import config
-from oar.kao.platform import Platform
-from oar.kao.interval import sub_intervals 
 
+from oar.lib import config, get_logger
+from oar.kao.platform import Platform
+from oar.kao.interval import (intersec, sub_intervals, itvs2ids, unordered_ids2itvs)
+from oar.kao.scheduling_basic import find_resource_hierarchies_job
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
 
 # Set undefined config value to default one
-default_config = {
-    "HIERARCHY_LABEL": "resource_id,network_address",
-    "SCHEDULER_RESOURCE_ORDER": "resource_id ASC"
+DEFAULT_CONFIG = {
+    'DB_PORT': '5432',
+    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
+    'SCHEDULER_JOB_SECURITY_TIME': '60',
+    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
+    'FAIRSHARING_ENABLED': 'no',
 }
 
-config.setdefault_config(default_config)
+config.setdefault_config(DEFAULT_CONFIG)
 
-def schedule_fifo_cycle(plt, queue="default"):
+log = get_logger("oar.kamelot_fifo")
+#config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+
+def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
+
+    assigned_jobs = {}
+    
     now = plt.get_time()
 
-    print "Begin scheduling....", now
+    log.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
 
     #
     # Retrieve waiting jobs
@@ -25,26 +36,28 @@ def schedule_fifo_cycle(plt, queue="default"):
 
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
-    print waiting_jobs, waiting_jids, nb_waiting_jobs
 
     if nb_waiting_jobs > 0:
+        log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        for jid in waiting_jids:
+             log.debug("waiting_jid: " + str(jid))
 
         #
         # Determine Global Resource Intervals
         #
         resource_set = plt.resource_set()
         res_itvs = resource_set.roid_itvs
-        
+
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set)
-        
+        job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         #
         # Remove resources used by running job 
         #
-        for job in plt.get_scheduled_jobs(resource_set):
+        for job in plt.get_scheduled_jobs(resource_set, job_security_time, now):
             if job.state == "Running":
                 res_itvs = sub_intervals(res_itvs, job.res_itvs)
 
@@ -55,22 +68,40 @@ def schedule_fifo_cycle(plt, queue="default"):
             job = waiting_jobs[jid]
             # We consider only one instance of resources request (no support for moldable)
             (mld_id, walltime, hy_res_rqts) = job.mld_res_rqts[0]
-            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, resource_set.hierarchy)
+            if hierarchy_use:
+                # Assign resources which hierarchy support (uncomment)
+                itvs = find_resource_hierarchies_job(res_itvs, hy_res_rqts, resource_set.hierarchy)
+            else:
+                # OR assign resource by considering only resource_id (no hierarchy)
+                # and only one type of resource
+                (hy_level_nbs, constraints) = hy_res_rqts[0]
+                (h_name, nb_asked_res) = hy_level_nbs[0]
+                itvs_avail = intersec(constraints, res_itvs)
+                ids_avail = itvs2ids(itvs_avail)
+
+                if len(ids_avail) < nb_asked_res:
+                    itvs = []
+                else:
+                    itvs = unordered_ids2itvs(ids_avail[:nb_asked_res])
 
             if (itvs != []):
-                job.res_itvs = itvs
+                job.moldable_id = mld_id
+                job.res_set = itvs
+                assigned_jobs[job.id] = job
+                res_itvs = sub_intervals(res_itvs, itvs)
             else:
-                print "Not enough available resources, it's a FIFO scheduler, we stop here."
+                log.debug("Not enough available resources, it's a FIFO scheduler, we stop here.")
                 break
         
         #
         # Save assignement
         #
-
-        plt.save_assigns(waiting_jobs, resource_set)
+        
+        log.info("save assignement")
+        plt.save_assigns(assigned_jobs, resource_set)
 
     else:
-        print "No waiting jobs"
+        log.info("no waiting jobs")        
 
 #
 # Main function
@@ -78,5 +109,5 @@ def schedule_fifo_cycle(plt, queue="default"):
 
 if __name__ == '__main__':
     plt = Platform()
-    schedule_fifo_cycle(plt)
-    print "That's all folks"
+    schedule_fifo_cycle(plt, "default")
+    log.info("That's all folks")

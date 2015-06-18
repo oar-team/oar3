@@ -55,7 +55,7 @@ def schedule_cycle(plt, now, queue="default"):
     if nb_waiting_jobs > 0:
         log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
         for jid in waiting_jids:
-             log.info("waiting_jid: " + str(jid))
+             log.debug("waiting_jid: " + str(jid))
              
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     plt = Platform()
 
-    log.info("argv..." + str(sys.argv))
+    log.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:
         schedule_cycle(plt, int(float(sys.argv[2])), sys.argv[1])
