@@ -5,6 +5,7 @@ import sys
 import re
 from copy import copy
 from functools import partial, reduce
+from itertools import chain
 
 from sqlalchemy import (func, MetaData, Table, and_, not_,
                         asc as order_by_func, create_engine)
@@ -100,12 +101,9 @@ def archive_db(ctx):
 def migrate_db(ctx):
     from_engine = create_engine(ctx.current_db.engine.url)
     to_engine = create_engine(ctx.new_db.engine.url)
-
     # Create databases
     if not ctx.data_only:
-        if not database_exists(to_engine.url):
-            ctx.log(green(' create') + ' ~> new database `%r`' % to_engine.url)
-            create_database(to_engine.url)
+        create_database_if_not_exists(ctx, to_engine)
 
     tables = [table for name, table in models.all_tables()]
 
@@ -331,34 +329,40 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
     )
     select_query = select_query.execution_options(stream_results=True)
 
+    def log(progress):
+        percentage = blue("%s/%s" % (progress, total_lenght))
+        message = yellow('\r   copy') + ' ~> table %s (%s)'
+        ctx.log(message % (table.name, percentage), nl=False)
+        if total_lenght == progress:
+            ctx.log("")
+
     def fetch_stream():
-        if ctx.pagination:
-            q = select_query.limit(ctx.chunk)
-        else:
-            result = from_conn.execute(select_query)
+        q = select_query.limit(ctx.chunk)
         page = 0
+        progress = 0
         while True:
-            if ctx.pagination:
-                rows = from_conn.execute(q.offset(page * ctx.chunk)).fetchall()
-            else:
-                rows = result.fetchmany(ctx.chunk)
-            if not rows:
+            offset = page * ctx.chunk
+            rows = (i for i in from_conn.execute(q.offset(offset)))
+            first = next(rows, None)
+            if first is None:
                 break
-            yield rows
+            progress = ctx.chunk + progress
+            progress = total_lenght if progress > total_lenght else progress
+            log(progress)
+            yield chain((first,), rows)
             page = page + 1
 
-    message = yellow('\r   copy') + ' ~> table %s (%s)'
-    ctx.log(message % (table.name, blue("0/%s" % total_lenght)), nl=False)
-    progress = 0
-    for rows in fetch_stream():
-        progress = ctx.chunk + progress
-        progress = total_lenght if progress > total_lenght else progress
-        percentage = blue("%s/%s" % (progress, total_lenght))
-        if not use_pg_copy:
+    if not use_pg_copy:
+        for rows in fetch_stream():
             to_conn.execute(insert_query, rows)
-        else:
-            from oar.lib.psycopg2 import pg_bulk_insert
-            columns = ["%s" % k for k in rows[0].keys()]
+    else:
+        from oar.lib.psycopg2 import pg_bulk_insert
+        columns = None
+        for rows in fetch_stream():
+            if columns is None:
+                first = next(rows, None)
+                columns = ["%s" % k for k in first.keys()]
+                rows = chain((first,), rows)
             try:
                 with to_conn.begin():
                     cursor = to_conn.connection.cursor()
@@ -367,8 +371,6 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             except:
                 exc_type, exc_value, tb = sys.exc_info()
                 reraise(exc_type, exc_value, tb.tb_next)
-        ctx.log(message % (table.name, percentage), nl=False)
-    ctx.log("")
 
 
 def fix_sequences(ctx, to_engine=None, tables=[]):

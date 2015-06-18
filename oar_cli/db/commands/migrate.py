@@ -65,10 +65,8 @@ pass_context = make_pass_decorator(MigrationContext)
               help='the url for your current OAR database.')
 @click.option('--new-db-url', prompt="new OAR database URL",
               help='the url for your new OAR database.')
-@click.option('--chunk', type=int, default=50000,
+@click.option('--chunk', type=int, default=100000,
               help="Defines the chunk size")
-@click.option('--pagination/--no-pagination', is_flag=True, default=True,
-              help='Disable queries pagination during copy.')
 @click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
 @click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
