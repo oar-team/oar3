@@ -3,11 +3,12 @@ from __future__ import division, absolute_import, unicode_literals
 
 import random
 
+from tempfile import NamedTemporaryFile
 from struct import pack
-from io import BytesIO
 
 from sqlalchemy import types as sa_types
-from oar.lib.compat import is_bytes, str, StringIO, basestring, izip
+
+from oar.lib.compat import is_bytes, str, basestring
 
 
 def serialize_rows_to_csv(rows, null_value, output):
@@ -23,7 +24,7 @@ def serialize_rows_to_csv(rows, null_value, output):
                 else:
                     yield value
             else:
-                yield value.__str__()
+                yield "%s" % value
 
     for row in rows:
         output.write("\t".join(escape_row(row)) + "\n")
@@ -58,7 +59,7 @@ def serialize_rows_to_binary(rows, columns_obj, output):
     num_columns = pack(b'!h', len(columns_obj))
     for row in rows:
         output.write(num_columns)
-        for (fmt, size), value in izip(formats, row):
+        for (fmt, size), value in zip(formats, row):
             if value is None:
                 size = -1
                 output.write(pack(b'!i', size))
@@ -78,21 +79,30 @@ def serialize_rows_to_binary(rows, columns_obj, output):
     output.write(pack(b'!h', -1))
 
 
-def pg_bulk_insert(cursor, table, rows, columns, binary=False):
-    if binary:
+def pg_bulk_insert_binary(cursor, table, rows, columns):
+    with NamedTemporaryFile() as tmp:
         columns_obj = [table.columns[key] for key in columns]
-        binary_stream = BytesIO()
-        serialize_rows_to_binary(rows, columns_obj, binary_stream)
-        binary_stream.seek(0)
+        serialize_rows_to_binary(rows, columns_obj, tmp)
+        tmp.seek(0)
         query = "COPY %s(%s) FROM STDIN WITH BINARY" % (table.name,
                                                         ", ".join(columns))
-        cursor.copy_expert(query, binary_stream)
-    else:
+        cursor.copy_expert(query, tmp)
+
+
+def pg_bulk_insert_csv(cursor, table, rows, columns):
+    with NamedTemporaryFile() as tmp:
         null_value = 'None_%x' % random.getrandbits(32)
-        csv_stream = StringIO()
-        serialize_rows_to_csv(rows, null_value, csv_stream)
-        csv_stream.seek(0)
-        cursor.copy_from(csv_stream,
+
+        serialize_rows_to_csv(rows, null_value, tmp)
+        tmp.seek(0)
+        cursor.copy_from(tmp,
                          "%s" % table.name,
                          columns=columns,
                          null=null_value)
+
+
+def pg_bulk_insert(cursor, table, rows, columns, binary=False):
+    if binary:
+        pg_bulk_insert_binary(cursor, table, rows, columns)
+    else:
+        pg_bulk_insert_csv(cursor, table, rows, columns)
