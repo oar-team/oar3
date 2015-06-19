@@ -12,6 +12,12 @@ from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
 from sqlalchemy.orm.exc import UnmappedClassError
 
+
+try:
+    from MySQLdb.cursors import SSCursor as MySQLdb_SSCursor
+except:
+    MySQLdb_SSCursor = None
+
 from .utils import cached_property
 from .compat import iteritems
 
@@ -233,6 +239,10 @@ class EngineConnector(object):
             info.query.setdefault('charset', 'utf8')
             options.setdefault('pool_size', 10)
             options.setdefault('pool_recycle', 7200)
+            if MySQLdb_SSCursor is not None:
+                connect_args = options.get('connect_args', {})
+                connect_args.update({'cursorclass': MySQLdb_SSCursor})
+                options['connect_args'] = connect_args
 
         elif info.drivername == 'sqlite':
             no_pool = options.get('pool_size') == 0
