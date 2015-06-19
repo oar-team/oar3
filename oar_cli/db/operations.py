@@ -25,17 +25,6 @@ from .helpers import green, magenta, yellow, blue, red
 from .alembic import alembic_sync_schema
 
 
-ARCHIVE_IGNORED_TABLES = [
-    'accounting',
-    'gantt_jobs_predictions',
-    'gantt_jobs_predictions_log',
-    'gantt_jobs_predictions_visu',
-    'gantt_jobs_resources',
-    'gantt_jobs_resources_log',
-    'gantt_jobs_resources_visu',
-]
-
-
 jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
 moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
 resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
@@ -87,23 +76,40 @@ def create_database_if_not_exists(ctx, engine):
 
 
 def archive_db(ctx):
-    engine_url = ctx.archive_db.engine.url
-    if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
-            and ctx.current_db.dialect in ("postgresql", "mysql")):
-        clone_db(ctx, ignored_tables=ARCHIVE_IGNORED_TABLES)
-        tables = sync_schema(ctx)
-        sync_tables(ctx, tables, ctx.current_db,
-                    ctx.archive_db, delete=True,
-                    ignored_tables=ARCHIVE_IGNORED_TABLES)
-    else:
-        if not database_exists(engine_url):
-            create_database(engine_url)
-        tables = sync_schema(ctx)
+    from_engine = create_engine(ctx.current_db.engine.url)
+    to_engine = create_engine(ctx.archive_db.engine.url)
 
-        sync_tables(ctx, tables, ctx.current_db, ctx.archive_db,
-                    ignored_tables=ARCHIVE_IGNORED_TABLES)
+    ignored_tables = [
+        'accounting',
+        'gantt_jobs_predictions',
+        'gantt_jobs_predictions_log',
+        'gantt_jobs_predictions_visu',
+        'gantt_jobs_resources',
+        'gantt_jobs_resources_log',
+        'gantt_jobs_resources_visu',
+    ]
 
-    fix_sequences(ctx)
+    # Create databases
+    create_database_if_not_exists(ctx, to_engine)
+
+    # Collect all tables
+    tables = [table for name, table in models.all_tables()]
+
+    if (is_local_database(from_engine, to_engine)
+       and from_engine.dialect in ("postgresql", "mysql")):
+        clone_db(ctx, ignored_tables=ignored_tables)
+
+    # Create missing tables
+    tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+
+    # Upgrade schema
+    alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
+
+    # copy data
+    sync_tables(ctx, tables, ctx.current_db, ctx.archive_db, delete=True,
+                ignored_tables=ignored_tables)
+
+    fix_sequences(ctx, to_engine, tables)
 
 
 def migrate_db(ctx):
@@ -362,7 +368,7 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
 
     if not use_pg_copy:
         for rows in fetch_stream():
-            to_conn.execute(insert_query, rows)
+            to_conn.execute(insert_query, list(rows))
     else:
         from oar.lib.psycopg2 import pg_bulk_insert
         columns = None
@@ -415,10 +421,10 @@ def generic_mapper(table):
     return GenericMapper
 
 
-def is_local_database(ctx, engine_url):
-    url = copy(engine_url)
-    url.database = ctx.current_db.engine.url.database
-    return url == ctx.current_db.engine.url
+def is_local_database(from_engine, to_engine):
+    url = copy(to_engine.url)
+    url.database = from_engine.engine.url.database
+    return url == from_engine.engine.url
 
 
 class NotSupportedDatabase(Exception):

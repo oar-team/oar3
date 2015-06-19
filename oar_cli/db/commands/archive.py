@@ -160,7 +160,7 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar_archive',
 @click.option('--verbose', is_flag=True, default=False,
               help="Enables verbose output.")
 @click.option('--debug', is_flag=True, default=False,
-              help="Enable debug mode.")
+              help="Enables debug mode.")
 @pass_context
 def cli(ctx, **kwargs):
     """Archive OAR database."""
@@ -168,7 +168,7 @@ def cli(ctx, **kwargs):
 
 
 @cli.command()
-@click.option('--chunk', type=int, default=10000, show_default=True,
+@click.option('--chunk', type=int, default=100000, show_default=True,
               help="Chunk size")
 @click.option('--ignore-jobs', default=["^Terminated", "^Error"],
               show_default=True, multiple=True, help='Ignore job state')
@@ -178,12 +178,17 @@ def cli(ctx, **kwargs):
 @click.option('--archive-db-url', prompt="OAR archive database URL",
               default=get_default_archive_database_url(), show_default=True,
               help='The url for your archive OAR database.')
-@click.option('--disable-pagination', is_flag=True, default=False,
-              help='Enable query pagination during copy.')
+@click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
+              help='Use postgresql COPY clause to make batch inserts faster')
+@click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
+              help='Use postgresql COPY with binary-format. '
+                   'It is somewhat faster than the text and CSV formats, but '
+                   'a binary-format file is less portable')
 @pass_context
 def sync(ctx, **kwargs):
     """ Send all resources and finished jobs to archive database."""
     ctx.update_options(**kwargs)
+    ctx.configure_log()
     ctx.confirm("Continue to copy old resources and jobs to the archive "
                 "database?", default=True)
     archive_db(ctx)
