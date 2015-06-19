@@ -254,9 +254,9 @@ def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
                     delete_from_table(ctx, table, to_conn)
                     copy_table(ctx, table, from_conn, to_conn)
 
-    with from_db.engine.connect() as from_conn:
-        with to_db.engine.connect() as to_conn:
-            for table in tables:
+    for table in tables:
+        with from_db.engine.connect() as from_conn:
+            with to_db.engine.connect() as to_conn:
                 do_sync(table, from_conn, to_conn)
 
 
