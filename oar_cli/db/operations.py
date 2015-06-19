@@ -78,6 +78,14 @@ def get_resources_purge_criterion(ctx, table):
     return criterion
 
 
+def create_database_if_not_exists(ctx, engine):
+    if not database_exists(engine.url):
+        ctx.log(green(' create') + ' ~> new database `%r`' % engine.url)
+        create_database(engine.url)
+        return True
+    return False
+
+
 def archive_db(ctx):
     engine_url = ctx.archive_db.engine.url
     if (not database_exists(engine_url) and is_local_database(ctx, engine_url)
