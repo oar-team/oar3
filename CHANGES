@@ -1,10 +1,36 @@
 OAR lib changes
 ===============
 
-Version 0.2.0.dev0
-------------------
+Version 0.2.0
+-------------
 
-**unreleased**
+Released on June 23rd 2015
+
+- [config] Added clear parameter to clear the config before loading a new file
+- [config] only one default configuration file
+- [config] Made load file configuration atomic
+- [config] Warned user when configuration loading failed
+- [compat] Used iterator version of zip and range method
+- [compat] Removed unused string_types
+
+- [database] pg_bulk_insert that use COPY clause to perform batch inserts
+- [database] Added db.queries object that included all oar-lib sql queries
+- [database] Workaround to support table inheritance and __table_args__
+- [database] Moved the BaseQuery class to the basequery module
+
+- [models] Added missings relations between tables as dicts
+- [models] Used BigInteger type on Accounting fields
+- [models] Added all_tables method to get all tables
+
+- [basequery] make models module easier to read
+- [basequery] Added get_job_resources query
+- [basequery] Added filter_jobs_for_user method to build jobs query
+- [basequery] Added get_resources
+- [basequery] Added get_jobs_for_user query
+
+- [utils] Added IterStream class that give a stream like interface for any iterator
+
+- Added alembic and sqlalchemy-utils requirements
 
 Version 0.1.1
 -------------
