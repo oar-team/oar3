@@ -88,27 +88,36 @@ def archive_db(ctx):
         'gantt_jobs_resources_log',
         'gantt_jobs_resources_visu',
     ]
-
-    # Create databases
-    create_database_if_not_exists(ctx, to_engine)
-
-    # Collect all tables
-    tables = [table for name, table in models.all_tables()]
-
     if (is_local_database(from_engine, to_engine)
-       and from_engine.dialect in ("postgresql", "mysql")):
+       and from_engine.dialect.name in ("postgresql", "mysql")):
         clone_db(ctx, ignored_tables=ignored_tables)
+        tables = list(sync_schema(ctx, None, from_engine, to_engine))
+        # copy data
+        sync_tables(ctx, sorted(tables, key=lambda x: x.name),
+                    ctx.current_db, ctx.archive_db, delete=True,
+                    ignored_tables=ignored_tables)
+    else:
+        # Create databases
+        create_database_if_not_exists(ctx, to_engine)
 
-    # Create missing tables
-    tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+        if from_engine.dialect.name != to_engine.dialect.name:
+            # Collect all tables from our models
+            tables = [table for name, table in models.all_tables()]
+            # Create missing tables
+            tables = list(sync_schema(ctx, tables, from_engine, to_engine))
+            # Upgrade schema
+            alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
+        else:
+            tables = None
+            # Create missing tables
+            tables = list(sync_schema(ctx, tables, from_engine, to_engine))
 
-    # Upgrade schema
-    alembic_sync_schema(ctx, from_engine, to_engine, tables=tables)
-
-    # copy data
-    sync_tables(ctx, tables, ctx.current_db, ctx.archive_db, delete=True,
-                ignored_tables=ignored_tables)
-
+        tables = sorted(tables, key=lambda x: x.name)
+        for table in tables:
+            print table.name
+        sync_tables(ctx, sorted(tables, key=lambda x: x.name),
+                    ctx.current_db, ctx.archive_db, delete=True,
+                    ignored_tables=ignored_tables)
     fix_sequences(ctx, to_engine, tables)
 
 
@@ -154,7 +163,7 @@ def clone_db(ctx, ignored_tables=()):
         ctx.current_db.session.connection().connection.set_isolation_level(1)
     elif ctx.current_db.dialect == 'mysql':
         # Horribly slow implementation.
-        create_database(ctx.archive_db.engine.url)
+        create_database_if_not_exists(ctx, ctx.archive_db.engine)
         show_tables_query = 'SHOW TABLES in %s;' % ctx.current_db_name
         for row in ctx.current_db.session.execute(show_tables_query):
             name = row[0]
