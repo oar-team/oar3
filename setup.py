@@ -32,7 +32,7 @@ setup(
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
-    description='Custom scripts and various utility functions for OAR.',
+    description='OAR Command line interface.',
     long_description=read('README.rst') + '\n\n' + read('CHANGES'),
     license="GNU GPL",
     classifiers=[
