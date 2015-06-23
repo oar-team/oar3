@@ -50,6 +50,7 @@ class Configuration(dict):
         :param strip_quotes: Strip the quotes
         """
         try:
+            conf = {}
             equal_char = "="
             with open(filename, encoding="utf-8") as config_file:
                 for line in config_file:
@@ -61,7 +62,9 @@ class Configuration(dict):
                         value = value.strip()
                         value = value.strip('"\'')
                         value = try_convert_decimal(value)
-                        self[key] = value
+                        conf[key] = value
+            for k, v in iteritems(conf):
+                self[k] = v
         except IOError as e:
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             if silent:
