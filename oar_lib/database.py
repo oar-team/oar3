@@ -238,11 +238,11 @@ class EngineConnector(object):
         if info.drivername == 'mysql':
             info.query.setdefault('charset', 'utf8')
             options.setdefault('pool_size', 10)
-            options.setdefault('pool_recycle', 7200)
-            if MySQLdb_SSCursor is not None:
-                connect_args = options.get('connect_args', {})
-                connect_args.update({'cursorclass': MySQLdb_SSCursor})
-                options['connect_args'] = connect_args
+            options.setdefault('pool_recycle', 3600)
+            # if MySQLdb_SSCursor is not None:
+            #     connect_args = options.get('connect_args', {})
+            #     connect_args.update({'cursorclass': MySQLdb_SSCursor})
+            #     options['connect_args'] = connect_args
 
         elif info.drivername == 'sqlite':
             no_pool = options.get('pool_size') == 0
