@@ -113,8 +113,7 @@ def archive_db(ctx):
             tables = list(sync_schema(ctx, tables, from_engine, to_engine))
 
         tables = sorted(tables, key=lambda x: x.name)
-        for table in tables:
-            print table.name
+
         sync_tables(ctx, sorted(tables, key=lambda x: x.name),
                     ctx.current_db, ctx.archive_db, delete=True,
                     ignored_tables=ignored_tables)
