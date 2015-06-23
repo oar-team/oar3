@@ -40,13 +40,15 @@ class Configuration(dict):
         self.load_file(self.DEFAULT_CONFIG_FILE, silent=silent)
 
     def load_file(self, filename, comment_char="#", strip_quotes=True,
-                  silent=False):
+                  silent=False, clear=False):
         """Updates the values in the config from a config file.
         :param filename: the filename of the config.  This can either be an
-                         absolute filename or a filename relative to the
-                         root path.
-        :param comment_char: The string character used to comment
-        :param strip_quotes: Strip the quotes
+            absolute filename or a filename relative to the root path.
+        :param comment_char: The string character used to comment line.
+        :param strip_quotes: Strip the quotes.
+        :param silent: If True, fail silently.
+        :param clear: If True, delete clear all old values before loading
+            the new file.
         """
         try:
             conf = {}
@@ -62,6 +64,8 @@ class Configuration(dict):
                         value = value.strip('"\'')
                         value = try_convert_decimal(value)
                         conf[key] = value
+            if clear:
+                self.clear()
             for k, v in iteritems(conf):
                 self[k] = v
         except IOError as e:
