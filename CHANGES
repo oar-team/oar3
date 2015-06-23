@@ -1,10 +1,19 @@
 OAR CLI changelog
 =================
 
-Version 0.3.0.dev0
-------------------
+Version 0.3.0
+-------------
 
-**unreleased**
+Released on June 23rd 2015
+
+- Renamed the project to OAR CLI !
+- Added ``oar-database-migrate`` script.
+- Added ``--schema-only`` and ``--data-only`` features to ``oar-database-migrate`` script
+- Supported postgresql bulk insert using COPY clause to improved performance.
+- Handled database connection errors.
+- Managed the schema upgrade with alembic
+- Fixed max_job_to_sync query if we want to copy all jobs
+
 
 Version 0.2.0
 -------------
