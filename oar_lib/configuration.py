@@ -17,7 +17,7 @@ class Configuration(dict):
 
     :param defaults: an optional dictionary of default values
     """
-    DEFAULT_CONFIG_FILES = ["/etc/oar/oar.conf"]
+    DEFAULT_CONFIG_FILE = "/etc/oar/oar.conf"
 
     DEFAULT_CONFIG = {
         'SQLALCHEMY_CONVERT_UNICODE': True,
@@ -37,8 +37,7 @@ class Configuration(dict):
         dict.__init__(self, defaults)
 
     def load_default_config(self, silent=True):
-        for config_file in self.DEFAULT_CONFIG_FILES:
-            self.load_file(config_file, silent=silent)
+        self.load_file(self.DEFAULT_CONFIG_FILE, silent=silent)
 
     def load_file(self, filename, comment_char="#", strip_quotes=True,
                   silent=False):
