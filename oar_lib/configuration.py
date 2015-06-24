@@ -2,7 +2,6 @@
 from __future__ import with_statement, absolute_import, unicode_literals
 
 import sys
-import warnings
 import pprint
 
 from io import open
@@ -73,7 +72,6 @@ class Configuration(dict):
             if silent:
                 from . import logger
                 logger.warn(e.strerror)
-                warnings.warn(e.strerror)
                 return False
             else:
                 exc_type, exc_value, tb = sys.exc_info()
