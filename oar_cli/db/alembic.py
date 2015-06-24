@@ -102,10 +102,12 @@ def alembic_apply_diff(ctx, op, op_name, diff, tables=[]):
         column_name = diff[0][3]
         kwargs = diff[0][4]
         nullable = diff[0][6]
+        existing_type = kwargs['existing_type']
 
         def op_callback():
             op.alter_column(table_name, column_name,
-                            nullable=nullable, **kwargs)
+                            nullable=nullable,
+                            existing_type=existing_type)
         msg = SUPPORTED_ALEMBIC_OPERATIONS[op_name] \
             % (table_name, column_name, nullable)
     try:
