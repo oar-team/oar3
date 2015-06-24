@@ -25,56 +25,6 @@ from .helpers import green, magenta, yellow, blue, red
 from .alembic import alembic_sync_schema
 
 
-jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
-moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
-resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
-
-
-def get_table_columns(tables, table_name):
-    return [d[table_name] for d in tables if table_name in d.keys()]
-
-
-get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
-get_moldables_columns = partial(get_table_columns, MOLDABLES_JOBS_TABLES)
-get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
-
-
-def get_jobs_sync_criterion(ctx, table):
-    # prepare query
-    criterion = []
-    if hasattr(ctx, 'max_job_to_sync'):
-        if table.name in jobs_table:
-            for column_name in get_jobs_columns(table.name):
-                column = table.c.get(column_name)
-                criterion.append(column < ctx.max_job_to_sync)
-    if hasattr(ctx, 'max_moldable_job_to_sync'):
-        if table.name in moldable_jobs_tables:
-            for column_name in get_moldables_columns(table.name):
-                column = table.c.get(column_name)
-                criterion.append(column < ctx.max_moldable_job_to_sync)
-    return criterion
-
-
-def get_resources_purge_criterion(ctx, table):
-    # prepare query
-    criterion = []
-    if hasattr(ctx, 'resources_to_purge'):
-        if table.name in resources_tables:
-            for column_name in get_resources_columns(table.name):
-                column = table.c.get(column_name)
-                if ctx.resources_to_purge:
-                    criterion.append(column.in_(ctx.resources_to_purge))
-    return criterion
-
-
-def create_database_if_not_exists(ctx, engine):
-    if not database_exists(engine.url):
-        ctx.log(green(' create') + ' ~> new database `%r`' % engine.url)
-        create_database(engine.url)
-        return True
-    return False
-
-
 def archive_db(ctx):
     from_engine = create_engine(ctx.current_db.engine.url)
     to_engine = create_engine(ctx.archive_db.engine.url)
@@ -142,6 +92,84 @@ def migrate_db(ctx):
         sync_tables(ctx, new_tables, ctx.current_db, ctx.new_db)
 
         fix_sequences(ctx, to_engine, new_tables)
+
+
+jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
+moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
+resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
+
+
+def get_table_columns(tables, table_name):
+    return [d[table_name] for d in tables if table_name in d.keys()]
+
+
+get_jobs_columns = partial(get_table_columns, JOBS_TABLES)
+get_moldables_columns = partial(get_table_columns, MOLDABLES_JOBS_TABLES)
+get_resources_columns = partial(get_table_columns, RESOURCES_TABLES)
+
+
+def get_jobs_sync_criterion(ctx, table):
+    # prepare query
+    criterion = []
+    if hasattr(ctx, 'max_job_to_sync'):
+        if table.name in jobs_table:
+            for column_name in get_jobs_columns(table.name):
+                column = table.c.get(column_name)
+                criterion.append(column < ctx.max_job_to_sync)
+    if hasattr(ctx, 'max_moldable_job_to_sync'):
+        if table.name in moldable_jobs_tables:
+            for column_name in get_moldables_columns(table.name):
+                column = table.c.get(column_name)
+                criterion.append(column < ctx.max_moldable_job_to_sync)
+    return criterion
+
+
+def get_resources_purge_criterion(ctx, table):
+    # prepare query
+    criterion = []
+    if hasattr(ctx, 'resources_to_purge'):
+        if table.name in resources_tables:
+            for column_name in get_resources_columns(table.name):
+                column = table.c.get(column_name)
+                if ctx.resources_to_purge:
+                    criterion.append(column.in_(ctx.resources_to_purge))
+    return criterion
+
+
+def get_primary_keys(table):
+    # Deterministic order
+    # Order by name and Integer type first
+    pks = sorted((c for c in table.c if c.primary_key), key=lambda c: c.name)
+    return sorted(pks, key=lambda x: not isinstance(x.type, Integer))
+
+
+def get_first_primary_key(table):
+    for pk in get_primary_keys(table):
+        return pk
+
+
+def create_database_if_not_exists(ctx, engine):
+    if not database_exists(engine.url):
+        ctx.log(green(' create') + ' ~> new database `%r`' % engine.url)
+        create_database(engine.url)
+        return True
+    return False
+
+
+def generic_mapper(table):
+    class GenericMapper(declarative_base()):
+        __table__ = table
+    return GenericMapper
+
+
+def is_local_database(from_engine, to_engine):
+    url = copy(to_engine.url)
+    url.database = from_engine.engine.url.database
+    return url == from_engine.engine.url
+
+
+class NotSupportedDatabase(Exception):
+    pass
 
 
 def reflect_table(db, table_name):
@@ -220,18 +248,6 @@ def sync_schema(ctx, tables, from_engine, to_engine):
         yield Table(table.name, metadata, autoload=True)
 
 
-def get_primary_keys(table):
-    # Deterministic order
-    # Order by name and Integer type first
-    pks = sorted((c for c in table.c if c.primary_key), key=lambda c: c.name)
-    return sorted(pks, key=lambda x: not isinstance(x.type, Integer))
-
-
-def get_first_primary_key(table):
-    for pk in get_primary_keys(table):
-        return pk
-
-
 def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
     # Get the max pk
     def do_sync(table, from_conn, to_conn):
@@ -272,59 +288,6 @@ def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
         with from_db.engine.connect() as from_conn:
             with to_db.engine.connect() as to_conn:
                 do_sync(table, from_conn, to_conn)
-
-
-def merge_table(ctx, table, from_db, to_db):
-    # Very slow !!
-    ctx.log(' %s ~> table %s' % (magenta(' merge'), table.name))
-    model = generic_mapper(table)
-    columns = table.columns.keys()
-    for record in from_db.query(table).all():
-        data = dict(
-            [(str(column), getattr(record, column)) for column in columns]
-        )
-        to_db.session.merge(model(**data))
-    to_db.session.commit()
-
-
-def delete_from_table(ctx, table, raw_conn, criterion=[], message=None):
-    if message:
-        ctx.log(message)
-    delete_query = table.delete()
-    if criterion:
-        delete_query = delete_query.where(reduce(and_, criterion))
-    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % table.name,
-            nl=False)
-    count = raw_conn.execute(delete_query).rowcount
-    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (table.name,
-                                                                 blue(count)))
-    return count
-
-
-def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
-    if message:
-        ctx.log(message)
-    dialect = raw_conn.engine.dialect.name
-    if dialect == 'mysql':
-        raw_query = 'DELETE a FROM {f_table} a\n' \
-                    'LEFT JOIN {p_table} b\n' \
-                    'ON a.{f_key} = b.{p_key}\n' \
-                    'WHERE b.{p_key} IS NULL'.format(**locals())
-    elif dialect == 'postgresql':
-        raw_query = 'DELETE FROM {f_table} a\n' \
-                    'USING {p_table} b\n' \
-                    'WHERE a.{f_key} = b.{p_key}\n' \
-                    'AND b.{p_key} IS NULL'.format(**locals())
-    else:
-        raw_query = 'DELETE FROM {f_table}\n' \
-                    'WHERE {f_key} NOT IN ' \
-                    '(SELECT {p_key} from {p_table})'.format(**locals())
-    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % f_table,
-            nl=False)
-    count = raw_conn.execute(raw_query).rowcount
-    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (f_table,
-                                                                 blue(count)))
-    return count
 
 
 def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
@@ -395,6 +358,59 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
                 reraise(exc_type, exc_value, tb.tb_next)
 
 
+def merge_table(ctx, table, from_db, to_db):
+    # Very slow !!
+    ctx.log(' %s ~> table %s' % (magenta(' merge'), table.name))
+    model = generic_mapper(table)
+    columns = table.columns.keys()
+    for record in from_db.query(table).all():
+        data = dict(
+            [(str(column), getattr(record, column)) for column in columns]
+        )
+        to_db.session.merge(model(**data))
+    to_db.session.commit()
+
+
+def delete_from_table(ctx, table, raw_conn, criterion=[], message=None):
+    if message:
+        ctx.log(message)
+    delete_query = table.delete()
+    if criterion:
+        delete_query = delete_query.where(reduce(and_, criterion))
+    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % table.name,
+            nl=False)
+    count = raw_conn.execute(delete_query).rowcount
+    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (table.name,
+                                                                 blue(count)))
+    return count
+
+
+def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
+    if message:
+        ctx.log(message)
+    dialect = raw_conn.engine.dialect.name
+    if dialect == 'mysql':
+        raw_query = 'DELETE a FROM {f_table} a\n' \
+                    'LEFT JOIN {p_table} b\n' \
+                    'ON a.{f_key} = b.{p_key}\n' \
+                    'WHERE b.{p_key} IS NULL'.format(**locals())
+    elif dialect == 'postgresql':
+        raw_query = 'DELETE FROM {f_table} a\n' \
+                    'USING {p_table} b\n' \
+                    'WHERE a.{f_key} = b.{p_key}\n' \
+                    'AND b.{p_key} IS NULL'.format(**locals())
+    else:
+        raw_query = 'DELETE FROM {f_table}\n' \
+                    'WHERE {f_key} NOT IN ' \
+                    '(SELECT {p_key} from {p_table})'.format(**locals())
+    ctx.log(magenta(' delete') + ' ~> table %s (in progress)' % f_table,
+            nl=False)
+    count = raw_conn.execute(raw_query).rowcount
+    ctx.log(magenta('\r\033[2K delete') + ' ~> table %s (%s)' % (f_table,
+                                                                 blue(count)))
+    return count
+
+
 def fix_sequences(ctx, to_engine=None, tables=[]):
     if to_engine is None:
         to_engine = ctx.archive_db.engine
@@ -421,22 +437,6 @@ def fix_sequences(ctx, to_engine=None, tables=[]):
             to_engine.execute(query % (sequence_name, pk_name, table_name))
         except Exception as ex:
             ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
-
-
-def generic_mapper(table):
-    class GenericMapper(declarative_base()):
-        __table__ = table
-    return GenericMapper
-
-
-def is_local_database(from_engine, to_engine):
-    url = copy(to_engine.url)
-    url.database = from_engine.engine.url.database
-    return url == from_engine.engine.url
-
-
-class NotSupportedDatabase(Exception):
-    pass
 
 
 def purge_db(ctx):
