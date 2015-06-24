@@ -1,10 +1,15 @@
 OAR CLI changelog
 =================
 
-Version 0.3.3.dev0
-------------------
+Version 0.3.3
+-------------
 
-**unreleased**
+Released on June 24th 2015
+
+- Added ``--conf`` option to used custom oar configuration file
+- Used postgresql COPY with csv format by default
+- Fixed modify nullable operation during schema upgrade
+
 
 Version 0.3.2
 -------------
