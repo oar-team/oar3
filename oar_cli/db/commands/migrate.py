@@ -3,11 +3,13 @@ from __future__ import division, absolute_import, unicode_literals
 
 import click
 
+from oar.lib import config
 from oar.lib import Database
 from oar.lib.utils import cached_property
 
 from ..helpers import (make_pass_decorator, Context, DATABASE_URL_PROMPT,
-                       get_default_database_url)
+                       default_database_url, load_configuration_file)
+
 from ..operations import migrate_db
 
 
@@ -53,19 +55,20 @@ pass_context = make_pass_decorator(MigrationContext)
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.version_option()
-@click.option('-y', '--force-yes', is_flag=True, default=False,
-              help="Never prompts for user intervention")
+@click.option('-c', '--conf', callback=load_configuration_file,
+              type=click.Path(writable=False, readable=False),
+              help="Use a different OAR configuration file.", required=False,
+              default=config.DEFAULT_CONFIG_FILE, show_default=True)
 @click.option('--data-only', is_flag=True, default=False,
               help="Migrates only the data, not the schema")
 @click.option('--schema-only', is_flag=True, default=False,
               help="Migrates only the schema, no data")
 @click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=get_default_database_url(),
+              default=default_database_url,
               help='the url for your current OAR database.')
 @click.option('--new-db-url', prompt="new OAR database URL",
               help='the url for your new OAR database.')
-@click.option('--chunk', type=int, default=100000,
+@click.option('--chunk', type=int, default=100000, show_default=True,
               help="Defines the chunk size")
 @click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
@@ -75,6 +78,7 @@ pass_context = make_pass_decorator(MigrationContext)
                    'a binary-format file is less portable')
 @click.option('-y', '--force-yes', is_flag=True, default=False,
               help="Never prompts for user intervention")
+@click.version_option()
 @click.option('--verbose', is_flag=True, default=False,
               help="Enables verbose output.")
 @click.option('--debug', is_flag=True, default=False,

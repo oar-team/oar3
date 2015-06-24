@@ -7,12 +7,12 @@ from functools import reduce
 
 from sqlalchemy import func, and_, not_
 
-from oar.lib import Database
+from oar.lib import Database, config
 from oar.lib.utils import cached_property
 from tabulate import tabulate
 
 from ..helpers import (make_pass_decorator, Context, DATABASE_URL_PROMPT,
-                       get_default_database_url)
+                       default_database_url, load_configuration_file)
 from ..operations import archive_db, purge_db, inspect_db
 
 
@@ -143,10 +143,10 @@ class ArchiveContext(Context):
 pass_context = make_pass_decorator(ArchiveContext)
 
 
-def get_default_archive_database_url():
-    default_database_url = get_default_database_url()
-    if default_database_url:
-        return get_default_database_url() + "_archive"
+def default_archive_database_url():
+    url = default_database_url()
+    if url:
+        return url + "_archive"
 
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar_archive',
@@ -154,9 +154,13 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar_archive',
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, chain=False)
-@click.version_option()
+@click.option('-c', '--conf', callback=load_configuration_file,
+              type=click.Path(writable=False, readable=False),
+              help="Use a different OAR configuration file.", required=False,
+              default=config.DEFAULT_CONFIG_FILE, show_default=True)
 @click.option('-y', '--force-yes', is_flag=True, default=False,
               help="Never prompts for user intervention")
+@click.version_option()
 @click.option('--verbose', is_flag=True, default=False,
               help="Enables verbose output.")
 @click.option('--debug', is_flag=True, default=False,
@@ -173,10 +177,10 @@ def cli(ctx, **kwargs):
 @click.option('--ignore-jobs', default=["^Terminated", "^Error"],
               show_default=True, multiple=True, help='Ignore job state')
 @click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=get_default_database_url(), show_default=True,
+              default=default_archive_database_url,
               help='The url for your current OAR database.')
 @click.option('--archive-db-url', prompt="OAR archive database URL",
-              default=get_default_archive_database_url(), show_default=True,
+              default=default_archive_database_url,
               help='The url for your archive OAR database.')
 @click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
@@ -217,10 +221,10 @@ def purge(ctx, **kwargs):
 
 @cli.command()
 @click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=get_default_database_url(),
+              default=default_database_url,
               help='The url for your current OAR database.')
 @click.option('--archive-db-url', prompt="OAR archive database URL",
-              default=get_default_archive_database_url(),
+              default=default_archive_database_url,
               help='The url for your archive OAR database.')
 @pass_context
 def inspect(ctx, **kwargs):

@@ -34,11 +34,24 @@ For more information, see : http://docs.sqlalchemy.org/en/latest/core/engines.ht
 OAR database URL"""  # noqa
 
 
-def get_default_database_url():
+def load_configuration_file(ctx, param, value):
+    if value is not None:
+        if not value == config.DEFAULT_CONFIG_FILE:
+            config.load_file(value, clear=True)
+        return config
+
+
+def default_database_url():
     try:
         return config.get_sqlalchemy_uri()
     except:
         pass
+
+
+def config_default_value(value):
+    def callback():
+        return config.get(value)
+    return callback
 
 
 class Context(object):
@@ -50,7 +63,7 @@ class Context(object):
 
     def configure_log(self):
         logging.basicConfig()
-        self.logger = logging.getLogger("oar.database")
+        self.logger = logging.getLogger("oar.cli.database")
 
         if not self.verbose:
             self.logger.setLevel(logging.INFO)
@@ -97,8 +110,8 @@ class Context(object):
 
     def handle_error(self):
         exc_type, exc_value, tb = sys.exc_info()
-        if self.debug or isinstance(exc_value, (click.ClickException,
-                                                click.Abort)):
+        if (isinstance(exc_value, (click.ClickException, click.Abort))
+                or self.debug):
             reraise(exc_type, exc_value, tb.tb_next)
         else:
             sys.stderr.write(u"\nError: %s\n" % exc_value)
