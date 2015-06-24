@@ -180,7 +180,7 @@ def cli(ctx, **kwargs):
               help='The url for your archive OAR database.')
 @click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
-@click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
+@click.option('--pg-copy-binary', is_flag=True, default=False,
               help='Use postgresql COPY with binary-format. '
                    'It is somewhat faster than the text and CSV formats, but '
                    'a binary-format file is less portable')
@@ -202,7 +202,7 @@ def sync(ctx, **kwargs):
 @click.option('--ignore-resources', default=["^Dead"], show_default=True,
               help='Ignore resource state', multiple=True)
 @click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=get_default_database_url(), show_default=True,
+              default=default_database_url,
               help='The url for your current OAR database.')
 @pass_context
 def purge(ctx, **kwargs):
