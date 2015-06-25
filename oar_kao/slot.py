@@ -1,11 +1,17 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-
+from oar.lib import config
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
+from oar.kao.quotas import Quotas
 from copy import deepcopy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
+
+DEFAULT_CONFIG = {
+    'QUOTAS': 'no'
+}
+config.setdefault_config(DEFAULT_CONFIG)
 
 class Slot(object):
 
@@ -19,7 +25,9 @@ class Slot(object):
         # timesharing ts_itvs: [user] * [job_name] * itvs
         self.ts_itvs = ts_itvs
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
-
+        if config['QUOTAS'] == 'yes':
+            self.quotas = Quotas.new()
+        
     def show(self):
         print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",
               self.itvs, "b:", self.b, "e:", self.e,
@@ -135,7 +143,11 @@ class SlotSet:
         # w/ sid = 1 r
         slot.id = n_id
         self.slots[n_id] = slot
-
+        
+        if hasattr(self, 'quotas'):
+            a_slot.quotas.deepcopy_from(slot.quotas)
+            
+            
     # Generate B slot (substract job resources)
     def sub_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
@@ -156,6 +168,10 @@ class SlotSet:
         if job.ph == PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = job.res_set[:]
 
+        if hasattr(self, 'quotas'):
+            slot.quotas.update(job)
+            
+            
     # Generate B slot
     def add_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
@@ -192,6 +208,9 @@ class SlotSet:
         slot.next = s_id
         self.slots[s_id] = c_slot
 
+        if hasattr(self, 'quotas'):
+            c_slot.quotas.deepcopy_from(slot.quotas) 
+        
     def split_slots(self, sid_left, sid_right, job, sub=True):
         sid = sid_left
         while True:

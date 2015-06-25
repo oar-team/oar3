@@ -43,6 +43,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                               walltime=job.walltime - job_security_time,
                               res_set=job.res_set,
                               ts=job.ts, ph=job.ts)
+                
                 slots_sets[ss_name].split_slots_jobs([j], False) #add job's resources
 
             ss_name = 'default'
