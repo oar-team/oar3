@@ -76,10 +76,10 @@ release: clean
 	python setup.py bdist_wheel upload
 
 bumpversion:
-	python scripts/bump-release-version.py
+	@python scripts/bumpversion.py release
 
 newversion:
-	@python scripts/bump-dev-version.py $(filter-out $@,$(MAKECMDGOALS))
+	@python scripts/bumpversion.py newversion $(filter-out $@,$(MAKECMDGOALS))
 
 %:
 	@:
