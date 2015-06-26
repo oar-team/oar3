@@ -1,23 +1,49 @@
-.vagrant
-.oardocker
-*.py[co]
-*~
-*.log
-*#
-**#
+*.py[cod]
+
+# C extensions
+*.so
+
+# Packages
 *.egg
 *.egg-info
 dist
 build
-src/
 eggs
 parts
+bin
+var
 sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
 # Installer logs
 pip-log.txt
 
 # Unit test / coverage reports
 .coverage
 .tox
-*.tar.gz
-env
+nosetests.xml
+htmlcov
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Sphinx
+docs/_build
+
+# Oar-docker
+.oardocker
+
+# Vagrant
+.vagrant
