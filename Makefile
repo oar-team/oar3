@@ -69,10 +69,10 @@ coverage: ## Check code coverage quickly with the default Python
 lint:  ## Check style with flake8
 	flake8 $(FLAKE8_WHITELIST)
 
-docs-init: ## install all documentation dependencies
+docs-init: ## Install all documentation dependencies
 	pip install sphinx
 
-docs:  ## generate Sphinx HTML documentation, including API docs
+docs:  ## Generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(open) docs/_build/html/index.html
