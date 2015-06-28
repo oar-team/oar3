@@ -5,11 +5,7 @@ import os.path as op
 
 
 from codecs import open
-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 
 def read(fname):
@@ -37,16 +33,17 @@ if not version:
 
 setup(
     name='oar-rest-api',
-    author='Salem Harrache',
+    author="Salem Harrache",
     author_email='salem.harrache@inria.fr',
     version=version,
     url='https://github.com/oar-team/python-oar-rest-api',
-    packages=['oar_rest_api'],
+    packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
     description='Python OAR RESTful API',
     long_description=readme + '\n\n' + history,
+    keywords='oar-rest-api',
     license="GNU GPL",
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
