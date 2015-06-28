@@ -1,7 +1,5 @@
 SHELL := /bin/bash
 
-# Internal variables.
-PACKAGE=oar_rest_api
 # these files should pass flakes8
 FLAKE8_WHITELIST=$(shell find . -name "*.py" \
                     ! -path "./docs/*" ! -path "./.tox/*" \
@@ -12,9 +10,28 @@ open := $(shell { which xdg-open || which open; } 2>/dev/null)
 
 .PHONY: clean-pyc clean-build docs clean
 
+
+help:  ## This help dialog.
+	@IFS=$$'\n' ; \
+	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
+	printf "%-15s %s\n" "target" "help" ; \
+	printf "%-15s %s\n" "------" "----" ; \
+	for help_line in $${help_lines[@]}; do \
+		IFS=$$':' ; \
+		help_split=($$help_line) ; \
+		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
+		printf '\033[36m'; \
+		printf "%-15s %s" $$help_command ; \
+		printf '\033[0m'; \
+		printf "%s\n" $$help_info; \
+	done
+
+
 init:  ## Install the project in development mode (using virtualenv is highly recommended)
 	pip install -e .
-	pip install -U setuptools pip tox ipdb jedi pytest pytest-cov flake8 wheel bumpversion httpie
+	pip install -U setuptools pip
+	pip install sphinx tox ipdb jedi pytest pytest-cov flake8 wheel bumpversion httpie
 
 clean: clean-build clean-pyc clean-test  ## Remove all build, test, coverage and Python artifacts
 
@@ -46,14 +63,11 @@ ci:  ## Run all tests and get junitxml report for CI (Travis, Jenkins...)
 	py.test --junitxml=junit.xml
 
 coverage: ## Check code coverage quickly with the default Python
-	py.test --verbose --cov-report term --cov-report html --cov=${PACKAGE} || true
+	py.test --verbose --cov-report term --cov-report html --cov=oar_rest_api || true
 	$(open) htmlcov/index.html
 
 lint:  ## Check style with flake8
 	flake8 $(FLAKE8_WHITELIST)
-
-docs-init: ## Install all documentation dependencies
-	pip install sphinx
 
 docs:  ## Generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
@@ -78,20 +92,3 @@ newversion:  ## Set the new development version
 
 %:
 	@:
-
-
-help:  ## This help dialog.
-	@IFS=$$'\n' ; \
-	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
-	printf "%-15s %s\n" "target" "help" ; \
-	printf "%-15s %s\n" "------" "----" ; \
-	for help_line in $${help_lines[@]}; do \
-		IFS=$$':' ; \
-		help_split=($$help_line) ; \
-		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		printf '\033[36m'; \
-		printf "%-15s %s" $$help_command ; \
-		printf '\033[0m'; \
-		printf "%s\n" $$help_info; \
-	done
