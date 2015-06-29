@@ -34,8 +34,14 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
     g.data['links'] = page.links
     g.data['offset'] = offset
     g.data['items'] = []
+    if detailed:
+        jobs_ids = [j['id'] for j in page]
+        jobs_resources = db.queries.get_assigned_jobs_resources(jobs_ids)
+    else:
+        jobs_resources = []
     for item in page:
         attach_links(item)
+        attach_resources(item, jobs_resources)
         g.data['items'].append(item)
 
 
@@ -76,6 +82,15 @@ def attach_links(job):
     for title, rel, endpoint in rel_map:
         url = url_for('%s.%s' % (app.name, endpoint), job_id=job['id'])
         job['links'].append({'rel': rel, 'href': url, 'title': title})
+
+
+def attach_resources(job, jobs_resources):
+    job['resources'] = []
+    from .resource import attach_links
+    for resource in jobs_resources[job['id']]:
+        resource = resource.asdict(ignore_keys=('network_address',))
+        attach_links(resource)
+        job['resources'].append(resource)
 
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
