@@ -6,7 +6,7 @@ import contextlib
 
 from collections import OrderedDict
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
@@ -41,11 +41,9 @@ class BaseModel(object):
             cls.db.session.rollback()
             raise
 
-    def asdict(self):
-        result = OrderedDict()
-        for key in self.__mapper__.c.keys():
-            result[key] = getattr(self, key)
-        return result
+    def asdict(self, ignore_keys=()):
+        keys = get_entity_loaded_propnames(self) - set(ignore_keys)
+        return OrderedDict(((k, getattr(self, k)) for k in keys))
 
     def __iter__(self):
         """Returns an iterable that supports .next()"""
@@ -301,3 +299,28 @@ def _include_sqlalchemy(obj):
 
     obj.Column = Column
     obj.DeferredReflection = DeferredReflection
+
+
+def get_entity_loaded_propnames(entity):
+    """Get entity property names that are loaded (e.g. won't produce new
+    queries)
+
+    :param entity: SQLAlchemy entity
+    :returns: Set of entity property names
+    """
+    ins = inspect(entity)
+    keynames = set(
+        ins.mapper.column_attrs.keys() +  # Columns
+        ins.mapper.relationships.keys()  # Relationships
+    )
+    # If the entity is not transient -- exclude unloaded keys
+    # Transient entities won't load these anyway, so it's safe to include
+    # all columns and get defaults
+    if not ins.transient:
+        keynames -= ins.unloaded
+
+    # If the entity is expired -- reload expired attributes as well
+    # Expired attributes are usually unloaded as well!
+    if ins.expired:
+        keynames |= ins.expired_attributes
+    return keynames
