@@ -6,7 +6,7 @@ from math import ceil
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 # from oar.lib.models import (db, Job, Resource)
-from oar.lib.utils import cached_property
+from oar.lib.utils import cached_property, row2dict
 
 
 class APIQuery(BaseQuery):
@@ -117,10 +117,7 @@ class PaginationQuery(object):
     def __iter__(self):
         for item in self.items:
             if hasattr(item, 'keys') and callable(getattr(item, 'keys')):
-                result = OrderedDict()
-                for key in item.keys():
-                    result[key] = getattr(item, key)
-                yield result
+                yield row2dict(item)
             elif hasattr(item, 'asdict') and callable(getattr(item, 'asdict')):
                 yield item.asdict()
             else:
