@@ -139,7 +139,6 @@ class Blueprint(FlaskBlueprint):
         kwargs.setdefault('cls', JSONEncoder)
         kwargs.setdefault('indent', 4)
         kwargs.setdefault('separators', (',', ': '))
-        kwargs.setdefault('encoding', 'utf-8')
         return json.dumps(obj, **kwargs)
 
     def _jsonify_response(self, obj):
