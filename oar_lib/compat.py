@@ -4,6 +4,15 @@ import sys
 PY3 = sys.version_info[0] == 3
 
 
+try:
+    # Should be (manually) installed if using Python 2.6 or older,
+    # or if you want the speedup for raw bytestrings provided by
+    # simplejson.
+    import simplejson as json
+except ImportError:
+    import json  # Works with python 2.7+ # noqa
+
+
 if PY3:
     builtin_str = str
     str = str
