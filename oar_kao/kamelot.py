@@ -11,6 +11,7 @@ from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
                                 schedule_id_jobs_ct)
 from oar.kao.karma import karma_jobs_sorting
+from oar.kao.quotas import load_quotas_rules
 
 
 # Constant duration time of a besteffort job *)
@@ -24,11 +25,18 @@ DEFAULT_CONFIG = {
     'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
     'FAIRSHARING_ENABLED': 'no',
     'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30'
+    'QUOTAS': 'no'
 }
 
 
 logger = get_logger("oar.kamelot")
 
+
+if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+    if 'QUOTAS_FILENAME' not in config:
+        config['QUOTAS_FILENAME'] = './quotas_conf.json'
+    load_quotas_rules()
+        
 
 def schedule_cycle(plt, now, queue="default"):
 

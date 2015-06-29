@@ -3,9 +3,13 @@ from __future__ import unicode_literals, print_function
 
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
-from oar.kao.interval import intersec
+from oar.kao.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib import get_logger
+#for quotas
+from oar.kao.resource import default_resource_itvs
+from oar.kao.quotas import check_slots_quotas
+
 
 logger = get_logger("oar.kamelot")
 
@@ -105,7 +109,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
     slots = slots_set.slots
     cache = slots_set.cache
-
+    # flag to control cache update for considered entry
+    no_cache = False
     # updated_cache = False
     sid_left = 1
     if min_start_time < 0:
@@ -165,11 +170,23 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if (itvs != []):
-            break
+            if config['QUOTAS'] == 'yes':
+                nb_res = itvs_size(intersec(itvs, default_resource_itvs))
+                res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
+                (quotas_ok, quotas_msg, rule_value) = res
+                if quotas_ok:
+                    break
+                else:
+                    rule, value = rule_value
+                    log.info("Quotas limitaion reached, job:" + str(job.id) +
+                             ", " + quotas_msg +  ", rule: " + rule +
+                             ", value: " + str(value))
+                    # quotas limitation trigger therefore disable cache update for this entry
+                    no_cache = True
 
         sid_left = slots[sid_left].next
 
-    if (job.key_cache and min_start_time < 0):  # and (not job.deps):
+    if job.key_cache and (min_start_time < 0) and (not no_cache):  # and (not job.deps):
         cache[job.key_cache[mld_id]] = sid_left
         #        print("cache: update entry ",  job.key_cache[mld_id], " with ", sid_left)
         # else:

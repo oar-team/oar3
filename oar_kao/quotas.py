@@ -9,10 +9,6 @@ from oar.kao.resource import default_resource_itvs
 quotas_job_types = ['*']
 quotas_rules = {}
 
-QUOTAS_OK = 0
-NB_RESOURCES_QUOTAS_FAILED = -1
-NB_JOBS_QUOTAS_FAILED = -2
-RESOURCES_TIMES_QUOTAS_FAILED = -3
 
 class Quotas(object):
     """
@@ -188,17 +184,20 @@ class Quotas(object):
                                 # 1) test nb_resources
                                 if rl_nb_resources > -1:
                                     if rl_nb_resources < (nb_resources + job_nb_resources):
-                                        return -1
+                                        return (False, 'nb resources quotas failed',
+                                                rl_fields, rl_nb_resources)
                                 # 2) test nb_jobs
                                 if rl_nb_jobs > -1:
                                     if rl_nb_jobs < (nb_jobs + 1):
-                                        return -2
+                                        return (False, 'nb jobs quotas failed',
+                                                rl_fields, rl_nb_jobs)
                                 # 3) test resources_time (work)
                                 if resources_time > -1:
                                     if rl_resources_time < \
                                        (resources_time + job_nb_resources * duration):
-                                        return -3
-        return 0
+                                        return (False, 'resources hours quotas failed',
+                                                rl_fields, rl_resources_time)
+        return (True, 'quotas ok', rl_fields, 0)
                                     
 def check_slots_quotas(slot_set, slot_left, slot_right, job, job_nb_resources, duration):
     #loop over slot_set
