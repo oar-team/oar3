@@ -31,7 +31,8 @@ help:  ## This help dialog.
 init:  ## Install the project in development mode (using virtualenv is highly recommended)
 	pip install -e .
 	pip install -U setuptools pip
-	pip install sphinx tox ipdb jedi pytest pytest-cov flake8 wheel bumpversion httpie
+	pip install sphinx tox ipdb jedi pytest pytest-cov flake8 wheel \
+                bumpversion httpie sqlparse sqlalchemy_utils
 
 clean: clean-build clean-pyc clean-test  ## Remove all build, test, coverage and Python artifacts
 
