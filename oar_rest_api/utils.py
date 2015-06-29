@@ -2,12 +2,11 @@
 from __future__ import division
 
 import sys
-import json
 import decimal
 import datetime
 
 from flask import request, abort
-from oar.lib.compat import reraise, to_unicode, iteritems, integer_types
+from oar.lib.compat import reraise, to_unicode, iteritems, integer_types, json
 
 
 class WSGIProxyFix(object):
@@ -32,8 +31,6 @@ class JSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         elif isinstance(obj, (decimal.Decimal)):
             return to_unicode(obj)
-        elif hasattr(obj, '_asdict') and callable(getattr(obj, '_asdict')):
-            return obj._asdict()
         elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
             return obj.asdict()
         else:

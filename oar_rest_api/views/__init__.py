@@ -2,7 +2,6 @@
 from __future__ import with_statement, absolute_import
 
 import os
-import json
 import time
 from collections import OrderedDict
 from functools import wraps
@@ -11,6 +10,7 @@ from flask import Blueprint as FlaskBlueprint, Response, g, abort
 
 from oar.lib import config
 from oar.lib.database import BaseModel
+from oar.lib.compat import json
 
 from ..utils import JSONEncoder, ArgParser
 
