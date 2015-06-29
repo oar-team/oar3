@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-from collections import OrderedDict
 from math import ceil
 
 from flask import abort, current_app, request, url_for, g
@@ -29,26 +28,30 @@ class APIQuery(BaseQuery):
             limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
         if error_out and offset < 0:
             abort(404)
-        items = self.limit(limit).offset(offset).all()
-        if not items and offset != 0 and error_out:
+        query = self.limit(limit).offset(offset)
+        return PaginationQuery(query, offset, limit, error_out)
+
+
+class PaginationQuery(object):
+    """Internal helper class returned by :meth:`APIBaseQuery.paginate`."""
+
+    def __init__(self, query, offset, limit, error_out):
+        self.query = query
+        self.items = self.query.all()
+        if not self.items and offset != 0 and error_out:
             abort(404)
         # No need to count if we're on the first page and there are fewer
         # items than we expected.
-        if offset == 0 and len(items) < limit:
-            total = len(items)
+        if offset == 0 and len(self.items) < limit:
+            total = len(self.items)
         else:
             total = self.order_by(None).count()
-        return Pagination(offset, limit, total, items)
-
-
-class Pagination(object):
-    """Internal helper class returned by :meth:`APIBaseQuery.paginate`."""
-
-    def __init__(self, offset, limit, total, items):
         self.offset = offset
         self.limit = limit or 0
         self.total = total
-        self.items = items
+
+    def render(self):
+        self.query.render()
 
     @cached_property
     def current_page(self):
