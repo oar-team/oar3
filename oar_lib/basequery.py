@@ -77,22 +77,24 @@ class BaseQuery(Query):
                 q = q.filter(criteria) if criteria is not None else q
             return q
 
-        q1 = db.query(Job.id).distinct()\
+        q1 = db.query(Job.id.label('job_id')).distinct()\
                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
                .filter(MoldableJobDescription.job_id == Job.id)
         q1 = apply_commons_filters(q1, q1_start, q1_stop)
 
-        q2 = db.query(Job.id).distinct()\
+        q2 = db.query(Job.id.label('job_id')).distinct()\
                .filter(GanttJobsPredictionsVisu.moldable_id == GanttJobsResourcesVisu.moldable_id)\
                .filter(GanttJobsPredictionsVisu.moldable_id == MoldableJobDescription.id)\
                .filter(Job.id == MoldableJobDescription.job_id)
         q2 = apply_commons_filters(q2, q2_start, q2_stop)
 
-        q3 = db.query(Job.id).distinct().filter(Job.start_time == 0)
+        q3 = db.query(Job.id.label('job_id')).distinct()\
+               .filter(Job.start_time == 0)
         q3 = apply_commons_filters(q3, q3_start, q3_stop)
 
+        unionquery = q1.union(q2.union(q3)).subquery()
         return self.join(MoldableJobDescription, Job.assigned_moldable_job == MoldableJobDescription.id)\
-                   .filter(Job.id.in_(q1.union(q2.union(q3))))
+                   .join(unionquery, Job.id == unionquery.c.job_id)
 
 
 class BaseQueryCollection(object):
