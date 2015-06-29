@@ -2,7 +2,7 @@
 from __future__ import with_statement, absolute_import
 
 from sqlalchemy import func, and_, or_
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, Load
 
 from .exceptions import DoesNotExist
 from . import db
@@ -103,11 +103,10 @@ class BaseQueryCollection(object):
         if detailed:
             query = db.query(Job)
         else:
-            query = db.query(Job.id,
-                             Job.name,
-                             Job.queue_name,
-                             Job.user,
-                             Job.submission_time)
+            columns = ("id", "name", "queue_name", "user", "submission_time",
+                       "state")
+            option = Load(Job).load_only(*columns)
+            query = db.query(Job).options(option)
         return query.order_by(Job.id)\
                     .filter_jobs_for_user(user, start_time,
                                           stop_time, states,
@@ -117,10 +116,9 @@ class BaseQueryCollection(object):
         if detailed:
             query = db.query(Resource)
         else:
-            query = db.query(Resource.id,
-                             Resource.state,
-                             Resource.available_upto,
-                             Resource.network_address)
+            columns = ("id", "state", "available_upto", "network_address")
+            option = Load(Resource).load_only(*columns)
+            query = db.query(Resource).options(option)
         if network_address is not None:
             query = query.filter_by(network_address=network_address)
         return query.order_by(Resource.id.asc())
