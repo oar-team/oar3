@@ -25,6 +25,7 @@ def create_app():
     app.config.update(config)
     db.query_class = APIQuery
     db.query_collection_class = APIQueryCollection
+    db.reflect()
     register_error_handlers(app)
     register_hooks(app)
     register_extensions(app)
