@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+from collections import OrderedDict
 from .compat import numeric_types
 
 
@@ -43,6 +44,15 @@ class CachedProperty(object):
 
 
 cached_property = CachedProperty
+
+
+def row2dict(row, ignore_keys=()):
+    """Converts sqlalchemy RowProxy to an OrderedDict."""
+    result = OrderedDict()
+    for key in row.keys():
+        if key not in ignore_keys:
+            result[key] = getattr(row, key)
+    return result
 
 
 class IterStream(object):
