@@ -9,12 +9,16 @@ from . import db
 from .models import (Job, MoldableJobDescription, AssignedResource,
                      GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
                      Resource)
+from .utils import render_query
 
 
 __all__ = ['BaseQuery', 'BaseQueryCollection']
 
 
 class BaseQuery(Query):
+
+    def render(self):
+        print(render_query(self))
 
     def get_or_error(self, uid):
         """Like :meth:`get` but raises an error if not found instead of
