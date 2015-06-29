@@ -125,14 +125,21 @@ class BaseQueryCollection(object):
             query = query.filter_by(network_address=network_address)
         return query.order_by(Resource.id.asc())
 
-    def get_job_resources(self, moldable_id, detailed=False):
-        """ Returns the list of resources associated to the job passed in
-        parameter """
-        if detailed:
-            query = db.query(Resource)
-        else:
-            query = db.query(Resource.id)
-        query = query.join(AssignedResource,
-                           AssignedResource.resource_id == Resource.id)\
-                     .filter(AssignedResource.moldable_id == moldable_id)
-        return query.order_by(Resource.id.asc())
+    def groupby_jobs_resources(self, jobs, query):
+        jobs_resources = dict(((job.id, []) for job in jobs))
+        for job_id, resource in query:
+            jobs_resources[job_id].append(resource)
+        return jobs_resources
+
+    def get_assigned_jobs_resources(self, jobs):
+        """Returns the list of assigned resources associated to the job passed
+        in parameter."""
+        columns = ("id",)
+        job_id_column = AssignedResource.moldable_id.label('job_id')
+        query = db.query(job_id_column, Resource)\
+                  .options(Load(Resource).load_only(*columns))\
+                  .join(Resource, Resource.id == AssignedResource.resource_id)\
+                  .filter(job_id_column.in_([job.id for job in jobs]))\
+                  .order_by(job_id_column.asc())
+        return self.groupby_jobs_resources(jobs, query)
+
