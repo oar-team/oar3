@@ -12,22 +12,6 @@ from ..utils import Arg
 app = Blueprint('resources', __name__, url_prefix="/resources")
 
 
-def get_items_links(resource_id, network_address):
-    rel_map = (
-        ("node", "member", "index"),
-        ("show", "self", "show"),
-        ("jobs", "collection", "jobs"),
-    )
-    links = []
-    for title, rel, endpoint in rel_map:
-        if title == "node":
-            url = url_for('.%s' % endpoint, network_address=network_address)
-        else:
-            url = url_for('.%s' % endpoint, resource_id=resource_id)
-        links.append({'rel': rel, 'href': url, 'title': title})
-    return links
-
-
 @app.route('/', methods=['GET'])
 @app.route('/<any(details, full):detailed>', methods=['GET'])
 @app.route('/nodes/<string:network_address>', methods=['GET'])
@@ -41,7 +25,7 @@ def index(offset, limit, network_address=None, detailed=False):
     g.data['offset'] = offset
     g.data['items'] = []
     for item in page:
-        item['links'] = get_items_links(item["id"], item["network_address"])
+        attach_links(item)
         g.data['items'].append(item)
 
 
@@ -49,9 +33,28 @@ def index(offset, limit, network_address=None, detailed=False):
 def show(resource_id):
     resource = Resource.query.get_or_404(resource_id)
     g.data.update(resource.asdict())
-    g.data['links'] = get_items_links(resource.id, resource.network_address)
+    attach_links(g.data)
 
 
 @app.route('/<int:resource_id>/jobs', methods=['GET'])
 def jobs(resource_id):
     g.data.update(Resource.query.get_or_404(resource_id).asdict())
+
+
+def attach_links(resource):
+    rel_map = (
+        ("node", "member", "index"),
+        ("show", "self", "show"),
+        ("jobs", "collection", "jobs"),
+    )
+    links = []
+    for title, rel, endpoint in rel_map:
+        if title == "node" and "network_address" in resource:
+            url = url_for('%s.%s' % (app.name, endpoint),
+                          network_address=resource['network_address'])
+            links.append({'rel': rel, 'href': url, 'title': title})
+        elif title != "node" and "id" in resource:
+            url = url_for('%s.%s' % (app.name, endpoint),
+                          resource_id=resource['id'])
+            links.append({'rel': rel, 'href': url, 'title': title})
+    resource['links'] = links

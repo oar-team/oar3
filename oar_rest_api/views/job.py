@@ -12,17 +12,6 @@ from ..utils import Arg
 app = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
-def get_items_links(job_id):
-    rel_map = (
-        ("show", "self", "show"),
-        ("nodes", "collection", "nodes"),
-        ("resources", "collection", "resources"),
-    )
-    for title, rel, endpoint in rel_map:
-        url = url_for('.%s' % endpoint, job_id=job_id)
-        yield {'rel': rel, 'href': url, 'title': title}
-
-
 @app.route('/', methods=['GET'])
 @app.route('/<any(details, table):detailed>', methods=['GET'])
 @app.route('/nodes/<string:network_address>', methods=['GET'])
@@ -46,7 +35,7 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
     g.data['offset'] = offset
     g.data['items'] = []
     for item in page:
-        item['links'] = list(get_items_links(item["id"]))
+        attach_links(item)
         g.data['items'].append(item)
 
 
@@ -60,7 +49,7 @@ def resources(job_id, offset, limit):
     g.data['offset'] = offset
     g.data['items'] = []
     for item in page:
-        item['links'] = list(get_items_links(job_id))
+        attach_links(item)
         g.data['items'].append(item)
 
 
@@ -68,7 +57,7 @@ def resources(job_id, offset, limit):
 def show(job_id):
     job = db.query(Job).get_or_404(job_id)
     g.data.update(job.asdict())
-    g.data['links'] = list(get_items_links(g.data['id']))
+    attach_links(g.data)
 
 
 @app.route('/<int:job_id>/nodes', methods=['GET'])
@@ -76,7 +65,18 @@ def show(job_id):
 def nodes(job_id, offset, limit):
     pass
 
-#
+
+def attach_links(job):
+    rel_map = (
+        ("show", "self", "show"),
+        ("nodes", "collection", "nodes"),
+        ("resources", "collection", "resources"),
+    )
+    job['links'] = []
+    for title, rel, endpoint in rel_map:
+        url = url_for('%s.%s' % (app.name, endpoint), job_id=job['id'])
+        job['links'].append({'rel': rel, 'href': url, 'title': title})
+
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
 # def index(offset=0, limit=None):
