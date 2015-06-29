@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
 from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
+from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.orm.exc import UnmappedClassError
 
 
@@ -42,8 +43,11 @@ class BaseModel(object):
             raise
 
     def asdict(self, ignore_keys=()):
-        keys = get_entity_loaded_propnames(self) - set(ignore_keys)
-        return OrderedDict(((k, getattr(self, k)) for k in keys))
+        data = OrderedDict()
+        for key in get_entity_loaded_propnames(self):
+            if key not in ignore_keys:
+                data[key] = getattr(self, key)
+        return data
 
     def __iter__(self):
         """Returns an iterable that supports .next()"""
@@ -306,13 +310,11 @@ def get_entity_loaded_propnames(entity):
     queries)
 
     :param entity: SQLAlchemy entity
-    :returns: Set of entity property names
+    :returns: List of entity property names
     """
-    ins = inspect(entity)
-    keynames = set(
-        ins.mapper.column_attrs.keys() +  # Columns
-        ins.mapper.relationships.keys()  # Relationships
-    )
+    ins = entity if isinstance(entity, InstanceState) else inspect(entity)
+    columns = ins.mapper.column_attrs.keys() + ins.mapper.relationships.keys()
+    keynames = set(columns)
     # If the entity is not transient -- exclude unloaded keys
     # Transient entities won't load these anyway, so it's safe to include
     # all columns and get defaults
@@ -323,4 +325,4 @@ def get_entity_loaded_propnames(entity):
     # Expired attributes are usually unloaded as well!
     if ins.expired:
         keynames |= ins.expired_attributes
-    return keynames
+    return sorted(keynames, key=lambda x: columns.index(x))
