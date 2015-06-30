@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from oar.lib import config, db, Accounting
 from sqlalchemy import func
 import re
@@ -95,7 +97,7 @@ def get_sum_accounting_by_user(queue, window_start, window_stop):
 #
 def karma_jobs_sorting(queue, now, jids, jobs, plt):
 
-    #if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
+    # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
         # TODO NOT UDSED
         # fairsharing_nb_job_limit = 100000

@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from itertools import islice
 
 
@@ -68,6 +70,7 @@ def equal_itvs2ids(itvs1, itvs2):
     rids2 = itvs2ids(itvs2)
     return (rids1 == rids2)
 
+
 def equal_itvs(itvs1, itvs2):
 
     lx = len(itvs1)
@@ -97,7 +100,7 @@ def equal_itvs(itvs1, itvs2):
             return False
 
         if x[1] == y[1]:
-            if (ix == (lx-1)) and (iy == (ly-1)):
+            if (ix == (lx - 1)) and (iy == (ly - 1)):
                 return True
 
             ix += 1
@@ -106,18 +109,20 @@ def equal_itvs(itvs1, itvs2):
             next_y = True
 
         elif x[1] > y[1]:
-            x = (y[1]+1, x[1])
+            x = (y[1] + 1, x[1])
             iy += 1
             next_x = False
             next_y = True
-        else: #x[1] < y[1]
-            y = (x[1]+1, y[1])
+        else:  # x[1] < y[1]
+            y = (x[1] + 1, y[1])
             ix += 1
             next_x = True
             next_y = False
 
 # suppose same segmentation (be careful 2 itvs with differents segmentation can be equal)
 # [(1,20)] == [(1,10), (11,15), (16,20)]
+
+
 def equal_itvs_same_segmentation(itvs1, itvs2):
     lx = len(itvs1)
     ly = len(itvs2)

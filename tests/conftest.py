@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
 import pytest
 import re
 from tempfile import mkstemp
@@ -18,8 +19,8 @@ def setup_config(request):
 @pytest.fixture(scope='module', autouse=True)
 def setup_db(request):
 
-    if re.search(r'test_db',request.node.name):
-        #print "\nsetup_db"
+    if re.search(r'test_db', request.node.name):
+        # print "\nsetup_db"
         # Create the tables based on the current model
         db.create_all()
         # Add base data here
@@ -33,9 +34,10 @@ def setup_db(request):
 
         request.addfinalizer(teardown)
 
+
 @pytest.fixture(autouse=True)
 def db_session(request, monkeypatch):
-    if re.search(r'test_db',request.node.name):
+    if re.search(r'test_db', request.node.name):
         # Roll back at the end of every test
         request.addfinalizer(db.session.remove)
         # Prevent the session from closing (make it a no-op)

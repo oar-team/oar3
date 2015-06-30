@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from oar.lib import config, get_logger
 
 logger = get_logger("oar.kao.tools")
@@ -23,14 +25,13 @@ def send_to_hulot(cmd, data):
     return 0
 
 
-
-
 def get_oar_pid_file_name(job_id):
-    oar.error("get_oar_pid_file_name id not YET IMPLEMENTED")
+    logger.error("get_oar_pid_file_name id not YET IMPLEMENTED")
+
 
 def get_default_suspend_resume_file():
-    oar.error("get_default_suspend_resume_file id not YET IMPLEMENTED")
+    logger.error("get_default_suspend_resume_file id not YET IMPLEMENTED")
+
 
 def manage_remote_commands():
-    oar.error("manage_remote_commands id not YET IMPLEMENTED")
-
+    logger.error("manage_remote_commands id not YET IMPLEMENTED")

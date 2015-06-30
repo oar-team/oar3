@@ -1,4 +1,8 @@
+# coding: utf-8
+from __future__ import unicode_literals, print_function
+
 # from oar.lib import config
+
 from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched
 from oar.kao.helpers import plot_slots_and_job
 
@@ -49,17 +53,17 @@ for i in range(1, nb_jobs + 1):
 # submission_time_jids= [(10, [1,2]), (10, [3])]
 
 
-print submission_time_jids
+print(submission_time_jids)
 
 simsched = SimSched(res_set, jobs, submission_time_jids)
 simsched.run()
 
 plt = simsched.platform
 
-print "Number completed jobs:", len(plt.completed_jids)
-print "Completed job ids:", plt.completed_jids
+print("Number completed jobs:", len(plt.completed_jids))
+print("Completed job ids:", plt.completed_jids)
 
-print jobs
+print(jobs)
 
 # for jid,job in jobs.iteritems():
 #    jres_set = job.res_set
@@ -68,6 +72,6 @@ print jobs
 #    print jid, job.state, job.start_time, job.walltime, job.res_set
 
 last_completed_job = jobs[plt.completed_jids[-1]]
-print last_completed_job
+print(last_completed_job)
 plot_slots_and_job(
     {}, jobs, nb_res, last_completed_job.start_time + last_completed_job.walltime)

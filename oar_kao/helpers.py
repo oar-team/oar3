@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 import random
 import colorsys
 
@@ -12,7 +14,7 @@ RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
 def dump(obj):
     for attr in dir(obj):
-        print "obj.%s = %s" % (attr, getattr(obj, attr))
+        print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
 
 def annotate(ax, rect, annot):
@@ -76,7 +78,7 @@ def slots_2_val_ref(slots):
     sid = 1
     while True:
         slot = slots[sid]
-        print '(', slot.b, ',', slot.e, ',', slot.itvs, '),'
+        print('(', slot.b, ',', slot.e, ',', slot.itvs, '),')
         sid = slot.next
         if (sid == 0):
             break
@@ -87,7 +89,7 @@ def slots_all_2_val_ref(slots):
     sid = 1
     while True:
         slot = slots[sid]
-        print '(', slot.id, ',', slot.prev, ',', slot.next, ',', slot.itvs, ',', slot.b, ',', slot.e, '),'
+        print('(', slot.id, ',', slot.prev, ',', slot.next, ',', slot.itvs, ',', slot.b, ',', slot.e, '),')
         sid = slot.next
         if (sid == 0):
             break

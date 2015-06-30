@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
 from copy import deepcopy
@@ -19,9 +21,9 @@ class Slot(object):
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
 
     def show(self):
-        print "(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",\
-            self.itvs, "b:", self.b, "e:", self.e,\
-            "ts_itvs:", self.ts_itvs, "ph_itvs:", self.ph_itvs
+        print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",
+              self.itvs, "b:", self.b, "e:", self.e,
+              "ts_itvs:", self.ts_itvs, "ph_itvs:", self.ph_itvs)
 
 # not used TO REMOVE?
 
@@ -105,9 +107,9 @@ class SlotSet:
 
     def show_slots(self):
         for i, slot in self.slots.iteritems():
-            print i
+            print(i)
             slot.show()
-        print '---'
+        print('---')
 
 
     #
@@ -194,7 +196,7 @@ class SlotSet:
         sid = sid_left
         while True:
             slot = self.slots[sid]
-            # print "split", slot.show()
+            # print("split", slot.show())
             if job.start_time > slot.b:
                 # Generate AB | ABC
                 if (job.start_time + job.walltime) > slot.e:

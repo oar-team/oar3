@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 import time
 
 from oar.kao.resource import ResourceSet
@@ -44,7 +46,7 @@ class Platform(object):
             self.get_sum_accounting_by_user = self.get_sum_accounting_by_user_simu
 
         else:
-            print "mode: ", mode, " is undefined"
+            print("mode: ", mode, " is undefined")
 
     def resource_set_default(self):
         return ResourceSet()
@@ -84,7 +86,7 @@ class Platform(object):
         return self.env.now
 
     def get_waiting_jobs_simu(self, queue):
-        print " get_waiting_jobs_simu:", self.waiting_jids
+        print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []
         nb_waiting_jobs = 0
@@ -94,7 +96,7 @@ class Platform(object):
             waiting_jids_lst.append(jid)
             nb_waiting_jobs += 1
 
-        print waiting_jobs, waiting_jids_lst, nb_waiting_jobs
+        print(waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
 
         return (waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
 
@@ -106,25 +108,25 @@ class Platform(object):
         return running_jobs
 
     def get_data_jobs_simu(self, *args):
-        print "get_data_jobs_simu"
+        print("get_data_jobs_simu")
         pass
 
     def save_assigns_simu(self, jobs, resource_set):
-        print "save_assigns_simu"
+        print("save_assigns_simu")
 
         for jid, job in jobs.iteritems():
             jres_set = job.res_set
-            print "job.res_set before", jid, job.res_set
+            print("job.res_set before", jid, job.res_set)
             r_ids = [resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set)]
             job.res_set = unordered_ids2itvs(r_ids)
 
         self.assigned_jobs = jobs
 
     def get_sum_accounting_window_simu(self, *args):
-        print "get_sum_accounting_window_simu NOT IMPLEMENTED"
+        print("get_sum_accounting_window_simu NOT IMPLEMENTED")
 
     def get_sum_accounting_by_project_simu(self, *args):
-        print "get_sum_accounting_by_project NOT IMPLEMENTED"
+        print("get_sum_accounting_by_project NOT IMPLEMENTED")
 
     def get_sum_accounting_by_user_simu(self, *args):
-        print "get_sum_accounting_by_user NOT IMPLEMENTED"
+        print("get_sum_accounting_by_user NOT IMPLEMENTED")

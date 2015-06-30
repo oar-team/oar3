@@ -1,19 +1,27 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 import os
+
+from sqlalchemy import distinct
+from sqlalchemy.orm import aliased
 
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
-                     JobStateLog, AssignedResource, FragJob, get_logger)
+                     JobStateLog, AssignedResource, FragJob, Resources,
+                     get_logger, config)
 
 from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
                            get_date)
 
 import oar.kao.utils as utils
 
+from interval import unordered_ids2itvs, itvs2ids, sub_intervals
+
+
 logger = get_logger("oar.kamelot")
 
-from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
 ''' Use
 
@@ -97,7 +105,6 @@ def get_jobs_types(jids, jobs):
             if jid not in jobs_types:
                 jobs_types[jid] = dict()
 
-            # print t, v
             (jobs_types[jid])[t] = v
 
     for job in jobs.itervalues():
@@ -199,7 +206,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
          res_jrg_id,
          res_type,
          res_value) = x
-        # print  x
         #
         # new job
         #
@@ -217,9 +223,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                 job.deps = []
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
-                # print "======================"
-                # print "job_id:",job.id,  job.mld_res_rqts
-                # print "======================"
 
             prev_mld_id = moldable_id
             prev_j_id = j_id
@@ -288,8 +291,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
         else:
             # add next res_type , res_value
             jr_descriptions.append((res_type, res_value))
-            # print "@@@@@@@@@@@@@@@@@@@"
-            # print jr_descriptions
 
     # complete the last job
     jrg.append((jr_descriptions, res_constraints))
@@ -342,7 +343,6 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
     if result:
         for x in result:
             j, moldable_id, start_time, walltime, r_id = x
-            # print x
             if j.id != prev_jid:
                 if prev_jid != 0:
                     job.res_set = unordered_ids2itvs(roids)
@@ -391,7 +391,6 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
         .filter(Job.id == MoldableJobDescription.job_id)\
         .order_by(Job.start_time, Job.id)\
         .all()
-
 
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
@@ -451,17 +450,17 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
                       GanttJobsPrediction.start_time,
                       MoldableJobDescription.walltime,
                       GanttJobsResource.resource_id)\
-               .filter(GanttJobsPrediction.start_time <= now)\
-               .filter(Job.state == "Waiting")\
-               .filter(Job.id == MoldableJobDescription.job_id)\
-               .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
-               .all()
-
+        .filter(GanttJobsPrediction.start_time <= now)\
+        .filter(Job.state == "Waiting")\
+        .filter(Job.id == MoldableJobDescription.job_id)\
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+        .all()
 
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
     return (jobs_lst, rid2jid)
+
 
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
@@ -508,6 +507,7 @@ def get_current_jobs_dependencies(jobs):
             jobs[j_dep.job_id].deps.append(
                 (j_dep.job_id_required, state, exit_code))
 
+
 def get_current_not_waiting_jobs():
     jobs = db.query(Job).filter(Job.state != "Waiting").all()
     jobs_by_state = {}
@@ -516,8 +516,6 @@ def get_current_not_waiting_jobs():
             jobs_by_state[job.state] = []
         jobs_by_state[job.state].append(job)
     return (jobs_by_state)
-
-
 
 
 def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
@@ -555,7 +553,7 @@ def set_job_state(jid, state):
                           .update({Job.state: state})
     db.commit()
 
-    if result == 1:  #OK for sqlite
+    if result == 1:  # OK for sqlite
         logger.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
@@ -621,11 +619,11 @@ def set_job_state(jid, state):
                 nb_sent = utils.notify_almighty("ChState")
                 if nb_sent == 0:
                     logger.warn("Not able to notify almighty to launch the job " +
-                             str(job.id) + " (socket error)")
+                                str(job.id) + " (socket error)")
 
     else:
         logger.warning("Job is already termindated or in error or wanted state, job_id: " +
-                    str(jid) + ", wanted state: " + state)
+                       str(jid) + ", wanted state: " + state)
 
 # NO USED
 
@@ -714,12 +712,12 @@ def get_gantt_waiting_interactive_prediction_date():
                    Job.info_type,
                    GanttJobsPrediction.start_time,
                    Job.message)\
-            .filter(Job.state == 'Waiting')\
-            .filter(Job.type == 'INTERACTIVE')\
-            .filter(Job.reservation == 'None')\
-            .filter(MoldableJobDescription.job_id == Job.id)\
-            .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)\
-            .all()
+        .filter(Job.state == 'Waiting')\
+        .filter(Job.type == 'INTERACTIVE')\
+        .filter(Job.reservation == 'None')\
+        .filter(MoldableJobDescription.job_id == Job.id)\
+        .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)\
+        .all()
     return req
 
 
@@ -790,7 +788,6 @@ def insert_job(**kwargs):
                                     'res_group_property': properties})
             res_hys.append(res_hy)
 
-        # print "mld_id_property: ", mld_id_property
         result = db.engine.execute(JobResourceGroup.__table__.insert(),
                                    mld_id_property)
 
@@ -1022,7 +1019,7 @@ def set_moldable_job_max_time(moldable_id, walltime):
 
 
 # Update start_time in gantt for a specified job
-def set_gantt_job_startTime(moldable_id, current_time_sec):
+def set_gantt_job_start_time(moldable_id, current_time_sec):
 
     db.query(GanttJobsPrediction)\
       .filter(GanttJobsPrediction.moldable_id == moldable_id)\
@@ -1034,7 +1031,7 @@ def set_gantt_job_startTime(moldable_id, current_time_sec):
 def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
 
     riods = itvs2ids(job_res_set)
-    resource_ids = [ resource_set.rid_o2i[rid] for rid in riods ]
+    resource_ids = [resource_set.rid_o2i[rid] for rid in riods]
 
     db.query(GanttJobsResource)\
       .filter(GanttJobsResource.moldable_id == moldable_id)\
@@ -1044,21 +1041,21 @@ def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
     db.commit()
 
 
-def  is_timesharing_for_2_jobs(j1,j2):
-    if  ('timesharing' in j1.types) and ('timesharing' in j2.types):
+def is_timesharing_for_two_jobs(j1, j2):
+    if ('timesharing' in j1.types) and ('timesharing' in j2.types):
         t1 = j1.types['timesharing']
         t2 = j2.types['timesharing']
 
         if (t1 == '*,*') and (t2 == '*,*'):
             return True
 
-        if (j1.user == j2.user) and  (j1.name == j2.name):
+        if (j1.user == j2.user) and (j1.name == j2.name):
             return True
 
-        if  (j1.user == j2.user) and  (t1 == 'user,*') and (t2 == 'user,*'):
+        if (j1.user == j2.user) and (t1 == 'user,*') and (t2 == 'user,*'):
             return True
 
-        if  (j1.name == j2.name) and  (t1 == '*,name') and (t1 == '*,name'):
+        if (j1.name == j2.name) and (t1 == '*,name') and (t1 == '*,name'):
             return True
 
     return False
@@ -1091,40 +1088,40 @@ def resume_job_action(job_id):
 
     set_job_state(job_id, "Running")
 
-    resources = get_current_resources_with_suspended_job();
+    resources = get_current_resources_with_suspended_job()
     if resources != ():
         db.query(Resource)\
           .filter(~Resource.id.in_(resources))\
-          .update({Resouce.suspended_jobs: 'NO'}, synchronize_session=False)
+          .update({Resources.suspended_jobs: 'NO'}, synchronize_session=False)
 
     else:
         db.query(Resource)\
-          .update({Resouce.suspended_jobs: 'NO'}, synchronize_session=False)
+          .update({Resources.suspended_jobs: 'NO'}, synchronize_session=False)
 
     db.commit()
 
 
 # get_cpuset_values_for_a_moldable_job
 # get cpuset values for each nodes of a MJob
-def  get_cpuset_values(cpuset_field, moldable_id):
-    #TODO TOFINISH
-    oar.warn("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
+def get_cpuset_values(cpuset_field, moldable_id):
+    # TODO TOFINISH
+    logger.warn("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
     sql_where_string = "\'0\'"
     if "SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE" in config:
         resources_to_always_add_type = config["SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE"]
     else:
         resources_to_always_add_type = ""
 
-    #TODO
+    # TODO
     if resources_to_always_add_type != "":
         sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
 
-    result = db.query(Resources)\
-               .filter(AssignedResource.moldable_id == moldable_id)\
-               .filter(AssignedResource.resource_id == Resource.id)\
+    results = db.query(Resources)\
+                .filter(AssignedResource.moldable_id == moldable_id)\
+                .filter(AssignedResource.resource_id == Resource.id)\
 
 
-    #my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field
+    # my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field
     #                            FROM resources, assigned_resources
     #                            WHERE
     #                                assigned_resources.moldable_job_id = $moldable_job_id AND

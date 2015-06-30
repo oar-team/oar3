@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
 
 

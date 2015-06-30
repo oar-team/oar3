@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
 from oar.kao.interval import equal_itvs
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, MAX_TIME
@@ -11,7 +12,7 @@ def compare_slots_val_ref(slots, v):
         slot = slots[sid]
         (b, e, itvs) = v[i]
         if (slot.b != b) or (slot.e != e) or not equal_itvs(slot.itvs, itvs):
-            print "NOT EQUAL", sid, i, slot.b,b,slot.e,e, slot.itvs, itvs
+            print("NOT EQUAL", sid, i, slot.b, b, slot.e, e, slot.itvs, itvs)
             return False
         sid = slot.next
         if (sid == 0):
@@ -102,7 +103,7 @@ def test_bug_split_slots():
          (70, 79, [(1, 15), (31, 32)]),
          (80, 2147483599, [(1, 32)]),
          (2147483600, 2147483647, [])
-    ]
+         ]
 
     # res = [(1, 32)]
     s1 = Slot(1, 0, 4, [(16, 32)], 20, 69)
@@ -122,11 +123,12 @@ def test_bug_split_slots():
     ss.split_slots(1, 4, j2)
     assert compare_slots_val_ref(ss.slots, v)
 
+
 def test_add_split_slots_jobs_one_job():
 
-    v = [(10, 14, [(10, 50)]),  (15, MAX_TIME, [])]
+    v = [(10, 14, [(10, 50)]), (15, MAX_TIME, [])]
 
-    ss = SlotSet(([],10))
+    ss = SlotSet(([], 10))
 
     j = JobPseudo(id=1,
                   start_time=5,
@@ -139,22 +141,23 @@ def test_add_split_slots_jobs_one_job():
 
     assert compare_slots_val_ref(ss.slots, v)
 
+
 def test_add_split_slots_jobs_2_jobs_1():
-    v = [(10, 19 , []),
+    v = [(10, 19, []),
          (20, 99, [(40, 50)]),
          (100, 129, [(10, 20), (40, 50)]),
-         (130, 219,[(40, 50)]),
+         (130, 219, [(40, 50)]),
          (220, MAX_TIME, []),
-    ]
+         ]
 
-    ss = SlotSet(([],10))
+    ss = SlotSet(([], 10))
 
     j1 = JobPseudo(id=1,
-                  start_time=100,
-                  walltime=30,
-                  res_set=[(10, 20)],
-                  ts=False,
-                  ph=0)
+                   start_time=100,
+                   walltime=30,
+                   res_set=[(10, 20)],
+                   ts=False,
+                   ph=0)
 
     j2 = JobPseudo(id=2,
                    start_time=20,
@@ -162,7 +165,6 @@ def test_add_split_slots_jobs_2_jobs_1():
                    res_set=[(40, 50)],
                    ts=False,
                    ph=0)
-
 
     ss.split_slots_jobs([j1], False)
 
@@ -170,22 +172,23 @@ def test_add_split_slots_jobs_2_jobs_1():
 
     assert compare_slots_val_ref(ss.slots, v)
 
+
 def test_add_split_slots_jobs_2_jobs_2():
-    v = [(10, 19 , []),
+    v = [(10, 19, []),
          (20, 99, [(40, 50)]),
          (100, 129, [(10, 20), (40, 50)]),
-         (130, 219,[(40, 50)]),
+         (130, 219, [(40, 50)]),
          (220, MAX_TIME, []),
-    ]
+         ]
 
-    ss = SlotSet(([],10))
+    ss = SlotSet(([], 10))
 
     j1 = JobPseudo(id=1,
-                  start_time=100,
-                  walltime=30,
-                  res_set=[(10, 20)],
-                  ts=False,
-                  ph=0)
+                   start_time=100,
+                   walltime=30,
+                   res_set=[(10, 20)],
+                   ts=False,
+                   ph=0)
 
     j2 = JobPseudo(id=2,
                    start_time=20,
@@ -193,7 +196,6 @@ def test_add_split_slots_jobs_2_jobs_2():
                    res_set=[(40, 50)],
                    ts=False,
                    ph=0)
-
 
     ss.split_slots_jobs([j2, j1], False)
 

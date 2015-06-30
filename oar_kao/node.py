@@ -1,6 +1,9 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from sqlalchemy import func
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
+                     EventLog, EventLogHostname, MoldableJobDescription,
                      get_logger)
 
 logger = get_logger("oar.kao")
@@ -59,6 +62,7 @@ def get_gantt_hostname_to_wake_up(date, wakeup_time):
 
     return hostnames
 
+
 def get_next_job_date_on_node(hostname):
     result = db.query(func.min(GanttJobsPrediction.start_time))\
                .filter(Resource.network_address == hostname)\
@@ -71,9 +75,9 @@ def get_next_job_date_on_node(hostname):
 
 def get_last_wake_up_date_of_node(hostname):
     result = db.query(EventLog.date)\
-             .filter(EventLogHostname.event_id == EventLog.id)\
-             .filter(EventLogHostname.hostname == hostname)\
-             .filter(EventLog.type == 'WAKEUP_NODE')\
-             .order_by(EventLog.date.desc()).limit(1).scalar()
+               .filter(EventLogHostname.event_id == EventLog.id)\
+               .filter(EventLogHostname.hostname == hostname)\
+               .filter(EventLog.type == 'WAKEUP_NODE')\
+               .order_by(EventLog.date.desc()).limit(1).scalar()
 
     return result

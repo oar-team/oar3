@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from oar.lib import (db, Resource, GanttJobsPrediction, Accounting)
 
 from oar.kao.job import insert_job
@@ -17,8 +19,9 @@ from __init__ import DEFAULT_CONFIG
 DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
 #db.create_all()
 
+
 def setup_db1(fs=False):
-    print "setup db for fair sharing"
+    print("setup db for fair sharing")
     config.clear()
     DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
     if fs:
@@ -27,16 +30,16 @@ def setup_db1(fs=False):
     config.update(DEFAULT_CONFIG.copy())
     config["LOG_FILE"] = '/tmp/oar.log'
 
-    print ("db.create_all()")
+    print("db.create_all()")
 
     db.create_all()
-
 
 
 def db_flush():
     db.session.flush()
     db.session.expunge_all()
     db.session.commit()
+
 
 def del_accounting():
     db.engine.execute(Accounting.__table__.delete())
@@ -92,9 +95,9 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
 
 def test_db_fairsharing():
 
-    print "Test_db_fairsharing"
+    print("Test_db_fairsharing")
 
-    print "DB_BASE_FILE: ", config["DB_BASE_FILE"]
+    print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     #setup_db1(False)
     generate_accountings()
 
@@ -107,7 +110,7 @@ def test_db_fairsharing():
 
     users = [str(x) for x in sample(range(nb_users), nb_users)]
 
-    print "users:", users
+    print("users:", users)
     jid_2_u = {}
     for i, user in enumerate(users):
         insert_job(
@@ -122,7 +125,7 @@ def test_db_fairsharing():
     plt = Platform()
     r = plt.resource_set()
 
-    print "r.roid_itvs: ", r.roid_itvs
+    print("r.roid_itvs: ", r.roid_itvs)
 
     schedule_cycle(plt, plt.get_time())
 
@@ -130,13 +133,12 @@ def test_db_fairsharing():
         GanttJobsPrediction.start_time).all()
     flag = True
 
-    print jid_2_u
+    print(jid_2_u)
 
     for i, r in enumerate(req):
-        print "req:", r.moldable_id, jid_2_u[r.moldable_id], i
+        print("req:", r.moldable_id, jid_2_u[r.moldable_id], i)
         if jid_2_u[r.moldable_id] != i:
             flag = False
             break
 
     assert flag
-

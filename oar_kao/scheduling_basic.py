@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.interval import intersec
 from oar.kao.slot import intersec_itvs_slots, Slot

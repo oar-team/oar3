@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
 from oar.kao.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
                               equal_itvs)
@@ -59,12 +60,14 @@ def test_add_intervals3():
     a = add_intervals(x, y)
     assert a == r
 
+
 def test_equal_itvs1():
-    x = [(1,10), (11,15), (16,20)]
-    y = [(1,10), (11,15), (16,20)]
-    equal_itvs(x,y)
+    x = [(1, 10), (11, 15), (16, 20)]
+    y = [(1, 10), (11, 15), (16, 20)]
+    equal_itvs(x, y)
+
 
 def test_equal_itvs2():
-    x = [(1,10), (11,15), (16,20)]
-    y = [(1,10), (11,20)]
-    assert equal_itvs(x,y)
+    x = [(1, 10), (11, 15), (16, 20)]
+    y = [(1, 10), (11, 20)]
+    assert equal_itvs(x, y)

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 
 import sys
 from oar.lib import config, get_logger

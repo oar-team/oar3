@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 from sqlalchemy import text
 from oar.lib import config, db, Resource
 from oar.kao.hierarchy import Hierarchy

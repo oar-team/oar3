@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
+
 import re
 from sets import Set
 import simpy
@@ -44,42 +46,40 @@ class SimSched(object):
 
         while True:
 
-            print 'Wait for job arrivals or job endings', self.env.now
+            print('Wait for job arrivals or job endings', self.env.now)
 
             events = list(self.evt_running_jobs)
             if next_job_arrival is not None:
-                print "append next_job_arrival evt"
+                print("append next_job_arrival evt")
                 events.append(next_job_arrival)
             any_of_events = AnyOf(self.env, events)
             ev = yield any_of_events
 
             for k, v in ev.todict().iteritems():
-                #print "event:..... ", k
                 if k == next_job_arrival:
-                    print "job arrives !", v
+                    print("job arrives !", v)
                     for jid in v:
                         self.waiting_jids.add(jid)
                     next_job_arrival = self.job_arrival()
 
                 else:
-                    print "job endings !" , k, v
+                    print("job endings !", k, v)
                     # if k in self.evt_running_jobs:
-                    # print "remove ev: ", k
+                    # print("remove ev: ", k)
                     self.evt_running_jobs.remove(k)
                     self.jobs[v].state = "Terminated"
                     self.platform.completed_jids.append(v)
                     self.platform.running_jids.remove(v)
-
 
             now = self.env.now
 
             if ((next_job_arrival is None)
                     and not self.waiting_jids
                     and not self.evt_running_jobs):
-                print "All job submitted, no more waiting or running jobs ...", now
+                print("All job submitted, no more waiting or running jobs ...", now)
                 self.env.exit()
 
-            print "call schedule_cycle.... ", now
+            print("call schedule_cycle.... ", now)
 
             schedule_cycle(self.platform, now, "test")
 
@@ -88,7 +88,7 @@ class SimSched(object):
                 if job.start_time == now:
                     self.waiting_jids.remove(jid)
                     job.state = "Running"
-                    print "launch:", jid
+                    print("launch:", jid)
                     evt_running_job = self.env.timeout(job.run_time, jid)
                     self.evt_running_jobs.add(evt_running_job)
 
@@ -98,7 +98,7 @@ class SimSched(object):
         if self.sub_time_idx < self.sub_time_len:
             t, jids = self.sub_time_jids[self.sub_time_idx]
             self.sub_time_idx += 1
-            print "next jobs ", jids , "submitted in:", t, " sec"
+            print("next jobs ", jids, "submitted in:", t, " sec")
             return self.env.timeout(t, jids)
         else:
             return None
@@ -210,7 +210,7 @@ class SWFWorkload(object):
         for line in open(filename):
             li = line.strip()
             if not li.startswith(";"):
-                print line.rstrip()
+                print(line.rstrip())
                 fields = [int(f) for f in re.split('\W+', line) if f != '']
                 jid = fields[JID]
                 sub_time = fields[SUB_TIME]

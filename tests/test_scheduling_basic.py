@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import unicode_literals, print_function
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.interval import equal_itvs
