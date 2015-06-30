@@ -1,10 +1,24 @@
+===================================
+Kao: A Scheduling Framework for OAR
+===================================
 
-Kao: a Scheduling Framework for OAR
-====================================
+.. image:: https://img.shields.io/travis/oar-team/oar-kao.svg
+        :target: https://travis-ci.org/oar-team/oar-kao
+
+.. image:: https://img.shields.io/pypi/v/oar-kao.svg
+        :target: https://pypi.python.org/pypi/oar-kao
+
+
+Another Metascheduler for OAR.
+
+* Free software: BSD license
+* Documentation: https://oar-kao.readthedocs.org.
+
 
 Goal
 ----
-  Provide meta-scheduler and scheduler alernatives to OAR
+
+Provide meta-scheduler and scheduler alernatives to OAR
 
 Main features
 --------------
@@ -40,16 +54,12 @@ To install Kao:
   cd kao
   sudo python setup.py install
 
-After you need to configure a queue use kamelot  
-
-
+After you need to configure a queue use kamelot
 
 Install within oar-docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Simulation Mode
 ---------------
-Kao provides an a simple integrated simulator called *Simsim*. Its first purpose is the simulation of scheduler attached to one queue, 
+Kao provides an a simple integrated simulator called *Simsim*. Its first purpose is the simulation of scheduler attached to one queue,
 in other words it mights simulate only one Kamelot instance (one queue).
-
-  
