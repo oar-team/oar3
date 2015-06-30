@@ -11,7 +11,7 @@ from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
 
 import oar.kao.utils as utils
 
-log = get_logger("oar.kamelot")
+logger = get_logger("oar.kamelot")
 
 from interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
@@ -466,11 +466,11 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
-        log.debug("nb job to save: " + str(len(jobs)))
+        logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in jobs.itervalues():
-            log.debug("first job_id  to save: " + str(j.id))
+            logger.debug("first job_id  to save: " + str(j.id))
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
             riods = itvs2ids(j.res_set)
@@ -478,7 +478,7 @@ def save_assigns(jobs, resource_set):
                 [{'moldable_job_id': j.moldable_id,
                   'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
 
-        log.info("save assignements")
+        logger.info("save assignements")
 
         db.engine.execute(
             GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
@@ -503,8 +503,7 @@ def get_current_jobs_dependencies(jobs):
         j_dep, state, exit_code = x
         if j_dep.job_id not in jobs:
             # This fact have no particular impact
-            log.warning(" during get dependencies for current job " +
-                        str(j_dep.job_id) + " is not in waiting state")
+            logger.warning(" during get dependencies for current job %s is not in waiting state" % str(j_dep.job_id))
         else:
             jobs[j_dep.job_id].deps.append(
                 (j_dep.job_id_required, state, exit_code))
@@ -557,7 +556,7 @@ def set_job_state(jid, state):
     db.commit()
 
     if result == 1:  #OK for sqlite
-        log.debug(
+        logger.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
         date = get_date()
@@ -621,11 +620,11 @@ def set_job_state(jid, state):
                 # $dbh is valid so these 2 variables must be defined
                 nb_sent = utils.notify_almighty("ChState")
                 if nb_sent == 0:
-                    log.warn("Not able to notify almighty to launch the job " +
+                    logger.warn("Not able to notify almighty to launch the job " +
                              str(job.id) + " (socket error)")
 
     else:
-        log.warning("Job is already termindated or in error or wanted state, job_id: " +
+        logger.warning("Job is already termindated or in error or wanted state, job_id: " +
                     str(jid) + ", wanted state: " + state)
 
 # NO USED
@@ -826,7 +825,7 @@ def get_job(job_id):
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
     except Exception, e:
-        log.warn("get_job(" + str(job_id) + ") raises execption: " + str(e))
+        logger.warn("get_job(" + str(job_id) + ") raises execption: " + str(e))
         return None
     else:
         return job
@@ -958,7 +957,7 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
     '''Flush gantt tables but keep accepted advance reservations'''
 
     if reservations_to_keep_mld_ids != []:
-        log.debug("reservations_to_keep_mld_ids[0]: " + str(reservations_to_keep_mld_ids[0]))
+        logger.debug("reservations_to_keep_mld_ids[0]: " + str(reservations_to_keep_mld_ids[0]))
         db.query(GanttJobsPrediction)\
           .filter(~GanttJobsPrediction.moldable_id.in_(tuple(reservations_to_keep_mld_ids)))\
           .delete(synchronize_session=False)

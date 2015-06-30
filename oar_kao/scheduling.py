@@ -5,7 +5,7 @@ from oar.kao.interval import intersec
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib import get_logger
 
-log = get_logger("oar.kamelot")
+logger = get_logger("oar.kamelot")
 
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
@@ -14,7 +14,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
     jobs_slotsets = {'default': []}
 
     for job in jobs:
-        log.debug("job.id:" + str(job.id))
+        logger.debug("job.id:" + str(job.id))
         #print "job.id:", str(job.id)
         if not (filter_besteffort and ("besteffort" in job.types)):
             if "container" in job.types:
@@ -27,7 +27,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                 else:
                     ss_name = str(job.id)
 
-                log.debug("container:" + ss_name)
+                logger.debug("container:" + ss_name)
 
                 if ss_name not in slots_sets:
                     slots_sets[ss_name] = SlotSet(([],1))
@@ -53,7 +53,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
             jobs_slotsets[ss_name].append(job)
 
     for ss_name, slot_set in slots_sets.iteritems():
-        log.debug(" slots_sets.iteritems():" + ss_name)
+        logger.debug(" slots_sets.iteritems():" + ss_name)
         print "slots_sets.iteritems():", ss_name
         if ss_name in jobs_slotsets:
             slot_set.split_slots_jobs(jobs_slotsets[ss_name])
@@ -136,7 +136,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         else:
             # TODO error
             # print "TODO error can't schedule job.id:", job.id
-            log.info(
+            logger.info(
                 "can't schedule job with id:" + str(job.id) + ", due resources")
             return ([], -1, -1)
 
@@ -145,7 +145,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             if sid_right != 0:
                 slot_e = slots[sid_right].e
             else:
-                log.info(
+                logger.info(
                     "can't schedule job with id:" + str(job.id) + ", due time")
                 return ([], -1, -1)
 
@@ -223,7 +223,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     # print "*********j_id:", k, job.mld_res_rqts[0]
 
     for jid in id_jobs:
-        log.debug("Schedule job:" + str(jid))
+        logger.debug("Schedule job:" + str(jid))
         job = jobs[jid]
 
         min_start_time = -1
@@ -232,7 +232,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
             if state == "Error":
-                log.info("job(" + str(jid_dep) + ") in dependencies for job("
+                logger.info("job(" + str(jid_dep) + ") in dependencies for job("
                          + str(jid) + ") is in error state")
                 # TODO  set job to ERROR"
                 to_skip = True
@@ -255,7 +255,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                 break
 
         if to_skip:
-            log.info(
+            logger.info(
                 "job(" + str(jid) + ") can't be scheduled due to dependencies")
         else:
             ss_name = "default"
@@ -263,7 +263,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                 ss_name = job.types["inner"]
 
             if ss_name not in slots_sets:
-                log.error("job(" + str(jid) +
+                logger.error("job(" + str(jid) +
                           ") can't be scheduled, slots set '" +
                           ss_name + "' is missing. Skip it for this round.")
                 next

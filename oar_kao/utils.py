@@ -6,7 +6,7 @@ import socket
 from oar.lib import (db, config, get_logger, Resource, AssignedResource,
                      EventLog)
 
-log = get_logger("oar.kao.utils")
+logger = get_logger("oar.kao.utils")
 
 almighty_socket = None
 
@@ -14,7 +14,7 @@ notification_user_socket = None
 
 def init_judas_notify_user():
 
-    log.debug("init judas_notify_user (launch judas_notify_user.pl)")
+    logger.debug("init judas_notify_user (launch judas_notify_user.pl)")
 
     global notify_user_socket
     uds_name = "/tmp/judas_notify_user.sock"
@@ -39,7 +39,7 @@ def notify_user(job, state, msg):
     # TODO need to define and develop the next notification system
     # see OAR::Modules::Judas::notify_user
 
-    log.debug("notify_user uses the perl script: judas_notify_user.pl !!! ("
+    logger.debug("notify_user uses the perl script: judas_notify_user.pl !!! ("
               + state + ", " + msg + ")")
 
     # OAR::Modules::Judas::notify_user($base,notify,$addr,$user,$jid,$name,$state,$msg);
@@ -51,7 +51,7 @@ def notify_user(job, state, msg):
     nb_sent = notification_user_socket.send(msg_uds)
 
     if nb_sent == 0:
-        log.error("notify_user: socket error")
+        logger.error("notify_user: socket error")
 
 
 def create_almighty_socket():
@@ -62,7 +62,7 @@ def create_almighty_socket():
     try:
         almighty_socket.connect((server, port))
     except socket.error, exc:
-        log.error("Connection to Almighty" + server + ":" + str(port) +
+        logger.error("Connection to Almighty" + server + ":" + str(port) +
                   " raised exception socket.error: " + str(exc))
         sys.exit(1)
 
@@ -74,11 +74,11 @@ def notify_almighty(message):
 def notify_tcp_socket(addr, port, message):
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    log.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
+    logger.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
     try:
         tcp_socket.connect((addr, int(port)))
     except socket.error, exc:
-        log.error("notify_tcp_socket: Connection to " + addr + ":" + port +
+        logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                   " raised exception socket.error: " + str(exc))
         return 0
     nb_sent = tcp_socket.send(message)
@@ -168,7 +168,7 @@ def update_current_scheduler_priority(job, value, state):
 
     # TODO: MOVE TO resource.py ???
 
-    log.info("update_current_scheduler_priority " +
+    logger.info("update_current_scheduler_priority " +
              " job.id: " + str(job.id) + ", state: " + state + ", value: "
              + str(value))
 
@@ -231,12 +231,12 @@ def get_job_events(job_id):
     """Get events for the specified job
     """
 
-    result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
+    result = db.query(EventLog).filter(EventLogger.job_id == job_id).all()
 
     return result
 
 
 def send_checkpoint_signal(job):
-    log.debug("Send checkpoint signal to the job " + str(be_job.id))
-    log.warn("Send checkpoint signal NOT YET IMPLEMENTED " )
+    logger.debug("Send checkpoint signal to the job " + str(be_job.id))
+    logger.warn("Send checkpoint signal NOT YET IMPLEMENTED " )
     #Have a look to  check_jobs_to_kill/oar_meta_sched.pl

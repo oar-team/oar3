@@ -31,7 +31,7 @@ config.clear()
 config.update(DEFAULT_CONFIG)
 config['LOG_FILE'] = '/tmp/yop'
 
-log = get_logger("oar.batsim")
+logger = get_logger("oar.batsim")
 
 jobs = {}
 jobs_completed = []
@@ -146,7 +146,7 @@ class BatSched(object):
         self.jobs = jobs
         self.nb_jobs = len(jobs)
         self.sock = create_uds(uds_name)
-        log.info('waiting for a connection')
+        logger.info('waiting for a connection')
         self.connection, self.client_address = self.sock.accept()
 
         self.platform.running_jids = []

@@ -3,7 +3,7 @@ from sqlalchemy import func
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      get_logger)
 
-log = get_logger("oar.kao")
+logger = get_logger("oar.kao")
 
 
 def search_idle_nodes(date):
