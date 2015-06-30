@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
+from oar.lib.utils import Command
 
 from oar.kao.job import (get_current_not_waiting_jobs,
                          get_gantt_jobs_to_launch,
@@ -688,7 +689,7 @@ def meta_schedule(mode='extern'):
                     log.debug("[" + str(job.id) + "] Running post suspend script: `" +
                               script +  " " + str(job.id) + "'")
                     cmd_str =  script + str(job.id)
-                    cmd = tools.Command(cmd_str)
+                    cmd = Command(cmd_str)
                     error, error_code = cmd.run(timeout)
                     
                     if error or (script_error):

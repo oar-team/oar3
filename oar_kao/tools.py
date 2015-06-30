@@ -1,7 +1,3 @@
-import os
-import threading
-import subprocess
- 
 from oar.lib import config, get_logger
 
 log = get_logger("oar.kao.tools")
@@ -35,30 +31,3 @@ def get_default_suspend_resume_file():
 def manage_remote_commands():
     oar.error("manage_remote_commands id not YET IMPLEMENTED")
 
-class Command(object):
-    """
-    Run subprocess commands in a different thread with TIMEOUT option.
-    Based on jcollado's solution:
-    http://stackoverflow.com/questions/1191374/subprocess-with-timeout/4825933#4825933
-    """
-    def __init__(self, cmd):
-        self.cmd = cmd
-        self.process = None
-
-    def run(self, timeout):
-        def target():
-            self.process = subprocess.Popen(self.cmd, shell=True)
-            self.process.communicate()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        error = None
-        thread.join(timeout)
-        if thread.is_alive():
-            error ('Timeout: Terminating process')
-            oar.error(error)
-            self.process.terminate()
-            thread.join()
-
-        return (error, self.process.returncode)
