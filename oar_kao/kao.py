@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 from oar.lib import get_logger
 from oar.kao.meta_sched import meta_schedule
 

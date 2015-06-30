@@ -1,3 +1,4 @@
+# coding: utf-8
 import os
 
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,

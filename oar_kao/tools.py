@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.lib import config, get_logger
 
 log = get_logger("oar.kao.tools")

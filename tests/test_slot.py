@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.kao.interval import equal_itvs
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, MAX_TIME

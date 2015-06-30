@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.kao.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
                               equal_itvs)

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# coding: utf-8
 
 use IO::Socket::UNIX;
 use strict;

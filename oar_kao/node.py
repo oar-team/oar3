@@ -1,3 +1,4 @@
+# coding: utf-8
 from sqlalchemy import func
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      get_logger)

@@ -1,4 +1,4 @@
-#import ipdb
+# coding: utf-8
 import pytest
 import re
 from tempfile import mkstemp

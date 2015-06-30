@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.lib import config, db, Accounting
 from sqlalchemy import func
 import re

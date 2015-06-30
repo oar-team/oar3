@@ -1,3 +1,4 @@
+# coding: utf-8
 import time
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import schedule_id_jobs_ct

@@ -1,3 +1,4 @@
+# coding: utf-8
 import pdb
 import pytest
 import os.path

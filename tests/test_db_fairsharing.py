@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.lib import (db, Resource, GanttJobsPrediction, Accounting)
 
 from oar.kao.job import insert_job

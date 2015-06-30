@@ -1,3 +1,4 @@
+# coding: utf-8
 import pytest
 from oar.lib import (db, Resource, GanttJobsPrediction)
 from oar.kao.job import insert_job

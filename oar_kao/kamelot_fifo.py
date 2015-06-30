@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# coding: utf-8
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.interval import (intersec, sub_intervals, itvs2ids, unordered_ids2itvs)

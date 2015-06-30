@@ -1,3 +1,4 @@
+# coding: utf-8
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
 from copy import deepcopy
