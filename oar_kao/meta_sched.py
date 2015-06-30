@@ -107,12 +107,12 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     #TODO Can we remove this step, below ???
     #  why don't use: assigned_resources and job start_time ??? in get_scheduled_jobs ???
     log.debug("Processing of current jobs")
-    current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching', 
+    current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching',
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
     save_assigns(current_jobs, resource_set)
 
-    
+
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
     #
@@ -187,8 +187,8 @@ def prepare_job_to_be_launched(job, current_time_sec):
     # OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
 
     # set start_time an for jobs to launch
-    set_job_start_time_assigned_moldable_id(job.id, 
-                                            current_time_sec, 
+    set_job_start_time_assigned_moldable_id(job.id,
+                                            current_time_sec,
                                             job.moldable_id)
 
     # fix resource assignement
@@ -206,7 +206,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
               ": begin processing accepted Advance Reservations")
 
     ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
-                                
+
     for job in ar_jobs:
 
         moldable_id = job.moldable_id
@@ -214,7 +214,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
         # Test if AR job is expired and handle it
         if (current_time_sec > (job.start_time + walltime)):
-            log.warn("[" + str(job.id) + 
+            log.warn("[" + str(job.id) +
                      "] set job state to Error: avdance reservation expired and couldn't be started")
             set_job_state(job.id, 'Error')
             set_job_message(job.id, "Reservation expired and couldn't be started.")
@@ -222,10 +222,10 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
             # Determine current available ressources
             avail_res = intersec(resource_set.roid_itvs, job.res_set)
-        
-            # Test if the AR job is waiting to be launched due to nodes' unavailabilities 
+
+            # Test if the AR job is waiting to be launched due to nodes' unavailabilities
             if (avail_res == []) and (job.start_time < current_time_sec):
-                log.warn("[" + str(job.id) + 
+                log.warn("[" + str(job.id) +
                      "] advance reservation is waiting because no resource is present")
 
                 # Delay launching time
@@ -233,7 +233,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
             elif (job.start_time < current_time_sec):
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
                     if not equal_itvs(avail_res, job.res_set):
-                        # The expected ressources are not all available, 
+                        # The expected ressources are not all available,
                         # wait the specified timeout
                         log.warn("[" + str(job.id) +
                                  "] advance reservation is waiting because not all \
@@ -244,12 +244,12 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                     missing_resources_itvs = sub_intervals(job.res_set, avail_res)
                     remove_gantt_resource_job(moldable_id, missing_resources_itvs,
                                               resource_set)
-                    log.warn("[" + str(job.id) + 
+                    log.warn("[" + str(job.id) +
                              "remove some resources assigned to this advance reservation, \
                               because there are not Alive")
-                            
-                    add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_ADVANCE_RESERVATION', 
-                                  job.id, 
+
+                    add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_ADVANCE_RESERVATION',
+                                  job.id,
                                   "[MetaSched] Reduce the number of resources for the job "
                                   + str(job.id))
 
@@ -303,7 +303,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             # TODO container
             #if 'inner' in job.types:
             #    ss_name = job.types['inner']
-                
+
             # TODO: test if container is an AR job
 
             slots = all_slot_sets[ss_name].slots
@@ -351,9 +351,9 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
     log.debug("Queue " + queue_name + ": end processing of new reservations")
 
 
-def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time_sec, 
+def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time_sec,
                                   besteffort_rid2job, resource_set):
-    
+
     '''Detect if there are besteffort jobs to kill
     return 1 if there is at least 1 job to frag otherwise 0
     '''
@@ -361,13 +361,13 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time
     return_code = 0
 
     log.debug("Begin processing of besteffort jobs to kill")
-    
+
     fragged_jobs = []
 
     for rid, job_id in rid2jid_to_launch.iteritems():
         if rid in besteffort_rid2job:
             be_job = besteffort_rid2job[rid]
-            job_toLaunch = jobs_to_launch[job_id] 
+            job_toLaunch = jobs_to_launch[job_id]
 
             if is_timesharing_for_2_jobs(be_job, job_toLaunch):
                 log.debug("Resource " + str(rid) +
@@ -390,16 +390,16 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,current_time
                         send_checkpoint_signal(be_job)
 
                         log.debug("Send checkpoint signal to the job " + str(be_job.id))
-                        
+
                     if skip_kill == 0:
-                        log.debug("Resource " + str(rid) + 
-                                  "need to be freed for job " + str(be_job.id) + 
+                        log.debug("Resource " + str(rid) +
+                                  "need to be freed for job " + str(be_job.id) +
                                   ": killing besteffort job " + str(job_toLaunch.id))
 
                         add_new_event('BESTEFFORT_KILL',be_job.id,
                                       "kill the besteffort job " + str(be_job.id))
                         frag_job(be_job_id)
-                        
+
                     fragged_jobs[be_job.id] = 1
                     return_code = 1
 
@@ -414,7 +414,7 @@ def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
         "Begin processing jobs to launch (start time <= " + current_time_sql)
 
     return_code = 0
-    
+
     for job in jobs_to_launch:
         return_code = 1
         log.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
@@ -424,13 +424,13 @@ def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
         #
         if ((job.reservation == 'Scheduled') and (job.start_time < current_time_sec)):
             max_time = walltime - (current_time_sec - job.start_time)
-         
+
             set_moldable_job_max_time(job.moldable_id, max_time)
             set_gantt_job_startTime(job.moldable_id, current_time_sec)
             log.warn("Reduce walltime of job " + str(job.id) +
                      "to " + str(max_time) + "(was  " + str(walltime) + " )")
 
-            add_new_event('REDUCE_RESERVATION_WALLTIME', job.id, 
+            add_new_event('REDUCE_RESERVATION_WALLTIME', job.id,
                           "Change walltime from " + str(walltime) + " to "
                           + str(max_time))
 
@@ -472,7 +472,7 @@ def meta_schedule(mode='extern'):
     exit_code = 0
 
     job_security_time = int(config['SCHEDULER_JOB_SECURITY_TIME'])
-        
+
     utils.init_judas_notify_user()
     utils.create_almighty_socket()
 
@@ -488,7 +488,7 @@ def meta_schedule(mode='extern'):
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(initial_time_sec, 
+    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(initial_time_sec,
                                                                                       job_security_time)
 
     if 'OARDIR' in os.environ:
@@ -546,9 +546,9 @@ def meta_schedule(mode='extern'):
                 db.query(Queue).filter_by(name=queue.name).update(
                     {'state': 'notActive'})
 
-            
+
             #retrieve jobs and assignement decision from previous scheduling step
-            scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set, 
+            scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,
                                                         job_security_time, initial_time_sec)
 
 
@@ -561,7 +561,7 @@ def meta_schedule(mode='extern'):
                                                        job_security_time, filter_besteffort)
 
 
-            handle_waiting_reservation_jobs(queue.name, resource_set, 
+            handle_waiting_reservation_jobs(queue.name, resource_set,
                                             job_security_time, current_time_sec)
 
             #handle_new_AR_jobs
@@ -570,12 +570,12 @@ def meta_schedule(mode='extern'):
 
 
 
-    jobs_toL, rid2jid_toL = get_gantt_jobs_to_launch(resource_set, 
-                                                     job_security_time, 
+    jobs_toL, rid2jid_toL = get_gantt_jobs_to_launch(resource_set,
+                                                     job_security_time,
                                                      current_time_sec)
 
     if check_besteffort_jobs_to_kill(jobs_toL, rid2jid_toL,
-                                     current_time_sec, besteffort_rid2jid, 
+                                     current_time_sec, besteffort_rid2jid,
                                      resource_set) == 1:
         # We must kill some besteffort jobs
         utils.notify_almighty('ChState')
@@ -590,16 +590,16 @@ def meta_schedule(mode='extern'):
     flagHulot = False
     timeout_cmd = int(config['SCHEDULER_TIMEOUT'])
 
-    if ((('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or  
-        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and 
+    if ((('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
+        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
          ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))) and
-        (('SCHEDULER_NODE_MANAGER_SLEEP_TIME' in config) 
+        (('SCHEDULER_NODE_MANAGER_SLEEP_TIME' in config)
          and ('SCHEDULER_NODE_MANAGER_IDLE_TIME' in config))):
 
         # Look at nodes that are unused for a duration
         idle_duration = int(config['SCHEDULER_NODE_MANAGER_IDLE_TIME'])
         sleep_duration = int(config['SCHEDULER_NODE_MANAGER_SLEEP_TIME'])
-    
+
         idle_nodes = search_idle_nodes(current_time_sec)
         tmp_time = current_time_sec - idle_duration
 
@@ -627,20 +627,20 @@ def meta_schedule(mode='extern'):
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
                 if tools.fork_and_feed_stdin(cmd, timeout_cmd, node_halt):
-                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd) 
-                              + "s) while trying to  poweroff some nodes") 
+                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
+                              + "s) while trying to  poweroff some nodes")
 
-    
-    if (('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or 
-        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and 
+
+    if (('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
+        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
          ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))):
-        # Get nodes which the scheduler wants to schedule jobs to, 
+        # Get nodes which the scheduler wants to schedule jobs to,
         # but which are in the Absent state, to wake them up
         wakeup_time = int(config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME'])
         nodes = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
 
         if nodes != []:
-            log.debug("Awaking some nodes: " + str(nodes))        
+            log.debug("Awaking some nodes: " + str(nodes))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
                 if tools.send_to_hulot('WAKEUP', nodes.join( )):
@@ -650,16 +650,16 @@ def meta_schedule(mode='extern'):
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
                 if tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes):
-                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd) 
-                              + "s) while trying to wake-up some nodes ") 
-                    
+                    log.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
+                              + "s) while trying to wake-up some nodes ")
 
-    # Send CHECK signal to Hulot if needed                
+
+    # Send CHECK signal to Hulot if needed
     if not flagHulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
         if tools.send_to_hulot('CHECK', []):
             log.error("Communication problem with the energy saving module (Hulot)")
 
-    # Retrieve jobs according to their state and excluding job in 'Waiting' state.        
+    # Retrieve jobs according to their state and excluding job in 'Waiting' state.
     jobs_by_state = get_current_not_waiting_jobs()
 
     #
@@ -691,7 +691,7 @@ def meta_schedule(mode='extern'):
                     cmd_str =  script + str(job.id)
                     cmd = Command(cmd_str)
                     error, error_code = cmd.run(timeout)
-                    
+
                     if error or (script_error):
                         str_error = "[" + str(job.id) + "] Suspend script error:" +\
                                     error +";  return code = " + str(error_code)
@@ -707,7 +707,7 @@ def meta_schedule(mode='extern'):
                 else:
                     cpuset_field = ""
                 if cpuset_field and (skip == 0):
-                    # 
+                    #
                     cpuset_name = job.user + "_" + str(job.id)
                     cpuset_nodes = get_cpuset_values(cpuset_field,
                                                      job.assigned_moldable_id)
@@ -722,14 +722,14 @@ def meta_schedule(mode='extern'):
                         suspend_file = config['SUSPEND_RESUME_FILE']
                     else:
                         suspend_file = tools.get_default_suspend_resume_file()
-                
+
     #
     # TODO: TOFINISH
     #
-                
-                
 
-                        
+
+
+
     # Notify oarsub -I when they will be launched
     for j_info in get_gantt_waiting_interactive_prediction_date():
         job_id, job_info_type, job_start_time, job_message = j_info

@@ -392,11 +392,11 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
         .all()
 
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
     return jobs_lst
-    
+
 
 def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now):
     """ Get waiting jobs which are not AR and after scheduler round
@@ -416,7 +416,7 @@ def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now)
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
     return jobs_lst
@@ -438,14 +438,14 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
     return jobs_lst
 
 
 def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
-    result = db.query(Job, 
+    result = db.query(Job,
                       GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
                       MoldableJobDescription.walltime,
@@ -457,14 +457,14 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
                .all()
 
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set, 
+    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
     return (jobs_lst, rid2jid)
-   
+
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
-    if len(jobs) > 0: 
+    if len(jobs) > 0:
         log.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
@@ -944,7 +944,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
             roids.append(resource_set.rid_i2o[resource_id])
 
         job.res_set = unordered_ids2itvs(roids)
-        
+
         jids.append(job.id)
         jobs[job.id] = job
 
@@ -1046,9 +1046,9 @@ def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
 
 def  is_timesharing_for_2_jobs(j1,j2):
     if  ('timesharing' in j1.types) and ('timesharing' in j2.types):
-        t1 = j1.types['timesharing'] 
+        t1 = j1.types['timesharing']
         t2 = j2.types['timesharing']
-        
+
         if (t1 == '*,*') and (t2 == '*,*'):
             return True
 
@@ -1070,9 +1070,9 @@ def get_jobs_on_resuming_job_resources(job_id):
     j2 = aliased(Job)
     a1 = aliased(AssignedResource)
     a2 = aliased(AssignedResource)
-    
+
     states = ('toLaunch', 'toError', 'toAckReservation', 'Launching', 'Running ', 'Finishing')
- 
+
     result = db.query(distinct(j2.id))\
                .filter(a1.assigned_resource_index == 'CURRENT')\
                .filter(a2.assigned_resource_index == 'CURRENT')\
@@ -1114,7 +1114,7 @@ def  get_cpuset_values(cpuset_field, moldable_id):
         resources_to_always_add_type = config["SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE"]
     else:
         resources_to_always_add_type = ""
-        
+
     #TODO
     if resources_to_always_add_type != "":
         sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
@@ -1122,8 +1122,8 @@ def  get_cpuset_values(cpuset_field, moldable_id):
     result = db.query(Resources)\
                .filter(AssignedResource.moldable_id == moldable_id)\
                .filter(AssignedResource.resource_id == Resource.id)\
-               
-        
+
+
     #my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field
     #                            FROM resources, assigned_resources
     #                            WHERE
@@ -1135,4 +1135,4 @@ def  get_cpuset_values(cpuset_field, moldable_id):
     #                            GROUP BY resources.network_address, resources.$cpuset_field
     #                        ");
 
-    return results 
+    return results

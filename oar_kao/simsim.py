@@ -52,7 +52,7 @@ class SimSched(object):
                 events.append(next_job_arrival)
             any_of_events = AnyOf(self.env, events)
             ev = yield any_of_events
-            
+
             for k, v in ev.todict().iteritems():
                 #print "event:..... ", k
                 if k == next_job_arrival:
@@ -69,8 +69,8 @@ class SimSched(object):
                     self.jobs[v].state = "Terminated"
                     self.platform.completed_jids.append(v)
                     self.platform.running_jids.remove(v)
-                    
-                    
+
+
             now = self.env.now
 
             if ((next_job_arrival is None)
@@ -98,7 +98,7 @@ class SimSched(object):
         if self.sub_time_idx < self.sub_time_len:
             t, jids = self.sub_time_jids[self.sub_time_idx]
             self.sub_time_idx += 1
-            print "next jobs ", jids , "submitted in:", t, " sec" 
+            print "next jobs ", jids , "submitted in:", t, " sec"
             return self.env.timeout(t, jids)
         else:
             return None

@@ -205,7 +205,7 @@ class SlotSet:
                     else:
                         #add resources
                         self.add_slot_during_job(slot, job)
-                        
+
                 else:
                     # generate ABC
                     self.slot_before_job(slot, job)
@@ -228,7 +228,7 @@ class SlotSet:
                     else:
                         #add resources
                         self.add_slot_during_job(slot, job)
-                    
+
                 else:
                     # Generate BC
                     # Generate C before modify slot / B
@@ -239,7 +239,7 @@ class SlotSet:
                     else:
                         #add resources
                         self.add_slot_during_job(slot, job)
-                    
+
             if (sid == sid_right):
                 break
             else:
@@ -258,7 +258,7 @@ class SlotSet:
         if not sub:
             # for adding resources we need to inverse the chronological order
             ordered_jobs.reverse()
-        
+
         for job in ordered_jobs:
             # Find first slot
             while not ((slot.b > job.start_time)

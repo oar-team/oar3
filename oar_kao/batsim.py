@@ -251,5 +251,5 @@ for j in json_jobs:
                         deps=[],
                         key_cache={},
                         ts=False, ph=0)
-    
+
 BatSched(res_set, jobs).run()

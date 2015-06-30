@@ -25,7 +25,7 @@ log = get_logger("oar.kamelot_fifo")
 def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
 
     assigned_jobs = {}
-    
+
     now = plt.get_time()
 
     log.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
@@ -55,15 +55,15 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
         plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         #
-        # Remove resources used by running job 
+        # Remove resources used by running job
         #
         for job in plt.get_scheduled_jobs(resource_set, job_security_time, now):
             if job.state == "Running":
                 res_itvs = sub_intervals(res_itvs, job.res_itvs)
 
-        #        
+        #
         # Assign resource to jobs
-        #        
+        #
         for jid in waiting_jids:
             job = waiting_jobs[jid]
             # We consider only one instance of resources request (no support for moldable)
@@ -92,16 +92,16 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
             else:
                 log.debug("Not enough available resources, it's a FIFO scheduler, we stop here.")
                 break
-        
+
         #
         # Save assignement
         #
-        
+
         log.info("save assignement")
         plt.save_assigns(assigned_jobs, resource_set)
 
     else:
-        log.info("no waiting jobs")        
+        log.info("no waiting jobs")
 
 #
 # Main function

@@ -95,7 +95,7 @@ def get_date():
         req =  "SELECT strftime('%s','now')"
     else:
         req ="SELECT EXTRACT(EPOCH FROM current_timestamp)"
-    
+
     result = db.engine.execute(req).scalar()
     return int(result)
 
@@ -138,7 +138,7 @@ def duration_to_hms(t):
 
     sec = t % 60
     t /= 60
-    min = t % 60 
+    min = t % 60
     hour  = int(t / 60)
 
     return (hour, min , sec)
@@ -165,7 +165,7 @@ def duration_to_sql(t):
 def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources
     """
-    
+
     # TODO: MOVE TO resource.py ???
 
     log.info("update_current_scheduler_priority " +
@@ -175,37 +175,37 @@ def update_current_scheduler_priority(job, value, state):
     if "SCHEDULER_PRIORITY_HIERARCHY_ORDER" in config:
         sched_priority = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
         if ((('besteffort' in job.types) or ('timesharing' in job.types)) and
-           (((state == 'START') and 
+           (((state == 'START') and
             is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
-           ((state == 'STOP') and 
+           ((state == 'STOP') and
             is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") > 0))):
-            
+
             coeff = 1
             if ('besteffort' in job.types) and (not ('timesharing' in job.types)):
                 coeff = 10
-            
+
             index = 0
             for f in sched_priority.split('/'):
                 if f == "":
                     continue
                 index += 1
-                
+
                 resources = db.query(distinct(getattr(Resource, f)))\
                               .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
                               .filter(AssignedResource.moldable_id == job.assigned_moldable_job)\
                               .filter(AssignedResource.resource_id == Resource.id)\
                               .all()
-                                                  
+
                 if resources == []:
                     return
-                    
+
                 db.query(Resource)\
                   .filter(Resource.id.in_(tuple(resources)))\
-                  .update({Resource.scheduler_priority: Resource.scheduler_priority + (value * index * coeff)}, 
+                  .update({Resource.scheduler_priority: Resource.scheduler_priority + (value * index * coeff)},
                           synchronize_session=False)
                 db.commit()
 
- 
+
             add_new_event("SCHEDULER_PRIORITY_UPDATED_$state", job.id,
                           "Scheduler priority for job $job_id updated (" + sched_priority +")")
 
@@ -232,7 +232,7 @@ def get_job_events(job_id):
     """
 
     result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
-    
+
     return result
 
 

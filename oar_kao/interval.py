@@ -80,7 +80,7 @@ def equal_itvs(itvs1, itvs2):
     next_x = True
     next_y = True
 
-    while True: 
+    while True:
 
         if next_x:
             if ix == lx:
@@ -92,7 +92,7 @@ def equal_itvs(itvs1, itvs2):
             y = itvs2[iy]
 
         if x[0] != y[0]:
-    
+
             return False
 
         if x[1] == y[1]:
@@ -105,7 +105,7 @@ def equal_itvs(itvs1, itvs2):
             next_y = True
 
         elif x[1] > y[1]:
-            x = (y[1]+1, x[1]) 
+            x = (y[1]+1, x[1])
             iy += 1
             next_x = False
             next_y = True

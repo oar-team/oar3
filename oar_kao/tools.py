@@ -24,7 +24,7 @@ def send_to_hulot(cmd, data):
 
 def get_oar_pid_file_name(job_id):
     oar.error("get_oar_pid_file_name id not YET IMPLEMENTED")
-    
+
 def get_default_suspend_resume_file():
     oar.error("get_default_suspend_resume_file id not YET IMPLEMENTED")
 

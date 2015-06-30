@@ -56,7 +56,7 @@ def schedule_cycle(plt, now, queue="default"):
         log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
         for jid in waiting_jids:
              log.debug("waiting_jid: " + str(jid))
-             
+
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
         #
@@ -93,7 +93,7 @@ def schedule_cycle(plt, now, queue="default"):
         #
         # Karma sorting (Fairsharing)
         #
-        
+
         if "FAIRSHARING_ENABLED" in config:
             if config["FAIRSHARING_ENABLED"] == "yes":
                 waiting_jids = karma_jobs_sorting(

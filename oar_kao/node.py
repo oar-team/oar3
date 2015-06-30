@@ -52,10 +52,10 @@ def get_gantt_hostname_to_wake_up(date, wakeup_time):
                   .filter(Resource.state != 'Absent')\
                   .filter(Resource.network_address != '')\
                   .filter(Resource.type == 'default')\
-                  .filter((GanttJobsPrediction.start_time + MoldableJobDescription.walltime) <= 
+                  .filter((GanttJobsPrediction.start_time + MoldableJobDescription.walltime) <=
                           Resource.available_upto)\
                   .group_by(Resource.network_address).all()
-  
+
     return hostnames
 
 def get_next_job_date_on_node(hostname):
@@ -74,5 +74,5 @@ def get_last_wake_up_date_of_node(hostname):
              .filter(EventLogHostname.hostname == hostname)\
              .filter(EventLog.type == 'WAKEUP_NODE')\
              .order_by(EventLog.date.desc()).limit(1).scalar()
-    
+
     return result

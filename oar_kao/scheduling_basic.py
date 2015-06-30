@@ -93,7 +93,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     prev_t_finish = 2 ** 32 - 1  # large enough
     prev_res_set = []
     prev_res_rqt = []
-   
+
     slots = slots_set.slots
     prev_start_time = slots[1].b
 
