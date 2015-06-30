@@ -332,10 +332,10 @@ def test_simple_dependency():
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
-    
+
     assert j2.start_time == 60
 
-    
+
 def test_error_dependency():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
@@ -353,7 +353,7 @@ def test_error_dependency():
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
     assert (not hasattr(j2, "start_time"))
-    
+
 def test_terminated_dependency():
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
@@ -367,7 +367,7 @@ def test_terminated_dependency():
     schedule_id_jobs_ct(all_ss, {2: j2}, hy, [2], 20)
 
     assert j2.start_time == 0
-    
+
 
 def test_schedule_placeholder1():
     res = [(1, 32)]
@@ -383,21 +383,21 @@ def test_schedule_placeholder1():
     j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
                    mld_res_rqts=[(1, 50, [([("node", 4)], res[:])])],
                    ts=False, ph=0)
-    
+
     #Allow type: allow="yop"
     j3 = JobPseudo(id=3, types={}, deps=[], key_cache={},
                    mld_res_rqts=[(1, 60, [([("node", 4)], res[:])])],
                    ts=False, ph=2, ph_name="yop")
 
-    
+
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2, 3: j3}, hy, [1, 2, 3], 20)
 
     print "Placeholder: j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time,\
         " j3.start_time:", j3.start_time
-        
-    
+
+
     assert (j2.start_time == 80) and (j3.start_time == 0)
-   
+
 
 def test_schedule_placeholder2():
     res = [(1, 32)]
@@ -415,7 +415,7 @@ def test_schedule_placeholder2():
                    ts=False, ph=2, ph_name="yop")
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
-    
+
     print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
 
     assert  j2.start_time == 60
@@ -452,10 +452,10 @@ def test_schedule_placeholder_prev_sched():
 
     print "j1.start_time:", j1.start_time, "j2.start_time:", j2.start_time,\
         " j3.start_time:", j3.start_time
-    
+
     all_ss['default'].show_slots()
     #pdb.set_trace()
-    
+
     #assert j3.start_time == 150
     assert j3.res_set == [(1, 16)]
 
@@ -481,7 +481,7 @@ def test_schedule_timesharing1():
     print "j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time
 
     assert j1.start_time == j2.start_time
-    
+
 def test_schedule_timesharing2():
     pass
 

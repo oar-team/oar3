@@ -16,7 +16,7 @@ def db_flush():
 def flush_db(request):
     def teardown():
         db.delete_all()
-        
+
     request.addfinalizer(teardown)
 
 def test_db_kamelot_fifo_no_hierarchy():
@@ -34,7 +34,7 @@ def test_db_kamelot_fifo_no_hierarchy():
     schedule_fifo_cycle(plt, "default", False)
 
     req = db.query(GanttJobsPrediction).all()
-    
+
     #for i, r in enumerate(req):
     #    print "req:", r.moldable_id, r.start_time
 
@@ -47,7 +47,7 @@ def test_db_kamelot_fifo_w_hierarchy():
         db.add(Resource(network_address="localhost"+str(int(i/2))))
 
     print
-        
+
     for res in db.query(Resource).all():
         print res.id, res.network_address
 
@@ -61,7 +61,7 @@ def test_db_kamelot_fifo_w_hierarchy():
     schedule_fifo_cycle(plt, "default", True)
 
     req = db.query(GanttJobsPrediction).all()
-    
+
     #for i, r in enumerate(req):
     #    print "req:", r.moldable_id, r.start_time
 

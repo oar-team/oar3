@@ -16,7 +16,7 @@ from __init__ import DEFAULT_CONFIG
 #DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
 DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
 #db.create_all()
- 
+
 def setup_db1(fs=False):
     print "setup db for fair sharing"
     config.clear()
@@ -28,9 +28,9 @@ def setup_db1(fs=False):
     config["LOG_FILE"] = '/tmp/oar.log'
 
     print ("db.create_all()")
-    
+
     db.create_all()
-    
+
 
 
 def db_flush():

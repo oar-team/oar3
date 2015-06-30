@@ -165,7 +165,7 @@ def test_add_split_slots_jobs_2_jobs_1():
 
 
     ss.split_slots_jobs([j1], False)
- 
+
     ss.split_slots_jobs([j2], False)
 
     assert compare_slots_val_ref(ss.slots, v)
@@ -196,5 +196,5 @@ def test_add_split_slots_jobs_2_jobs_2():
 
 
     ss.split_slots_jobs([j2, j1], False)
- 
+
     assert compare_slots_val_ref(ss.slots, v)

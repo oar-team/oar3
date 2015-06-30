@@ -27,10 +27,10 @@ def setup_db(request):
         db.session.flush()
         db.session.expunge_all()
         db.session.commit()
-        
+
         def teardown():
             db.delete_all()
-            
+
         request.addfinalizer(teardown)
 
 @pytest.fixture(autouse=True)
