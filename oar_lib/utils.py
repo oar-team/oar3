@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import threading
+import subprocess
+
 from collections import OrderedDict
 
+from . import logger
 from .compat import numeric_types
 
 
@@ -70,3 +74,34 @@ def render_query(statement, bind=None, reindent=True):
         return sqlparse.format(raw_sql, reindent=reindent)
     except ImportError:
         return raw_sql
+
+
+class Command(object):
+    """
+    Run subprocess commands in a different thread with TIMEOUT option.
+    Based on jcollado's solution:
+    http://stackoverflow.com/questions/1191374/subprocess-with-timeout/4825933#4825933
+    """
+    def __init__(self, cmd):
+        self.cmd = cmd
+        self.process = None
+
+    def run(self, timeout):
+        def target():
+            self.process = subprocess.Popen(self.cmd, shell=True)
+            self.process.communicate()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+        error = None
+        thread.join(timeout)
+        if thread.is_alive():
+            logger.error('Timeout: Terminating process "%s"' % self.cmd)
+            self.process.terminate()
+            thread.join()
+
+        return (error, self.process.returncode)
+
+    def __call__(self, *args, **kwargs):
+        self.run(*args, **kwargs)
