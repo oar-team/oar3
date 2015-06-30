@@ -1,27 +1,21 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import sys
-import os
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, Slot, MAX_TIME
+from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
                                 schedule_id_jobs_ct)
 from oar.kao.karma import karma_jobs_sorting
 
-from oar.lib import db, Job
-
-# Initialize some variables to default value or retrieve from oar.conf
-# configuration file *)
-
-#config['LOG_FILE'] = '/dev/stdout'
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'DB_PORT': '5432',
     'HIERARCHY_LABEL': 'resource_id,network_address',
     'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
     'SCHEDULER_JOB_SECURITY_TIME': '60',
@@ -30,22 +24,13 @@ DEFAULT_CONFIG = {
     'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30'
 }
 
-#config.update(DEFAULT_CONFIG)
 
-config.setdefault_config(DEFAULT_CONFIG)
+logger = get_logger("oar.kamelot")
 
-#if 'OARCONFFILE' in os.environ:
-#    config.load_file(os.environ['OARCONFILE'])
-
-#config.load_file(os.environ['OARCONFILE'])
-
-log = get_logger("oar.kamelot")
-#config.load_file("/etc/oar/oar.conf")
-config['LOG_FILE'] = '/tmp/oar_kamelot.log'
 
 def schedule_cycle(plt, now, queue="default"):
 
-    log.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
+    logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
     #
     # Retrieve waiting jobs
     #
@@ -53,9 +38,9 @@ def schedule_cycle(plt, now, queue="default"):
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
     if nb_waiting_jobs > 0:
-        log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
         for jid in waiting_jids:
-             log.debug("waiting_jid: " + str(jid))
+            logger.debug("waiting_jid: " + str(jid))
 
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
@@ -130,21 +115,22 @@ def schedule_cycle(plt, now, queue="default"):
         #
         # Save assignement
         #
-        log.info("save assignement")
+        logger.info("save assignement")
 
         plt.save_assigns(waiting_jobs, resource_set)
     else:
-        log.info("no waiting jobs")
+        logger.info("no waiting jobs")
+
 
 #
 # Main function
 #
-
-if __name__ == '__main__':
+def main():
+    config.setdefault_config(DEFAULT_CONFIG)
 
     plt = Platform()
 
-    log.debug("argv..." + str(sys.argv))
+    logger.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:
         schedule_cycle(plt, int(float(sys.argv[2])), sys.argv[1])
@@ -153,4 +139,10 @@ if __name__ == '__main__':
     else:
         schedule_cycle(plt, plt.get_time())
 
-    log.info("That's all folks")
+    logger.info("That's all folks")
+
+
+if __name__ == '__main__':
+    config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+    logger = get_logger("oar.kamelot", stdout=True)
+    main()

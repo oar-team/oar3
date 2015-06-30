@@ -1,34 +1,31 @@
-from oar.lib import config
-from oar.lib.platform import Platform
+from oar.lib import config, get_logger
+from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, Slot, MAX_TIME
+from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
-# Initialize some variables to default value or retrieve from oar.conf
-# configuration file *)
 
 # Set undefined config value to default one
-default_config = {
+DEFAULT_CONFIG = {
     "HIERARCHY_LABEL": "resource_id,network_address",
     "SCHEDULER_RESOURCE_ORDER": "resource_id ASC"
-
 }
 
-config.setdefault_config(default_config)
+
+logger = get_logger("oar.kamelot_basic")
 
 
 def schedule_cycle(plt, queue="default"):
     now = plt.get_time()
 
-    print "Begin scheduling....", now
+    logger.info("Begin scheduling....", now)
 
     #
     # Retrieve waiting jobs
     #
-
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
-    print waiting_jobs, waiting_jids, nb_waiting_jobs
+    logger.info(waiting_jobs, waiting_jids, nb_waiting_jobs)
 
     if nb_waiting_jobs > 0:
 
@@ -45,7 +42,7 @@ def schedule_cycle(plt, queue="default"):
         for t_avail_upto in sorted(resource_set.available_upto.keys()):
             itvs = resource_set.available_upto[t_avail_upto]
             j = JobPseudo()
-            #print t_avail_upto, MAX_TIME - t_avail_upto, itvs
+            # logger.info(t_avail_upto, MAX_TIME - t_avail_upto, itvs)
             j.start_time = t_avail_upto
             j.walltime = MAX_TIME - t_avail_upto
             j.res_set = itvs
@@ -70,7 +67,6 @@ def schedule_cycle(plt, queue="default"):
         if scheduled_jobs != []:
             initial_slot_set.split_slots_jobs(scheduled_jobs)
 
-        # print "after split sched"
         initial_slot_set.show_slots()
 
         all_slot_sets = {"default": initial_slot_set}
@@ -87,16 +83,21 @@ def schedule_cycle(plt, queue="default"):
         #
         # Save assignement
         #
-
         plt.save_assigns(waiting_jobs, resource_set)
     else:
-        print "no waiting jobs"
+        logger.info("no waiting jobs")
+
 
 #
 # Main function
 #
-
-if __name__ == '__main__':
+def main():
+    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_cycle(plt)
-    print "That's all folks"
+    logger.info("That's all folks")
+
+
+if __name__ == '__main__':
+    logger = get_logger("oar.kamelot_basic", stdout=True)
+    main()

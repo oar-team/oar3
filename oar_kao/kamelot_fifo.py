@@ -7,9 +7,9 @@ from oar.kao.scheduling_basic import find_resource_hierarchies_job
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
 
+
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'DB_PORT': '5432',
     'HIERARCHY_LABEL': 'resource_id,network_address',
     'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
     'SCHEDULER_JOB_SECURITY_TIME': '60',
@@ -17,30 +17,27 @@ DEFAULT_CONFIG = {
     'FAIRSHARING_ENABLED': 'no',
 }
 
-config.setdefault_config(DEFAULT_CONFIG)
 
-log = get_logger("oar.kamelot_fifo")
-#config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+logger = get_logger("oar.kamelot_fifo")
 
-def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
+
+def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 
     assigned_jobs = {}
 
     now = plt.get_time()
 
-    log.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
+    logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
 
     #
     # Retrieve waiting jobs
     #
-
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
-
     if nb_waiting_jobs > 0:
-        log.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
         for jid in waiting_jids:
-             log.debug("waiting_jid: " + str(jid))
+            logger.debug("waiting_jid: " + str(jid))
 
         #
         # Determine Global Resource Intervals
@@ -90,24 +87,29 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use = False):
                 assigned_jobs[job.id] = job
                 res_itvs = sub_intervals(res_itvs, itvs)
             else:
-                log.debug("Not enough available resources, it's a FIFO scheduler, we stop here.")
+                logger.debug("Not enough available resources, it's a FIFO scheduler, we stop here.")
                 break
 
         #
         # Save assignement
         #
-
-        log.info("save assignement")
+        logger.info("save assignement")
         plt.save_assigns(assigned_jobs, resource_set)
 
     else:
-        log.info("no waiting jobs")
+        logger.info("no waiting jobs")
+
 
 #
 # Main function
 #
-
-if __name__ == '__main__':
+def main():
+    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_fifo_cycle(plt, "default")
-    log.info("That's all folks")
+    logger.info("That's all folks")
+
+
+if __name__ == '__main__':
+    logger = get_logger("oar.kamelot_fifo", stdout=True)
+    main()
