@@ -19,15 +19,17 @@ class Configuration(dict):
     DEFAULT_CONFIG_FILE = "/etc/oar/oar.conf"
 
     DEFAULT_CONFIG = {
+        'DB_PORT': '5432',
+        'DB_TYPE': 'Pg',
         'SQLALCHEMY_CONVERT_UNICODE': True,
         'SQLALCHEMY_ECHO': False,
         'SQLALCHEMY_POOL_SIZE': None,
         'SQLALCHEMY_POOL_TIMEOUT': None,
         'SQLALCHEMY_POOL_RECYCLE': None,
         'SQLALCHEMY_MAX_OVERFLOW': None,
-        'LOG_LEVEL': 1,
+        'LOG_LEVEL': 3,
         'LOG_FILE': None,
-        'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s'
+        'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
     }
 
     def __init__(self, defaults=None):
