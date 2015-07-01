@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
-                     JobStateLog, AssignedResource, FragJob, Resources,
+                     JobStateLog, AssignedResource, FragJob, Resource,
                      get_logger, config)
 
 from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
@@ -1092,11 +1092,11 @@ def resume_job_action(job_id):
     if resources != ():
         db.query(Resource)\
           .filter(~Resource.id.in_(resources))\
-          .update({Resources.suspended_jobs: 'NO'}, synchronize_session=False)
+          .update({Resource.suspended_jobs: 'NO'}, synchronize_session=False)
 
     else:
         db.query(Resource)\
-          .update({Resources.suspended_jobs: 'NO'}, synchronize_session=False)
+          .update({Resource.suspended_jobs: 'NO'}, synchronize_session=False)
 
     db.commit()
 
@@ -1116,7 +1116,7 @@ def get_cpuset_values(cpuset_field, moldable_id):
     if resources_to_always_add_type != "":
         sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
 
-    results = db.query(Resources)\
+    results = db.query(Resource)\
                 .filter(AssignedResource.moldable_id == moldable_id)\
                 .filter(AssignedResource.resource_id == Resource.id)\
 
