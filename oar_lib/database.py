@@ -18,6 +18,8 @@ try:
     from MySQLdb.cursors import SSCursor as MySQLdb_SSCursor
 except:
     MySQLdb_SSCursor = None
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 
 from .utils import cached_property
 from .compat import iteritems
@@ -129,6 +131,10 @@ class Database(object):
         from oar.lib import config
         return config.get_sqlalchemy_uri()
 
+    @property
+    def op(self):
+        ctx = MigrationContext.configure(self.engine)
+        return Operations(ctx)
     @cached_property
     def queries(self):
         if self.query_collection_class is None:
