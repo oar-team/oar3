@@ -6,7 +6,6 @@ import subprocess
 
 from collections import OrderedDict
 
-from . import logger
 from .compat import numeric_types
 
 
@@ -83,8 +82,10 @@ class Command(object):
     http://stackoverflow.com/questions/1191374/subprocess-with-timeout/4825933#4825933
     """
     def __init__(self, cmd):
+        from . import logger
         self.cmd = cmd
         self.process = None
+        self.logger = logger
 
     def run(self, timeout):
         def target():
@@ -97,7 +98,7 @@ class Command(object):
         error = None
         thread.join(timeout)
         if thread.is_alive():
-            logger.error('Timeout: Terminating process "%s"' % self.cmd)
+            self.logger.error('Timeout: Terminating process "%s"' % self.cmd)
             self.process.terminate()
             thread.join()
 
