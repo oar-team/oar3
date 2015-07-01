@@ -201,6 +201,32 @@ class Database(object):
                 con.execute(table.delete())
             trans.commit()
 
+    @cached_property
+    def models(self):
+        """ Return a namespace with all mapping classes"""
+        self.reflect()
+        from oar.lib.models import all_models  # avoid a circular import
+        return dict(all_models())
+
+    @cached_property
+    def tables(self):
+        """ Return a dict with all tables classes"""
+        self.reflect()
+        from oar.lib.models import all_tables  # avoid a circular import
+        return dict(all_tables())
+
+    def __contains__(self, member):
+        return member in self.tables or member in self.models
+
+    def __getitem__(self, name):
+        if name in self:
+            if name in self.tables:
+                return self.tables[name]
+            else:
+                return self.models[name]
+        else:
+            return self.models[name]
+
     def close(self, **kwargs):
         """Proxy for Session.close"""
         if self.connector is not None:
