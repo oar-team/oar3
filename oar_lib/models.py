@@ -324,6 +324,6 @@ def all_models():
 def all_tables():
     for name, obj in inspect.getmembers(sys.modules[__name__]):
         if inspect.isclass(obj) and isinstance(obj, DeclarativeMeta):
-            yield name, obj.__table__
+            yield obj.__table__.name, obj.__table__
         elif isinstance(obj, Table):
-            yield name, obj
+            yield obj.name, obj
