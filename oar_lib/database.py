@@ -13,11 +13,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.orm.exc import UnmappedClassError
 
-
-try:
-    from MySQLdb.cursors import SSCursor as MySQLdb_SSCursor
-except:
-    MySQLdb_SSCursor = None
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
@@ -247,6 +242,8 @@ class EngineConnector(object):
             info.query.setdefault('charset', 'utf8')
             options.setdefault('pool_size', 10)
             options.setdefault('pool_recycle', 3600)
+            # TODO: More test
+            # from MySQLdb.cursors import SSCursor as MySQLdb_SSCursor
             # if MySQLdb_SSCursor is not None:
             #     connect_args = options.get('connect_args', {})
             #     connect_args.update({'cursorclass': MySQLdb_SSCursor})
