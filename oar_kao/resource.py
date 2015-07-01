@@ -16,8 +16,8 @@ class ResourceSet(object):
 
         # prepare resource order/indirection stuff
         order_by_clause = config["SCHEDULER_RESOURCE_ORDER"]
-        self.rid_i2o = array("i", [0] * MAX_NB_RESOURCES)
-        self.rid_o2i = array("i", [0] * MAX_NB_RESOURCES)
+        self.rid_i2o = array(b"i", [0] * MAX_NB_RESOURCES)
+        self.rid_o2i = array(b"i", [0] * MAX_NB_RESOURCES)
 
         # suspend
         suspendable_roids = []
