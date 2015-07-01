@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
-                     JobStateLog, AssignedResource, FragJob, Resource,
+                     JobStateLog, AssignedResource, FragJob,
                      get_logger, config)
 
 from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
