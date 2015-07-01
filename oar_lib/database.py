@@ -130,6 +130,7 @@ class Database(object):
     def op(self):
         ctx = MigrationContext.configure(self.engine)
         return Operations(ctx)
+
     @cached_property
     def queries(self):
         if self.query_collection_class is None:

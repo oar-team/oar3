@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from logging import (getLogger, FileHandler as BaseFileHandler, Formatter,
-                     INFO, ERROR, WARN, DEBUG)
+                     INFO, ERROR, WARN, DEBUG, StreamHandler)
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
@@ -45,4 +45,16 @@ def _configure(handler):
     handler.setFormatter(Formatter(config['LOG_FORMAT']))
 
 
-get_logger = getLogger
+def get_logger(*args, **kwargs):
+    """ Returns logger with attached StreamHandler if `stdout` is True."""
+    from . import config
+    kwargs.setdefault('stdout', False)
+    if kwargs.pop('stdout'):
+        logger = getLogger(*args, **kwargs)
+        handler = StreamHandler()
+        handler.setLevel(LEVELS[config['LOG_LEVEL']])
+        handler.setFormatter(Formatter(config['LOG_FORMAT']))
+        logger.addHandler(handler)
+        return logger
+    else:
+        return getLogger(*args, **kwargs)
