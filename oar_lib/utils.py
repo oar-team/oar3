@@ -6,18 +6,27 @@ import subprocess
 
 from collections import OrderedDict
 
-from .compat import numeric_types
+from .compat import numeric_types, to_unicode, json
 
 
-def try_convert_decimal(value):
-    """Try to convert ``value`` to a decimal."""
-    if value.isdecimal():
-        for _type in numeric_types:
-            try:
-                return _type(value)
-            except:
-                pass
-    return value
+class JSONEncoder(json.JSONEncoder):
+    """JSON Encoder class that handles conversion for a number of types not
+    supported by the default json library, especially the sqlalchemy objects.
+
+    :returns: object that can be converted to json
+    """
+
+    def default(self, obj):
+        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
+            return obj.isoformat()
+        elif isinstance(obj, (decimal.Decimal)):
+            return to_unicode(obj)
+        elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
+            return obj.asdict()
+        elif hasattr(obj, 'to_dict') and callable(getattr(obj, 'to_dict')):
+            return obj.to_dict()
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 
 class SimpleNamespace(dict):
@@ -50,29 +59,9 @@ class CachedProperty(object):
 cached_property = CachedProperty
 
 
-def row2dict(row, ignore_keys=()):
-    """Converts sqlalchemy RowProxy to an OrderedDict."""
-    result = OrderedDict()
-    for key in row.keys():
-        if key not in ignore_keys:
-            result[key] = getattr(row, key)
-    return result
 
 
-def render_query(statement, bind=None, reindent=True):
-    """Generate an SQL expression string with bound parameters rendered inline
-    for the given SQLAlchemy statement.
 
-    The function can also receive a `sqlalchemy.orm.Query` object instead of
-    statement.
-    """
-    from sqlalchemy_utils.functions import render_statement
-    raw_sql = render_statement(statement, bind)
-    try:
-        import sqlparse
-        return sqlparse.format(raw_sql, reindent=reindent)
-    except ImportError:
-        return raw_sql
 
 
 class Command(object):
@@ -106,3 +95,39 @@ class Command(object):
 
     def __call__(self, *args, **kwargs):
         self.run(*args, **kwargs)
+
+
+def try_convert_decimal(value):
+    """Try to convert ``value`` to a decimal."""
+    if value.isdecimal():
+        for _type in numeric_types:
+            try:
+                return _type(value)
+            except:
+                pass
+    return value
+
+
+def row2dict(row, ignore_keys=()):
+    """Converts sqlalchemy RowProxy to an OrderedDict."""
+    result = OrderedDict()
+    for key in row.keys():
+        if key not in ignore_keys:
+            result[key] = getattr(row, key)
+    return result
+
+
+def render_query(statement, bind=None, reindent=True):
+    """Generate an SQL expression string with bound parameters rendered inline
+    for the given SQLAlchemy statement.
+
+    The function can also receive a `sqlalchemy.orm.Query` object instead of
+    statement.
+    """
+    from sqlalchemy_utils.functions import render_statement
+    raw_sql = render_statement(statement, bind)
+    try:
+        import sqlparse
+        return sqlparse.format(raw_sql, reindent=reindent)
+    except ImportError:
+        return raw_sql
