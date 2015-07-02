@@ -62,9 +62,9 @@ class AdmissionRule(db.Model):
     __tablename__ = 'admission_rules'
 
     id = db.Column(db.Integer, primary_key=True)
+    rule = db.Column(db.Text)
     priority = db.Column(db.Integer, server_default='0')
     enabled = db.Column(db.String(3), server_default='YES')
-    rule = db.Column(db.Text)
 
 
 class AssignedResource(db.Model):
