@@ -3,7 +3,10 @@ from __future__ import with_statement, absolute_import, unicode_literals
 
 import threading
 import subprocess
+import decimal
+import datetime
 
+from inspect import isgenerator
 from collections import OrderedDict
 
 from .compat import numeric_types, to_unicode, json
@@ -59,9 +62,35 @@ class CachedProperty(object):
 cached_property = CachedProperty
 
 
+class ResultProxyIter(list):
+    """ SQLAlchemy ResultProxies are not iterable to get a
+    list of dictionaries. This is to wrap them. """
 
+    def __init__(self, result_proxies):
+        self.count = result_proxies.rowcount
+        if not isgenerator(result_proxies):
+            result_proxies = iter((result_proxies, ))
+        self.result_proxies = result_proxies
+        self._iter = None
 
+    def __next__(self):
+        if self._iter is None:
+            rp = next(self.result_proxies)
+            self.keys = list(rp.keys())
+            self._iter = iter(rp.fetchall())
+        try:
+            return row2dict(next(self._iter))
+        except StopIteration:
+            self._iter = None
+            return self.__next__()
 
+    def __len__(self):
+        return self.count
+
+    next = __next__
+
+    def __iter__(self):
+        return self
 
 
 class Command(object):
