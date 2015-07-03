@@ -11,8 +11,9 @@ from flask import Blueprint as FlaskBlueprint, Response, g, abort
 from oar.lib import config
 from oar.lib.database import BaseModel
 from oar.lib.compat import json
+from oar.lib.utils import JSONEncoder
 
-from ..utils import JSONEncoder, ArgParser
+from ..utils import ArgParser
 
 
 class Blueprint(FlaskBlueprint):

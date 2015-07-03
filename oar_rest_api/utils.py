@@ -2,11 +2,10 @@
 from __future__ import division
 
 import sys
-import decimal
-import datetime
+
 
 from flask import request, abort
-from oar.lib.compat import reraise, to_unicode, iteritems, integer_types, json
+from oar.lib.compat import reraise, to_unicode, iteritems, integer_types
 
 
 class WSGIProxyFix(object):
@@ -17,24 +16,6 @@ class WSGIProxyFix(object):
         user = environ.pop('HTTP_X_REMOTE_IDENT', None)
         environ['USER'] = user
         return self.app(environ, start_response)
-
-
-class JSONEncoder(json.JSONEncoder):
-    """JSON Encoder class that handles conversion for a number of types not
-    supported by the default json library, especially the sqlalchemy objects.
-
-    :returns: object that can be converted to json
-    """
-
-    def default(self, obj):
-        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
-            return obj.isoformat()
-        elif isinstance(obj, (decimal.Decimal)):
-            return to_unicode(obj)
-        elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
-            return obj.asdict()
-        else:
-            return json.JSONEncoder.default(self, obj)
 
 
 class Arg(object):
