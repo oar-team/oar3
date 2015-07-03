@@ -40,6 +40,21 @@ RESOURCES_TABLES = [
     {'gantt_jobs_resources_visu': 'resource_id'},
 ]
 
+TIME_COLUMNS = [
+    'window_start',
+    'window_stop',
+    'date_start',
+    'date_stop',
+    'last_job_date',
+    'available_upto',
+    'start_time',
+    'date',
+    'submission_time',
+    'stop_time',
+    'date',
+]
+
+
 schema = db.Table('schema',
                   db.Column('version', db.String(255)),
                   db.Column('name', db.String(255))
