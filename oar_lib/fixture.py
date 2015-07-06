@@ -62,8 +62,10 @@ def get_defined_tables(db):
     return tables
 
 
-def load_fixtures(db, filename, ref_time=None):
+def load_fixtures(db, filename, ref_time=None, clear=False):
     data = JsonSerializer(filename, ref_time=ref_time).load()
+    if clear:
+        db.delete_all()
     for fixture in data:
         if "table" in fixture:
             table = db[fixture['table']]
