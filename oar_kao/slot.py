@@ -13,6 +13,7 @@ DEFAULT_CONFIG = {
 }
 config.setdefault_config(DEFAULT_CONFIG)
 
+
 class Slot(object):
 
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):
@@ -27,7 +28,7 @@ class Slot(object):
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
         if config['QUOTAS'] == 'yes':
             self.quotas = Quotas.new()
-        
+
     def show(self):
         print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",
               self.itvs, "b:", self.b, "e:", self.e,
@@ -143,10 +144,9 @@ class SlotSet:
         # w/ sid = 1 r
         slot.id = n_id
         self.slots[n_id] = slot
-        
+
         if hasattr(self, 'quotas'):
             a_slot.quotas.deepcopy_from(slot.quotas)
-            
             
     # Generate B slot (substract job resources)
     def sub_slot_during_job(self, slot, job):
@@ -168,10 +168,9 @@ class SlotSet:
         if job.ph == PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = job.res_set[:]
 
-        if hasattr(self, 'quotas'):
+        if hasattr(self, 'quotas') and not ("container" in job.types):
             slot.quotas.update(job)
-            
-            
+
     # Generate B slot
     def add_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
@@ -194,9 +193,7 @@ class SlotSet:
             else:
                 slot.ph_itvs[job.ph_name] = job.res_set[:]
 
-        #PLACEHOLDER / ALLOWED need not to considered in this case
-
-
+        # PLACEHOLDER / ALLOWED need not to considered in this case
 
     # Generate C slot - slot after job's end
     def slot_after_job(self, slot, job):
@@ -209,8 +206,8 @@ class SlotSet:
         self.slots[s_id] = c_slot
 
         if hasattr(self, 'quotas'):
-            c_slot.quotas.deepcopy_from(slot.quotas) 
-        
+            c_slot.quotas.deepcopy_from(slot.quotas)
+
     def split_slots(self, sid_left, sid_right, job, sub=True):
         sid = sid_left
         while True:
@@ -222,10 +219,10 @@ class SlotSet:
                     # Generate AB
                     self.slot_before_job(slot, job)
                     if sub:
-                        #substract resources
+                        # substract resources
                         self.sub_slot_during_job(slot, job)
                     else:
-                        #add resources
+                        # add resources
                         self.add_slot_during_job(slot, job)
 
                 else:
@@ -234,10 +231,10 @@ class SlotSet:
                     # generate C before modify slot / B
                     self.slot_after_job(slot, job)
                     if sub:
-                        #substract resources
+                        # substract resources
                         self.sub_slot_during_job(slot, job)
                     else:
-                        #add resources
+                        # add resources
                         self.add_slot_during_job(slot, job)
 
             else:
@@ -245,10 +242,10 @@ class SlotSet:
                 if ((job.start_time + job.walltime) - 1) >= slot.e:
                     # Generate B
                     if sub:
-                        #substract resources
+                        # substract resources
                         self.sub_slot_during_job(slot, job)
                     else:
-                        #add resources
+                        # add resources
                         self.add_slot_during_job(slot, job)
 
                 else:
@@ -256,10 +253,10 @@ class SlotSet:
                     # Generate C before modify slot / B
                     self.slot_after_job(slot, job)
                     if sub:
-                        #substract resources
+                        # substract resources
                         self.sub_slot_during_job(slot, job)
                     else:
-                        #add resources
+                        # add resources
                         self.add_slot_during_job(slot, job)
 
             if (sid == sid_right):

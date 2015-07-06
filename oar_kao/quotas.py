@@ -3,7 +3,6 @@ from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
 from oar.kao.interval import itvs_size, intersec
-from oar.kao.job import nb_default_resources
 from oar.kao.resource import default_resource_itvs
 
 quotas_job_types = ['*']
@@ -25,7 +24,7 @@ class Quotas(object):
     - job project name ("--project" oarsub option)
     - job types ("-t" oarsub options)
     - job user
- 
+
     Syntax is like:
 
     quotas[queue, project, job_type, user] = [int, int, float];
@@ -113,59 +112,58 @@ class Quotas(object):
 
     """
 
-    
     def __init__(self):
-        self.quotas = defaultdict(lambda: [0,0,0])
-        
-    def deepcopy_from(self, quotas):
-        self.quotas = deepcopy(quotas)
+        self.counters = defaultdict(lambda: [0, 0, 0])
+
+        def deepcopy_from(self, quotas):
+            self.counters = deepcopy(quotas.counters)
 
     def update(self, job):
 
         queue = job.queue
         project = job.project
         user = job.user
-        
+
         if not hasattr(self, 'nb_res'):
             job.nb_res = itvs_size(intersec(job.res_set, default_resource_itvs))
-                
+
+        nb_resources = job.nb_res
+
         for t in quotas_job_types:
             if (t == '*') or (t in job.types):
                 # Update the number of used resources
-                self.quotas['*','*',t,'*'][0] += nb_resources
-                self.quotas['*','*',t,user][0] += nb_resources
-                self.quotas['*',project,t,'*'][0] += nb_resources
-                self.quotas[queue,'*',t,'*'][0] += nb_resources
-                self.quotas[queue,project,t,user][0] += nb_resources
-                self.quotas[queue,project,t,'*'][0] += nb_resources
-                self.quotas[queue,'*',t,user][0] += nb_resources
-                self.quotas['*',project,t,user][0] += nb_resources
+                self.counters['*', '*', t, '*'][0] += nb_resources
+                self.counters['*', '*', t, user][0] += nb_resources
+                self.counters['*', project, t, '*'][0] += nb_resources
+                self.counters[queue, '*', t, '*'][0] += nb_resources
+                self.counters[queue, project, t, user][0] += nb_resources
+                self.counters[queue, project, t, '*'][0] += nb_resources
+                self.counters[queue, '*', t, user][0] += nb_resources
+                self.counters['*', project, t, user][0] += nb_resources
                 # Update the number of running jobs
-                self.quotas['*','*',t,'*'][1] += 1
-                self.quotas['*','*',t,user][1] += 1
-                self.quotas['*',project,t,'*'][1] += 1
-                self.quotas[queue,'*',t,'*'][1] += 1
-                self.quotas[queue,project,t,user][1] += 1
-                self.quotas[queue,project,t,'*'][1] += 1
-                self.quotas[queue,'*',t,user][1] += 1
-                self.quotas['*',project,t,user][1] += 1
+                self.counters['*', '*', t, '*'][1] += 1
+                self.counters['*', '*', t, user][1] += 1
+                self.counters['*', project, t, '*'][1] += 1
+                self.counters[queue, '*', t, '*'][1] += 1
+                self.counters[queue, project, t, user][1] += 1
+                self.counters[queue, project, t, '*'][1] += 1
+                self.counters[queue, '*', t, user][1] += 1
+                self.counters['*', project, t, user][1] += 1
 
-    
-    def combine(self, quotas, duration):
-        for key, value in quotas.iteritems():
-            self.quotas[key][0] = max(self.quotas[key][0], value[0]) 
-            self.quotas[key][1] = max(self.quotas[key][1], value[1]) 
-            self.quotas[key][2] += value[1] * duration
-
+    def combine(self, counters, duration):
+        for key, value in counters.iteritems():
+            self.counters[key][0] = max(self.counters[key][0], value[0])
+            self.counters[key][1] = max(self.counters[key][1], value[1])
+            self.counters[key][2] += value[1] * duration
 
     def check(self, job, job_nb_resources, duration):
-        for rl_fields, rl_quotas  in quotas_rules:
+        for rl_fields, rl_quotas in quotas_rules:
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, quotas in self.quotas:
+            for fields, counters in self.counters:
                 queue, project, job_type, user = fields
-                nb_resources, nb_jobs, resources_time = quotas
-                # match queue 
+                nb_resources, nb_jobs, resources_time = counters
+                # match queue
                 if ((rl_queue == '*') and (queue == '*')) or\
                    ((rl_queue == queue) and (job.queue == job.queue)) or\
                    (rl_queue == '/'):
@@ -198,23 +196,25 @@ class Quotas(object):
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
         return (True, 'quotas ok', rl_fields, 0)
-                                    
-def check_slots_quotas(slot_set, slot_left, slot_right, job, job_nb_resources, duration):
-    #loop over slot_set
+
+
+def check_slots_quotas(slot_set, sid_left, sid_right, job, job_nb_resources, duration):
+    # loop over slot_set
     slots_quotas = Quotas.new()
     sid = sid_left
     while True:
         slot = slot_set.slots[sid]
 
         slots_quotas.combine(slot.quotas)
-        
+
         if (sid == sid_right):
             break
         else:
             sid = slot.next
 
     return slots_quotas.check(job, job_nb_resources, duration)
-        
+
+
 def load_quotas_rules():
     """
     {
@@ -225,10 +225,10 @@ def load_quotas_rules():
     }
 
     """
-    quotas_rules_filename = config['QUOTAS_FILENAME'] 
+    quotas_rules_filename = config['QUOTAS_FILENAME']
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
         print json_quotas['quotas']
-        for k,v in json_quotas['quotas'].iteritems():
+        for k, v in json_quotas['quotas'].iteritems():
             quotas_rules[tuple(k.split(','))] = [v[0], v[1], 3600*v[2]]
-    print quotas_rules 
+    print quotas_rules
