@@ -15,7 +15,7 @@ def read(fname):
         return fd.read()
 
 readme = read('README.rst')
-history = read('HISTORY.rst').replace('.. :changelog:', '')
+history = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
     'oar-lib',
