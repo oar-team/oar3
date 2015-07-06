@@ -34,6 +34,7 @@ import oar.kao.utils as utils
 import oar.kao.tools as tools
 
 from oar.kao.platform import Platform
+
 from oar.kao.slot import (SlotSet, intersec_ts_ph_itvs_slots, intersec_itvs_slots,
                           MAX_TIME)
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
@@ -44,12 +45,16 @@ from oar.kao.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itv
 from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
+# for quotas
+from oar.kao.resource import default_resource_itvs
+from oar.kao.quotas import check_slots_quotas
+
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
 # TODO : not used, to confirm
 # timeout for validating reservation
-#reservation_validation_timeout = 30
+# reservation_validation_timeout = 30
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -315,6 +320,20 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             itvs = find_resource_hierarchies_job(
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
+            if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+                nb_res = itvs_size(intersec(itvs, default_resource_itvs))
+                res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
+                (quotas_ok, quotas_msg, rule_value) = res
+                if not quotas_ok:
+                    itvs = []
+                    rule, value = rule_value
+                    log.info("Quotas limitaion reached, job:" + str(job.id) +
+                             ", " + quotas_msg + ", rule: " + rule +
+                             ", value: " + str(value))
+                    set_job_state(job.id, 'toError')
+                    set_job_message(job.id,
+                                    "This advance reservation cannot run due to quotas")
+
             if itvs == []:
                 # not enough resource available
                 log.warn("[" + str(job.id) +
@@ -328,7 +347,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 job.moldable_id = moldable_id
                 job.res_set = itvs
                 ar_jobs_scheduled[job.id] = job
-                # if 'container' in job.types:
+                # if 'container' in job.types
                 #    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
                 #                job.start_time + job.walltime - job_security_time)
                 # slot.show()
