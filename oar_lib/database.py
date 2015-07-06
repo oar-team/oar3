@@ -17,7 +17,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
 from .utils import cached_property
-from .compat import iteritems
+from .compat import iteritems, itervalues
 
 
 __all__ = ['Database']
@@ -198,7 +198,7 @@ class Database(object):
             bind = self.engine
         with contextlib.closing(bind.connect()) as con:
             trans = con.begin()
-            for table in reversed(self.metadata.sorted_tables):
+            for table in itervalues(self.tables):
                 con.execute(table.delete())
             trans.commit()
 
