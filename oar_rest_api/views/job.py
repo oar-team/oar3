@@ -35,13 +35,11 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
     g.data['offset'] = offset
     g.data['items'] = []
     if detailed:
-        jobs_ids = [j['id'] for j in page]
-        jobs_resources = db.queries.get_assigned_jobs_resources(jobs_ids)
-    else:
-        jobs_resources = []
+        jobs_resources = db.queries.get_assigned_jobs_resources(page.items)
     for item in page:
         attach_links(item)
-        attach_resources(item, jobs_resources)
+        if detailed:
+            attach_resources(item, jobs_resources)
         g.data['items'].append(item)
 
 
