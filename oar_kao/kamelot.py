@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
     'SCHEDULER_JOB_SECURITY_TIME': '60',
     'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
     'FAIRSHARING_ENABLED': 'no',
-    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30'
+    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30',
     'QUOTAS': 'no'
 }
 
@@ -36,7 +36,7 @@ if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
     if 'QUOTAS_FILENAME' not in config:
         config['QUOTAS_FILENAME'] = './quotas_conf.json'
     load_quotas_rules()
-        
+
 
 def schedule_cycle(plt, now, queue="default"):
 

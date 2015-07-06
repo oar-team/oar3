@@ -8,12 +8,6 @@ from copy import deepcopy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
 
-DEFAULT_CONFIG = {
-    'QUOTAS': 'no'
-}
-config.setdefault_config(DEFAULT_CONFIG)
-
-
 class Slot(object):
 
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):

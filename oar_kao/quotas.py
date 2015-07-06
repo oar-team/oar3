@@ -1,3 +1,5 @@
+# coding: utf-8
+from __future__ import unicode_literals, print_function
 import json
 from collections import defaultdict
 from copy import deepcopy
@@ -228,7 +230,7 @@ def load_quotas_rules():
     quotas_rules_filename = config['QUOTAS_FILENAME']
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
-        print json_quotas['quotas']
+        print(json_quotas['quotas'])
         for k, v in json_quotas['quotas'].iteritems():
             quotas_rules[tuple(k.split(','))] = [v[0], v[1], 3600*v[2]]
-    print quotas_rules
+    print(quotas_rules)

@@ -170,20 +170,22 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         # print("itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
-        if (itvs != []):
+        if itvs != []:
             if config['QUOTAS'] == 'yes':
                 nb_res = itvs_size(intersec(itvs, default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule_value) = res
-                if quotas_ok:
-                    break
-                else:
+                if not quotas_ok:
                     rule, value = rule_value
-                    log.info("Quotas limitaion reached, job:" + str(job.id) +
+                    logger.info("Quotas limitaion reached, job:" + str(job.id) +
                              ", " + quotas_msg +  ", rule: " + rule +
                              ", value: " + str(value))
                     # quotas limitation trigger therefore disable cache update for this entry
                     no_cache = True
+                else:
+                    break
+            else:
+                break
 
         sid_left = slots[sid_left].next
 
@@ -254,7 +256,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
             jid_dep, state, exit_code = j_dep
             if state == "Error":
                 logger.info("job(" + str(jid_dep) + ") in dependencies for job("
-                         + str(jid) + ") is in error state")
+                            + str(jid) + ") is in error state")
                 # TODO  set job to ERROR"
                 to_skip = True
                 break
@@ -285,8 +287,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
             if ss_name not in slots_sets:
                 logger.error("job(" + str(jid) +
-                          ") can't be scheduled, slots set '" +
-                          ss_name + "' is missing. Skip it for this round.")
+                             ") can't be scheduled, slots set '" +
+                             ss_name + "' is missing. Skip it for this round.")
                 next
 
             slots_set = slots_sets[ss_name]
@@ -302,9 +304,9 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
                 if ss_name in slots_sets:
                     j = JobPseudo(id=0, start_time=job.start_time,
-                              walltime=job.walltime - job_security_time,
-                              res_set=job.res_set,
-                              ts=job.ts, ph=job.ts)
+                                  walltime=job.walltime - job_security_time,
+                                  res_set=job.res_set,
+                                  ts=job.ts, ph=job.ts)
                     slots_sets[ss_name].split_slots_jobs([j], False)
 
                 else:

@@ -11,6 +11,7 @@ MAX_NB_RESOURCES = 100000
 
 default_resource_itvs = []
 
+
 class ResourceSet(object):
 
     def __init__(self):
@@ -47,7 +48,7 @@ class ResourceSet(object):
         roids = []
 
         default_rids = []
-        
+
         # retreive resource in order from DB
         self.resources_db = db.query(Resource).order_by(text(order_by_clause)).all()
 
@@ -58,7 +59,7 @@ class ResourceSet(object):
                 roids.append(roid)
                 if r.type == 'default':
                     default_rids.append(rid)
-    
+
                 self.rid_i2o[rid] = roid
                 self.rid_o2i[roid] = rid
 
@@ -101,7 +102,7 @@ class ResourceSet(object):
         #
         self.suspendable_roid_itvs = ordered_ids2itvs(suspendable_roids)
 
-        self.default_resource_itvs = unordered_ids2itvs(map(self.rid_i2o, default_rids))
+        default_roids = [self.rid_i2o[i] for i in default_rids]
+        self.default_resource_itvs = unordered_ids2itvs(default_roids)
+        # update global variable
         default_resource_itvs = self.default_resource_itvs
-
-                                                        
