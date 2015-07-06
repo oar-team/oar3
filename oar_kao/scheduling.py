@@ -174,12 +174,11 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             if config['QUOTAS'] == 'yes':
                 nb_res = itvs_size(intersec(itvs, default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
-                (quotas_ok, quotas_msg, rule_value) = res
+                (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
-                    rule, value = rule_value
                     logger.info("Quotas limitaion reached, job:" + str(job.id) +
-                             ", " + quotas_msg +  ", rule: " + rule +
-                             ", value: " + str(value))
+                                ", " + quotas_msg + ", rule: " + rule +
+                                ", value: " + str(value))
                     # quotas limitation trigger therefore disable cache update for this entry
                     no_cache = True
                 else:

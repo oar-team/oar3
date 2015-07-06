@@ -21,7 +21,7 @@ class Slot(object):
         self.ts_itvs = ts_itvs
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
         if config['QUOTAS'] == 'yes':
-            self.quotas = Quotas.new()
+            self.quotas = Quotas()
 
     def show(self):
         print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",

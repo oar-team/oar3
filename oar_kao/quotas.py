@@ -152,17 +152,17 @@ class Quotas(object):
                 self.counters[queue, '*', t, user][1] += 1
                 self.counters['*', project, t, user][1] += 1
 
-    def combine(self, counters, duration):
-        for key, value in counters.iteritems():
+    def combine(self, quotas, duration):
+        for key, value in quotas.counters.iteritems():
             self.counters[key][0] = max(self.counters[key][0], value[0])
             self.counters[key][1] = max(self.counters[key][1], value[1])
             self.counters[key][2] += value[1] * duration
 
     def check(self, job, job_nb_resources, duration):
-        for rl_fields, rl_quotas in quotas_rules:
+        for rl_fields, rl_quotas in quotas_rules.iteritems():
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, counters in self.counters:
+            for fields, counters in self.counters.iteritems():
                 queue, project, job_type, user = fields
                 nb_resources, nb_jobs, resources_time = counters
                 # match queue
@@ -197,17 +197,17 @@ class Quotas(object):
                                        (resources_time + job_nb_resources * duration):
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
-        return (True, 'quotas ok', rl_fields, 0)
+        return (True, 'quotas ok', '', 0)
 
 
-def check_slots_quotas(slot_set, sid_left, sid_right, job, job_nb_resources, duration):
+def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
     # loop over slot_set
-    slots_quotas = Quotas.new()
+    slots_quotas = Quotas()
     sid = sid_left
     while True:
-        slot = slot_set.slots[sid]
+        slot = slots[sid]
 
-        slots_quotas.combine(slot.quotas)
+        slots_quotas.combine(slot.quotas, slot.e - slot.b)
 
         if (sid == sid_right):
             break
