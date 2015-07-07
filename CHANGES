@@ -1,10 +1,12 @@
 OAR CLI changelog
 =================
 
-Version 0.3.4.dev0
-------------------
+Version 0.3.4
+-------------
 
-**unreleased**
+Released on July 07th 2015
+
+- Removed OFFSET sql clause from big query to avoid mysql crashes
 
 Version 0.3.3
 -------------
