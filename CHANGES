@@ -1,10 +1,39 @@
 OAR lib changes
 ===============
 
-Version 0.3.0.dev0
-------------------
+Version 0.3.0
+-------------
 
-**unreleased**
+Released on July 07th 2015
+
+- [database] Fixed ``Database.delete_all`` method to remove all database content
+- [database] Listed all datetime columns in ``models.TIME_COLUMNS``
+- [database] Made table and model import easier with getitem syntax (Eg. db['table_name'])
+- [database] Added an alembic operator as ``Database.op`` attribut
+- [database] Kept columns order during dictionary conversion
+- [database] Put MySQLdb SSCursor tweak on standby
+
+- [models] Added ``ResultProxyIter`` class that make SQLAlchemy ResultProxies iterable by dicts
+- [models] Fixed columns orders for admission_rules table
+- [models] ``models.all_tables`` returns a dictionary with table names as keys now
+- [models] Forwarded log to STDOUT if ``get_logger(..)`` receive ``stdout=True``
+
+- [configuration] New default configuration values for *DB_PORT=5432* and *DB_TYPE=Pg*
+- [configuration] Handled ``OARCONFFILE`` environment variable to load OAR configuration
+
+- [basequery] Added ``Query.render`` that generate an SQL expression string from statement
+- [basequery] Added ``get_gantt_visu_scheduled_jobs_resources`` method that returns all nodes allocated to a (waiting) reservation
+- [basequery] Added ``get_assigned_jobs_resources`` and groups results by job_id
+- [basequery] Optimized get_user_jobs query by using JOIN instead of IN operator
+- [basequery] Loaded only some columns with Load ORM object
+
+
+- [utils] Added ``utils.Command`` class to run subprocess commands with a timeout option
+- [utils] Moved ``JSONEncoder`` class from oar-rest-api to oar-lib
+- [utils] Removed unsed ``IterStream`` class
+- [utils] Added ``utils.row2dict`` function helpers to convert a RowProxy to a dict
+
+- [compat] Used simplejson if available
 
 Version 0.2.0
 -------------
