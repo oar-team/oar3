@@ -15,7 +15,6 @@ from sqlalchemy.sql.expression import select
 from sqlalchemy_utils.functions import (database_exists, create_database,
                                         render_statement)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import IntegrityError
 
 from oar.lib import models
 from oar.lib.compat import to_unicode, iterkeys, reraise
@@ -260,24 +259,7 @@ def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
                 if table.primary_key:
                     pk = get_first_primary_key(table)
                     if isinstance(pk.type, Integer):
-                        max_pk_query = select([func.max(pk)])
-                        errors_integrity = {}
-                        while True:
-                            criterion_c = criterion[:]
-                            max_pk = to_conn.execute(max_pk_query).scalar()
-                            if max_pk is not None:
-                                criterion_c.append(pk > max_pk)
-                            try:
-                                copy_table(ctx, table, from_conn, to_conn,
-                                           criterion_c)
-                            except IntegrityError:
-                                exc_type, exc_value, tb = sys.exc_info()
-                                if max_pk in errors_integrity:
-                                    reraise(exc_type, exc_value, tb.tb_next)
-                                else:
-                                    errors_integrity[max_pk] = True
-                                    continue
-                            break
+                        copy_table(ctx, table, from_conn, to_conn, pk)
                     else:
                         merge_table(ctx, table, from_db, to_db)
                 else:
@@ -290,28 +272,30 @@ def sync_tables(ctx, tables, from_db, to_db, ignored_tables=(), delete=False):
                 do_sync(table, from_conn, to_conn)
 
 
-def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
+def copy_table(ctx, table, from_conn, to_conn, pk=None):
     use_pg_copy = False
     if hasattr(ctx, 'pg_copy') and ctx.pg_copy:
         if hasattr(to_conn.dialect, 'psycopg2_version'):
             use_pg_copy = True
+
     insert_query = table.insert()
-    select_table = select([table])
-    select_count = select([func.count()]).select_from(table)
-    if criterion:
-        select_query = select_table.where(reduce(and_, criterion))
-        count_query = select_count.where(reduce(and_, criterion))
+    select_query = select([table])
+    count_query = select([func.count()]).select_from(table)
+
+    if pk is not None:
+        min_pk = to_conn.execute(select([func.max(pk)])).scalar()
+        if min_pk is not None:
+            count_query = count_query.where(pk > min_pk)
+        select_query = select_query.order_by(pk)
     else:
-        select_query = select_table
-        count_query = select_count
+        select_query = select_query.order_by(
+            *(order_by_func(pk) for pk in get_primary_keys(table))
+        )
 
     total_lenght = from_conn.execute(count_query).scalar()
     if total_lenght == 0:
         return
 
-    select_query = select_query.order_by(
-        *(order_by_func(pk) for pk in get_primary_keys(table))
-    )
     select_query = select_query.execution_options(stream_results=True)
 
     def log(progress):
@@ -322,12 +306,27 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             ctx.log("")
 
     def fetch_stream():
+
+        def gen_pagination_query(chunk):
+            page = 0
+            q = select_query.limit(chunk)
+            while True:
+                min_pk = None
+                if pk is not None:
+                    min_pk = to_conn.execute(select([func.max(pk)])).scalar()
+                    if min_pk is not None:
+                        yield q.where(pk > min_pk)
+                    else:
+                        yield q.offset(page * chunk)
+                        page = page + 1
+                else:
+                    yield q.offset(page * chunk)
+                    page = page + 1
+
         q = select_query.limit(ctx.chunk)
-        page = 0
         progress = 0
-        while True:
-            offset = page * ctx.chunk
-            rows = (i for i in from_conn.execute(q.offset(offset)))
+        for q in gen_pagination_query(ctx.chunk):
+            rows = (i for i in from_conn.execute(q))
             first = next(rows, None)
             if first is None:
                 break
@@ -335,7 +334,6 @@ def copy_table(ctx, table, from_conn, to_conn, criterion=[]):
             progress = total_lenght if progress > total_lenght else progress
             log(progress)
             yield chain((first,), rows)
-            page = page + 1
 
     if not use_pg_copy:
         for rows in fetch_stream():
