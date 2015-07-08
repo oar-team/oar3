@@ -286,11 +286,10 @@ def copy_table(ctx, table, from_conn, to_conn, pk=None):
         min_pk = to_conn.execute(select([func.max(pk)])).scalar()
         if min_pk is not None:
             count_query = count_query.where(pk > min_pk)
-        select_query = select_query.order_by(pk)
-    else:
-        select_query = select_query.order_by(
-            *(order_by_func(pk) for pk in get_primary_keys(table))
-        )
+
+    select_query = select_query.order_by(
+        *(order_by_func(pk) for pk in get_primary_keys(table))
+    )
 
     total_lenght = from_conn.execute(count_query).scalar()
     if total_lenght == 0:
@@ -302,38 +301,42 @@ def copy_table(ctx, table, from_conn, to_conn, pk=None):
         percentage = blue("%s/%s" % (progress, total_lenght))
         message = yellow('\r   copy') + ' ~> table %s (%s)'
         ctx.log(message % (table.name, percentage), nl=False)
-        if total_lenght == progress:
-            ctx.log("")
 
     def fetch_stream():
 
-        def gen_pagination_query(chunk):
-            page = 0
-            q = select_query.limit(chunk)
-            while True:
-                min_pk = None
-                if pk is not None:
-                    min_pk = to_conn.execute(select([func.max(pk)])).scalar()
-                    if min_pk is not None:
-                        yield q.where(pk > min_pk)
-                    else:
-                        yield q.offset(page * chunk)
-                        page = page + 1
-                else:
-                    yield q.offset(page * chunk)
-                    page = page + 1
+        def gen_pagination_with_pk(chunk):
+            max_pk_query = select([func.max(pk)])
+            min_pk_query = select([func.min(pk)])
 
-        q = select_query.limit(ctx.chunk)
+            max_pk = from_conn.execute(max_pk_query).scalar() or 0
+            min_pk = from_conn.execute(min_pk_query).scalar() or 0
+            min_pk = to_conn.execute(max_pk_query).scalar() or min_pk
+
+            left_seq = range(min_pk, max_pk, chunk)
+            right_seq = range(min_pk + chunk - 1, max_pk + chunk, chunk)
+            for min_id, max_id in zip(left_seq, right_seq):
+                yield select_query.where(pk.between(min_id, max_id))
+
+        if pk is not None:
+            queries = gen_pagination_with_pk(ctx.chunk)
+        else:
+            queries = [select_query]
+
         progress = 0
-        for q in gen_pagination_query(ctx.chunk):
-            rows = (i for i in from_conn.execute(q))
-            first = next(rows, None)
-            if first is None:
-                break
-            progress = ctx.chunk + progress
-            progress = total_lenght if progress > total_lenght else progress
-            log(progress)
-            yield chain((first,), rows)
+        for query in queries:
+            page = 0
+            while True:
+                q = query.offset(page * ctx.chunk).limit(ctx.chunk)
+                rows = from_conn.execute(q)
+                if rows.rowcount == 0:
+                    break
+                progress = rows.rowcount + progress
+                if progress > total_lenght:
+                    progress = total_lenght
+                log(progress)
+                yield (i for i in rows)
+                page = page + 1
+        ctx.log("")
 
     if not use_pg_copy:
         for rows in fetch_stream():
