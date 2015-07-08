@@ -88,6 +88,15 @@ def migrate_db(ctx):
         for table in tables:
             new_tables.append(reflect_table(to_engine, table.name))
 
+        tables_to_empty = (
+            'admission_rules',
+        )
+
+        for table in new_tables:
+            with to_engine.engine.connect() as to_conn:
+                if table.name in tables_to_empty:
+                    delete_from_table(ctx, table, to_conn)
+
         sync_tables(ctx, new_tables, ctx.current_db, ctx.new_db)
 
         fix_sequences(ctx, to_engine, new_tables)
