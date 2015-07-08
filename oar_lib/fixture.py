@@ -83,7 +83,7 @@ def dump_fixtures(db, filename, ref_time=None):
     for table_name, table in iteritems(tables):
         entry = OrderedDict()
         entry['table'] = table_name
-        entry['records'] = ResultProxyIter(db.engine.execute(table.select()))
+        entry['records'] = ResultProxyIter(db.session.execute(table.select()))
         data.append(entry)
     for model_name, model in iteritems(db.models):
         entry = OrderedDict()

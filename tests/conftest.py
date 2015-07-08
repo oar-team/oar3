@@ -1,31 +1,34 @@
-import pytest
+import os
 from tempfile import mkstemp
+
+import pytest
+
+from sqlalchemy import Column, Integer, String
 from oar.lib import config, db
+from oar.lib.fixture import load_fixtures
 
 from . import DEFAULT_CONFIG
 
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_config(request):
+@pytest.fixture(scope="session", autouse=True)
+def setup_config_and_create_database_schema(request):
+    # Create the tables based on the current model
     config.clear()
     config.update(DEFAULT_CONFIG.copy())
     _, config["LOG_FILE"] = mkstemp()
 
+    db.create_all()
+    db.op.add_column('resources', Column('core', Integer()))
+    db.op.add_column('resources', Column('cpu', Integer()))
+    db.op.add_column('resources', Column('host', String()))
+    db.op.add_column('resources', Column('mem', Integer()))
+
 
 @pytest.fixture(scope='module', autouse=True)
-def setup_db(request):
-    # Create the tables based on the current model
-    db.create_all()
-    # Add base data here
-    # ...
-    db.session.flush()
-    db.session.expunge_all()
-    db.session.commit()
-
-    def teardown():
-        db.delete_all()
-
-    request.addfinalizer(teardown)
+def populate_database(request):
+    # populate database
+    here = os.path.abspath(os.path.dirname(__file__))
+    load_fixtures(db, os.path.join(here, "data", "dataset_1.json"), clear=True)
 
 
 @pytest.fixture(autouse=True)

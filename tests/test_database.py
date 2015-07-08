@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy.orm.util import object_state
-
-from oar.lib import Resource
-from oar.lib import db
+from oar.lib.models import Resource
 
 
-def test_db_insert():
-    r1 = Resource(id=100)
-    db.add(r1)
-    assert object_state(r1).pending is True
-    db.flush()
-    assert object_state(r1).persistent is True
-    db.commit()
-
-
-def test_db_query():
-    res = db.query(Resource).order_by(Resource.id.asc()).first()
-    assert res.id == 100
+def test_deferred_reflection():
+    resource = Resource.query.order_by(Resource.id).first()
+    keys = resource.asdict().keys()
+    assert "cpu" in keys
+    assert "core" in keys
+    assert "mem" in keys
+    assert "host" in keys
