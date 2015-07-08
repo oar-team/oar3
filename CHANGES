@@ -1,17 +1,21 @@
 OAR CLI changelog
 =================
 
-Version 0.3.5.dev0
-------------------
+Version 0.3.5
+-------------
 
-**unreleased**
+Released on July 08th 2015
+
+- Emptied admission_rules table before migration
+- Used postgresql binary COPY by default
+- Split big queries with BETWEEN clause to improved performance and avoided mysql crashes
 
 Version 0.3.4
 -------------
 
 Released on July 07th 2015
 
-- Removed OFFSET sql clause from big query to avoid mysql crashes
+- Removed OFFSET sql clause from big queries to avoided mysql crashes
 
 Version 0.3.3
 -------------
