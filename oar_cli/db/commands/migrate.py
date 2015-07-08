@@ -72,7 +72,7 @@ pass_context = make_pass_decorator(MigrationContext)
               help="Defines the chunk size")
 @click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
               help='Use postgresql COPY clause to make batch inserts faster')
-@click.option('--pg-copy-binary', is_flag=True, default=False,
+@click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
               help='Use postgresql COPY with binary-format. '
                    'It is somewhat faster than the text and CSV formats, but '
                    'a binary-format file is less portable')
