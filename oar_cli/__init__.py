@@ -6,5 +6,5 @@
     OAR Command line interface
 
 """
-__version__ = '0.3.4'
+__version__ = '0.3.5.dev0'
 VERSION = __version__
