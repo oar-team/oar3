@@ -310,10 +310,10 @@ def copy_table(ctx, table, from_conn, to_conn, pk=None):
 
             max_pk = from_conn.execute(max_pk_query).scalar() or 0
             min_pk = from_conn.execute(min_pk_query).scalar() or 0
-            min_pk = to_conn.execute(max_pk_query).scalar() or min_pk
+            min_pk = to_conn.execute(max_pk_query).scalar() or (min_pk - 1)
 
-            left_seq = range(min_pk, max_pk, chunk)
-            right_seq = range(min_pk + chunk - 1, max_pk + chunk, chunk)
+            left_seq = range(min_pk + 1, max_pk, chunk)
+            right_seq = range(min_pk + chunk, max_pk + chunk, chunk)
             for min_id, max_id in zip(left_seq, right_seq):
                 yield select_query.where(pk.between(min_id, max_id))
 
