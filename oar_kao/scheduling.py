@@ -7,7 +7,7 @@ from oar.kao.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib import get_logger, config
 # for quotas
-from oar.kao.resource import default_resource_itvs
+import oar.kao.resource as rs
 from oar.kao.quotas import check_slots_quotas
 
 
@@ -172,12 +172,12 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
         if itvs != []:
             if config['QUOTAS'] == 'yes':
-                nb_res = itvs_size(intersec(itvs, default_resource_itvs))
+                nb_res = itvs_size(intersec(itvs, rs.default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     logger.info("Quotas limitaion reached, job:" + str(job.id) +
-                                ", " + quotas_msg + ", rule: " + rule +
+                                ", " + quotas_msg + ", rule: " + str(rule) +
                                 ", value: " + str(value))
                     # quotas limitation trigger therefore disable cache update for this entry
                     no_cache = True

@@ -5,7 +5,8 @@ from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
 from oar.kao.interval import itvs_size, intersec
-from oar.kao.resource import default_resource_itvs
+import oar.kao.resource as rs
+# import pdb
 
 quotas_job_types = ['*']
 quotas_rules = {}
@@ -38,7 +39,7 @@ class Quotas(object):
 
 
        '*' means "all" when used in place of queue, project,
-           type and user, quota will encompass all queues or projects or 
+           type and user, quota will encompass all queues or projects or
            users or type
        '/' means "any" when used in place of queue, project and user
            (cannot be used with type), quota will be "per" queue or project or
@@ -107,7 +108,8 @@ class Quotas(object):
            $Gantt_quotas->{'*'}->{'*'}->{'*'}->{'john'} = [100, -1, -1] ;
 
 
-    Note1: Quotas are applied globally, only the jobs of the type container are not taken in account (but the inner jobs are used to compute the quotas).
+    Note1: Quotas are applied globally, only the jobs of the type container are not taken in 
+account (but the inner jobs are used to compute the quotas).
 
     Note2: Besteffort jobs are not taken in account except in the besteffort queue.
 
@@ -120,16 +122,23 @@ class Quotas(object):
         def deepcopy_from(self, quotas):
             self.counters = deepcopy(quotas.counters)
 
-    def update(self, job):
+    def update(self, job, prev_nb_res=0, prev_duration=0):
 
         queue = job.queue
         project = job.project
         user = job.user
 
-        if not hasattr(self, 'nb_res'):
-            job.nb_res = itvs_size(intersec(job.res_set, default_resource_itvs))
+        if hasattr(job, 'res_set'):
+            if not hasattr(self, 'nb_res'):
+                job.nb_res = itvs_size(intersec(job.res_set, rs.default_resource_itvs))
+                nb_resources = job.nb_res
+        else:
+            nb_resources = prev_nb_res
 
-        nb_resources = job.nb_res
+        if hasattr(job, 'walltime'):
+            duration = job.walltime
+        else:
+            duration = prev_duration
 
         for t in quotas_job_types:
             if (t == '*') or (t in job.types):
@@ -151,6 +160,15 @@ class Quotas(object):
                 self.counters[queue, project, t, '*'][1] += 1
                 self.counters[queue, '*', t, user][1] += 1
                 self.counters['*', project, t, user][1] += 1
+                # Update the resource * second
+                self.counters['*', '*', t, '*'][2] += nb_resources * duration
+                self.counters['*', '*', t, user][2] += nb_resources * duration
+                self.counters['*', project, t, '*'][2] += nb_resources * duration
+                self.counters[queue, '*', t, '*'][2] += nb_resources * duration
+                self.counters[queue, project, t, user][2] += nb_resources * duration
+                self.counters[queue, project, t, '*'][2] += nb_resources * duration
+                self.counters[queue, '*', t, user][2] += nb_resources * duration
+                self.counters['*', project, t, user][2] += nb_resources * duration
 
     def combine(self, quotas, duration):
         for key, value in quotas.counters.iteritems():
@@ -159,7 +177,10 @@ class Quotas(object):
             self.counters[key][2] += value[1] * duration
 
     def check(self, job, job_nb_resources, duration):
+        global quotas_rules
+
         for rl_fields, rl_quotas in quotas_rules.iteritems():
+            # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
             for fields, counters in self.counters.iteritems():
@@ -182,19 +203,15 @@ class Quotas(object):
                                (rl_user == '/'):
                                 # test quotas values plus job's ones
                                 # 1) test nb_resources
-                                if rl_nb_resources > -1:
-                                    if rl_nb_resources < (nb_resources + job_nb_resources):
+                                if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
                                         return (False, 'nb resources quotas failed',
                                                 rl_fields, rl_nb_resources)
                                 # 2) test nb_jobs
-                                if rl_nb_jobs > -1:
-                                    if rl_nb_jobs < (nb_jobs + 1):
+                                if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
                                         return (False, 'nb jobs quotas failed',
                                                 rl_fields, rl_nb_jobs)
                                 # 3) test resources_time (work)
-                                if resources_time > -1:
-                                    if rl_resources_time < \
-                                       (resources_time + job_nb_resources * duration):
+                                if (rl_resources_time > -1) and (rl_resources_time < resources_time):
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
         return (True, 'quotas ok', '', 0)
@@ -203,6 +220,8 @@ class Quotas(object):
 def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
     # loop over slot_set
     slots_quotas = Quotas()
+    slots_quotas.update(job, job_nb_resources)
+
     sid = sid_left
     while True:
         slot = slots[sid]
@@ -218,6 +237,7 @@ def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, durati
 
 
 def load_quotas_rules():
+    global quotas_rules
     """
     {
         "quotas": {

@@ -3,7 +3,7 @@ from __future__ import unicode_literals, print_function
 from oar.lib import config
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
-from oar.kao.quotas import Quotas
+import oar.kao.quotas as qts
 from copy import deepcopy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
@@ -21,7 +21,7 @@ class Slot(object):
         self.ts_itvs = ts_itvs
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
         if config['QUOTAS'] == 'yes':
-            self.quotas = Quotas()
+            self.quotas = qts.Quotas()
 
     def show(self):
         print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",

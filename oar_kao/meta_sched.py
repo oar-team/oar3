@@ -46,7 +46,7 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
 # for quotas
-from oar.kao.resource import default_resource_itvs
+import oar.kao.resource as rs
 from oar.kao.quotas import check_slots_quotas
 
 # Constant duration time of a besteffort job *)
@@ -321,7 +321,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
             if config['QUOTAS'] == 'yes':
-                nb_res = itvs_size(intersec(itvs, default_resource_itvs))
+                nb_res = itvs_size(intersec(itvs, rs.default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule_value) = res
                 if not quotas_ok:
