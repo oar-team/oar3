@@ -28,27 +28,27 @@ class APIQuery(BaseQuery):
             limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
         if error_out and offset < 0:
             abort(404)
-        query = self.limit(limit).offset(offset)
-        return PaginationQuery(query, offset, limit, error_out)
+        return PaginationQuery(self, offset, limit, error_out)
 
 
 class PaginationQuery(object):
     """Internal helper class returned by :meth:`APIBaseQuery.paginate`."""
 
     def __init__(self, query, offset, limit, error_out):
-        self.query = query
+        self.query = query.limit(limit).offset(offset)
         self.items = self.query.all()
-        if not self.items and offset != 0 and error_out:
-            abort(404)
+        self.offset = offset
+        self.limit = limit
+
         # No need to count if we're on the first page and there are fewer
         # items than we expected.
         if offset == 0 and len(self.items) < limit:
-            total = len(self.items)
+            self.total = len(self.items)
         else:
-            total = self.order_by(None).count()
-        self.offset = offset
-        self.limit = limit or 0
-        self.total = total
+            self.total = query.order_by(None).count()
+
+        if not self.items and offset != 0 and error_out:
+            abort(404)
 
     def render(self):
         self.query.render()
