@@ -1,5 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
+import os
+from tempfile import mkstemp
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.interval import equal_itvs
@@ -106,3 +108,43 @@ def test_quotas_one_job_rule_nb_res_2():
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert j1.res_set == [(1, 16)]
+
+
+def test_quotas_two_job_rules_nb_res_quotas_file():
+
+    config['QUOTAS'] = 'yes'
+    quotas_fd, quotas_file_name = mkstemp()
+    config['QUOTAS_FILE'] = quotas_file_name
+
+    # quotas_file = open(quotas_file_name, 'w')
+    os.write(quotas_fd, '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+    os.close(quotas_fd)
+    qts.load_quotas_rules()
+
+    res = [(1, 32)]
+    rs.default_resource_itvs = res
+
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   queue='default', user='toto', project='',
+                   mld_res_rqts=[
+        (1, 60,
+         [([("node", 2)], res)]
+         )
+    ], ts=False, ph=0)
+
+    j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
+                   queue='default', user='tutu', project='',
+                   mld_res_rqts=[
+        (1, 60,
+         [([("node", 2)], res)]
+         )
+    ], ts=False, ph=0)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+
+    assert j1.res_set == []
+    assert j2.res_set == [(1, 16)]

@@ -247,10 +247,8 @@ def load_quotas_rules():
     }
 
     """
-    quotas_rules_filename = config['QUOTAS_FILENAME']
+    quotas_rules_filename = config['QUOTAS_FILE']
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
-        print(json_quotas['quotas'])
         for k, v in json_quotas['quotas'].iteritems():
             quotas_rules[tuple(k.split(','))] = [v[0], v[1], 3600*v[2]]
-    print(quotas_rules)
