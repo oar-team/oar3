@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
+import pytest
 import os
 from tempfile import mkstemp
 from oar.kao.job import JobPseudo
@@ -32,6 +33,16 @@ def compare_slots_val_ref(slots, v):
             break
         i += 1
     return True
+
+
+@pytest.fixture(scope='module', autouse=True)
+def oar_conf(request):
+    config['QUOTAS'] = 'yes'
+
+    def remove_quotas():
+        config['QUOTAS'] = 'no'
+
+    request.addfinalizer(remove_quotas)
 
 
 def test_quotas_one_job_no_rules():

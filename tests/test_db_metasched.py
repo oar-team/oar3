@@ -1,19 +1,18 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pytest
+import os
 import os.path
 import re
 
-from oar.lib import (db, Resource, Job, Queue, GanttJobsPrediction)
+from oar.lib import (config, db, Resource, Job, Queue, GanttJobsPrediction)
 from oar.kao.job import insert_job
-from oar.kao.platform import Platform
 from oar.kao.meta_sched import meta_schedule
 
 import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 
-from oar.lib import config
-from . import DEFAULT_CONFIG
+from __init__ import DEFAULT_CONFIG
 
 # def update_conf(fs=False):
 #    if fs:
@@ -22,15 +21,16 @@ from . import DEFAULT_CONFIG
 
 
 @pytest.fixture(scope='module', autouse=True)
-def generate_oar_conf():
+def generate_oar_conf(request):
 
-    print("\ngenerate_oar_conf")
+    print("generate_oar_conf")
 
+    #print(config['DB_BASE_FILE'])
+
+    # old_config_db_base_file = config['DB_BASE_FILE']
     DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
-    DEFAULT_CONFIG['LOG_FILE'] = '/tmp/oar.log'
-    # DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
-
     config.update(DEFAULT_CONFIG.copy())
+    config['DB_BASE_FILE'] = DEFAULT_CONFIG['DB_BASE_FILE']
 
     file = open("/etc/oar/oar.conf", 'w')
     for key, value in config.iteritems():
@@ -39,21 +39,19 @@ def generate_oar_conf():
             file.write(key + '="' + str(value) + '"\n')
     file.close()
 
+    def teardown():
+        # config['DB_BASE_FILE'] = old_config_db_base_file
+        os.remove('/etc/oar/oar.conf')
+
+    request.addfinalizer(teardown)
+
 
 @pytest.fixture(scope='module', autouse=True)
 def setup_db_file(request):
-    print("setup_db_file")
-    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+
     db_file = config['DB_BASE_FILE']
-    config.update(DEFAULT_CONFIG.copy())
 
-    # db.delete_all()
-    # print("db.create_all(): ", db_file)
-    # del db._cache
-    # del db._cache["uri"]
-    # db._cache["uri"] = "sqlite:////tmp/oar.sqlite"
-
-    # db.delete_all()
+    print("setup_db_file: ", db_file)
     if os.path.isfile(db_file):
         db.delete_all()
 
@@ -101,16 +99,17 @@ def test_db_metasched_simple_1(monkeypatch):
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
-
-    plt = Platform()
-    r = plt.resource_set()
+    job = db.query(Job).one()
+    print('job state:', job.state)
+    # plt = Platform()
+    # r = plt.resource_set()
 
     # pdb.set_trace()
 
     meta_schedule()
 
     # retrieve jobs
-    #jobs = {job.id: job for job in db.query(Job).all()}
+    # jobs = {job.id: job for job in db.query(Job).all()}
 
     # pdb.set_trace()
 
@@ -127,15 +126,15 @@ def test_db_metasched_ar_1(monkeypatch):
 
     # add one job
     now = get_date()
-    #sql_now = local_to_sql(now)
+    # sql_now = local_to_sql(now)
 
     insert_job(res=[(60, [('resource_id=4', "")])], properties="",
                reservation='toSchedule', start_time=(now + 10),
                info_type='localhost:4242')
     db_flush()
 
-    plt = Platform()
-    r = plt.resource_set()
+    # plt = Platform()
+    # r = plt.resource_set()
 
     meta_schedule()
 

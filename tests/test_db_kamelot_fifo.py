@@ -25,6 +25,7 @@ def test_db_kamelot_fifo_no_hierarchy():
     # add some resources
     for i in range(5):
         db.add(Resource(network_address="localhost"))
+    db_flush()
 
     for i in range(5):
         insert_job(res=[(60, [('resource_id=2', "")])],
@@ -48,7 +49,7 @@ def test_db_kamelot_fifo_w_hierarchy():
     for i in range(5):
         db.add(Resource(network_address="localhost" + str(int(i / 2))))
 
-    print
+    db_flush()
 
     for res in db.query(Resource).all():
         print(res.id, res.network_address)

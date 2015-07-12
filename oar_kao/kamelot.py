@@ -33,14 +33,15 @@ logger = get_logger("oar.kamelot")
 
 
 if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-    if 'QUOTAS_FILENAME' not in config:
-        config['QUOTAS_FILENAME'] = './quotas_conf.json'
+    if 'QUOTAS_FILE' not in config:
+        config['QUOTAS_FILE'] = './quotas_conf.json'
     load_quotas_rules()
 
 
 def schedule_cycle(plt, now, queue="default"):
 
     logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
+    logger.debug("DB_BASE_FILE: " + config["DB_BASE_FILE"])
     #
     # Retrieve waiting jobs
     #

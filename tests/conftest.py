@@ -11,16 +11,22 @@ from __init__ import DEFAULT_CONFIG
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_config(request):
-    config.clear()
-    config.update(DEFAULT_CONFIG.copy())
-    _, config["LOG_FILE"] = mkstemp()
+    if not re.search(r'test_db_metasched', request.node.name):
+        print("setup_config")
+        config.clear()
+        config.update(DEFAULT_CONFIG.copy())
+        _, config["LOG_FILE"] = mkstemp()
+
+    # if re.search(r'test_db_metasched', request.node.name):
+    #    _, config["LOG_FILE"] = mkstemp()
 
 
 @pytest.fixture(scope='module', autouse=True)
 def setup_db(request):
 
-    if re.search(r'test_db', request.node.name):
-        # print "\nsetup_db"
+    if re.search(r'test_db', request.node.name) and\
+       not re.search(r'test_db_metasched', request.node.name):
+        print("setup_db")
         # Create the tables based on the current model
         db.create_all()
         # Add base data here

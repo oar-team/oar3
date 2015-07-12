@@ -1,6 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-
+import pytest
 from oar.lib import (db, Resource, GanttJobsPrediction, Accounting)
 
 from oar.kao.job import insert_job
@@ -13,26 +13,17 @@ import time
 from random import sample
 
 from oar.lib import config
-from __init__ import DEFAULT_CONFIG
-
-#DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
-DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
-#db.create_all()
 
 
-def setup_db1(fs=False):
-    print("setup db for fair sharing")
-    config.clear()
-    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar1.sqlite"
-    if fs:
-        DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
+@pytest.fixture(scope='module', autouse=True)
+def oar_conf(request):
 
-    config.update(DEFAULT_CONFIG.copy())
-    config["LOG_FILE"] = '/tmp/oar.log'
+    config['FAIRSHARING_ENABLED'] = 'yes'
 
-    print("db.create_all()")
+    def remove_fairsharing():
+        config['FAIRSHARING_ENABLED'] = 'no'
 
-    db.create_all()
+    request.addfinalizer(remove_fairsharing)
 
 
 def db_flush():
@@ -90,15 +81,12 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
     set_accounting(accountings_u, "USED")
 
 
-##########
-
-
 def test_db_fairsharing():
 
     print("Test_db_fairsharing")
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
-    #setup_db1(False)
+
     generate_accountings()
 
     # add some resources
