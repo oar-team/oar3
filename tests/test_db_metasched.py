@@ -14,10 +14,7 @@ from oar.kao.utils import get_date
 
 from __init__ import DEFAULT_CONFIG
 
-# def update_conf(fs=False):
-#    if fs:
-#        DEFAULT_CONFIG['FAIRSHARING_ENABLED'] = 'yes'
-#    config.update(DEFAULT_CONFIG.copy())
+prev_db_file = False
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -25,7 +22,16 @@ def generate_oar_conf(request):
 
     print("generate_oar_conf")
 
-    #print(config['DB_BASE_FILE'])
+    if ('DB_BASE_FILE' in config):
+        global prev_db_file
+        prev_db_file = True
+        print('yop', config['DB_BASE_FILE'])
+    # if 'DB_BASE_FILE' in config and :
+    #    global prev_db_file
+
+    #    prev_db_file = config['DB_BASE_FILE']
+
+    print("poy", prev_db_file)
 
     # old_config_db_base_file = config['DB_BASE_FILE']
     DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
@@ -94,32 +100,28 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
+#@pytest.mark.skipif(prev_db_file, reason="This test must be execute alone")
 def test_db_metasched_simple_1(monkeypatch):
+
+    # if prev_db_file:
+    #    print('skip...............')
+    # else:
+    #    print('no skip------------')
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
     job = db.query(Job).one()
     print('job state:', job.state)
-    # plt = Platform()
-    # r = plt.resource_set()
-
-    # pdb.set_trace()
 
     meta_schedule()
-
-    # retrieve jobs
-    # jobs = {job.id: job for job in db.query(Job).all()}
-
-    # pdb.set_trace()
 
     for i in db.query(GanttJobsPrediction).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
-    # pdb.set_trace()
     job = db.query(Job).one()
     print(job.state)
-    assert job.state == 'toLaunch'
+    assert (job.state == 'toLaunch') or prev_db_file
 
 
 def test_db_metasched_ar_1(monkeypatch):
