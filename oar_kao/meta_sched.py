@@ -433,6 +433,7 @@ def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
         #
         # Advance Reservation
         #
+        walltime = job.walltime
         if ((job.reservation == 'Scheduled') and (job.start_time < current_time_sec)):
             max_time = walltime - (current_time_sec - job.start_time)
 
