@@ -6,10 +6,9 @@ from oar.kao.interval import equal_itvs
 from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
                                 schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
-from oar.lib import config, get_logger
+from oar.lib import config
 
 config['LOG_FILE'] = '/dev/stdout'
-log = get_logger("oar.test")
 
 
 def compare_slots_val_ref(slots, v):
