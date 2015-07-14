@@ -15,14 +15,17 @@ logger = get_logger("oar.kamelot")
 
 
 def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
-                                       filter_besteffort=True, now=0):
+                                       now=0,
+                                       filter_besteffort=True,
+                                       only_besteffort=False):
 
     jobs_slotsets = {'default': []}
 
     for job in jobs:
         logger.debug("job.id:" + str(job.id))
         # print("job.id:", str(job.id))
-        if not (filter_besteffort and ("besteffort" in job.types)):
+        if ((not filter_besteffort) and ("besteffort" in job.types)) or\
+           ((not only_besteffort) and (not ("besteffort" in job.types))):
             if "container" in job.types:
                 t_e = job.start_time + job.walltime - job_security_time
                 # t "job.res_set, job.start_time, t_e", job.res_set,

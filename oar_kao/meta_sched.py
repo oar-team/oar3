@@ -40,6 +40,8 @@ from oar.kao.slot import (SlotSet, intersec_ts_ph_itvs_slots, intersec_itvs_slot
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompassing_slots,
                                 find_resource_hierarchies_job)
 
+from oar.kao.kamelot import internal_schedule_cycle
+
 from oar.kao.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itvs_size)
 
 from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
@@ -144,6 +146,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
 
     # retrieve ressources used by besteffort jobs
     besteffort_rid2job = {}
+
     for job in scheduled_jobs:
         if 'besteffort' in job.types:
             for r_id in itvs2ids(job.res_set):
@@ -154,9 +157,10 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     if scheduled_jobs != []:
         filter_besteffort = True
         set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
-                                           job_security_time, filter_besteffort)
+                                           job_security_time, initial_time_sec,
+                                           filter_besteffort)
 
-    return (plt, all_slot_sets, resource_set, besteffort_rid2job)
+    return (plt, all_slot_sets, scheduled_jobs, besteffort_rid2job)
 
 
 # Tell Almighty to run a job
@@ -472,15 +476,82 @@ def update_gantt_visualization():
         db.engine.execute(query)
 
 
-def call_extern_scheduler():
-    pass
+def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
+                            resource_set, job_security_time, queue,
+                            initial_time_sec, initial_time_sql):
+
+    cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy
+
+    child_launched = True
+    # TODO TO CONFIRM
+    sched_exit_code = 0
+    sched_signal_num = 0
+    sched_dumped_core = 0
+    try:
+        child = subprocess.Popen([cmd_scheduler, queue.name, str(
+            initial_time_sec), initial_time_sql], stdout=subprocess.PIPE)
+
+        for line in iter(child.stdout.readline, ''):
+            log.debug("Read on the scheduler output:" + line.rstrip())
+
+        # TODO SCHEDULER_LAUNCHER_OPTIMIZATION
+        # if
+        # ((get_conf_with_default_param('SCHEDULER_LAUNCHER_OPTIMIZATION',
+        # 'yes') eq 'yes') and
+
+        child.wait()
+        rc = child.returncode
+        sched_exit_code, sched_signal_num, sched_dumped_core = rc >> 8, rc & 0x7f, bool(
+            rc & 0x80)
+
+    except OSError as e:
+        child_launched = False
+        log.warn(str(e) + " Cannot run: " + cmd_scheduler + " " + queue.name + " " +
+                 str(initial_time_sec) + " " + initial_time_sql)
+
+    if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core != 0):
+        log.error("Execution of " + queue.scheduler_policy +
+                  " failed, inactivating queue " + queue.name + " (see `oarnotify')")
+        # stop queue
+        db.query(Queue).filter_by(name=queue.name).update({'state': 'notActive'})
+
+    if sched_exit_code != 0:
+        log.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " +
+                  str(sched_exit_code) + ". Inactivating queue " + queue.scheduler_policy +
+                  " (see `oarnotify')")
+        # stop queue
+        db.query(Queue).filter_by(name=queue.name).update(
+            {'state': 'notActive'})
+
+    # retrieve jobs and assignement decision from previous scheduling step
+    scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,
+                                                job_security_time, initial_time_sec)
+
+    if scheduled_jobs != []:
+        if queue.name == 'besteffort':
+            filter_besteffort = False
+        else:
+            filter_besteffort = True
+
+        set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
+                                           job_security_time, initial_time_sec,
+                                           filter_besteffort)
 
 
-def call_intern_scheduler():
-    pass
+def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_time,
+                            queue, now):
+
+    # Place running besteffort jobs if their queue is considered
+    if queue.name == 'besteffort':
+        set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
+                                           job_security_time, now,
+                                           False, True)
+
+    internal_schedule_cycle(plt, now, all_slot_sets, job_security_time,
+                            queue.name)
 
 
-def meta_schedule(mode='extern'):
+def meta_schedule(mode='internal'):
 
     exit_code = 0
 
@@ -490,7 +561,8 @@ def meta_schedule(mode='extern'):
     utils.create_almighty_socket()
 
     log.debug(
-        "Retrieve information for already scheduled reservations from database before flush (keep assign resources)")
+        "Retrieve information for already scheduled reservations from \
+        database before flush (keep assign resources)")
 
     # reservation ??.
 
@@ -500,9 +572,12 @@ def meta_schedule(mode='extern'):
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt, all_slot_sets, resource_set, besteffort_rid2jid = plt_init_with_running_jobs(initial_time_sec,
-                                                                                      job_security_time)
+    plt_init_results = plt_init_with_running_jobs(initial_time_sec,
+                                                  job_security_time)
+    plt, all_slot_sets, scheduled_jobs, besteffort_rid2jid = plt_init_results
+    resource_set = plt.resource_set()
 
+    # Path for user of external schedulers
     if 'OARDIR' in os.environ:
         binpath = os.environ['OARDIR'] + '/'
     else:
@@ -513,62 +588,16 @@ def meta_schedule(mode='extern'):
     for queue in db.query(Queue).order_by(text('priority DESC')).all():
 
         if queue.state == 'Active':
-            log.debug("Queue " + queue.name + ": Launching scheduler " + queue.scheduler_policy + " at time "
-                      + initial_time_sql)
+            log.debug("Queue " + queue.name + ": Launching scheduler " +
+                      queue.scheduler_policy + " at time " + initial_time_sql)
 
-            cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy
-
-            child_launched = True
-            # TODO TO CONFIRM
-            sched_exit_code = 0
-            sched_signal_num = 0
-            sched_dumped_core = 0
-            try:
-                child = subprocess.Popen([cmd_scheduler, queue.name, str(
-                    initial_time_sec), initial_time_sql], stdout=subprocess.PIPE)
-
-                for line in iter(child.stdout.readline, ''):
-                    log.debug("Read on the scheduler output:" + line.rstrip())
-                # TODO SCHEDULER_LAUNCHER_OPTIMIZATION
-                # if
-                # ((get_conf_with_default_param('SCHEDULER_LAUNCHER_OPTIMIZATION',
-                # 'yes') eq 'yes') and
-
-                child.wait()
-                rc = child.returncode
-                sched_exit_code, sched_signal_num, sched_dumped_core = rc >> 8, rc & 0x7f, bool(
-                    rc & 0x80)
-
-            except OSError as e:
-                child_launched = False
-                log.warn(str(e) + " Cannot run: " + cmd_scheduler + " " + queue.name + " " +
-                         str(initial_time_sec) + " " + initial_time_sql)
-
-            if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core != 0):
-                log.error("Execution of " + queue.scheduler_policy +
-                          " failed, inactivating queue " + queue.name + " (see `oarnotify')")
-                # stop queue
-                db.query(Queue).filter_by(name=queue.name).update(
-                    {'state': 'notActive'})
-
-            if sched_exit_code != 0:
-                log.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " + str(sched_exit_code) +
-                          ". Inactivating queue " + queue.scheduler_policy + " (see `oarnotify')")
-                # stop queue
-                db.query(Queue).filter_by(name=queue.name).update(
-                    {'state': 'notActive'})
-
-            # retrieve jobs and assignement decision from previous scheduling step
-            scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,
-                                                        job_security_time, initial_time_sec)
-
-            if scheduled_jobs != []:
-                if queue == 'besteffort':
-                    filter_besteffort = False
-                else:
-                    filter_besteffort = True
-                    set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
-                                                       job_security_time, filter_besteffort)
+            if mode == 'external':
+                call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
+                                        resource_set, job_security_time, queue,
+                                        initial_time_sec, initial_time_sql)
+            else:
+                call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
+                                        job_security_time, queue, initial_time_sec)
 
             handle_waiting_reservation_jobs(queue.name, resource_set,
                                             job_security_time, current_time_sec)
@@ -683,7 +712,7 @@ def meta_schedule(mode='extern'):
                 log.debug("[" + str(job.id) + "] Resuming job")
                 if 'noop' in job.types:
                     resume_job_action(job.id)
-                    log.debug("[" + str(job_id) + "] Resume NOOP job OK")
+                    log.debug("[" + str(job.id) + "] Resume NOOP job OK")
                 else:
                     script = config['JUST_BEFORE_RESUME_EXEC_FILE']
                     timeout = int(config['SUSPEND_RESUME_SCRIPT_TIMEOUT'])

@@ -123,9 +123,12 @@ def test_db_fairsharing():
 
     print(jid_2_u)
 
+    min_jid = min(r.moldable_id for r in req)
+    min_jid -= 1
+
     for i, r in enumerate(req):
-        print("req:", r.moldable_id, jid_2_u[r.moldable_id], i)
-        if jid_2_u[r.moldable_id] != i:
+        print("req:", r.moldable_id, jid_2_u[r.moldable_id - min_jid], i)
+        if jid_2_u[r.moldable_id - min_jid] != i:
             flag = False
             break
 

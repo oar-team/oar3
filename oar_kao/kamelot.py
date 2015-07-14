@@ -38,14 +38,62 @@ if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
     load_quotas_rules()
 
 
+def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue_name):
+
+    resource_set = plt.resource_set()
+
+    #
+    # Retrieve waiting jobs
+    #
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue_name)
+
+    if nb_waiting_jobs > 0:
+        logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        for jid in waiting_jids:
+            logger.debug("waiting_jid: " + str(jid))
+
+        #
+        # Get  additional waiting jobs' data
+        #
+        plt.get_data_jobs(
+            waiting_jobs, waiting_jids, resource_set, job_security_time)
+
+        #
+        # Karma sorting (Fairsharing)
+        #
+
+        if "FAIRSHARING_ENABLED" in config:
+            if config["FAIRSHARING_ENABLED"] == "yes":
+                waiting_jids = karma_jobs_sorting(
+                    queue, now, waiting_jids, waiting_jobs, plt)
+
+        #
+        # Scheduled
+        #
+        schedule_id_jobs_ct(all_slot_sets,
+                            waiting_jobs,
+                            resource_set.hierarchy,
+                            waiting_jids,
+                            job_security_time)
+
+        #
+        # Save assignement
+        #
+        logger.info("save assignement")
+
+        plt.save_assigns(waiting_jobs, resource_set)
+    else:
+        logger.info("no waiting jobs")
+
+
 def schedule_cycle(plt, now, queue="default"):
 
     logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
     logger.debug("DB_BASE_FILE: " + config["DB_BASE_FILE"])
+
     #
     # Retrieve waiting jobs
     #
-
     waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
 
     if nb_waiting_jobs > 0:
@@ -111,8 +159,8 @@ def schedule_cycle(plt, now, queue="default"):
             set_slots_with_prev_scheduled_jobs(all_slot_sets,
                                                scheduled_jobs,
                                                job_security_time,
-                                               filter_besteffort,
-                                               now)
+                                               now,
+                                               filter_besteffort)
 
         #
         # Scheduled

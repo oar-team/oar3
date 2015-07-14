@@ -990,7 +990,6 @@ def get_jobs_in_multiple_states(states, resource_set):
                 if first_job:
                     first_job = False
                 else:
-
                     job.res_set = unordered_ids2itvs(roids)
                     jobs[job.id] = job
                     roids = []
