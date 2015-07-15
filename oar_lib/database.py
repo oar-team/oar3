@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
+import sys
 import re
 import threading
 import contextlib
@@ -19,7 +20,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
 from .utils import cached_property, merge_dicts
-from .compat import iteritems, itervalues
+from .compat import iteritems, itervalues, reraise
 
 
 __all__ = ['Database']
@@ -35,14 +36,17 @@ class BaseModel(object):
 
     @classmethod
     def create(cls, **kwargs):
-        record = cls(**kwargs)
+        record = cls()
+        for key, value in iteritems(kwargs):
+            setattr(record, key, value)
         try:
-            cls.db.session.add(record)
-            cls.db.session.commit()
+            cls._db.session.add(record)
+            cls._db.session.commit()
             return record
-        except Exception:
-            cls.db.session.rollback()
-            raise
+        except:
+            exc_type, exc_value, tb = sys.exc_info()
+            cls._db.session.rollback()
+            reraise(exc_type, exc_value, tb.tb_next)
 
     def asdict(self, ignore_keys=()):
         data = OrderedDict()
