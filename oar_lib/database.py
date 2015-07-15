@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
+import re
 import threading
 import contextlib
 
@@ -8,7 +9,8 @@ from collections import OrderedDict
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import declarative_base, DeferredReflection
+from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
+                                        DeclarativeMeta)
 from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.orm.exc import UnmappedClassError
@@ -118,7 +120,8 @@ class Database(object):
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
-        self.Model = declarative_base(cls=BaseModel, name='Model')
+        self.Model = declarative_base(cls=BaseModel, name='Model',
+                                      metaclass=_BoundDeclarativeMeta)
         self.Model.query = QueryProperty(self)
 
     @cached_property
@@ -336,6 +339,23 @@ def _include_sqlalchemy(obj):
 
     obj.Column = Column
     obj.DeferredReflection = DeferredReflection
+
+
+class _BoundDeclarativeMeta(DeclarativeMeta):
+
+    def __new__(cls, name, bases, d):
+        if '__tablename__' not in d and '__table__' not in d and '__abstract__' not in d:
+            d['__tablename__'] = get_table_name(name)
+        return DeclarativeMeta.__new__(cls, name, bases, d)
+
+
+def get_table_name(name):
+    def _join(match):
+        word = match.group()
+        if len(word) > 1:
+            return ('_%s_%s' % (word[:-1], word[-1])).lower()
+        return '_' + word.lower()
+    return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
 
 
 def get_entity_loaded_propnames(entity):
