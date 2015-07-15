@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import inspect
-from sqlalchemy.orm import configure_mappers
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy import Table
 from . import db
@@ -228,7 +227,7 @@ class JobType(db.Model):
 
 class Job(db.DeferredReflection, db.Model):
     __tablename__ = 'jobs'
-    __extra_table_args__ = (db.Index('state_id', 'state', 'job_id'), )
+    __table_args__ = (db.Index('state_id', 'state', 'job_id'), )
 
     id = db.Column('job_id', db.Integer, primary_key=True)
     array_id = db.Column(db.Integer, index=True, server_default='0')
@@ -325,9 +324,6 @@ class Scheduler(db.Model):
     name = db.Column(db.String(100), primary_key=True)
     script = db.Column(db.String(100))
     description = db.Column(db.String(255))
-
-
-configure_mappers()
 
 
 def all_models():

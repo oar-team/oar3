@@ -18,7 +18,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-from .utils import cached_property
+from .utils import cached_property, merge_dicts
 from .compat import iteritems, itervalues
 
 
@@ -27,7 +27,10 @@ __all__ = ['Database']
 
 class BaseModel(object):
 
-    __table_args__ = {'extend_existing': True, 'sqlite_autoincrement': True}
+    __default_table_args__ = {
+        'extend_existing': True,
+        'sqlite_autoincrement': True
+    }
     query = None
 
     @classmethod
@@ -55,12 +58,6 @@ class BaseModel(object):
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
-
-    @classmethod
-    def __declare_last__(cls):
-        if '__extra_table_args__' in cls.__dict__:
-            cls.__table__._init_items(*cls.__extra_table_args__)
-            del cls.__extra_table_args__
 
 
 class SessionProperty(object):
@@ -346,6 +343,20 @@ class _BoundDeclarativeMeta(DeclarativeMeta):
     def __new__(cls, name, bases, d):
         if '__tablename__' not in d and '__table__' not in d and '__abstract__' not in d:
             d['__tablename__'] = get_table_name(name)
+        default_table_args = d.pop('__default_table_args__',
+                                   BaseModel.__default_table_args__)
+        table_args = d.pop('__table_args__', {})
+        if isinstance(table_args, dict):
+            table_args = merge_dicts(default_table_args, table_args)
+        elif isinstance(table_args, tuple):
+            table_args = list(table_args)
+            if isinstance(table_args[-1], dict):
+                table_args[-1] = merge_dicts(default_table_args,
+                                             table_args[-1])
+            else:
+                table_args.append(default_table_args)
+            table_args = tuple(table_args)
+        d['__table_args__'] = table_args
         return DeclarativeMeta.__new__(cls, name, bases, d)
 
 
