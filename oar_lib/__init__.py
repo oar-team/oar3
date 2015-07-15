@@ -20,7 +20,7 @@ __version__ = '0.4.0.dev0'
 # import mapping to objects in other modules
 all_by_module = {
     'oar_lib.models': [
-        'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
+        'db', 'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
         'EventLog', 'EventLogHostname', 'File', 'FragJob',
         'GanttJobsPrediction', 'GanttJobsPredictionsLog',
         'GanttJobsPredictionsVisu', 'GanttJobsResource',
@@ -37,7 +37,7 @@ all_by_module = {
     'oar_lib.logging': ['create_logger', 'get_logger'],
     'oar_lib.configuration': ['Configuration'],
     'oar_lib.utils': [],
-    'oar_lib.globals': ['config', 'db', 'logger'],
+    'oar_lib.globals': ['config', 'logger'],
 }
 
 # modules that should be imported when accessed as attributes of oar

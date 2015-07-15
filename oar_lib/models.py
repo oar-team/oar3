@@ -3,7 +3,7 @@ import sys
 import inspect
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy import Table
-from . import db
+from .globals import db
 
 
 JOBS_TABLES = [
