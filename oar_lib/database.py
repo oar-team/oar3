@@ -124,6 +124,9 @@ class Database(object):
         self.Model = declarative_base(cls=BaseModel, name='Model',
                                       metaclass=_BoundDeclarativeMeta)
         self.Model.query = QueryProperty(self)
+        self.Model._db = self
+        self.models = {}
+        self.tables = {}
 
     @cached_property
     def uri(self):
@@ -183,8 +186,6 @@ class Database(object):
     def reflect(self, **kwargs):
         """Proxy for Model.prepare"""
         if not self._reflected:
-            # avoid a circular import
-            from oar.lib import models  # noqa
             self.create_all()
             # autoload all tables marked for autoreflect
             self.DeferredReflection.prepare(self.engine)
@@ -205,20 +206,6 @@ class Database(object):
             for table in itervalues(self.tables):
                 con.execute(table.delete())
             trans.commit()
-
-    @cached_property
-    def models(self):
-        """ Return a namespace with all mapping classes"""
-        self.reflect()
-        from oar.lib.models import all_models  # avoid a circular import
-        return dict(all_models())
-
-    @cached_property
-    def tables(self):
-        """ Return a dict with all tables classes"""
-        self.reflect()
-        from oar.lib.models import all_tables  # avoid a circular import
-        return dict(all_tables())
 
     def __contains__(self, member):
         return member in self.tables or member in self.models
@@ -310,36 +297,38 @@ class EngineConnector(object):
             return engine
 
 
-def _include_sqlalchemy(obj):
+def _include_sqlalchemy(db):
     import sqlalchemy
 
     for module in sqlalchemy, sqlalchemy.orm:
         for key in module.__all__:
-            if not hasattr(obj, key):
-                setattr(obj, key, getattr(module, key))
-    obj.event = sqlalchemy.event
-    # Note: obj.Table does not attempt to be a SQLAlchemy Table class.
+            if not hasattr(db, key):
+                setattr(db, key, getattr(module, key))
+    db.event = sqlalchemy.event
+    # Note: db.Table does not attempt to be a SQLAlchemy Table class.
 
-    def _make_table(obj):
+    def _make_table(db):
         def _make_table(*args, **kwargs):
-            if len(args) > 1 and isinstance(args[1], obj.Column):
-                args = (args[0], obj.metadata) + args[1:]
+            if len(args) > 1 and isinstance(args[1], db.Column):
+                args = (args[0], db.metadata) + args[1:]
             kwargs.setdefault('extend_existing', True)
             info = kwargs.pop('info', None) or {}
             info.setdefault('autoreflect', False)
             kwargs['info'] = info
-            return sqlalchemy.Table(*args, **kwargs)
+            table = sqlalchemy.Table(*args, **kwargs)
+            db.tables[table.name] = table
+            return table
         return _make_table
 
-    obj.Table = _make_table(obj)
+    db.Table = _make_table(db)
 
     class Column(sqlalchemy.Column):
         def __init__(self, *args, **kwargs):
             kwargs.setdefault("nullable", False)
             super(Column, self).__init__(*args, **kwargs)
 
-    obj.Column = Column
-    obj.DeferredReflection = DeferredReflection
+    db.Column = Column
+    db.DeferredReflection = DeferredReflection
 
 
 class _BoundDeclarativeMeta(DeclarativeMeta):
@@ -362,6 +351,13 @@ class _BoundDeclarativeMeta(DeclarativeMeta):
             table_args = tuple(table_args)
         d['__table_args__'] = table_args
         return DeclarativeMeta.__new__(cls, name, bases, d)
+
+    def __init__(self, name, bases, d):
+        DeclarativeMeta.__init__(self, name, bases, d)
+        if hasattr(bases[0], '_db'):
+            bases[0]._db.models[name] = self
+            bases[0]._db.tables[self.__table__.name] = self.__table__
+            self._db = bases[0]._db
 
 
 def get_table_name(name):
