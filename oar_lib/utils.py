@@ -160,3 +160,11 @@ def render_query(statement, bind=None, reindent=True):
         return sqlparse.format(raw_sql, reindent=reindent)
     except ImportError:
         return raw_sql
+
+
+def merge_dicts(*dict_args):
+    """Merge given dicts into a new dict."""
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
