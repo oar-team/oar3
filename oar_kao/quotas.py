@@ -6,7 +6,7 @@ from copy import deepcopy
 from oar.lib import config
 from oar.kao.interval import itvs_size, intersec
 import oar.kao.resource as rs
-# import pdb
+import pdb
 
 quotas_job_types = ['*']
 quotas_rules = {}
@@ -119,8 +119,13 @@ account (but the inner jobs are used to compute the quotas).
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
 
-        def deepcopy_from(self, quotas):
-            self.counters = deepcopy(quotas.counters)
+    def deepcopy_from(self, quotas):
+        self.counters = deepcopy(quotas.counters)
+
+    def show_counters(self, msg=''):
+        print('show_counters:', msg)
+        for k, v in self.counters.iteritems():
+            print(k, ' = ', v)
 
     def update(self, job, prev_nb_res=0, prev_duration=0):
 
@@ -170,15 +175,17 @@ account (but the inner jobs are used to compute the quotas).
                 self.counters[queue, '*', t, user][2] += nb_resources * duration
                 self.counters['*', project, t, user][2] += nb_resources * duration
 
-    def combine(self, quotas, duration):
+    def combine(self, quotas):
+        # self.show_counters('combine before')
         for key, value in quotas.counters.iteritems():
             self.counters[key][0] = max(self.counters[key][0], value[0])
             self.counters[key][1] = max(self.counters[key][1], value[1])
-            self.counters[key][2] += value[1] * duration
+            self.counters[key][2] += value[2]
+        # self.show_counters('combine after')
 
-    def check(self, job, job_nb_resources, duration):
+    def check(self, job):
         global quotas_rules
-
+        # self.show_counters('before check, job id: ' + str(job.id))
         for rl_fields, rl_quotas in quotas_rules.iteritems():
             # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
@@ -203,7 +210,8 @@ account (but the inner jobs are used to compute the quotas).
                                (rl_user == '/'):
                                 # test quotas values plus job's ones
                                 # 1) test nb_resources
-                                if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
+                                if (rl_nb_resources > -1) and\
+                                   (rl_nb_resources < nb_resources):
                                         return (False, 'nb resources quotas failed',
                                                 rl_fields, rl_nb_resources)
                                 # 2) test nb_jobs
@@ -211,7 +219,8 @@ account (but the inner jobs are used to compute the quotas).
                                         return (False, 'nb jobs quotas failed',
                                                 rl_fields, rl_nb_jobs)
                                 # 3) test resources_time (work)
-                                if (rl_resources_time > -1) and (rl_resources_time < resources_time):
+                                if (rl_resources_time > -1) and\
+                                   (rl_resources_time < resources_time):
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
         return (True, 'quotas ok', '', 0)
@@ -220,20 +229,19 @@ account (but the inner jobs are used to compute the quotas).
 def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
     # loop over slot_set
     slots_quotas = Quotas()
-    slots_quotas.update(job, job_nb_resources)
-
     sid = sid_left
     while True:
         slot = slots[sid]
-
-        slots_quotas.combine(slot.quotas, slot.e - slot.b)
+        # slot.quotas.show_counters('check_slots_quotas, b e: ' + str(slot.b) + ' ' + str(slot.e))
+        slots_quotas.combine(slot.quotas)
 
         if (sid == sid_right):
             break
         else:
             sid = slot.next
-
-    return slots_quotas.check(job, job_nb_resources, duration)
+    # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
+    slots_quotas.update(job, job_nb_resources, duration)
+    return slots_quotas.check(job)
 
 
 def load_quotas_rules():
@@ -251,4 +259,4 @@ def load_quotas_rules():
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
         for k, v in json_quotas['quotas'].iteritems():
-            quotas_rules[tuple(k.split(','))] = [v[0], v[1], 3600*v[2]]
+            quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600*v[2])]

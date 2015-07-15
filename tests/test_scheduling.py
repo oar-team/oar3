@@ -7,6 +7,9 @@ from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
                                 schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
 from oar.lib import config
+from copy import deepcopy
+
+# import pdb
 
 config['LOG_FILE'] = '/dev/stdout'
 
@@ -88,6 +91,28 @@ def test_schedule_id_jobs_ct_1():
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
+
+
+def test_schedule_error_1():
+    # Be careful you need a deepcopy for resources constraint when declare
+    res = [(1, 32)]
+
+    ss = SlotSet(Slot(1, 0, 0, deepcopy(res), 0, 10000))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j2 = JobPseudo(id=2, start_time=0, walltime=30,
+                   res_set=[(1, 8)], types={}, ts=False, ph=0)
+
+    set_slots_with_prev_scheduled_jobs(all_ss, [j2], 10)
+
+    j4 = JobPseudo(id=4, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60, [([("node", 2)], deepcopy(res))])],
+                   ts=False, ph=0)
+
+    schedule_id_jobs_ct(all_ss, {4: j4}, hy, [4], 5)
+
+    assert j4.res_set == [(9, 24)]
 
 
 def test_schedule_container1():

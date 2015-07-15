@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 
 import os
+from copy import deepcopy
 
 from sqlalchemy import distinct
 from sqlalchemy.orm import aliased
@@ -17,7 +18,7 @@ from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
 
 import oar.kao.utils as utils
 
-from interval import unordered_ids2itvs, itvs2ids, sub_intervals
+from oar.kao.interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
 
 logger = get_logger("oar.kamelot")
@@ -45,19 +46,36 @@ logger = get_logger("oar.kamelot")
 
 '''
 
-global NO_PLACEHOLDER
-global PLACEHOLDER
-global ALLOW
-
 NO_PLACEHOLDER = 0
 PLACEHOLDER = 1
 ALLOW = 2
 
 
 class JobPseudo(object):
+    ''' Define a simple job class without database counter part
+    '''
+    types = {}
+    deps = []
+    key_cache = {}
+    ts = False
+    ph = 0
+
     def __init__(self, **kwargs):
+        self.mld_res_rqts = []
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+
+    def simple_req(self, resources_req, walltime, resources_constraint):
+        ''' Allow declaration of simple resources request.
+        Examples:
+        - j.simple_req(('node', 2), 60, [(1, 32)])
+        - j.simple_req([('node', 2), ('core', 4)], 600, [(1, 64)])
+        '''
+        if type(resources_req) == tuple:
+            res_req = [resources_req]
+        else:
+            res_req = resources_req
+        self.mld_res_rqts = [(1, walltime, [(res_req, deepcopy(resources_constraint))])]
 
 
 def get_waiting_jobs(queue, reservation='None'):

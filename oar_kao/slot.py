@@ -8,6 +8,7 @@ from copy import deepcopy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
 
+
 class Slot(object):
 
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):
@@ -114,8 +115,6 @@ class SlotSet:
             slot.show()
         print('---')
 
-
-    #
     # Split slot accordingly with job resource assignment *)
     # new slot A + B + C (A, B and C can be null)         *)
     #   -------
@@ -139,9 +138,9 @@ class SlotSet:
         slot.id = n_id
         self.slots[n_id] = slot
 
-        if hasattr(self, 'quotas'):
+        if hasattr(a_slot, 'quotas'):
             a_slot.quotas.deepcopy_from(slot.quotas)
-            
+
     # Generate B slot (substract job resources)
     def sub_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
@@ -162,8 +161,9 @@ class SlotSet:
         if job.ph == PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = job.res_set[:]
 
-        if hasattr(self, 'quotas') and not ("container" in job.types):
+        if hasattr(slot, 'quotas') and not ("container" in job.types):
             slot.quotas.update(job)
+            # slot.quotas.show_counters()
 
     # Generate B slot
     def add_slot_during_job(self, slot, job):
@@ -199,7 +199,7 @@ class SlotSet:
         slot.next = s_id
         self.slots[s_id] = c_slot
 
-        if hasattr(self, 'quotas'):
+        if hasattr(c_slot, 'quotas'):
             c_slot.quotas.deepcopy_from(slot.quotas)
 
     def split_slots(self, sid_left, sid_right, job, sub=True):
