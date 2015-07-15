@@ -230,8 +230,11 @@ class Database(object):
 
     def close(self, **kwargs):
         """Proxy for Session.close"""
-        if self.connector is not None:
-            return self.session.close()
+        with self._engine_lock:
+            if self.connector is not None:
+                self.session.close()
+                self.connector.get_engine().dispose()
+                self.connector = None
 
     def __repr__(self):
         engine = None
