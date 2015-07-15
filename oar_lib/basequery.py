@@ -154,4 +154,3 @@ class BaseQueryCollection(object):
                   .filter(job_id_column.in_([job.id for job in jobs]))\
                   .order_by(job_id_column.asc())
         return self.groupby_jobs_resources(jobs, query)
-
