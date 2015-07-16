@@ -128,6 +128,11 @@ class Database(object):
         self.models = {}
         self.tables = {}
 
+        class DeferredReflectionModel(DeferredReflection, self.Model):
+            __abstract__ = True
+
+        self.DeferredReflectionModel = DeferredReflectionModel
+
     @cached_property
     def uri(self):
         from oar.lib import config
@@ -188,7 +193,7 @@ class Database(object):
         if not self._reflected:
             self.create_all()
             # autoload all tables marked for autoreflect
-            self.DeferredReflection.prepare(self.engine)
+            self.DeferredReflectionModel.prepare(self.engine)
             self._reflected = True
 
     def create_all(self, bind=None, **kwargs):
@@ -328,7 +333,6 @@ def _include_sqlalchemy(db):
             super(Column, self).__init__(*args, **kwargs)
 
     db.Column = Column
-    db.DeferredReflection = DeferredReflection
 
 
 class _BoundDeclarativeMeta(DeclarativeMeta):

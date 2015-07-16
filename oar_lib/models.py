@@ -225,7 +225,7 @@ class JobType(db.Model):
     types_index = db.Column(db.String(7), index=True, server_default='CURRENT')
 
 
-class Job(db.DeferredReflection, db.Model):
+class Job(db.DeferredReflectionModel):
     __tablename__ = 'jobs'
     __table_args__ = (db.Index('state_id', 'state', 'job_id'), )
 
@@ -294,7 +294,7 @@ class ResourceLog(db.Model):
     finaud_decision = db.Column(db.String(3), index=True, server_default='NO')
 
 
-class Resource(db.DeferredReflection, db.Model):
+class Resource(db.DeferredReflectionModel):
     __tablename__ = 'resources'
 
     id = db.Column('resource_id', db.Integer, primary_key=True)
