@@ -2,10 +2,15 @@
 import pytest
 import datetime
 
-from sqlalchemy import event
+from sqlalchemy import event, Table
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.util import object_state
+from collections import OrderedDict
 
-from oar.lib.database import Database
+from oar.lib.database import Database, SessionProperty, QueryProperty
 from oar.lib.compat import StringIO, to_unicode
+from . import assert_raises
 
 
 class EngineListener(object):
@@ -36,19 +41,34 @@ class EngineListener(object):
 def db(request, monkeypatch):
     db = Database(uri='sqlite://')
 
+    association_table = db.Table(
+        'association',
+        db.Column('movie_id', db.Integer, db.ForeignKey('movie.id')),
+        db.Column('actor_id', db.Integer, db.ForeignKey('actor.id'))
+    )
+
+    class Movie(db.Model):
+        __table_args__ = (
+            db.UniqueConstraint('title', name='uix_1'),
+            {'sqlite_autoincrement': True},
+        )
+        id = db.Column(db.Integer, primary_key=True)
+        title = db.Column(db.String(20))
+
     class Actor(db.DeferredReflectionModel):
-        __table_args__ = (db.Index('name', 'lastname', 'firstname'), )
+        __table_args__ = (
+            db.Index('name', 'lastname', 'firstname'),
+            db.UniqueConstraint('firstname', 'lastname', name='uix_1')
+        )
 
         id = db.Column(db.Integer, primary_key=True)
         firstname = db.Column(db.String(20))
         lastname = db.Column(db.String(20))
         birthday = db.Column(db.DateTime, nullable=False,
                              default=datetime.datetime.utcnow)
-
-    db.Table('categories',
-             db.Column('name', db.String(255)),
-             db.Column('description', db.String(255))
-             )
+        movies = db.relationship("Movie",
+                                 secondary=association_table,
+                                 backref="actors")
 
     return db
 
@@ -57,21 +77,30 @@ def test_sqlite_schema(db):
     engine_listener = EngineListener(db.engine)
     db.create_all()
 
-    expected_schemas = ("""
-CREATE TABLE categories (
-    name VARCHAR(255) NOT NULL,
-    description VARCHAR(255) NOT NULL
-);""", """
+    expected_schemas = """
+CREATE TABLE movie (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(20) NOT NULL,
+    CONSTRAINT uix_1 UNIQUE (title)
+);
+
 CREATE TABLE actor (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     firstname VARCHAR(20) NOT NULL,
     lastname VARCHAR(20) NOT NULL,
-    birthday DATETIME NOT NULL
-);""", """
-CREATE INDEX name ON actor (lastname, firstname);"""
-                        )
-    for schema in expected_schemas:
-        assert schema in engine_listener.raw_sql
+    birthday DATETIME NOT NULL,
+    CONSTRAINT uix_1 UNIQUE (firstname, lastname)
+);
+CREATE INDEX name ON actor (lastname, firstname);
+
+CREATE TABLE association (
+    movie_id INTEGER NOT NULL,
+    actor_id INTEGER NOT NULL,
+    FOREIGN KEY(movie_id) REFERENCES movie (id),
+    FOREIGN KEY(actor_id) REFERENCES actor (id)
+);"""
+    for schema in expected_schemas.split(';'):
+        assert schema.strip() in engine_listener.raw_sql
 
 
 def test_model_args(db):
@@ -84,11 +113,18 @@ def test_model_args(db):
 
 def test_collected_tables_and_models(db):
     db.create_all()
-    # assert db.tables == {'actor': Actor.__table__, 'categories': category}
-    # assert db.models == {'Actor': Actor}
-    assert "Actor" in db
-    assert "actor" in db
-    assert "categories" in db
+    model_names = ('Actor', 'Movie')
+    table_names = ('actor', 'movie', 'association')
+    for model_name in model_names:
+        assert model_name in db
+        assert isinstance(db[model_name], DeclarativeMeta)
+
+    for table_name in table_names:
+        assert table_name in db
+        assert isinstance(db[table_name], Table)
+
+    with assert_raises(KeyError, "totototo"):
+        db['totototo']
 
 
 def test_deferred_reflection(db):
@@ -98,7 +134,88 @@ def test_deferred_reflection(db):
                                         default=1000000))
     db.reflect()
     db['Actor'].create(firstname="Ben", lastname="Affleck", salary=12000000)
-    ben = db['Actor'].query.first()
-    keys = list(ben.asdict().keys())
-    assert ben.salary == 12000000
+    affleck = db['Actor'].query.first()
+    keys = OrderedDict(affleck).keys()
+    assert affleck.salary == 12000000
     assert ['id', 'firstname', 'lastname', 'birthday', 'salary'] == keys
+
+
+def test_db_api_create_and_delete_all(db):
+    db.create_all()
+    db.reflect()
+    dicaprio = db['Actor'].create(firstname="Leonardo", lastname="DiCaprio")
+    ruffalo = db['Actor'].create(firstname="Mark", lastname="Ruffalo")
+    shutter_island = db['Movie'].create(title="Shutter Island")
+    shutter_island.actors.append(dicaprio)
+    shutter_island.actors.append(ruffalo)
+
+    dicaprio = db['Actor'].query.filter_by(firstname="Leonardo").first()
+    assert dicaprio.lastname == "DiCaprio"
+    assert dicaprio.movies[0].actors[0] is dicaprio
+    assert dicaprio.movies[0].actors[1] is ruffalo
+
+    with assert_raises(IntegrityError, "UNIQUE constraint failed"):
+        db['Actor'].create(firstname="Leonardo", lastname="DiCaprio")
+
+    db.delete_all()
+    assert db['Actor'].query.count() == 0
+    assert db['Movie'].query.count() == 0
+    assert len(db.session.execute(db['association'].select()).fetchall()) == 0
+
+
+def test_db_api_others(db):
+    assert repr(db) == "<Database engine=None>"
+    db.create_all()
+    assert repr(db) == "<Database engine=Engine(sqlite://)>"
+    assert db.metadata == db.Model.metadata
+    movie = db['Movie'].create(title="Mad Max")
+    assert repr(movie) == "<Movie>"
+
+    assert db.query(db['Movie']).first().title == "Mad Max"
+    assert db.dialect == "sqlite"
+
+
+def test_db_api_add(db):
+    db.create_all()
+    movie = db['Movie'](title="Mad Max")
+    db.add(movie)
+    assert db['Movie'].query.first().title == "Mad Max"
+
+
+def test_db_api_rollback(db):
+    db.create_all()
+    movie = db['Movie'](title="Mad Max")
+    db.add(movie)
+    db.rollback()
+    assert db['Movie'].query.first() is None
+
+
+def test_db_api_flush(db):
+    db.create_all()
+    movie = db['Movie'](title="Mad Max")
+    db.add(movie)
+    assert object_state(movie).pending is True
+    db.flush()
+    assert object_state(movie).persistent is True
+    db.commit()
+
+
+def test_db_api_close(db):
+    assert db.connector is None
+    db.create_all()
+    db['Movie'].create(title="Mad Max")
+    db.add(db['Movie'](title="Mad Max"))
+    assert db.connector is not None
+    session = db.session
+    assert session.new
+    db.close()
+    assert db.connector is None
+    assert not session.new
+
+
+def test_internal_operations(db):
+    assert isinstance(Database.session, SessionProperty)
+    assert Database.Model is None
+    assert Database.query_class is None
+    assert Database.query_collection_class is None
+    assert isinstance(db.Model.query, QueryProperty)
