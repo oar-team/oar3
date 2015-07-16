@@ -101,7 +101,7 @@ class QueryProperty(object):
             if mapper:
                 return self._db.query_class(mapper, session=session)
         except UnmappedClassError:
-            return None
+            return self
 
 
 class Database(object):
@@ -110,6 +110,7 @@ class Database(object):
     """
 
     session = SessionProperty()
+    Model = None
     query_class = None
     query_collection_class = None
 
@@ -288,15 +289,14 @@ class EngineConnector(object):
     def get_engine(self):
         with self._lock:
             uri = self._db.uri
-            echo = self._config['SQLALCHEMY_ECHO']
+            echo = self._config.get('SQLALCHEMY_ECHO', False)
             if (uri, echo) == self._connected_for:
                 return self._engine
             info = make_url(uri)
             options = {}
             self.apply_pool_defaults(options)
             self.apply_driver_hacks(info, options)
-            if echo:
-                options['echo'] = True
+            options['echo'] = echo
             self._engine = engine = create_engine(info, **options)
             self._connected_for = (uri, echo)
             return engine
