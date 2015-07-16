@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import re
 import threading
 import subprocess
 import decimal
@@ -168,3 +169,12 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+
+
+def get_table_name(name):
+    def _join(match):
+        word = match.group()
+        if len(word) > 1:
+            return ('_%s_%s' % (word[:-1], word[-1])).lower()
+        return '_' + word.lower()
+    return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')

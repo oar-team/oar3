@@ -2,7 +2,6 @@
 from __future__ import with_statement, absolute_import
 
 import sys
-import re
 import threading
 import contextlib
 
@@ -19,7 +18,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-from .utils import cached_property, merge_dicts
+from .utils import cached_property, merge_dicts, get_table_name
 from .compat import iteritems, itervalues, reraise
 
 
@@ -362,15 +361,6 @@ class _BoundDeclarativeMeta(DeclarativeMeta):
             bases[0]._db.models[name] = self
             bases[0]._db.tables[self.__table__.name] = self.__table__
             self._db = bases[0]._db
-
-
-def get_table_name(name):
-    def _join(match):
-        word = match.group()
-        if len(word) > 1:
-            return ('_%s_%s' % (word[:-1], word[-1])).lower()
-        return '_' + word.lower()
-    return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
 
 
 def get_entity_loaded_propnames(entity):
