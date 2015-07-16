@@ -222,7 +222,7 @@ class Database(object):
             else:
                 return self.models[name]
         else:
-            return self.models[name]
+            raise KeyError(name)
 
     def close(self, **kwargs):
         """Proxy for Session.close"""
