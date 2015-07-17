@@ -38,6 +38,7 @@ all_by_module = {
     'oar_lib.configuration': ['Configuration'],
     'oar_lib.utils': [],
     'oar_lib.globals': ['config', 'logger'],
+    'oar_lib.fixture': ['load_fixtures', 'dump_fixtures'],
 }
 
 # modules that should be imported when accessed as attributes of oar
