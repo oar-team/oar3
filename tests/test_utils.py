@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 import time
 import random
-from oar.lib.utils import SimpleNamespace, cached_property
+
+from collections import OrderedDict
+
+from oar.lib import Database
+from oar.lib.utils import SimpleNamespace, cached_property, ResultProxyIter
 
 
 def test_simple_namespace():
@@ -27,3 +31,29 @@ def test_cached_propery():
     del myobject.value
     assert 'value' not in myobject._cache
     assert myobject.value != value
+
+
+def test_result_proxy_iter():
+    db = Database(uri='sqlite://')
+
+    table = db.Table(
+        'table',
+        db.Column('num', db.Integer),
+        db.Column('word', db.String(255))
+    )
+    db.create_all()
+    db.session.execute(table.insert(), ({'num': 1, 'word': 'one'},
+                                        {'num': 2, 'word': 'two'},
+                                        {'num': 3, 'word': 'three'},
+                                        {'num': 4, 'word': 'four'}))
+
+    db.commit()
+    result_proxy = ResultProxyIter(db.session.execute(table.select()))
+    assert len(result_proxy) == 4
+    for item in result_proxy:
+        assert isinstance(item, OrderedDict)
+        assert set(item.keys()) == {'num', 'word'}
+    # result_proxy is a yield-generator
+    assert list(result_proxy) == 0
+    assert len(result_proxy) == 4
+    return db
