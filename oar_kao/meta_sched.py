@@ -49,7 +49,7 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 
 # for quotas
 import oar.kao.resource as rs
-from oar.kao.quotas import check_slots_quotas
+from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -328,10 +328,9 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             if config['QUOTAS'] == 'yes':
                 nb_res = itvs_size(intersec(itvs, rs.default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
-                (quotas_ok, quotas_msg, rule_value) = res
+                (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     itvs = []
-                    rule, value = rule_value
                     logger.info("Quotas limitaion reached, job:" + str(job.id) +
                                 ", " + quotas_msg + ", rule: " + rule +
                                 ", value: " + str(value))
@@ -557,6 +556,11 @@ def meta_schedule(mode='internal'):
     exit_code = 0
 
     job_security_time = int(config['SCHEDULER_JOB_SECURITY_TIME'])
+
+    if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+        if 'QUOTAS_FILE' not in config:
+            config['QUOTAS_FILE'] = './quotas_conf.json'
+        load_quotas_rules()
 
     utils.init_judas_notify_user()
     utils.create_almighty_socket()

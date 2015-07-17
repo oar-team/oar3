@@ -13,7 +13,7 @@ import oar.kao.quotas as qts
 import oar.kao.resource as rs
 
 from oar.lib import config, get_logger
-import pdb
+# import pdb
 
 config['LOG_FILE'] = '/dev/stdout'
 logger = get_logger("oar.test")

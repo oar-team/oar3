@@ -13,7 +13,7 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 import oar.kao.quotas as qts
 
-# import pdb
+import pdb
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -52,7 +52,7 @@ def create_quotas_rules_file(quotas_rules):
     '''
     quotas_fd, quotas_file_name = mkstemp()
     config['QUOTAS_FILE'] = quotas_file_name
-    os.write(quotas_fd, '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+    os.write(quotas_fd, quotas_rules)
     os.close(quotas_fd)
     qts.load_quotas_rules()
 
@@ -96,6 +96,7 @@ def test_db_all_in_one_ar_1(monkeypatch):
     now = get_date()
     # sql_now = local_to_sql(now)
 
+    #
     insert_job(res=[(60, [('resource_id=4', "")])], properties="",
                reservation='toSchedule', start_time=(now + 10),
                info_type='localhost:4242')
@@ -115,11 +116,19 @@ def test_db_all_in_one_ar_1(monkeypatch):
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_quotas_1(monkeypatch):
 
-    create_quotas_rules_file('{"quotas": {"*,*,*,/": [3,-1,-1],"/,*,*,*": [-1,-1,0.55]}}')
+    """
+    quotas[queue, project, job_type, user] = [int, int, float];
+                                               |    |     |
+              maximum used resources ----------+    |     |
+              maximum number of running jobs -------+     |
+              maximum resources times (hours) ------------+
+    """
 
-    insert_job(res=[(100, [('resource_id=2', "")])], properties="", user="toto")
-    insert_job(res=[(200, [('resource_id=2', "")])], properties="", user="toto")
-    insert_job(res=[(200, [('resource_id=2', "")])], properties="", user="toto")
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 0.55]}}')
+
+    insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
 
     db_flush()
 
@@ -127,10 +136,47 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     now = get_date()
     meta_schedule('internal')
 
+    res = []
     for i in db.query(GanttJobsPrediction).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-now)
+        res.append(i.start_time - now)
 
-    # jobs = db.query(Job)
-    # print(job.state)
-    # assert job.state == 'toLaunch'
-    assert 1
+    assert res == [0, 160, 420]
+
+
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_2(monkeypatch):
+
+    """
+    quotas[queue, project, job_type, user] = [int, int, float];
+                                               |    |     |
+              maximum used resources ----------+    |     |
+              maximum number of running jobs -------+     |
+              maximum resources times (hours) ------------+
+    """
+
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1]}}')
+
+    # Submit and allocate an Advance Reservation
+    t0 = get_date()
+    insert_job(res=[(60, [('resource_id=1', "")])], properties="",
+               reservation='toSchedule', start_time=(t0 + 100),
+               info_type='localhost:4242')
+    db_flush()
+    meta_schedule('internal')
+
+    # Submit other jobs
+    insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+    db_flush()
+
+    # pdb.set_trace()
+    t1 = get_date()
+    meta_schedule('internal')
+
+    res = []
+    for i in db.query(GanttJobsPrediction).all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-t1)
+        res.append(i.start_time - t1)
+
+    assert res == [100, 220, 380]
