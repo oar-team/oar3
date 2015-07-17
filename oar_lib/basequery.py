@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import
 
-from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import Query, Load
 
 from .exceptions import DoesNotExist
@@ -38,35 +37,34 @@ class BaseQuery(Query):
             raise DoesNotExist()
         return rv
 
-    def filter_jobs_for_user(self, user, start_time, stop_time, states,
+    def filter_jobs_for_user(self, user, from_time, to_time, states,
                              job_ids, array_id):
         if not states:
             states = ['Finishing', 'Running', 'Resuming', 'Suspended',
                       'Launching', 'toLaunch', 'Waiting', 'Hold',
                       'toAckReservation']
-        q1_start, q3_start, q2_start = None, None, None
-        if start_time is not None:
+        c1_from, c2_from, c3_from = None, None, None
+        if from_time is not None:
             # first sub query start time filter
-            timeout = func(Job.start_time + MoldableJobDescription.walltime)
-            q1_start = and_(timeout >= start_time, Job.state == 'Running')
-            q1_start = or_(q1_start, Job.state.in_('Running', 'Resuming'))
-            q1_start = and_(Job.stop_time == 0, q1_start)
-            q1_start = or_(Job.stop_time >= start_time, q1_start)
+            c1 = (Job.start_time + MoldableJobDescription.walltime) >= from_time
+            c2 = Job.state == 'Running'
+            c3 = Job.state.in_(('Suspended', 'Resuming'))
+            c4 = Job.stop_time == 0
+            c5 = Job.stop_time >= from_time
+            c1_from = c5 | (c4 & ((c2 & c1) | c3))
             # second sub query start time filter
-            timeout = func(GanttJobsPredictionsVisu.start_time
-                           + MoldableJobDescription.walltime)
-            q2_start = timeout >= start_time
+            c2_from = GanttJobsPredictionsVisu.start_time + MoldableJobDescription.walltime >= from_time
             # third sub query start time filter
-            q3_start = start_time <= Job.submission_time
+            c3_from = Job.submission_time >= from_time
 
-        q1_stop, q3_stop, q2_stop = None, None, None
-        if stop_time is not None:
+        c1_to, c2_to, c3_to = None, None, None
+        if to_time is not None:
             # first sub query stop time filter
-            q1_stop = Job.start_time < stop_time
+            c1_to = Job.start_time < to_time
             # second sub query stop time filter
-            q2_stop = GanttJobsPredictionsVisu.start_time < stop_time
+            c2_to = GanttJobsPredictionsVisu.start_time < to_time
             # third sub query stop time filter
-            q3_stop = Job.submission_time < stop_time
+            c3_to = Job.submission_time <= to_time
 
         def apply_commons_filters(q, *criterion):
             q = q.filter(Job.user == user) if user else q
@@ -80,27 +78,28 @@ class BaseQuery(Query):
         q1 = db.query(Job.id.label('job_id')).distinct()\
                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
                .filter(MoldableJobDescription.job_id == Job.id)
-        q1 = apply_commons_filters(q1, q1_start, q1_stop)
+        q1 = apply_commons_filters(q1, c1_from, c1_to)
 
         q2 = db.query(Job.id.label('job_id')).distinct()\
                .filter(GanttJobsPredictionsVisu.moldable_id == GanttJobsResourcesVisu.moldable_id)\
                .filter(GanttJobsPredictionsVisu.moldable_id == MoldableJobDescription.id)\
                .filter(Job.id == MoldableJobDescription.job_id)
-        q2 = apply_commons_filters(q2, q2_start, q2_stop)
+        q2 = apply_commons_filters(q2, c2_from, c2_to)
 
         q3 = db.query(Job.id.label('job_id')).distinct()\
-               .filter(Job.start_time == 0)
-        q3 = apply_commons_filters(q3, q3_start, q3_stop)
+               .filter(Job.stop_time == 0)
+        q3 = apply_commons_filters(q3, c3_from, c3_to)
 
-        unionquery = q1.union(q2.union(q3)).subquery()
-        return self.join(MoldableJobDescription, Job.assigned_moldable_job == MoldableJobDescription.id)\
+        unionquery = q1.union(q2, q3).subquery()
+        return self.outerjoin(MoldableJobDescription, Job.assigned_moldable_job == MoldableJobDescription.id)\
                    .join(unionquery, Job.id == unionquery.c.job_id)
 
 
 class BaseQueryCollection(object):
     """ Queries collection. """
-    def get_jobs_for_user(self, user, start_time, stop_time, states, job_ids,
-                          array_id, detailed=True):
+    def get_jobs_for_user(self, user, from_time=None, to_time=None,
+                          states=None, job_ids=None, array_id=None,
+                          detailed=True):
         """ Get all distinct jobs for a user query. """
         if detailed:
             query = db.query(Job)
@@ -110,8 +109,8 @@ class BaseQueryCollection(object):
             option = Load(Job).load_only(*columns)
             query = db.query(Job).options(option)
         return query.order_by(Job.id)\
-                    .filter_jobs_for_user(user, start_time,
-                                          stop_time, states,
+                    .filter_jobs_for_user(user, from_time,
+                                          to_time, states,
                                           job_ids, array_id)
 
     def get_resources(self, network_address, detailed=True):
