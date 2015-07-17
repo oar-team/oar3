@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
+import argparse
 import struct
 import socket
 import sys
@@ -8,14 +10,22 @@ import os
 import json
 from sets import Set
 
-from oar.lib import config, get_logger
+from oar.lib import (db, config, get_logger, Resource, Queue)
+from oar.kao.job import (insert_job, set_job_state)
+
 from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.interval import itvs2ids
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
+from oar.kao.meta_sched import meta_schedule
+import oar.kao.utils
+
+offset_idx = 0
 
 DEFAULT_CONFIG = {
+    'DB_BASE_FILE': ':memory:',
+    'DB_TYPE': 'sqlite',
     'LOG_CATEGORIES': 'all',
     'LOG_FILE': '',
     'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
@@ -25,7 +35,20 @@ DEFAULT_CONFIG = {
     'SCHEDULER_JOB_SECURITY_TIME': '60',
     'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
     'FAIRSHARING_ENABLED': 'no',
-    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '3'
+    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '3',
+    'QUOTAS': 'no',
+    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
+    'SCHEDULER_TIMEOUT': 30,
+    'SERVER_HOSTNAME': 'server',
+    'SERVER_PORT': 6666,
+    'SQLALCHEMY_CONVERT_UNICODE': True,
+    'SQLALCHEMY_ECHO': False,
+    'SQLALCHEMY_MAX_OVERFLOW': None,
+    'SQLALCHEMY_POOL_RECYCLE': None,
+    'SQLALCHEMY_POOL_SIZE': None,
+    'SQLALCHEMY_POOL_TIMEOUT': None,
+    'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
+    'QUOTAS': 'no'
 }
 
 config.clear()
@@ -107,7 +130,7 @@ def send_bat_msg(connection, now, jids_to_launch, jobs):
         for jid in jids_to_launch:
             msg += str(jid) + "="
             for r in itvs2ids(jobs[jid].res_set):
-                msg += str(r) + ","
+                msg += str(r-offset_idx) + ","
             # replace last comma by semicolon separtor between jobs
             msg = msg[:-1] + ";"
         msg = msg[:-1]  # remove last semicolon
@@ -127,6 +150,31 @@ def load_json_workload_profile(filename):
     return wkp["jobs"], wkp["nb_res"]
 
 
+def monkeypatch_oar_kao_utils():
+    oar.kao.utils.init_judas_notify_user = lambda: None
+    oar.kao.utils.create_almighty_socket = lambda: None
+    oar.kao.utils.notify_almighty = lambda x: len(x)
+    oar.kao.utils.notify_tcp_socket = lambda addr, port, msg: len(msg)
+    oar.kao.utils.notify_user = lambda job, state, msg: len(state + msg)
+
+
+def db_initialization(nb_res):
+
+    print("Set default queue")
+    db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
+
+    print("add resources")
+    # add some resources
+    for i in range(nb_res):
+        db.add(Resource(network_address="localhost"))
+
+    db.flush()
+
+
+def db_add_job():
+    pass
+
+
 class BatEnv(object):
 
     def __init__(self, now):
@@ -135,14 +183,15 @@ class BatEnv(object):
 
 class BatSched(object):
 
-    def __init__(self, res_set, jobs, sched_delay=5,
-                 uds_name='/tmp/bat_socket', mode_platform="simu"):
+    def __init__(self, res_set, jobs, mode_platform="simu", db_jid2s_jid={}, sched_delay=5,
+                 uds_name='/tmp/bat_socket'):
 
+        self.mode_platform = mode_platform
         self.sched_delay = sched_delay
 
         self.env = BatEnv(0)
         self.platform = Platform(
-            mode_platform, env=self.env, resource_set=res_set, jobs=jobs)
+            mode_platform, env=self.env, resource_set=res_set, jobs=jobs, db_jid2s_jid=db_jid2s_jid)
 
         self.jobs = jobs
         self.nb_jobs = len(jobs)
@@ -169,6 +218,9 @@ class BatSched(object):
             if jobs_submitted:
                 for jid in jobs_submitted:
                     self.waiting_jids.add(jid)
+                    if self.mode_platform == 'batsim-db':
+                        print('set_job_state("Waiting"):', self.jobs[jid].db_jid)
+                        set_job_state(self.jobs[jid].db_jid, 'Waiting')
 
             nb_completed_jobs += len(new_jobs_completed)
 
@@ -177,6 +229,8 @@ class BatSched(object):
             for jid in new_jobs_completed:
                 jobs_completed.append(jid)
                 self.platform.running_jids.remove(jid)
+                if self.mode_platform == 'batsim-db':
+                    set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
             now = int(now_str)
             self.env.now = now  # TODO can be remove ???
@@ -186,7 +240,7 @@ class BatSched(object):
             print("jobs completed: %s" % jobs_completed)
 
             print("call schedule_cycle.... %s" % now)
-            schedule_cycle(self.platform, now, "test")
+            schedule_cycle(self.platform, now, "default")
 
             # retrieve jobs to launch
             jids_to_launch = []
@@ -205,53 +259,100 @@ class BatSched(object):
             send_bat_msg(self.connection, now, jids_to_launch, self.jobs)
 
     def run(self):
-        self. sched_loop()
+        self.sched_loop()
 
 ##############
 
 
-#
-# Load workload
-#
+def main(wkp_filename, database_mode):
 
-json_jobs, nb_res = load_json_workload_profile(sys.argv[1])
+    #
+    # Load workload
+    #
 
-print("nb_res: %s %s" % (nb_res, type(nb_res)))
+    json_jobs, nb_res = load_json_workload_profile(wkp_filename)
 
-#
-# generate ResourceSet
-#
+    print("nb_res: %s %s" % (nb_res, type(nb_res)))
 
-hy_resource_id = [[(i, i)] for i in range(nb_res)]
-res_set = ResourceSetSimu(
-    rid_i2o=range(nb_res),
-    rid_o2i=range(nb_res),
-    roid_itvs=[(0, nb_res - 1)],
-    hierarchy={'resource_id': hy_resource_id},
-    available_upto={2147483600: [(0, nb_res - 1)]}
-)
+    if database_mode == 'no-db':
+        #
+        # generate ResourceSet
+        #
 
-#
-# generate jobs
-#
+        hy_resource_id = [[(i, i)] for i in range(nb_res)]
+        res_set = ResourceSetSimu(
+            rid_i2o=range(nb_res),
+            rid_o2i=range(nb_res),
+            roid_itvs=[(0, nb_res - 1)],
+            hierarchy={'resource_id': hy_resource_id},
+            available_upto={2147483600: [(0, nb_res - 1)]}
+        )
 
-for j in json_jobs:
-    print("retrieve jobjob")
-    jid = int(j["id"])
-    jobs[jid] = JobSimu(id=jid,
-                        state="Waiting",
-                        queue="test",
-                        start_time=0,
-                        walltime=0,
-                        types={},
-                        res_set=[],
-                        moldable_id=0,
-                        mld_res_rqts=[(jid, j["walltime"],
-                                       [([("resource_id", j["res"])],
-                                         [(0, nb_res - 0)])])],
-                        run_time=0,
-                        deps=[],
-                        key_cache={},
-                        ts=False, ph=0)
+        #
+        # prepare jobs
+        #
 
-BatSched(res_set, jobs).run()
+        for j in json_jobs:
+            print("Genererate jobs")
+            jid = int(j["id"])
+            jobs[jid] = JobSimu(id=jid,
+                                state="Waiting",
+                                queue="test",
+                                start_time=0,
+                                walltime=0,
+                                types={},
+                                res_set=[],
+                                moldable_id=0,
+                                mld_res_rqts=[(jid, j["walltime"],
+                                               [([("resource_id", j["res"])],
+                                                 [(0, nb_res - 0)])])],
+                                run_time=0,
+                                deps=[],
+                                key_cache={},
+                                ts=False, ph=0)
+
+        BatSched(res_set, jobs, 'simu', {}).run()
+
+    elif database_mode == 'memory':
+        global offset_idx
+        offset_idx = 1
+        monkeypatch_oar_kao_utils()
+        db_initialization(nb_res)
+
+        #
+        # prepare jobs
+        #
+        db_jid2s_jid = {}
+        print("Prepare jobs")
+        for i, j in enumerate(json_jobs):
+            jid = int(j["id"])
+            jobs[jid] = JobSimu(id=jid,
+                                state="Waiting",
+                                queue="test",
+                                start_time=0,
+                                walltime=0,
+                                moldable_id=0,
+                                mld_res_rqts=[(jid, j["walltime"],
+                                               [([("resource_id", j["res"])],
+                                                 [(0, nb_res - 0)])])],
+                                run_time=0,
+                                db_jid=i+1)
+
+            insert_job(res=[(j["walltime"], [('resource_id='+str(j["res"]), "")])],
+                       state='Hold', properties='', user='')
+            db_jid2s_jid[i+1] = jid
+
+        db.flush()
+
+        BatSched([], jobs, 'batsim-db', db_jid2s_jid).run()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Adaptor to run oar-kao with BatSim.')
+    parser.add_argument('wkp_filename', metavar='F',
+                        help='a file which contains the workload profile.')
+    parser.add_argument('--database-mode', default='no-db',
+                        help="select database mode (no-db, memory, oarconf)")
+    args = parser.parse_args()
+    print(args)
+    main(args.wkp_filename, args.database_mode)

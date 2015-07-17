@@ -64,7 +64,7 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue_na
         if "FAIRSHARING_ENABLED" in config:
             if config["FAIRSHARING_ENABLED"] == "yes":
                 waiting_jids = karma_jobs_sorting(
-                    queue, now, waiting_jids, waiting_jobs, plt)
+                    queue_name, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Scheduled
@@ -88,7 +88,6 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue_na
 def schedule_cycle(plt, now, queue="default"):
 
     logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
-    logger.debug("DB_BASE_FILE: " + config["DB_BASE_FILE"])
 
     #
     # Retrieve waiting jobs

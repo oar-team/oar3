@@ -1,10 +1,25 @@
+#!/usr/bin/env python
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
-# from oar.lib import config
+from oar.lib import config
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched
 from oar.kao.helpers import plot_slots_and_job
+
+
+# Set undefined config value to default one
+DEFAULT_CONFIG = {
+    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
+    'SCHEDULER_JOB_SECURITY_TIME': '60',
+    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
+    'FAIRSHARING_ENABLED': 'no',
+    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30',
+    'QUOTAS': 'no'
+}
+
+config.setdefault_config(DEFAULT_CONFIG)
 
 # config['LOG_FILE'] = '/dev/stdout'
 

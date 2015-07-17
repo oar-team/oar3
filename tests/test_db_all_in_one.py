@@ -13,13 +13,13 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 import oar.kao.quotas as qts
 
-import pdb
+# import pdb
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_intialization(request):
+def minimal_db_initialization(request):
     # pdb.set_trace()
-    print("set default queue")
+    print("Set default queue")
     db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
 
     print("add resources")
