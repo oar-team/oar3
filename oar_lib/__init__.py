@@ -36,14 +36,16 @@ all_by_module = {
     'oar_lib.database': ['Database'],
     'oar_lib.logging': ['create_logger', 'get_logger'],
     'oar_lib.configuration': ['Configuration'],
-    'oar_lib.utils': [],
+    'oar_lib.utils': ['cached_property', 'Command', 'JSONEncoder',
+                      'render_query', 'ResultProxyIter', 'row2dict'],
     'oar_lib.globals': ['config', 'logger'],
     'oar_lib.fixture': ['load_fixtures', 'dump_fixtures'],
 }
 
 # modules that should be imported when accessed as attributes of oar
 attribute_modules = frozenset(['configuration', 'database', 'exceptions',
-                               'logging', 'models', 'utils'])
+                               'logging', 'models', 'utils', 'fixture',
+                               'psycopg2', 'compat', 'basequery'])
 
 
 object_origins = {}
