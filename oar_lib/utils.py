@@ -59,6 +59,10 @@ class CachedProperty(object):
             obj._cache[self.__name__] = self.func(obj)
         return obj._cache.get(self.__name__)
 
+    def __delete__(self, obj):
+        cache_obj = getattr(obj, "_cache", {})
+        if self.__name__ in cache_obj:
+            del cache_obj[self.__name__]
 
 cached_property = CachedProperty
 
