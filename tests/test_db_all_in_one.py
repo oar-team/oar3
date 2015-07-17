@@ -179,4 +179,5 @@ def test_db_all_in_one_quotas_2(monkeypatch):
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-t1)
         res.append(i.start_time - t1)
 
-    assert res == [100, 220, 380]
+    assert (res[1] - res[0]) == 120
+    assert (res[2] - res[0]) == 280
