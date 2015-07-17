@@ -6,7 +6,9 @@ OAR-kao changes
 Version 0.2.0.dev0
 ------------------
 
-**unreleased**
+ - Added quotas support
+ - Added "all in one" scheduling (meta_scheduler calls directly kamelot)
+ - Various debug and tests
 
 Version 0.1.0
 -------------

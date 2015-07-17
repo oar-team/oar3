@@ -2,12 +2,17 @@
 from __future__ import unicode_literals, print_function
 import pytest
 
-from oar.lib import (db, Resource, Job, Queue, GanttJobsPrediction)
+import os
+from tempfile import mkstemp
+
+from oar.lib import (db, config, Resource, Job, Queue, GanttJobsPrediction)
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
 import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
+import oar.kao.quotas as qts
+
 # import pdb
 
 
@@ -29,6 +34,27 @@ def minimal_db_intialization(request):
         db.delete_all()
 
     request.addfinalizer(teardown)
+
+
+@pytest.fixture(scope="function")
+def active_quotas(request):
+    print('active_quotas')
+    config['QUOTAS'] = 'yes'
+
+    def teardown():
+        config['QUOTAS'] = 'no'
+
+    request.addfinalizer(teardown)
+
+
+def create_quotas_rules_file(quotas_rules):
+    ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+    '''
+    quotas_fd, quotas_file_name = mkstemp()
+    config['QUOTAS_FILE'] = quotas_file_name
+    os.write(quotas_fd, '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+    os.close(quotas_fd)
+    qts.load_quotas_rules()
 
 
 def db_flush():
@@ -84,3 +110,27 @@ def test_db_all_in_one_ar_1(monkeypatch):
     print(job.state, ' ', job.reservation)
 
     assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
+
+
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_1(monkeypatch):
+
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [3,-1,-1],"/,*,*,*": [-1,-1,0.55]}}')
+
+    insert_job(res=[(100, [('resource_id=2', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=2', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=2', "")])], properties="", user="toto")
+
+    db_flush()
+
+    # pdb.set_trace()
+    now = get_date()
+    meta_schedule('internal')
+
+    for i in db.query(GanttJobsPrediction).all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-now)
+
+    # jobs = db.query(Job)
+    # print(job.state)
+    # assert job.state == 'toLaunch'
+    assert 1

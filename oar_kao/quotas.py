@@ -129,7 +129,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def update(self, job, prev_nb_res=0, prev_duration=0):
 
-        queue = job.queue
+        queue = job.queue_name
         project = job.project
         user = job.user
 
@@ -195,7 +195,7 @@ account (but the inner jobs are used to compute the quotas).
                 nb_resources, nb_jobs, resources_time = counters
                 # match queue
                 if ((rl_queue == '*') and (queue == '*')) or\
-                   ((rl_queue == queue) and (job.queue == job.queue)) or\
+                   ((rl_queue == queue) and (job.queue_name == queue)) or\
                    (rl_queue == '/'):
                     # match project
                     if ((rl_project == '*') and (project == '*')) or\

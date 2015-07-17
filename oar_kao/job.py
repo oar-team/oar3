@@ -59,6 +59,9 @@ class JobPseudo(object):
     key_cache = {}
     ts = False
     ph = 0
+    queue_name = 'default'
+    user = ''
+    project = ''
 
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
@@ -768,6 +771,9 @@ def insert_job(**kwargs):
 
     if 'queue_name' not in kwargs:
         kwargs['queue_name'] = 'default'
+
+    if 'user' in kwargs:
+        kwargs['job_user'] = kwargs.pop('user')
 
     ins = Job.__table__.insert().values(**kwargs)
     result = db.engine.execute(ins)
