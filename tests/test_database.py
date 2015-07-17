@@ -135,7 +135,7 @@ def test_deferred_reflection(db):
     db.reflect()
     db['Actor'].create(firstname="Ben", lastname="Affleck", salary=12000000)
     affleck = db['Actor'].query.first()
-    keys = OrderedDict(affleck).keys()
+    keys = list(OrderedDict(affleck).keys())
     assert affleck.salary == 12000000
     assert ['id', 'firstname', 'lastname', 'birthday', 'salary'] == keys
 
