@@ -128,7 +128,7 @@ class Command(object):
 
 def try_convert_decimal(raw_value):
     """Try to convert ``value`` to a decimal."""
-    value = to_unicode(raw_value).encode('utf-8')
+    value = to_unicode(raw_value)
     try:
         Decimal(value)
         for _type in numeric_types:
