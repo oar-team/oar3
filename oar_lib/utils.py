@@ -34,6 +34,15 @@ class JSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
+def to_json(obj, **kwargs):
+    """Dumps object to json string. """
+    kwargs.setdefault('ensure_ascii', False)
+    kwargs.setdefault('cls', JSONEncoder)
+    kwargs.setdefault('indent', 4)
+    kwargs.setdefault('separators', (',', ': '))
+    return json.dumps(obj, **kwargs)
+
+
 class SimpleNamespace(dict):
     def __init__(self, *args, **kwargs):
         super(SimpleNamespace, self).__init__(*args, **kwargs)
