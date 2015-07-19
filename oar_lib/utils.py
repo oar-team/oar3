@@ -113,11 +113,16 @@ class Command(object):
         self.cmd = cmd
         self.process = None
         self.logger = logger
+        self.stdout = self.stderr = None
 
     def run(self, timeout):
         def target():
-            self.process = subprocess.Popen(self.cmd, shell=True)
-            self.process.communicate()
+            self.process = subprocess.Popen(self.cmd, shell=True,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
+            stdout, stderr = self.process.communicate()
+            self.stdout = to_unicode(stdout)
+            self.stderr = to_unicode(stderr)
 
         thread = threading.Thread(target=target)
         thread.start()
