@@ -3,9 +3,10 @@ from __future__ import unicode_literals, print_function
 import pytest
 import os
 import os.path
-import re
 
-from oar.lib import (config, db, Resource, Job, Queue, GanttJobsPrediction)
+from codecs import open
+
+from oar.lib import config, db
 from oar.lib.compat import iteritems
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
@@ -15,70 +16,42 @@ from oar.kao.utils import get_date
 
 from . import DEFAULT_CONFIG
 
-prev_db_file = False
-
 
 @pytest.fixture(scope='module', autouse=True)
-def generate_oar_conf(request):
+def generate_oar_confand_create_db(request):
 
-    print("generate_oar_conf")
-
-    if ('DB_BASE_FILE' in config):
-        global prev_db_file
-        prev_db_file = True
-        print('yop', config['DB_BASE_FILE'])
-    # if 'DB_BASE_FILE' in config and :
-    #    global prev_db_file
-
-    #    prev_db_file = config['DB_BASE_FILE']
-
-    print("poy", prev_db_file)
-
-    # old_config_db_base_file = config['DB_BASE_FILE']
-    DEFAULT_CONFIG['DB_BASE_FILE'] = "/tmp/oar.sqlite"
+    DEFAULT_CONFIG['DB_BASE_FILE'] = '/tmp/oar.sqlite'
     config.update(DEFAULT_CONFIG.copy())
-    config['DB_BASE_FILE'] = DEFAULT_CONFIG['DB_BASE_FILE']
 
-    file = open("/etc/oar/oar.conf", 'w')
-    for key, value in iteritems(config):
-        if not re.search(r'SQLALCHEMY_', key):
-            # print key, value
-            file.write(key + '="' + str(value) + '"\n')
-    file.close()
+    def dump_configuration(filename):
+        with open(filename, 'w', encoding='utf-8') as fd:
+            for key, value in iteritems(config):
+                if not key.startswith('SQLALCHEMY_'):
+                    fd.write("%s=%s\n" % (key, str(value)))
+
+    def remove_db_if_exists():
+        if 'DB_BASE_FILE' in config:
+            if os.path.isfile(config['DB_BASE_FILE']):
+                os.remove(config['DB_BASE_FILE'])
 
     def teardown():
-        # config['DB_BASE_FILE'] = old_config_db_base_file
         os.remove('/etc/oar/oar.conf')
+        remove_db_if_exists()
 
     request.addfinalizer(teardown)
-
-
-@pytest.fixture(scope='module', autouse=True)
-def setup_db_file(request):
-
-    db_file = config['DB_BASE_FILE']
-
-    print("setup_db_file: ", db_file)
-    if os.path.isfile(db_file):
-        db.delete_all()
-
+    dump_configuration('/etc/oar/oar.conf')
+    remove_db_if_exists()
     db.create_all()
-    print("setup_db_file: end")
+    db.reflect()
 
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_intialization(request):
-    # pdb.set_trace()
-    print("set default queue")
-    db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
+    db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
-    print("add resources")
     # add some resources
     for i in range(5):
-        db.add(Resource(network_address="localhost"))
-
-    db_flush()
-    # pdb.set_trace()
+        db['Resource'].create(network_address="localhost")
 
     def teardown():
         db.delete_all()
@@ -101,28 +74,22 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
-#@pytest.mark.skipif(prev_db_file, reason="This test must be execute alone")
 def test_db_metasched_simple_1(monkeypatch):
-
-    # if prev_db_file:
-    #    print('skip...............')
-    # else:
-    #    print('no skip------------')
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print('job state:', job.state)
 
     meta_schedule()
 
-    for i in db.query(GanttJobsPrediction).all():
+    for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print(job.state)
-    assert (job.state == 'toLaunch') or prev_db_file
+    assert (job.state == 'toLaunch')
 
 
 def test_db_metasched_ar_1(monkeypatch):
@@ -136,12 +103,9 @@ def test_db_metasched_ar_1(monkeypatch):
                info_type='localhost:4242')
     db_flush()
 
-    # plt = Platform()
-    # r = plt.resource_set()
-
     meta_schedule()
 
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print(job.state, ' ', job.reservation)
 
     assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
