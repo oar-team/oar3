@@ -3,8 +3,7 @@ from __future__ import unicode_literals, print_function
 import pytest
 import re
 from tempfile import mkstemp
-from oar.lib import config, db
-
+from oar.lib import config
 
 from . import DEFAULT_CONFIG
 
@@ -19,23 +18,3 @@ def setup_config(request):
 
     # if re.search(r'test_db_metasched', request.node.name):
     #    _, config["LOG_FILE"] = mkstemp()
-
-
-@pytest.fixture(scope='module', autouse=True)
-def setup_db(request):
-
-    if re.search(r'test_db', request.node.name) and\
-       not re.search(r'test_db_metasched', request.node.name):
-        print("setup_db")
-        # Create the tables based on the current model
-        db.create_all()
-        # Add base data here
-        # ...
-        db.session.flush()
-        db.session.expunge_all()
-        db.session.commit()
-
-        def teardown():
-            db.delete_all()
-
-        request.addfinalizer(teardown)

@@ -6,7 +6,7 @@ import os
 from codecs import open
 from tempfile import mkstemp
 
-from oar.lib import (db, config, Resource, Job, Queue, GanttJobsPrediction)
+from oar.lib import (db, config, Job, GanttJobsPrediction)
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
@@ -14,22 +14,21 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 import oar.kao.quotas as qts
 
-# import pdb
+
+@pytest.fixture(scope='module', autouse=True)
+def create_db(request):
+    # Create the tables based on the current model
+    db.create_all()
+    db.reflect()
 
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
-    # pdb.set_trace()
-    print("Set default queue")
-    db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
+    db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
-    print("add resources")
     # add some resources
     for i in range(5):
-        db.add(Resource(network_address="localhost"))
-
-    db_flush()
-    # pdb.set_trace()
+        db['Resource'].create(network_address="localhost")
 
     def teardown():
         db.delete_all()
@@ -76,7 +75,6 @@ def monkeypatch_utils(request, monkeypatch):
 
 
 def test_db_all_in_one_simple_1(monkeypatch):
-
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
     job = db.query(Job).one()
@@ -94,7 +92,6 @@ def test_db_all_in_one_simple_1(monkeypatch):
 
 
 def test_db_all_in_one_ar_1(monkeypatch):
-
     # add one job
     now = get_date()
     # sql_now = local_to_sql(now)
@@ -118,7 +115,6 @@ def test_db_all_in_one_ar_1(monkeypatch):
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_quotas_1(monkeypatch):
-
     """
     quotas[queue, project, job_type, user] = [int, int, float];
                                                |    |     |
@@ -149,7 +145,6 @@ def test_db_all_in_one_quotas_1(monkeypatch):
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_quotas_2(monkeypatch):
-
     """
     quotas[queue, project, job_type, user] = [int, int, float];
                                                |    |     |
@@ -178,7 +173,7 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db.query(GanttJobsPrediction).all():
+    for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
         res.append(i.start_time - t1)
 
