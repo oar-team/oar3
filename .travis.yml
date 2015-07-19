@@ -2,17 +2,19 @@
 
 language: python
 python: 2.7
-env:
-    - TOX_ENV=py27
-    - TOX_ENV=py34
-    - TOX_ENV=pypy
 
-script: tox -e $TOX_ENV
+env:
+  - TOXENV=py27
+  - TOXENV=py34
+  - TOXENV=pypy
 
 install:
-    - pip install tox
+  - pip install tox --use-mirrors
+
+script: tox
 
 after_success:
     # Report coverage results to codecov.io
     - pip install codecov
     - codecov
+
