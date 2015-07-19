@@ -18,7 +18,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-from .utils import cached_property, merge_dicts, get_table_name
+from .utils import cached_property, merge_dicts, get_table_name, to_json
 from .compat import iteritems, itervalues, reraise
 
 
@@ -55,6 +55,13 @@ class BaseModel(object):
         return data
 
     asdict = to_dict
+
+    def to_json(self, **kwargs):
+        """Dumps `self` to json string. """
+        kwargs.setdefault('ignore_keys', ())
+        obj = self.to_dict(kwargs.pop('ignore_keys'))
+        return to_json(obj, **kwargs)
+
     def __iter__(self):
         """Returns an iterable that supports .next()"""
         for (k, v) in iteritems(self.asdict()):
