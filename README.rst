@@ -1,6 +1,18 @@
 Python OAR Common Library
 =========================
 
+.. image:: https://img.shields.io/travis/oar-team/oar-kao.svg
+        :target: https://travis-ci.org/oar-team/oar-lib
+
+.. image:: https://img.shields.io/pypi/v/oar-kao.svg
+        :target: https://pypi.python.org/pypi/oar-lib
+
+
+Python version of OAR Common Library
+
+* Free software: BSD license
+* Documentation: https://oar-lib.readthedocs.org.
+
 Read Configuration
 -------------------
 
