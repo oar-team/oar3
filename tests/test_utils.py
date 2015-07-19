@@ -50,10 +50,12 @@ def test_result_proxy_iter():
     db.commit()
     result_proxy = ResultProxyIter(db.session.execute(table.select()))
     assert len(result_proxy) == 4
+
+    # result_proxy is an iterator
+    assert len(list(result_proxy)) == 4
+    # reset iterator automatically
+    assert len(list(result_proxy)) == 4
+
     for item in result_proxy:
         assert isinstance(item, OrderedDict)
         assert set(item.keys()) == {'num', 'word'}
-    # result_proxy is a yield-generator
-    assert len(list(result_proxy)) == 0
-    assert len(result_proxy) == 4
-    return db

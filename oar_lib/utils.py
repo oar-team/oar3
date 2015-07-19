@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import sys
 import re
 import threading
 import subprocess
@@ -9,7 +10,7 @@ import datetime
 
 from collections import OrderedDict
 
-from .compat import numeric_types, to_unicode, json
+from .compat import numeric_types, to_unicode, json, reraise
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -78,7 +79,12 @@ class ResultProxyIter(list):
         return len(self.items)
 
     def __next__(self):
-        return row2dict(next(self._iter))
+        try:
+            return row2dict(next(self._iter))
+        except StopIteration:
+            self._iter = iter(self.items)
+            exc_type, exc_value, tb = sys.exc_info()
+            reraise(exc_type, exc_value, tb.tb_next)
 
     def __iter__(self):
         return self
