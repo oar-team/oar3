@@ -115,7 +115,7 @@ class Command(object):
         self.logger = logger
         self.stdout = self.stderr = None
 
-    def run(self, timeout):
+    def run(self, timeout=None):
         def target():
             self.process = subprocess.Popen(self.cmd, shell=True,
                                             stdout=subprocess.PIPE,
@@ -127,11 +127,15 @@ class Command(object):
         thread = threading.Thread(target=target)
         thread.start()
 
-        thread.join(timeout)
-        if thread.is_alive():
-            self.logger.error('Timeout: Terminating process "%s"' % self.cmd)
-            self.process.terminate()
+        if timeout is None:
             thread.join()
+        else:
+            thread.join(timeout)
+            if thread.is_alive():
+                self.logger.error('Timeout: Terminating process "%s"'
+                                  % self.cmd)
+                self.process.terminate()
+                thread.join()
 
         return self.process.returncode
 
