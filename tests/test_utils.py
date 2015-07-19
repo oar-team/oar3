@@ -188,8 +188,10 @@ def test_to_json():
 
 
 def test_command():
-    cmd = Command("sleep 0.02; echo hello;")
+    assert Command("false").run() == 1
+    assert Command("true").run() == 0
+    cmd = Command("sleep 0.02; echo hello; echo world 1>&2")
     assert cmd(timeout=1) == 0
     assert cmd.stdout == "hello\n"
+    assert cmd.stderr == "world\n"
     assert cmd(timeout=0.01) != 0
-    cmd(timeout=0.1)
