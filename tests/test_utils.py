@@ -152,8 +152,9 @@ def test_to_json():
     a['birthday'] = datetime.datetime(2015, 7, 19, 9, 14, 22, 140921)
     a['level'] = 90
     a['length'] = Decimal('177.85')
-    a['parents'] = OrderedDict(father=dict(name="Monkey D. Dragon"),
-                               mother=dict(name="Unknown"))
+    a['parents'] = OrderedDict()
+    a['parents']["father"] = dict(name="Monkey D. Dragon")
+    a['parents']["mother"] = dict(name="Unknown")
 
     class FakeDict(object):
         def to_dict(self):
