@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
+from oar.lib.compat import iteritems
 from oar.kao.interval import (ordered_ids2itvs,
                               extract_n_scattered_block_itv,
                               keep_no_empty_scat_bks,
@@ -13,9 +14,9 @@ class Hierarchy(object):
     def __init__(self, hy=None, hy_rid=None, ):
         if hy_rid:
             self.hy = {}
-            for hy_label, hy_level_roids in hy_rid.iteritems():
+            for hy_label, hy_level_roids in iteritems(hy_rid):
                 self.hy[hy_label] = [
-                    ordered_ids2itvs(ids) for k, ids in hy_level_roids.iteritems()]
+                    ordered_ids2itvs(ids) for k, ids in iteritems(hy_level_roids)]
         else:
             if hy:
                 self.hy = hy

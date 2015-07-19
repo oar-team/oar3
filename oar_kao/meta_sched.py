@@ -11,6 +11,7 @@ from sqlalchemy import text
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
 from oar.lib.utils import Command
+from oar.lib.compat import iteritems
 
 from oar.kao.job import (get_current_not_waiting_jobs,
                          get_gantt_jobs_to_launch,
@@ -379,7 +380,7 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch, current_tim
 
     fragged_jobs = []
 
-    for rid, job_id in rid2jid_to_launch.iteritems():
+    for rid, job_id in iteritems(rid2jid_to_launch):
         if rid in besteffort_rid2job:
             be_job = besteffort_rid2job[rid]
             job_to_launch = jobs_to_launch[job_id]
@@ -645,7 +646,7 @@ def meta_schedule(mode='internal', plt=Platform()):
 
         node_halt = []
 
-        for node, idle_duration in idle_nodes.iteritems():
+        for node, idle_duration in iteritems(idle_nodes):
             if idle_duration < tmp_time:
                 # Search if the node has enough time to sleep
                 tmp = get_next_job_date_on_node(node)

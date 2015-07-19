@@ -1,7 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pytest
-import os
+
+from codecs import open
 from copy import deepcopy
 from tempfile import mkstemp
 from oar.kao.job import JobPseudo
@@ -209,12 +210,13 @@ def test_quotas_three_jobs_rule_1():
 def test_quotas_two_job_rules_nb_res_quotas_file():
 
     config['QUOTAS'] = 'yes'
-    quotas_fd, quotas_file_name = mkstemp()
+    _, quotas_file_name = mkstemp()
     config['QUOTAS_FILE'] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
-    os.write(quotas_fd, '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
-    os.close(quotas_fd)
+    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+        quotas_fd.write('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+
     qts.load_quotas_rules()
 
     res = [(1, 32)]

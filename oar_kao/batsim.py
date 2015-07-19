@@ -11,6 +11,8 @@ import json
 from sets import Set
 
 from oar.lib import (db, config, get_logger, Job, Resource, Queue)
+from oar.lib.compat import iteritems
+
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
@@ -42,7 +44,7 @@ DEFAULT_CONFIG = {
     'SCHEDULER_TIMEOUT': 30,
     'SERVER_HOSTNAME': 'server',
     'SERVER_PORT': 6666,
-    'ENERGY_SAVING_INTERNAL' : 'no',
+    'ENERGY_SAVING_INTERNAL': 'no',
     'SQLALCHEMY_CONVERT_UNICODE': True,
     'SQLALCHEMY_ECHO': False,
     'SQLALCHEMY_MAX_OVERFLOW': None,
@@ -132,7 +134,7 @@ def send_bat_msg(connection, now, jids_to_launch, jobs):
         for jid in jids_to_launch:
             msg += str(jid) + "="
             for r in itvs2ids(jobs[jid].res_set):
-                msg += str(r-offset_idx) + ","
+                msg += str(r - offset_idx) + ","
             # replace last comma by semicolon separtor between jobs
             msg = msg[:-1] + ";"
         msg = msg[:-1]  # remove last semicolon
@@ -251,7 +253,7 @@ class BatSched(object):
 
                 # retrieve jobs to launch
                 jids_to_launch = []
-                for jid, job in self.platform.assigned_jobs.iteritems():
+                for jid, job in iteritems(self.platform.assigned_jobs):
                     print(">>>>>>> job.start_time %s" % job.start_time)
                     if job.start_time == now:
                         self.waiting_jids.remove(jid)
@@ -360,11 +362,11 @@ def main(wkp_filename, database_mode):
                                                [([("resource_id", j["res"])],
                                                  [(0, nb_res - 0)])])],
                                 run_time=0,
-                                db_jid=i+1)
+                                db_jid=i + 1)
 
-            insert_job(res=[(j["walltime"], [('resource_id='+str(j["res"]), "")])],
+            insert_job(res=[(j["walltime"], [('resource_id=' + str(j["res"]), "")])],
                        state='Hold', properties='', user='')
-            db_jid2s_jid[i+1] = jid
+            db_jid2s_jid[i + 1] = jid
 
         db.flush()
 

@@ -1,6 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 from oar.lib import config
+from oar.lib.compat import iteritems
+
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.kao.interval import intersec, sub_intervals, add_intervals
 import oar.kao.quotas as qts
@@ -110,7 +112,7 @@ class SlotSet:
         self.cache = {}
 
     def show_slots(self):
-        for i, slot in self.slots.iteritems():
+        for i, slot in iteritems(self.slots):
             print(i)
             slot.show()
         print('---')

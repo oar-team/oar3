@@ -80,7 +80,7 @@ print("Completed job ids:", plt.completed_jids)
 
 print(jobs)
 
-# for jid,job in jobs.iteritems():
+# for jid,job in iteritems(jobs):
 #    jres_set = job.res_set
 #    r_ids = [ res_set.rid_o2i[roid] for roid in itvs2ids(jres_set) ]
 #    job.res_set = unordered_ids2itvs(r_ids)

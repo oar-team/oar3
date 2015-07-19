@@ -62,7 +62,7 @@ def create_almighty_socket():
     port = config["SERVER_PORT"]
     try:
         almighty_socket.connect((server, port))
-    except socket.error, exc:
+    except socket.error as exc:
         logger.error("Connection to Almighty" + server + ":" + str(port) +
                   " raised exception socket.error: " + str(exc))
         sys.exit(1)
@@ -78,7 +78,7 @@ def notify_tcp_socket(addr, port, message):
     logger.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
     try:
         tcp_socket.connect((addr, int(port)))
-    except socket.error, exc:
+    except socket.error as exc:
         logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                   " raised exception socket.error: " + str(exc))
         return 0

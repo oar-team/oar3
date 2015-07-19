@@ -1,5 +1,7 @@
 # coding: utf-8
 import time
+
+from oar.lib.compat import iteritems
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.job import JobPseudo, set_jobs_cache_keys
@@ -75,7 +77,7 @@ def simple_bench_1(job_key_cache=False):
         if job_key_cache:
             set_jobs_cache_keys(jobs)
 
-        # for k,job in jobs.iteritems():
+        # for k,job in iteritems(jobs):
         #    print job.key_cache
 
         with Timer() as t:

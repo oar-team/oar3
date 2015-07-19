@@ -1,8 +1,10 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
+from __future__ import print_function
 
 from sqlalchemy import text
 from oar.lib import config, db, Resource
+from oar.lib.compat import iteritems
+
 from oar.kao.hierarchy import Hierarchy
 from oar.kao.interval import ordered_ids2itvs, unordered_ids2itvs
 from array import array
@@ -18,8 +20,8 @@ class ResourceSet(object):
 
         # prepare resource order/indirection stuff
         order_by_clause = config["SCHEDULER_RESOURCE_ORDER"]
-        self.rid_i2o = array(b"i", [0] * MAX_NB_RESOURCES)
-        self.rid_o2i = array(b"i", [0] * MAX_NB_RESOURCES)
+        self.rid_i2o = array("i", [0] * MAX_NB_RESOURCES)
+        self.rid_o2i = array("i", [0] * MAX_NB_RESOURCES)
 
         # suspend
         suspendable_roids = []
@@ -96,7 +98,7 @@ class ResourceSet(object):
         self.hierarchy = Hierarchy(hy_rid=hy_roid).hy
 
         # transform available_upto
-        for k, v in available_upto.iteritems():
+        for k, v in iteritems(available_upto):
             self.available_upto[k] = ordered_ids2itvs(v)
 
         #

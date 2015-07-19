@@ -4,9 +4,10 @@ import json
 from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
+from oar.lib.compat import iteritems
+
 from oar.kao.interval import itvs_size, intersec
 import oar.kao.resource as rs
-import pdb
 
 quotas_job_types = ['*']
 quotas_rules = {}
@@ -108,7 +109,7 @@ class Quotas(object):
            $Gantt_quotas->{'*'}->{'*'}->{'*'}->{'john'} = [100, -1, -1] ;
 
 
-    Note1: Quotas are applied globally, only the jobs of the type container are not taken in 
+    Note1: Quotas are applied globally, only the jobs of the type container are not taken in
 account (but the inner jobs are used to compute the quotas).
 
     Note2: Besteffort jobs are not taken in account except in the besteffort queue.
@@ -124,7 +125,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def show_counters(self, msg=''):
         print('show_counters:', msg)
-        for k, v in self.counters.iteritems():
+        for k, v in iteritems(self.counters):
             print(k, ' = ', v)
 
     def update(self, job, prev_nb_res=0, prev_duration=0):
@@ -177,7 +178,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def combine(self, quotas):
         # self.show_counters('combine before')
-        for key, value in quotas.counters.iteritems():
+        for key, value in iteritems(quotas.counters):
             self.counters[key][0] = max(self.counters[key][0], value[0])
             self.counters[key][1] = max(self.counters[key][1], value[1])
             self.counters[key][2] += value[2]
@@ -186,11 +187,11 @@ account (but the inner jobs are used to compute the quotas).
     def check(self, job):
         global quotas_rules
         # self.show_counters('before check, job id: ' + str(job.id))
-        for rl_fields, rl_quotas in quotas_rules.iteritems():
+        for rl_fields, rl_quotas in iteritems(quotas_rules):
             # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, counters in self.counters.iteritems():
+            for fields, counters in iteritems(self.counters):
                 queue, project, job_type, user = fields
                 nb_resources, nb_jobs, resources_time = counters
                 # match queue
@@ -258,5 +259,5 @@ def load_quotas_rules():
     quotas_rules_filename = config['QUOTAS_FILE']
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
-        for k, v in json_quotas['quotas'].iteritems():
-            quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600*v[2])]
+        for k, v in iteritems(json_quotas['quotas']):
+            quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]

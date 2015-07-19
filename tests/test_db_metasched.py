@@ -6,13 +6,14 @@ import os.path
 import re
 
 from oar.lib import (config, db, Resource, Job, Queue, GanttJobsPrediction)
+from oar.lib.compat import iteritems
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
 import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 
-from __init__ import DEFAULT_CONFIG
+from . import DEFAULT_CONFIG
 
 prev_db_file = False
 
@@ -39,7 +40,7 @@ def generate_oar_conf(request):
     config['DB_BASE_FILE'] = DEFAULT_CONFIG['DB_BASE_FILE']
 
     file = open("/etc/oar/oar.conf", 'w')
-    for key, value in config.iteritems():
+    for key, value in iteritems(config):
         if not re.search(r'SQLALCHEMY_', key):
             # print key, value
             file.write(key + '="' + str(value) + '"\n')

@@ -1,6 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
+from oar.lib.compat import iteritems
+
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.interval import intersec
 from oar.kao.slot import intersec_itvs_slots, Slot
@@ -134,7 +136,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     (recursivity has not be tested)
     '''
 
-    #    for k,job in jobs.iteritems():
+    #    for k,job in iteritems(jobs):
     # print "*********j_id:", k, job.mld_res_rqts[0]
 
     for jid in id_jobs:

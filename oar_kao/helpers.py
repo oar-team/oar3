@@ -7,6 +7,8 @@ import colorsys
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatch
 
+from oar.lib.compat import iteritems
+
 NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
 RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
@@ -31,7 +33,7 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
     fig, ax = plt.subplots()
 
     if slots_set:
-        for sid, slot in slots_set.slots.iteritems():
+        for sid, slot in iteritems(slots_set.slots):
             col = "blue"
             if (sid % 2):
                 col = "red"
@@ -46,7 +48,7 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
                 ax.add_artist(rect)
 
     if jobs:
-        for jid, job in jobs.iteritems():
+        for jid, job in iteritems(jobs):
             col = RGB_tuples[random.randint(0, NB_COLORS - 1)]
             duration = job.walltime
             if hasattr(job, 'run_time'):

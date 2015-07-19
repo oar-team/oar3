@@ -5,7 +5,10 @@ from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
 from oar.kao.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
+
 from oar.lib import get_logger, config
+from oar.lib.compat import iteritems
+
 # for quotas
 import oar.kao.resource as rs
 from oar.kao.quotas import check_slots_quotas
@@ -62,7 +65,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
 
             jobs_slotsets[ss_name].append(job)
 
-    for ss_name, slot_set in slots_sets.iteritems():
+    for ss_name, slot_set in iteritems(slots_sets):
         logger.debug(" slots_sets.iteritems():" + ss_name)
         print("slots_sets.iteritems():", ss_name)
         if ss_name in jobs_slotsets:
@@ -70,7 +73,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
 
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
-    '''find resources in interval for all resource subrequests of a moldable 
+    '''find resources in interval for all resource subrequests of a moldable
     instance of a job'''
     result = []
     for hy_res_rqt in hy_res_rqts:
@@ -244,7 +247,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
-    #    for k,job in jobs.iteritems():
+    #    for k,job in iteritems(jobs):
     # print("*********j_id:", k, job.mld_res_rqts[0])
 
     for jid in id_jobs:

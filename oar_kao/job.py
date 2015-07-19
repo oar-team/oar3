@@ -12,6 +12,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobDependencie, GanttJobsResource, JobType,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config)
+from oar.lib.compat import iteritems, itervalues
 
 from oar.kao.utils import (update_current_scheduler_priority, add_new_event)
 
@@ -64,7 +65,7 @@ class JobPseudo(object):
 
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             setattr(self, key, value)
 
     def simple_req(self, resources_req, walltime, resources_constraint):
@@ -126,7 +127,7 @@ def get_jobs_types(jids, jobs):
 
             (jobs_types[jid])[t] = v
 
-    for job in jobs.itervalues():
+    for job in itervalues(jobs):
         if job.id in jobs_types:
             job.types = jobs_types[job.id]
         else:
@@ -145,7 +146,7 @@ def set_jobs_cache_keys(jobs):
     For jobs with dependencies, they do not update the cache entries.
 
     """
-    for job_id, job in jobs.iteritems():
+    for job_id, job in iteritems(jobs):
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
             for res_rqt in job.mld_res_rqts:
                 (moldable_id, walltime, hy_res_rqts) = res_rqt
@@ -487,7 +488,7 @@ def save_assigns(jobs, resource_set):
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
-        for j in jobs.itervalues():
+        for j in itervalues(jobs):
             logger.debug("first job_id  to save: " + str(j.id))
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
@@ -845,7 +846,7 @@ def insert_job(**kwargs):
 def get_job(job_id):
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
-    except Exception, e:
+    except Exception as e:
         logger.warn("get_job(" + str(job_id) + ") raises execption: " + str(e))
         return None
     else:

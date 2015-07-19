@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 import pytest
 
 import os
+from codecs import open
 from tempfile import mkstemp
 
 from oar.lib import (db, config, Resource, Job, Queue, GanttJobsPrediction)
@@ -40,9 +41,13 @@ def minimal_db_initialization(request):
 def active_quotas(request):
     print('active_quotas')
     config['QUOTAS'] = 'yes'
+    _, quotas_file_name = mkstemp()
+    config['QUOTAS_FILE'] = quotas_file_name
 
     def teardown():
         config['QUOTAS'] = 'no'
+        os.remove(config['QUOTAS_FILE'])
+        del config['QUOTAS_FILE']
 
     request.addfinalizer(teardown)
 
@@ -50,10 +55,8 @@ def active_quotas(request):
 def create_quotas_rules_file(quotas_rules):
     ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
     '''
-    quotas_fd, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
-    os.write(quotas_fd, quotas_rules)
-    os.close(quotas_fd)
+    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+        quotas_fd.write(quotas_rules)
     qts.load_quotas_rules()
 
 
@@ -138,7 +141,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
 
     res = []
     for i in db.query(GanttJobsPrediction).all():
-        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-now)
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time - now)
 
     assert res == [0, 160, 420]
@@ -176,7 +179,7 @@ def test_db_all_in_one_quotas_2(monkeypatch):
 
     res = []
     for i in db.query(GanttJobsPrediction).all():
-        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time-t1)
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
         res.append(i.start_time - t1)
 
     assert (res[1] - res[0]) == 120

@@ -1,1 +1,11 @@
-include README.rst CHANGES
+include AUTHORS.rst
+include CONTRIBUTING.rst
+include CHANGES.rst
+include COPYING
+include README.rst
+
+recursive-include tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
+recursive-include docs *.rst conf.py Makefile make.bat

@@ -3,6 +3,8 @@ from __future__ import unicode_literals, print_function
 
 import time
 
+from oar.lib.compat import iteritems
+
 from oar.kao.resource import ResourceSet
 from oar.kao.job import (get_waiting_jobs, get_data_jobs, get_scheduled_jobs,
                          save_assigns)
@@ -134,7 +136,7 @@ class Platform(object):
     def save_assigns_simu(self, jobs, resource_set):
         print("save_assigns_simu")
 
-        for jid, job in jobs.iteritems():
+        for jid, job in iteritems(jobs):
             jres_set = job.res_set
             print("job.res_set before", jid, job.res_set)
             r_ids = [resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set)]
@@ -144,7 +146,7 @@ class Platform(object):
     def save_assigns_simu_and_default(self, jobs, resource_set):
         print("save_assigns_simu_and_default........................")
         # assigned_jobs = {}
-        for jid, job in jobs.iteritems():
+        for jid, job in iteritems(jobs):
             sid = self.db_jid2s_jid[jid]
             jobsimu = self.jobs[sid]
             jres_set = job.res_set
