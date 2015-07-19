@@ -8,6 +8,7 @@ import subprocess
 import decimal
 import datetime
 
+from decimal import Decimal, InvalidOperation
 from collections import OrderedDict
 
 from .compat import numeric_types, to_unicode, json, reraise
@@ -125,15 +126,18 @@ class Command(object):
         self.run(*args, **kwargs)
 
 
-def try_convert_decimal(value):
+def try_convert_decimal(raw_value):
     """Try to convert ``value`` to a decimal."""
-    if value.isdecimal():
+    value = to_unicode(raw_value).encode('utf-8')
+    try:
+        Decimal(value)
         for _type in numeric_types:
             try:
                 return _type(value)
             except:
                 pass
-    return value
+    except InvalidOperation:
+        return raw_value
 
 
 def row2dict(row, ignore_keys=()):

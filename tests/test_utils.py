@@ -5,7 +5,8 @@ import random
 from collections import OrderedDict
 
 from oar.lib import Database
-from oar.lib.utils import SimpleNamespace, cached_property, ResultProxyIter
+from oar.lib.utils import (SimpleNamespace, cached_property, ResultProxyIter,
+                           try_convert_decimal)
 
 
 def test_simple_namespace():
@@ -59,3 +60,11 @@ def test_result_proxy_iter():
     for item in result_proxy:
         assert isinstance(item, OrderedDict)
         assert set(item.keys()) == {'num', 'word'}
+
+
+def test_try_convert_decimal():
+    assert try_convert_decimal("3.1") == 3.1
+    assert try_convert_decimal("3.10") == 3.1
+    assert try_convert_decimal("3") == 3
+    assert try_convert_decimal("3,2") == "3,2"
+    assert try_convert_decimal("foo") == "foo"
