@@ -14,14 +14,11 @@ from oar.kao.meta_sched import meta_schedule
 import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 
-from . import DEFAULT_CONFIG
-
 
 @pytest.fixture(scope='module', autouse=True)
 def generate_oar_confand_create_db(request):
 
-    DEFAULT_CONFIG['DB_BASE_FILE'] = '/tmp/oar.sqlite'
-    config.update(DEFAULT_CONFIG.copy())
+    config['DB_BASE_FILE'] = '/tmp/oar.sqlite'
 
     def dump_configuration(filename):
         with open(filename, 'w', encoding='utf-8') as fd:
@@ -34,15 +31,25 @@ def generate_oar_confand_create_db(request):
             if os.path.isfile(config['DB_BASE_FILE']):
                 os.remove(config['DB_BASE_FILE'])
 
+    @request.addfinalizer
     def teardown():
         os.remove('/etc/oar/oar.conf')
         remove_db_if_exists()
 
-    request.addfinalizer(teardown)
     dump_configuration('/etc/oar/oar.conf')
     remove_db_if_exists()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def create_db(request):
     db.create_all()
     db.reflect()
+    db.delete_all()
+
+    @request.addfinalizer
+    def teardown():
+        db.delete_all()
+        db.session.close()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -55,6 +62,7 @@ def minimal_db_intialization(request):
 
     def teardown():
         db.delete_all()
+        db.session.close()
 
     request.addfinalizer(teardown)
 

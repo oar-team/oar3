@@ -479,7 +479,7 @@ def test_schedule_placeholder_prev_sched():
     all_ss['default'].show_slots()
     # pdb.set_trace()
 
-    #assert j3.start_time == 150
+    # assert j3.start_time == 150
     assert j3.res_set == [(1, 16)]
 
 

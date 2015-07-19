@@ -1,10 +1,33 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
+
 import pytest
-from oar.lib import (db, Resource, GanttJobsPrediction)
+
+from oar.lib import db
+
 from oar.kao.job import insert_job
 from oar.kao.platform import Platform
 from oar.kao.kamelot_fifo import schedule_fifo_cycle
+
+
+@pytest.fixture(scope="module", autouse=True)
+def create_db(request):
+    db.create_all()
+    db.reflect()
+    db.delete_all()
+
+    @request.addfinalizer
+    def teardown():
+        db.delete_all()
+        db.session.close()
+
+
+@pytest.fixture(scope='function', autouse=True)
+def minimal_db_initialization(request):
+    @request.addfinalizer
+    def teardown():
+        db.delete_all()
+        db.session.close()
 
 
 def db_flush():
@@ -13,30 +36,21 @@ def db_flush():
     db.session.commit()
 
 
-@pytest.fixture(scope='function', autouse=True)
-def flush_db(request):
-    def teardown():
-        db.delete_all()
-
-    request.addfinalizer(teardown)
-
-
 def test_db_kamelot_fifo_no_hierarchy():
     # add some resources
     for i in range(5):
-        db.add(Resource(network_address="localhost"))
+        db['Resource'].create(network_address="localhost")
     db_flush()
 
     for i in range(5):
-        insert_job(res=[(60, [('resource_id=2', "")])],
-                   properties="")
+        insert_job(res=[(60, [('resource_id=2', "")])], properties="")
     db_flush()
 
     plt = Platform()
 
     schedule_fifo_cycle(plt, "default", False)
 
-    req = db.query(GanttJobsPrediction).all()
+    req = db['GanttJobsPrediction'].query.all()
 
     # for i, r in enumerate(req):
     #    print "req:", r.moldable_id, r.start_time
@@ -47,11 +61,11 @@ def test_db_kamelot_fifo_no_hierarchy():
 def test_db_kamelot_fifo_w_hierarchy():
     # add some resources
     for i in range(5):
-        db.add(Resource(network_address="localhost" + str(int(i / 2))))
+        db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
     db_flush()
 
-    for res in db.query(Resource).all():
+    for res in db['Resource'].query.all():
         print(res.id, res.network_address)
 
     for i in range(5):
@@ -63,7 +77,7 @@ def test_db_kamelot_fifo_w_hierarchy():
 
     schedule_fifo_cycle(plt, "default", True)
 
-    req = db.query(GanttJobsPrediction).all()
+    req = db['GanttJobsPrediction'].query.all()
 
     # for i, r in enumerate(req):
     #    print "req:", r.moldable_id, r.start_time

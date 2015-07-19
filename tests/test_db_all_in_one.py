@@ -6,7 +6,7 @@ import os
 from codecs import open
 from tempfile import mkstemp
 
-from oar.lib import (db, config, Job, GanttJobsPrediction)
+from oar.lib import db, config
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
@@ -15,11 +15,16 @@ from oar.kao.utils import get_date
 import oar.kao.quotas as qts
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def create_db(request):
-    # Create the tables based on the current model
     db.create_all()
     db.reflect()
+    db.delete_all()
+
+    @request.addfinalizer
+    def teardown():
+        db.delete_all()
+        db.session.close()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -30,10 +35,10 @@ def minimal_db_initialization(request):
     for i in range(5):
         db['Resource'].create(network_address="localhost")
 
+    @request.addfinalizer
     def teardown():
         db.delete_all()
-
-    request.addfinalizer(teardown)
+        db.session.close()
 
 
 @pytest.fixture(scope="function")
@@ -77,16 +82,16 @@ def monkeypatch_utils(request, monkeypatch):
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db_flush()
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print('job state:', job.state)
 
     # pdb.set_trace()
     meta_schedule('internal')
 
-    for i in db.query(GanttJobsPrediction).all():
+    for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print(job.state)
     assert (job.state == 'toLaunch')
 
@@ -107,7 +112,7 @@ def test_db_all_in_one_ar_1(monkeypatch):
 
     meta_schedule('internal')
 
-    job = db.query(Job).one()
+    job = db['Job'].query.one()
     print(job.state, ' ', job.reservation)
 
     assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
@@ -136,7 +141,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db.query(GanttJobsPrediction).all():
+    for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time - now)
 

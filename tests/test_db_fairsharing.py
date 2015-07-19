@@ -1,29 +1,37 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-import pytest
-from oar.lib import (db, Resource, GanttJobsPrediction, Accounting)
-
-from oar.kao.job import insert_job
-
-from oar.kao.platform import Platform
-
-from oar.kao.kamelot import schedule_cycle
 
 import time
+import pytest
+
 from random import sample
 
-from oar.lib import config
+from oar.lib import db, config
+
+from oar.kao.job import insert_job
+from oar.kao.platform import Platform
+from oar.kao.kamelot import schedule_cycle
+
+
+@pytest.fixture(scope="module", autouse=True)
+def create_db(request):
+    db.create_all()
+    db.reflect()
+    db.delete_all()
+
+    @request.addfinalizer
+    def teardown():
+        db.delete_all()
+        db.session.close()
 
 
 @pytest.fixture(scope='module', autouse=True)
 def oar_conf(request):
-
     config['FAIRSHARING_ENABLED'] = 'yes'
 
+    @request.addfinalizer
     def remove_fairsharing():
         config['FAIRSHARING_ENABLED'] = 'no'
-
-    request.addfinalizer(remove_fairsharing)
 
 
 def db_flush():
@@ -33,7 +41,7 @@ def db_flush():
 
 
 def del_accounting():
-    db.engine.execute(Accounting.__table__.delete())
+    db.engine.execute(db['accounting'].delete())
     db.commit()
 
 
@@ -49,7 +57,7 @@ def set_accounting(accountings, consumption_type):
                                 'consumption_type': consumption_type,
                                 'consumption': consumption})
 
-    db.engine.execute(Accounting.__table__.insert(), ins_accountings)
+    db.engine.execute(db['accounting'].insert(), ins_accountings)
     db.commit()
 
 
@@ -91,8 +99,7 @@ def test_db_fairsharing():
 
     # add some resources
     for i in range(5):
-        db.add(Resource(network_address="localhost"))
-    # db_flush()
+        db['Resource'].create(network_address="localhost")
 
     nb_users = 5
 
@@ -117,8 +124,9 @@ def test_db_fairsharing():
 
     schedule_cycle(plt, plt.get_time())
 
-    req = db.query(GanttJobsPrediction).order_by(
-        GanttJobsPrediction.start_time).all()
+    req = db['GanttJobsPrediction'].query\
+                                   .order_by(db['GanttJobsPrediction'].start_time)\
+                                   .all()
     flag = True
 
     print(jid_2_u)
