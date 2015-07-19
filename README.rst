@@ -8,6 +8,9 @@ Kao: A Scheduling Framework for OAR
 .. image:: https://img.shields.io/pypi/v/oar-kao.svg
         :target: https://pypi.python.org/pypi/oar-kao
 
+.. image:: http://codecov.io/github/oar-team/oar-kao/coverage.svg?branch=master
+        :target: http://codecov.io/github/oar-team/oar-kao?branch=master
+
 
 Another Metascheduler for OAR.
 
