@@ -1,10 +1,18 @@
 # Config file for automatic testing at travis-ci.org
 
 language: python
+python: 2.7
+env:
+    - TOX_ENV=py27
+    - TOX_ENV=py34
+    - TOX_ENV=pypy
 
-python:
-  - "3.4"
-  - "2.7"
+script: tox -e $TOX_ENV
 
-# command to run tests, e.g. python setup.py test
-script: py.test
+install:
+    - pip install tox
+
+after_success:
+    # Report coverage results to codecov.io
+    - pip install codecov
+    - codecov
