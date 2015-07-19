@@ -155,7 +155,7 @@ def test_db_api_create_and_delete_all(db):
     assert dicaprio.movies[0].actors[0] is dicaprio
     assert dicaprio.movies[0].actors[1] is ruffalo
 
-    with assert_raises(IntegrityError, "UNIQUE constraint failed"):
+    with assert_raises(IntegrityError):
         db['Actor'].create(firstname="Leonardo", lastname="DiCaprio")
 
     db.delete_all()
