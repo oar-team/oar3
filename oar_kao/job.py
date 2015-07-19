@@ -13,8 +13,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config)
 
-from oar.kao.utils import (update_current_scheduler_priority, add_new_event,
-                           get_date)
+from oar.kao.utils import (update_current_scheduler_priority, add_new_event)
 
 import oar.kao.utils as utils
 
@@ -577,7 +576,7 @@ def set_job_state(jid, state):
         logger.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
-        date = get_date()
+        date = utils.get_date()
 
         # TODO: optimize job log
         db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
@@ -690,6 +689,8 @@ def get_current_resources_with_suspended_job():
 
 
 def log_job(job):
+    if db.dialect == "sqlite":
+        return
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.index == 'CURRENT')\
       .filter(MoldableJobDescription.job_id == job.id)\
@@ -866,7 +867,7 @@ def frag_job(jid):
                               or (luser == 'root')):
         res = db.query(FragJob).filter(FragJob.job_id == jid).all()
         if len(res) == 0:
-            date = get_date()
+            date = utils.get_date()
             frajob = FragJob(job_id=jid, date=date)
             db.add(frajob)
             db.commit()
@@ -914,9 +915,17 @@ def get_waiting_reservation_jobs_specific_queue(queue_name):
 def update_scheduler_last_job_date(date, moldable_id):
     ''' used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)
     '''
-    db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
-                      .filter(Resource.id == AssignedResource.resource_id)\
-                      .update({Resource.last_job_date: date}, synchronize_session=False)
+
+    if db.dialect == "sqlite":
+        subquery = db.query(AssignedResource.resource_id).filter_by(moldable_id=moldable_id)\
+                     .subquery()
+        db.query(Resource).filter(Resource.id.in_(subquery))\
+                          .update({Resource.last_job_date: date}, synchronize_session=False)
+
+    else:
+        db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
+                          .filter(Resource.id == AssignedResource.resource_id)\
+                          .update({Resource.last_job_date: date}, synchronize_session=False)
     db.commit()
 
 

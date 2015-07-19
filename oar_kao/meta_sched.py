@@ -26,7 +26,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
                          resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql, get_date,
+from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql,
                            get_job_events, send_checkpoint_signal)
 
 import oar.kao.utils as utils
@@ -96,9 +96,8 @@ to_launch_jobs_already_treated = {}
 ##########################################################################
 
 
-def plt_init_with_running_jobs(initial_time_sec, job_security_time):
+def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
 
-    plt = Platform()
     #
     # Determine Global Resource Intervals and Initial Slot
     #
@@ -116,7 +115,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching',
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
-    save_assigns(current_jobs, resource_set)
+    plt.save_assigns(current_jobs, resource_set)
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -160,7 +159,7 @@ def plt_init_with_running_jobs(initial_time_sec, job_security_time):
                                            job_security_time, initial_time_sec,
                                            filter_besteffort)
 
-    return (plt, all_slot_sets, scheduled_jobs, besteffort_rid2job)
+    return (all_slot_sets, scheduled_jobs, besteffort_rid2job)
 
 
 # Tell Almighty to run a job
@@ -551,7 +550,7 @@ def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_tim
                             queue.name)
 
 
-def meta_schedule(mode='internal'):
+def meta_schedule(mode='internal', plt=Platform()):
 
     exit_code = 0
 
@@ -571,15 +570,15 @@ def meta_schedule(mode='internal'):
 
     # reservation ??.
 
-    initial_time_sec = get_date()  # time.time()
+    initial_time_sec = utils.get_date()  # time.time()
     initial_time_sql = local_to_sql(initial_time_sec)
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    plt_init_results = plt_init_with_running_jobs(initial_time_sec,
-                                                  job_security_time)
-    plt, all_slot_sets, scheduled_jobs, besteffort_rid2jid = plt_init_results
+    gantt_init_results = gantt_init_with_running_jobs(plt, initial_time_sec,
+                                                      job_security_time)
+    all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
     resource_set = plt.resource_set()
 
     # Path for user of external schedulers

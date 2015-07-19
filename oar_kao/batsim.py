@@ -10,7 +10,7 @@ import os
 import json
 from sets import Set
 
-from oar.lib import (db, config, get_logger, Resource, Queue)
+from oar.lib import (db, config, get_logger, Job, Resource, Queue)
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
@@ -22,6 +22,7 @@ from oar.kao.meta_sched import meta_schedule
 import oar.kao.utils
 
 offset_idx = 0
+plt = None
 
 DEFAULT_CONFIG = {
     'DB_BASE_FILE': ':memory:',
@@ -41,6 +42,7 @@ DEFAULT_CONFIG = {
     'SCHEDULER_TIMEOUT': 30,
     'SERVER_HOSTNAME': 'server',
     'SERVER_PORT': 6666,
+    'ENERGY_SAVING_INTERNAL' : 'no',
     'SQLALCHEMY_CONVERT_UNICODE': True,
     'SQLALCHEMY_ECHO': False,
     'SQLALCHEMY_MAX_OVERFLOW': None,
@@ -156,6 +158,7 @@ def monkeypatch_oar_kao_utils():
     oar.kao.utils.notify_almighty = lambda x: len(x)
     oar.kao.utils.notify_tcp_socket = lambda addr, port, msg: len(msg)
     oar.kao.utils.notify_user = lambda job, state, msg: len(state + msg)
+    oar.kao.utils.get_date = lambda: plt.get_time()
 
 
 def db_initialization(nb_res):
@@ -188,11 +191,12 @@ class BatSched(object):
 
         self.mode_platform = mode_platform
         self.sched_delay = sched_delay
-
+        self.db_jid2s_jid = db_jid2s_jid
         self.env = BatEnv(0)
         self.platform = Platform(
             mode_platform, env=self.env, resource_set=res_set, jobs=jobs, db_jid2s_jid=db_jid2s_jid)
-
+        global plt
+        plt = self.platform
         self.jobs = jobs
         self.nb_jobs = len(jobs)
         self.sock = create_uds(uds_name)
@@ -239,23 +243,43 @@ class BatSched(object):
             print("jobs waiting: %s" % self.waiting_jids)
             print("jobs completed: %s" % jobs_completed)
 
-            print("call schedule_cycle.... %s" % now)
-            schedule_cycle(self.platform, now, "default")
-
-            # retrieve jobs to launch
             jids_to_launch = []
-            for jid, job in self.platform.assigned_jobs.iteritems():
-                print(">>>>>>> job.start_time %s" % job.start_time)
-                if job.start_time == now:
+
+            if self.mode_platform == 'simu':
+                print("call schedule_cycle.... %s" % now)
+                schedule_cycle(self.platform, now, "default")
+
+                # retrieve jobs to launch
+                jids_to_launch = []
+                for jid, job in self.platform.assigned_jobs.iteritems():
+                    print(">>>>>>> job.start_time %s" % job.start_time)
+                    if job.start_time == now:
+                        self.waiting_jids.remove(jid)
+                        jids_to_launch.append(jid)
+                        job.state = "Running"
+                        print("tolaunch: %s" % jid)
+                        self.platform.running_jids.append(jid)
+
+            else:
+                print("call meta_schedule('internal')")
+                meta_schedule('internal', plt)
+                # Launching phase
+                # Retrieve job to Launch
+
+                result = db.query(Job).filter(Job.state == 'toLaunch')\
+                                      .order_by(Job.id).all()
+
+                for job_db in result:
+                    set_job_state(job_db.id, 'Running')
+                    jid = self.db_jid2s_jid[job_db.id]
                     self.waiting_jids.remove(jid)
                     jids_to_launch.append(jid)
-                    job.state = "Running"
-                    print("tolaunch: %s" % jid)
+                    self.jobs[jid].state = "Running"
+                    print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
 
             now += self.sched_delay
             self.env.now = now
-
             send_bat_msg(self.connection, now, jids_to_launch, self.jobs)
 
     def run(self):

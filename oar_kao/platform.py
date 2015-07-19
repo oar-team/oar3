@@ -47,7 +47,7 @@ class Platform(object):
 
         elif mode == 'batsim-db':
             self.env = kwargs['env']
-            self.assigned_jobs = {}
+            # self.assigned_jobs = {}
             self.jobs = kwargs['jobs']
             self.db_jid2s_jid = kwargs['db_jid2s_jid']
             self.running_jids = None
@@ -142,19 +142,20 @@ class Platform(object):
         self.assigned_jobs = jobs
 
     def save_assigns_simu_and_default(self, jobs, resource_set):
-        print("save_assigns_simu_and_default")
-        assigned_jobs = {}
+        print("save_assigns_simu_and_default........................")
+        # assigned_jobs = {}
         for jid, job in jobs.iteritems():
             sid = self.db_jid2s_jid[jid]
             jobsimu = self.jobs[sid]
             jres_set = job.res_set
             r_ids = [resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set)]
             jobsimu.res_set = unordered_ids2itvs(r_ids)
+            print("save assign jid, sid, res_set: ", jid, " ", sid, " ", jobsimu.res_set)
             jobsimu.start_time = job.start_time
             jobsimu.walltime = job.walltime
-            assigned_jobs[sid] = jobsimu
+            # assigned_jobs[sid] = jobsimu
 
-        self.assigned_jobs = jobs
+        # self.assigned_jobs = assigned_jobs
 
         return save_assigns(jobs, resource_set)
 
