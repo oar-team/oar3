@@ -132,7 +132,7 @@ class Command(object):
         return (error, self.process.returncode)
 
     def __call__(self, *args, **kwargs):
-        self.run(*args, **kwargs)
+        return self.run(*args, **kwargs)
 
 
 def try_convert_decimal(raw_value):
