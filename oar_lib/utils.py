@@ -7,7 +7,6 @@ import subprocess
 import decimal
 import datetime
 
-from inspect import isgenerator
 from collections import OrderedDict
 
 from .compat import numeric_types, to_unicode, json
@@ -71,31 +70,20 @@ class ResultProxyIter(list):
     """ SQLAlchemy ResultProxies are not iterable to get a
     list of dictionaries. This is to wrap them. """
 
-    def __init__(self, result_proxies):
-        self.count = result_proxies.rowcount
-        if not isgenerator(result_proxies):
-            result_proxies = iter((result_proxies, ))
-        self.result_proxies = result_proxies
-        self._iter = None
-
-    def __next__(self):
-        if self._iter is None:
-            rp = next(self.result_proxies)
-            self.keys = list(rp.keys())
-            self._iter = iter(rp.fetchall())
-        try:
-            return row2dict(next(self._iter))
-        except StopIteration:
-            self._iter = None
-            return self.__next__()
+    def __init__(self, result_proxy):
+        self.items = result_proxy.fetchall()
+        self._iter = iter(self.items)
 
     def __len__(self):
-        return self.count
+        return len(self.items)
 
-    next = __next__
+    def __next__(self):
+        return row2dict(next(self._iter))
 
     def __iter__(self):
         return self
+
+    next = __next__
 
 
 class Command(object):

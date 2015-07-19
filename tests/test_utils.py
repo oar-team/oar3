@@ -54,6 +54,6 @@ def test_result_proxy_iter():
         assert isinstance(item, OrderedDict)
         assert set(item.keys()) == {'num', 'word'}
     # result_proxy is a yield-generator
-    assert list(result_proxy) == 0
+    assert len(list(result_proxy)) == 0
     assert len(result_proxy) == 4
     return db
