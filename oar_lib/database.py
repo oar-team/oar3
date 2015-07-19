@@ -47,13 +47,14 @@ class BaseModel(object):
             cls._db.session.rollback()
             reraise(exc_type, exc_value, tb.tb_next)
 
-    def asdict(self, ignore_keys=()):
+    def to_dict(self, ignore_keys=()):
         data = OrderedDict()
         for key in get_entity_loaded_propnames(self):
             if key not in ignore_keys:
                 data[key] = getattr(self, key)
         return data
 
+    asdict = to_dict
     def __iter__(self):
         """Returns an iterable that supports .next()"""
         for (k, v) in iteritems(self.asdict()):
