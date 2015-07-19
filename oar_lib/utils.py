@@ -127,14 +127,13 @@ class Command(object):
         thread = threading.Thread(target=target)
         thread.start()
 
-        error = None
         thread.join(timeout)
         if thread.is_alive():
             self.logger.error('Timeout: Terminating process "%s"' % self.cmd)
             self.process.terminate()
             thread.join()
 
-        return (error, self.process.returncode)
+        return self.process.returncode
 
     def __call__(self, *args, **kwargs):
         return self.run(*args, **kwargs)
