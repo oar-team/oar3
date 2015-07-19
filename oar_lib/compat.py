@@ -3,6 +3,12 @@ import sys
 
 PY3 = sys.version_info[0] == 3
 
+try:  # pragma: no cover
+    import __pypy__
+    PYPY = True
+except:  # pragma: no cover
+    __pypy__ = None
+    PYPY = False
 
 try:
     # Should be (manually) installed if using Python 2.6 or older,

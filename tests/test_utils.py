@@ -12,6 +12,7 @@ from oar.lib import Database
 from oar.lib.utils import (SimpleNamespace, cached_property, ResultProxyIter,
                            try_convert_decimal, row2dict, merge_dicts,
                            get_table_name, render_query, to_json, Command)
+from oar.lib.compat import PYPY
 from . import assert_raises
 
 
@@ -60,6 +61,8 @@ def test_cached_propery():
     value = myobject.value
     assert myobject.value == value
     assert myobject._cache['value'] == myobject.value
+    if PYPY:
+        return
     del myobject.value
     assert 'value' not in myobject._cache
     assert myobject.value != value
