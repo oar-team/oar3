@@ -67,12 +67,6 @@ def minimal_db_intialization(request):
     request.addfinalizer(teardown)
 
 
-def db_flush():
-    db.session.flush()
-    db.session.expunge_all()
-    db.session.commit()
-
-
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
@@ -86,7 +80,6 @@ def test_db_metasched_simple_1(monkeypatch):
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
-    db_flush()
     job = db['Job'].query.one()
     print('job state:', job.state)
 
@@ -109,7 +102,6 @@ def test_db_metasched_ar_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="",
                reservation='toSchedule', start_time=(now + 10),
                info_type='localhost:4242')
-    db_flush()
 
     meta_schedule()
 

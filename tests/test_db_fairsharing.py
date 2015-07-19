@@ -34,12 +34,6 @@ def oar_conf(request):
         config['FAIRSHARING_ENABLED'] = 'no'
 
 
-def db_flush():
-    db.session.flush()
-    db.session.expunge_all()
-    db.session.commit()
-
-
 def del_accounting():
     db.engine.execute(db['accounting'].delete())
     db.commit()
@@ -114,8 +108,6 @@ def test_db_fairsharing():
             properties=""
         )
         jid_2_u[i + 1] = int(user)
-
-    db_flush()
 
     plt = Platform()
     r = plt.resource_set()

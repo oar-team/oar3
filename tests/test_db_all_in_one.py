@@ -64,12 +64,6 @@ def create_quotas_rules_file(quotas_rules):
     qts.load_quotas_rules()
 
 
-def db_flush():
-    db.session.flush()
-    db.session.expunge_all()
-    db.session.commit()
-
-
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
@@ -81,7 +75,6 @@ def monkeypatch_utils(request, monkeypatch):
 
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
-    db_flush()
     job = db['Job'].query.one()
     print('job state:', job.state)
 
@@ -105,7 +98,6 @@ def test_db_all_in_one_ar_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="",
                reservation='toSchedule', start_time=(now + 10),
                info_type='localhost:4242')
-    db_flush()
 
     # plt = Platform()
     # r = plt.resource_set()
@@ -133,8 +125,6 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
-
-    db_flush()
 
     # pdb.set_trace()
     now = get_date()
@@ -165,13 +155,11 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     insert_job(res=[(60, [('resource_id=1', "")])], properties="",
                reservation='toSchedule', start_time=(t0 + 100),
                info_type='localhost:4242')
-    db_flush()
     meta_schedule('internal')
 
     # Submit other jobs
     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
-    db_flush()
 
     # pdb.set_trace()
     t1 = get_date()
