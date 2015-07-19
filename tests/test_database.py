@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 from oar.lib.database import Database, SessionProperty, QueryProperty
 from oar.lib.compat import StringIO, to_unicode
+from oar.lib.utils import to_json
 from . import assert_raises
 
 
@@ -161,6 +162,34 @@ def test_db_api_create_and_delete_all(db):
     assert db['Actor'].query.count() == 0
     assert db['Movie'].query.count() == 0
     assert len(db.session.execute(db['association'].select()).fetchall()) == 0
+
+
+def test_db_api_to_dict_json(db):
+    db.create_all()
+    db.reflect()
+    Actor, Movie = db['Actor'], db['Movie']
+    dt = datetime.datetime(2015, 7, 19, 9, 14, 22, 140921)
+    a1 = Actor.create(firstname="Leonardo", lastname="DiCaprio", birthday=dt)
+    a2 = Actor.create(firstname="Mark", lastname="Ruffalo")
+    m1 = Movie.create(title="Shutter Island")
+    m1.actors.append(a1)
+    m1.actors.append(a2)
+
+    item = Actor.query.filter_by(firstname="Leonardo").first()
+    item_dict = OrderedDict([('id', 1),
+                             ('firstname', 'Leonardo'),
+                             ('lastname', 'DiCaprio'),
+                             ('birthday', dt)])
+    assert item.to_dict() == item_dict
+    expected_json = """
+{
+    "id": 1,
+    "firstname": "Leonardo",
+    "lastname": "DiCaprio",
+    "birthday": "2015-07-19T09:14:22.140921"
+}""".strip()
+    assert item.to_json() == expected_json
+    assert to_json(item) == expected_json
 
 
 def test_db_api_others(db):
