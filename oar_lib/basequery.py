@@ -9,6 +9,7 @@ from .models import (Job, MoldableJobDescription, AssignedResource,
                      GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
                      Resource)
 from .utils import render_query
+from .compat import str
 
 
 __all__ = ['BaseQuery', 'BaseQueryCollection']
@@ -17,7 +18,12 @@ __all__ = ['BaseQuery', 'BaseQueryCollection']
 class BaseQuery(Query):
 
     def render(self):
-        print(render_query(self))
+        class QueryStr(str):
+            # Useful for debug
+            def __repr__(self):
+                return self.replace(' \n', '\n').strip()
+
+        return QueryStr(render_query(self))
 
     def get_or_error(self, uid):
         """Like :meth:`get` but raises an error if not found instead of
