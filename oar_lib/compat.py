@@ -1,32 +1,48 @@
 # -*- coding: utf-8 -*-
 import sys
 
-PY3 = sys.version_info[0] == 3
+# Syntax sugar.
+_ver = sys.version_info
+
+#: Python 2.x?
+is_py2 = (_ver[0] == 2)
+
+#: Python 3.x?
+is_py3 = (_ver[0] == 3)
+
+#: Python 3.3.x
+is_py33 = (is_py3 and _ver[1] == 3)
+
+#: Python 3.4.x
+is_py34 = (is_py3 and _ver[1] == 4)
+
+#: Python 2.7.x
+is_py27 = (is_py2 and _ver[1] == 7)
+
 
 try:  # pragma: no cover
     import __pypy__
-    PYPY = True
+    is_pypy = True
 except:  # pragma: no cover
     __pypy__ = None
-    PYPY = False
+    is_pypy = False
 
-try:
+try:  # pragma: no cover
     # Should be (manually) installed if using Python 2.6 or older,
     # or if you want the speedup for raw bytestrings provided by
     # simplejson.
     import simplejson as json
-except ImportError:
+except ImportError:  # pragma: no cover
     import json  # Works with python 2.7+ # noqa
 
 
-if PY3:
+if is_py3:
     builtin_str = str
     str = str
     bytes = bytes
     basestring = (str, bytes)
     integer_types = (int, )
     numeric_types = integer_types + (float, )
-
     from io import StringIO
     from queue import Empty
 
@@ -54,9 +70,6 @@ if PY3:
 
     def callable(obj):
         return isinstance(obj, Callable)
-
-    # Simple container
-    from types import SimpleNamespace
 
 else:
     builtin_str = str
@@ -90,6 +103,11 @@ else:
 
     callable = callable
 
+
+if is_py33:
+    # Simple container
+    from types import SimpleNamespace
+else:
     class SimpleNamespace(object):
         """ A generic container for when multiple values need to be returned
         """
