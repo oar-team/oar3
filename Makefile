@@ -60,9 +60,6 @@ test:  ## Run tests quickly with the default Python
 testall:  ## Run tests on every Python version with tox
 	tox
 
-ci:  ## Run all tests and get junitxml report for CI (Travis, Jenkins...)
-	py.test --junitxml=junit.xml
-
 coverage: ## Check code coverage quickly with the default Python
 	py.test --verbose --cov-report term --cov-report html --cov=oar_lib || true
 	$(open) htmlcov/index.html
