@@ -39,7 +39,7 @@ RESOURCES_TABLES = [
     {'gantt_jobs_resources_visu': 'resource_id'},
 ]
 
-TIME_COLUMNS = [
+db.__time_columns__ = [
     'window_start',
     'window_stop',
     'date_start',
