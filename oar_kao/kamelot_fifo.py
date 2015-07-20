@@ -6,6 +6,8 @@ from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.interval import (intersec, sub_intervals, itvs2ids, unordered_ids2itvs)
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
+
+from copy import deepcopy
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
 
@@ -45,7 +47,7 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
         # Determine Global Resource Intervals
         #
         resource_set = plt.resource_set()
-        res_itvs = resource_set.roid_itvs
+        res_itvs = deepcopy(resource_set.roid_itvs)
 
         #
         # Get  additional waiting jobs' data
@@ -63,10 +65,13 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
         #
         # Assign resource to jobs
         #
+
         for jid in waiting_jids:
             job = waiting_jobs[jid]
+
             # We consider only one instance of resources request (no support for moldable)
             (mld_id, walltime, hy_res_rqts) = job.mld_res_rqts[0]
+
             if hierarchy_use:
                 # Assign resources which hierarchy support (uncomment)
                 itvs = find_resource_hierarchies_job(res_itvs, hy_res_rqts, resource_set.hierarchy)

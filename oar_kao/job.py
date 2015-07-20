@@ -180,7 +180,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                       MoldableJobDescription.id,
                       MoldableJobDescription.walltime,
                       JobResourceGroup.id,
-                      JobResourceGroup.moldable_id,
                       JobResourceGroup.property,
                       JobResourceDescription.group_id,
                       JobResourceDescription.resource_type,
@@ -221,7 +220,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
          moldable_id,
          mld_id_walltime,
          jrg_id,
-         jrg_mld_id,
          jrg_grp_property,
          res_jrg_id,
          res_type,
@@ -290,7 +288,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
             # determine resource constraints
             #
             if (j_properties == "" and (jrg_grp_property == "" or jrg_grp_property == "type = 'default'")):
-                res_constraints = resource_set.roid_itvs
+                res_constraints = deepcopy(resource_set.roid_itvs)
             else:
                 if j_properties == "" or jrg_grp_property == "":
                     and_sql = ""
@@ -298,7 +296,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                     and_sql = " AND "
 
                 sql_constraints = j_properties + and_sql + jrg_grp_property
-
                 if sql_constraints in cache_constraints:
                     res_constraints = cache_constraints[sql_constraints]
                 else:

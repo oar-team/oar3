@@ -69,6 +69,6 @@ def test_db_kamelot_fifo_w_hierarchy():
     req = db['GanttJobsPrediction'].query.all()
 
     # for i, r in enumerate(req):
-    #    print "req:", r.moldable_id, r.start_time
+    #    print("req:", r.moldable_id, r.start_time)
 
     assert len(req) == 3
