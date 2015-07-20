@@ -8,6 +8,7 @@ from oar.lib.compat import iteritems
 from oar.kao.hierarchy import Hierarchy
 from oar.kao.interval import ordered_ids2itvs, unordered_ids2itvs
 from array import array
+from collections import OrderedDict
 
 MAX_NB_RESOURCES = 100000
 
@@ -41,7 +42,7 @@ class ResourceSet(object):
 
         hy_roid = {}
         for hy_label in hy_labels_w_id:
-            hy_roid[hy_label] = {}
+            hy_roid[hy_label] = OrderedDict()
 
         # available_upto for pseudo job in slot
         available_upto = {}
@@ -68,13 +69,10 @@ class ResourceSet(object):
                 # fill hy_rid structure
                 for hy_label in hy_labels_w_id:
                     v = getattr(r, hy_label)
-                    if v:
-                        if hy_label not in hy_roid:
-                            hy_roid[hy_label] = {}
-                        if v in hy_roid[hy_label]:
-                            hy_roid[hy_label][v].append(roid)
-                        else:
-                            hy_roid[hy_label][v] = [roid]
+                    if v in hy_roid[hy_label]:
+                        hy_roid[hy_label][v].append(roid)
+                    else:
+                        hy_roid[hy_label][v] = [roid]
 
                 # fill available_upto structure
                 if r.available_upto in available_upto:
