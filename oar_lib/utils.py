@@ -175,10 +175,10 @@ def render_query(statement, bind=None, reindent=True):
     """
     from sqlalchemy_utils.functions import render_statement
     raw_sql = render_statement(statement, bind)
-    try:
+    try:  # pragma: no cover
         import sqlparse
         return sqlparse.format(raw_sql, reindent=reindent)
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return raw_sql
 
 
