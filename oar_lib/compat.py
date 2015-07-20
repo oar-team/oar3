@@ -104,17 +104,6 @@ else:
     callable = callable
 
 
-if is_py33:
-    # Simple container
-    from types import SimpleNamespace
-else:
-    class SimpleNamespace(object):
-        """ A generic container for when multiple values need to be returned
-        """
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-
-
 def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
 
