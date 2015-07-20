@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import pytest
+import time
 import datetime
+
+from codecs import open
 
 from sqlalchemy import event, Table
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
@@ -8,8 +11,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.util import object_state
 from collections import OrderedDict
 
+from oar.lib import fixture
 from oar.lib.database import Database, SessionProperty, QueryProperty
-from oar.lib.compat import StringIO, to_unicode
+from oar.lib.compat import StringIO, to_unicode, json
 from oar.lib.utils import to_json
 from . import assert_raises
 
@@ -248,3 +252,44 @@ def test_internal_operations(db):
     assert Database.query_class is None
     assert Database.query_collection_class is None
     assert isinstance(db.Model.query, QueryProperty)
+
+
+def test_load_fixtures(db, tmpdir):
+    ts = int(time.time())
+
+    db.create_all()
+
+    db.op.add_column(
+        table_name='actor',
+        column=db.Column('start_time', db.Integer, nullable=True),
+    )
+
+    db.reflect()
+    db.__time_columns__ = ["start_time"]
+
+    Actor, Movie = db['Actor'], db['Movie']
+    a1 = Actor.create(firstname="Leonardo", lastname="DiCaprio", start_time=ts)
+    a2 = Actor.create(firstname="Mark", lastname="Ruffalo", start_time=ts)
+    m1 = Movie.create(title="Shutter Island")
+    m1.actors.append(a1)
+    m1.actors.append(a2)
+
+    assert Actor.query.order_by(Actor.id).first().start_time == ts
+
+    filepath = tmpdir.join('fixtures.json').strpath
+    fixture.dump_fixtures(db, filepath, ref_time=ts)
+
+    data = {}
+    with open(filepath, 'r', encoding='utf-8') as fd:
+        data = json.load(fd)
+
+    assert data['metadata']['ref_time'] == ts
+
+    fixture.load_fixtures(db, filepath, clear=True, ref_time=None)
+    assert Actor.query.order_by(Actor.id).first().start_time == ts
+
+    fixture.load_fixtures(db, filepath, clear=True, ref_time=(ts - 10))
+    assert Actor.query.order_by(Actor.id).first().start_time == (ts - 10)
+
+    with assert_raises(IntegrityError):
+        fixture.load_fixtures(db, filepath)
