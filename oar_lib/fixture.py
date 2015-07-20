@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
+import re
 import time
 
 from codecs import open
 from collections import OrderedDict
+from datetime import datetime
 
 from .compat import json, iteritems, itervalues, iterkeys
 from .utils import JSONEncoder, ResultProxyIter
-from .models import TIME_COLUMNS
 
 
 class JsonSerializer(object):
@@ -24,16 +25,24 @@ class JsonSerializer(object):
         else:
             return self.ref_time - self.old_ref_time
 
-    def load(self):
+    def convert_datetime(self, dct):
+        for key, value in iteritems(dct):
+            try:
+                dct[key] = datetime(*map(int, re.split('[^\d]', value)[:-1]))
+            except Exception:
+                pass
+        return dct
+
+    def load(self, time_columns=()):
         self.old_ref_time = int(time.time())
         with open(self.filename, 'r', encoding='utf-8') as fd:
-            dct = json.load(fd)
+            dct = json.load(fd, object_hook=self.convert_datetime)
             self.old_ref_time = dct['metadata']['ref_time']
             if self.time_offset != 0:
                 for data in dct['data']:
                     for record in data['records']:
                         for key, value in record.items():
-                            if (key in TIME_COLUMNS
+                            if (key in time_columns
                                     and 0 < record[key] < 2147483647):
                                 record[key] = record[key] + self.time_offset
             return dct['data']
@@ -62,8 +71,9 @@ def get_defined_tables(db):
     return tables
 
 
-def load_fixtures(db, filename, ref_time=None, clear=False):
-    data = JsonSerializer(filename, ref_time=ref_time).load()
+def load_fixtures(db, filename, ref_time=None, clear=False, time_columns=()):
+    time_columns = time_columns or getattr(db, '__time_columns__', [])
+    data = JsonSerializer(filename, ref_time).load(time_columns)
     if clear:
         db.delete_all()
     for fixture in data:
@@ -91,4 +101,4 @@ def dump_fixtures(db, filename, ref_time=None):
         entry['records'] = db.query(model).all()
         data.append(entry)
 
-    JsonSerializer(filename, ref_time=ref_time).dump(data)
+    JsonSerializer(filename, ref_time).dump(data)
