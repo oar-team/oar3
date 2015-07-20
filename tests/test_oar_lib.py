@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import oar.lib
 
+from . import assert_raises
+
 
 def test_all_module_api():
 
@@ -23,3 +25,5 @@ def test_all_module_api():
         'render_query', 'row2dict', 'utils']
 
     assert set(all_modules) == set(dir(oar.lib))
+    with assert_raises(ImportError):
+        from oar.lib import totototo  # noqa
