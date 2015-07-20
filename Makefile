@@ -61,7 +61,11 @@ testall:  ## Run tests on every Python version with tox
 	tox
 
 coverage: ## Check code coverage quickly with the default Python
-	py.test --verbose --cov-report term --cov-report html --cov=oar_lib || true
+	coverage erase
+	tox
+	coverage combine
+	coverage report --include=* -m
+	coverage html
 	$(open) htmlcov/index.html
 
 lint:  ## Check style with flake8

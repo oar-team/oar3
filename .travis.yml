@@ -11,10 +11,13 @@ env:
 
 install:
   - pip install tox
+  - coverage erase
 
-script: tox
+script:
+  - tox -v
 
 after_success:
+    - coverage combine
     # Report coverage results to codecov.io
     - pip install codecov
     - codecov
