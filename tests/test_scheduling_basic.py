@@ -48,7 +48,7 @@ def test_schedule_id_jobs_ct_1():
 
     res = [(1, 32)]
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
-    all_ss = {0: ss}
+    all_ss = {'default': ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
     j1 = JobPseudo(id=1, types={}, key_cache="",

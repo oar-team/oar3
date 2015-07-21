@@ -11,18 +11,19 @@ from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    "HIERARCHY_LABEL": "resource_id,network_address",
-    "SCHEDULER_RESOURCE_ORDER": "resource_id ASC"
+    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
+    'SCHEDULER_JOB_SECURITY_TIME': '60',
 }
 
 
-logger = get_logger("oar.kamelot_basic")
+logger = get_logger('oar.kamelot_basic')
 
 
-def schedule_cycle(plt, queue="default"):
+def schedule_cycle(plt, queue='default'):
     now = plt.get_time()
 
-    logger.info("Begin scheduling....", now)
+    logger.info('Begin scheduling....', now)
 
     #
     # Retrieve waiting jobs
@@ -61,17 +62,18 @@ def schedule_cycle(plt, queue="default"):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set)
+        job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(resource_set)
+        scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, now)
 
         if scheduled_jobs != []:
             initial_slot_set.split_slots_jobs(scheduled_jobs)
 
-        initial_slot_set.show_slots()
+        # initial_slot_set.show_slots()
 
         all_slot_sets = {"default": initial_slot_set}
 

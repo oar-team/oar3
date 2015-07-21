@@ -43,8 +43,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
 
     # to not always begin by the first slots ( O(n^2) )
     # TODO:
-    if job.key_cache and job.key_cache in cache:
-        sid_left = cache[job.key_cache]
+    if job.key_cache and (job.key_cache[mld_id] in cache):
+        sid_left = cache[job.key_cache[mld_id]]
     else:
         sid_left = 1
 
@@ -79,7 +79,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
         sid_left = slots[sid_left].next
 
     if job.key_cache:
-        cache[job.key_cache] = sid_left
+        cache[job.key_cache[mld_id]] = sid_left
 
     return (itvs, sid_left, sid_right)
 
@@ -106,7 +106,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
         (mld_id, walltime, hy_res_rqts) = res_rqt
         (res_set, sid_left, sid_right) = \
             find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy)
-        # print "after find fisrt suitable"
+        # print("after find fisrt suitable")
         t_finish = slots[sid_left].b + walltime
         if (t_finish < prev_t_finish):
             prev_start_time = slots[sid_left].b
@@ -142,7 +142,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     for jid in id_jobs:
         job = jobs[jid]
 
-        ss_id = 0
+        ss_id = 'default'
         if "inner" in job.types:
             ss_id = job.types["inner"]
 
