@@ -7,7 +7,7 @@ from oar.lib import db
 
 from oar.kao.job import insert_job
 from oar.kao.platform import Platform
-from oar.kao.kamelot_fifo import schedule_fifo_cycle
+from oar.kao.kamelot_fifo import main, schedule_fifo_cycle
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -38,9 +38,7 @@ def test_db_kamelot_fifo_no_hierarchy():
     for i in range(5):
         insert_job(res=[(60, [('resource_id=2', "")])], properties="")
 
-    plt = Platform()
-
-    schedule_fifo_cycle(plt, "default", False)
+    main()
 
     req = db['GanttJobsPrediction'].query.all()
 
