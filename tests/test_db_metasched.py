@@ -16,7 +16,7 @@ from oar.kao.utils import get_date
 
 
 @pytest.fixture(scope='module', autouse=True)
-def generate_oar_confand_create_db(request):
+def generate_oar_conf_and_create_db(request):
 
     config['DB_BASE_FILE'] = '/tmp/oar.sqlite'
 
@@ -34,22 +34,16 @@ def generate_oar_confand_create_db(request):
     @request.addfinalizer
     def teardown():
         os.remove('/etc/oar/oar.conf')
+        db.delete_all()
+        db.session.close()
         remove_db_if_exists()
+        del db.uri
 
     dump_configuration('/etc/oar/oar.conf')
     remove_db_if_exists()
-
-
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
     db.create_all()
     db.reflect()
     db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
 
 
 @pytest.fixture(scope="function", autouse=True)
