@@ -191,7 +191,7 @@ def main():
 
     if len(sys.argv) > 2:
         schedule_cycle(plt, int(float(sys.argv[2])), sys.argv[1])
-    elif (sys.argv) == 2:
+    elif len(sys.argv) == 2:
         schedule_cycle(plt, plt.get_time(), sys.argv[1])
     else:
         schedule_cycle(plt, plt.get_time())
