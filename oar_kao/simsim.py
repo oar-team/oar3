@@ -2,7 +2,6 @@
 from __future__ import unicode_literals, print_function
 
 import re
-from sets import Set
 import simpy
 from simpy.events import AnyOf
 
@@ -32,10 +31,10 @@ class SimSched(object):
 
         self.sched_proc = self.env.process(self.sched())
 
-        self.evt_running_jobs = Set()
+        self.evt_running_jobs = set()
         self.running_jids = []  # TO REMOVE ???
         self.platform.running_jids = []
-        self.waiting_jids = Set()
+        self.waiting_jids = set()
         self.platform.waiting_jids = self.waiting_jids
         self.platform.completed_jids = []
 
@@ -212,7 +211,7 @@ class SWFWorkload(object):
         for line in open(filename):
             li = line.strip()
             if not li.startswith(";"):
-                print(line.rstrip())
+                # print(line.rstrip())
                 fields = [int(f) for f in re.split('\W+', line) if f != '']
                 jid = fields[JID]
                 sub_time = fields[SUB_TIME]

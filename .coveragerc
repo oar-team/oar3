@@ -10,6 +10,5 @@ exclude_lines =
 omit =
     oar_kao/helpers.py
     oar_kao/batsim.py
-    oar_kao/simsim.py
     bench/minibench.py       
     bench/plot_minibench.py 
