@@ -13,7 +13,8 @@ almighty_socket = None
 
 notification_user_socket = None
 
-def init_judas_notify_user():
+
+def init_judas_notify_user():  # pragma: no cover
 
     logger.debug("init judas_notify_user (launch judas_notify_user.pl)")
 
@@ -34,7 +35,7 @@ def init_judas_notify_user():
         notification_user_socket.connect(uds_name)
 
 
-def notify_user(job, state, msg):
+def notify_user(job, state, msg):  # pragma: no cover
     global notification_user_socket
     # Currently it uses a unix domain sockey to communication to a perl script
     # TODO need to define and develop the next notification system
@@ -55,7 +56,7 @@ def notify_user(job, state, msg):
         logger.error("notify_user: socket error")
 
 
-def create_almighty_socket():
+def create_almighty_socket():  # pragma: no cover
     global almighty_socket
     almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server = config["SERVER_HOSTNAME"]
@@ -68,7 +69,7 @@ def create_almighty_socket():
         sys.exit(1)
 
 
-def notify_almighty(message):
+def notify_almighty(message):  # pragma: no cover
     return almighty_socket.send(message)
 
 
@@ -93,9 +94,9 @@ def notify_tcp_socket(addr, port, message):
 def get_date():
 
     if db.engine.dialect.name == 'sqlite':
-        req =  "SELECT strftime('%s','now')"
-    else:
-        req ="SELECT EXTRACT(EPOCH FROM current_timestamp)"
+        req = "SELECT strftime('%s','now')"
+    else:   # pragma: no cover
+        req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
     result = db.engine.execute(req).scalar()
     return int(result)
@@ -123,8 +124,7 @@ def local_to_sql(local):
 
 def hms_to_sql(hour, min, sec):
 
-    return  str(hour) + ":" + str(min) + ":" + str(sec)
-
+    return(str(hour) + ":" + str(min) + ":" + str(sec))
 
 
 # duration_to_hms
@@ -140,11 +140,9 @@ def duration_to_hms(t):
     sec = t % 60
     t /= 60
     min = t % 60
-    hour  = int(t / 60)
+    hour = int(t / 60)
 
-    return (hour, min , sec)
-
-
+    return (hour, min, sec)
 
 # duration_to_sql
 # converts a date specified as a duration in seconds to the format used by the
@@ -152,11 +150,13 @@ def duration_to_hms(t):
 # parameters : duration
 # return value : date string
 # side effects : /
+
+
 def duration_to_sql(t):
 
     hour, min, sec = duration_to_hms(t)
 
-    return hms_to_sql( hour, min, sec)
+    return hms_to_sql(hour, min, sec)
 
 
 # update_current_scheduler_priority
@@ -167,11 +167,12 @@ def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources
     """
 
+    # TO FINISH
     # TODO: MOVE TO resource.py ???
 
     logger.info("update_current_scheduler_priority " +
-             " job.id: " + str(job.id) + ", state: " + state + ", value: "
-             + str(value))
+                " job.id: " + str(job.id) + ", state: " + state + ", value: "
+                + str(value))
 
     if "SCHEDULER_PRIORITY_HIERARCHY_ORDER" in config:
         sched_priority = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
@@ -202,10 +203,9 @@ def update_current_scheduler_priority(job, value, state):
 
                 db.query(Resource)\
                   .filter(Resource.id.in_(tuple(resources)))\
-                  .update({Resource.scheduler_priority: Resource.scheduler_priority + (value * index * coeff)},
-                          synchronize_session=False)
+                  .update({Resource.scheduler_priority: Resource.scheduler_priority +
+                           (value * index * coeff)}, synchronize_session=False)
                 db.commit()
-
 
             add_new_event("SCHEDULER_PRIORITY_UPDATED_$state", job.id,
                           "Scheduler priority for job $job_id updated (" + sched_priority +")")
@@ -223,21 +223,20 @@ def update_scheduler_last_job_date(date, moldable_id):
 # add a new entry in event_log table
 # args : database ref, event type, job_id , description
 def add_new_event(type, job_id, description):
-    event_data = EventLog(
-        type=type, job_id=job_id, date=get_date(), description=description[:255])
+    event_data = EventLog(type=type, job_id=job_id, date=get_date(),
+                          description=description[:255])
     db.add(event_data)
     db.commit()
 
+
 def get_job_events(job_id):
-    """Get events for the specified job
-    """
-
-    result = db.query(EventLog).filter(EventLogger.job_id == job_id).all()
-
+    '''Get events for the specified job
+    '''
+    result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
     return result
 
 
 def send_checkpoint_signal(job):
-    logger.debug("Send checkpoint signal to the job " + str(be_job.id))
-    logger.warn("Send checkpoint signal NOT YET IMPLEMENTED " )
-    #Have a look to  check_jobs_to_kill/oar_meta_sched.pl
+    logger.debug("Send checkpoint signal to the job " + str(job.id))
+    logger.warn("Send checkpoint signal NOT YET IMPLEMENTED ")
+    # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
