@@ -54,6 +54,12 @@ def oar_conf(request):
     request.addfinalizer(remove_quotas)
 
 
+@pytest.fixture(scope='function', autouse=True)
+def reset_quotas():
+    qts.quotas_rules = {}
+    qts.quotas_job_types = ['*']
+
+
 def test_quotas_one_job_no_rules():
     config['QUOTAS'] = 'yes'
 
@@ -246,3 +252,36 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
     assert j1.res_set == []
     assert j2.res_set == [(1, 16)]
+
+
+def test_quotas_two_jobs_job_type_proc():
+    config['QUOTAS'] = 'yes'
+    _, quotas_file_name = mkstemp()
+    config['QUOTAS_FILE'] = quotas_file_name
+
+    # quotas_file = open(quotas_file_name, 'w')
+    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+        quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "quotas_job_types": ["yop"]}')
+
+    qts.load_quotas_rules()
+
+    print(qts.quotas_rules, qts.quotas_job_types)
+
+    res = [(1, 32)]
+    rs.default_resource_itvs = res
+
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, queue='default', user='toto', project='', types={'yop'})
+    j1.simple_req(('node', 1), 50, res)
+    j2 = JobPseudo(id=2, queue='default', user='toto', project='', types={'yop'})
+    j2.simple_req(('node', 1), 50, res)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+
+    print(j1.start_time, j2.start_time)
+
+    assert j1.start_time == 0
+    assert j2.start_time == 50

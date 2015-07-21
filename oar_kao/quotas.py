@@ -9,8 +9,8 @@ from oar.lib.compat import iteritems
 from oar.kao.interval import itvs_size, intersec
 import oar.kao.resource as rs
 
-quotas_job_types = ['*']
 quotas_rules = {}
+quotas_job_types = ['*']
 
 
 class Quotas(object):
@@ -123,7 +123,7 @@ account (but the inner jobs are used to compute the quotas).
     def deepcopy_from(self, quotas):
         self.counters = deepcopy(quotas.counters)
 
-    def show_counters(self, msg=''):
+    def show_counters(self, msg=''):  # pragma: no cover
         print('show_counters:', msg)
         for k, v in iteritems(self.counters):
             print(k, ' = ', v)
@@ -134,6 +134,7 @@ account (but the inner jobs are used to compute the quotas).
         project = job.project
         user = job.user
 
+        # TOREMOVE ?
         if hasattr(job, 'res_set'):
             if not hasattr(self, 'nb_res'):
                 job.nb_res = itvs_size(intersec(job.res_set, rs.default_resource_itvs))
@@ -247,12 +248,14 @@ def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, durati
 
 def load_quotas_rules():
     global quotas_rules
+    global quotas_job_types
     """
     {
         "quotas": {
                "*,*,*,*": [120,-1,-1],
                 "*,*,*,john": [150,-1,-1]
         }
+        "quotas_job_types": ['besteffort','deploy','console']
     }
 
     """
@@ -261,3 +264,5 @@ def load_quotas_rules():
         json_quotas = json.load(json_file)
         for k, v in iteritems(json_quotas['quotas']):
             quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
+        if 'quotas_job_types' in json_quotas:
+            quotas_job_types.extend(json_quotas['quotas_job_types'])
