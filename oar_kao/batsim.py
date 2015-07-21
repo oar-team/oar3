@@ -373,7 +373,7 @@ def main(wkp_filename, database_mode):
         BatSched([], jobs, 'batsim-db', db_jid2s_jid).run()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(description='Adaptor to run oar-kao with BatSim.')
     parser.add_argument('wkp_filename', metavar='F',
                         help='a file which contains the workload profile.')

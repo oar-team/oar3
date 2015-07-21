@@ -12,6 +12,6 @@ def main():
     logger.info("Starting Kao Meta Scheduler")
     meta_schedule()
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     logger = get_logger("oar.kao", stdout=True)
     main()

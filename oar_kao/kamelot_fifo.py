@@ -117,6 +117,6 @@ def main():
     logger.info("That's all folks")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     logger = get_logger("oar.kamelot_fifo", stdout=True)
     main()

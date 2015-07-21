@@ -199,7 +199,7 @@ def main():
     logger.info("That's all folks")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     config['LOG_FILE'] = '/tmp/oar_kamelot.log'
     logger = get_logger("oar.kamelot", stdout=True)
     main()
