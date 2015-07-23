@@ -1,10 +1,61 @@
 # Config file for automatic testing at travis-ci.org
+sudo: true
+
+addons:
+  hosts:
+    - node1
+    - node2
+    - server
 
 language: python
 
 python:
-  - "3.4"
   - "2.7"
+  - "3.4"
+
+env:
+  - OAR_VERSION=2.5.3   DB=mysql
+  - OAR_VERSION=2.5.4   DB=mysql
+  - OAR_VERSION=2.5     DB=mysql
+  - OAR_VERSION=2.5.3   DB=postgresql
+  - OAR_VERSION=2.5.4   DB=postgresql
+  - OAR_VERSION=2.5     DB=postgresql
+  - OAR_VERSION=master  DB=postgresql
+
+
+before_install:
+  - sudo apt-get update
+  - |
+    sudo apt-get -y install --no-install-recommends
+    openssh-server perl perl-base taktuk libdbi-perl libsort-versions-perl
+    libdbd-pg-perl libdatetime-perl libsort-naturally-perl libappconfig-perl
+    libtie-ixhash-perl libmysqlclient-dev
+  - pip install tox coverage
+
+install:
+  - coverage erase
+
+before_script:
+  - sudo bash ./scripts/ci/install_oar.sh
+  - sudo service oar-server start
+  - sudo service oar-node start
+  - sudo oarproperty -a core
+  - sudo oarproperty -a cpu
+  - sudo oarnodesetting -a -h node1 -p cpu=0 -p core=0 -p cpuset=0
+  - sudo oarnodesetting -a -h node1 -p cpu=0 -p core=1 -p cpuset=0
+  - sudo oarnodesetting -a -h node1 -p cpu=1 -p core=2 -p cpuset=0
+  - sudo oarnodesetting -a -h node1 -p cpu=1 -p core=3 -p cpuset=0
+  - sudo oarnodesetting -a -h node2 -p cpu=2 -p core=4 -p cpuset=0
+  - sudo oarnodesetting -a -h node2 -p cpu=2 -p core=5 -p cpuset=0
+  - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=6 -p cpuset=0
+  - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=7 -p cpuset=0
 
 # command to run tests, e.g. python setup.py test
-script: py.test
+script:
+  - sudo -E su oar -c "tox -e $(python ./scripts/ci/pyversion2toxenv.py)-$DB"
+
+after_success:
+    - coverage combine
+    # Report coverage results to codecov.io
+    - pip install codecov
+    - codecov
