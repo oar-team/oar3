@@ -29,7 +29,7 @@ before_install:
     sudo apt-get -y install --no-install-recommends
     taktuk libdbi-perl libsort-versions-perl libdbd-pg-perl libdatetime-perl
     libsort-naturally-perl libappconfig-perl libtie-ixhash-perl
-  - pip install tox coverage
+  - sudo pip install tox coverage
 
 install:
   - coverage erase
