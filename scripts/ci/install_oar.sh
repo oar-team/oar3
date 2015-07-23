@@ -28,7 +28,7 @@ echo "$VERSION" | tee /oar_version
 
 
 echo "Extract OAR $VERSION"
-tar xf $OAR_TARBALL_URL -C $SRCDIR
+tar xf $TARBALL_FILE -C $SRCDIR
 SRCDIR=$SRCDIR/oar-${VERSION}
 
 echo "Install OAR ${VERSION}"
