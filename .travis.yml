@@ -34,7 +34,7 @@ before_install:
 install:
   - coverage erase
 
-before_script:
+script:
   - sudo bash ./scripts/ci/install_oar.sh $OAR_VERSION $DB
   - sudo service oar-server start
   - sudo service oar-node start
@@ -48,9 +48,6 @@ before_script:
   - sudo oarnodesetting -a -h node2 -p cpu=2 -p core=5 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=6 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=7 -p cpuset=0
-
-# command to run tests, e.g. python setup.py test
-script:
   - sudo -E su oar -c "tox -e $(python ./scripts/ci/pyversion2toxenv.py)-$DB"
 
 after_success:
