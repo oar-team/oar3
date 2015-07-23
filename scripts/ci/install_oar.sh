@@ -20,16 +20,11 @@ mkdir -p $SRCDIR
 wget  --no-check-certificate "$OAR_TARBALL_URL" -O $TMPDIR/oar-tarball.tar.gz
 TARBALL_FILE=$TMPDIR/oar-tarball.tar.gz
 
-VERSION=$(tar xfz $TARBALL_FILE --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
-echo "$VERSION" | tee /oar_version
-[ -n "${VERSION}" ] || fail "error: fail to retrieve OAR version"
-
-
-echo "Extract OAR $VERSION"
+echo "Extract OAR $OAR_VERSION"
 tar xf "$TARBALL_FILE" -C $SRCDIR
-SRCDIR=$SRCDIR/oar-${VERSION}
+SRCDIR=$SRCDIR/oar-${OAR_VERSION}
 
-echo "Install OAR ${VERSION}"
+echo "Install OAR ${OAR_VERSION}"
 make -C $SRCDIR PREFIX=/usr/local user-build tools-build node-build server-build
 make -C $SRCDIR PREFIX=/usr/local user-install tools-install node-install server-install
 make -C $SRCDIR PREFIX=/usr/local user-setup tools-setup node-setup server-setup
