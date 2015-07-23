@@ -14,13 +14,9 @@ fail() {
     exit 1
 }
 
-if [ ! -r "$OAR_TARBALL_URL" ]; then
-    echo "DOwnload oar from $OAR_TARBALL_URL"
-    curl -L $OAR_TARBALL_URL -o $TMPDIR/oar-tarball.tar.gz
-    TARBALL_FILE=$TMPDIR/oar-tarball.tar.gz
-else
-    TARBALL_FILE="$(readlink -m $OAR_TARBALL_URL)"
-fi
+echo "Download oar from $OAR_TARBALL_URL"
+wget  --no-check-certificate "$OAR_TARBALL_URL" -O $TMPDIR/oar-tarball.tar.gz
+TARBALL_FILE=$TMPDIR/oar-tarball.tar.gz
 
 VERSION=$(tar xfz $TARBALL_FILE --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
 echo "$VERSION" | tee /oar_version
@@ -28,7 +24,7 @@ echo "$VERSION" | tee /oar_version
 
 
 echo "Extract OAR $VERSION"
-tar xf $TARBALL_FILE -C $SRCDIR
+tar xf "$TARBALL_FILE" -C $SRCDIR
 SRCDIR=$SRCDIR/oar-${VERSION}
 
 echo "Install OAR ${VERSION}"
