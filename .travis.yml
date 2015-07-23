@@ -35,7 +35,7 @@ install:
   - coverage erase
 
 before_script:
-  - sudo bash ./scripts/ci/install_oar.sh
+  - sudo bash ./scripts/ci/install_oar.sh $OAR_VERSION $DB
   - sudo service oar-server start
   - sudo service oar-node start
   - sudo oarproperty -a core

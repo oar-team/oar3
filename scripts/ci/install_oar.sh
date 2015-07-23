@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+OAR_VERSION=$1
+DB=$2
+
 TMPDIR=$(mktemp -d --tmpdir install_oar.XXXXXXXX)
 SRCDIR="$TMPDIR/src"
 OAR_TARBALL_URL="https://github.com/oar-team/oar/archive/${OAR_VERSION}.tar.gz"
