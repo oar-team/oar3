@@ -16,18 +16,18 @@ fail() {
 
 if [ ! -r "$OAR_TARBALL_URL" ]; then
     echo "DOwnload oar from $OAR_TARBALL_URL"
-    curl $OAR_TARBALL_URL -o $TMPDIR/oar-OAR_TARBALL_URL.tar.gz
-    OAR_TARBALL_URL=$TMPDIR/oar-OAR_TARBALL_URL.tar.gz
+    curl -L $OAR_TARBALL_URL -o $TMPDIR/oar-tarball.tar.gz
+    TARBALL_FILE=$TMPDIR/oar-tarball.tar.gz
 else
-    OAR_TARBALL_URL="$(readlink -m $OAR_TARBALL_URL)"
+    TARBALL_FILE="$(readlink -m $OAR_TARBALL_URL)"
 fi
 
-VERSION=$(tar xfz $OAR_TARBALL_URL --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
+VERSION=$(tar xfz $TARBALL_FILE --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
 echo "$VERSION" | tee /oar_version
 [ -n "${VERSION}" ] || fail "error: fail to retrieve OAR version"
 
 
-echo "Extract OAR OAR_TARBALL_URL"
+echo "Extract OAR $VERSION"
 tar xf $OAR_TARBALL_URL -C $SRCDIR
 SRCDIR=$SRCDIR/oar-${VERSION}
 
