@@ -27,9 +27,8 @@ before_install:
   - sudo apt-get update
   - >
     sudo apt-get -y install --no-install-recommends
-    openssh-server perl perl-base taktuk libdbi-perl libsort-versions-perl
-    libdbd-pg-perl libdatetime-perl libsort-naturally-perl libappconfig-perl
-    libtie-ixhash-perl libmysqlclient-dev
+    taktuk libdbi-perl libsort-versions-perl libdbd-pg-perl libdatetime-perl
+    libsort-naturally-perl libappconfig-perl libtie-ixhash-perl
   - pip install tox coverage
 
 install:
