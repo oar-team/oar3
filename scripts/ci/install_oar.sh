@@ -11,21 +11,21 @@ fail() {
     exit 1
 }
 
-if [ ! -r "$TARBALL" ]; then
-    echo "DOwnload oar from $TARBALL"
-    curl $TARBALL -o $TMPDIR/oar-tarball.tar.gz
-    TARBALL=$TMPDIR/oar-tarball.tar.gz
+if [ ! -r "$OAR_TARBALL_URL" ]; then
+    echo "DOwnload oar from $OAR_TARBALL_URL"
+    curl $OAR_TARBALL_URL -o $TMPDIR/oar-OAR_TARBALL_URL.tar.gz
+    OAR_TARBALL_URL=$TMPDIR/oar-OAR_TARBALL_URL.tar.gz
 else
-    TARBALL="$(readlink -m $TARBALL)"
+    OAR_TARBALL_URL="$(readlink -m $OAR_TARBALL_URL)"
 fi
 
-VERSION=$(tar xfz $TARBALL --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
+VERSION=$(tar xfz $OAR_TARBALL_URL --wildcards "*/sources/core/common-libs/lib/OAR/Version.pm" --to-command "grep -e 'my \$OARVersion'" | sed -e 's/^[^"]\+"\(.\+\)";$/\1/')
 echo "$VERSION" | tee /oar_version
 [ -n "${VERSION}" ] || fail "error: fail to retrieve OAR version"
 
 
-echo "Extract OAR tarball"
-tar xf $TARBALL -C $SRCDIR
+echo "Extract OAR OAR_TARBALL_URL"
+tar xf $OAR_TARBALL_URL -C $SRCDIR
 SRCDIR=$SRCDIR/oar-${VERSION}
 
 echo "Install OAR ${VERSION}"
