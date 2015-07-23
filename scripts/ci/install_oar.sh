@@ -36,7 +36,7 @@ if [ -f /usr/local/share/oar/oar-server/init.d/oar-server ]; then
 fi
 
 if [ -f /usr/local/share/doc/oar-server/examples/init.d/oar-server ]; then
-    cat /usr/local/share/oar/oar-server/init.d/oar-server > /etc/init.d/oar-server
+    cat /usr/local/share/doc/oar-server/examples/init.d/oar-server > /etc/init.d/oar-server
     chmod +x  /etc/init.d/oar-server
 fi
 
@@ -55,7 +55,7 @@ if [ -f /usr/local/share/oar/oar-node/init.d/oar-node ]; then
 fi
 
 if [ -f /usr/local/share/doc/oar-node/examples/init.d/oar-node ]; then
-    cat /usr/local/share/oar/oar-node/init.d/oar-node > /etc/init.d/oar-node
+    cat /usr/local/share/doc/oar-node/examples/init.d/oar-node > /etc/init.d/oar-node
     chmod +x  /etc/init.d/oar-node
 fi
 
