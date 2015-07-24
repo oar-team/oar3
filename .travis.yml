@@ -34,7 +34,7 @@ before_install:
 install:
   - coverage erase
 
-script:
+before_script:
   - sudo bash ./scripts/ci/install_oar.sh $OAR_VERSION $DB
   - sudo service oar-server start
   - sudo service oar-node start
@@ -48,6 +48,8 @@ script:
   - sudo oarnodesetting -a -h node2 -p cpu=2 -p core=5 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=6 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=7 -p cpuset=0
+
+script:
   - sudo tox -e py-$DB
 
 after_success:
