@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+    bumpversion.py: Automated software release workflow
+"""
 from __future__ import unicode_literals, print_function
 import os
 import re
@@ -12,17 +15,19 @@ from argparse import RawTextHelpFormatter, ArgumentParser, FileType
 
 
 def generate_changelog_title(version):
+    """ Returns a changelog entry for the new version. """
     version_title = "Version %s" % version
     return version_title + "\n" + "-" * len(version_title)
 
 
 def get_release_date():
-    dt = datetime.date.today()
-    if 4 <= dt.day <= 20 or 24 <= dt.day <= 30:
+    """ Returns release date in the appropriate format. """
+    now = datetime.date.today()
+    if 4 <= now.day <= 20 or 24 <= now.day <= 30:
         suffix = "th"
     else:
-        suffix = ["st", "nd", "rd"][dt.day % 10 - 1]
-    return dt.strftime("%%B %%d%s %%Y" % suffix)
+        suffix = ["st", "nd", "rd"][now.day % 10 - 1]
+    return now.strftime("%%B %%d%s %%Y" % suffix)
 
 
 def bump_release_version(args):
@@ -48,24 +53,27 @@ which will create a 'release' version (Eg. 0.7.2-dev => 0.7.2).
     bumpver = subprocess.check_output(
         ['bumpversion', 'release', '--dry-run', '--verbose'],
         stderr=subprocess.STDOUT)
-    m = re.search(r'Parsing version \'(\d+\.\d+\.\d+)\.dev0\'', bumpver)
-    current_version = m.groups(0)[0] + ".dev0"
-    m = re.search(r'New version will be \'(\d+\.\d+\.\d+)\'', bumpver)
-    release_version = m.groups(0)[0]
+    match_version = re.search(r'Parsing version \'(\d+\.\d+\.\d+)\.dev0\'',
+                              bumpver)
+    current_version = match_version.groups(0)[0] + ".dev0"
+    match_version = re.search(r'New version will be \'(\d+\.\d+\.\d+)\'',
+                              bumpver)
+    release_version = match_version.groups(0)[0]
 
     date = get_release_date()
 
     current_version_title = generate_changelog_title(current_version)
     release_version_title = generate_changelog_title(release_version)
     changes = ""
-    with open(changelog) as fd:
-        changes += fd.read()
+
+    with open(changelog) as fd_file:
+        changes += fd_file.read()
 
     changes = changes.replace(current_version_title, release_version_title)\
                      .replace("**unreleased**", "Released on %s" % date)
 
-    with open(changelog, "w") as fd:
-            fd.write(changes)
+    with open(changelog, "w") as fd_file:
+        fd_file.write(changes)
 
     # Tries to load the EDITOR environment variable, else falls back to vim
     editor = os.environ.get('EDITOR', 'vim')
@@ -103,7 +111,6 @@ You can also specify a patch level (patch, minor, major) to change to::
     $ python bumpversion.py newversion major
 
 which will create a 'major' release (0.0.2 => 1.0.0-dev)."""
-    pass
     # Dry run 'bumpversion' to find out what the new version number
     # would be. Useful side effect: exits if the working directory is not
     # clean.
@@ -112,10 +119,11 @@ which will create a 'major' release (0.0.2 => 1.0.0-dev)."""
     bumpver = subprocess.check_output(
         ['bumpversion', part, '--dry-run', '--verbose'],
         stderr=subprocess.STDOUT)
-    m = re.search(r'Parsing version \'(\d+\.\d+\.\d+)\'', bumpver)
-    current_version = m.groups(0)[0]
-    m = re.search(r'New version will be \'(\d+\.\d+\.\d+)\.dev0\'', bumpver)
-    next_version = m.groups(0)[0] + ".dev0"
+    match_version = re.search(r'Parsing version \'(\d+\.\d+\.\d+)\'', bumpver)
+    current_version = match_version.groups(0)[0]
+    match_version = re.search(r'New version will be \'(\d+\.\d+\.\d+)\.dev0\'',
+                              bumpver)
+    next_version = match_version.groups(0)[0] + ".dev0"
 
     current_version_title = generate_changelog_title(current_version)
     next_version_title = generate_changelog_title(next_version)
@@ -123,14 +131,14 @@ which will create a 'major' release (0.0.2 => 1.0.0-dev)."""
     next_release_template = "%s\n\n**unreleased**\n\n" % next_version_title
 
     changes = ""
-    with open(changelog) as fd:
-        changes += fd.read()
+    with open(changelog) as fd_file:
+        changes += fd_file.read()
 
     changes = changes.replace(current_version_title,
                               next_release_template + current_version_title)
 
-    with open(changelog, "w") as fd:
-            fd.write(changes)
+    with open(changelog, "w") as fd_file:
+        fd_file.write(changes)
 
     # Tries to load the EDITOR environment variable, else falls back to vim
     editor = os.environ.get('EDITOR', 'vim')
