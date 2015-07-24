@@ -5,7 +5,7 @@ from oar.lib import db
 
 
 def register_hooks(app):
-    '''Declares all flask application hooks'''
+    """Declare all flask application hooks."""
     # 0.9 and later
     if hasattr(app, 'teardown_appcontext'):
         teardown = app.teardown_appcontext
@@ -16,11 +16,12 @@ def register_hooks(app):
     else:
         teardown = app.after_request
 
-    @teardown
     def shutdown_db_session(response_or_exc):
         db.session.remove()
 
-    @app.before_request
+    def reflect_database():
+        db.reflect()
+
     def authenticate():
         if app.debug:
             g.current_user = 'docker'
@@ -31,3 +32,7 @@ def register_hooks(app):
         else:
             if 'OARDO_USER' in os.environ:
                 del os.environ['OARDO_USER']
+
+    app.before_request(reflect_database)
+    app.before_request(authenticate)
+    teardown(shutdown_db_session)
