@@ -48,7 +48,7 @@ script:
   - sudo oarnodesetting -a -h node2 -p cpu=2 -p core=5 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=6 -p cpuset=0
   - sudo oarnodesetting -a -h node2 -p cpu=3 -p core=7 -p cpuset=0
-  - sudo tox -e $(python ./scripts/ci/pyversion2toxenv.py)-$DB
+  - sudo tox -e py-$DB
 
 after_success:
     - coverage combine
