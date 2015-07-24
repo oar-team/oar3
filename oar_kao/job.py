@@ -687,7 +687,7 @@ def get_current_resources_with_suspended_job():
 
 
 def log_job(job):
-    if db.dialect == "sqlite":
+    if db.dialect == "sqlite": #  pragma: no cover
         return
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.index == 'CURRENT')\

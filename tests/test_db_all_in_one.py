@@ -174,6 +174,24 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     assert (res[2] - res[0]) == 280
 
 
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_AR(monkeypatch):
+    create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
+
+    now = get_date()
+
+    insert_job(res=[(60, [('resource_id=4', "")])],
+               reservation='toSchedule', start_time=(now + 10),
+               info_type='localhost:4242')
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state, ' ', job.reservation)
+
+    assert job.state == 'Error'
+
+
 def test_db_all_in_one_BE(monkeypatch):
 
     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
