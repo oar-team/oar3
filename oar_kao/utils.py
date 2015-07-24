@@ -4,6 +4,7 @@ import sys
 import time
 import os
 import socket
+from sqlalchemy import func, distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource,
                      EventLog)
 
@@ -73,7 +74,7 @@ def notify_almighty(message):  # pragma: no cover
     return almighty_socket.send(message)
 
 
-def notify_tcp_socket(addr, port, message):
+def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     logger.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
@@ -178,9 +179,8 @@ def update_current_scheduler_priority(job, value, state):
         sched_priority = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
         if ((('besteffort' in job.types) or ('timesharing' in job.types)) and
            (((state == 'START') and
-            is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
-           ((state == 'STOP') and
-            is_an_event_exists(job_id,"SCHEDULER_PRIORITY_UPDATED_START") > 0))):
+             is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
+           ((state == 'STOP') and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0))):
 
             coeff = 1
             if ('besteffort' in job.types) and (not ('timesharing' in job.types)):
@@ -188,27 +188,34 @@ def update_current_scheduler_priority(job, value, state):
 
             index = 0
             for f in sched_priority.split('/'):
-                if f == "":
+                if f == '':
                     continue
+                elif f == 'resource_id':
+                    f = 'id'
+
                 index += 1
 
-                resources = db.query(distinct(getattr(Resource, f)))\
-                              .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
-                              .filter(AssignedResource.moldable_id == job.assigned_moldable_job)\
-                              .filter(AssignedResource.resource_id == Resource.id)\
-                              .all()
+                res = db.query(distinct(getattr(Resource, f)))\
+                        .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
+                        .filter(AssignedResource.moldable_id == job.assigned_moldable_job)\
+                        .filter(AssignedResource.resource_id == Resource.id)\
+                        .all()
 
-                if resources == []:
+                resources = tuple(r[0] for r in res)
+
+                if resources == ():
                     return
 
+                incr_priority = int(value) * index * coeff
                 db.query(Resource)\
-                  .filter(Resource.id.in_(tuple(resources)))\
-                  .update({Resource.scheduler_priority: Resource.scheduler_priority +
-                           (value * index * coeff)}, synchronize_session=False)
+                  .filter((getattr(Resource, f)).in_(resources))\
+                  .update({Resource.scheduler_priority:  incr_priority}, synchronize_session=False)
+
                 db.commit()
 
-            add_new_event("SCHEDULER_PRIORITY_UPDATED_$state", job.id,
-                          "Scheduler priority for job $job_id updated (" + sched_priority +")")
+            add_new_event('SCHEDULER_PRIORITY_UPDATED_' + state, job.id,
+                          'Scheduler priority for job ' + str(job.id) +
+                          'updated (' + sched_priority + ')')
 
 
 def update_scheduler_last_job_date(date, moldable_id):
@@ -227,6 +234,13 @@ def add_new_event(type, job_id, description):
                           description=description[:255])
     db.add(event_data)
     db.commit()
+
+
+def is_an_event_exists(job_id, event):
+    res = db.query(func.count(EventLog.id)).filter(EventLog.job_id == job_id)\
+                                           .filter(EventLog.type == event)\
+                                           .scalar()
+    return res
 
 
 def get_job_events(job_id):

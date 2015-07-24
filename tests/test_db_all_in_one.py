@@ -172,3 +172,43 @@ def test_db_all_in_one_quotas_2(monkeypatch):
 
     assert (res[1] - res[0]) == 120
     assert (res[2] - res[0]) == 280
+
+
+def test_db_all_in_one_BE(monkeypatch):
+
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+
+    insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort', types='besteffort')
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state)
+    assert (job.state == 'toLaunch')
+
+
+def test_db_all_in_one_BE_to_kill(monkeypatch):
+
+    os.environ['USER'] = 'root'  # to allow fragging
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+
+    insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort', types='besteffort')
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    assert (job.state == 'toLaunch')
+
+    insert_job(res=[(100, [('resource_id=5', "")])])
+
+    meta_schedule('internal')
+
+    jobs = db['Job'].query.all()
+
+    print(jobs[0].state, jobs[1].state)
+
+    print("frag...", db['FragJob'].query.one())
+    frag_job = db['FragJob'].query.one()
+    assert jobs[0].state == 'toLaunch'
+    assert jobs[1].state == 'Waiting'
+    assert frag_job.job_id ==  jobs[0].id

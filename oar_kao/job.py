@@ -476,7 +476,7 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
                                                            job_security_time, now)
 
-    return (jobs_lst, rid2jid)
+    return (jobs, jobs_lst, rid2jid)
 
 
 def save_assigns(jobs, resource_set):
@@ -745,7 +745,7 @@ def insert_job(**kwargs):
 
     #   "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
     #
-    #   res = "/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=20" type="besteffort, container"
+    #   res = "/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=20" types="besteffort, container"
     #
     insert_job(
     res = [
@@ -755,8 +755,12 @@ def insert_job(**kwargs):
 
 
     """
-    kwargs['launching_directory'] = ""
-    kwargs['checkpoint_signal'] = 0
+
+    default_values = {'launching_directory': "", 'checkpoint_signal': 0, 'properties': ""}
+
+    for k, v in iteritems(default_values):
+        if k not in kwargs:
+            kwargs[k] = v
 
     if 'res' in kwargs:
         res = kwargs.pop('res')
@@ -835,7 +839,7 @@ def insert_job(**kwargs):
 
     if types:
         ins = [{'job_id': job_id, 'type': typ} for typ in types.split(',')]
-        db.engine.execute(JobResourceDescription.__table__.insert(), ins)
+        db.engine.execute(JobType.__table__.insert(), ins)
 
     return job_id
 
@@ -857,14 +861,16 @@ def frag_job(jid):
         luser = os.environ['OARDO_USER']
     else:
         luser = os.environ['USER']
-
+        
     job = get_job(jid)
 
     if (job is not None) and ((luser == job.user)
                               or (luser == 'oar')
                               or (luser == 'root')):
         res = db.query(FragJob).filter(FragJob.job_id == jid).all()
+
         if len(res) == 0:
+
             date = utils.get_date()
             frajob = FragJob(job_id=jid, date=date)
             db.add(frajob)

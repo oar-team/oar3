@@ -148,6 +148,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     besteffort_rid2job = {}
 
     for job in scheduled_jobs:
+        #  print("job.id:", job.id, job.queue_name, job.types, job.res_set, job.start_time)
         if 'besteffort' in job.types:
             for r_id in itvs2ids(job.res_set):
                 besteffort_rid2job[r_id] = job
@@ -400,23 +401,24 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch, current_tim
                             if ev.type == 'CHECKPOINT':
                                 if checkpoint_first_date > ev.date:
                                     checkpoint_first_date = ev.date
-                    if (checkpoint_first_date == sys.maxsize) or\
-                       (current_time_sec <= (checkpoint_first_date + be_job.checkpoint)):
-                        skip_kill = 1
-                        send_checkpoint_signal(be_job)
 
-                        logger.debug("Send checkpoint signal to the job " + str(be_job.id))
+                        if (checkpoint_first_date == sys.maxsize) or\
+                           (current_time_sec <= (checkpoint_first_date + be_job.checkpoint)):
+                            skip_kill = 1
+                            send_checkpoint_signal(be_job)
 
-                    if skip_kill == 0:
+                            logger.debug("Send checkpoint signal to the job " + str(be_job.id))
+
+                    if not skip_kill:
                         logger.debug("Resource " + str(rid) +
                                      "need to be freed for job " + str(be_job.id) +
                                      ": killing besteffort job " + str(job_to_launch.id))
 
                         add_new_event('BESTEFFORT_KILL', be_job.id,
                                       "kill the besteffort job " + str(be_job.id))
-                        frag_job(be_job)
+                        frag_job(be_job.id)
 
-                    fragged_jobs[be_job.id] = 1
+                    fragged_jobs.append(be_job.id)
                     return_code = 1
 
     logger.debug("End precessing of besteffort jobs to kill\n")
@@ -424,13 +426,13 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch, current_tim
     return return_code
 
 
-def handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql):
+def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql):
     logger.debug(
         "Begin processing jobs to launch (start time <= " + current_time_sql)
 
     return_code = 0
 
-    for job in jobs_to_launch:
+    for job in jobs_to_launch_lst:
         return_code = 1
         logger.debug("Set job " + str(job.id) + " state to toLaunch at " + current_time_sql)
 
@@ -492,7 +494,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
             initial_time_sec), initial_time_sql], stdout=subprocess.PIPE)
 
         for line in iter(child.stdout.readline, ''):
-            logger.debug("Read on the scheduler output:" + line.rstrip())
+            logger.debug("Read on the scheduler output:" + str(line.rstrip()))
 
         # TODO SCHEDULER_LAUNCHER_OPTIMIZATION
         # if
@@ -611,9 +613,9 @@ def meta_schedule(mode='internal', plt=Platform()):
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
-    jobs_to_launch, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
-                                                                 job_security_time,
-                                                                 current_time_sec)
+    jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
+                                                                                     job_security_time,
+                                                                                     current_time_sec)
 
     if check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch,
                                      current_time_sec, besteffort_rid2jid,
@@ -621,7 +623,7 @@ def meta_schedule(mode='internal', plt=Platform()):
         # We must kill some besteffort jobs
         utils.notify_almighty('ChState')
         exit_code = 2
-    elif handle_jobs_to_launch(jobs_to_launch, current_time_sec, current_time_sql) == 1:
+    elif handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql) == 1:
         exit_code = 0
 
     # Update visu gantt tables

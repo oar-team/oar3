@@ -67,7 +67,6 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
 
     for ss_name, slot_set in iteritems(slots_sets):
         logger.debug(" slots_sets.iteritems():" + ss_name)
-        print("slots_sets.iteritems():", ss_name)
         if ss_name in jobs_slotsets:
             slot_set.split_slots_jobs(jobs_slotsets[ss_name])
 
