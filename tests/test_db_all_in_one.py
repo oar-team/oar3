@@ -6,8 +6,8 @@ import os
 from codecs import open
 from tempfile import mkstemp
 
-from oar.lib import db, config
-from oar.kao.job import insert_job
+from oar.lib import (db, config, GanttJobsPrediction, Resource)
+from oar.kao.job import insert_job, set_jobs_start_time
 from oar.kao.meta_sched import meta_schedule
 
 import oar.kao.utils  # for monkeypatching
@@ -64,6 +64,16 @@ def create_quotas_rules_file(quotas_rules):
     qts.load_quotas_rules()
 
 
+def insert_and_sched_ar(start_time):
+
+    insert_job(res=[(60, [('resource_id=4', "")])],
+               reservation='toSchedule', start_time=start_time,
+               info_type='localhost:4242')
+
+    meta_schedule('internal')
+
+    return (db['Job'].query.one())
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
@@ -91,20 +101,8 @@ def test_db_all_in_one_simple_1(monkeypatch):
 
 def test_db_all_in_one_ar_1(monkeypatch):
     # add one job
-    now = get_date()
-    # sql_now = local_to_sql(now)
 
-    #
-    insert_job(res=[(60, [('resource_id=4', "")])], properties="",
-               reservation='toSchedule', start_time=(now + 10),
-               info_type='localhost:4242')
-
-    # plt = Platform()
-    # r = plt.resource_set()
-
-    meta_schedule('internal')
-
-    job = db['Job'].query.one()
+    job = insert_and_sched_ar(get_date() + 10)
     print(job.state, ' ', job.reservation)
 
     assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
@@ -152,10 +150,7 @@ def test_db_all_in_one_quotas_2(monkeypatch):
 
     # Submit and allocate an Advance Reservation
     t0 = get_date()
-    insert_job(res=[(60, [('resource_id=1', "")])], properties="",
-               reservation='toSchedule', start_time=(t0 + 100),
-               info_type='localhost:4242')
-    meta_schedule('internal')
+    insert_and_sched_ar(t0 + 100)
 
     # Submit other jobs
     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
@@ -176,21 +171,79 @@ def test_db_all_in_one_quotas_2(monkeypatch):
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_quotas_AR(monkeypatch):
+
     create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
 
-    now = get_date()
-
-    insert_job(res=[(60, [('resource_id=4', "")])],
-               reservation='toSchedule', start_time=(now + 10),
-               info_type='localhost:4242')
-
-    meta_schedule('internal')
-
-    job = db['Job'].query.one()
+    job = insert_and_sched_ar(get_date() + 10)
     print(job.state, ' ', job.reservation)
 
     assert job.state == 'Error'
 
+
+def test_db_all_in_one_AR_2(monkeypatch):
+
+    job = insert_and_sched_ar(get_date() - 1000)
+    print(job.state, ' ', job.reservation)
+    assert job.state == 'Error'
+
+
+def test_db_all_in_one_AR_3(monkeypatch):
+
+    now = get_date()
+    job = insert_and_sched_ar(now + 1000)
+    new_start_time = now - 2000
+
+    set_jobs_start_time(tuple([job.id]), new_start_time)
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+
+    assert job.state == 'Error'
+
+
+def test_db_all_in_one_AR_4(monkeypatch):
+
+    now = get_date()
+    job = insert_and_sched_ar(now + 10)
+    new_start_time = now - 20
+
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+
+    assert job.state == 'toLaunch'
+
+
+def test_db_all_in_one_AR_5(monkeypatch):
+
+    now = get_date()
+    job = insert_and_sched_ar(now + 10)
+    new_start_time = now - 20
+
+    set_jobs_start_time(tuple([job.id]), new_start_time)
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
+
+    db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
+    db.commit()
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+
+    assert job.state == 'Waiting'
 
 def test_db_all_in_one_BE(monkeypatch):
 

@@ -545,16 +545,10 @@ def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
 
 
 def set_jobs_start_time(tuple_jids, start_time):
+
     db.query(Job).filter(Job.id.in_(tuple_jids)).update(
-        {Job.start_time: start_time})
+        {Job.start_time: start_time}, synchronize_session=False)
     db.commit()
-
-
-def set_jobs_state(tuple_jids, state):  # NOT USED
-    # TODO complete to enhance performance by vectorizing operations
-    # db.query(Job).update({Job.state: state}).filter(Job.job_id.in_( tuple_jids ))
-    # db.commit()
-    pass
 
 
 def set_job_state(jid, state):

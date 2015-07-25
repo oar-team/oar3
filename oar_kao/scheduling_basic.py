@@ -84,12 +84,6 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     return (itvs, sid_left, sid_right)
 
 
-def assign_resources_job_split_slots():
-    '''
-    Not implemented see assign_resources_mld_job_split_slots
-    '''
-
-
 def assign_resources_mld_job_split_slots(slots_set, job, hy):
     '''
     Assign resources to a job and update by spliting the concerned slots -

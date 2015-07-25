@@ -211,7 +211,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
     logger.debug("Queue " + queue_name +
                  ": begin processing accepted Advance Reservations")
-
+    # pdb.set_trace()
     ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
 
     for job in ar_jobs:
@@ -482,7 +482,7 @@ def update_gantt_visualization():
 
 def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                             resource_set, job_security_time, queue,
-                            initial_time_sec, initial_time_sql):
+                            initial_time_sec, initial_time_sql):  # pragma: no cover
 
     cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy
 
