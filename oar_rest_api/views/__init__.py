@@ -34,6 +34,7 @@ class Blueprint(FlaskBlueprint):
             def factorial(x=0):
                 import math
                 return {'result': math.factorial(x)}
+
         """
         rule = partial_rule
         if self.root_prefix:
@@ -76,6 +77,7 @@ class Blueprint(FlaskBlueprint):
             @app.jsonify('/foo')
             def foo(name="bar"):
                 g.data["foo"] = name  # or return {"foo": name}
+
         """
         def decorator(func):
             @wraps(func)
@@ -91,8 +93,7 @@ class Blueprint(FlaskBlueprint):
         return decorator
 
     def args(self, argmap):
-        """Decorator that injects parsed arguments into a view function or
-        method.
+        """Decorator that injects parsed arguments into a view function.
 
         Example usage with: ::
 
@@ -101,6 +102,7 @@ class Blueprint(FlaskBlueprint):
             def factorial(x=0):
                 import math
                 return {'result': math.factorial(x)}
+
         """
         def decorator(func):
             @wraps(func)
@@ -115,8 +117,7 @@ class Blueprint(FlaskBlueprint):
         return decorator
 
     def need_authentication(self):
-        """Decorator that check is user is authenticate
-        """
+        """Decorator that check is user is authenticate."""
         def decorator(func):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
@@ -135,7 +136,7 @@ class Blueprint(FlaskBlueprint):
         g.data['api_timestamp'] = int(time.time())
 
     def _json_dumps(self, obj, **kwargs):
-        """Dumps object to json string. """
+        """Dump object to json string."""
         kwargs.setdefault('ensure_ascii', False)
         kwargs.setdefault('cls', JSONEncoder)
         kwargs.setdefault('indent', 4)
@@ -143,7 +144,7 @@ class Blueprint(FlaskBlueprint):
         return json.dumps(obj, **kwargs)
 
     def _jsonify_response(self, obj):
-        """Get a json response. """
+        """Get a json response."""
         return Response(self._json_dumps(obj), mimetype='application/json')
 
 

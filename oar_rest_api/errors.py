@@ -9,8 +9,7 @@ from oar.lib.compat import iterkeys, to_unicode
 
 
 def register_error_handlers(app):
-    """
-    Creates a JSON-oriented Flask app.
+    """Creates a JSON-oriented Flask app.
 
     All error responses that you don't specifically
     manage yourself will have application/json content

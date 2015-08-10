@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+oar_rest_api.app
+~~~~~~~~~~~~~~~~
+
+oar_rest_api application package
+
+"""
 from flask import Flask
 
 from oar.lib import db, config
@@ -19,6 +26,7 @@ default_config = {
 
 
 def create_app():
+    """Return the OAR API application instance."""
     app = Flask(__name__)
     app.wsgi_app = WSGIProxyFix(app.wsgi_app)
     config.setdefault_config(default_config)
