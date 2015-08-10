@@ -63,8 +63,6 @@ class Blueprint(FlaskBlueprint):
             else:
                 wrapper = f
             self.add_url_rule(rule, endpoint, wrapper, **options)
-            self.add_url_rule(rule + ".json", endpoint + "__json", wrapper,
-                              **options)
             return wrapper
         return decorator
 
