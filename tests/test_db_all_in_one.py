@@ -14,6 +14,10 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 import oar.kao.quotas as qts
 
+import pdb
+
+node_list = []
+
 
 @pytest.fixture(scope="module", autouse=True)
 def create_db(request):
@@ -33,7 +37,7 @@ def minimal_db_initialization(request):
 
     # add some resources
     for i in range(5):
-        db['Resource'].create(network_address="localhost")
+        db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
     @request.addfinalizer
     def teardown():
@@ -56,6 +60,24 @@ def active_quotas(request):
     request.addfinalizer(teardown)
 
 
+@pytest.fixture(scope="function")
+def active_energy_saving(request):
+    config['SCHEDULER_NODE_MANAGER_SLEEP_CMD'] = 'sleep_node_command'
+    config['SCHEDULER_NODE_MANAGER_SLEEP_TIME'] = '15'
+    config['SCHEDULER_NODE_MANAGER_IDLE_TIME'] = '30'
+    config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME'] = '30'
+    config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD'] = 'wakeup_node_command'
+
+    def teardown():
+        del config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
+        del config['SCHEDULER_NODE_MANAGER_SLEEP_TIME']
+        del config['SCHEDULER_NODE_MANAGER_IDLE_TIME']
+        del config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME']
+        del config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
+
+    request.addfinalizer(teardown)
+
+
 def create_quotas_rules_file(quotas_rules):
     ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
     '''
@@ -74,6 +96,12 @@ def insert_and_sched_ar(start_time):
 
     return (db['Job'].query.one())
 
+
+def assign_node_list(nodes):
+    global node_list
+    node_list = nodes
+
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
@@ -81,6 +109,8 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_almighty', lambda x: len(x))
     monkeypatch.setattr(oar.kao.utils, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
+    monkeypatch.setattr(oar.kao.tools, 'fork_and_feed_stdin',
+                        lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
 
 
 def test_db_all_in_one_simple_1(monkeypatch):
@@ -245,6 +275,7 @@ def test_db_all_in_one_AR_5(monkeypatch):
 
     assert job.state == 'Waiting'
 
+
 def test_db_all_in_one_BE(monkeypatch):
 
     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
@@ -282,4 +313,45 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     frag_job = db['FragJob'].query.one()
     assert jobs[0].state == 'toLaunch'
     assert jobs[1].state == 'Waiting'
-    assert frag_job.job_id ==  jobs[0].id
+    assert frag_job.job_id == jobs[0].id
+
+
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_wakeup_node_1(monkeypatch):
+
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+
+    now = get_date()
+    # Suspend nodes
+    db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'Waiting')
+    assert (node_list == [u'localhost0', u'localhost1'])
+
+
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_sleep_node_1(monkeypatch):
+
+    now = get_date()
+
+    insert_job(res=[(60, [('resource_id=1', "")])], properties="")
+
+    # Suspend nodes
+    # pdb.set_trace()
+    db.query(Resource).update({Resource.available_upto: now + 50000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'toLaunch')
+    assert (node_list == [u'localhost2', u'localhost1'] or \
+            node_list == [u'localhost1', u'localhost2'])

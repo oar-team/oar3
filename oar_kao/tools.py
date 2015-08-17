@@ -8,7 +8,7 @@ logger = get_logger("oar.kao.tools")
 
 def fork_and_feed_stdin(cmd, timeout_cmd, nodes):
     logger.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
-    return False
+    return True
 
 
 def send_to_hulot(cmd, data):

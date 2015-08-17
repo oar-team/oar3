@@ -455,13 +455,28 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
-                                                           job_security_time, now)
+    _, jobs_lst, _, _ = extract_scheduled_jobs(result, resource_set,
+                                               job_security_time, now)
 
     return jobs_lst
 
 
 def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
+
+    # get unlaunchable jobs
+    # NOT USED launcher will manage these cases ??? (MUST BE CONFIRMED)
+    #
+    #result = db.query(distinct(Job.id))\
+    #           .filter(GanttJobsPrediction.start_time <= now)\
+    #           .filter(Job.state == "Waiting")\
+    #           .filter(Job.id == MoldableJobDescription.job_id)\
+    #           .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+    #           .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)\
+    # AND (resources.state IN (\'Dead\',\'Suspected\',\'Absent\')
+    #                   OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
+    #
+    #           .all()
+    
     result = db.query(Job,
                       GanttJobsPrediction.moldable_id,
                       GanttJobsPrediction.start_time,
@@ -471,10 +486,14 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
         .filter(Job.state == "Waiting")\
         .filter(Job.id == MoldableJobDescription.job_id)\
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)\
+        .filter(GanttJobsResource.moldable_id
+                == GanttJobsPrediction.moldable_id)\
+        .filter(Resource.id == GanttJobsResource.resource_id)\
+        .filter(Resource.state == 'Alive')\
         .all()
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
-                                                           job_security_time, now)
+    jobs, jobs_lst, _, rid2jid = extract_scheduled_jobs(result, resource_set,
+                                                        job_security_time, now)
 
     return (jobs, jobs_lst, rid2jid)
 

@@ -49,7 +49,6 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
 # for quotas
-import oar.kao.resource as rs
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 import pdb
