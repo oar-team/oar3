@@ -4,13 +4,12 @@ from __future__ import unicode_literals, print_function
 import sys
 import os
 import re
-import subprocess
 
 from sqlalchemy import text
 
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
-from oar.lib.utils import Command
+from oar.kao.utils import (Popen, call, TimeoutExpired)
 from oar.lib.compat import iteritems
 
 from oar.kao.job import (get_current_not_waiting_jobs,
@@ -28,7 +27,7 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          resume_job_action, is_timesharing_for_two_jobs)
 
 from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql,
-                           get_job_events, send_checkpoint_signal)
+                           get_job_events, send_checkpoint_signal, Popen, call)
 
 import oar.kao.utils as utils
 
@@ -491,7 +490,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
     sched_signal_num = 0
     sched_dumped_core = 0
     try:
-        child = subprocess.Popen([cmd_scheduler, queue.name, str(
+        child = Popen([cmd_scheduler, queue.name, str(
             initial_time_sec), initial_time_sql], stdout=subprocess.PIPE)
 
         for line in iter(child.stdout.readline, ''):
@@ -730,12 +729,15 @@ def meta_schedule(mode='internal', plt=Platform()):
                     logger.debug("[" + str(job.id) + "] Running post suspend script: `" +
                                  script + " " + str(job.id) + "'")
                     cmd_str = script + str(job.id)
-                    cmd = Command(cmd_str)
-                    error, error_code = cmd.run(timeout)
-                    # TODO
-                    if error or (script_error):
-                        str_error = "[" + str(job.id) + "] Suspend script error:" +\
-                                    error + ";  return code = " + str(error_code)
+                    return_code = -1
+                    try:
+                        return_code = call(cmd_str, shell=True, timeout=timeout)
+                    except TimeoutExpired as e:
+                        logger.error(str(e) + "[" + str(job.id) + "] Suspend script timeouted")
+                        add_new_event('RESUME_SCRIPT_ERROR', job.id, "Suspend script timeouted")
+                    if return_code != 0:
+                        str_error = "[" + str(job.id) + "] Suspend script error, return code = "\
+                                    + str(return_code)
                         logger.error(str_error)
                         add_new_event('RESUME_SCRIPT_ERROR', job.id, str_error)
                         frag_job(job.id)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import sys
 import re
 import os.path as op
 
@@ -22,6 +23,9 @@ requirements = [
     'Click',
     'SimPy',
 ]
+
+if sys.version_info[0] == 2:
+    requirements.append('subprocess32')
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',

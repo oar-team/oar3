@@ -1134,7 +1134,7 @@ def get_jobs_on_resuming_job_resources(job_id):
 def resume_job_action(job_id):
     '''resume_job_action performs all action when a job is suspended'''
 
-    set_job_state(job_id, "Running")
+    set_job_state(job_id, 'Running')
 
     resources = get_current_resources_with_suspended_job()
     if resources != ():
