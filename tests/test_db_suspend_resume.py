@@ -6,7 +6,6 @@ from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
 import oar.kao.utils  # for monkeypatching
-from oar.kao.utils import get_date
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -47,8 +46,8 @@ def monkeypatch_utils(request, monkeypatch):
 @pytest.fixture(scope="function")
 def config_suspend_resume(request):
 
-    config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'sleep 1'
-    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = '2'
+    config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'true'
+    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = '1'
 
     def teardown():
         del config['JUST_BEFORE_RESUME_EXEC_FILE']
@@ -73,7 +72,7 @@ def test_suspend_resume_1(monkeypatch):
 
 @pytest.mark.usefixtures('config_suspend_resume')
 def test_suspend_resume_2(monkeypatch):
-    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = '1'
+    config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'sleep 2'
     # now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     meta_schedule('internal')
