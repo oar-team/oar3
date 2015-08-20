@@ -372,6 +372,25 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
 
 
 @pytest.mark.usefixtures('create_oar_hulot_pipe')
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
+    config['ENERGY_SAVING_INTERNAL'] = 'yes'
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+
+    now = get_date()
+    # Suspend nodes
+    db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'Waiting')
+
+
+@pytest.mark.usefixtures('create_oar_hulot_pipe')
 @pytest.mark.usefixtures('active_energy_saving')
 def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     config['ENERGY_SAVING_INTERNAL'] = 'yes'
