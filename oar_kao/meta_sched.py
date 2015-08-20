@@ -662,7 +662,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Powering off some nodes (energy saving): " + str(node_halt))
             # Using the built-in energy saving module to shut down nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('HALT', node_halt.join()):
+                if tools.send_to_hulot('HALT', ' '.join(node_halt)):
                     logger.error("Communication problem with the energy saving module (Hulot)\n")
                 flag_hulot = 1
             else:
@@ -684,7 +684,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Awaking some nodes: " + str(nodes))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('WAKEUP', nodes.join()):
+                if tools.send_to_hulot('WAKEUP', ' '.join(nodes)):
                     logger.error("Communication problem with the energy saving module (Hulot)")
                 flag_hulot = 1
             else:

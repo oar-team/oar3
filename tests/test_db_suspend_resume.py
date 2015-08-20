@@ -47,8 +47,8 @@ def monkeypatch_utils(request, monkeypatch):
 @pytest.fixture(scope="function")
 def config_suspend_resume(request):
 
-    config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'sleep 2 '
-    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = '10'
+    config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'sleep 1'
+    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = '2'
 
     def teardown():
         del config['JUST_BEFORE_RESUME_EXEC_FILE']

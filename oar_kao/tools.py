@@ -15,7 +15,7 @@ def send_to_hulot(cmd, data):
     config.setdefault_config({"FIFO_HULOT": "/tmp/oar_hulot_pipe"})
     fifoname = config["FIFO_HULOT"]
     try:
-        with open(fifoname) as fifo:
+        with open(fifoname, 'w') as fifo:
             fifo.write('HALT' + ':' + data + '\n')
             fifo.flush()
     except IOError as e:

@@ -113,6 +113,20 @@ def monkeypatch_utils(request, monkeypatch):
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
 
 
+@pytest.fixture(scope="function")
+def create_oar_hulot_pipe(request):
+    try:
+        os.mkfifo('/tmp/oar_hulot_pipe')
+        os.system('cat /tmp/oar_hulot_pipe > /dev/null &')
+    except OSError:
+        print('Failed to create FIFO')
+
+    def teardown():
+        os.remove('/tmp/oar_hulot_pipe')
+
+    request.addfinalizer(teardown)
+
+
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
@@ -353,5 +367,26 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
     print(job.state)
     print(node_list)
     assert (job.state == 'toLaunch')
-    assert (node_list == [u'localhost2', u'localhost1'] or \
+    assert (node_list == [u'localhost2', u'localhost1'] or
             node_list == [u'localhost1', u'localhost2'])
+
+
+@pytest.mark.usefixtures('create_oar_hulot_pipe')
+@pytest.mark.usefixtures('active_energy_saving')
+def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
+    config['ENERGY_SAVING_INTERNAL'] = 'yes'
+    now = get_date()
+
+    insert_job(res=[(60, [('resource_id=1', "")])], properties="")
+
+    # Suspend nodes
+    # pdb.set_trace()
+    db.query(Resource).update({Resource.available_upto: now + 50000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'toLaunch')
