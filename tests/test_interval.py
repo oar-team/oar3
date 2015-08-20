@@ -2,7 +2,8 @@
 from __future__ import unicode_literals, print_function
 from oar.kao.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
-                              equal_itvs)
+                              equal_itvs, equal_and_sub_prefix_itvs,
+                              equal_itvs2ids, equal_itvs_same_segmentation)
 
 
 def test_intersec():
@@ -71,3 +72,37 @@ def test_equal_itvs2():
     x = [(1, 10), (11, 15), (16, 20)]
     y = [(1, 10), (11, 20)]
     assert equal_itvs(x, y)
+
+
+def test_equal_and_sub_prefix_itvs_1():
+    r = equal_and_sub_prefix_itvs([(1, 4), (6, 9)], [(6, 9), (10, 17), (20, 30)])
+    assert r == (False, [])
+
+
+def test_equal_and_sub_prefix_itvs_2():
+    r = equal_and_sub_prefix_itvs([(1, 4), (6, 9)], [(1, 4), (6, 9), (10, 17), (20, 30)])
+    assert r == (True, [(10, 17), (20, 30)])
+
+
+def test_equal_itvs2ids_1():
+    assert(equal_itvs2ids([(1, 5)], [(1, 5)]))
+
+
+def test_equal_itvs2ids_2():
+    assert(equal_itvs2ids([(1, 3), (4, 5)], [(1, 5)]))
+
+
+def test_equal_itvs2ids_3():
+    assert(not equal_itvs2ids([(4, 5)], [(1, 5)]))
+
+
+def test_equal_itvs_same_segmentation_1():
+    assert(equal_itvs_same_segmentation([(2, 4), (6, 9), (10, 14)], [(2, 4), (6, 9), (10, 14)]))
+
+
+def test_equal_itvs_same_segmentation_2():
+    assert(not equal_itvs_same_segmentation([(2, 4), (6, 9), (10, 14)], [(6, 9), (10, 14)]))
+
+
+def test_equal_itvs_same_segmentation_3():
+    assert(not equal_itvs_same_segmentation([(2, 4), (6, 9), (10, 14)], [(2, 4), (6, 14)]))

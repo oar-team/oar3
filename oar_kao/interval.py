@@ -32,31 +32,33 @@ def itvs2ids(itvs):
     return ids
 
 
-def test_and_sub_prefix_itvs(prefix_itvs, itvs):
+def equal_and_sub_prefix_itvs(prefix_itvs, itvs):
     # need of sub_intervals
-    flag = True
     lx = len(prefix_itvs)
     ly = len(itvs)
     i = 0
     residue_itvs = []
 
     if (lx > ly):
-        return (False, residue_itvs)
+        return (False, [])
 
     if (lx == 0):
         return (True, itvs)
 
-    while (flag) and (i < lx) and (i < ly):
+    while True:
         x = prefix_itvs[i]
         y = itvs[i]
         i += 1
-        if not (x[0] == y[0]) and (x[1] == y[1]):
-            flag = False
-            i -= 1
+        if (x[0] != y[0]) or (x[1] != y[1]):
+            return (False, [])
+        if (i == lx):
+            break
+        if (i == ly):
+            return(False, [])
 
     residue_itvs = [item for item in islice(itvs, i, None)]
 
-    return flag, residue_itvs
+    return True, residue_itvs
 
 # test_and_sub_prefix_itvs( [(1,4),(6,9)], [(6,9),(10,17),(20,30)] )
 # (false, [{b = 10; e = 17}; {b = 20; e = 30}])
