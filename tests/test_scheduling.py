@@ -504,11 +504,3 @@ def test_schedule_timesharing1():
     print("j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time)
 
     assert j1.start_time == j2.start_time
-
-
-def test_schedule_timesharing2():
-    pass
-
-
-def test_schedule_timesharing_prev_sched():
-    pass

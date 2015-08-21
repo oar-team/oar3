@@ -294,7 +294,7 @@ def test_db_all_in_one_BE(monkeypatch):
 
     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
 
-    insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort', types='besteffort')
+    insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort', types=['besteffort'])
 
     meta_schedule('internal')
 
@@ -308,7 +308,7 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     os.environ['USER'] = 'root'  # to allow fragging
     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
 
-    insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort', types='besteffort')
+    insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort', types=['besteffort'])
 
     meta_schedule('internal')
 

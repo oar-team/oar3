@@ -5,6 +5,7 @@ import os
 from copy import deepcopy
 
 from sqlalchemy import distinct
+from sqlalchemy import text
 from sqlalchemy.orm import aliased
 
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
@@ -108,7 +109,7 @@ def get_jobs_types(jids, jobs):
         if t == "timesharing":
             job = jobs[jid]
             job.ts = True
-            job.ts_user, job.ts_jobname = t_v[1].split(',')
+            job.ts_user, job.ts_name = t_v[1].split(',')
         elif t == "placeholder":
             job = jobs[jid]
             job.ph = PLACEHOLDER
@@ -300,7 +301,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                     res_constraints = cache_constraints[sql_constraints]
                 else:
                     request_constraints = db.query(
-                        Resource.id).filter(sql_constraints).all()
+                        Resource.id).filter(text(sql_constraints)).all()
                     roids = [resource_set.rid_i2o[int(y[0])]
                              for y in request_constraints]
                     res_constraints = unordered_ids2itvs(roids)
@@ -658,7 +659,7 @@ def set_job_state(jid, state):
 # NO USED
 
 
-def add_resource_jobs_pairs(tuple_mld_ids):
+def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
     resources_mld_ids = db.query(GanttJobsResource)\
                           .filter(GanttJobsResource.job_id.in_(tuple_mld_ids))\
                           .all()
@@ -699,8 +700,8 @@ def get_current_resources_with_suspended_job():
 # return value : /
 
 
-def log_job(job):
-    if db.dialect == "sqlite": #  pragma: no cover
+def log_job(job):  # pragma: no cover
+    if db.dialect == "sqlite":
         return
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.index == 'CURRENT')\
@@ -763,8 +764,8 @@ def insert_job(**kwargs):
     insert_job(
     res = [
         ( 60, [("switch=2/nodes=20", ""), ("licence=20", "lic_type = 'mathlab'")] ) ],
-    type = "besteffort, container",
-    job_user= "")
+    types = ["besteffort", "container"],
+    user= "")
 
 
     """
@@ -783,7 +784,7 @@ def insert_job(**kwargs):
     if 'types' in kwargs:
         types = kwargs.pop('types')
     else:
-        types = ""
+        types = []
 
     if 'queue_name' not in kwargs:
         kwargs['queue_name'] = 'default'
@@ -851,7 +852,7 @@ def insert_job(**kwargs):
                               res_description)
 
     if types:
-        ins = [{'job_id': job_id, 'type': typ} for typ in types.split(',')]
+        ins = [{'job_id': job_id, 'type': typ} for typ in types]
         db.engine.execute(JobType.__table__.insert(), ins)
 
     return job_id

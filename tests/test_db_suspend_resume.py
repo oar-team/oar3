@@ -70,6 +70,7 @@ def test_suspend_resume_1(monkeypatch):
     assert(job.state == 'Resuming')
     # assert(True)
 
+
 @pytest.mark.usefixtures('config_suspend_resume')
 def test_suspend_resume_2(monkeypatch):
     config['JUST_BEFORE_RESUME_EXEC_FILE'] = 'sleep 2'
