@@ -9,7 +9,7 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def create_db(request):
     db.create_all()
     db.reflect()
@@ -47,7 +47,9 @@ def monkeypatch_utils(request, monkeypatch):
 def test_db_timesharing_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
+
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
+
     meta_schedule('internal')
 
     for j in db['Job'].query.all():
