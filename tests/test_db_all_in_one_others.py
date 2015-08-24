@@ -82,6 +82,25 @@ def test_db_timesharing_2(monkeypatch):
     assert res[0] != res[1]
 
 
+def test_db_timesharing_3(monkeypatch):
+    now = get_date()
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
+
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
+
+    meta_schedule('internal')
+
+    for j in db['Job'].query.all():
+        print(j.id, j.state)
+
+    res = []
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
+        res.append(i.start_time - now)
+
+    assert res[0] == res[1]
+
+
 def test_db_properties_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=2', "")])], properties="network_address='localhost1'")
