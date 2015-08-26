@@ -33,7 +33,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     description='OAR Command line interface.',
-    long_description=read('README.rst') + '\n\n' + read('CHANGES'),
+    long_description=read('README.rst') + '\n\n' + read('CHANGES.rst'),
     license="GNU GPL",
     classifiers=[
         'Development Status :: 1 - Planning',
@@ -50,5 +50,6 @@ setup(
     [console_scripts]
     oar-database-migrate=oar_cli.db.commands.migrate:cli
     oar-database-archive=oar_cli.db.commands.archive:cli
+    oarsub=oar_cli.oarsub:cli
     ''',
 )
