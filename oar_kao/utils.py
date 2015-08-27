@@ -118,6 +118,17 @@ def get_date():
 def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
 
+# sql_to_hms
+# converts a date specified in the format used by the sql database to hours,
+# minutes, secondes values
+# parameters : date string
+# return value : hours, minutes, secondes
+# side effects : /
+
+
+def sql_to_hms(t):
+    hms = t.split(':')
+    return (hms[0], hms[1], hms[2])
 
 # hms_to_sql
 # converts a date specified in hours, minutes, secondes values to the format
@@ -130,6 +141,16 @@ def local_to_sql(local):
 def hms_to_sql(hour, min, sec):
 
     return(str(hour) + ":" + str(min) + ":" + str(sec))
+# hms_to_duration
+# converts a date specified in hours, minutes, secondes values to a duration
+# in seconds
+# parameters : hours, minutes, secondes
+# return value : duration
+# side effects : /
+
+
+def hms_to_duration(hour, min, sec):
+    return int(hour)*3600 + int(min) * 60 + int(sec)
 
 
 # duration_to_hms
@@ -163,6 +184,18 @@ def duration_to_sql(t):
 
     return hms_to_sql(hour, min, sec)
 
+
+# sql_to_duration
+# converts a date specified in the format used by the sql database to a
+# duration in seconds
+# parameters : date string
+# return value : duration
+# side effects : /
+
+
+def sql_to_duration(t):
+    (hour, min, sec) = sql_to_hms(t)
+    return hms_to_duration(hour, min, sec)
 
 # update_current_scheduler_priority
 # Update the scheduler_priority field of the table resources
