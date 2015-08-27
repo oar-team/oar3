@@ -7,7 +7,7 @@ import signal
 import random
 import click
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, config)
-from oar.kao.utils import get_date  # TODO move to oar.lib.utils
+from oar.kao.utils import (get_date, sql_to_duration)  # TODO move to oar.lib.utils
 
 DEFAULT_VALUE = {
     'directory': os.environ['PWD'],
@@ -392,11 +392,12 @@ def cli(script, interactive, queue, resource, reservation, connect, stagein, sta
     else:
         default_resources = '/resource_id=1'
 
-    # $Nodes_resources = get_conf("OARSUB_NODES_RESOURCES");
-    # if (!defined($Nodes_resources)){
-    #    $Nodes_resources = "resource_id";
-    # }
+    if 'OARSUB_NODES_RESOURCES' in config:
+        nodes_resources = config['OARSUB_NODES_RESOURCES']
+    else:
+        nodes_resources = 'resource_id'
 
+    # TODODeploy_hostname / Cosystem_hostname
     # $Deploy_hostname = get_conf("DEPLOY_HOSTNAME");
     # if (!defined($Deploy_hostname)){
     #    $Deploy_hostname = $remote_host;
@@ -551,3 +552,89 @@ def cli(script, interactive, queue, resource, reservation, connect, stagein, sta
 
         cmd_executor = 'Qsub -I'
         
+
+
+def parse_resource_descriptions(str_resource_request_list, default_resources, nodes_resources):
+    # "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
+    # transform to 'à la' perl structure use in admission rules
+    #
+    # resource_request = [moldable_instance , ...]
+    # moldable_instance =  ( resource_desc , walltime)
+    # walltime = int|None
+    # resource_desc = [{property: prop, resources: res}]
+    # property = string|''|None
+    # resources = [{resource: r, value: v}]
+    # r = string
+    # v = int
+    #
+    #   "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
+    #
+    #  str_resource_request_list = ["/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=2, walltime = 60"]
+    #
+    #  resource_request = [
+    #                      ([{property: '', resources:  [{resource: 'switch', value: 2},
+    #                                                    {resource: 'nodes', value: 10}]},
+    #                        {property: "lic_type = 'mathlab'", resources: [{resource: 'licence', value: 2}]}
+    #                       ], 60)
+    #                     ]
+
+    # "{gpu='YES'}/nodes=2/core=4+{gpu='NO'}/core=20"
+
+    if not str_resource_request_list:
+        str_resource_request_list = [default_resources]
+
+    resource_request = []  # resource_request = [moldable_instance , ...]
+    for str_resource_request in str_resource_request_list:
+        res_req_walltime = str_resource_request.split(',')
+        str_prop_res_req = res_req_walltime[0]
+        walltime = None
+        if len(res_req_walltime) == 2:
+            walltime_desc = res_req_walltime[1].split('=')
+            if len(walltime_desc) == 2:
+                str_walltime = walltime_desc[1]
+                lg_wallime_lst = len(str_walltime.split(':'))
+                if lg_wallime_lst == 1:
+                    str_walltime += ':00:00'
+                elif lg_wallime_lst == 2:
+                    str_walltime += ':00'
+                walltime = sql_to_duration(str_walltime)
+
+        prop_res_reqs = str_prop_res_req.split('+')
+
+        resource_desc = []  # resource_desc = [{property: prop, resources: res}]
+        for prop_res_req in prop_res_reqs:
+            # Extract propertie if any
+            m = re.search(r'^\{(.+?)\}(.*)$',  prop_res_req)
+            if m:
+                property = m.group(1)
+                str_res_req = m.group(2)
+            else:
+                property = ''
+                str_res_req = prop_res_req
+
+            str_res_value_lst = str_res_req.split('/')
+
+            resources = []  # resources = [{resource: r, value: v}]
+
+            for str_res_value in str_res_value_lst:
+                if str_res_value:  # to filter first and last / if any "/nodes=1" or "/nodes=1/"
+                    res_value = str_res_value.split('=')
+                    res = res_value[0]
+                    value = res_value[1]
+                    if res == 'nodes':
+                        res = nodes_resources
+                    if value == 'ALL':
+                        v = -1
+                    elif value == 'BESTHALF':
+                        v = -2
+                    elif value == 'BEST':
+                        v = -3
+                    else:
+                        v = str(value)
+                    resources.append({'resource': res, 'value': v})
+
+            resource_desc.append({'property': property, 'resources': resources})
+
+        resource_request.append((resource_desc, walltime))
+
+    return(resource_request)
