@@ -427,6 +427,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
               .filter(AdmissionRule.enabled == 'YES')\
               .order_by(AdmissionRule.priority, AdmissionRule.id)\
               .all()
+    str_rules = '\n'.join([r[0] for r in rules])
 
     # This variable is used to add some resources properties restrictions but
     # after the validation (job is queued even if there are not enough
@@ -434,7 +435,8 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
     properties_applied_after_validation = ''
 
     # Apply rules
-    code = compile('\n'.join(rules), '<string>', 'exec')
+    code = compile(str_rules, '<string>', 'exec')
+
     try:
         exec(code)
     except:

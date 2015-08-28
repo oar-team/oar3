@@ -61,3 +61,30 @@ def test_oarsub_sleep_1():
     assert mld_job_desc.walltime == 0
     assert job_res_desc.resource_type == 'resource_id'
     assert job_res_desc.value == 1
+
+
+def test_oarsub_admission_name_1():
+
+    db['AdmissionRule'].create(rule="name='yop'")
+    runner = CliRunner()
+    result = runner.invoke(cli, ['"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    print("name: ", job.name)
+    assert result.exit_code == 0
+    assert job.name == 'yop'
+
+
+
+def test_oarsub_admission_queue_1():
+
+    db['AdmissionRule'].create(rule=("if user == 'yop':"
+                                     "    queue_name= 'admin'"))
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ['"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    print("queue-name: ", job.queue_name)
+    assert result.exit_code == 0
+    assert job.queue_name == 'admin'
