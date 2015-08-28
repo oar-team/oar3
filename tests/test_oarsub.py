@@ -53,9 +53,11 @@ def test_oarsub_sleep_1():
     runner = CliRunner()
     result = runner.invoke(cli, ['"sleep 1"'])
     print(result.output)
-    job = db['Job'].query.one()
+    # job = db['Job'].query.one()
     mld_job_desc = db['MoldableJobDescription'].query.one()
     job_res_desc = db['JobResourceDescription'].query.one()
     print(mld_job_desc.walltime, job_res_desc.resource_type, job_res_desc.value)
     assert result.exit_code == 0
-    assert job.id == 1
+    assert mld_job_desc.walltime == 0
+    assert job_res_desc.resource_type == 'resource_id'
+    assert job_res_desc.value == 1

@@ -7,7 +7,8 @@ import signal
 import random
 import click
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
-                     JobDependencie, JobStateLog, config)
+                     JobDependencie, JobStateLog, MoldableJobDescription,
+                     JobResourceGroup, JobResourceDescription, config)
 from oar.kao.utils import (get_date, sql_to_duration)  # TODO move to oar.lib.utils
 
 
@@ -236,7 +237,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     kwargs['array_index'] = array_index
     kwargs['message'] = message
 
-    print(kwargs)
+    # print(kwargs)
     
     ins = Job.__table__.insert().values(**kwargs)
     result = db.engine.execute(ins)
@@ -268,7 +269,74 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     else:
         stderr = re.sub(r'%jobname%', name, stderr)
 
-    # TODO resources request
+    # print(resource_request)
+
+    # Insert resources request in DB
+    mld_jid_walltimes = []
+    resource_desc_lst = []
+    for moldable_instance in resource_request:
+        resource_desc, walltime = moldable_instance
+        if not walltime:
+            # TODO add nullable=True in MoldableJobDescription@oar.lib.model.py ?
+            walltime = 0
+        mld_jid_walltimes.append(
+            {'moldable_job_id': job_id, 'moldable_walltime': walltime})
+        resource_desc_lst.append(resource_desc)
+
+    # Insert MoldableJobDescription job_id and walltime
+    # print('mld_jid_walltimes)
+    db.engine.execute(MoldableJobDescription.__table__.insert(),
+                      mld_jid_walltimes)
+
+    # Retrieve MoldableJobDescription.ids
+    if len(mld_jid_walltimes) == 1:
+        mld_ids = [result.inserted_primary_key[0]]
+    else:
+        r = db.query(MoldableJobDescription.id)\
+              .filter(MoldableJobDescription.job_id == job_id).all()
+        mld_ids = [e[0] for e in r]
+    #
+    # print(mld_ids, resource_desc_lst)
+    for mld_idx, resource_desc in enumerate(resource_desc_lst):
+        # job_resource_groups
+        mld_id_property = []
+        res_lst = []
+
+        moldable_id = mld_ids[mld_idx]
+
+        for prop_res in resource_desc:
+            prop = prop_res['property']
+            res = prop_res['resources']
+
+            mld_id_property.append({'res_group_moldable_id': moldable_id,
+                                    'res_group_property': prop})
+
+            res_lst.append(res)
+
+        # print(mld_id_property)
+        # Insert property for moldable
+        db.engine.execute(JobResourceGroup.__table__.insert(),
+                          mld_id_property)
+
+        if len(mld_id_property) == 1:
+            grp_ids = [result.inserted_primary_key[0]]
+        else:
+            r = db.query(JobResourceGroup.id)\
+                  .filter(JobResourceGroup.moldable_id == moldable_id).all()
+            grp_ids = [e[0] for e in r]
+
+        # print('grp_ids, res_lst)
+        # Insert job_resource_descriptions
+        for grp_idx, res in enumerate(res_lst):
+            res_description = []
+            for idx, res_value in enumerate(res):
+                res_description.append({'res_job_group_id': grp_ids[grp_idx],
+                                        'res_job_resource_type': res_value['resource'],
+                                        'res_job_value': res_value['value'],
+                                        'res_job_order': idx})
+            # print(res_description)
+            db.engine.execute(JobResourceDescription.__table__.insert(),
+                              res_description)
 
     # types of job
     if types:
