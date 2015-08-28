@@ -23,6 +23,7 @@ DEFAULT_CONFIG = {
     'OARSH_OARSTAT_CMD': '/usr/local/bin/oarstat',
     'OARSH_OPENSSH_DEFAULT_OPTIONS':
         '-oProxyCommand=none -oPermitLocalCommand=no',
+    'OAR_SSH_CONNECTION_TIMEOUT': 200,
     'OARSTAT_DEFAULT_OUTPUT_FORMAT': 2,
     'OARSUB_DEFAULT_RESOURCES': '/resource_id=1',
     'OARSUB_FORCE_JOB_KEY': 'no',
@@ -54,6 +55,7 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
     'QUOTAS': 'no'
+    
 }
 
 
