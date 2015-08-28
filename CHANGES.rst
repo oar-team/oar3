@@ -1,6 +1,14 @@
 OAR CLI changelog
 =================
 
+Version 1.0.0.dev0
+------------------
+
+**unreleased**
+
+- Added oarsub
+
+
 Version 0.3.5
 -------------
 
