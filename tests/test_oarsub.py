@@ -9,6 +9,8 @@ from click.testing import CliRunner
 from oar.lib import db
 from oar.cli.oarsub import cli
 
+import oar.kao.utils  # for monkeypatching
+
 default_res = '/resource_id=1'
 nodes_res = 'resource_id'
 
@@ -43,13 +45,19 @@ def minimal_db_initialization(request):
         db.session.close()
 
 
+@pytest.fixture(scope='function', autouse=True)
+def monkeypatch_utils(request, monkeypatch):
+    monkeypatch.setattr(oar.kao.utils, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.kao.utils, 'notify_almighty', lambda x: len(x))
+
+
 def test_oarsub_void():
     runner = CliRunner()
     result = runner.invoke(cli)
     assert result.exit_code == 5
 
 
-def test_oarsub_sleep_1():
+def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['"sleep 1"'])
     print(result.output)
@@ -63,7 +71,7 @@ def test_oarsub_sleep_1():
     assert job_res_desc.value == 1
 
 
-def test_oarsub_admission_name_1():
+def test_oarsub_admission_name_1(monkeypatch):
 
     db['AdmissionRule'].create(rule="name='yop'")
     runner = CliRunner()
@@ -75,8 +83,7 @@ def test_oarsub_admission_name_1():
     assert job.name == 'yop'
 
 
-
-def test_oarsub_admission_queue_1():
+def test_oarsub_admission_queue_1(monkeypatch):
 
     db['AdmissionRule'].create(rule=("if user == 'yop':"
                                      "    queue_name= 'admin'"))

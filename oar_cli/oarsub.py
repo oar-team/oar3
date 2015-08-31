@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import re
 import os
 import sys
+import socket
 import signal
 import random
 import click
@@ -10,6 +11,7 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, config)
 from oar.kao.utils import (get_date, sql_to_duration)  # TODO move to oar.lib.utils
+import oar.kao.utils as utils
 
 
 DEFAULT_VALUE = {
@@ -30,12 +32,38 @@ DEFAULT_CONFIG = {
 config.setdefault_config(DEFAULT_CONFIG)
 
 
+use_internal = False
+log_warning = ''
+log_error = ''
+log_info = ''
+log_std = ''
+
 def print_warning(*objs):
     print('# WARNING: ', *objs, file=sys.stderr)
 
 
 def print_error(*objs):
     print('# ERROR: ', *objs, file=sys.stderr)
+
+
+def print_info(*objs):
+    print('# INFO: ', *objs, file=sys.stderr)
+
+
+def sub_exit(num, result=''):
+    if use_internal:
+        return (num, result)
+    else:
+        if result:
+            print(result)
+        sys.exit(num)
+
+
+def init_tcp_server():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((socket.getfqdn(), 0))
+    s.listen(5)
+    return s
 
 
 def qdel(signal, frame):
@@ -182,6 +210,7 @@ def estimate_job_nb_resources(resource_request, properties):
 
     # resource_set = plt.resource_set()
 
+
 def add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
                          properties, reservation_date, file_id, checkpoint, signal,
                          notify, name, env, types, launching_directory,
@@ -190,7 +219,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
                          array_id, user, reservation_field, start_time,
                          array_index, properties_applied_after_validation):
 
-    # Test if properties and resources are coherent
+    # TODO Test if properties and resources are coherent
 
     # Add admin properties to the job
     if properties_applied_after_validation:
@@ -209,7 +238,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     # $jobType, $reservationField, $queue_name, $project, $type_list, '');
 
     # TODO  job_group
-    
+
     # Insert job
     date = get_date()
 
@@ -238,7 +267,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     kwargs['message'] = message
 
     # print(kwargs)
-    
+
     ins = Job.__table__.insert().values(**kwargs)
     result = db.engine.execute(ins)
     job_id = result.inserted_primary_key[0]
@@ -459,7 +488,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
     array_index = 1
     job_id_list = []
     if array_nb > 1 and not use_job_key:
-        # TODO Simple array job submissio
+        # TODO Simple array job submissiom
         # Simple array job submission is used
         pass
     else:
@@ -522,7 +551,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
 @click.option('--array-param-file', type=click.STRING,
               help='Specify an array job on which each subjob will receive one line of the \
               file as parameter')
-@click.option('-S', '--scanscript', is_flag=False,
+@click.option('-S', '--scanscript', is_flag=True,
               help='Batch mode only: asks oarsub to scan the given script for OAR directives \
               (#OAR -l ...)')
 @click.option('-k', '--checkpoint', type=int, default=0,
@@ -573,19 +602,26 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
               help='Set the stagein file md5sum.')
 @click.option('-V', '--version', is_flag=True,
               help='Print OAR version number.')
+@click.option('--internal', is_flag=True, 
+              help="For internal use only, not for cli mode.")
 @click.option('--verbose', is_flag=True,
               help="Enables verbose output.")
 def cli(command, interactive, queue, resource, reservation, connect, stagein, stagein_md5sum,
         type, checkpoint, verbose, property, resubmit, scanscript, project, signal,
         directory, name, after, notify, array, array_param_file,
         use_job_key, import_job_key_from_file, import_job_key_inline, export_job_key_to_file,
-        stdout, stderr, hold, version):
+        stdout, stderr, hold, version, internal):
     """Submit a job to OAR batch scheduler."""
+
+    # Set global variable when this function is not used as cli
+    if internal:
+        global use_internal
+        use_internal = True
 
     remote_host = config['SERVER_HOSTNAME']
     remote_port = int(config['SERVER_PORT'])
 
-    if 'STAGEIN_DIR' in config: 
+    if 'STAGEIN_DIR' in config:
         stageindir = config['STAGEIN_DIR']
 
     if 'OARSUB_DEFAULT_RESOURCES' in config:
@@ -644,7 +680,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     env = ''
     #
     types = type
-    properties =  property
+    properties = property
     if not directory:
         launching_directory = ''
     else:
@@ -653,7 +689,12 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     initial_request = ' '.join(sys.argv[1:])
     queue_name = queue
     reservation_date = reservation
-    
+
+    if array:
+        array_nb = array
+    else:
+        array_nb = 1
+
     # Check the default name of the key if we have to generate it
     if ('OARSUB_FORCE_JOB_KEY' in config) and config['OARSUB_FORCE_JOB_KEY'] == 'yes':
         use_job_key = True
@@ -661,8 +702,8 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         use_job_key = False
 
     # TODO ssh_private_key, ssh_public_key,
-    ssh_private_key = ''
-    ssh_public_key = ''
+    # ssh_private_key = ''
+    # ssh_public_key = ''
 
     # TODO import_job_key_file, export_job_key_file
     import_job_key_file = ''
@@ -721,7 +762,8 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     # if (defined($notify) && $notify =~ m/^.*exec\s*:.+$/m){
     # my $notify_exec_regexp = '[a-zA-Z0-9_.\/ -]+';
     # unless ($notify =~ m/.*exec\s*:($notify_exec_regexp)$/m){
-    #  warn("# Error: insecure characters found in the notification method (the allowed regexp is: $notify_exec_regexp).\n");
+    #  warn("# Error: insecure characters found in the notification method
+    # (the allowed regexp is: $notify_exec_regexp).\n");
     #  OAR::Sub::close_db_connection(); exit(16);
     # }
     # }
@@ -741,14 +783,16 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     if not directory:
         directory = DEFAULT_VALUE['directory']
 
+    resource_request = parse_resource_descriptions(resource, default_resources, nodes_resources)
+
     if not interactive and command:
+
+        cmd_executor = 'Qsub'
+
         if scanscript:
             # TODO scanscript
             pass
 
-        resource_request = parse_resource_descriptions(resource, default_resources, nodes_resources)
-
-        array_nb = 1
         array_params = []
         if array_param_file:
             pass
@@ -761,7 +805,6 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             usage()
             sys.exit(6)
 
-        cmd_executor = 'Qsub'
         if reservation:
             pass
         # TODO advance reservation
@@ -770,13 +813,13 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
 
         info_type = "$Host:$server_port"  # TODO  "$Host:$server_port"
         file_id = None  # stage-in file  OAR::Sub::get_stagein_id($md5sum);
-        (err, job_id_list) = add_micheline_jobs('PASSIVE', resource_request, command, info_type,
-                                                queue_name, properties, reservation_date, file_id,
-                                                checkpoint, signal, notify, name, env, types,
-                                                launching_directory, dependencies, stdout, stderr,
-                                                hold, project, use_job_key, import_job_key_inline,
-                                                import_job_key_file, export_job_key_file,
-                                                initial_request, array_nb, array_params)
+        (err, job_id_lst) = add_micheline_jobs('PASSIVE', resource_request, command, info_type,
+                                               queue_name, properties, reservation_date, file_id,
+                                               checkpoint, signal, notify, name, env, types,
+                                               launching_directory, dependencies, stdout, stderr,
+                                               hold, project, use_job_key, import_job_key_inline,
+                                               import_job_key_file, export_job_key_file,
+                                               initial_request, array_nb, array_params)
     else:
         # TODO interactive
         if command:
@@ -784,3 +827,86 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
 
         cmd_executor = 'Qsub -I'
 
+        if array_param_file:
+            print_error('a array job with parameters given in a file cannot be interactive.')
+            usage()
+            sys.exit(9)
+
+        if array_nb != 1:
+            print_error('an array job cannot be interactive.')
+            usage()
+            sys.exit(8)
+
+            if reservation:
+                # Test if this job is a reservation and the syntax is right
+                # TODO Pass
+                pass
+        socket_server = init_tcp_server()
+        (server, server_port) = socket_server.getsockname()
+        info_type = server + ':' + str(server_port)
+        (err, job_id_lst) = add_micheline_jobs('INTERACTIVE', resource_request, '', info_type,
+                                               queue_name, properties, reservation_date, file_id,
+                                               checkpoint, signal, notify, name, env, types,
+                                               launching_directory, dependencies, stdout, stderr,
+                                               hold, project, use_job_key, import_job_key_inline,
+                                               import_job_key_file, export_job_key_file,
+                                               initial_request, array_nb, array_params)
+
+    if err != 0:
+        print_error('command failed, please verify your syntax.')
+        sub_exit(err, '')
+
+    oar_array_id = 0
+    
+    # Print job_id list
+    if len(job_id_lst) == 1:
+            print('OAR_JOB_ID=', job_id_lst[0])
+    else:
+        oar_arrar_id = get_job_array_id(job_id_lst[0])
+        for job_id in job_id_lst:
+            print('OAR_JOB_ID=', job_id)
+
+    result = (job_id_lst, oar_array_id)
+
+    # Notify Almigthy
+    utils.create_almighty_socket()
+    utils.notify_almighty(cmd_executor)
+
+    if reservation:
+        # Reservation mode
+        print_info("advance reservation request: waiting for approval from the scheduler...")
+        (conn, address) = socket_server.accept()
+        answer = conn.recv(1024)
+        if answer[:-1] == 'GOOD RESERVATION':
+            print_info('advance reservation is GRANTED.')
+        else:
+            print_info('advance reservation is REJECTED ', answer[:-1])
+            sub_exit(10)
+    elif interactive:
+        # Interactive mode
+        print_info('interactive mode: waiting...')
+
+        prev_str = ''
+        while True:
+            (conn, address) = socket_server.accept()
+            answer = conn.recv(1024)
+            answer = answer[:-1]
+
+            m = re.search(r'\](.*)$', answer)
+            if m and m.group(1) != prev_str:
+                print_info(answer)
+                prev_str = m.group(1)
+            elif answer != 'GOOD JOB':
+                print_info(answer)
+
+            if (answer == 'GOOD JOB') or (answer == 'BAD JOB') or\
+               (answer == 'JOB KILLE') or re.match(r'^ERROR', answer):
+                break
+
+        if (answer == 'GOOD JOB'):
+            # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
+            pass
+        else:
+            sub_exit(11)
+
+    sub_exit(0, result)
