@@ -10,7 +10,8 @@ import click
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, config)
-from oar.kao.utils import (get_date, sql_to_duration)  # TODO move to oar.lib.utils
+# TODO move to oar.lib.utils
+from oar.kao.utils import (get_date, sql_to_duration, sql_to_local)
 import oar.kao.utils as utils
 
 
@@ -806,8 +807,13 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             sys.exit(6)
 
         if reservation:
-            pass
-        # TODO advance reservation
+            m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
+                          reservation)
+            if m:
+                reservation = sql_to_local(m.group(1) + ' ' + m.group(2))
+            else:
+                print_error('syntax error for the advance reservation start date \
+                specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
 
         # TODO: stagein machinery (dead feature ?) put in lib or remove ?
 
