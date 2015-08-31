@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 import sys
 import time
+import re
 import os
 import socket
 from sqlalchemy import func, distinct
@@ -47,7 +48,7 @@ def notify_user(job, state, msg):  # pragma: no cover
     # see OAR::Modules::Judas::notify_user
 
     logger.debug("notify_user uses the perl script: judas_notify_user.pl !!! ("
-              + state + ", " + msg + ")")
+                 + state + ", " + msg + ")")
 
     # OAR::Modules::Judas::notify_user($base,notify,$addr,$user,$jid,$name,$state,$msg);
     # OAR::Modules::Judas::notify_user($dbh,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"SUSPENDED","Job
@@ -86,7 +87,7 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
         tcp_socket.connect((addr, int(port)))
     except socket.error as exc:
         logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
-                  " raised exception socket.error: " + str(exc))
+                     " raised exception socket.error: " + str(exc))
         return 0
     nb_sent = tcp_socket.send(message)
     tcp_socket.close()
@@ -107,13 +108,27 @@ def get_date():
     return int(result)
 
 
+# sql_to_local
+# converts a date specified in the format used by the sql database to an
+# integer local time format
+# parameters : date string
+# return value : date integer
+# side effects : /
+
+
+def sql_to_local(date):
+    # Date "year mon mday hour min sec"
+    date = ' '.join(re.findall(r"[\d']+", date))
+    t = time.strptime(date, "%Y %m %d %H %m %s")
+    return int(time.mktime(t))
+
+
 # local_to_sql
 # converts a date specified in an integer local time format to the format used
 # by the sql database
 # parameters : date integer
 # return value : date string
 # side effects : /
-
 
 def local_to_sql(local):
     return time.strftime("%F %T", time.localtime(local))
