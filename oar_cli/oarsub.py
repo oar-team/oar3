@@ -857,12 +857,13 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         sub_exit(err, '')
 
     oar_array_id = 0
-    
+
     # Print job_id list
     if len(job_id_lst) == 1:
             print('OAR_JOB_ID=', job_id_lst[0])
     else:
-        oar_arrar_id = get_job_array_id(job_id_lst[0])
+        job = db['Job'].query.filter(Job.id == job_id_lst[0]).one()
+        oar_array_id = job.array_id
         for job_id in job_id_lst:
             print('OAR_JOB_ID=', job_id)
 
