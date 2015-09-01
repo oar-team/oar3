@@ -10,7 +10,10 @@ import click
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, config)
-# TODO move to oar.lib.utils
+
+from oar.kao.platform import Platform
+
+# TODO move oar.kao.utils to oar.lib.utils
 from oar.kao.utils import (get_date, sql_to_duration, sql_to_local)
 import oar.kao.utils as utils
 
@@ -34,10 +37,11 @@ config.setdefault_config(DEFAULT_CONFIG)
 
 
 use_internal = False
-log_warning = ''
+log_warning = ''  # TODO
 log_error = ''
 log_info = ''
 log_std = ''
+
 
 def print_warning(*objs):
     print('# WARNING: ', *objs, file=sys.stderr)
@@ -196,22 +200,43 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
     return(resource_request)
 
 
-def estimate_job_nb_resources(resource_request, properties):
+def estimate_job_nb_resources(plt, resource_request, properties):
     '''returns an array with an estimation of the number of resources that can be  used by a job:
     [
       {
-        nbresources => int,
-        walltime => int,
-        comment => string
-      }
+    nbresources => int,
+    walltime => int,
+    comment => string
+    }
     ]
     '''
     # TODO estimate_job_nb_resources
-    pass
 
-    # resource_set = plt.resource_set()
+    resource_set = plt.resource_set()
+    initial_slot_set = SlotSet((resource_set.roid_itvs, get_date))
+    #
+    #  Resource availabilty (Available_upto field) is integrated through pseudo job
+    #
+    pseudo_jobs = []
+    for t_avail_upto in sorted(resource_set.available_upto.keys()):
+        itvs = resource_set.available_upto[t_avail_upto]
+        j = JobPseudo()
+        # print t_avail_upto, max_time - t_avail_upto, itvs
+        j.start_time = t_avail_upto
+        j.walltime = MAX_TIME - t_avail_upto
+        j.res_set = itvs
+        j.ts = False
+        j.ph = NO_PLACEHOLDER
 
+        pseudo_jobs.append(j)
 
+    if pseudo_jobs != []:
+        initial_slot_set.split_slots_jobs(pseudo_jobs)
+
+    result = find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):    
+
+    
+        
 def add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
                          properties, reservation_date, file_id, checkpoint, signal,
                          notify, name, env, types, launching_directory,
@@ -430,27 +455,24 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
 
     user = os.environ['OARDO_USER']
 
-    # TODO Verify notify syntax
-    # if ((defined($notify)) and ($notify !~ m/^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$/m)){
-    #     warn("# Error: bad syntax for the notify option.\n");
-    #    return(-6);
-    # }
+    # TVerify notify syntax
+    if notify and not re.match(r'^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$', notify):
+        print_error('bad syntax for the notify option.')
+        return (-6, [])
 
-    # TODO Check the stdout and stderr path validity
-    # if ((defined($stdout)) and ($stdout !~ m/^[a-zA-Z0-9_.\/\-\%\\ ]+$/m)) {
-    #  warn("# Error: invalid stdout file name (bad character)\n.");
-    #  return(-12);
-    # }
-    # if (defined($stderr) and ($stderr !~ m/^[a-zA-Z0-9_.\/\-\%\\ ]+$/m)) {
-    #  warn("# Error: invalid stderr file name (bad character).\n");
-    #  return(-13);
-    # }
+    # Check the stdout and stderr path validity
+    if stdout and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', stdout):
+        print_error('invalid stdout file name (bad character)')
+        return (-12, [])
 
-    # TODO Verify the content of env variables
-    # if ( "$job_env" !~ m/^[\w\=\s\/\.\-\"]*$/m ){
-    #   warn("# Error: the specified environnement variables contains bad characters -- $job_env\n");
-    #    return(-9);
-    # }
+    if stderr and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', stderr):
+        print_error('invalid stderr file name (bad character)')
+        return (-13, [])
+
+    # Verify the content of env variables
+    if not re.march(r'^[\w\=\s\/\.\-\"]*$', env):
+        print_error('the specified environnement variables contains bad characters -- ', env)
+        return(-9, [])
 
     # Retrieve Micheline's rules from the table
     rules = db.query(AdmissionRule.rule)\
@@ -594,7 +616,6 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
 @click.option('--hold', is_flag=True,
               help='Set the job state into Hold instead of Waiting,\
               so that it is not scheduled (you must run "oarresume" to turn it into the Waiting state)')
-
 @click.option('--resubmit', type=int,
               help='Resubmit the given job as a new one.')
 @click.option('-s', '--stagein', type=click.Path(writable=False, readable=False),
@@ -635,7 +656,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     else:
         nodes_resources = 'resource_id'
 
-    # TODODeploy_hostname / Cosystem_hostname
+    # TODO Deploy_hostname / Cosystem_hostname
     # $Deploy_hostname = get_conf("DEPLOY_HOSTNAME");
     # if (!defined($Deploy_hostname)){
     #    $Deploy_hostname = $remote_host;
@@ -759,15 +780,13 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             print_error('a NOOP job does not have a shell to connect to.')
             sys.exit(17)
 
-    # TODO notify : check insecure character
-    # if (defined($notify) && $notify =~ m/^.*exec\s*:.+$/m){
-    # my $notify_exec_regexp = '[a-zA-Z0-9_.\/ -]+';
-    # unless ($notify =~ m/.*exec\s*:($notify_exec_regexp)$/m){
-    #  warn("# Error: insecure characters found in the notification method
-    # (the allowed regexp is: $notify_exec_regexp).\n");
-    #  OAR::Sub::close_db_connection(); exit(16);
-    # }
-    # }
+    # notify : check insecure character
+    if notify and re.match(r'^.*exec\s*:.+$'):
+        m = re.search(r'.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', notify)
+        if not m:
+            print_error('insecure characters found in the notification method \
+            (the allowed regexp is: [a-zA-Z0-9_.\/ -]+).')
+            sub_exit(16)
 
     # TODO   Connect to a reservation
     # Connect to a reservation
