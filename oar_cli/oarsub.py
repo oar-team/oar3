@@ -7,11 +7,20 @@ import socket
 import signal
 import random
 import click
+
+import pdb
+
+from copy import deepcopy
+from sqlalchemy import text, exc
+
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
                      JobDependencie, JobStateLog, MoldableJobDescription,
-                     JobResourceGroup, JobResourceDescription, config)
+                     JobResourceGroup, JobResourceDescription, Resource,
+                     config)
 
-from oar.kao.platform import Platform
+from oar.kao.resource import ResourceSet
+from oar.kao.hierarchy import find_resource_hierarchies_scattered
+from oar.kao.interval import intersec, unordered_ids2itvs,itvs_size 
 
 # TODO move oar.kao.utils to oar.lib.utils
 from oar.kao.utils import (get_date, sql_to_duration, sql_to_local)
@@ -61,7 +70,7 @@ def sub_exit(num, result=''):
     else:
         if result:
             print(result)
-        sys.exit(num)
+        exit(num)
 
 
 def init_tcp_server():
@@ -177,8 +186,11 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
             resources = []  # resources = [{resource: r, value: v}]
 
             for str_res_value in str_res_value_lst:
-                if str_res_value:  # to filter first and last / if any "/nodes=1" or "/nodes=1/"
-                    res_value = str_res_value.split('=')
+                
+                if str_res_value.lstrip():  # to filter first and last / if any "/nodes=1" or "/nodes=1/
+                    # remove  first and trailing spaces"
+                    str_res_value_wo_spc = str_res_value.lstrip()
+                    res_value = str_res_value_wo_spc.split('=')
                     res = res_value[0]
                     value = res_value[1]
                     if res == 'nodes':
@@ -200,43 +212,83 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
     return(resource_request)
 
 
-def estimate_job_nb_resources(plt, resource_request, properties):
+def estimate_job_nb_resources(resource_request, j_properties):
     '''returns an array with an estimation of the number of resources that can be  used by a job:
-    [
-      {
-    nbresources => int,
-    walltime => int,
-    comment => string
-    }
-    ]
+    (resources_available, [(nbresources => int, walltime => int)])
     '''
-    # TODO estimate_job_nb_resources
+    #estimate_job_nb_resources
+    estimated_nb_resources = []
+    resource_available = False
+    resource_set = ResourceSet()
+    resources_itvs = resource_set.roid_itvs
+ 
+    for mld_idx, mld_resource_request in enumerate(resource_request):
 
-    resource_set = plt.resource_set()
-    initial_slot_set = SlotSet((resource_set.roid_itvs, get_date))
-    #
-    #  Resource availabilty (Available_upto field) is integrated through pseudo job
-    #
-    pseudo_jobs = []
-    for t_avail_upto in sorted(resource_set.available_upto.keys()):
-        itvs = resource_set.available_upto[t_avail_upto]
-        j = JobPseudo()
-        # print t_avail_upto, max_time - t_avail_upto, itvs
-        j.start_time = t_avail_upto
-        j.walltime = MAX_TIME - t_avail_upto
-        j.res_set = itvs
-        j.ts = False
-        j.ph = NO_PLACEHOLDER
+        resource_desc , walltime =  mld_resource_request
 
-        pseudo_jobs.append(j)
+        result = []
 
-    if pseudo_jobs != []:
-        initial_slot_set.split_slots_jobs(pseudo_jobs)
+        for prop_res in resource_desc:
+            jrg_grp_property =  prop_res['property']
+            resource_value_lst =  prop_res['resources']
+            
+            #
+            # determine resource constraints
+            #
+            if (not j_properties) and (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
+                constraints = deepcopy(resource_set.roid_itvs)
+            else:
+                if not j_properties or not jrg_grp_property:
+                    and_sql = ""
+                else:
+                    and_sql = " AND "
+                
+                sql_constraints = j_properties + and_sql + jrg_grp_property
+                #if  sql_constraints:
+                #    print("sql_constraints: ", sql_constraints)
+                try:
+                    request_constraints = db.query(Resource.id).filter(text(sql_constraints)).all()
+                except exc.SQLAlchemyError:
+                    print_error('Bad resource SQL constraints request:', sql_constraints)
+                    print_error('SQLAlchemyError: ', exc)
+                    result = []
+                    break
+                
+                roids = [resource_set.rid_i2o[int(y[0])] for y in request_constraints]
+                constraints = unordered_ids2itvs(roids)
 
-    result = find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):    
+            hy_levels = []
+            hy_nbs = []
+            for resource_value in resource_value_lst:
+                res_name = resource_value['resource']
+                value = resource_value['value']
+                hy_levels.append(resource_set.hierarchy[res_name])
+                hy_nbs.append(int(value))
+                
+            cts_resources_itvs = intersec(constraints, resources_itvs)
+            res_itvs =  find_resource_hierarchies_scattered( cts_resources_itvs, hy_levels, hy_nbs)
+            if res_itvs:
+                result.extend(res_itvs)
+            else:
+                result = []
+            break
+    
+        if result:
+            resource_available = True
+
+        estimated_nb_res = itvs_size(result)
+        estimated_nb_resources.append((estimated_nb_res, walltime))
+        print_info('Modlable instance: ', mld_idx,
+                   ' Estimated nb resources: ', estimated_nb_res,
+                   ' Walltime: ', walltime)
 
     
-        
+    if not resource_available:
+        print_error("There are not enough resources for your request")
+        sub_exit(-5)
+            
+    return(resource_available, estimated_nb_resources)
+
 def add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
                          properties, reservation_date, file_id, checkpoint, signal,
                          notify, name, env, types, launching_directory,
@@ -246,7 +298,9 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
                          array_index, properties_applied_after_validation):
 
     # TODO Test if properties and resources are coherent
-
+    # pdb.set_trace()
+    resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
+    
     # Add admin properties to the job
     if properties_applied_after_validation:
         if properties:
@@ -470,7 +524,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
         return (-13, [])
 
     # Verify the content of env variables
-    if not re.march(r'^[\w\=\s\/\.\-\"]*$', env):
+    if not re.match(r'^[\w\=\s\/\.\-\"]*$', env):
         print_error('the specified environnement variables contains bad characters -- ', env)
         return(-9, [])
 
@@ -495,7 +549,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
         err = sys.exc_info()
         print_error(err[1])
         print_error('a failed admission rule prevented submitting the job.')
-        return -2
+        return(-2,[])
 
     # TODO Test if the queue exists
     # my %all_queues = get_all_queue_informations($dbh);
@@ -635,6 +689,9 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         stdout, stderr, hold, version, internal):
     """Submit a job to OAR batch scheduler."""
 
+    # pdb.set_trace()
+    print(resource)
+    
     # Set global variable when this function is not used as cli
     if internal:
         global use_internal
@@ -686,7 +743,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         binpath = os.environ['OARDIR'] + '/'
     else:
         print_error('OARDIR environment variable is not defined.')
-        sys.exit(1)
+        sub_exit(1)
 
     openssh_cmd = config['OPENSSH_CMD']
     ssh_timeout = int(config['OAR_SSH_CONNECTION_TIMEOUT'])
@@ -723,6 +780,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     else:
         use_job_key = False
 
+        
     # TODO ssh_private_key, ssh_public_key,
     # ssh_private_key = ''
     # ssh_public_key = ''
@@ -741,9 +799,9 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             if signal_almighty(remote_host, remote_port, 'Qsub') > 0:
                 print_error('cannot connect to executor ' + str(remote_host) + ':' +
                             str(remote_port) + '. OAR server might be down.')
-                sys.exit(3)
+                sub_exit(3)
             else:
-                sys.exit(0)
+                sub_exit(0)
         else:
             print(' error.')
             if ret == -1:
@@ -756,29 +814,29 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
                 print_error('another active job is using the same job key.')
             else:
                 print_error('unknown error.')
-            sys.exit(4)
+            sub_exit(4)
 
     if not command and not interactive and not reservation and not connect:
         usage()
-        sys.exit(5)
+        sub_exit(5)
 
     if interactive and reservation:
         print_error('an advance reservation cannot be interactive.')
         usage()
-        sys.exit(7)
+        sub_exit(7)
 
     if interactive and any(re.match(r'^desktop_computing$', t) for t in type):
         print_error(' a desktop computing job cannot be interactive')
         usage()
-        sys.exit(17)
+        sub_exit(17)
 
     if any(re.match(r'^noop$', t) for t in type):
         if interactive:
             print_error('a NOOP job cannot be interactive.')
-            sys.exit(17)
+            sub_exit(17)
         elif connect:
             print_error('a NOOP job does not have a shell to connect to.')
-            sys.exit(17)
+            sub_exit(17)
 
     # notify : check insecure character
     if notify and re.match(r'^.*exec\s*:.+$'):
@@ -823,7 +881,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         if array_nb == 0:
             print_error('an array of job must have a number of sub-jobs greater than 0.')
             usage()
-            sys.exit(6)
+            sub_exit(6)
 
         if reservation:
             m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
@@ -855,12 +913,12 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
         if array_param_file:
             print_error('a array job with parameters given in a file cannot be interactive.')
             usage()
-            sys.exit(9)
+            sub_exit(9)
 
         if array_nb != 1:
             print_error('an array job cannot be interactive.')
             usage()
-            sys.exit(8)
+            sub_exit(8)
 
             if reservation:
                 # Test if this job is a reservation and the syntax is right
