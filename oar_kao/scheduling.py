@@ -85,8 +85,11 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             hy_nbs.append(n)
 
         itvs_cts_slots = intersec(constraints, itvs_slots)
-        result.extend(
-            find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs))
+        res = find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs)
+        if res:
+            result.extend(res)
+        else:
+            return []
 
     return result
 

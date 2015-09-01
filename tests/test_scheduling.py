@@ -51,7 +51,7 @@ def test_set_slots_with_prev_scheduled_jobs_1():
     assert compare_slots_val_ref(ss.slots, v) is True
 
 
-def test_assign_resources_mld_job_split_slots():
+def test_assign_resources_mld_job_split_slots_1():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -71,6 +71,52 @@ def test_assign_resources_mld_job_split_slots():
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
 
     assert compare_slots_val_ref(ss.slots, v) is True
+
+
+def test_assign_resources_mld_job_split_slots_2():
+
+    v = [(0, 59, [(17, 21)]), (60, 100, [(1, 32)])]
+
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]],
+          'switch': [[(1, 16)], [(17, 21)]],
+          'gpu': [[(22, 32)]]
+          }
+
+    j1 = JobPseudo(id=1, key_cache={},
+                   mld_res_rqts=[
+                       (1, 60,
+                        [([('node', 2)], res), ([('gpu', 1)], res)]
+                    )]
+               )
+
+    assign_resources_mld_job_split_slots(ss, j1, hy, -1)
+    ss.show_slots()
+    assert compare_slots_val_ref(ss.slots, v)
+
+    
+def test_assign_resources_mld_job_split_slots_3():
+
+    v = [(0, 100, [(1, 32)])]
+
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]],
+          'switch': [[(1, 16)], [(17, 21)]],
+          'gpu': [[(22, 32)]]
+          }
+
+    # Job below cannot be satisfied (only 1 GPU available)
+    j1 = JobPseudo(id=1, key_cache={},
+                   mld_res_rqts=[(1, 60,
+                                  [([('node', 2)], res), ([('gpu', 2)], res)]
+                              )]
+               )
+
+    assign_resources_mld_job_split_slots(ss, j1, hy, -1)
+    ss.show_slots()
+    assert compare_slots_val_ref(ss.slots, v)
 
 
 def test_schedule_id_jobs_ct_1():
