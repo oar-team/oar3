@@ -30,8 +30,7 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
-@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
-def test_db_timesharing_1(monkeypatch):
+def _test_db_timesharing_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
 
@@ -143,8 +142,7 @@ def test_db_properties_3(monkeypatch):
     assert res[0] == res[1]
 
 
-@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
-def test_db_placeholder_1(monkeypatch):
+def _test_db_placeholder_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["placeholder=yop"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["allow=yop"])
