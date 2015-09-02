@@ -128,269 +128,270 @@ def test_db_all_in_one_simple_1(monkeypatch):
     assert (job.state == 'toLaunch')
 
 
-# def test_db_all_in_one_ar_1(monkeypatch):
-#     # add one job
+def test_db_all_in_one_ar_1(monkeypatch):
+    # add one job
 
-#     job = insert_and_sched_ar(get_date() + 10)
-#     print(job.state, ' ', job.reservation)
+    job = insert_and_sched_ar(get_date() + 10)
+    print(job.state, ' ', job.reservation)
 
-#     assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
+    assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
 
 
-# @pytest.mark.usefixtures("active_quotas")
-# def test_db_all_in_one_quotas_1(monkeypatch):
-#     """
-#     quotas[queue, project, job_type, user] = [int, int, float];
-#                                                |    |     |
-#               maximum used resources ----------+    |     |
-#               maximum number of running jobs -------+     |
-#               maximum resources times (hours) ------------+
-#     """
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_1(monkeypatch):
+    """
+    quotas[queue, project, job_type, user] = [int, int, float];
+                                               |    |     |
+              maximum used resources ----------+    |     |
+              maximum number of running jobs -------+     |
+              maximum resources times (hours) ------------+
+    """
 
-#     create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 0.55]}}')
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 0.55]}}')
 
-#     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
-#     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
-#     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
 
-#     # pdb.set_trace()
-#     now = get_date()
-#     meta_schedule('internal')
+    # pdb.set_trace()
+    now = get_date()
+    meta_schedule('internal')
 
-#     res = []
-#     for i in db['GanttJobsPrediction'].query.all():
-#         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
-#         res.append(i.start_time - now)
+    res = []
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
+        res.append(i.start_time - now)
 
-#     assert res == [0, 160, 420]
+    assert res == [0, 160, 420]
 
 
-# @pytest.mark.usefixtures("active_quotas")
-# def test_db_all_in_one_quotas_2(monkeypatch):
-#     """
-#     quotas[queue, project, job_type, user] = [int, int, float];
-#                                                |    |     |
-#               maximum used resources ----------+    |     |
-#               maximum number of running jobs -------+     |
-#               maximum resources times (hours) ------------+
-#     """
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_2(monkeypatch):
+    """
+    quotas[queue, project, job_type, user] = [int, int, float];
+                                               |    |     |
+              maximum used resources ----------+    |     |
+              maximum number of running jobs -------+     |
+              maximum resources times (hours) ------------+
+    """
 
-#     create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1]}}')
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1]}}')
 
-#     # Submit and allocate an Advance Reservation
-#     t0 = get_date()
-#     insert_and_sched_ar(t0 + 100)
+    # Submit and allocate an Advance Reservation
+    t0 = get_date()
+    insert_and_sched_ar(t0 + 100)
 
-#     # Submit other jobs
-#     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
-#     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+    # Submit other jobs
+    insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
 
-#     # pdb.set_trace()
-#     t1 = get_date()
-#     meta_schedule('internal')
+    # pdb.set_trace()
+    t1 = get_date()
+    meta_schedule('internal')
 
-#     res = []
-#     for i in db['GanttJobsPrediction'].query.all():
-#         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
-#         res.append(i.start_time - t1)
+    res = []
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
+        res.append(i.start_time - t1)
 
-#     assert (res[1] - res[0]) == 120
-#     assert (res[2] - res[0]) == 280
+    assert (res[1] - res[0]) == 120
+    assert (res[2] - res[0]) == 280
 
 
-# @pytest.mark.usefixtures("active_quotas")
-# def test_db_all_in_one_quotas_AR(monkeypatch):
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_quotas_AR(monkeypatch):
 
-#     create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
+    create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
 
-#     job = insert_and_sched_ar(get_date() + 10)
-#     print(job.state, ' ', job.reservation)
+    job = insert_and_sched_ar(get_date() + 10)
+    print(job.state, ' ', job.reservation)
 
-#     assert job.state == 'Error'
+    assert job.state == 'Error'
 
 
-# def test_db_all_in_one_AR_2(monkeypatch):
+def test_db_all_in_one_AR_2(monkeypatch):
 
-#     job = insert_and_sched_ar(get_date() - 1000)
-#     print(job.state, ' ', job.reservation)
-#     assert job.state == 'Error'
+    job = insert_and_sched_ar(get_date() - 1000)
+    print(job.state, ' ', job.reservation)
+    assert job.state == 'Error'
 
 
-# def test_db_all_in_one_AR_3(monkeypatch):
+def test_db_all_in_one_AR_3(monkeypatch):
 
-#     now = get_date()
-#     job = insert_and_sched_ar(now + 1000)
-#     new_start_time = now - 2000
+    now = get_date()
+    job = insert_and_sched_ar(now + 1000)
+    new_start_time = now - 2000
 
-#     set_jobs_start_time(tuple([job.id]), new_start_time)
-#     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
-#                                          synchronize_session=False)
-#     db.commit()
+    set_jobs_start_time(tuple([job.id]), new_start_time)
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
 
-#     assert job.state == 'Error'
+    assert job.state == 'Error'
 
 
-# def test_db_all_in_one_AR_4(monkeypatch):
+def test_db_all_in_one_AR_4(monkeypatch):
 
-#     now = get_date()
-#     job = insert_and_sched_ar(now + 10)
-#     new_start_time = now - 20
+    now = get_date()
+    job = insert_and_sched_ar(now + 10)
+    new_start_time = now - 20
 
-#     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
-#                                          synchronize_session=False)
-#     db.commit()
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
 
-#     assert job.state == 'toLaunch'
+    assert job.state == 'toLaunch'
 
 
-# def test_db_all_in_one_AR_5(monkeypatch):
+def test_db_all_in_one_AR_5(monkeypatch):
 
-#     now = get_date()
-#     job = insert_and_sched_ar(now + 10)
-#     new_start_time = now - 20
+    now = get_date()
+    job = insert_and_sched_ar(now + 10)
+    new_start_time = now - 20
 
-#     set_jobs_start_time(tuple([job.id]), new_start_time)
-#     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
-#                                          synchronize_session=False)
-#     db.commit()
+    set_jobs_start_time(tuple([job.id]), new_start_time)
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+    db.commit()
 
-#     db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
-#     db.commit()
+    db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
+    db.commit()
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
 
-#     assert job.state == 'Waiting'
+    assert job.state == 'Waiting'
 
 
-# def test_db_all_in_one_BE(monkeypatch):
+def test_db_all_in_one_BE(monkeypatch):
 
-#     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
 
-#     insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort', types=['besteffort'])
+    insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort', types=['besteffort'])
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print(job.state)
-#     assert (job.state == 'toLaunch')
+    job = db['Job'].query.one()
+    print(job.state)
+    assert (job.state == 'toLaunch')
 
 
-# def test_db_all_in_one_BE_to_kill(monkeypatch):
+def test_db_all_in_one_BE_to_kill(monkeypatch):
 
-#     os.environ['USER'] = 'root'  # to allow fragging
-#     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+    os.environ['USER'] = 'root'  # to allow fragging
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
 
-#     insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort', types=['besteffort'])
+    insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort', types=['besteffort'])
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     assert (job.state == 'toLaunch')
+    job = db['Job'].query.one()
+    assert (job.state == 'toLaunch')
 
-#     insert_job(res=[(100, [('resource_id=5', "")])])
+    insert_job(res=[(100, [('resource_id=5', "")])])
 
-#     meta_schedule('internal')
+    meta_schedule('internal')
 
-#     jobs = db['Job'].query.all()
+    jobs = db['Job'].query.all()
 
-#     print(jobs[0].state, jobs[1].state)
+    print(jobs[0].state, jobs[1].state)
 
-#     print("frag...", db['FragJob'].query.one())
-#     frag_job = db['FragJob'].query.one()
-#     assert jobs[0].state == 'toLaunch'
-#     assert jobs[1].state == 'Waiting'
-#     assert frag_job.job_id == jobs[0].id
+    print("frag...", db['FragJob'].query.one())
+    frag_job = db['FragJob'].query.one()
+    assert jobs[0].state == 'toLaunch'
+    assert jobs[1].state == 'Waiting'
+    assert frag_job.job_id == jobs[0].id
 
 
-# @pytest.mark.usefixtures("active_energy_saving")
-# def test_db_all_in_one_wakeup_node_1(monkeypatch):
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_wakeup_node_1(monkeypatch):
 
-#     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
 
-#     now = get_date()
-#     # Suspend nodes
-#     db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
-#                               synchronize_session=False)
-#     db.commit()
-#     meta_schedule('internal')
+    now = get_date()
+    # Suspend nodes
+    db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print(job.state)
-#     print(node_list)
-#     assert (job.state == 'Waiting')
-#     assert (node_list == [u'localhost0', u'localhost1'])
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'Waiting')
+    assert (node_list == [u'localhost0', u'localhost1'])
 
 
-# @pytest.mark.usefixtures("active_energy_saving")
-# def test_db_all_in_one_sleep_node_1(monkeypatch):
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_sleep_node_1(monkeypatch):
 
-#     now = get_date()
+    now = get_date()
 
-#     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
+    insert_job(res=[(60, [('resource_id=1', "")])], properties="")
 
-#     # Suspend nodes
-#     # pdb.set_trace()
-#     db.query(Resource).update({Resource.available_upto: now + 50000},
-#                               synchronize_session=False)
-#     db.commit()
-#     meta_schedule('internal')
+    # Suspend nodes
+    # pdb.set_trace()
+    db.query(Resource).update({Resource.available_upto: now + 50000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print(job.state)
-#     print(node_list)
-#     assert (job.state == 'toLaunch')
-#     assert (node_list == [u'localhost2', u'localhost1'] or
-#             node_list == [u'localhost1', u'localhost2'])
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'toLaunch')
+    assert (node_list == [u'localhost2', u'localhost1'] or
+            node_list == [u'localhost1', u'localhost2'])
 
 
-# @pytest.mark.usefixtures('create_oar_hulot_pipe')
-# @pytest.mark.usefixtures("active_energy_saving")
-# def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
-#     config['ENERGY_SAVING_INTERNAL'] = 'yes'
-#     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+@pytest.mark.usefixtures('create_oar_hulot_pipe')
+@pytest.mark.usefixtures("active_energy_saving")
+def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
+    config['ENERGY_SAVING_INTERNAL'] = 'yes'
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
 
-#     now = get_date()
-#     # Suspend nodes
-#     db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
-#                               synchronize_session=False)
-#     db.commit()
-#     meta_schedule('internal')
+    now = get_date()
+    # Suspend nodes
+    db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print(job.state)
-#     print(node_list)
-#     assert (job.state == 'Waiting')
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'Waiting')
 
 
-# @pytest.mark.usefixtures('create_oar_hulot_pipe')
-# @pytest.mark.usefixtures('active_energy_saving')
-# def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
-#     config['ENERGY_SAVING_INTERNAL'] = 'yes'
-#     now = get_date()
+@pytest.mark.usefixtures('create_oar_hulot_pipe')
+@pytest.mark.usefixtures('active_energy_saving')
+def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
+    config['ENERGY_SAVING_INTERNAL'] = 'yes'
+    now = get_date()
 
-#     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
+    insert_job(res=[(60, [('resource_id=1', "")])], properties="")
 
-#     # Suspend nodes
-#     # pdb.set_trace()
-#     db.query(Resource).update({Resource.available_upto: now + 50000},
-#                               synchronize_session=False)
-#     db.commit()
-#     meta_schedule('internal')
+    # Suspend nodes
+    # pdb.set_trace()
+    db.query(Resource).update({Resource.available_upto: now + 50000},
+                              synchronize_session=False)
+    db.commit()
+    meta_schedule('internal')
 
-#     job = db['Job'].query.one()
-#     print(job.state)
-#     print(node_list)
-#     assert (job.state == 'toLaunch')
+    job = db['Job'].query.one()
+    print(job.state)
+    print(node_list)
+    assert (job.state == 'toLaunch')
+
