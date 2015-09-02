@@ -8,30 +8,15 @@ from oar.kao.meta_sched import meta_schedule
 import oar.kao.utils  # for monkeypatching
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
+    db.delete_all()
+    db.session.close()
     db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
     # add some resources
     for i in range(5):
         db['Resource'].create(network_address="localhost" + str(int(i / 2)))
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
 
 
 @pytest.fixture(scope='function', autouse=True)

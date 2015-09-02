@@ -13,16 +13,10 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
+@pytest.fixture(scope="function", autouse=True)
+def minimal_db_initialization(request):
     db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
+    db.session.close()
 
 
 @pytest.fixture(scope='module', autouse=True)

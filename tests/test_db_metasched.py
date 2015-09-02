@@ -1,13 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pytest
-import os
-import os.path
-
-from codecs import open
 
 from oar.lib import config, db
-from oar.lib.compat import iteritems
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
@@ -15,50 +10,15 @@ import oar.kao.utils  # for monkeypatching
 from oar.kao.utils import get_date
 
 
-@pytest.fixture(scope='module', autouse=True)
-def generate_oar_conf_and_create_db(request):
-
-    config['DB_BASE_FILE'] = '/tmp/oar.sqlite'
-
-    def dump_configuration(filename):
-        with open(filename, 'w', encoding='utf-8') as fd:
-            for key, value in iteritems(config):
-                if not key.startswith('SQLALCHEMY_'):
-                    fd.write("%s=%s\n" % (key, str(value)))
-
-    def remove_db_if_exists():
-        if 'DB_BASE_FILE' in config:
-            if os.path.isfile(config['DB_BASE_FILE']):
-                os.remove(config['DB_BASE_FILE'])
-
-    @request.addfinalizer
-    def teardown():
-        os.remove('/etc/oar/oar.conf')
-        db.delete_all()
-        db.session.close()
-        remove_db_if_exists()
-        del db.uri
-
-    dump_configuration('/etc/oar/oar.conf')
-    remove_db_if_exists()
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_intialization(request):
+    db.delete_all()
+    db.session.close()
     db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
     # add some resources
     for i in range(5):
         db['Resource'].create(network_address="localhost")
-
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-    request.addfinalizer(teardown)
 
 
 @pytest.fixture(scope='function', autouse=True)
