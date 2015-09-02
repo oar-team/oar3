@@ -20,7 +20,7 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
 
 from oar.kao.resource import ResourceSet
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.interval import intersec, unordered_ids2itvs,itvs_size 
+from oar.kao.interval import intersec, unordered_ids2itvs, itvs_size
 
 # TODO move oar.kao.utils to oar.lib.utils
 from oar.kao.utils import (get_date, sql_to_duration, sql_to_local)
@@ -40,9 +40,14 @@ DEFAULT_CONFIG = {
     'OAR_SSH_CONNECTION_TIMEOUT': '200',
     'STAGEIN_DIR': '/tmp',
     'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': 'cpuset',
-    'CPUSET_PATH': '/oar'
+    'CPUSET_PATH': '/oar',
+    'DEFAULT_JOB_WALLTIME': '3600'
     }
 config.setdefault_config(DEFAULT_CONFIG)
+
+
+# When the walltime of a job is not defined
+default_job_walltime = str(config['DEFAULT_JOB_WALLTIME'])
 
 
 use_internal = False
@@ -133,9 +138,9 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
     # transform to 'à la' perl structure use in admission rules
     #
     # resource_request = [moldable_instance , ...]
-    # moldable_instance =  ( resource_desc , walltime)
+    # moldable_instance =  ( resource_desc_lst , walltime)
     # walltime = int|None
-    # resource_desc = [{property: prop, resources: res}]
+    # resource_desc_lst = [{property: prop, resources: res}]
     # property = string|''|None
     # resources = [{resource: r, value: v}]
     # r = string
@@ -231,6 +236,9 @@ def estimate_job_nb_resources(resource_request, j_properties):
 
         resource_desc, walltime = mld_resource_request
 
+        if not walltime:
+            walltime = default_job_walltime
+
         result = []
 
         for prop_res in resource_desc:
@@ -315,8 +323,6 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
 
     # TODO Verify the content of the ssh keys
 
-    # TODO Check the user validity
-
     # TODO format job message
     message = ''
     # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
@@ -324,6 +330,23 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
 
     # TODO  job_group
 
+    if not stdout:
+        stdout = 'OAR'
+        if name:
+            stdout += '.' + name
+        stdout += ".%jobid%.stdout"
+    else:
+        stdout = re.sub(r'%jobname%', name, stdout)
+
+    if not stderr:
+        stderr = 'OAR'
+        if name:
+            stderr += '.' + name
+        stderr += '.%jobid%.stderr'
+    else:
+        stderr = re.sub(r'%jobname%', name, stderr)
+
+    
     # Insert job
     date = get_date()
 
@@ -350,6 +373,8 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     kwargs['array_id'] = array_id
     kwargs['array_index'] = array_index
     kwargs['message'] = message
+    # TODO DEBUG kwargs['stdout'] = '"' + stdout + '"'
+    # TODO DEBUG kwargs['stderr'] = '"' + stderr + '"'
 
     # print(kwargs)
 
@@ -366,22 +391,6 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
         {'job_id': job_id, 'challenge': random_number,
          'ssh_private_key': ssh_private_key, 'ssh_public_key': ssh_public_key})
     db.engine.execute(ins)
-
-    if not stdout:
-        stdout = 'OAR'
-        if name:
-            stdout += '.' + name
-        stdout += '.%jobid%.stdout'
-    else:
-        stdout = re.sub(r'%jobname%', name, stdout)
-
-    if not stderr:
-        stderr = 'OAR'
-        if name:
-            stderr += '.' + name
-        stderr += '.%jobid%.stderr'
-    else:
-        stderr = re.sub(r'%jobname%', name, stderr)
 
     # print(resource_request)
 
@@ -470,7 +479,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
         req = db.insert(JobStateLog).values(
             {'job_id': job_id, 'job_state': 'Waiting', 'date_start': date})
         db.engine.execute(req)
-        db.commit
+        db.commit()
 
         db.query(Job).filter(Job.id == job_id).update({Job.state: 'Waiting'})
         db.commit()
@@ -478,9 +487,200 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
         req = db.insert(JobStateLog).values(
             {'job_id': job_id, 'job_state': 'Hold', 'date_start': date})
         db.engine.execute(req)
-        db.commit
+        db.commit()
 
     return(0, job_id)
+
+
+def add_micheline_simple_array_job(job_type, resource_request, array_commands, info_type, queue_name,
+                                   properties, reservation_date, file_id, checkpoint, signal,
+                                   notify, name, env, types, launching_directory,
+                                   dependencies, stdout, stderr, hold, project,
+                                   ssh_private_key, ssh_public_key, initial_request,
+                                   array_id, user, reservation_field, start_time,
+                                   array_index, properties_applied_after_validation):
+
+    job_id_list = []
+    nb_jobs = len(array_commands)
+
+    # Check the jobs are no moldable
+    if len(resource_request) > 1:
+        print_error('array jobs cannot be moldable')
+        sub_exit(-30)
+
+    # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
+    # against avalaible resources
+    # pdb.set_trace()
+    resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
+
+    # Add admin properties to the job
+    if properties_applied_after_validation:
+        if properties:
+            properties = '(' + properties + ') AND ' + properties_applied_after_validation
+        else:
+            properties = properties_applied_after_validation
+
+    # TODO format job message
+    message = ''
+    # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
+    # $jobType, $reservationField, $queue_name, $project, $type_list, '');
+
+    # Insert job
+    date = get_date()
+
+    if not stdout:
+        stdout = 'OAR'
+        if name:
+            stdout += '.' + name
+        stdout += '.%jobid%.stdout'
+    else:
+        stdout = re.sub(r'%jobname%', name, stdout)
+
+    if not stderr:
+        stderr = 'OAR'
+        if name:
+            stderr += '.' + name
+        stderr += '.%jobid%.stderr'
+    else:
+        stderr = re.sub(r'%jobname%', name, stderr)
+    
+    date = get_date()
+
+    # Insert job
+    kwargs = {}
+    kwargs['job_type'] = job_type
+    kwargs['info_type'] = info_type
+    kwargs['state'] = 'Hold'
+    kwargs['job_user'] = user
+    kwargs['command'] = array_commands[0]
+    kwargs['submission_time'] = date
+    kwargs['queue_name'] = queue_name
+    kwargs['properties'] = properties
+    kwargs['launching_directory'] = launching_directory
+    kwargs['reservation'] = reservation_field
+    kwargs['start_time'] = start_time
+    kwargs['file_id'] = file_id
+    kwargs['checkpoint'] = checkpoint
+    kwargs['job_name'] = name
+    kwargs['notify'] = notify
+    kwargs['checkpoint_signal'] = signal
+    kwargs['job_env'] = env
+    kwargs['project'] = project
+    kwargs['initial_request'] = initial_request
+    kwargs['array_id'] = array_id
+    kwargs['array_index'] = array_index
+    kwargs['message'] = message
+    kwargs['stdout'] = stdout
+    kwargs['stderr'] = stderr
+
+    # print(kwargs)
+
+    ins = Job.__table__.insert().values(**kwargs)
+    result = db.engine.execute(ins)
+    first_job_id = result.inserted_primary_key[0]
+
+    # Update array_id
+    array_id = first_job_id
+    db.query(Job).filter(Job.id == first_job_id).update({Job.array_id: array_id})
+    db.commit()
+
+    # Insert remaining array jobs with array_id
+    jobs_data = []
+    for command in array_commands[1:]:
+        job_data = kwargs.copy()
+        job_data['command'] = command
+        jobs_data.append(job_data)
+
+    db.engine.execute(Job.__table__.insert(), jobs_data)
+    db.commit()
+
+    # Retreive job_ids thanks to array_id value
+    result = db.query(Job.id).filter(Job.array_id == array_id).all()
+    job_id_list = [r[0] for r in result]
+
+    # TODO Populate challenges and moldable_job_descriptions tables
+    challenges = []
+    moldable_job_descriptions = []
+
+    walltime = resource_request[0][1]
+    if not walltime:
+        walltime = default_job_walltime
+
+    for job_id in job_id_list:
+        random_number = random.randint(1, 1000000000000)
+        challenges.append({'job_id': job_id, 'challenge': random_number})
+        moldable_job_descriptions.append({'moldable_job_id': job_id, 'moldable_walltime': walltime})
+
+    db.engine.execute(Challenge.__table__.insert(), challenges)
+    db.engine.execute(MoldableJobDescription.__table__.insert(), moldable_job_descriptions)
+    db.commit()
+
+    # Retrieve moldable_ids thanks to job_ids
+    result = db.query(MoldableJobDescription.id)\
+               .filter(MoldableJobDescription.job_id.in_(tuple(job_id_list)))\
+               .order_by(MoldableJobDescription.id).all()
+    moldable_ids = [r[0] for r in result]
+
+    # Populate job_resource_groups table
+    resource_desc_lst = resource_request[0][0]    
+    for moldable_id in moldable_ids:
+        for resource_desc in resource_desc_lst:
+            prop = resource_desc['property']
+            job_resource_groups.append({'res_group_moldable_id': moldable_id,
+                                        'res_group_property': prop})
+
+    db.engine.execute(JobResourceGroup.__table__.insert(), job_resource_groups)
+    db.commit()
+
+    # Retrieve res_group_ids thanks to moldable_ids
+    result = db.query(JobResourceGroup.id)\
+               .filter(JobResourceGroup.moldable_id.in_(tuple(moldable_ids)))\
+               .order_by(JobResourceGroup.id).all()
+    res_group_ids = [r[0] for r in result]
+
+    # Populate job_resource_descriptions table
+    k = 0
+    job_resource_descriptions = []
+    for i in xrange(len(array_commands)):  # Nb jobs
+        for resource_desc in resource_desc_lst:
+            order = 0
+            for res_val in resource_desc['resources']:
+                job_resource_descriptions.append({'res_job_group_id': res_group_ids[k],
+                                                  'res_job_resource_type': res_val['resource'],
+                                                  'res_job_value': res_val['value'],
+                                                  'res_job_order': order})
+                order += 1
+            k += 1
+
+    db.engine.execute(JobResourceDescriptions.__table__.insert(), job_resource_descriptions)
+    db.commit()
+
+    # Populate job_types table
+    if types:
+        job_types = []
+        for job_id in job_id_list:
+            for typ in types:
+                job_types.append({'job_id': job_id, 'type': typ})
+        db.engine.execute(JobType.__table__.insert(), job_types)
+        db.commit()
+
+    # TODO Anterior job setting
+
+    # Hold/Waiting management, job_state_log setting
+    # Job is inserted with hold state first
+    state_log = 'Hold'
+    if hold:
+        state_log = 'Waiting'
+        db.query(Job).filter(Job.array_id == array_id).update({Job.state: state_log})
+        db.commit
+
+    # Update array_id field and set job to state if waiting and insert job_state_log
+    job_state_logs = [{'job_id': job_id, 'job_state': state_log, 'date_start': date}
+                      for job_id in job_id_list]
+    db.engine.execute(JobStateLog.__table__.insert(), job_state_logs)
+    db.commit()
+
+    return(0, job_id_list)
 
 
 def add_micheline_jobs(job_type, resource_request, command, info_type, queue_name,
@@ -513,6 +713,11 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
         start_time = reservation_date
 
     user = os.environ['OARDO_USER']
+
+    # Check the user validity
+    if not re.match(r'[a-zA-Z0-9_-]+', user):
+        print_error('invalid username:', user)
+        sub_exit(-11)
 
     # TVerify notify syntax
     if notify and not re.match(r'^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$', notify):
@@ -571,7 +776,15 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
     if array_nb > 1 and not use_job_key:
         # TODO Simple array job submissiom
         # Simple array job submission is used
-        pass
+        (error, job_id) = add_micheline_simple_array_job(job_type, resource_request, array_commands,
+                                                         info_type, queue_name, properties, reservation_date,
+                                                         file_id, checkpoint, signal,
+                                                         notify, name, env, types, launching_directory,
+                                                         dependencies, stdout, stderr, hold, project,
+                                                         ssh_private_key, ssh_public_key, initial_request,
+                                                         array_id, user, reservation_field, start_time,
+                                                         array_index, properties_applied_after_validation)
+
     else:
         # single job to submit or when job key is used with array job
         for cmd in array_commands:
