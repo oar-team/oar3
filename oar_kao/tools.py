@@ -16,7 +16,7 @@ def send_to_hulot(cmd, data):
     fifoname = config["FIFO_HULOT"]
     try:
         with open(fifoname, 'w') as fifo:
-            fifo.write('HALT' + ':' + data + '\n')
+            fifo.write('HALT:%s\n' % data)
             fifo.flush()
     except IOError as e:
         e.strerror = 'Unable to communication with Hulot: %s (%s)' % fifoname % e.strerror
