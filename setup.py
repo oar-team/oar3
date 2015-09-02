@@ -19,6 +19,7 @@ readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
+    'subprocess32',
     'oar-lib',
     'Click',
     'SimPy',
