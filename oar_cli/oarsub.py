@@ -13,7 +13,7 @@ import pdb
 from copy import deepcopy
 from sqlalchemy import text, exc
 
-from oar.lib import (db, Job, JobType, AdmissionRule, Challenge,
+from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, Resource,
                      config)
@@ -73,6 +73,13 @@ def sub_exit(num, result=''):
         exit(num)
 
 
+def lstrip_none(str):
+    if str:
+        return str.lstrip()
+    else:
+        return None
+
+
 def init_tcp_server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((socket.getfqdn(), 0))
@@ -109,13 +116,11 @@ def usage():
 
 # Move to oar.lib.utils or oar.lib.tools
 
-
 def signal_almighty(remote_host, remote_port, msg):
     print('TODO signal_almighty')
     return 1
 
 # Move to oar.lib.sub ??
-
 
 def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
                        export_job_key_file):
@@ -186,7 +191,7 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
             resources = []  # resources = [{resource: r, value: v}]
 
             for str_res_value in str_res_value_lst:
-                
+
                 if str_res_value.lstrip():  # to filter first and last / if any "/nodes=1" or "/nodes=1/
                     # remove  first and trailing spaces"
                     str_res_value_wo_spc = str_res_value.lstrip()
@@ -216,22 +221,22 @@ def estimate_job_nb_resources(resource_request, j_properties):
     '''returns an array with an estimation of the number of resources that can be  used by a job:
     (resources_available, [(nbresources => int, walltime => int)])
     '''
-    #estimate_job_nb_resources
+    # estimate_job_nb_resources
     estimated_nb_resources = []
     resource_available = False
     resource_set = ResourceSet()
     resources_itvs = resource_set.roid_itvs
- 
+
     for mld_idx, mld_resource_request in enumerate(resource_request):
 
-        resource_desc , walltime =  mld_resource_request
+        resource_desc, walltime = mld_resource_request
 
         result = []
 
         for prop_res in resource_desc:
-            jrg_grp_property =  prop_res['property']
-            resource_value_lst =  prop_res['resources']
-            
+            jrg_grp_property = prop_res['property']
+            resource_value_lst = prop_res['resources']
+
             #
             # determine resource constraints
             #
@@ -242,10 +247,9 @@ def estimate_job_nb_resources(resource_request, j_properties):
                     and_sql = ""
                 else:
                     and_sql = " AND "
-                
+
                 sql_constraints = j_properties + and_sql + jrg_grp_property
-                #if  sql_constraints:
-                #    print("sql_constraints: ", sql_constraints)
+
                 try:
                     request_constraints = db.query(Resource.id).filter(text(sql_constraints)).all()
                 except exc.SQLAlchemyError:
@@ -253,7 +257,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
                     print_error('SQLAlchemyError: ', exc)
                     result = []
                     break
-                
+
                 roids = [resource_set.rid_i2o[int(y[0])] for y in request_constraints]
                 constraints = unordered_ids2itvs(roids)
 
@@ -264,15 +268,15 @@ def estimate_job_nb_resources(resource_request, j_properties):
                 value = resource_value['value']
                 hy_levels.append(resource_set.hierarchy[res_name])
                 hy_nbs.append(int(value))
-                
+
             cts_resources_itvs = intersec(constraints, resources_itvs)
-            res_itvs =  find_resource_hierarchies_scattered( cts_resources_itvs, hy_levels, hy_nbs)
+            res_itvs = find_resource_hierarchies_scattered(cts_resources_itvs, hy_levels, hy_nbs)
             if res_itvs:
                 result.extend(res_itvs)
             else:
                 result = []
             break
-    
+
         if result:
             resource_available = True
 
@@ -282,12 +286,12 @@ def estimate_job_nb_resources(resource_request, j_properties):
                    ' Estimated nb resources: ', estimated_nb_res,
                    ' Walltime: ', walltime)
 
-    
     if not resource_available:
         print_error("There are not enough resources for your request")
         sub_exit(-5)
-            
+
     return(resource_available, estimated_nb_resources)
+
 
 def add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
                          properties, reservation_date, file_id, checkpoint, signal,
@@ -297,10 +301,11 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
                          array_id, user, reservation_field, start_time,
                          array_index, properties_applied_after_validation):
 
-    # TODO Test if properties and resources are coherent
+    # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
+    # against avalaible resources
     # pdb.set_trace()
     resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
-    
+
     # Add admin properties to the job
     if properties_applied_after_validation:
         if properties:
@@ -549,14 +554,13 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
         err = sys.exc_info()
         print_error(err[1])
         print_error('a failed admission rule prevented submitting the job.')
-        return(-2,[])
+        sub_exit(-2)
 
-    # TODO Test if the queue exists
-    # my %all_queues = get_all_queue_informations($dbh);
-    # if (!defined($all_queues{$queue_name})){
-    #    warn("# Error: queue $queue_name does not exist.\n");
-    #    return(-8);
-    # }
+    # Test if the queue exists
+    if not db.query(Queue).filter(Queue.name == queue_name).all():
+        print_error('queue ', queue_name, ' does not exist')
+        sub_exit(-8)
+
     if array_params:
         array_commands = [command + ' ' + params for params in array_params]
     else:
@@ -691,7 +695,7 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
 
     # pdb.set_trace()
     print(resource)
-    
+
     # Set global variable when this function is not used as cli
     if internal:
         global use_internal
@@ -759,15 +763,17 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     env = ''
     #
     types = type
-    properties = property
+    
+    properties = lstrip_none(property)
     if not directory:
         launching_directory = ''
     else:
-        launching_directory = directory
+        launching_directory = lstrip_none(directory)
+
     dependencies = after
     initial_request = ' '.join(sys.argv[1:])
-    queue_name = queue
-    reservation_date = reservation
+    queue_name = lstrip_none(queue)
+    reservation_date = lstrip_none(reservation)
 
     if array:
         array_nb = array
