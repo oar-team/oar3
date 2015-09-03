@@ -214,11 +214,9 @@ class Database(object):
         """Drop all tables. """
         if bind is None:
             bind = self.engine
-        with contextlib.closing(bind.connect()) as con:
-            trans = con.begin()
+        with bind.connect() as con:
             for table in itervalues(self.tables):
                 con.execute(table.delete())
-            trans.commit()
 
     def __contains__(self, member):
         return member in self.tables or member in self.models
