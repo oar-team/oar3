@@ -306,7 +306,7 @@ class Resource(db.DeferredReflectionModel):
     next_finaud_decision = db.Column(db.String(3), server_default='NO')
     state_num = db.Column(db.Integer, server_default='0')
     suspended_jobs = db.Column(db.String(3), index=True, server_default='NO')
-    scheduler_priority = db.Column(db.Integer, server_default='0')
+    scheduler_priority = db.Column(db.BigInteger, server_default='0')
     cpuset = db.Column(db.String(255), server_default='0')
     besteffort = db.Column(db.String(3), server_default='YES')
     deploy = db.Column(db.String(3), server_default='NO')
