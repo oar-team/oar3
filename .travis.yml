@@ -8,7 +8,7 @@ python:
   - "3.4"
 
 env:
-  - DB_TYPE=postgresql
+  #- DB_TYPE=postgresql
   - DB_TYPE=sqlite
 
 before_install:
