@@ -57,12 +57,10 @@ DEFAULT_CONFIG = {
 
 
 @contextmanager
-def assert_raises(exception_class, message_part=None):
-    """
-    Check that an exception is raised and its message contains some string.
-    """
+def assert_raises(exception_class, msg=None):
+    """Check that an exception is raised and its message contains `msg`."""
     with pytest.raises(exception_class) as exception:
         yield
-    if message_part is not None:
+    if msg is not None:
         message = '%s' % exception
-        assert message_part.lower() in message.lower()
+        assert msg.lower() in message.lower()
