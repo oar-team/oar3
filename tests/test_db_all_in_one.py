@@ -158,7 +158,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db['GanttJobsPrediction'].query.all():
+    for i in db['GanttJobsPrediction'].query.order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time - now)
 
