@@ -515,14 +515,14 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
         logger.error("Execution of " + queue.scheduler_policy +
                      " failed, inactivating queue " + queue.name + " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter_by(name=queue.name).update({'state': 'notActive'})
+        db.query(Queue).filter(Queue.name==queue.name).update({'state': 'notActive'})
 
     if sched_exit_code != 0:
         logger.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " +
                      str(sched_exit_code) + ". Inactivating queue " + queue.scheduler_policy +
                      " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter_by(name=queue.name).update(
+        db.query(Queue).filter(Queue.name==queue.name).update(
             {'state': 'notActive'})
 
     # retrieve jobs and assignement decision from previous scheduling step
