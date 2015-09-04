@@ -1,24 +1,31 @@
 # Config file for automatic testing at travis-ci.org
-sudo: false
-
-#before_install:
-#  - sudo mkdir -p /etc/oar
-#  - sudo chown -R $USER /etc/oar
+sudo: true
 
 language: python
-python: 2.7
+
+python:
+  - "2.7"
+  - "3.4"
 
 env:
-  - TOXENV=py27
-  - TOXENV=py33
-  - TOXENV=py34
+  #- DB_TYPE=postgresql
+  - DB_TYPE=sqlite
+
+before_install:
+ - sudo mkdir -p /etc/oar
+ - sudo chown -R $USER /etc/oar
 
 install:
   - pip install tox coverage
   - coverage erase
 
+before_script:
+  - psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';"
+  - psql -U postgres -c "CREATE DATABASE oar;"
+  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
+
 script:
-  - tox -v
+  - tox -e py-$DB_TYPE
 
 after_success:
     - coverage combine

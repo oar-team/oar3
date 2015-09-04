@@ -9,24 +9,10 @@ from oar.kao.job import insert_job
 from oar.kao.kamelot_basic import main
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-
 @pytest.fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
+    db.delete_all()
+    db.session.close()
 
 
 def test_db_kamelot_basic_1():

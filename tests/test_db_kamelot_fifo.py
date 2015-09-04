@@ -10,24 +10,10 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot_fifo import main, schedule_fifo_cycle
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-
 @pytest.fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
+    db.delete_all()
+    db.session.close()
 
 
 def test_db_kamelot_fifo_no_hierarchy():

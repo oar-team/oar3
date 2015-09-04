@@ -10,29 +10,15 @@ from oar.kao.utils import get_date
 
 
 @pytest.fixture(scope="function", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-
-@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
+    db.delete_all()
+    db.session.close()
     db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
     # add some resources
     for i in range(5):
         db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -44,8 +30,7 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
-@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
-def test_db_timesharing_1(monkeypatch):
+def _test_db_timesharing_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["timesharing=*,*"])
 
@@ -157,8 +142,7 @@ def test_db_properties_3(monkeypatch):
     assert res[0] == res[1]
 
 
-@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
-def test_db_placeholder_1(monkeypatch):
+def _test_db_placeholder_1(monkeypatch):
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["placeholder=yop"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["allow=yop"])
