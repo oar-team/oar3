@@ -127,10 +127,36 @@ def signal_almighty(remote_host, remote_port, msg):
 
 # Move to oar.lib.sub ??
 
+
 def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
                        export_job_key_file):
     # TODO job_key_management
     return(0, '', '')
+
+
+def job_kwargs(job_vars, command, date):
+    kwargs = {}
+    kwargs['submission_time'] = date
+    kwargs['command'] = command
+    kwargs['state'] = 'Hold'
+
+    kwargs = {}
+    for keys in [('job_type', 'job_type'), ('info_type', 'info_type'), ('job_user', 'user'),
+                 ('queue_name', 'queue_name'), ('properties', 'properties'),
+                 ('launching_directory', 'launching_directory'),
+                 ('start_time', 'start_time'),
+                 ('checkpoint', 'checkpoint'), ('job_name', 'name'),
+                 ('notify', 'notify'), ('checkpoint_signal', 'signal'),
+                 ('project', 'project'), ('initial_request', 'initial_request'),
+                 ('array_id', 'array_id')]:
+        # TODO DEBUG ('stdout', (''"' + stdout + '"'
+        # TODO DEBUG kwargs['stderr', (''"' + stderr + '"'
+        k1, k2 = keys
+        kwargs[k1] = job_vars[k2]
+    if job_vars['reservation_field']:
+         kwargs['reservation'] = job_vars['reservation_field']
+        # print(kwargs)
+    return kwargs
 
 
 def parse_resource_descriptions(str_resource_request_list, default_resources, nodes_resources):
@@ -301,17 +327,18 @@ def estimate_job_nb_resources(resource_request, j_properties):
     return(resource_available, estimated_nb_resources)
 
 
-def add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
-                         properties, reservation_date, file_id, checkpoint, signal,
-                         notify, name, env, types, launching_directory,
-                         dependencies, stdout, stderr, hold, project,
-                         ssh_private_key, ssh_public_key, initial_request,
-                         array_id, user, reservation_field, start_time,
-                         array_index, properties_applied_after_validation):
+def add_micheline_subjob(job_vars,
+                         ssh_private_key, ssh_public_key,
+                         array_id, array_index,
+                         array_commands,
+                         properties_applied_after_validation):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
     # pdb.set_trace()
+    date = get_date()
+    properties = job_vars['properties']
+    resource_request = job_vars['resource_request']
     resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
 
     # Add admin properties to the job
@@ -320,16 +347,19 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
             properties = '(' + properties + ') AND ' + properties_applied_after_validation
         else:
             properties = properties_applied_after_validation
-
+    job_vars['properties'] = properties
     # TODO Verify the content of the ssh keys
 
     # TODO format job message
-    message = ''
+    # message = ''
+
     # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
     # $jobType, $reservationField, $queue_name, $project, $type_list, '');
 
     # TODO  job_group
-
+    #
+    name = job_vars['name']
+    stdout = job_vars['stdout']
     if not stdout:
         stdout = 'OAR'
         if name:
@@ -337,7 +367,9 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
         stdout += ".%jobid%.stdout"
     else:
         stdout = re.sub(r'%jobname%', name, stdout)
+    job_vars['stdout'] = stdout
 
+    stderr = job_vars['stderr']
     if not stderr:
         stderr = 'OAR'
         if name:
@@ -345,37 +377,16 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
         stderr += '.%jobid%.stderr'
     else:
         stderr = re.sub(r'%jobname%', name, stderr)
+    stderr = job_vars['stderr']
 
-    
     # Insert job
-    date = get_date()
 
-    kwargs = {}
-    kwargs['job_type'] = job_type
-    kwargs['info_type'] = info_type
-    kwargs['state'] = 'Hold'
-    kwargs['job_user'] = user
-    kwargs['command'] = command
-    kwargs['submission_time'] = date
-    kwargs['queue_name'] = queue_name
-    kwargs['properties'] = properties
-    kwargs['launching_directory'] = launching_directory
-    kwargs['reservation'] = reservation_field
-    kwargs['start_time'] = start_time
-    kwargs['file_id'] = file_id
-    kwargs['checkpoint'] = checkpoint
-    kwargs['job_name'] = name
-    kwargs['notify'] = notify
-    kwargs['checkpoint_signal'] = signal
-    kwargs['job_env'] = env
-    kwargs['project'] = project
-    kwargs['initial_request'] = initial_request
-    kwargs['array_id'] = array_id
+    kwargs = job_kwargs(job_vars, array_commands[0], date)
+    kwargs['message'] = ''  # TODO message
     kwargs['array_index'] = array_index
-    kwargs['message'] = message
-    # TODO DEBUG kwargs['stdout'] = '"' + stdout + '"'
-    # TODO DEBUG kwargs['stderr'] = '"' + stderr + '"'
-
+    
+    if array_id > 0:
+        kwargs['array_id'] = array_id
     # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
@@ -462,11 +473,13 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
                               res_description)
 
     # types of job
+    types = job_vars['types']
     if types:
         ins = [{'job_id': job_id, 'type': typ} for typ in types]
         db.engine.execute(JobType.__table__.insert(), ins)
 
     # TODO dependencies with min_start_shift and max_start_shift
+    dependencies = job_vars['dependencies']
     if dependencies:
         ins = [{'job_id': job_id, 'job_id_required': dep} for dep in dependencies]
         db.engine.execute(JobDependencie.__table__.insert(), ins)
@@ -475,7 +488,7 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     #        $dbh->do("  INSERT INTO job_dependencies (job_id,job_id_required,min_start_shift,max_start_shift)
     #                    VALUES ($job_id,$j,'".(defined($min)?$min:"")."','".(defined($max)?$max:"")."')
 
-    if not hold:
+    if not job_vars['hold']:
         req = db.insert(JobStateLog).values(
             {'job_id': job_id, 'job_state': 'Waiting', 'date_start': date})
         db.engine.execute(req)
@@ -492,18 +505,17 @@ def add_micheline_subjob(job_type, resource_request, command, info_type, queue_n
     return(0, job_id)
 
 
-def add_micheline_simple_array_job(job_type, resource_request, array_commands, info_type, queue_name,
-                                   properties, reservation_date, file_id, checkpoint, signal,
-                                   notify, name, env, types, launching_directory,
-                                   dependencies, stdout, stderr, hold, project,
-                                   ssh_private_key, ssh_public_key, initial_request,
-                                   array_id, user, reservation_field, start_time,
-                                   array_index, properties_applied_after_validation):
+def add_micheline_simple_array_job(job_vars,
+                                   ssh_private_key, ssh_public_key,
+                                   array_id, array_index,
+                                   array_commands,
+                                   properties_applied_after_validation):
 
     job_id_list = []
-    nb_jobs = len(array_commands)
+    date = get_date()
 
     # Check the jobs are no moldable
+    resource_request = job_vars['resource_request']
     if len(resource_request) > 1:
         print_error('array jobs cannot be moldable')
         sub_exit(-30)
@@ -511,6 +523,7 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
     # pdb.set_trace()
+    properties = job_vars['properties']
     resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
 
     # Add admin properties to the job
@@ -519,23 +532,24 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
             properties = '(' + properties + ') AND ' + properties_applied_after_validation
         else:
             properties = properties_applied_after_validation
-
+    job_vars['properties'] = properties
     # TODO format job message
-    message = ''
+
     # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
     # $jobType, $reservationField, $queue_name, $project, $type_list, '');
 
-    # Insert job
-    date = get_date()
-
+    name = job_vars['name']
+    stdout = job_vars['stdout']
     if not stdout:
         stdout = 'OAR'
         if name:
             stdout += '.' + name
-        stdout += '.%jobid%.stdout'
+        stdout += ".%jobid%.stdout"
     else:
         stdout = re.sub(r'%jobname%', name, stdout)
+    job_vars['stdout'] = stdout
 
+    stderr = job_vars['stderr']
     if not stderr:
         stderr = 'OAR'
         if name:
@@ -543,36 +557,13 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
         stderr += '.%jobid%.stderr'
     else:
         stderr = re.sub(r'%jobname%', name, stderr)
-    
-    date = get_date()
+    stderr = job_vars['stderr']
 
     # Insert job
-    kwargs = {}
-    kwargs['job_type'] = job_type
-    kwargs['info_type'] = info_type
-    kwargs['state'] = 'Hold'
-    kwargs['job_user'] = user
-    kwargs['command'] = array_commands[0]
-    kwargs['submission_time'] = date
-    kwargs['queue_name'] = queue_name
-    kwargs['properties'] = properties
-    kwargs['launching_directory'] = launching_directory
-    kwargs['reservation'] = reservation_field
-    kwargs['start_time'] = start_time
-    kwargs['file_id'] = file_id
-    kwargs['checkpoint'] = checkpoint
-    kwargs['job_name'] = name
-    kwargs['notify'] = notify
-    kwargs['checkpoint_signal'] = signal
-    kwargs['job_env'] = env
-    kwargs['project'] = project
-    kwargs['initial_request'] = initial_request
-    kwargs['array_id'] = array_id
+    kwargs = job_kwargs(job_vars, array_commands[0], date)
+    kwargs['message'] = ''  # TODO message
     kwargs['array_index'] = array_index
-    kwargs['message'] = message
-    kwargs['stdout'] = stdout
-    kwargs['stderr'] = stderr
-
+    
     # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
@@ -622,7 +613,8 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
     moldable_ids = [r[0] for r in result]
 
     # Populate job_resource_groups table
-    resource_desc_lst = resource_request[0][0]    
+    job_resource_groups = []
+    resource_desc_lst = resource_request[0][0]
     for moldable_id in moldable_ids:
         for resource_desc in resource_desc_lst:
             prop = resource_desc['property']
@@ -652,10 +644,11 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
                 order += 1
             k += 1
 
-    db.engine.execute(JobResourceDescriptions.__table__.insert(), job_resource_descriptions)
+    db.engine.execute(JobResourceDescription.__table__.insert(), job_resource_descriptions)
     db.commit()
 
     # Populate job_types table
+    types = job_vars['types']
     if types:
         job_types = []
         for job_id in job_id_list:
@@ -669,7 +662,7 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
     # Hold/Waiting management, job_state_log setting
     # Job is inserted with hold state first
     state_log = 'Hold'
-    if hold:
+    if job_vars['hold']:
         state_log = 'Waiting'
         db.query(Job).filter(Job.array_id == array_id).update({Job.state: state_log})
         db.commit
@@ -683,11 +676,8 @@ def add_micheline_simple_array_job(job_type, resource_request, array_commands, i
     return(0, job_id_list)
 
 
-def add_micheline_jobs(job_type, resource_request, command, info_type, queue_name,
-                       properties, reservation_date, file_id, checkpoint, signal,
-                       notify, name, env, types, launching_directory,
-                       dependencies, stdout, stderr, hold, project,
-                       use_job_key, import_job_key_inline, import_job_key_file,
+def add_micheline_jobs(job_vars, reservation_date, use_job_key,
+                       import_job_key_inline, import_job_key_file,
                        export_job_key_file, initial_request, array_nb, array_params):
     '''Adds a new job(or multiple in case of array-job) to the table Jobs applying
     the admission rules from the base  parameters : base, jobtype, nbnodes,
@@ -705,39 +695,36 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
                  be to change parameters
     '''
 
+    #pdb.set_trace()
     array_id = 0
-    start_time = '0'
-    reservation_field = 'None'
-    if reservation_date > 0:
-        reservation_field = 'toSchedule'
-        start_time = reservation_date
 
-    user = os.environ['OARDO_USER']
+    if reservation_date:
+        job_vars['reservation_field'] = 'toSchedule'
+        job_vars['start_time'] = reservation_date
+
+    job_vars['user'] = os.environ['OARDO_USER']
 
     # Check the user validity
-    if not re.match(r'[a-zA-Z0-9_-]+', user):
-        print_error('invalid username:', user)
+    if not re.match(r'[a-zA-Z0-9_-]+', job_vars['user']):
+        print_error('invalid username:', job_vars['user'])
         sub_exit(-11)
 
     # TVerify notify syntax
-    if notify and not re.match(r'^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$', notify):
+    if job_vars['notify'] and not re.match(r'^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$',
+                                           job_vars['notify']):
         print_error('bad syntax for the notify option.')
         return (-6, [])
 
     # Check the stdout and stderr path validity
-    if stdout and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', stdout):
+    if job_vars['stdout'] and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', job_vars['stdout']):
         print_error('invalid stdout file name (bad character)')
         return (-12, [])
 
-    if stderr and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', stderr):
+    if job_vars['stderr'] and not re.match(r'^[a-zA-Z0-9_.\/\-\%\\ ]+$', job_vars['stderr']):
         print_error('invalid stderr file name (bad character)')
         return (-13, [])
 
-    # Verify the content of env variables
-    if not re.match(r'^[\w\=\s\/\.\-\"]*$', env):
-        print_error('the specified environnement variables contains bad characters -- ', env)
-        return(-9, [])
-
+    # pdb.set_trace()
     # Retrieve Micheline's rules from the table
     rules = db.query(AdmissionRule.rule)\
               .filter(AdmissionRule.enabled == 'YES')\
@@ -754,7 +741,7 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
     code = compile(str_rules, '<string>', 'exec')
 
     try:
-        exec(code)
+        exec(code, job_vars)
     except:
         err = sys.exc_info()
         print_error(err[1])
@@ -762,28 +749,27 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
         sub_exit(-2)
 
     # Test if the queue exists
-    if not db.query(Queue).filter(Queue.name == queue_name).all():
-        print_error('queue ', queue_name, ' does not exist')
+    if not db.query(Queue).filter(Queue.name == job_vars['queue_name']).all():
+        print_error('queue ', job_vars['queue_name'], ' does not exist')
         sub_exit(-8)
 
     if array_params:
-        array_commands = [command + ' ' + params for params in array_params]
+        array_commands = [job_vars['command'] + ' ' + params for params in array_params]
     else:
-        array_commands = [command] * array_nb
+        array_commands = [job_vars['command'] * array_nb]
 
     array_index = 1
     job_id_list = []
+    ssh_private_key = ''
+    ssh_public_key = ''
     if array_nb > 1 and not use_job_key:
         # TODO Simple array job submissiom
         # Simple array job submission is used
-        (error, job_id) = add_micheline_simple_array_job(job_type, resource_request, array_commands,
-                                                         info_type, queue_name, properties, reservation_date,
-                                                         file_id, checkpoint, signal,
-                                                         notify, name, env, types, launching_directory,
-                                                         dependencies, stdout, stderr, hold, project,
-                                                         ssh_private_key, ssh_public_key, initial_request,
-                                                         array_id, user, reservation_field, start_time,
-                                                         array_index, properties_applied_after_validation)
+        (error, job_id) = add_micheline_simple_array_job(job_vars,
+                                                         ssh_private_key, ssh_public_key,
+                                                         array_id, array_index,
+                                                         array_commands,
+                                                         properties_applied_after_validation)
 
     else:
         # single job to submit or when job key is used with array job
@@ -796,13 +782,11 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
                 print_error('job key generation and management failed :' + str(err))
                 return(err, job_id_list)
 
-            (error, job_id) = add_micheline_subjob(job_type, resource_request, command, info_type, queue_name,
-                                                   properties, reservation_date, file_id, checkpoint, signal,
-                                                   notify, name, env, types, launching_directory,
-                                                   dependencies, stdout, stderr, hold, project,
-                                                   ssh_private_key, ssh_public_key, initial_request,
-                                                   array_id, user, reservation_field, start_time,
-                                                   array_index, properties_applied_after_validation)
+            (error, job_id) = add_micheline_subjob(job_vars,
+                                                   ssh_private_key, ssh_public_key,
+                                                   array_id, array_index,
+                                                   array_commands,
+                                                   properties_applied_after_validation)
 
             if error == 0:
                 job_id_list.append(job_id)
@@ -889,21 +873,15 @@ def add_micheline_jobs(job_type, resource_request, command, info_type, queue_nam
               so that it is not scheduled (you must run "oarresume" to turn it into the Waiting state)')
 @click.option('--resubmit', type=int,
               help='Resubmit the given job as a new one.')
-@click.option('-s', '--stagein', type=click.Path(writable=False, readable=False),
-              help='Set the stagein directory or archive.')
-@click.option('-m', '--stagein-md5sum', type=int,
-              help='Set the stagein file md5sum.')
 @click.option('-V', '--version', is_flag=True,
               help='Print OAR version number.')
-@click.option('--internal', is_flag=True, 
-              help="For internal use only, not for cli mode.")
-@click.option('--verbose', is_flag=True,
-              help="Enables verbose output.")
-def cli(command, interactive, queue, resource, reservation, connect, stagein, stagein_md5sum,
-        type, checkpoint, verbose, property, resubmit, scanscript, project, signal,
+#@click.option('--internal', is_flag=True,
+#              help="For internal use only, not for cli mode.")
+def cli(command, interactive, queue, resource, reservation, connect,
+        type, checkpoint, property, resubmit, scanscript, project, signal,
         directory, name, after, notify, array, array_param_file,
         use_job_key, import_job_key_from_file, import_job_key_inline, export_job_key_to_file,
-        stdout, stderr, hold, version, internal):
+        stdout, stderr, hold, version, internal=False):
     """Submit a job to OAR batch scheduler."""
 
     # pdb.set_trace()
@@ -916,9 +894,6 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
 
     remote_host = config['SERVER_HOSTNAME']
     remote_port = int(config['SERVER_PORT'])
-
-    if 'STAGEIN_DIR' in config:
-        stageindir = config['STAGEIN_DIR']
 
     if 'OARSUB_DEFAULT_RESOURCES' in config:
         default_resources = config['OARSUB_DEFAULT_RESOURCES']
@@ -972,21 +947,28 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     # OAR version
     # TODO: OAR is now a set of composition...
 
-    # TODO env/job_env ... not set in perl version ????
-    env = ''
     #
     types = type
-    
+
     properties = lstrip_none(property)
     if not directory:
         launching_directory = ''
     else:
         launching_directory = lstrip_none(directory)
 
-    dependencies = after
     initial_request = ' '.join(sys.argv[1:])
     queue_name = lstrip_none(queue)
     reservation_date = lstrip_none(reservation)
+
+    if reservation_date:
+        m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
+                      reservation)
+        if m:
+            reservation_date = sql_to_local(m.group(1) + ' ' + m.group(2))
+        else:
+            print_error('syntax error for the advance reservation start date \
+            specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
+            sub_exit(7)
 
     if array:
         array_nb = array
@@ -999,7 +981,6 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
     else:
         use_job_key = False
 
-        
     # TODO ssh_private_key, ssh_public_key,
     # ssh_private_key = ''
     # ssh_public_key = ''
@@ -1082,6 +1063,31 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
 
     resource_request = parse_resource_descriptions(resource, default_resources, nodes_resources)
 
+    job_vars = {
+        'job_type': None,
+        'resource_request': resource_request,
+        'command': command,
+        'info_type': None,
+        'queue_name': queue_name,
+        'properties': properties,
+        'checkpoint': checkpoint,
+        'signal': signal,
+        'notify': notify,
+        'name': name,
+        'types': types,
+        'launching_directory': launching_directory,
+        'dependencies': after,
+        'stdout': stdout,
+        'stderr': stderr,
+        'hold': hold,
+        'project': project,
+        'initial_request': initial_request,
+        'user': os.environ['OARDO_USER'],
+        'array_id': 0,
+        'start_time': '0',
+        'reservation_field': None,
+    }
+
     if not interactive and command:
 
         cmd_executor = 'Qsub'
@@ -1102,25 +1108,11 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             usage()
             sub_exit(6)
 
-        if reservation:
-            m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
-                          reservation)
-            if m:
-                reservation = sql_to_local(m.group(1) + ' ' + m.group(2))
-            else:
-                print_error('syntax error for the advance reservation start date \
-                specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
-
-        # TODO: stagein machinery (dead feature ?) put in lib or remove ?
-
-        info_type = "$Host:$server_port"  # TODO  "$Host:$server_port"
-        file_id = None  # stage-in file  OAR::Sub::get_stagein_id($md5sum);
-        (err, job_id_lst) = add_micheline_jobs('PASSIVE', resource_request, command, info_type,
-                                               queue_name, properties, reservation_date, file_id,
-                                               checkpoint, signal, notify, name, env, types,
-                                               launching_directory, dependencies, stdout, stderr,
-                                               hold, project, use_job_key, import_job_key_inline,
-                                               import_job_key_file, export_job_key_file,
+        job_vars['info_type'] = "$Host:$server_port"  # TODO  "$Host:$server_port"
+        job_vars['job_type'] = 'PASSIVE'
+        (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
+                                               import_job_key_inline, import_job_key_file,
+                                               export_job_key_file,
                                                initial_request, array_nb, array_params)
     else:
         # TODO interactive
@@ -1139,20 +1131,20 @@ def cli(command, interactive, queue, resource, reservation, connect, stagein, st
             usage()
             sub_exit(8)
 
-            if reservation:
-                # Test if this job is a reservation and the syntax is right
-                # TODO Pass
-                pass
+        if reservation:
+            # Test if this job is a reservation and the syntax is right
+            # TODO Pass
+            pass
         socket_server = init_tcp_server()
         (server, server_port) = socket_server.getsockname()
-        info_type = server + ':' + str(server_port)
-        (err, job_id_lst) = add_micheline_jobs('INTERACTIVE', resource_request, '', info_type,
-                                               queue_name, properties, reservation_date, file_id,
-                                               checkpoint, signal, notify, name, env, types,
-                                               launching_directory, dependencies, stdout, stderr,
-                                               hold, project, use_job_key, import_job_key_inline,
+        job_vars['info_type'] = server + ':' + str(server_port)
+        job_vars['job_type'] = 'INTERACTIVE'
+        (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
+                                               import_job_key_inline,
                                                import_job_key_file, export_job_key_file,
                                                initial_request, array_nb, array_params)
+
+    # pdb.set_trace()
 
     if err != 0:
         print_error('command failed, please verify your syntax.')

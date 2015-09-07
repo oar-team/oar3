@@ -62,6 +62,7 @@ def test_oarsub_void():
 def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '"sleep 1"'])
+    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
     print(result.output)
     # job = db['Job'].query.one()
     mld_job_desc = db['MoldableJobDescription'].query.one()
