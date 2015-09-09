@@ -21,9 +21,7 @@ import oar.kao.utils as utils
 
 from oar.kao.interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
-
 logger = get_logger("oar.kamelot")
-
 
 ''' Use
 
@@ -60,6 +58,8 @@ class JobPseudo(object):
     key_cache = {}
     ts = False
     ph = 0
+    assign = False
+    find = False
     queue_name = 'default'
     user = ''
     project = ''
@@ -101,23 +101,28 @@ def get_waiting_jobs(queue, reservation='None'):
 
 
 def get_jobs_types(jids, jobs):
+    import oar.kao.advanced_scheduling
     jobs_types = {}
     for j_type in db.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
         jid = j_type.job_id
+        job = jobs[jid]
         t_v = j_type.type.split("=")
         t = t_v[0]
         if t == "timesharing":
-            job = jobs[jid]
             job.ts = True
             job.ts_user, job.ts_name = t_v[1].split(',')
         elif t == "placeholder":
-            job = jobs[jid]
             job.ph = PLACEHOLDER
             job.ph_name = t_v[1]
         elif t == "allow":
-            job = jobs[jid]
             job.ph = ALLOW
             job.ph_name = t_v[1]
+        elif t == "assign":
+            job.assign = True
+            job.assign_func = getattr(oar.kao.advanced_scheduling, t_v[1])
+        elif t == "find":
+            job.find = True
+            job.find_func = getattr(oar.kao.advanced_scheduling, t_v[1])
         else:
             if len(t_v) == 2:
                 v = t_v[1]
@@ -242,6 +247,8 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                 job.deps = []
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
+                job.assign = False
+                job.find = False
 
             prev_mld_id = moldable_id
             prev_j_id = j_id
@@ -319,6 +326,8 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     job.deps = []
     job.ts = False
     job.ph = NO_PLACEHOLDER
+    job.assign = False
+    job.find = False
 
     get_jobs_types(jids, jobs)
     get_current_jobs_dependencies(jobs)
@@ -376,6 +385,8 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 job.moldable_id = moldable_id
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
+                job.assign = False
+                job.find = False
                 if job.suspended == "YES":
                     job.walltime += get_job_suspended_sum_duration(job.id, now)
 

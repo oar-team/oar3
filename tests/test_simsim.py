@@ -61,7 +61,8 @@ def test_simsim_1():
                           run_time=20 * i,
                           deps=[],
                           key_cache={},
-                          ts=False, ph=0)
+                          ts=False, ph=0,
+                          assign=False, find=False)
 
         submission_time_jids.append((10, [i]))
 

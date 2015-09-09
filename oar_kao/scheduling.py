@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 
 from oar.kao.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
+
 from oar.kao.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 
@@ -176,7 +177,11 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         else:
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         # print("itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy)
-        itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
+        if job.find:
+            # Use specialized find resource function
+            itvs = job.find_func(itvs_avail, hy_res_rqts, hy)
+        else:
+            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if itvs != []:
             if config['QUOTAS'] == 'yes':
@@ -300,8 +305,11 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
             slots_set = slots_sets[ss_name]
 
-            assign_resources_mld_job_split_slots(
-                slots_set, job, hy, min_start_time)
+            if job.assign:
+                # Use specialized assign function
+                job.assign_func(slots_set, job, hy, min_start_time)
+            else:
+                assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 
             if "container" in job.types:
                 if job.types["container"] == "":
