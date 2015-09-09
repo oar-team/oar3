@@ -20,7 +20,6 @@ def minimal_db_initialization(request):
         db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
 
-
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)

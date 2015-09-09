@@ -119,10 +119,10 @@ def get_jobs_types(jids, jobs):
             job.ph_name = t_v[1]
         elif t == "assign":
             job.assign = True
-            job.assign_func = getattr(oar.kao.advanced_scheduling, t_v[1])
+            job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' % t_v[1])
         elif t == "find":
             job.find = True
-            job.find_func = getattr(oar.kao.advanced_scheduling, t_v[1])
+            job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' % t_v[1])
         else:
             if len(t_v) == 2:
                 v = t_v[1]

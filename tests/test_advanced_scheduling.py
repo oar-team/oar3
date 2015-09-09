@@ -9,16 +9,16 @@ from oar.lib import config
 config['LOG_FILE'] = '/dev/stdout'
 
 
-def set_assign_legacy(job):
+def set_assign_legacy(job, name):
     import oar.kao.advanced_scheduling
     job.assign = True
-    job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_legacy')
+    job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + name)
 
 
-def set_find_legacy(job):
+def set_find_legacy(job, name):
     import oar.kao.advanced_scheduling
     job.find = True
-    job.find_func = getattr(oar.kao.advanced_scheduling, 'find_legacy')
+    job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + name)
 
 
 def compare_slots_val_ref(slots, v):
@@ -46,14 +46,14 @@ def test_schedule_id_jobs_ct_assign_legacy():
     all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
-    j1 = JobPseudo(id=1, types={'assign': 'assign_legacy'}, deps=[], key_cache={},
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                    mld_res_rqts=[
         (1, 60,
          [([("node", 2)], res)]
          )
     ])
 
-    set_assign_legacy(j1)
+    set_assign_legacy(j1, 'legacy')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
@@ -69,14 +69,38 @@ def test_schedule_id_jobs_ct_find_legacy():
     all_ss = {"default": ss}
     hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
 
-    j1 = JobPseudo(id=1, types={'find': 'find_legacy'}, deps=[], key_cache={},
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                    mld_res_rqts=[
         (1, 60,
          [([("node", 2)], res)]
          )
     ])
 
-    set_assign_legacy(j1)
+    set_find_legacy(j1, 'legacy')
+
+    schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
+
+    assert compare_slots_val_ref(ss.slots, v) is True
+
+
+def test_schedule_id_jobs_ct_assign_one_time_find_legacy():
+
+    v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
+
+    res = [(1, 32)]
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[
+        (1, 60,
+         [([("node", 2)], res)]
+         )
+    ])
+
+    set_assign_legacy(j1, 'one_time_find')
+    set_find_legacy(j1, 'legacy')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
