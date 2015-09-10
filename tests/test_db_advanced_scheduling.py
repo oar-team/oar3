@@ -29,8 +29,8 @@ def monkeypatch_utils(request, monkeypatch):
     monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
-def test_db_all_in_assgin_legacy_simple_1(monkeypatch):
-    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["assign=assign_legacy"])
+def test_db_all_in_assgin_default_simple_1(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["assign=default"])
     job = db['Job'].query.one()
     print('job state:', job.state)
 
@@ -45,8 +45,8 @@ def test_db_all_in_assgin_legacy_simple_1(monkeypatch):
     assert (job.state == 'toLaunch')
 
 
-def test_db_all_in_find_legacy_simple_1(monkeypatch):
-    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["find=find_legacy"])
+def test_db_all_in_find_default_simple_1(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["find=default"])
     job = db['Job'].query.one()
     print('job state:', job.state)
 
