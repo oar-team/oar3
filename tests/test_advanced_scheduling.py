@@ -9,13 +9,13 @@ from oar.lib import config
 config['LOG_FILE'] = '/dev/stdout'
 
 
-def set_assign_legacy(job, name):
+def set_assign_default(job, name):
     import oar.kao.advanced_scheduling
     job.assign = True
     job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + name)
 
 
-def set_find_legacy(job, name):
+def set_find_default(job, name):
     import oar.kao.advanced_scheduling
     job.find = True
     job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + name)
@@ -37,7 +37,7 @@ def compare_slots_val_ref(slots, v):
     return True
 
 
-def test_schedule_id_jobs_ct_assign_legacy():
+def test_schedule_id_jobs_ct_assign_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -53,14 +53,14 @@ def test_schedule_id_jobs_ct_assign_legacy():
          )
     ])
 
-    set_assign_legacy(j1, 'legacy')
+    set_assign_default(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
 
 
-def test_schedule_id_jobs_ct_find_legacy():
+def test_schedule_id_jobs_ct_find_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -76,14 +76,14 @@ def test_schedule_id_jobs_ct_find_legacy():
          )
     ])
 
-    set_find_legacy(j1, 'legacy')
+    set_find_default(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
 
 
-def test_schedule_id_jobs_ct_assign_one_time_find_legacy():
+def test_schedule_id_jobs_ct_assign_one_time_find_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -99,8 +99,8 @@ def test_schedule_id_jobs_ct_assign_one_time_find_legacy():
          )
     ])
 
-    set_assign_legacy(j1, 'one_time_find')
-    set_find_legacy(j1, 'legacy')
+    set_assign_default(j1, 'one_time_find')
+    set_find_default(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
