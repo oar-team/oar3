@@ -80,7 +80,8 @@ def test_batsim_no_db_1():
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
 
 
-def _test_batsim_db_memory_1():  # TODO DEBUG
+@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
+def test_batsim_db_memory_1():  # TODO DEBUG
     db.delete_all()
     db.session.close()
     global recv_msgs
