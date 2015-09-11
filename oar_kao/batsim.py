@@ -27,7 +27,7 @@ import oar.kao.utils
 offset_idx = 0
 plt = None
 
-DEFAULT_CONFIG = {
+BATSIM_DEFAULT_CONFIG = {
     'DB_BASE_FILE': ':memory:',
     'DB_TYPE': 'sqlite',
     'LOG_CATEGORIES': 'all',
@@ -53,12 +53,12 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_SIZE': None,
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
-    'QUOTAS': 'no'
 }
 
-config.clear()
-config.update(DEFAULT_CONFIG)
-config['LOG_FILE'] = '/tmp/yop'
+# config.clear()
+# config.update(BATSIM_DEFAULT_CONFIG)
+
+#config['LOG_FILE'] = '/tmp/yop'
 
 logger = get_logger("oar.batsim")
 
@@ -103,7 +103,19 @@ def read_bat_msg(connection):
     # print 'from client (lg_str): %r' % lg_str
     lg = struct.unpack("i", lg_str)[0]
     # print 'size msg to recv %d' % lg
-    msg = connection.recv(lg)
+    if sys.version_info[0] == 2:
+        msg = connection.recv(lg)
+    else:
+        chunks = []
+        bytes_recd = 0
+        while bytes_recd < lg:
+            chunk = connection.recv(lg - bytes_recd)
+            if chunk == b'':
+                raise RuntimeError("socket connection broken")
+            chunks.append(chunk)
+            bytes_recd = bytes_recd + len(chunk)
+        msg = (b''.join(chunks)).decode("utf-8")
+
     print('from batsim : %s' % msg)
     sub_msgs = msg.split('|')
     data = sub_msgs[0].split(":")
@@ -146,7 +158,7 @@ def send_bat_msg(connection, now, jids_to_launch, jobs):
     print(msg)
     lg = struct.pack("i", int(len(msg)))
     connection.sendall(lg)
-    connection.sendall(msg)
+    connection.sendall(msg.encode("utf-8"))
 
 
 def load_json_workload_profile(filename):
@@ -302,7 +314,7 @@ def main(wkp_filename, database_mode):
 
     json_jobs, nb_res = load_json_workload_profile(wkp_filename)
 
-    print("nb_res: %s %s" % (nb_res, type(nb_res)))
+    print("nb_res:", nb_res)
 
     if database_mode == 'no-db':
         #
@@ -345,6 +357,10 @@ def main(wkp_filename, database_mode):
         BatSched(res_set, jobs, 'simu', {}).run()
 
     elif database_mode == 'memory':
+
+        config.clear()
+        config.update(BATSIM_DEFAULT_CONFIG)
+        
         global offset_idx
         offset_idx = 1
         monkeypatch_oar_kao_utils()
