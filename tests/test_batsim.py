@@ -91,8 +91,5 @@ def test_batsim_db_memory_1():  # TODO DEBUG
     path = os.path.dirname(os.path.abspath(__file__))
     main(path + '/batsim-workload.json', 'memory')
 
-    db.delete_all()
-    db.session.close()
-
     print("Messages sent:", sent_msgs)
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']

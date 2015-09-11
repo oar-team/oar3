@@ -357,9 +357,6 @@ def main(wkp_filename, database_mode):
         BatSched(res_set, jobs, 'simu', {}).run()
 
     elif database_mode == 'memory':
-
-        config.clear()
-        config.update(BATSIM_DEFAULT_CONFIG)
         
         global offset_idx
         offset_idx = 1
@@ -404,4 +401,8 @@ if __name__ == '__main__':  # pragma: no cover
                         help="select database mode (no-db, memory, oarconf)")
     args = parser.parse_args()
     print(args)
+    if args.database_mode == 'memory':
+        config.clear()
+        config.update(BATSIM_DEFAULT_CONFIG)
+        
     main(args.wkp_filename, args.database_mode)
