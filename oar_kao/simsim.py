@@ -258,7 +258,8 @@ class SWFWorkload(object):
                                              run_time=fields[RUN_TIME],
                                              deps=[],
                                              key_cache={},
-                                             ts=False, ph=0)
+                                             ts=False, ph=0,
+                                             assign=False, find=False)
 
             i += 1
 

@@ -8,7 +8,8 @@ import socket
 import sys
 import os
 import json
-from sets import Set
+if sys.version_info[0] == 2:
+    from sets import Set
 
 from oar.lib import (db, config, get_logger, Job, Resource, Queue)
 from oar.lib.compat import iteritems
@@ -206,7 +207,10 @@ class BatSched(object):
         self.connection, self.client_address = self.sock.accept()
 
         self.platform.running_jids = []
-        self.waiting_jids = Set()
+        if sys.version_info[0] == 2:
+            self.waiting_jids = Set()
+        else:
+            self.waiting_jids = set()
         self.platform.waiting_jids = self.waiting_jids
         self.platform.completed_jids = []
 
@@ -335,7 +339,8 @@ def main(wkp_filename, database_mode):
                                 run_time=0,
                                 deps=[],
                                 key_cache={},
-                                ts=False, ph=0)
+                                ts=False, ph=0,
+                                assign=False, find=False)
 
         BatSched(res_set, jobs, 'simu', {}).run()
 
@@ -362,7 +367,9 @@ def main(wkp_filename, database_mode):
                                                [([("resource_id", j["res"])],
                                                  [(0, nb_res - 0)])])],
                                 run_time=0,
-                                db_jid=i + 1)
+                                db_jid=i + 1,
+                                assign=False,
+                                find=False)
 
             insert_job(res=[(j["walltime"], [('resource_id=' + str(j["res"]), "")])],
                        state='Hold', properties='', user='')
