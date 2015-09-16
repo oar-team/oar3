@@ -40,7 +40,6 @@ class BaseModel(object):
             setattr(record, key, value)
         try:
             cls._db.session.add(record)
-            cls._db.session.commit()
             return record
         except:
             exc_type, exc_value, tb = sys.exc_info()
@@ -57,13 +56,13 @@ class BaseModel(object):
     asdict = to_dict
 
     def to_json(self, **kwargs):
-        """Dumps `self` to json string. """
+        """Dump `self` to json string."""
         kwargs.setdefault('ignore_keys', ())
         obj = self.to_dict(kwargs.pop('ignore_keys'))
         return to_json(obj, **kwargs)
 
     def __iter__(self):
-        """Returns an iterable that supports .next()"""
+        """Return an iterable that supports .next()"""
         for (k, v) in iteritems(self.asdict()):
             yield (k, v)
 
@@ -79,7 +78,7 @@ class SessionProperty(object):
     def _create_scoped_session(self, db):
         options = db._session_options
         options.setdefault('autoflush', True)
-        options.setdefault('autocommit', False)
+        options.setdefault('autocommit', True)
         options.setdefault('bind', db.engine)
         if db.query_class is None:
             from .basequery import BaseQuery
