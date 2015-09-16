@@ -30,7 +30,6 @@ def oar_conf(request):
 
 def del_accounting():
     db.engine.execute(db['accounting'].delete())
-    db.commit()
 
 
 def set_accounting(accountings, consumption_type):
@@ -46,7 +45,6 @@ def set_accounting(accountings, consumption_type):
                                 'consumption': consumption})
 
     db.engine.execute(db['accounting'].insert(), ins_accountings)
-    db.commit()
 
 
 def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",

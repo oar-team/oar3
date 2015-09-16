@@ -258,9 +258,7 @@ def update_current_scheduler_priority(job, value, state):
                 incr_priority = int(value) * index * coeff
                 db.query(Resource)\
                   .filter((getattr(Resource, f)).in_(resources))\
-                  .update({Resource.scheduler_priority:  incr_priority}, synchronize_session=False)
-
-                db.commit()
+                  .update({Resource.scheduler_priority: incr_priority}, synchronize_session=False)
 
             add_new_event('SCHEDULER_PRIORITY_UPDATED_' + state, job.id,
                           'Scheduler priority for job ' + str(job.id) +
@@ -271,7 +269,6 @@ def update_scheduler_last_job_date(date, moldable_id):
     db.query(Resource).filter(AssignedResource.Moldable_job_id == moldable_id)\
                       .filter(AssignedResource.Resource_id == Resource.resource_id)\
                       .update({Resource.last_job_date: date})
-    db.commit()
 
 
 # EVENTS LOG MANAGEMENT
@@ -282,7 +279,6 @@ def add_new_event(type, job_id, description):
     event_data = EventLog(type=type, job_id=job_id, date=get_date(),
                           description=description[:255])
     db.add(event_data)
-    db.commit()
 
 
 def is_an_event_exists(job_id, event):

@@ -186,8 +186,6 @@ def db_initialization(nb_res):
     for i in range(nb_res):
         db.add(Resource(network_address="localhost"))
 
-    db.commit()
-
 
 def db_add_job():
     pass
@@ -358,7 +356,7 @@ def main(wkp_filename, database_mode):
         BatSched(res_set, jobs, 'simu', {}).run()
 
     elif database_mode == 'memory':
-        
+
         global offset_idx
         offset_idx = 1
         monkeypatch_oar_kao_utils()
@@ -405,5 +403,5 @@ if __name__ == '__main__':  # pragma: no cover
     if args.database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
-        
+
     main(args.wkp_filename, args.database_mode)
