@@ -250,7 +250,8 @@ class BatSched(object):
 
             for jid in new_jobs_completed:
                 jobs_completed.append(jid)
-                self.platform.running_jids.remove(jid)
+                if jid in self.platform.running_jids:
+                    self.platform.running_jids.remove(jid)
                 if self.mode_platform == 'batsim-db':
                     set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
