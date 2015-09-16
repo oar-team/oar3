@@ -3,7 +3,6 @@ from __future__ import with_statement, absolute_import
 
 import sys
 import threading
-import contextlib
 
 from collections import OrderedDict
 
@@ -214,8 +213,15 @@ class Database(object):
         if bind is None:
             bind = self.engine
         with bind.connect() as con:
-            for table in itervalues(self.tables):
-                con.execute(table.delete())
+            trans = con.begin()
+            if bind.dialect.name == "postgresql":
+                con.execute('TRUNCATE {} RESTART IDENTITY CASCADE;'.format(
+                    ','.join(table.name
+                             for table in self.tables.values())))
+            else:
+                for table in itervalues(self.tables):
+                    con.execute(table.delete())
+            trans.commit()
 
     def __contains__(self, member):
         return member in self.tables or member in self.models
