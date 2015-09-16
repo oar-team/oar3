@@ -6,7 +6,7 @@ import socket
 import struct
 import sys
 import os
-from oar.lib import (db, config)
+from oar.lib import db
 
 recv_msgs = []
 sent_msgs = []
@@ -67,6 +67,12 @@ def monkeypatch_socket_socket():
     socket.socket = FakeSocket
 
 
+@pytest.fixture(scope='function', autouse=True)
+def minimal_db_initialization(request):
+    db.delete_all()
+    db.session.close()
+
+
 def test_batsim_no_db_1():
 
     global recv_msgs
@@ -80,10 +86,7 @@ def test_batsim_no_db_1():
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
 
 
-@pytest.mark.skipif("os.environ.get('TRAVIS', '') == 'true'")
-def test_batsim_db_memory_1():  # TODO DEBUG
-    db.delete_all()
-    db.session.close()
+def test_batsim_db():
     global recv_msgs
     recv_msgs = [
         '0:10.000015|10.000015:S:1',
