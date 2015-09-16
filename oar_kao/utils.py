@@ -8,10 +8,7 @@ import socket
 from sqlalchemy import func, distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource,
                      EventLog)
-if sys.version_info[0] == 2:
-    from subprocess32 import (Popen, call, TimeoutExpired)
-else:
-    from subprocess import (Popen, call, TimeoutExpired)
+from subprocess import (Popen, call, TimeoutExpired)
 
 logger = get_logger("oar.kao.utils")
 
