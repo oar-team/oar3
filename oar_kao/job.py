@@ -734,7 +734,7 @@ def log_job(job):  # pragma: no cover
     if job.assigned_moldable_job != "0":
         db.query(AssignedResource)\
           .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
-          .filter(AssignedResource.d == int(job.assigned_moldable_job))\
+          .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
           .update({AssignedResource.assigned_resource_index: 'LOG'},
                   synchronize_session=False)
 
