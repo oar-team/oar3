@@ -186,7 +186,7 @@ def db_initialization(nb_res):
     for i in range(nb_res):
         db.add(Resource(network_address="localhost"))
 
-    db.flush()
+    db.commit()
 
 
 def db_add_job():
