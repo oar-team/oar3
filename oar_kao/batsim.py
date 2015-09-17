@@ -176,14 +176,12 @@ def monkeypatch_oar_kao_utils():
     orig_func['notify_almighty'] = oar.kao.utils.notify_almighty
     orig_func['notify_tcp_socket'] = oar.kao.utils.notify_tcp_socket
     orig_func['notify_user'] = oar.kao.utils.notify_user
-    orig_func['get_date'] = oar.kao.utils.get_date
 
     oar.kao.utils.init_judas_notify_user = lambda: None
     oar.kao.utils.create_almighty_socket = lambda: None
     oar.kao.utils.notify_almighty = lambda x: len(x)
     oar.kao.utils.notify_tcp_socket = lambda addr, port, msg: len(msg)
     oar.kao.utils.notify_user = lambda job, state, msg: len(state + msg)
-    oar.kao.utils.get_date = lambda: plt.get_time()
 
 
 def restore_oar_kao_utils():
@@ -192,7 +190,6 @@ def restore_oar_kao_utils():
     oar.kao.utils.notify_almighty = orig_func['notify_almighty']
     oar.kao.utils.notify_tcp_socket = orig_func['notify_tcp_socket']
     oar.kao.utils.notify_user = orig_func['notify_user']
-    oar.kao.utils.get_date = orig_func['get_date']
 
 
 def db_initialization(nb_res):
