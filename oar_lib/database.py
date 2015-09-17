@@ -18,7 +18,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
 from .utils import cached_property, merge_dicts, get_table_name, to_json
-from .compat import iteritems, itervalues, reraise
+from .compat import iteritems, itervalues, iterkeys, reraise
 
 
 __all__ = ['Database']
@@ -242,6 +242,13 @@ class Database(object):
             if self.connector is not None:
                 self.connector.get_engine().dispose()
                 self.connector = None
+
+    def show(self):
+        """ Return small database content representation."""
+        for model_name in sorted(iterkeys(self.models)):
+            data = [inspect(i).identity
+                    for i in self.models[model_name].query.all()]
+            print(model_name.ljust(25), data)
 
     def __repr__(self):
         engine = None
