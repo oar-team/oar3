@@ -26,6 +26,7 @@ import oar.kao.utils
 
 offset_idx = 0
 plt = None
+orig_func = {}
 
 BATSIM_DEFAULT_CONFIG = {
     'DB_BASE_FILE': ':memory:',
@@ -168,12 +169,30 @@ def load_json_workload_profile(filename):
 
 
 def monkeypatch_oar_kao_utils():
+    global orig_func
+
+    orig_func['init_judas_notify_user'] = oar.kao.utils.init_judas_notify_user
+    orig_func['create_almighty_socket'] = oar.kao.utils.create_almighty_socket
+    orig_func['notify_almighty'] = oar.kao.utils.notify_almighty
+    orig_func['notify_tcp_socket'] = oar.kao.utils.notify_tcp_socket
+    orig_func['notify_user'] = oar.kao.utils.notify_user
+    orig_func['get_date'] = oar.kao.utils.get_date
+
     oar.kao.utils.init_judas_notify_user = lambda: None
     oar.kao.utils.create_almighty_socket = lambda: None
     oar.kao.utils.notify_almighty = lambda x: len(x)
     oar.kao.utils.notify_tcp_socket = lambda addr, port, msg: len(msg)
     oar.kao.utils.notify_user = lambda job, state, msg: len(state + msg)
     oar.kao.utils.get_date = lambda: plt.get_time()
+
+
+def restore_oar_kao_utils():
+    oar.kao.utils.init_judas_notify_user = orig_func['init_judas_notify_user']
+    oar.kao.utils.create_almighty_socket = orig_func['create_almighty_socket']
+    oar.kao.utils.notify_almighty = orig_func['notify_almighty']
+    oar.kao.utils.notify_tcp_socket = orig_func['notify_tcp_socket']
+    oar.kao.utils.notify_user = orig_func['notify_user']
+    oar.kao.utils.get_date = orig_func['get_date']
 
 
 def db_initialization(nb_res):
@@ -391,6 +410,10 @@ def main(wkp_filename, database_mode):
 
         BatSched([], jobs, 'batsim-db', db_jid2s_jid).run()
 
+        if __name__ != '__main__':
+            # If used oar.kao.utils' functions are used after we need to undo monkeypatching.
+            # Main use case is suite testing evaluation
+            restore_oar_kao_utils()
 
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(description='Adaptor to run oar-kao with BatSim.')
