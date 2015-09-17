@@ -3,7 +3,10 @@ sudo: true
 
 language: python
 
-python: 3.4
+python:
+  - "2.7"
+  - "3.3"
+  - "3.4"
 
 env:
   - DB_TYPE=postgresql
