@@ -8,7 +8,12 @@ import socket
 from sqlalchemy import func, distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource,
                      EventLog)
-from subprocess import (Popen, call, TimeoutExpired)
+from oar.lib.compat import is_py2
+
+if is_py2:
+    from subprocess32 import (Popen, call, TimeoutExpired)
+else:
+    from subprocess import (Popen, call, TimeoutExpired)  # noqa
 
 logger = get_logger("oar.kao.utils")
 
@@ -68,7 +73,7 @@ def create_almighty_socket():  # pragma: no cover
         almighty_socket.connect((server, port))
     except socket.error as exc:
         logger.error("Connection to Almighty" + server + ":" + str(port) +
-                  " raised exception socket.error: " + str(exc))
+                     " raised exception socket.error: " + str(exc))
         sys.exit(1)
 
 
@@ -162,7 +167,7 @@ def hms_to_sql(hour, min, sec):
 
 
 def hms_to_duration(hour, min, sec):
-    return int(hour)*3600 + int(min) * 60 + int(sec)
+    return int(hour) * 3600 + int(min) * 60 + int(sec)
 
 
 # duration_to_hms
