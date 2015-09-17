@@ -66,7 +66,7 @@ class BaseModel(object):
             yield (k, v)
 
     def __repr__(self):
-        return '<%s>' % self.__class__.__name__
+        return '<%s %s>' % (self.__class__.__name__, inspect(self).identity)
 
 
 class SessionProperty(object):
