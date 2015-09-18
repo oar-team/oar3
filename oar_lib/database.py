@@ -39,6 +39,7 @@ class BaseModel(object):
             setattr(record, key, value)
         try:
             cls._db.session.add(record)
+            cls._db.session.commit()
             return record
         except:
             exc_type, exc_value, tb = sys.exc_info()
