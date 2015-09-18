@@ -74,7 +74,6 @@ def db(request, monkeypatch):
         movies = db.relationship("Movie",
                                  secondary=association_table,
                                  backref="actors")
-
     return db
 
 
@@ -202,7 +201,7 @@ def test_db_api_others(db):
     assert repr(db) == "<Database engine=Engine(sqlite://)>"
     assert db.metadata == db.Model.metadata
     movie = db['Movie'].create(title="Mad Max")
-    assert repr(movie) == "<Movie>"
+    assert repr(movie) == "<Movie (1,)>"
 
     assert db.query(db['Movie']).first().title == "Mad Max"
     assert db.dialect == "sqlite"

@@ -5,12 +5,14 @@ import sys
 import threading
 
 from collections import OrderedDict
+from contextlib import contextmanager
 
-from sqlalchemy import create_engine, inspect
+import sqlalchemy
+from sqlalchemy import create_engine, inspect, event
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
                                         DeclarativeMeta)
-from sqlalchemy.orm import scoped_session, sessionmaker, class_mapper
+from sqlalchemy.orm import sessionmaker, class_mapper
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.orm.exc import UnmappedClassError
 
@@ -19,7 +21,7 @@ from alembic.operations import Operations
 
 from .utils import cached_property, merge_dicts, get_table_name, to_json
 from .compat import iteritems, itervalues, iterkeys, reraise
-
+from .exceptions import DatabaseError
 
 __all__ = ['Database']
 
@@ -77,14 +79,15 @@ class SessionProperty(object):
 
     def _create_scoped_session(self, db):
         options = db._session_options
-        options.setdefault('autoflush', True)
-        options.setdefault('autocommit', True)
         options.setdefault('bind', db.engine)
         if db.query_class is None:
             from .basequery import BaseQuery
             db.query_class = BaseQuery
         options.setdefault('query_cls', db.query_class)
-        return scoped_session(sessionmaker(**options))
+        db.sessionmaker.configure(**options)
+        scoped = scoped_session(db.sessionmaker)
+        scoped.db = db
+        return scoped
 
     def __get__(self, obj, type):
         if obj is not None:
@@ -125,6 +128,9 @@ class Database(object):
         self._reflected = False
         self._cache = {"uri": uri}
         self._session_options = dict(session_options or {})
+        self._session_options.setdefault('autoflush', True)
+        self._session_options.setdefault('autocommit', False)
+        self.sessionmaker = sessionmaker(**self._session_options)
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
@@ -403,3 +409,46 @@ def get_entity_loaded_propnames(entity):
     if ins.expired:
         keynames |= ins.expired_attributes
     return sorted(keynames, key=lambda x: columns.index(x))
+
+
+@contextmanager
+def read_only_session(db, scoped, **kwargs):
+    dialect = db.engine.dialect.name
+    if dialect == 'postgresql':
+        @event.listens_for(db.engine, 'begin')
+        def set_pgsql_read_only(conn):
+            conn.execute('SET TRANSACTION READ ONLY')
+        try:
+            scoped.remove()
+            session = scoped(**kwargs)
+            yield session
+        finally:
+            event.remove(db.engine, 'begin', set_pgsql_read_only)
+            scoped.remove()
+    elif dialect == "sqlite":
+        import sqlite3
+        sqlite_path = db.engine.url.database
+        if not sqlite_path:
+            yield session
+        else:
+            try:
+                def creator():
+                    return sqlite3.connect('file:%s?mode=ro' % sqlite_path,
+                                           uri=True)
+
+                kwargs['bind'] = create_engine('sqlite://', creator=creator)
+                scoped.remove()
+                session = scoped(**kwargs)
+                yield session
+            finally:
+                scoped.remove()
+    else:
+        raise DatabaseError("Cannot start a read-only session for this "
+                            "database")
+
+class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
+    def __call__(self, **kwargs):
+        if not kwargs.pop('read_only', False):
+            return super(scoped_session, self).__call__(**kwargs)
+        else:
+            return read_only_session(self.db, self, **kwargs)
