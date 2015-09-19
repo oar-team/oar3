@@ -106,7 +106,7 @@ def get_date():
     else:   # pragma: no cover
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
-    result = db.engine.execute(req).scalar()
+    result = db.session.execute(req).scalar()
     return int(result)
 
 

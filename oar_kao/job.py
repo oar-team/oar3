@@ -527,9 +527,9 @@ def save_assigns(jobs, resource_set):
 
         logger.info("save assignements")
 
-        db.engine.execute(
+        db.session.execute(
             GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
-        db.engine.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
 
     # INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES
     # INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES
@@ -602,7 +602,7 @@ def set_job_state(jid, state):
                              .update({JobStateLog.date_stop: date})
         req = db.insert(JobStateLog).values(
             {'job_id': jid, 'job_state': state, 'date_start': date})
-        db.engine.execute(req)
+        db.session.execute(req)
 
         if state == "Terminated" or state == "Error" or state == "toLaunch" or \
            state == "Running" or state == "Suspended" or state == "Resuming":
@@ -669,7 +669,7 @@ def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
     assigned_resources = [{'moldable_job_id': res_mld_id.moldable_id,
                            'resource_id': res_mld_id.resource_id} for res_mld_id in resources_mld_ids]
 
-    db.engine.execute(AssignedResource.__table__.insert(), assigned_resources)
+    db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
 
 
 def add_resource_job_pairs(moldable_id):
@@ -680,7 +680,7 @@ def add_resource_job_pairs(moldable_id):
     assigned_resources = [{'moldable_job_id': res_mld_id.moldable_id,
                            'resource_id': res_mld_id.resource_id} for res_mld_id in resources_mld_ids]
 
-    db.engine.execute(AssignedResource.__table__.insert(), assigned_resources)
+    db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
 
 
 # Return the list of resources where there are Suspended jobs
@@ -792,7 +792,7 @@ def insert_job(**kwargs):
         kwargs['job_user'] = kwargs.pop('user')
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.engine.execute(ins)
+    result = db.session.execute(ins)
     job_id = result.inserted_primary_key[0]
 
     mld_jid_walltimes = []
@@ -804,7 +804,7 @@ def insert_job(**kwargs):
             {'moldable_job_id': job_id, 'moldable_walltime': w})
         res_grps.append(res_grp)
 
-    result = db.engine.execute(MoldableJobDescription.__table__.insert(),
+    result = db.session.execute(MoldableJobDescription.__table__.insert(),
                                mld_jid_walltimes)
 
     if len(mld_jid_walltimes) == 1:
@@ -827,7 +827,7 @@ def insert_job(**kwargs):
                                     'res_group_property': properties})
             res_hys.append(res_hy)
 
-        result = db.engine.execute(JobResourceGroup.__table__.insert(),
+        result = db.session.execute(JobResourceGroup.__table__.insert(),
                                    mld_id_property)
 
         if len(mld_id_property) == 1:
@@ -847,12 +847,12 @@ def insert_job(**kwargs):
                                         'res_job_value': tv[1],
                                         'res_job_order': idx})
 
-            db.engine.execute(JobResourceDescription.__table__.insert(),
+            db.session.execute(JobResourceDescription.__table__.insert(),
                               res_description)
 
     if types:
         ins = [{'job_id': job_id, 'type': typ} for typ in types]
-        db.engine.execute(JobType.__table__.insert(), ins)
+        db.session.execute(JobType.__table__.insert(), ins)
 
     return job_id
 

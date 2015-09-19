@@ -474,7 +474,7 @@ def update_gantt_visualization():
                    "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
                    ]
     for query in sql_queries:
-        db.engine.execute(query)
+        db.session.execute(query)
 
 
 def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
