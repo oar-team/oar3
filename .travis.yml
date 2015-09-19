@@ -10,7 +10,7 @@ python:
 
 env:
   - DB_TYPE=postgresql
-  - DB_TYPE=sqlite
+#  - DB_TYPE=sqlite
 
 before_install:
  - sudo mkdir -p /etc/oar
