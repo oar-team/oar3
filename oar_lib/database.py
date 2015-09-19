@@ -454,9 +454,36 @@ def read_only_session(scoped, **kwargs):
         raise DatabaseError("Cannot start a read-only session for this "
                             "database")
 
+
+@contextmanager
+def ephemeral_session(scoped, **kwargs):
+    """Ephemeral session context manager.
+
+    Will rollback the transaction at the end.
+    """
+    try:
+        scoped.remove()
+        connection = scoped.db.engine.connect()
+        # begin a non-ORM transaction
+        transaction = connection.begin()
+        kwargs['bind'] = connection
+        session = scoped(**kwargs)
+        yield session
+    finally:
+        session.close()
+        # rollback - everything that happened with the
+        # Session above (including calls to commit())
+        # is rolled back.
+        transaction.rollback()
+        # return connection to the Engine
+        connection.close()
+        scoped.remove()
+
 class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
     def __call__(self, **kwargs):
-        if not kwargs.pop('read_only', False):
-            return super(scoped_session, self).__call__(**kwargs)
+        if kwargs.pop('read_only', False):
+            return read_only_session(self, **kwargs)
+        elif kwargs.pop('ephemeral', False):
+            return ephemeral_session(self, **kwargs)
         else:
-            return read_only_session(self.db, self, **kwargs)
+            return super(scoped_session, self).__call__(**kwargs)
