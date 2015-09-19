@@ -479,11 +479,41 @@ def ephemeral_session(scoped, **kwargs):
         connection.close()
         scoped.remove()
 
+
+@contextmanager
+def atomic_session(scoped, **kwargs):
+    """Transaction context manager.
+
+    Will commit the transaction on successful completion
+    of the block, or roll it back on error.
+
+    Supports nested usage (via savepoints).
+
+    """
+    try:
+        session = scoped(**kwargs)
+        in_atomic = getattr(session, '_in_atomic', False)
+        if not in_atomic:
+            session.begin_nested()
+            session._in_atomic = True
+        yield session
+    except:
+        # rollback - everything that happened with the Session
+        session.rollback()
+        raise
+    else:
+        session.commit()
+    finally:
+        if in_atomic:
+            session._in_atomic = False
+
 class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
     def __call__(self, **kwargs):
         if kwargs.pop('read_only', False):
             return read_only_session(self, **kwargs)
         elif kwargs.pop('ephemeral', False):
             return ephemeral_session(self, **kwargs)
+        elif kwargs.pop('atomic', False):
+            return atomic_session(self, **kwargs)
         else:
             return super(scoped_session, self).__call__(**kwargs)
