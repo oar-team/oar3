@@ -412,22 +412,29 @@ def get_entity_loaded_propnames(entity):
 
 
 @contextmanager
-def read_only_session(db, scoped, **kwargs):
-    dialect = db.engine.dialect.name
+def read_only_session(scoped, **kwargs):
+    """Read-only session context manager.
+
+    Will raise exception if we try to write in the database.
+    """
+    dialect = scoped.db.engine.dialect.name
     if dialect == 'postgresql':
-        @event.listens_for(db.engine, 'begin')
+        @event.listens_for(scoped.db.engine, 'begin')
         def set_pgsql_read_only(conn):
             conn.execute('SET TRANSACTION READ ONLY')
         try:
             scoped.remove()
             session = scoped(**kwargs)
             yield session
+        except:
+            raise
         finally:
-            event.remove(db.engine, 'begin', set_pgsql_read_only)
+            session.close()
+            event.remove(scoped.db.engine, 'begin', set_pgsql_read_only)
             scoped.remove()
     elif dialect == "sqlite":
         import sqlite3
-        sqlite_path = db.engine.url.database
+        sqlite_path = scoped.db.engine.url.database
         if not sqlite_path:
             yield session
         else:
@@ -441,6 +448,7 @@ def read_only_session(db, scoped, **kwargs):
                 session = scoped(**kwargs)
                 yield session
             finally:
+                session.close()
                 scoped.remove()
     else:
         raise DatabaseError("Cannot start a read-only session for this "
