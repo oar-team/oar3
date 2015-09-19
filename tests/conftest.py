@@ -54,3 +54,4 @@ def setup_config(request):
     dump_configuration('/etc/oar/oar.conf')
     db.create_all()
     db.reflect()
+    db.delete_all()

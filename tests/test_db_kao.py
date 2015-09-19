@@ -9,15 +9,15 @@ from oar.kao.kao import main
 import oar.kao.utils  # for monkeypatching
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    db.delete_all()
-    db.session.close()
-    db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+    with db.session(ephemeral=True):
+        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
-    # add some resources
-    for i in range(5):
-        db['Resource'].create(network_address="localhost")
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost")
+        yield
 
 
 @pytest.fixture(scope='function', autouse=True)

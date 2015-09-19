@@ -19,15 +19,14 @@ import oar.kao.quotas as qts
 node_list = []
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    db.delete_all()
-    db.session.close()
-    db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
-
-    # add some resources
-    for i in range(5):
-        db['Resource'].create(network_address="localhost" + str(int(i / 2)))
+    with db.session(ephemeral=True):
+        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost" + str(int(i / 2)))
+        yield
 
 
 @pytest.fixture(scope="function")

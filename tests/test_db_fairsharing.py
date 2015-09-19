@@ -13,10 +13,10 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    db.delete_all()
-    db.session.close()
+    with db.session(ephemeral=True):
+        yield
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -29,7 +29,7 @@ def oar_conf(request):
 
 
 def del_accounting():
-    db.engine.execute(db['accounting'].delete())
+    db.session.execute(db['accounting'].delete())
 
 
 def set_accounting(accountings, consumption_type):
@@ -44,7 +44,7 @@ def set_accounting(accountings, consumption_type):
                                 'consumption_type': consumption_type,
                                 'consumption': consumption})
 
-    db.engine.execute(db['accounting'].insert(), ins_accountings)
+    db.session.execute(db['accounting'].insert(), ins_accountings)
 
 
 def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",

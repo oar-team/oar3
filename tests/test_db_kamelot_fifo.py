@@ -10,10 +10,10 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot_fifo import main, schedule_fifo_cycle
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    db.delete_all()
-    db.session.close()
+    with db.session(ephemeral=True):
+        yield
 
 
 def test_db_kamelot_fifo_no_hierarchy():
