@@ -11,16 +11,15 @@ from oar.kao.job import insert_job
 from oar.kao.kamelot import main
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
-    db.delete_all()
-    db.session.close()
+    with db.session(ephemeral=True):
+        for i in range(5):
+            db['Resource'].create(network_address="localhost")
 
-    for i in range(5):
-        db['Resource'].create(network_address="localhost")
-
-    for i in range(5):
-        insert_job(res=[(60, [('resource_id=2', "")])], properties="")
+        for i in range(5):
+            insert_job(res=[(60, [('resource_id=2', "")])], properties="")
+        yield
 
 
 def test_db_kamelot_1():
