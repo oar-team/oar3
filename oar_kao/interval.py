@@ -366,3 +366,27 @@ def itvs_size(itvs):
     for itv in itvs:
         size += itv[1] - itv[0] + 1
     return size
+
+
+def aggregate_itvs(itvs):
+    """Aggregate itvs whitout gap, [(1,2), (3, 4)] => [(1,4)]"""
+
+    if not itvs:
+        return itvs
+
+    res = []
+    lg = len(itvs)
+    i = 1
+    a, b = itvs[i-1]
+    while True:
+        if i == lg:
+            res.append((a, b))
+            return res
+        else:
+            x, y = itvs[i]
+            if x == (b + 1):
+                b = y
+            else:
+                res.append((a, b))
+                a, b = x, y
+            i += 1

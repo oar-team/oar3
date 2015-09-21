@@ -3,7 +3,8 @@ from __future__ import unicode_literals, print_function
 from oar.kao.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
                               equal_itvs, equal_and_sub_prefix_itvs,
-                              equal_itvs2ids, equal_itvs_same_segmentation)
+                              equal_itvs2ids, equal_itvs_same_segmentation,
+                              aggregate_itvs)
 
 
 def test_intersec():
@@ -106,3 +107,9 @@ def test_equal_itvs_same_segmentation_2():
 
 def test_equal_itvs_same_segmentation_3():
     assert(not equal_itvs_same_segmentation([(2, 4), (6, 9), (10, 14)], [(2, 4), (6, 14)]))
+
+
+def test_aggregate_itvs():
+    r = [(1, 2), (4, 10)]
+    a = aggregate_itvs([(1, 2), (4, 5), (6, 6), (7, 10)])
+    assert a == r

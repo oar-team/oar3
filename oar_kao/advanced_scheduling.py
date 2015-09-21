@@ -1,7 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import oar.kao.scheduling
-from oar.kao.interval import intersec, itvs_size
+from oar.kao.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
+                              keep_no_empty_scat_bks, aggregate_itvs)
 
 # assign_resources_mld_job_split_slots, find_resource_hierarchies_job
 
@@ -16,7 +17,7 @@ def assign_default(slots_set, job, hy, min_start_time):
     return oar.kao.scheduling.assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 
 
-def find_simple_contiguous(itvs_avail, hy_res_rqts, hy):
+def find_contiguous_1h(itvs_avail, hy_res_rqts, hy):
     # NOT FOR PRODUCTION USE
     # Notes support only one resource group and ordered resource_id hierarchy level
 
@@ -25,12 +26,95 @@ def find_simple_contiguous(itvs_avail, hy_res_rqts, hy):
     l_name, n = hy_level_nbs[0]  # one hierarchy level
     # hy_level = hy[l_name]
 
-    itvs_cts_slots = intersec(constraints, itvs_avail)
+    itvs_cts_slots = aggregate_itvs(intersec(constraints, itvs_avail))
+
     if l_name == "resource_id":
-        for itvs in itvs_cts_slots:
-            if itvs_size(itvs) > n:
-                result = [(itvs[0], itvs[0]+n-1)]
+        for itv in itvs_cts_slots:
+            if (itv[1] - itv[0] + 1) >= n:
+                result = [(itv[0], itv[0]+n-1)]
                 break
+
+    return result
+
+
+def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy):
+    # NOT FOR PRODUCTION USE
+    # Notes support only one resource group and ordered resource_id hierarchy level
+
+    result = []
+    hy_level_nbs, constraints = hy_res_rqts[0]  # one resource group
+    l_name, n = hy_level_nbs[0]  # one hierarchy level
+    # hy_level = hy[l_name]
+
+    itvs_unsorted = aggregate_itvs(intersec(constraints, itvs_avail))
+    lg = len(itvs_unsorted)
+
+    print(itvs_unsorted)
+    ids_sorted = sorted(range(lg), key=lambda k: itvs_unsorted[k][1] - itvs_unsorted[k][0])
+
+    if l_name == "resource_id":
+        for i in ids_sorted:
+            itv = itvs_unsorted[i]
+            if (itv[1] - itv[0] + 1) >= n:
+                result = [(itv[0], itv[0]+n-1)]
+                break
+
+    return result
+#
+# LOCAL
+#
+
+
+def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
+
+    n = rqts[h]
+    avail_bks = keep_no_empty_scat_bks(itvs, top)
+
+    size_bks = [itvs_size(block) for block in avail_bks]
+
+    sorted_ids = sorted(range(len(avail_bks)), key=lambda k: size_bks[k])
+
+    for i, idx in enumerate(sorted_ids):
+        if size_bks[i] >= n:
+            res_itvs = []
+            k = 0
+            for itv in avail_bks[idx]:
+                size_itv = itv[1] - itv[0] + 1
+                if (k + size_itv) < n:
+                    res_itvs.append(itv)
+                else:
+                    return res_itvs.append((itv[0], itv[0] + (n-k-1)))
+
+    return []
+
+
+def find_resource_hierarchies_scattered_local(itvs, hy, rqts):
+    l_hy = len(hy)
+    #    print "find itvs: ", itvs, rqts[0]
+    if (l_hy == 1):
+        return extract_n_scattered_block_itv(itvs, hy[0], rqts[0])
+    else:
+        return find_resource_n_h_local(itvs, hy, rqts, hy[0], 0, l_hy)
+
+
+def find_local(itvs_slots, hy_res_rqts, hy):
+    """ 2 Level of Hierarchy supported with sorting by increasing blocks' size"""
+    result = []
+    for hy_res_rqt in hy_res_rqts:
+        (hy_level_nbs, constraints) = hy_res_rqt
+        hy_levels = []
+        hy_nbs = []
+        for hy_l_n in hy_level_nbs:
+            (l_name, n) = hy_l_n
+            hy_levels.append(hy[l_name])
+            hy_nbs.append(n)
+
+        itvs_cts_slots = intersec(constraints, itvs_slots)
+        res = find_resource_hierarchies_scattered_local(itvs_cts_slots, hy_levels, hy_nbs)
+        if res:
+            result.extend(res)
+        else:
+            return []
 
     return result
 

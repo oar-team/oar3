@@ -9,13 +9,13 @@ from oar.lib import config
 config['LOG_FILE'] = '/dev/stdout'
 
 
-def set_assign_default(job, name):
+def set_assign_func(job, name):
     import oar.kao.advanced_scheduling
     job.assign = True
     job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + name)
 
 
-def set_find_default(job, name):
+def set_find_func(job, name):
     import oar.kao.advanced_scheduling
     job.find = True
     job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + name)
@@ -37,7 +37,7 @@ def compare_slots_val_ref(slots, v):
     return True
 
 
-def test_schedule_id_jobs_ct_assign_default():
+def test_assign_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -53,14 +53,14 @@ def test_schedule_id_jobs_ct_assign_default():
          )
     ])
 
-    set_assign_default(j1, 'default')
+    set_assign_func(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
 
 
-def test_schedule_id_jobs_ct_find_default():
+def test_find_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -76,14 +76,14 @@ def test_schedule_id_jobs_ct_find_default():
          )
     ])
 
-    set_find_default(j1, 'default')
+    set_find_func(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
 
 
-def test_schedule_id_jobs_ct_assign_one_time_find_default():
+def test_assign_one_time_find_default():
 
     v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
 
@@ -99,9 +99,61 @@ def test_schedule_id_jobs_ct_assign_one_time_find_default():
          )
     ])
 
-    set_assign_default(j1, 'one_time_find')
-    set_find_default(j1, 'default')
+    set_assign_func(j1, 'one_time_find')
+    set_find_func(j1, 'default')
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     assert compare_slots_val_ref(ss.slots, v) is True
+
+
+def test_find_contiguous_1h():
+
+    res = [(1, 32)]
+    prop = [(1, 8), (17, 32)]
+
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+
+    hy = {'resource_id': [[(i, i)] for i in range(1, 32)]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[
+        (1, 60,
+         [([("resource_id", 10)], prop)]
+         )
+    ])
+
+    set_find_func(j1, 'contiguous_1h')
+
+    schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
+
+    print(j1.res_set)
+
+    assert j1.res_set == [(17, 26)]
+
+
+def test_find_contiguous_sorted_1h():
+
+    res = [(1, 32)]
+    prop = [(1, 2), (4, 12), (14, 22), (24, 29)]
+
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+
+    hy = {'resource_id': [[(i, i)] for i in range(1, 32)]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[
+        (1, 60,
+         [([("resource_id", 5)], prop)]
+         )
+    ])
+
+    set_find_func(j1, 'contiguous_sorted_1h')
+
+    schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
+
+    print(j1.res_set)
+
+    assert j1.res_set == [(24, 28)]
