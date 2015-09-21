@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, print_function
 import oar.kao.scheduling
 from oar.kao.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
-                              keep_no_empty_scat_bks, aggregate_itvs)
+                              aggregate_itvs)
 
 # assign_resources_mld_job_split_slots, find_resource_hierarchies_job
 
@@ -49,7 +49,6 @@ def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy):
     itvs_unsorted = aggregate_itvs(intersec(constraints, itvs_avail))
     lg = len(itvs_unsorted)
 
-    print(itvs_unsorted)
     ids_sorted = sorted(range(lg), key=lambda k: itvs_unsorted[k][1] - itvs_unsorted[k][0])
 
     if l_name == "resource_id":
@@ -67,10 +66,13 @@ def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy):
 
 def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
 
-    n = rqts[h]
-    avail_bks = keep_no_empty_scat_bks(itvs, top)
-
-    size_bks = [itvs_size(block) for block in avail_bks]
+    n = rqts[h+1]
+    size_bks = []
+    avail_bks = []
+    for top_itvs in top:
+        avail_itvs = intersec(top_itvs, itvs)
+        avail_bks.append(avail_itvs)
+        size_bks.append(itvs_size(avail_itvs))
 
     sorted_ids = sorted(range(len(avail_bks)), key=lambda k: size_bks[k])
 
@@ -83,7 +85,8 @@ def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
                 if (k + size_itv) < n:
                     res_itvs.append(itv)
                 else:
-                    return res_itvs.append((itv[0], itv[0] + (n-k-1)))
+                    res_itvs.append((itv[0], itv[0] + (n-k-1)))
+                    return res_itvs
 
     return []
 
@@ -110,6 +113,7 @@ def find_local(itvs_slots, hy_res_rqts, hy):
             hy_nbs.append(n)
 
         itvs_cts_slots = intersec(constraints, itvs_slots)
+
         res = find_resource_hierarchies_scattered_local(itvs_cts_slots, hy_levels, hy_nbs)
         if res:
             result.extend(res)
