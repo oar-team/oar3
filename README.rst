@@ -21,22 +21,16 @@ Another Metascheduler for OAR.
 Goal
 ----
 
-Provide meta-scheduler and scheduler alernatives to OAR
+Yet another meta-scheduler and scheduler for OAR.
 
 Main features
 --------------
 
-- Python as script language
-- Same data structures of Kamelot
+- Use Python as scripting language
+- Same data structures as Kamelot
     - intervals to represent resource sets
-    - available resources are timely arranged through contiugous slots.
-- Other choices (high level programs' structures) follow those from the Perl version.
-- The first version will be without DB interaction (it'll be just a demonstrator) also
-1rst scheduler will not support :
-    - dependencies, fairsharing, timesharing, placeholder, quotas, resource always added,
-and will support :
-    - hierarchy, container
-
+    - available resources are timely arranged through contiguous slots.
+- Other choices (high level programs' structures) follow those of the Perl version.
 
 Installation
 ------------
