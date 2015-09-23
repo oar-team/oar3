@@ -93,7 +93,6 @@ class SessionProperty(object):
         if obj is not None:
             if obj not in self._sessions:
                 self._sessions[obj] = self._create_scoped_session(obj)
-                obj.reflect()
             return self._sessions[obj]
         return self
 
@@ -153,7 +152,7 @@ class Database(object):
 
     @property
     def op(self):
-        ctx = MigrationContext.configure(self.engine)
+        ctx = MigrationContext.configure(self.session(reflect=False).bind)
         return Operations(ctx)
 
     @cached_property
@@ -201,34 +200,40 @@ class Database(object):
         """Proxy for session.rollback"""
         return self.session.rollback()
 
-    def reflect(self, **kwargs):
+    def reflect(self, bind=None):
         """Proxy for Model.prepare"""
         if not self._reflected:
+            if bind is None:
+                bind = self.session(reflect=False).bind
             self.create_all()
             # autoload all tables marked for autoreflect
-            self.DeferredReflectionModel.prepare(self.engine)
+            self.DeferredReflectionModel.prepare(self.session.bind)
             self._reflected = True
 
     def create_all(self, bind=None, **kwargs):
         """Creates all tables. """
         if bind is None:
-            bind = self.engine
+            bind = self.session(reflect=False).bind
         self.metadata.create_all(bind=bind, **kwargs)
 
     def delete_all(self, bind=None, **kwargs):
         """Drop all tables. """
         if bind is None:
-            bind = self.engine
+            bind = self.session(reflect=False).bind
         with bind.connect() as con:
             trans = con.begin()
-            if bind.dialect.name == "postgresql":
-                con.execute('TRUNCATE {} RESTART IDENTITY CASCADE;'.format(
-                    ','.join(table.name
-                             for table in self.tables.values())))
-            else:
-                for table in itervalues(self.tables):
-                    con.execute(table.delete())
-            trans.commit()
+            try:
+                if bind.dialect.name == "postgresql":
+                    con.execute('TRUNCATE {} RESTART IDENTITY CASCADE;'.format(
+                        ','.join(table.name
+                                 for table in self.tables.values())))
+                else:
+                    for table in itervalues(self.tables):
+                        con.execute(table.delete())
+                trans.commit()
+            except:
+                trans.rollback()
+                raise
 
     def __contains__(self, member):
         return member in self.tables or member in self.models
@@ -516,4 +521,8 @@ class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
         elif kwargs.pop('atomic', False):
             return atomic_session(self, **kwargs)
         else:
-            return super(scoped_session, self).__call__(**kwargs)
+            reflect = kwargs.pop('reflect', True)
+            session = super(scoped_session, self).__call__(**kwargs)
+            if reflect:
+                self.db.reflect(bind=session.bind)
+            return session
