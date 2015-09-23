@@ -79,7 +79,7 @@ def load_fixtures(db, filename, ref_time=None, clear=False, time_columns=()):
     for fixture in data:
         if "table" in fixture:
             table = db[fixture['table']]
-            db.engine.execute(table.insert(), fixture['records'])
+            db.session.execute(table.insert(), fixture['records'])
         else:
             model = db[fixture['model']]
             db.session.bulk_insert_mappings(model, fixture['records'])
