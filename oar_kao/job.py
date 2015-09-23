@@ -39,7 +39,7 @@ logger = get_logger("oar.kamelot")
                   [                  # first moldable instance
                      (1, 60,         # moldable id, walltime
                       # list of requests composed of
-                      [  ( [("node", 2)], [(1,32)] ) ]
+                      [  ( [("node", 2), ("resource_id", 4)], [(1,32)] ) ]
                   )                  # list of hierarchy request and filtered
                  ]                   # resources (Properties)
 
