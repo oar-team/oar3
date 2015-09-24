@@ -805,7 +805,7 @@ def insert_job(**kwargs):
         res_grps.append(res_grp)
 
     result = db.session.execute(MoldableJobDescription.__table__.insert(),
-                               mld_jid_walltimes)
+                                mld_jid_walltimes)
 
     if len(mld_jid_walltimes) == 1:
         mld_ids = [result.inserted_primary_key[0]]
@@ -828,7 +828,7 @@ def insert_job(**kwargs):
             res_hys.append(res_hy)
 
         result = db.session.execute(JobResourceGroup.__table__.insert(),
-                                   mld_id_property)
+                                    mld_id_property)
 
         if len(mld_id_property) == 1:
             grp_ids = [result.inserted_primary_key[0]]
@@ -848,7 +848,7 @@ def insert_job(**kwargs):
                                         'res_job_order': idx})
 
             db.session.execute(JobResourceDescription.__table__.insert(),
-                              res_description)
+                               res_description)
 
     if types:
         ins = [{'job_id': job_id, 'type': typ} for typ in types]

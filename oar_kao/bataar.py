@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
+# BatAar: BatSim Adaptor for OAR
 from __future__ import unicode_literals, print_function
 
-import argparse
+import pdb
+
 import struct
 import socket
 import sys
 import os
 import json
+import click
+
 if sys.version_info[0] == 2:
     from sets import Set
 
@@ -20,6 +24,8 @@ from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.interval import itvs2ids
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
+
+import oar.kao.advanced_scheduling
 
 from oar.kao.meta_sched import meta_schedule
 import oar.kao.utils
@@ -59,8 +65,8 @@ BATSIM_DEFAULT_CONFIG = {
 # config.clear()
 # config.update(BATSIM_DEFAULT_CONFIG)
 
-#config['LOG_FILE'] = '/tmp/yop'
 
+config['LOG_FILE'] = '/tmp/batsim.log'
 logger = get_logger("oar.batsim")
 
 jobs = {}
@@ -192,7 +198,7 @@ def restore_oar_kao_utils():
     oar.kao.utils.notify_user = orig_func['notify_user']
 
 
-def db_initialization(nb_res):
+def db_initialization(nb_res, node_size=None):
 
     print("Set default queue")
     db.add(Queue(name='default', priority=3, scheduler_policy='kamelot', state='Active'))
@@ -201,10 +207,6 @@ def db_initialization(nb_res):
     # add some resources
     for i in range(nb_res):
         db.add(Resource(network_address="localhost"))
-
-
-def db_add_job():
-    pass
 
 
 class BatEnv(object):
@@ -321,7 +323,54 @@ class BatSched(object):
 ##############
 
 
-def main(wkp_filename, database_mode):
+@click.command()
+@click.argument('wkp_filename', required=True)
+@click.option('-d', '--database-mode', default='no-db',
+              help='select database mode (no-db, memory, oarconf)')
+@click.option('-t', '--types', default='',
+              help="types added to each jobs ex 'find=contiguous_1h,assign=one_time_find'")
+@click.option('-s', '--socket', default='/tmp/bat_socket',
+              help="name of socket to comminication with BatSim simulator")
+@click.option('-S', '--node_size', type=int,
+              help="size of node used for 2 levels hierarachy")
+@click.option('-p', '--scheduler_policy', type=click.STRING,
+              help="select a particular scheduler policy:\
+              BASIC | 0 | : \
+              * Equivalent to Conservative Backfilling for OAR (default)\
+              BEST_EFFORT_CONTIGUOUS | 1 |\
+              * Keep assignment with lower end time\
+              between contiguous and default polices. Contiguous policy is considered first, walltime is \
+              the same for each policy, contiguous assignment is retained if end times are equal\
+              CONTIGUOUS | 2 |\
+              * Allocated resources will have consecutive resouce_id\
+              BEST_EFFORT_LOCAL | 3 |\
+              * Keep assignment with lower end time\
+              between local and default polices. Local policy is considered first, walltime is \
+              the same for each policy, contiguous assignment is retained if end times are equal\
+              LOCAL | 4 |\
+              * Allocated resources which belongs to the same node. Node's size must be provided,\
+              job's sizes are not allowed to exceed node's size.")
+def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, types):
+
+    # pdb.set_trace()    
+    if database_mode == 'memory':
+        config.clear()
+        config.update(BATSIM_DEFAULT_CONFIG)
+    sp = scheduler_policy
+
+    if sp == 'BASIC' or sp == '0':
+        print("BASIC scheduler_policy selected")
+        # default
+        pass
+    elif sp == 'BEST_EFFORT_CONTIGUOUS' or sp == '1':
+        print("BEST_EFFORT_CONTIGUOUS scheduler_policy selected")
+    elif sp == 'CONTIGUOUS' or sp == '2':
+        print("CONTIGUOUS scheduler_policy selected")
+
+    elif sp == 'BEST_EFFORT_LOCAL' or sp == '3':
+        print("BEST_EFFORT_LOCAL scheduler_policy selected")
+    elif sp == 'LOCAL' or sp == '4':
+        print("LOCAL scheduler_policy selected")
 
     #
     # Load workload
@@ -330,6 +379,24 @@ def main(wkp_filename, database_mode):
     json_jobs, nb_res = load_json_workload_profile(wkp_filename)
 
     print("nb_res:", nb_res)
+
+    assign = False
+    assign_func = None
+    find = False
+    find_func = None
+
+    if types and types != '':
+        types_array = types.split(',')
+        for type_value in types_array:
+            t, v = type_value.split('=')
+            if t == "assign":
+                print("type assign with function: ", v)
+                assign = True
+                assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + v)
+            if t == "find":
+                print("type find with function: ", v)
+                find = True
+                find_func = getattr(oar.kao.advanced_scheduling, 'find_' + v)
 
     if database_mode == 'no-db':
         #
@@ -367,9 +434,10 @@ def main(wkp_filename, database_mode):
                                 deps=[],
                                 key_cache={},
                                 ts=False, ph=0,
-                                assign=False, find=False)
+                                assign=assign, assign_func=assign_func,
+                                find=find, find_func=find_func)
 
-        BatSched(res_set, jobs, 'simu', {}).run()
+        BatSched(res_set, jobs, 'simu', {}, 5, socket).run()
 
     elif database_mode == 'memory':
 
@@ -403,25 +471,14 @@ def main(wkp_filename, database_mode):
                        state='Hold', properties='', user='')
             db_jid2s_jid[i + 1] = jid
 
-        db.flush()
+        db.flush()  # TO REMOVE
 
-        BatSched([], jobs, 'batsim-db', db_jid2s_jid).run()
+        BatSched([], jobs, 'batsim-db', db_jid2s_jid, 5, socket).run()
 
         if __name__ != '__main__':
             # If used oar.kao.utils' functions are used after we need to undo monkeypatching.
             # Main use case is suite testing evaluation
             restore_oar_kao_utils()
 
-if __name__ == '__main__':  # pragma: no cover
-    parser = argparse.ArgumentParser(description='Adaptor to run oar-kao with BatSim.')
-    parser.add_argument('wkp_filename', metavar='F',
-                        help='a file which contains the workload profile.')
-    parser.add_argument('--database-mode', default='no-db',
-                        help="select database mode (no-db, memory, oarconf)")
-    args = parser.parse_args()
-    print(args)
-    if args.database_mode == 'memory':
-        config.clear()
-        config.update(BATSIM_DEFAULT_CONFIG)
-
-    main(args.wkp_filename, args.database_mode)
+# if __name__ == '__main__':  # pragma: no cover
+#    bataar()
