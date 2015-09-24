@@ -1,7 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-from oar.kao.batsim import main
 import pytest
+from click.testing import CliRunner
+from oar.kao.bataar import bataar
 import socket
 import struct
 import sys
@@ -73,7 +74,7 @@ def minimal_db_initialization(request):
         yield
 
 
-def test_batsim_no_db_1():
+def test_bataar_no_db_1():
 
     global recv_msgs
     recv_msgs = [
@@ -81,19 +82,30 @@ def test_batsim_no_db_1():
         '0:19.168395|19.168395:C:1'
     ]
     path = os.path.dirname(os.path.abspath(__file__))
-    main(path + '/batsim-workload.json', 'no-db')
+    wpf = path + '/batsim-workload.json'
+    print(wpf)
+    runner = CliRunner()
+    result = runner.invoke(bataar, [wpf, '-dno-db'])
+    print(result.exit_code)
+    # print(result.output)
     print("Messages sent:", sent_msgs)
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
 
 
-def test_batsim_db():
+def test_bataar_db():
     global recv_msgs
     recv_msgs = [
         '0:10.000015|10.000015:S:1',
         '0:19.168395|19.168395:C:1'
     ]
+
     path = os.path.dirname(os.path.abspath(__file__))
-    main(path + '/batsim-workload.json', 'memory')
+    wpf = path + '/batsim-workload.json'
+
+    runner = CliRunner()
+    result = runner.invoke(bataar, [wpf, '-dmemory'])
+    print(result.exit_code)
 
     print("Messages sent:", sent_msgs)
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
