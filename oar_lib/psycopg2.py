@@ -27,7 +27,7 @@ def serialize_rows_to_csv(rows, null_value, output):
                 yield "%s" % value
 
     for row in rows:
-        output.write("\t".join(escape_row(row)) + "\n")
+        output.write(("\t".join(escape_row(row)) + "\n").encode('utf-8'))
 
 
 def sqlalchemy_struct_mapper_type(columns):
