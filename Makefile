@@ -62,7 +62,7 @@ testall:  ## Run tests on every Python version with tox
 
 coverage: ## Check code coverage quickly with the default Python
 	coverage erase
-	tox
+	tox $(TOX)
 	coverage combine
 	coverage report --include=* -m
 	coverage html
