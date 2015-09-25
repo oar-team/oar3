@@ -460,66 +460,12 @@ def read_only_session(scoped, **kwargs):
                             "database")
 
 
-@contextmanager
-def ephemeral_session(scoped, **kwargs):
-    """Ephemeral session context manager.
-
-    Will rollback the transaction at the end.
-    """
-    try:
-        scoped.remove()
-        connection = scoped.db.engine.connect()
-        # begin a non-ORM transaction
-        transaction = connection.begin()
-        kwargs['bind'] = connection
-        session = scoped(**kwargs)
-        yield session
-    finally:
-        session.close()
-        # rollback - everything that happened with the
-        # Session above (including calls to commit())
-        # is rolled back.
-        transaction.rollback()
-        # return connection to the Engine
-        connection.close()
-        scoped.remove()
-
-
-@contextmanager
-def atomic_session(scoped, **kwargs):
-    """Transaction context manager.
-
-    Will commit the transaction on successful completion
-    of the block, or roll it back on error.
-
-    Supports nested usage (via savepoints).
-
-    """
-    try:
-        session = scoped(**kwargs)
-        in_atomic = getattr(session, '_in_atomic', False)
-        if not in_atomic:
-            session.begin_nested()
-            session._in_atomic = True
-        yield session
-    except:
-        # rollback - everything that happened with the Session
-        session.rollback()
-        raise
-    else:
-        session.commit()
-    finally:
-        if in_atomic:
-            session._in_atomic = False
+        yield scoped(**kwargs)
 
 class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
     def __call__(self, **kwargs):
         if kwargs.pop('read_only', False):
             return read_only_session(self, **kwargs)
-        elif kwargs.pop('ephemeral', False):
-            return ephemeral_session(self, **kwargs)
-        elif kwargs.pop('atomic', False):
-            return atomic_session(self, **kwargs)
         else:
             reflect = kwargs.pop('reflect', True)
             session = super(scoped_session, self).__call__(**kwargs)

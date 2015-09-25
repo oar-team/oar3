@@ -38,14 +38,14 @@ def setup_config(request):
         config['DB_BASE_LOGIN_RO'] = 'oar'
         config['DB_HOSTNAME'] = 'localhost'
 
-    db.create_all()
-    with db.session(ephemeral=True, reflect=False):
-        kw = {"nullable": True}
-        db.op.add_column('resources', db.Column('core', db.Integer, **kw))
-        db.op.add_column('resources', db.Column('cp', db.Integer, **kw))
-        db.op.add_column('resources', db.Column('host', db.String(255), **kw))
-        db.op.add_column('resources', db.Column('mem', db.Integer, **kw))
-        db.reflect()
-        yield
-
+    db.metadata.drop_all(bind=db.engine)
+    db.create_all(bind=db.engine)
+    # with db.session(ephemeral=True, reflect=False):
+    kw = {"nullable": True}
+    db.op.add_column('resources', db.Column('core', db.Integer, **kw))
+    db.op.add_column('resources', db.Column('cp', db.Integer, **kw))
+    db.op.add_column('resources', db.Column('host', db.String(255), **kw))
+    db.op.add_column('resources', db.Column('mem', db.Integer, **kw))
+    db.reflect()
+    yield
     shutil.rmtree(tempdir)

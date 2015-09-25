@@ -42,8 +42,8 @@ class EngineListener(object):
                                   .rstrip('\n')
 
 
-@pytest.fixture
-def db(request, monkeypatch):
+@pytest.fixture(scope='function')
+def db(request):
     db = Database(uri='sqlite://')
 
     association_table = db.Table(
