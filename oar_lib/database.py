@@ -8,7 +8,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
-from sqlalchemy import create_engine, inspect, event
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
                                         DeclarativeMeta)
@@ -21,7 +21,7 @@ from alembic.operations import Operations
 
 from .utils import cached_property, merge_dicts, get_table_name, to_json
 from .compat import iteritems, itervalues, iterkeys, reraise
-from .exceptions import DatabaseError
+
 
 __all__ = ['Database']
 
@@ -122,10 +122,10 @@ class Database(object):
     query_class = None
     query_collection_class = None
 
-    def __init__(self, uri=None, session_options=None):
+    def __init__(self, uri=None, uri_ro=None, session_options=None):
         self.connector = None
         self._reflected = False
-        self._cache = {"uri": uri}
+        self._cache = {"uri": uri, "uri_ro": uri_ro}
         self._session_options = dict(session_options or {})
         self._session_options.setdefault('autoflush', True)
         self._session_options.setdefault('autocommit', False)
@@ -149,6 +149,11 @@ class Database(object):
     def uri(self):
         from oar.lib import config
         return config.get_sqlalchemy_uri()
+
+    @cached_property
+    def uri_ro(self):
+        from oar.lib import config
+        return config.get_sqlalchemy_uri(read_only=True)
 
     @property
     def op(self):
@@ -424,29 +429,28 @@ def read_only_session(scoped, **kwargs):
     """
     dialect = scoped.db.engine.dialect.name
     if dialect == 'postgresql':
-        @event.listens_for(scoped.db.engine, 'begin')
-        def set_pgsql_read_only(conn):
-            conn.execute('SET TRANSACTION READ ONLY')
         try:
-            scoped.remove()
-            session = scoped(**kwargs)
+            kwargs['bind'] = create_engine(scoped.db.uri_ro)
+            session = scoped.session_factory(**kwargs)
+            old_session = None
+            if scoped.registry.has():
+                old_session = scoped.registry()
+                scoped.registry.clear()
+            scoped.registry.set(session)
             yield session
-        except:
-            raise
         finally:
-            session.close()
-            event.remove(scoped.db.engine, 'begin', set_pgsql_read_only)
             scoped.remove()
+            if old_session is not None:
+                scoped.registry.set(old_session)
     elif dialect == "sqlite":
         import sqlite3
         sqlite_path = scoped.db.engine.url.database
         if not sqlite_path:
-            yield session
+            yield scoped(**kwargs)
         else:
             try:
                 def creator():
-                    return sqlite3.connect('file:%s?mode=ro' % sqlite_path,
-                                           uri=True)
+                    return sqlite3.connect('file:%s?mode=ro' % sqlite_path)
 
                 kwargs['bind'] = create_engine('sqlite://', creator=creator)
                 scoped.remove()
@@ -456,10 +460,6 @@ def read_only_session(scoped, **kwargs):
                 session.close()
                 scoped.remove()
     else:
-        raise DatabaseError("Cannot start a read-only session for this "
-                            "database")
-
-
         yield scoped(**kwargs)
 
 class scoped_session(sqlalchemy.orm.scoped_session):  # noqa

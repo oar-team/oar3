@@ -34,8 +34,8 @@ def setup_config(request):
         config['DB_BASE_NAME'] = 'oar'
         config['DB_BASE_PASSWD'] = 'oar'
         config['DB_BASE_LOGIN'] = 'oar'
-        config['DB_BASE_PASSWD_RO'] = 'oar'
-        config['DB_BASE_LOGIN_RO'] = 'oar'
+        config['DB_BASE_PASSWD_RO'] = 'oar_ro'
+        config['DB_BASE_LOGIN_RO'] = 'oar_ro'
         config['DB_HOSTNAME'] = 'localhost'
 
     db.metadata.drop_all(bind=db.engine)

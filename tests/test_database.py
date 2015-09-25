@@ -7,7 +7,7 @@ from codecs import open
 
 from sqlalchemy import event, Table
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.orm.util import object_state
 from collections import OrderedDict
 
@@ -292,3 +292,19 @@ def test_load_fixtures(db, tmpdir):
 
     with assert_raises(IntegrityError):
         fixture.load_fixtures(db, filepath)
+
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'memory'",
+                    reason="need persistent database")
+def test_read_only_session():
+    from oar.lib import db
+    lenght = len(db['Resource'].query.all())
+    if db.dialect == "sqlite":
+        exception = OperationalError
+    else:
+        exception = ProgrammingError
+    with assert_raises(exception):
+        with db.session(read_only=True):
+            assert len(db['Resource'].query.all()) == lenght
+            db['Resource'].create()
+    len(db['Resource'].query.all()) == lenght
