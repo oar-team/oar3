@@ -4,24 +4,34 @@ import pytest
 
 from oar.lib.models import all_models, all_tables
 from oar.lib.fixture import load_fixtures
-from oar.lib import db
 
 REFTIME = 1437050120
 
 
-@pytest.fixture(autouse=True)
-def setup_db(request):
-    # populate database
-    here = os.path.abspath(os.path.dirname(__file__))
-    filename = os.path.join(here, "data", "dataset_1.json")
-    load_fixtures(db, filename, ref_time=REFTIME, clear=True)
+@pytest.yield_fixture
+def db(request):
+    """Creates a new database session for a test."""
+    from oar.lib import db
 
-    db.session.flush()
-    db.session.expunge_all()
-    db.session.commit()
+    connection = db.engine.connect()
+    transaction = connection.begin()
+
+    db.session.remove()
+    db.session(bind=connection)
+
+    try:
+        here = os.path.abspath(os.path.dirname(__file__))
+        filename = os.path.join(here, "data", "dataset_1.json")
+        load_fixtures(db, filename, ref_time=REFTIME, clear=False)
+        yield db
+    finally:
+        transaction.rollback()
+        connection.close()
+        db.session.remove()
 
 
 def test_simple_models():
+    from oar.lib import db
     expected_models = [
         'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
         'EventLog', 'EventLogHostname', 'File', 'FragJob',
@@ -39,7 +49,7 @@ def test_simple_models():
     assert len(dict(all_tables()).keys()) == len(expected_models) + 1
 
 
-def test_get_jobs_for_user_query():
+def test_get_jobs_for_user_query(db):
     jobs = db.queries.get_jobs_for_user("user1").all()
     assert len(jobs) == 2
     assert jobs[0].id == 5
