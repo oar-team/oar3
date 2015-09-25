@@ -331,7 +331,7 @@ class BatSched(object):
               help="types added to each jobs ex 'find=contiguous_1h,assign=one_time_find'")
 @click.option('-s', '--socket', default='/tmp/bat_socket',
               help="name of socket to comminication with BatSim simulator")
-@click.option('-S', '--node_size', type=int,
+@click.option('-n', '--node_size', default=0,
               help="size of node used for 2 levels hierarachy")
 @click.option('-p', '--scheduler_policy', type=click.STRING,
               help="select a particular scheduler policy:\
@@ -351,26 +351,41 @@ class BatSched(object):
               * Allocated resources which belongs to the same node. Node's size must be provided,\
               job's sizes are not allowed to exceed node's size.")
 def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, types):
-
-    # pdb.set_trace()    
+    # pdb.set_trace()
     if database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
-    sp = scheduler_policy
 
+    assign = False
+    assign_func = None
+    find = False
+    find_func = None
+
+    add_1h = False  # control addition of one level of hierarchy in resources' request
+    add_mld = False  # control addition of one modldable instance in resources' request
+
+    sp = scheduler_policy
     if sp == 'BASIC' or sp == '0':
         print("BASIC scheduler_policy selected")
         # default
         pass
     elif sp == 'BEST_EFFORT_CONTIGUOUS' or sp == '1':
         print("BEST_EFFORT_CONTIGUOUS scheduler_policy selected")
+        find = True
+        find_func = getattr(oar.kao.advanced_scheduling, 'find_contiguous_1h')
+        assign = True
+        assign_func = getattr(oar.kao.advanced_scheduling, 'assign_one_time_find')
     elif sp == 'CONTIGUOUS' or sp == '2':
         print("CONTIGUOUS scheduler_policy selected")
-
+        find = True
+        find_func = getattr(oar.kao.advanced_scheduling, 'find_contiguous_1h')
     elif sp == 'BEST_EFFORT_LOCAL' or sp == '3':
         print("BEST_EFFORT_LOCAL scheduler_policy selected")
+        add_1h = True
+        add_mld = True
     elif sp == 'LOCAL' or sp == '4':
         print("LOCAL scheduler_policy selected")
+        add_1h = True
 
     #
     # Load workload
@@ -379,11 +394,6 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
     json_jobs, nb_res = load_json_workload_profile(wkp_filename)
 
     print("nb_res:", nb_res)
-
-    assign = False
-    assign_func = None
-    find = False
-    find_func = None
 
     if types and types != '':
         types_array = types.split(',')
@@ -404,21 +414,43 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         #
 
         hy_resource_id = [[(i, i)] for i in range(nb_res)]
+        hierarchy = {'resource_id': hy_resource_id}
+        if node_size > 0:
+            node_id = [[(node_size*i, node_size*(i+1)-1)] for i in range(int(nb_res/node_size))]
+            hierarchy['node'] = node_id
         res_set = ResourceSetSimu(
             rid_i2o=range(nb_res),
             rid_o2i=range(nb_res),
             roid_itvs=[(0, nb_res - 1)],
-            hierarchy={'resource_id': hy_resource_id},
+            hierarchy=hierarchy,
             available_upto={2147483600: [(0, nb_res - 1)]}
         )
 
         #
         # prepare jobs
         #
-
+        mld_id = 1
         for j in json_jobs:
             print("Genererate jobs")
-            jid = int(j["id"])
+            jid = int(j['id'])
+            rqb = [([('resource_id', j['res'])], [(0, nb_res - 0)])]
+            rqbh = [('node', node_size), ([('resource_id', j['res'])], [(0, nb_res - 0)])]
+
+            if add_1h:
+                if add_mld:
+                    mld_res_rqts = [(mld_id, j["walltime"], rqbh), (mld_id+1, j["walltime"], rqb)]
+                    mld_id += 2
+                else:
+                    mld_res_rqts = [(mld_id, j["walltime"], rqbh)]
+                    mld_id += 1
+            else:
+                if add_mld:
+                    mld_res_rqts = [(mld_id, j["walltime"], rqb), (mld_id+1, j["walltime"], rqb)]
+                    mld_id += 2
+                else:
+                    mld_res_rqts = [(mld_id, j["walltime"], rqb)]
+                    mld_id += 1
+
             jobs[jid] = JobSimu(id=jid,
                                 state="Waiting",
                                 queue="test",
@@ -427,9 +459,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                                 types={},
                                 res_set=[],
                                 moldable_id=0,
-                                mld_res_rqts=[(jid, j["walltime"],
-                                               [([("resource_id", j["res"])],
-                                                 [(0, nb_res - 0)])])],
+                                mld_res_rqts=mld_res_rqts,
                                 run_time=0,
                                 deps=[],
                                 key_cache={},
@@ -471,7 +501,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                        state='Hold', properties='', user='')
             db_jid2s_jid[i + 1] = jid
 
-        db.flush()  # TO REMOVE
+        db.flush()  # TO REMOVE ???
 
         BatSched([], jobs, 'batsim-db', db_jid2s_jid, 5, socket).run()
 
@@ -480,5 +510,5 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
             # Main use case is suite testing evaluation
             restore_oar_kao_utils()
 
-# if __name__ == '__main__':  # pragma: no cover
-#    bataar()
+if __name__ == '__main__':  # pragma: no cover
+    bataar()

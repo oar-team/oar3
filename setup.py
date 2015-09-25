@@ -58,7 +58,10 @@ setup(
         'Topic :: System :: Clustering',
     ],
     entry_points='''
-        [console_scripts]
-        kao=oar_kao:kao
+    [console_scripts]
+    kao=oar_kao:kao
+    kamelot=oar_kao:kamelot
+    kamelot_fifo=oar_kao:kamelot_fifo
+    bataar=oar_kao.bataar:bataar
     ''',
 )
