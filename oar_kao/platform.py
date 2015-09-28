@@ -5,10 +5,10 @@ import time
 
 from oar.lib.compat import iteritems
 
-from oar.kao.resource import ResourceSet
+from oar.lib.resource import ResourceSet
 from oar.kao.job import (get_waiting_jobs, get_data_jobs, get_scheduled_jobs,
                          save_assigns)
-from oar.kao.interval import itvs2ids, unordered_ids2itvs
+from oar.lib.interval import itvs2ids, unordered_ids2itvs
 from oar.kao.karma import (get_sum_accounting_window, get_sum_accounting_by_project,
                            get_sum_accounting_by_user)
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-from oar.kao.interval import equal_itvs
+from oar.lib.interval import equal_itvs
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, MAX_TIME
 

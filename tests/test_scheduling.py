@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, print_function
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet
-from oar.kao.interval import equal_itvs
+from oar.lib.interval import equal_itvs
 from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
                                 schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)

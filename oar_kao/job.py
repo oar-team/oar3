@@ -15,11 +15,11 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      get_logger, config)
 from oar.lib.compat import iteritems, itervalues
 
-from oar.kao.utils import (update_current_scheduler_priority, add_new_event)
+from oar.lib.tools import (update_current_scheduler_priority, add_new_event)
 
-import oar.kao.utils as utils
+import oar.lib.tools as tools
 
-from oar.kao.interval import unordered_ids2itvs, itvs2ids, sub_intervals
+from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
 logger = get_logger("oar.kamelot")
 
@@ -119,10 +119,16 @@ def get_jobs_types(jids, jobs):
             job.ph_name = t_v[1]
         elif t == "assign":
             job.assign = True
-            job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + t_v[1])
+            f_p = t_v[1].split(':')
+            job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + f_p[0])
+            if len(f_p) == 2:
+                job.assign_params = f_p[1]
         elif t == "find":
             job.find = True
-            job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + t_v[1])
+            f_p = t_v[1].split(':')
+            job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + f_p[0])
+            if len(f_p) == 2:
+                job.find_params = f_p[1]
         else:
             if len(t_v) == 2:
                 v = t_v[1]
@@ -594,7 +600,7 @@ def set_job_state(jid, state):
         logger.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
 
-        date = utils.get_date()
+        date = tools.get_date()
 
         # TODO: optimize job log
         db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
@@ -608,11 +614,11 @@ def set_job_state(jid, state):
            state == "Running" or state == "Suspended" or state == "Resuming":
             job = db.query(Job).filter(Job.id == jid).one()
             if state == "Suspend":
-                utils.notify_user(job, "SUSPENDED", "Job is suspended.")
+                tools.notify_user(job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
-                utils.notify_user(job, "RESUMING", "Job is resuming.")
+                tools.notify_user(job, "RESUMING", "Job is resuming.")
             elif state == "Running":
-                utils.notify_user(job, "RUNNING", "Job is running.")
+                tools.notify_user(job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
                 update_current_scheduler_priority(job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
@@ -626,7 +632,7 @@ def set_job_state(jid, state):
                         date, int(job.assigned_moldable_job))
 
                 if state == "Terminated":
-                    utils.notify_user(job, "END", "Job stopped normally.")
+                    tools.notify_user(job, "END", "Job stopped normally.")
                 else:
                     # Verify if the job was suspended and if the resource
                     # property suspended is updated
@@ -641,7 +647,7 @@ def set_job_state(jid, state):
                             db.query(Resource).update(
                                 {Resource.suspended_jobs: 'NO'})
 
-                    utils.notify_user(
+                    tools.notify_user(
                         job, "ERROR", "Job stopped abnormally or an OAR error occured.")
 
                 update_current_scheduler_priority(job, "-2", "STOP")
@@ -649,7 +655,7 @@ def set_job_state(jid, state):
                 # Here we must not be asynchronously with the scheduler
                 log_job(job)
                 # $dbh is valid so these 2 variables must be defined
-                nb_sent = utils.notify_almighty("ChState")
+                nb_sent = tools.notify_almighty("ChState")
                 if nb_sent == 0:
                     logger.warn("Not able to notify almighty to launch the job " +
                                 str(job.id) + " (socket error)")
@@ -884,7 +890,7 @@ def frag_job(jid):
 
         if len(res) == 0:
 
-            date = utils.get_date()
+            date = tools.get_date()
             frajob = FragJob(job_id=jid, date=date)
             db.add(frajob)
             add_new_event("FRAG_JOB_REQUEST",

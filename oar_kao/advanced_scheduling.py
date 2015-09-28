@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, print_function
 from copy import deepcopy
 import oar.kao.scheduling
-from oar.kao.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
+from oar.lib.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
                               aggregate_itvs)
 
 # assign_resources_mld_job_split_slots, find_resource_hierarchies_job

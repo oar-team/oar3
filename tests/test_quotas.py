@@ -7,11 +7,11 @@ from copy import deepcopy
 from tempfile import mkstemp
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet
-from oar.kao.interval import equal_itvs
+from oar.lib.interval import equal_itvs
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
 import oar.kao.quotas as qts
-import oar.kao.resource as rs
+import oar.lib.resource as rs
 
 from oar.lib import config, get_logger
 # import pdb

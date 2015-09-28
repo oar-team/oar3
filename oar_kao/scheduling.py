@@ -1,17 +1,17 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
-from oar.kao.hierarchy import find_resource_hierarchies_scattered
+from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
 
-from oar.kao.interval import intersec, itvs_size
+from oar.lib.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 
 from oar.lib import get_logger, config
 from oar.lib.compat import iteritems
 
 # for quotas
-import oar.kao.resource as rs
+import oar.lib.resource as rs
 from oar.kao.quotas import check_slots_quotas
 
 

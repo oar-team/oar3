@@ -6,8 +6,8 @@ from oar.lib import config, db
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
-import oar.kao.utils  # for monkeypatching
-from oar.kao.utils import get_date
+import oar.lib.tools  # for monkeypatching
+from oar.lib.tools import get_date
 
 
 @pytest.yield_fixture(scope='function', autouse=True)
@@ -22,12 +22,12 @@ def minimal_db_initialization(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def monkeypatch_utils(request, monkeypatch):
-    monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
-    monkeypatch.setattr(oar.kao.utils, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.kao.utils, 'notify_almighty', lambda x: len(x))
-    monkeypatch.setattr(oar.kao.utils, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
-    monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'init_judas_notify_user', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
+    monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
+    monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
 def test_db_metasched_simple_1(monkeypatch):

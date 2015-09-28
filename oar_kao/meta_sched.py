@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
-from oar.kao.utils import (Popen, call, TimeoutExpired)
+from oar.lib.tools import (Popen, call, TimeoutExpired)
 from oar.lib.compat import iteritems
 
 from oar.kao.job import (get_current_not_waiting_jobs,
@@ -26,12 +26,12 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
                          resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.kao.utils import (local_to_sql, add_new_event, duration_to_sql,
-                           get_job_events, send_checkpoint_signal, Popen, call)
+from oar.lib.tools import (local_to_sql, add_new_event, duration_to_sql,
+                           get_job_events, send_checkpoint_signal)
 
-import oar.kao.utils as utils
+import oar.lib.tools as tools
 
-import oar.kao.tools as tools
+import oar.kao.tools as kao_tools
 
 from oar.kao.platform import Platform
 
@@ -42,7 +42,7 @@ from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompas
 
 from oar.kao.kamelot import internal_schedule_cycle
 
-from oar.kao.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itvs_size)
+from oar.lib.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itvs_size)
 
 from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
@@ -50,7 +50,6 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 # for quotas
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
-import pdb
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -171,7 +170,7 @@ def notify_to_run_job(jid):
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            nb_sent = utils.notify_almighty('OARRUNJOB_' + str(jid) + '\n')
+            nb_sent = tools.notify_almighty('OARRUNJOB_' + str(jid) + '\n')
             if nb_sent:
                 to_launch_jobs_already_treated[jid] = 1
                 logger.debug("Notify almighty to launch the job" + str(jid))
@@ -563,8 +562,8 @@ def meta_schedule(mode='internal', plt=Platform()):
             config['QUOTAS_FILE'] = './quotas_conf.json'
         load_quotas_rules()
 
-    utils.init_judas_notify_user()
-    utils.create_almighty_socket()
+    tools.init_judas_notify_user()
+    tools.create_almighty_socket()
 
     logger.debug(
         "Retrieve information for already scheduled reservations from \
@@ -572,7 +571,7 @@ def meta_schedule(mode='internal', plt=Platform()):
 
     # reservation ??.
 
-    initial_time_sec = utils.get_date()  # time.time()
+    initial_time_sec = tools.get_date()  # time.time()
     initial_time_sql = local_to_sql(initial_time_sec)
 
     current_time_sec = initial_time_sec
@@ -620,7 +619,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                                      current_time_sec, besteffort_rid2jid,
                                      resource_set) == 1:
         # We must kill some besteffort jobs
-        utils.notify_almighty('ChState')
+        tools.notify_almighty('ChState')
         exit_code = 2
     elif handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql) == 1:
         exit_code = 0
@@ -661,13 +660,13 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Powering off some nodes (energy saving): " + str(node_halt))
             # Using the built-in energy saving module to shut down nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('HALT', ' '.join(node_halt)):
+                if kao_tools.send_to_hulot('HALT', ' '.join(node_halt)):
                     logger.error("Communication problem with the energy saving module (Hulot)\n")
                 flag_hulot = 1
             else:
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
-                if tools.fork_and_feed_stdin(cmd, timeout_cmd, node_halt):
+                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, node_halt):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to  poweroff some nodes")
 
@@ -683,19 +682,19 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Awaking some nodes: " + str(nodes))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('WAKEUP', ' '.join(nodes)):
+                if kao_tools.send_to_hulot('WAKEUP', ' '.join(nodes)):
                     logger.error("Communication problem with the energy saving module (Hulot)")
                 flag_hulot = 1
             else:
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
-                if tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes):
+                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to wake-up some nodes ")
 
     # Send CHECK signal to Hulot if needed
     if not flag_hulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
-        if tools.send_to_hulot('CHECK', []):
+        if kao_tools.send_to_hulot('CHECK', []):
             logger.error("Communication problem with the energy saving module (Hulot)")
 
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.
@@ -723,7 +722,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                     script = config['JUST_BEFORE_RESUME_EXEC_FILE']
                     timeout = int(config['SUSPEND_RESUME_SCRIPT_TIMEOUT'])
                     if timeout is None:
-                        timeout = tools.get_default_suspend_resume_script_timeout()
+                        timeout = kao_tools.get_default_suspend_resume_script_timeout()
                     skip = 0
                     logger.debug("[" + str(job.id) + "] Running post suspend script: `" +
                                  script + " " + str(job.id) + "'")
@@ -740,7 +739,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                         logger.error(str_error)
                         add_new_event('RESUME_SCRIPT_ERROR', job.id, str_error)
                         frag_job(job.id)
-                        utils.notify_almighty('Qdel')
+                        tools.notify_almighty('Qdel')
                     skip = 1
 
                 cpuset_nodes = None
@@ -757,7 +756,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                     suspend_data_hash = {'name': cpuset_name,
                                          'job_id': job.id,
                                          'oarexec_pid_file':
-                                         tools.get_oar_pid_file_name(job.id)}
+                                         kao_tools.get_oar_pid_file_name(job.id)}
                 if cpuset_nodes:
                     # TODO
                     taktuk_cmd = config['TAKTUK_CMD']
@@ -765,7 +764,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                         suspend_file = config['SUSPEND_RESUME_FILE']
                     else:
                         # TODO
-                        suspend_file = tools.get_default_suspend_resume_file()
+                        suspend_file = kao_tools.get_default_suspend_resume_file()
 
     #
     # TODO: TOFINISH
@@ -778,7 +777,7 @@ def meta_schedule(mode='internal', plt=Platform()):
         new_start_prediction = local_to_sql(job_start_time)
         logger.debug("[" + str(job_id) + "] Notifying user of the start prediction: " +
                      new_start_prediction + "(" + job_message + ")")
-        utils.notify_tcp_socket(addr, port, "[" + initial_time_sql + "] Start prediction: " +
+        tools.notify_tcp_socket(addr, port, "[" + initial_time_sql + "] Start prediction: " +
                                 new_start_prediction + " (" + job_message + ")")
 
     # Run the decisions
@@ -791,8 +790,8 @@ def meta_schedule(mode='internal', plt=Platform()):
                 logger.debug("Notify oarsub job (num:" + str(job.id) + ") in error; jobInfo=" +
                              job.info_type)
 
-                nb_sent1 = utils.notify_tcp_socket(addr, port, job.message + '\n')
-                nb_sent2 = utils.notify_tcp_socket(addr, port, 'BAD JOB' + '\n')
+                nb_sent1 = tools.notify_tcp_socket(addr, port, job.message + '\n')
+                nb_sent2 = tools.notify_tcp_socket(addr, port, 'BAD JOB' + '\n')
                 if (nb_sent1 == 0) or (nb_sent2 == 0):
                     logger.warn(
                         "Cannot open connection to oarsub client for" + str(job.id))
@@ -806,7 +805,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug(
                 "Treate job" + str(job.id) + " in toAckReservation state")
 
-            nb_sent = utils.notify_tcp_socket(addr, port, 'GOOD RESERVATION' + '\n')
+            nb_sent = tools.notify_tcp_socket(addr, port, 'GOOD RESERVATION' + '\n')
 
             if nb_sent == 0:
                 logger.warn(

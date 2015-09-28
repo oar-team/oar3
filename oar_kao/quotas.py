@@ -5,9 +5,8 @@ from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
 from oar.lib.compat import iteritems
-
-from oar.kao.interval import itvs_size, intersec
-import oar.kao.resource as rs
+from oar.lib.interval import itvs_size, intersec
+import oar.lib.resource as rs
 
 quotas_rules = {}
 quotas_job_types = ['*']

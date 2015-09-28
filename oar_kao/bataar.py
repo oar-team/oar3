@@ -3,8 +3,6 @@
 # BatAar: BatSim Adaptor for OAR
 from __future__ import unicode_literals, print_function
 
-import pdb
-
 import struct
 import socket
 import sys
@@ -21,14 +19,14 @@ from oar.lib.compat import iteritems
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.kao.interval import itvs2ids
+from oar.lib.interval import itvs2ids
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
 import oar.kao.advanced_scheduling
 
 from oar.kao.meta_sched import meta_schedule
-import oar.kao.utils
+import oar.lib.tools
 
 offset_idx = 0
 plt = None
@@ -174,28 +172,28 @@ def load_json_workload_profile(filename):
     return wkp["jobs"], wkp["nb_res"]
 
 
-def monkeypatch_oar_kao_utils():
+def monkeypatch_oar_lib_tools():
     global orig_func
 
-    orig_func['init_judas_notify_user'] = oar.kao.utils.init_judas_notify_user
-    orig_func['create_almighty_socket'] = oar.kao.utils.create_almighty_socket
-    orig_func['notify_almighty'] = oar.kao.utils.notify_almighty
-    orig_func['notify_tcp_socket'] = oar.kao.utils.notify_tcp_socket
-    orig_func['notify_user'] = oar.kao.utils.notify_user
+    orig_func['init_judas_notify_user'] = oar.lib.tools.init_judas_notify_user
+    orig_func['create_almighty_socket'] = oar.lib.tools.create_almighty_socket
+    orig_func['notify_almighty'] = oar.lib.tools.notify_almighty
+    orig_func['notify_tcp_socket'] = oar.lib.tools.notify_tcp_socket
+    orig_func['notify_user'] = oar.lib.tools.notify_user
 
-    oar.kao.utils.init_judas_notify_user = lambda: None
-    oar.kao.utils.create_almighty_socket = lambda: None
-    oar.kao.utils.notify_almighty = lambda x: len(x)
-    oar.kao.utils.notify_tcp_socket = lambda addr, port, msg: len(msg)
-    oar.kao.utils.notify_user = lambda job, state, msg: len(state + msg)
+    oar.lib.tools.init_judas_notify_user = lambda: None
+    oar.lib.tools.create_almighty_socket = lambda: None
+    oar.lib.tools.notify_almighty = lambda x: len(x)
+    oar.lib.tools.notify_tcp_socket = lambda addr, port, msg: len(msg)
+    oar.lib.tools.notify_user = lambda job, state, msg: len(state + msg)
 
 
-def restore_oar_kao_utils():
-    oar.kao.utils.init_judas_notify_user = orig_func['init_judas_notify_user']
-    oar.kao.utils.create_almighty_socket = orig_func['create_almighty_socket']
-    oar.kao.utils.notify_almighty = orig_func['notify_almighty']
-    oar.kao.utils.notify_tcp_socket = orig_func['notify_tcp_socket']
-    oar.kao.utils.notify_user = orig_func['notify_user']
+def restore_oar_lib_tools():
+    oar.lib.tools.init_judas_notify_user = orig_func['init_judas_notify_user']
+    oar.lib.tools.create_almighty_socket = orig_func['create_almighty_socket']
+    oar.lib.tools.notify_almighty = orig_func['notify_almighty']
+    oar.lib.tools.notify_tcp_socket = orig_func['notify_tcp_socket']
+    oar.lib.tools.notify_user = orig_func['notify_user']
 
 
 def db_initialization(nb_res, node_size=None):
@@ -473,7 +471,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
 
         global offset_idx
         offset_idx = 1
-        monkeypatch_oar_kao_utils()
+        monkeypatch_oar_lib_tools()
         db_initialization(nb_res)
 
         #
@@ -506,9 +504,9 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         BatSched([], jobs, 'batsim-db', db_jid2s_jid, 5, socket).run()
 
         if __name__ != '__main__':
-            # If used oar.kao.utils' functions are used after we need to undo monkeypatching.
+            # If used oar.lib.tools' functions are used after we need to undo monkeypatching.
             # Main use case is suite testing evaluation
-            restore_oar_kao_utils()
+            restore_oar_lib_tools()
 
 if __name__ == '__main__':  # pragma: no cover
     bataar()

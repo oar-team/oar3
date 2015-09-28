@@ -4,7 +4,7 @@ from oar.lib import config
 from oar.lib.compat import iteritems
 
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
-from oar.kao.interval import intersec, sub_intervals, add_intervals
+from oar.lib.interval import intersec, sub_intervals, add_intervals
 import oar.kao.quotas as qts
 from copy import deepcopy
 

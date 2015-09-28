@@ -10,8 +10,8 @@ from oar.lib import (db, config, GanttJobsPrediction, Resource)
 from oar.kao.job import insert_job, set_jobs_start_time
 from oar.kao.meta_sched import meta_schedule
 
-import oar.kao.utils  # for monkeypatching
-from oar.kao.utils import get_date
+import oar.lib.tools  # for monkeypatching
+from oar.lib.tools import get_date
 import oar.kao.quotas as qts
 
 # import pdb
@@ -87,12 +87,12 @@ def assign_node_list(nodes):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def monkeypatch_utils(request, monkeypatch):
-    monkeypatch.setattr(oar.kao.utils, 'init_judas_notify_user', lambda: None)
-    monkeypatch.setattr(oar.kao.utils, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.kao.utils, 'notify_almighty', lambda x: len(x))
-    monkeypatch.setattr(oar.kao.utils, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
-    monkeypatch.setattr(oar.kao.utils, 'notify_user', lambda job, state, msg: len(state + msg))
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'init_judas_notify_user', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
+    monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
+    monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
     monkeypatch.setattr(oar.kao.tools, 'fork_and_feed_stdin',
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
 

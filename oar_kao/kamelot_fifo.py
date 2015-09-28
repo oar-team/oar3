@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function
 
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
-from oar.kao.interval import (intersec, sub_intervals, itvs2ids, unordered_ids2itvs)
+from oar.lib.interval import (intersec, sub_intervals, itvs2ids, unordered_ids2itvs)
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
 
 from copy import deepcopy

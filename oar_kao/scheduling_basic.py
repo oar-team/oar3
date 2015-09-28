@@ -1,10 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
-from oar.lib.compat import iteritems
-
-from oar.kao.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.interval import intersec
+from oar.lib.hierarchy import find_resource_hierarchies_scattered
+from oar.lib.interval import intersec
 from oar.kao.slot import intersec_itvs_slots, Slot
 
 
