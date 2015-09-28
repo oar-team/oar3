@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from oar.lib import db
 from oar.cli.oarsub import cli
 
-import oar.kao.utils  # for monkeypatching
+import oar.lib.tools  # for monkeypatching
 
 default_res = '/resource_id=1'
 nodes_res = 'resource_id'
@@ -48,9 +48,9 @@ def minimal_db_initialization(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def monkeypatch_utils(request, monkeypatch):
-    monkeypatch.setattr(oar.kao.utils, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.kao.utils, 'notify_almighty', lambda x: len(x))
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
 
 
 def test_oarsub_void():
@@ -62,7 +62,6 @@ def test_oarsub_void():
 def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '"sleep 1"'])
-    print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
     print(result.output)
     # job = db['Job'].query.one()
     mld_job_desc = db['MoldableJobDescription'].query.one()

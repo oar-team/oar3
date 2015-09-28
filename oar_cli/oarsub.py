@@ -8,8 +8,6 @@ import signal
 import random
 import click
 
-import pdb
-
 from copy import deepcopy
 from sqlalchemy import text, exc
 
@@ -18,13 +16,12 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobResourceGroup, JobResourceDescription, Resource,
                      config)
 
-from oar.kao.resource import ResourceSet
-from oar.kao.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.interval import intersec, unordered_ids2itvs, itvs_size
+from oar.lib.resource import ResourceSet
+from oar.lib.hierarchy import find_resource_hierarchies_scattered
+from oar.lib.interval import intersec, unordered_ids2itvs, itvs_size
 
-# TODO move oar.kao.utils to oar.lib.utils
-from oar.kao.utils import (get_date, sql_to_duration, sql_to_local)
-import oar.kao.utils as utils
+from oar.lib.tools import (get_date, sql_to_duration, sql_to_local)
+import oar.lib.tools as tools
 
 
 DEFAULT_VALUE = {
@@ -119,7 +116,7 @@ def usage():
     click.echo(ctx.get_help())
 
 
-# Move to oar.lib.utils or oar.lib.tools
+# Move to oar.lib.tool
 
 def signal_almighty(remote_host, remote_port, msg):
     print('TODO signal_almighty')
@@ -1164,8 +1161,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
     result = (job_id_lst, oar_array_id)
 
     # Notify Almigthy
-    utils.create_almighty_socket()
-    utils.notify_almighty(cmd_executor)
+    tools.create_almighty_socket()
+    tools.notify_almighty(cmd_executor)
 
     if reservation:
         # Reservation mode
