@@ -1,0 +1,12 @@
+If you want to generate RPM packages from the PYPI sources packages:
+
+    - Adapt the spec file (version number)
+    - Download the tarball from PYPI to the "SOURCES" directory::
+
+        wget https://pypi.python.org/packages/source/o/oar-lib/oar-lib-%{version}.tar.gz -O SOURCES/oar-lib-%{version}.tar.gz
+
+    - then execute the command::
+
+        rpmbuild -ba SPECS/oar.spec
+
+    - the RPM packages will be created in the "RPMS" directory
