@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+
+export PYBUILD_DESTDIR_python2=debian/python-oar-lib/
+export PYBUILD_DESTDIR_python3=debian/python3-oar-lib/
+export PYBUILD_SYSTEM=distutils
+# export PYBUILD_TEST_PYTEST=1
+
+export DH_ALWAYS_EXCLUDE=CVS:.git:.gitignore:__pycache__:src
+
+%:
+	dh $@ --with python2,python3 --buildsystem pybuild
+
+override_dh_auto_test:
+	DB_TYPE='memory' dh_auto_test --  --test-pytest
+
+override_dh_python3:
+	dh_python3 -p python3-oar-lib
+	rm -rf debian/python3-oar-lib/usr/lib/python3/dist-packages/oar-lib/test/
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf *.egg-info/ build
+	find . \( -name '*.py[co]' -or -name '\._*' -or -name '\.DS_Store' \) -delete

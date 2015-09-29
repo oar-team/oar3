@@ -1,0 +1,24 @@
+Source: oar-lib
+Maintainer: Salem Harrache <salem.harrache@inria.fr>
+Section: python
+Priority: optional
+Build-Depends: debhelper (>= 9), dh-python,
+ python-all, python3-all,
+ python-setuptools, python3-setuptools,
+ python-pytest, python3-pytest
+Standards-Version: 3.9.4
+Vcs-Git: git://github.com/oar-team/python-oar-lib.git -b debian
+Vcs-Browser: https://github.com/oar-team/python-oar-lib/tree/debian
+Homepage: http://oar.imag.fr//
+X-Python-Version: >= 2.7
+X-Python3-Version: >= 3.4
+
+Package: python-oar-lib
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: Python version of OAR Common Library
+
+Package: python3-oar-lib
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: Python version of OAR Common Library

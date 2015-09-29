@@ -1,0 +1,3 @@
+version=3
+opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/python-oar-lib-$1\.tar\.gz/ \
+  https://github.com/oar-team/python-oar-lib/tags .*/v?(\d\S*)\.tar\.gz

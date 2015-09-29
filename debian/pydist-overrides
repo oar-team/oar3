@@ -1,0 +1,2 @@
+SQLAlchemy python-sqlalchemy (>= 0.9)
+alembic python-alembic (>= 0.6)
