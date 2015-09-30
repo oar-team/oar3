@@ -85,7 +85,7 @@ class SessionProperty(object):
             db.query_class = BaseQuery
         options.setdefault('query_cls', db.query_class)
         db.sessionmaker.configure(**options)
-        scoped = scoped_session(db.sessionmaker)
+        scoped = ScopedSession(db.sessionmaker)
         scoped.db = db
         return scoped
 
@@ -487,7 +487,7 @@ def ephemeral_session(scoped, **kwargs):
         scoped.remove()
 
 
-class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
+class ScopedSession(sqlalchemy.orm.scoped_session):
     def __call__(self, **kwargs):
         if kwargs.pop('read_only', False):
             return read_only_session(self, **kwargs)
@@ -495,7 +495,7 @@ class scoped_session(sqlalchemy.orm.scoped_session):  # noqa
             return ephemeral_session(self, **kwargs)
         else:
             reflect = kwargs.pop('reflect', True)
-            session = super(scoped_session, self).__call__(**kwargs)
+            session = super(ScopedSession, self).__call__(**kwargs)
             if reflect:
                 self.db.reflect(bind=session.bind)
             return session
