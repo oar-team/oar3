@@ -1,6 +1,11 @@
 OAR lib changes
 ===============
 
+Version 0.5.0.dev0
+------------------
+
+**unreleased**
+
 Version 0.4.1
 -------------
 
