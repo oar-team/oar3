@@ -445,7 +445,7 @@ def read_only_session(scoped, **kwargs):
     elif dialect == "sqlite":
         import sqlite3
         sqlite_path = scoped.db.engine.url.database
-        if not sqlite_path:
+        if not sqlite_path or sqlite_path == ":memory:":
             yield scoped(**kwargs)
         else:
             try:

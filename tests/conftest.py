@@ -18,6 +18,7 @@ def setup_config(request):
     config["LOG_FILE"] = os.path.join(tempdir, 'oar.log')
 
     db_type = os.environ.get('DB_TYPE', 'memory')
+    os.environ.setdefault('DB_TYPE', db_type)
 
     if db_type not in ('memory', 'sqlite', 'postgresql'):
         pytest.exit("Unsupported database '%s'" % db_type)
