@@ -1,8 +1,8 @@
 Python OAR Common Library
 =========================
 
-.. image:: https://img.shields.io/travis/oar-team/python-oar-lib.svg
-        :target: https://travis-ci.org/oar-team/python-oar-lib
+.. image:: https://travis-ci.org/oar-team/python-oar-lib.svg?branch=master
+    :target: https://travis-ci.org/oar-team/python-oar-lib
 
 .. image:: https://img.shields.io/pypi/v/oar-lib.svg
         :target: https://pypi.python.org/pypi/oar-lib
