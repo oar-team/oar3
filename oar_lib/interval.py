@@ -1,5 +1,5 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
+from __future__ import print_function, absolute_import, unicode_literals
 
 from itertools import islice
 
@@ -369,7 +369,11 @@ def itvs_size(itvs):
 
 
 def aggregate_itvs(itvs):
-    """Aggregate itvs whitout gap, [(1,2), (3, 4)] => [(1,4)]"""
+    """Aggregate itvs whitout gap.
+
+    >>> aggregate_itvs([(1,2), (3, 4)])
+    [(1, 4)]
+    """
 
     if not itvs:
         return itvs
@@ -377,7 +381,7 @@ def aggregate_itvs(itvs):
     res = []
     lg = len(itvs)
     i = 1
-    a, b = itvs[i-1]
+    a, b = itvs[i - 1]
     while True:
         if i == lg:
             res.append((a, b))
