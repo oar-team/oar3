@@ -22,6 +22,9 @@ requirements = [
     'alembic',
 ]
 
+if sys.version_info[0] == 2:
+        requirements.append('subprocess32')
+
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
                     read(op.join('oar_lib', '__init__.py')),
