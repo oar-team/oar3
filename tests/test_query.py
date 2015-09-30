@@ -15,7 +15,7 @@ def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         here = os.path.abspath(os.path.dirname(__file__))
         filename = os.path.join(here, "data", "dataset_1.json")
-        load_fixtures(db, filename, ref_time=REFTIME, clear=False)
+        load_fixtures(db, filename, ref_time=REFTIME, clear=True)
         yield
 
 
