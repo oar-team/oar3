@@ -6,6 +6,7 @@ Version 1.0.0.dev0
 
 **unreleased**
 
+- Move submission core parts to oar-lib
 - Added oarsub
 
 
