@@ -1,13 +1,12 @@
 OAR lib changes
 ===============
 
-Version 0.4.0.dev0
-------------------
+Version 0.4.1
+-------------
 
-**unreleased**
+Released on September 30th 2015
 
 - [all] Switched the license to BSD
-- [all] Moved interval, hierarchy, resource and tools from oar.kao to oar-lib
 - [all] Dropped python 3.3 support
 - [all] Little code refactoring
 
