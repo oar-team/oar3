@@ -40,7 +40,7 @@ setup(
     author='Salem Harrache',
     author_email='salem.harrache@inria.fr',
     version=version,
-    description='Python version of OAR Common Library',
+    description='Python OAR Library',
     long_description=readme + '\n\n' + changelog,
     keywords='oar-lib',
     url='https://github.com/oar-team/python-oar-lib',
