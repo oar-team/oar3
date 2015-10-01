@@ -24,7 +24,7 @@ requirements = [
 ]
 
 if sys.version_info[0] == 2:
-        requirements.append('subprocess32')
+    requirements.append('subprocess32')
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -60,5 +60,5 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Clustering',
-    ]
+    ],
 )
