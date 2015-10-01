@@ -1,18 +1,24 @@
-.vagrant
-.oardocker
-*.py[co]
+*.py[cod]
 *~
 *.log
 *#
 **#
+
+# Packages
 *.egg
 *.egg-info
 dist
 build
-src/
 eggs
 parts
+bin
+var
 sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
 # Installer logs
 pip-log.txt
 
@@ -24,3 +30,24 @@ pip-log.txt
 *.tar.gz
 env
 htmlcov
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Sphinx
+docs/_build
+
+# Oar-docker
+.oardocker
+
+# Vagrant
+.vagrant
