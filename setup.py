@@ -16,7 +16,7 @@ def read(fname):
         return fd.read()
 
 readme = read('README.rst')
-history = read('CHANGES.rst').replace('.. :changelog:', '')
+changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
     'sqlalchemy',
@@ -41,7 +41,7 @@ setup(
     author_email='salem.harrache@inria.fr',
     version=version,
     description='Python version of OAR Common Library',
-    long_description=readme + '\n\n' + history,
+    long_description=readme + '\n\n' + changelog,
     keywords='oar-lib',
     url='https://github.com/oar-team/python-oar-lib',
     packages=['oar', 'oar_lib'],

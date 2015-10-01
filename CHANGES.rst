@@ -1,3 +1,5 @@
+.. :changelog:
+
 OAR lib changes
 ===============
 
