@@ -21,30 +21,15 @@ def set_env(request):
     os.environ['OARDO_USER'] = 'yop'
 
 
-@pytest.fixture(scope="module", autouse=True)
-def create_db(request):
-    db.create_all()
-    db.reflect()
-    db.delete_all()
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
-
-
-@pytest.fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost")
 
-    for i in range(5):
-        db['Resource'].create(network_address="localhost")
-
-    db['Queue'].create(name='default')
-
-    @request.addfinalizer
-    def teardown():
-        db.delete_all()
-        db.session.close()
+        db['Queue'].create(name='default')
+        yield
 
 
 @pytest.fixture(scope='function', autouse=True)
