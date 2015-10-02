@@ -13,7 +13,7 @@ from oar.lib.compat import iteritems
 from . import DEFAULT_CONFIG
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.yield_fixture(scope="session", autouse=True)
 def setup_config(request):
     config.clear()
     config.update(DEFAULT_CONFIG.copy())
@@ -49,11 +49,14 @@ def setup_config(request):
                 if not key.startswith('SQLALCHEMY_'):
                     fd.write("%s=%s\n" % (key, str(value)))
 
-    @request.addfinalizer
-    def teardown():
-        shutil.rmtree(tempdir)
-
     dump_configuration(config["CONFIG_FILE"])
-    db.create_all()
+    db.metadata.drop_all(bind=db.engine)
+    db.create_all(bind=db.engine)
+    kw = {"nullable": True}
+    db.op.add_column('resources', db.Column('core', db.Integer, **kw))
+    db.op.add_column('resources', db.Column('cpu', db.Integer, **kw))
+    db.op.add_column('resources', db.Column('host', db.String(255), **kw))
+    db.op.add_column('resources', db.Column('mem', db.Integer, **kw))
     db.reflect()
-    db.delete_all()
+    yield
+    shutil.rmtree(tempdir)
