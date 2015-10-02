@@ -22,6 +22,7 @@ OAR CLI
 
 OAR 3 Command line interface
 
+* Free software: BSD license
 * Documentation: https://oar-cli.readthedocs.org.
 
 Installation
