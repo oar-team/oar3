@@ -18,8 +18,6 @@ import os
 import re
 import datetime
 
-import sphinx_readable_theme
-
 import sphinx.environment
 from docutils.utils import get_source_line
 
@@ -31,6 +29,7 @@ def _warn_node(self, msg, node):
 sphinx.environment.BuildEnvironment.warn_node = _warn_node
 
 HERE = os.path.dirname(__file__)
+AUTHORS = ["Salem Harrache", ]
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -65,7 +64,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OAR CLI'
-copyright = u'2015, Salem Harrache'
+copyright = u'2015, Laboratoire d\'Informatique de Grenoble (http://www.liglab.fr)'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -109,7 +108,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'friendly'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -123,7 +122,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'readable'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
@@ -131,7 +130,7 @@ html_theme = 'readable'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
+# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -185,7 +184,7 @@ html_static_path = ['_static']
 
 # If true, "Created using Sphinx" is shown in the HTML footer.
 # Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer.
 # Default is True.
@@ -222,12 +221,12 @@ latex_elements = {
 latex_documents = [
     ('index', 'oar_cli.tex',
      u'OAR CLI Documentation',
-     u'Salem Harrache', 'manual'),
+      ', '.join(AUTHORS), 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at
 # the top of the title page.
-#latex_logo = None
+latex_logo = '_static/oar_logo.png'
 
 # For "manual" documents, if this is true, then toplevel headings
 # are parts, not chapters.
@@ -240,7 +239,7 @@ latex_documents = [
 #latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-#latex_appendices = []
+latex_appendices = ["changelog"]
 
 # If false, no module index is generated.
 #latex_domain_indices = True
@@ -253,7 +252,7 @@ latex_documents = [
 man_pages = [
     ('index', 'oar_cli',
      u'OAR CLI Documentation',
-     [u'Salem Harrache'], 1)
+     AUTHORS, 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -268,9 +267,9 @@ man_pages = [
 texinfo_documents = [
     ('index', 'oar_cli',
      u'OAR CLI Documentation',
-     u'Salem Harrache',
+     ', '.join(AUTHORS),
      'oar-cli',
-     'One line description of project.',
+     'OAR 3 Command line interface.',
      'Miscellaneous'),
 ]
 
@@ -285,3 +284,12 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+try:
+    import oar_theme
+    html_theme = 'oar'
+    html_theme_path = oar_theme.get_html_theme_path()
+    html_sidebars = oar_theme.default_sidebars()
+except:
+    import warnings
+    warnings.warn("Missing oar theme, used default theme")
