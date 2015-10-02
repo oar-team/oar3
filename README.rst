@@ -4,6 +4,8 @@ OAR CLI
 
 OAR 3 Command line interface
 
+* Documentation: https://oar-cli.readthedocs.org.
+
 Installation
 ============
 
