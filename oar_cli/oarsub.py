@@ -19,7 +19,7 @@ import oar.lib.tools as tools
 
 
 DEFAULT_VALUE = {
-    'directory': os.environ['PWD'],
+    'directory': os.getcwd(),
     'project': 'default',
     'signal': 12
     }
