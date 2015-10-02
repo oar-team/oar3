@@ -226,7 +226,7 @@ latex_documents = [
 
 # The name of an image file (relative to this directory) to place at
 # the top of the title page.
-latex_logo = '_static/oar_logo.png'
+# latex_logo = '_static/oar_logo.png'
 
 # For "manual" documents, if this is true, then toplevel headings
 # are parts, not chapters.
@@ -239,7 +239,7 @@ latex_logo = '_static/oar_logo.png'
 #latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-latex_appendices = ["changelog"]
+latex_appendices = ["changes"]
 
 # If false, no module index is generated.
 #latex_domain_indices = True
