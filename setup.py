@@ -20,6 +20,7 @@ changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
     'oar-lib',
+    'sqlalchemy_utils',
     'tabulate',
     'click',
 ]
