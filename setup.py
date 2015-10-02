@@ -27,7 +27,7 @@ setup(
     author='Salem Harrache',
     author_email='salem.harrache@inria.fr',
     version=get_version(),
-    url='https://github.com/oar-team/python-oar-cli',
+    url='https://github.com/oar-team/oar-cli',
     packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,

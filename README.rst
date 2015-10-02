@@ -1,8 +1,8 @@
-==============
-Python OAR CLI
-==============
+=======
+OAR CLI
+=======
 
-OAR Command line interface
+OAR 3 Command line interface
 
 Installation
 ============
@@ -19,7 +19,7 @@ You can install, upgrade, uninstall oar-cli with these commands::
 
 Or from git (last development version)::
 
-  $ pip install git+https://github.com/oar-team/python-oar-cli.git
+  $ pip install git+https://github.com/oar-team/oar-cli.git
 
 Or if you already pulled the sources::
 
