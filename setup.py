@@ -36,7 +36,7 @@ setup(
     author="Salem Harrache",
     author_email='salem.harrache@inria.fr',
     version=version,
-    url='https://github.com/oar-team/python-oar-rest-api',
+    url='https://github.com/oar-team/oar-rest-api',
     packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
