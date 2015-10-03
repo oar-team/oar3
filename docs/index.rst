@@ -6,7 +6,7 @@
 OAR Library documentation
 =========================
 
-.. include:: readme.rst
+.. include:: ../README.rst
 
 Contents:
 
@@ -16,5 +16,4 @@ Contents:
    installation
    usage
    contributing
-   authors
    changes
