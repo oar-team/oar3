@@ -1,24 +1,33 @@
-============
+.. _installation:
+
 Installation
 ============
 
 Requirements:
-  - python >= 2.7
+  - python 2.7 or python >= 3.4
 
-You can install, upgrade, uninstall oar-rest-api with these commands::
+You can install, upgrade, uninstall oar-rest-api with these commands
 
-  $ pip install [--user] oar-rest-api
-  $ pip install [--user] --upgrade oar-rest-api
-  $ pip uninstall oar-rest-api
+.. code:: bash
 
-Or from git (last development version)::
+      $ pip install [--user] oar-rest-api
+      $ pip install [--user] --upgrade oar-rest-api
+      $ pip uninstall oar-rest-api
 
-  $ pip install git+https://github.com/oar-team/oar-rest-api.git
+Or from git (last development version)
 
-Or if you already pulled the sources::
+.. code:: bash
 
-  $ pip install path/to/sources
+    $ pip install git+https://github.com/oar-team/oar-rest-api.git
 
-Or if you don't have pip::
+Or if you already pulled the sources
 
-  $ easy_install oar-rest-api
+.. code:: bash
+
+    $ pip install path/to/sources
+
+Or if you don't have pip
+
+.. code:: bash
+
+    $ easy_install oar-rest-api

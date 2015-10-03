@@ -1,0 +1,1 @@
+-e git+https://github.com/oar-team/oar-sphinx-theme.git#egg=oar-sphinx-theme
