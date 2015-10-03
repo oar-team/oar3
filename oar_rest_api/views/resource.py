@@ -26,6 +26,18 @@ app = Blueprint('resources', __name__, url_prefix="/resources")
 @app.args({'offset': Arg(int, default=0),
            'limit': Arg(int)})
 def index(offset, limit, network_address=None, detailed=False):
+    """Replie a comment to the post.
+
+    :param offset: post's unique id
+    :type offset: int
+
+    :form email: author email address
+    :form body: comment body
+    :reqheader Accept: the response content type depends on
+                      :mailheader:`Accept` header
+    :status 302: and then redirects to :http:get:`/resources/(int:resource_id)`
+    :status 400: when form parameters are missing
+    """
     query = db.queries.get_resources(network_address, detailed)
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
