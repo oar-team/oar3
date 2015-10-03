@@ -44,7 +44,7 @@ setup(
     description='Python OAR RESTful API',
     long_description=readme + '\n\n' + history,
     keywords='oar-rest-api',
-    license="GNU GPL",
+    license='BSD',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',

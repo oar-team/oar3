@@ -22,6 +22,6 @@ Python OAR RESTful API
 
 Python OAR RESTful API
 
-* Free software: GPLv2 license
+* Free software: BSD license
 * Documentation: https://oar-rest-api.readthedocs.org.
 * Source code and issue tracker: https://github.com/oar-team/oar-rest-api
