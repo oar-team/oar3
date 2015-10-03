@@ -12,6 +12,7 @@ app = Blueprint('frontend', __name__)
 
 @app.route('/')
 def index():
+    """ Get all main url section pages. """
     g.data['api_version'] = API_VERSION
     g.data['apilib_version'] = VERSION
     g.data['oar_version'] = '2.5.4 (Froggy Summer)'
@@ -29,6 +30,10 @@ def index():
 
 @app.route('/version')
 def version():
+    """Give OAR and OAR API version.
+
+    Also gives the timezone of the API server.
+    """
     g.data['oar_server'] = '3.0.0 (Big Blue)'
     g.data['oar_lib'] = oar.lib.VERSION
     g.data['api'] = API_VERSION
@@ -37,6 +42,10 @@ def version():
 
 @app.route('/whoami')
 def whoami():
+    """Give the name of the authenticated user seen by OAR API.
+
+    The name for a not authenticated user is the null string.
+    """
     g.data['authenticated_user'] = g.current_user
 
 

@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""
+oar_rest_api.views.resource
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Define resources api interaction
+
+"""
 from __future__ import division
 
 from flask import url_for, g
