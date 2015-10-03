@@ -12,14 +12,6 @@ OAR CLI
     :target: http://codecov.io/github/oar-team/oar-cli?branch=master
     :alt: Coverage Status
 
-.. image:: https://readthedocs.org/projects/oar-cli/badge/?version=latest
-    :target: https://readthedocs.org/projects/oar-cli/?badge=latest
-    :alt: Documentation Status
-
-.. image:: https://landscape.io/github/oar-team/oar-cli/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/oar-team/oar-cli/master
-    :alt: Code Health
-
 OAR 3 Command line interface
 
 * Free software: BSD license
