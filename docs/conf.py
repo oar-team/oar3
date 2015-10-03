@@ -64,7 +64,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Python OAR Library'
+project = u'OAR Library'
 copyright = u'2015, Salem Harrache'
 
 # The version info for the project you're documenting, acts as replacement
@@ -221,7 +221,7 @@ latex_elements = {
 # [howto/manual]).
 latex_documents = [
     ('index', 'oar_lib.tex',
-     u'Python OAR Library Documentation',
+     u'OAR Library Documentation',
      u'Salem Harrache', 'manual'),
 ]
 
@@ -252,7 +252,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'oar_lib',
-     u'Python OAR Library Documentation',
+     u'OAR Library Documentation',
      [u'Salem Harrache'], 1)
 ]
 
@@ -267,7 +267,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'oar_lib',
-     u'Python OAR Library Documentation',
+     u'OAR Library Documentation',
      u'Salem Harrache',
      'oar-lib',
      'One line description of project.',
