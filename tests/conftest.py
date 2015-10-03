@@ -41,10 +41,9 @@ def setup_config(request):
 
     db.metadata.drop_all(bind=db.engine)
     db.create_all(bind=db.engine)
-    # with db.session(ephemeral=True, reflect=False):
     kw = {"nullable": True}
     db.op.add_column('resources', db.Column('core', db.Integer, **kw))
-    db.op.add_column('resources', db.Column('cp', db.Integer, **kw))
+    db.op.add_column('resources', db.Column('cpu', db.Integer, **kw))
     db.op.add_column('resources', db.Column('host', db.String(255), **kw))
     db.op.add_column('resources', db.Column('mem', db.Integer, **kw))
     db.reflect()
