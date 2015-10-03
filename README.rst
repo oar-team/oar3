@@ -12,14 +12,6 @@ Python OAR RESTful API
     :target: http://codecov.io/github/oar-team/oar-rest-api?branch=master
     :alt: Coverage Status
 
-.. image:: https://readthedocs.org/projects/oar-rest-api/badge/?version=latest
-    :target: https://readthedocs.org/projects/oar-rest-api/?badge=latest
-    :alt: Documentation Status
-
-.. image:: https://landscape.io/github/oar-team/oar-rest-api/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/oar-team/oar-rest-api/master
-    :alt: Code Health
-
 Python OAR RESTful API
 
 * Free software: BSD license
