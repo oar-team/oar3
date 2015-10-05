@@ -416,6 +416,9 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         if node_size > 0:
             node_id = [[(node_size*i, node_size*(i+1)-1)] for i in range(int(nb_res/node_size))]
             hierarchy['node'] = node_id
+
+        print('hierarchy: ', hierarchy)
+
         res_set = ResourceSetSimu(
             rid_i2o=range(nb_res),
             rid_o2i=range(nb_res),
@@ -428,11 +431,12 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         # prepare jobs
         #
         mld_id = 1
+        print("Genererate jobs")
+        
         for j in json_jobs:
-            print("Genererate jobs")
             jid = int(j['id'])
             rqb = [([('resource_id', j['res'])], [(0, nb_res - 0)])]
-            rqbh = [('node', node_size), ([('resource_id', j['res'])], [(0, nb_res - 0)])]
+            rqbh = [([('node', 1), ('resource_id', j['res'])], [(0, nb_res - 0)])]
 
             if add_1h:
                 if add_mld:
@@ -464,6 +468,8 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                                 ts=False, ph=0,
                                 assign=assign, assign_func=assign_func,
                                 find=find, find_func=find_func)
+
+            # print("jobs: ", jid, " mld_res_rqts: ", mld_res_rqts)
 
         BatSched(res_set, jobs, 'simu', {}, 5, socket).run()
 
