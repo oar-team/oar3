@@ -197,12 +197,14 @@ def test_find_local():
     hy['resource_id'] = [[(i, i)] for i in range(1, 32)]
     hy['node'] = [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]
 
-    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[
-        (1, 60,
-         [([("node", 1), ("resource_id", 4)], prop)]
-         )
-    ])
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={})
+    j1.simple_req([("node", 1), ("resource_id", 4)], 60, prop)
+
+    #               mld_res_rqts=[
+    #    (1, 60,
+    #     [([("node", 1), ("resource_id", 4)], prop)]
+    #     )
+    # ])
 
     set_find_func(j1, 'local')
 
