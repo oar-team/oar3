@@ -59,3 +59,35 @@ def test_db_all_in_find_default_simple_1(monkeypatch):
     job = db['Job'].query.one()
     print(job.state)
     assert (job.state == 'toLaunch')
+
+
+def test_db_all_in_assgin_default_params_1(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["assign=default:foo.1"])
+    job = db['Job'].query.one()
+    print('job state:', job.state)
+
+    # pdb.set_trace()
+    meta_schedule('internal')
+
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
+
+    job = db['Job'].query.one()
+    print(job.state)
+    assert (job.state == 'toLaunch')
+
+
+def test_db_all_in_find_default_params_1(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["find=default:foo.1"])
+    job = db['Job'].query.one()
+    print('job state:', job.state)
+
+    # pdb.set_trace()
+    meta_schedule('internal')
+
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
+
+    job = db['Job'].query.one()
+    print(job.state)
+    assert (job.state == 'toLaunch')

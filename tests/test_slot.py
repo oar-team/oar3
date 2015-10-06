@@ -2,7 +2,8 @@
 from __future__ import unicode_literals, print_function
 from oar.lib.interval import equal_itvs
 from oar.kao.job import JobPseudo
-from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, MAX_TIME
+from oar.kao.slot import (Slot, SlotSet, intersec_itvs_slots, MAX_TIME,
+                          intersec_slots)
 
 
 def compare_slots_val_ref(slots, v):
@@ -29,6 +30,16 @@ def test_intersec_itvs_slots():
     slots = {1: s1, 2: s2, 3: s3}
 
     itvs = intersec_itvs_slots(slots, 1, 3)
+
+    assert itvs == [(1, 8), (12, 16), (24, 26)]
+
+
+def test_intersec_slots():
+    s1 = Slot(1, 0, 2, [(1, 32)], 1, 10)
+    s2 = Slot(2, 1, 3, [(1, 16), (24, 28)], 11, 20)
+    s3 = Slot(3, 2, 0, [(1, 8), (12, 26)], 21, 30)
+
+    itvs = intersec_slots([s1, s2, s3])
 
     assert itvs == [(1, 8), (12, 16), (24, 26)]
 

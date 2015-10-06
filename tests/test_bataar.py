@@ -74,8 +74,7 @@ def minimal_db_initialization(request):
         yield
 
 
-def test_bataar_no_db_1():
-
+def exec_gene(options):
     global recv_msgs
     recv_msgs = [
         '0:10.000015|10.000015:S:1',
@@ -84,28 +83,53 @@ def test_bataar_no_db_1():
     path = os.path.dirname(os.path.abspath(__file__))
     wpf = path + '/batsim-workload.json'
     print(wpf)
+    args = [wpf]
+    args.extend(options)
     runner = CliRunner()
-    result = runner.invoke(bataar, [wpf, '-dno-db'])
+    result = runner.invoke(bataar, args)
     print(result.exit_code)
     # print(result.output)
     print("Messages sent:", sent_msgs)
+    return (result, sent_msgs)
+
+
+def test_bataar_no_db():
+    result, sent_msgs = exec_gene(['-dno-db'])
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
     assert result.exit_code == 0
 
 
-def test_bataar_db():
-    global recv_msgs
-    recv_msgs = [
-        '0:10.000015|10.000015:S:1',
-        '0:19.168395|19.168395:C:1'
-    ]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-    wpf = path + '/batsim-workload.json'
-
-    runner = CliRunner()
-    result = runner.invoke(bataar, [wpf, '-dmemory'])
-    print(result.exit_code)
-
-    print("Messages sent:", sent_msgs)
+def test_bataar_db_memory():
+    result, sent_msgs = exec_gene(['-dmemory'])
     assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
+
+
+def test_bataar_db_basic():
+    result, sent_msgs = exec_gene(['-pBASIC', '-dmemory'])
+    assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
+
+
+def test_bataar_db_local():
+    result, sent_msgs = exec_gene(['-pLOCAL', '-n4', '-dmemory'])
+    assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
+
+
+def test_bataar_db_best_effort_local():
+    result, sent_msgs = exec_gene(['-pBEST_EFFORT_LOCAL', '-n4', '-dmemory'])
+    assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
+
+
+def test_bataar_db_contiguous():
+    result, sent_msgs = exec_gene(['-pCONTIGUOUS', '-dmemory'])
+    assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0
+
+
+def test_bataar_db_best_effot_contiguous():
+    result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
+    assert sent_msgs == ['0:15|15:J:1=0,1,2,3', '0:24|24:N']
+    assert result.exit_code == 0

@@ -451,8 +451,8 @@ def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now)
         .order_by(Job.start_time, Job.id)\
         .all()
 
-    jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(result, resource_set,
-                                                           job_security_time, now)
+    _, jobs_lst, _, _ = extract_scheduled_jobs(result, resource_set,
+                                               job_security_time, now)
 
     return jobs_lst
 
@@ -739,9 +739,9 @@ def log_job(job):  # pragma: no cover
 
     if job.assigned_moldable_job != "0":
         db.query(AssignedResource)\
-          .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
+          .filter(AssignedResource.index == 'CURRENT')\
           .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
-          .update({AssignedResource.assigned_resource_index: 'LOG'},
+          .update({AssignedResource.index: 'LOG'},
                   synchronize_session=False)
 
 
@@ -863,7 +863,7 @@ def insert_job(**kwargs):
     return job_id
 
 
-def get_job(job_id):
+def get_job(job_id):  # pragma: no cover
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
     except Exception as e:
@@ -1113,8 +1113,8 @@ def get_jobs_on_resuming_job_resources(job_id):
     states = ('toLaunch', 'toError', 'toAckReservation', 'Launching', 'Running ', 'Finishing')
 
     result = db.query(distinct(j2.id))\
-               .filter(a1.assigned_resource_index == 'CURRENT')\
-               .filter(a2.assigned_resource_index == 'CURRENT')\
+               .filter(a1.index == 'CURRENT')\
+               .filter(a2.index == 'CURRENT')\
                .filter(j1.id == job_id)\
                .filter(j1.id != j2.id)\
                .filter(a1.moldable_id == j1.assigned_moldable_job)\

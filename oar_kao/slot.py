@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 from oar.lib import config
 from oar.lib.compat import iteritems
+from functools import reduce
 
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 from oar.lib.interval import intersec, sub_intervals, add_intervals
@@ -31,10 +32,8 @@ class Slot(object):
               self.itvs, "b:", self.b, "e:", self.e,
               "ts_itvs:", self.ts_itvs, "ph_itvs:", self.ph_itvs)
 
-# not used TO REMOVE?
 
-
-def intersec_slots(slots):
+def intersec_slots(slots):  # not used TO REMOVE?
     "Return intersection of intervals from a slot list"
     return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs),
                   slots,
