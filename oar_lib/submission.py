@@ -315,7 +315,6 @@ def add_micheline_subjob(job_vars,
 
     if array_id > 0:
         kwargs['array_id'] = array_id
-    # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
     result = db.engine.execute(ins)
@@ -630,7 +629,7 @@ def add_micheline_jobs(job_vars, reservation_date, use_job_key,
         job_vars['reservation_field'] = 'toSchedule'
         job_vars['start_time'] = reservation_date
 
-    job_vars['user'] = os.environ['OARDO_USER']
+    # job_vars['user'] = os.environ['OARDO_USER']
 
     # Check the user validity
     if not re.match(r'[a-zA-Z0-9_-]+', job_vars['user']):
