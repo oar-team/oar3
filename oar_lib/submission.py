@@ -504,6 +504,7 @@ def add_micheline_simple_array_job(job_vars,
 
     # Insert remaining array jobs with array_id
     jobs_data = []
+    kwargs['array_id'] = array_id
     for command in array_commands[1:]:
         job_data = kwargs.copy()
         job_data['command'] = command
@@ -512,7 +513,7 @@ def add_micheline_simple_array_job(job_vars,
     db.engine.execute(Job.__table__.insert(), jobs_data)
     db.commit()
 
-    # Retreive job_ids thanks to array_id value
+    # Retrieve job_ids thanks to array_id value
     result = db.query(Job.id).filter(Job.array_id == array_id).all()
     job_id_list = [r[0] for r in result]
 
@@ -542,6 +543,7 @@ def add_micheline_simple_array_job(job_vars,
     # Populate job_resource_groups table
     job_resource_groups = []
     resource_desc_lst = resource_request[0][0]
+
     for moldable_id in moldable_ids:
         for resource_desc in resource_desc_lst:
             prop = resource_desc['property']
@@ -558,8 +560,8 @@ def add_micheline_simple_array_job(job_vars,
     res_group_ids = [r[0] for r in result]
 
     # Populate job_resource_descriptions table
-    k = 0
     job_resource_descriptions = []
+    k = 0
     for i in range(len(array_commands)):  # Nb jobs
         for resource_desc in resource_desc_lst:
             order = 0
@@ -692,11 +694,11 @@ def add_micheline_jobs(job_vars, reservation_date, use_job_key,
     if array_nb > 1 and not use_job_key:
         # TODO Simple array job submissiom
         # Simple array job submission is used
-        (error, job_id) = add_micheline_simple_array_job(job_vars,
-                                                         ssh_private_key, ssh_public_key,
-                                                         array_id, array_index,
-                                                         array_commands,
-                                                         properties_applied_after_validation)
+        (error, job_id_list) = add_micheline_simple_array_job(job_vars,
+                                                              ssh_private_key, ssh_public_key,
+                                                              array_id, array_index,
+                                                              array_commands,
+                                                              properties_applied_after_validation)
 
     else:
         # single job to submit or when job key is used with array job
