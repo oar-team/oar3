@@ -250,7 +250,7 @@ def update_current_scheduler_priority(job, value, state):
                 index += 1
 
                 res = db.query(distinct(getattr(Resource, f)))\
-                        .filter(AssignedResource.assigned_resource_index == 'CURRENT')\
+                        .filter(AssignedResource.index == 'CURRENT')\
                         .filter(AssignedResource.moldable_id == job.assigned_moldable_job)\
                         .filter(AssignedResource.resource_id == Resource.id)\
                         .all()
