@@ -7,7 +7,7 @@ from codecs import open
 from tempfile import mkstemp
 
 from oar.lib import (db, config, GanttJobsPrediction, Resource)
-from oar.kao.job import insert_job, set_jobs_start_time
+from oar.kao.job import (insert_job, set_jobs_start_time, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
 import oar.lib.tools  # for monkeypatching
@@ -70,9 +70,9 @@ def create_quotas_rules_file(quotas_rules):
     qts.load_quotas_rules()
 
 
-def insert_and_sched_ar(start_time):
+def insert_and_sched_ar(start_time, walltime=60):
 
-    insert_job(res=[(60, [('resource_id=4', "")])],
+    insert_job(res=[(walltime, [('resource_id=4', "")])],
                reservation='toSchedule', start_time=start_time,
                info_type='localhost:4242')
 
@@ -270,6 +270,39 @@ def test_db_all_in_one_AR_5(monkeypatch):
     assert job.state == 'Waiting'
 
 
+def test_db_all_in_one_AR_6(monkeypatch):
+
+    now = get_date()
+    job = insert_and_sched_ar(now + 10, 600)
+    new_start_time = now - 350
+
+    set_jobs_start_time(tuple([job.id]), new_start_time)
+    db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
+                                         synchronize_session=False)
+
+    # db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
+
+    assert job.state == 'Waiting'
+
+
+def test_db_all_in_one_AR_7(monkeypatch):
+
+    now = get_date()
+    insert_job(res=[(60, [('resource_id=4', "")])],
+               reservation='toSchedule', start_time=now+10,
+               info_type='localhost:4242', types=["timesharing=*,*"])
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    assert ((job.state == 'Waiting') and (job.reservation == 'Scheduled'))
+
+
 def test_db_all_in_one_BE(monkeypatch):
 
     db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
@@ -308,6 +341,53 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     assert jobs[0].state == 'toLaunch'
     assert jobs[1].state == 'Waiting'
     assert frag_job.job_id == jobs[0].id
+
+
+def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
+
+    os.environ['USER'] = 'root'  # to allow fragging
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+
+    insert_job(res=[(100, [('resource_id=2', "")])], queue_name='besteffort',
+               checkpoint=10, types=['besteffort'])
+
+    meta_schedule('internal')
+
+    job = db['Job'].query.one()
+    assert (job.state == 'toLaunch')
+
+    insert_job(res=[(100, [('resource_id=5', "")])])
+
+    meta_schedule('internal')
+
+    jobs = db['Job'].query.all()
+
+    print(jobs[0].state, jobs[1].state)
+
+    assert jobs[0].state == 'toLaunch'
+    assert jobs[1].state == 'Waiting'
+
+
+def test_db_all_in_one_BE_2(monkeypatch):
+    # TODO TOFINISH
+    db['Queue'].create(name='besteffort', priority=3, scheduler_policy='kamelot', state='Active')
+
+    insert_job(res=[(100, [('resource_id=1', "")])], queue_name='besteffort',
+               types=['besteffort', "timesharing=*,*"])
+
+    meta_schedule('internal')
+    job = db['Job'].query.one()
+
+    set_job_state(job.id, 'Running')
+
+    insert_job(res=[(50, [('resource_id=1', "")])], types=["timesharing=*,*"])
+
+    meta_schedule('internal')
+
+    jobs = db['Job'].query.all()
+    print(jobs[1].id, jobs[1].state)
+    # assert (jobs[1].state == 'toLaunch')
+    assert (jobs[1].state == 'Waiting')
 
 
 @pytest.mark.usefixtures("active_energy_saving")
@@ -386,3 +466,34 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     print(node_list)
     assert (job.state == 'toLaunch')
 
+
+def test_db_all_in_one_simple_2(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    job = db['Job'].query.one()
+    print('job state:', job.state)
+
+    os.environ['OARDIR'] = '/tmp/'
+
+    meta_schedule('internal')
+
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
+
+    job = db['Job'].query.one()
+    print(job.state)
+    assert (job.state == 'toLaunch')
+
+
+def test_db_all_in_one_simple_interactive_waiting_1(monkeypatch):
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", job_type='INTERACTIVE',
+               info_type="0.0.0.0:1234")
+
+    meta_schedule('internal')
+
+    for i in db['GanttJobsPrediction'].query.all():
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
+
+    jobs = db['Job'].query.all()
+    assert (jobs[0].state == 'toLaunch')
+    assert (jobs[1].state == 'Waiting')

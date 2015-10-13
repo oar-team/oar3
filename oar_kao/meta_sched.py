@@ -208,7 +208,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
     logger.debug("Queue " + queue_name +
                  ": begin processing accepted Advance Reservations")
-    # pdb.set_trace()
+
     ar_jobs = get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, current_time_sec)
 
     for job in ar_jobs:
@@ -235,6 +235,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                 # Delay launching time
                 set_gantt_job_start_time(moldable_id, current_time_sec + 1)
             elif (job.start_time < current_time_sec):
+
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
                     if not equal_itvs(avail_res, job.res_set):
                         # The expected ressources are not all available,
@@ -513,15 +514,14 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
         logger.error("Execution of " + queue.scheduler_policy +
                      " failed, inactivating queue " + queue.name + " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter(Queue.name==queue.name).update({'state': 'notActive'})
+        db.query(Queue).filter(Queue.name == queue.name).update({'state': 'notActive'})
 
     if sched_exit_code != 0:
         logger.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " +
                      str(sched_exit_code) + ". Inactivating queue " + queue.scheduler_policy +
                      " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter(Queue.name==queue.name).update(
-            {'state': 'notActive'})
+        db.query(Queue).filter(Queue.name == queue.name).update({'state': 'notActive'})
 
     # retrieve jobs and assignement decision from previous scheduling step
     scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,
@@ -596,7 +596,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Queue " + queue.name + ": Launching scheduler " +
                          queue.scheduler_policy + " at time " + initial_time_sql)
 
-            if mode == 'external':
+            if mode == 'external':  # pragma: no cover
                 call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                         resource_set, job_security_time, queue,
                                         initial_time_sec, initial_time_sql)
