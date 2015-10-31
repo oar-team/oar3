@@ -50,7 +50,7 @@ def default_job_vars(resource_request):
         'stderr': None,
         'hold': None,
         'initial_request': 'foo',
-        'user': os.environ['USERNAME'],
+        'user': os.environ['USER'],
         'array_id': 0,
         'start_time': '0',
         'reservation_field': None
