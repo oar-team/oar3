@@ -345,8 +345,8 @@ def add_micheline_subjob(job_vars,
 
     # Insert MoldableJobDescription job_id and walltime
     # print('mld_jid_walltimes)
-    db.session.execute(MoldableJobDescription.__table__.insert(),
-                       mld_jid_walltimes)
+    result = db.session.execute(MoldableJobDescription.__table__.insert(),
+                                mld_jid_walltimes)
 
     # Retrieve MoldableJobDescription.ids
     if len(mld_jid_walltimes) == 1:
