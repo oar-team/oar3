@@ -20,6 +20,7 @@ changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
     'sqlalchemy',
+    'sqlalchemy_utils',
     'alembic',
 ]
 
