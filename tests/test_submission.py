@@ -10,9 +10,9 @@ from oar.lib.submission import (parse_resource_descriptions, add_micheline_jobs,
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
+    db.delete_all()
     with db.session(ephemeral=True):
-        if not db['Queue'].query.all():
-            db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
         # add some resources
         for i in range(5):
@@ -21,7 +21,6 @@ def minimal_db_initialization(request):
         con = db.session(reflect=False).bind.connect()
         con.execute(AdmissionRule.__table__.delete())
         db['AdmissionRule'].create(rule="name='yop'")
-
         yield
 
 
