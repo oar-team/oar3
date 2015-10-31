@@ -267,7 +267,6 @@ def add_micheline_subjob(job_vars,
     properties = job_vars['properties']
     resource_request = job_vars['resource_request']
     resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
-    # TOREMOVE resource_available, estimated_nb_resources = True, 10
     # Add admin properties to the job
     if properties_applied_after_validation:
         if properties:
