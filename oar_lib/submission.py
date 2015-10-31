@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division, absolute_import, unicode_literals
 import re
-import os
 import sys
 import random
 
@@ -244,7 +243,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
 
         estimated_nb_res = itvs_size(result)
         estimated_nb_resources.append((estimated_nb_res, walltime))
-        print_info('Modlable instance: ', mld_idx,
+        print_info('Moldable instance: ', mld_idx,
                    ' Estimated nb resources: ', estimated_nb_res,
                    ' Walltime: ', walltime)
 
@@ -268,7 +267,7 @@ def add_micheline_subjob(job_vars,
     properties = job_vars['properties']
     resource_request = job_vars['resource_request']
     resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
-
+    # TOREMOVE resource_available, estimated_nb_resources = True, 10
     # Add admin properties to the job
     if properties_applied_after_validation:
         if properties:
@@ -317,7 +316,7 @@ def add_micheline_subjob(job_vars,
         kwargs['array_id'] = array_id
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.engine.execute(ins)
+    result = db.session.execute(ins)
     job_id = result.inserted_primary_key[0]
 
     if array_id <= 0:
@@ -328,7 +327,7 @@ def add_micheline_subjob(job_vars,
     ins = Challenge.__table__.insert().values(
         {'job_id': job_id, 'challenge': random_number,
          'ssh_private_key': ssh_private_key, 'ssh_public_key': ssh_public_key})
-    db.engine.execute(ins)
+    db.session.execute(ins)
 
     # print(resource_request)
 
@@ -346,8 +345,8 @@ def add_micheline_subjob(job_vars,
 
     # Insert MoldableJobDescription job_id and walltime
     # print('mld_jid_walltimes)
-    db.engine.execute(MoldableJobDescription.__table__.insert(),
-                      mld_jid_walltimes)
+    db.session.execute(MoldableJobDescription.__table__.insert(),
+                       mld_jid_walltimes)
 
     # Retrieve MoldableJobDescription.ids
     if len(mld_jid_walltimes) == 1:
@@ -376,8 +375,8 @@ def add_micheline_subjob(job_vars,
 
         # print(mld_id_property)
         # Insert property for moldable
-        db.engine.execute(JobResourceGroup.__table__.insert(),
-                          mld_id_property)
+        db.session.execute(JobResourceGroup.__table__.insert(),
+                           mld_id_property)
 
         if len(mld_id_property) == 1:
             grp_ids = [result.inserted_primary_key[0]]
@@ -396,20 +395,20 @@ def add_micheline_subjob(job_vars,
                                         'res_job_value': res_value['value'],
                                         'res_job_order': idx})
             # print(res_description)
-            db.engine.execute(JobResourceDescription.__table__.insert(),
-                              res_description)
+            db.session.execute(JobResourceDescription.__table__.insert(),
+                               res_description)
 
     # types of job
     types = job_vars['types']
     if types:
         ins = [{'job_id': job_id, 'type': typ} for typ in types]
-        db.engine.execute(JobType.__table__.insert(), ins)
+        db.session.execute(JobType.__table__.insert(), ins)
 
     # TODO dependencies with min_start_shift and max_start_shift
     dependencies = job_vars['dependencies']
     if dependencies:
         ins = [{'job_id': job_id, 'job_id_required': dep} for dep in dependencies]
-        db.engine.execute(JobDependencie.__table__.insert(), ins)
+        db.session.execute(JobDependencie.__table__.insert(), ins)
     #    foreach my $a (@{$anterior_ref}){
     #    if (my ($j,$min,$max) = $a =~ /^(\d+)(?:,([\[\]][-+]?\d+)?(?:,([\[\]][-+]?\d+)?)?)?$/) {
     #        $dbh->do("  INSERT INTO job_dependencies (job_id,job_id_required,min_start_shift,max_start_shift)
@@ -418,7 +417,7 @@ def add_micheline_subjob(job_vars,
     if not job_vars['hold']:
         req = db.insert(JobStateLog).values(
             {'job_id': job_id, 'job_state': 'Waiting', 'date_start': date})
-        db.engine.execute(req)
+        db.session.execute(req)
         db.commit()
 
         db.query(Job).filter(Job.id == job_id).update({Job.state: 'Waiting'})
@@ -426,7 +425,7 @@ def add_micheline_subjob(job_vars,
     else:
         req = db.insert(JobStateLog).values(
             {'job_id': job_id, 'job_state': 'Hold', 'date_start': date})
-        db.engine.execute(req)
+        db.session.execute(req)
         db.commit()
 
     return(0, job_id)
@@ -494,7 +493,7 @@ def add_micheline_simple_array_job(job_vars,
     # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.engine.execute(ins)
+    result = db.session.execute(ins)
     first_job_id = result.inserted_primary_key[0]
 
     # Update array_id
@@ -510,7 +509,7 @@ def add_micheline_simple_array_job(job_vars,
         job_data['command'] = command
         jobs_data.append(job_data)
 
-    db.engine.execute(Job.__table__.insert(), jobs_data)
+    db.session.execute(Job.__table__.insert(), jobs_data)
     db.commit()
 
     # Retrieve job_ids thanks to array_id value
@@ -530,8 +529,8 @@ def add_micheline_simple_array_job(job_vars,
         challenges.append({'job_id': job_id, 'challenge': random_number})
         moldable_job_descriptions.append({'moldable_job_id': job_id, 'moldable_walltime': walltime})
 
-    db.engine.execute(Challenge.__table__.insert(), challenges)
-    db.engine.execute(MoldableJobDescription.__table__.insert(), moldable_job_descriptions)
+    db.session.execute(Challenge.__table__.insert(), challenges)
+    db.session.execute(MoldableJobDescription.__table__.insert(), moldable_job_descriptions)
     db.commit()
 
     # Retrieve moldable_ids thanks to job_ids
@@ -550,7 +549,7 @@ def add_micheline_simple_array_job(job_vars,
             job_resource_groups.append({'res_group_moldable_id': moldable_id,
                                         'res_group_property': prop})
 
-    db.engine.execute(JobResourceGroup.__table__.insert(), job_resource_groups)
+    db.session.execute(JobResourceGroup.__table__.insert(), job_resource_groups)
     db.commit()
 
     # Retrieve res_group_ids thanks to moldable_ids
@@ -573,7 +572,7 @@ def add_micheline_simple_array_job(job_vars,
                 order += 1
             k += 1
 
-    db.engine.execute(JobResourceDescription.__table__.insert(), job_resource_descriptions)
+    db.session.execute(JobResourceDescription.__table__.insert(), job_resource_descriptions)
     db.commit()
 
     # Populate job_types table
@@ -583,7 +582,7 @@ def add_micheline_simple_array_job(job_vars,
         for job_id in job_id_list:
             for typ in types:
                 job_types.append({'job_id': job_id, 'type': typ})
-        db.engine.execute(JobType.__table__.insert(), job_types)
+        db.session.execute(JobType.__table__.insert(), job_types)
         db.commit()
 
     # TODO Anterior job setting
@@ -599,7 +598,7 @@ def add_micheline_simple_array_job(job_vars,
     # Update array_id field and set job to state if waiting and insert job_state_log
     job_state_logs = [{'job_id': job_id, 'job_state': state_log, 'date_start': date}
                       for job_id in job_id_list]
-    db.engine.execute(JobStateLog.__table__.insert(), job_state_logs)
+    db.session.execute(JobStateLog.__table__.insert(), job_state_logs)
     db.commit()
 
     return(0, job_id_list)
