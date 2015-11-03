@@ -55,9 +55,9 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    kao=oar_kao:kao
-    kamelot=oar_kao:kamelot
-    kamelot_fifo=oar_kao:kamelot_fifo
+    kao=oar_kao.kao:main
+    kamelot=oar_kao.kamelot:main
+    kamelot_fifo=oar_kao.kamelot_fifo:main
     bataar=oar_kao.bataar:bataar
     ''',
 )
