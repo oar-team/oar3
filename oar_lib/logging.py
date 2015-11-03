@@ -1,24 +1,39 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
-from logging import (getLogger, FileHandler as BaseFileHandler, Formatter,
-                     INFO, ERROR, WARN, DEBUG, StreamHandler)
+import sys
+
+from logging import (getLogger, NullHandler, FileHandler, StreamHandler,
+                     Formatter, INFO, ERROR, WARN, DEBUG)
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
 
-class DeferredFileHandler(BaseFileHandler):
+class DeferredHandler(NullHandler):
 
-    def __init__(self, *args, **kwargs):
-        self.callback = kwargs.pop("callback", lambda: None)
-        kwargs['delay'] = True
-        BaseFileHandler.__init__(self, "/dev/null", *args, **kwargs)
+    def __init__(self, logger):
+        self.logger = logger
+        super(NullHandler, self).__init__()
 
-    def _open(self):
-        # We import settings here to avoid a circular reference as this module
-        # will be imported when settings.py is executed.
-        self.callback(self)
-        return BaseFileHandler._open(self)
+    def emit(self, record):
+        from . import config
+
+        self.logger.setLevel(LEVELS[config['LOG_LEVEL']])
+        # configure the handler
+        log_file = config.get('LOG_FILE', None)
+        if log_file is not None:
+            if log_file == ":stdout:":
+                handler = StreamHandler(sys.stdout)
+            if log_file == ":stderr:":
+                handler = StreamHandler(sys.stderr)
+            else:
+                handler = FileHandler(log_file)
+            handler.setLevel(LEVELS[config['LOG_LEVEL']])
+            handler.setFormatter(Formatter(config['LOG_FORMAT']))
+
+            self.logger.handlers = []
+            self.logger.addHandler(handler)
+            handler.emit(record)
 
 
 def create_logger():
@@ -30,19 +45,8 @@ def create_logger():
     # already attached to it.
     del logger.handlers[:]
 
-    handler = DeferredFileHandler(callback=_configure)
-    logger.addHandler(handler)
+    logger.addHandler(DeferredHandler(logger))
     return logger
-
-
-def _configure(handler):
-    from . import config
-    getLogger("oar").setLevel(LEVELS[config['LOG_LEVEL']])
-    # configure the handler
-    if config['LOG_FILE']:
-        handler.baseFilename = config['LOG_FILE']
-    handler.setLevel(LEVELS[config['LOG_LEVEL']])
-    handler.setFormatter(Formatter(config['LOG_FORMAT']))
 
 
 def get_logger(*args, **kwargs):
