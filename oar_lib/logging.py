@@ -50,15 +50,16 @@ def create_logger():
 
 
 def get_logger(*args, **kwargs):
-    """ Returns logger with attached StreamHandler if `stdout` is True."""
+    """ Returns sub logger once the root logger is configured."""
+    kwargs.setdefault('forward_stderr', False)
     from . import config
-    kwargs.setdefault('stdout', False)
-    if kwargs.pop('stdout'):
-        logger = getLogger(*args, **kwargs)
+    # Make sure that the root logger is configured
+    from . import logger  # noqa
+    if kwargs.pop('forward_stderr'):
+        sublogger = getLogger(*args, **kwargs)
         handler = StreamHandler()
         handler.setLevel(LEVELS[config['LOG_LEVEL']])
         handler.setFormatter(Formatter(config['LOG_FORMAT']))
         logger.addHandler(handler)
-        return logger
-    else:
-        return getLogger(*args, **kwargs)
+        return sublogger
+    return getLogger(*args, **kwargs)
