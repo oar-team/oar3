@@ -18,8 +18,7 @@ def minimal_db_initialization(request):
         for i in range(5):
             db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
-        con = db.session(reflect=False).bind.connect()
-        con.execute(AdmissionRule.__table__.delete())
+        db.session.execute(AdmissionRule.__table__.delete())
         db['AdmissionRule'].create(rule="name='yop'")
         yield
 
