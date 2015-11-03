@@ -29,11 +29,9 @@ def init_judas_notify_user():  # pragma: no cover
     global notify_user_socket
     uds_name = "/tmp/judas_notify_user.sock"
     if not os.path.exists(uds_name):
-        if "OARDIR" in os.environ:
-            binpath = os.environ["OARDIR"] + "/"
-        else:
-            binpath = "/usr/local/lib/oar/"
-        os.system(binpath + "judas_notify_user.pl &")
+        binary = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                              "judas_notify_user.pl")
+        os.system("%s &" % binary)
 
         while(not os.path.exists(uds_name)):
             time.sleep(0.1)
