@@ -11,7 +11,7 @@ from oar.lib.compat import iteritems
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
-config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = ':stderr:'
 
 
 class SimSched(object):

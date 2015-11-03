@@ -11,7 +11,7 @@ from copy import deepcopy
 
 # import pdb
 
-config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = ':stderr:'
 
 
 def compare_slots_val_ref(slots, v):

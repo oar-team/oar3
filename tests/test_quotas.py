@@ -16,7 +16,7 @@ import oar.lib.resource as rs
 from oar.lib import config, get_logger
 # import pdb
 
-config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = ':stderr:'
 logger = get_logger("oar.test")
 
 """

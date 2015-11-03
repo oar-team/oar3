@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
 
 config.setdefault_config(DEFAULT_CONFIG)
 
-# config['LOG_FILE'] = '/dev/stdout'
+# config['LOG_FILE'] = ':stderr:'
 
 nb_res = 32
 
