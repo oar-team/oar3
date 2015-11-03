@@ -93,6 +93,8 @@ class SessionProperty(object):
         if obj is not None:
             if obj not in self._sessions:
                 self._sessions[obj] = self._create_scoped_session(obj)
+            if not obj._reflected:
+                obj.reflect(bind=self._sessions[obj]().bind)
             return self._sessions[obj]
         return self
 
@@ -157,7 +159,7 @@ class Database(object):
 
     @property
     def op(self):
-        ctx = MigrationContext.configure(self.session(reflect=False).bind)
+        ctx = MigrationContext.configure(self.engine)
         return Operations(ctx)
 
     @cached_property
@@ -209,22 +211,22 @@ class Database(object):
         """Proxy for Model.prepare"""
         if not self._reflected:
             if bind is None:
-                bind = self.session(reflect=False).bind
-            self.create_all()
+                bind = self.engine
+            self.create_all(bind=bind)
             # autoload all tables marked for autoreflect
-            self.DeferredReflectionModel.prepare(self.session.bind)
+            self.DeferredReflectionModel.prepare(bind)
             self._reflected = True
 
     def create_all(self, bind=None, **kwargs):
         """Creates all tables. """
         if bind is None:
-            bind = self.session(reflect=False).bind
+            bind = self.engine
         self.metadata.create_all(bind=bind, **kwargs)
 
     def delete_all(self, bind=None, **kwargs):
         """Drop all tables. """
         if bind is None:
-            bind = self.session(reflect=False).bind
+            bind = self.engine
         with bind.connect() as con:
             trans = con.begin()
             try:
@@ -494,8 +496,4 @@ class ScopedSession(sqlalchemy.orm.scoped_session):
         elif kwargs.pop('ephemeral', False):
             return ephemeral_session(self, **kwargs)
         else:
-            reflect = kwargs.pop('reflect', True)
-            session = super(ScopedSession, self).__call__(**kwargs)
-            if reflect:
-                self.db.reflect(bind=session.bind)
-            return session
+            return super(ScopedSession, self).__call__(**kwargs)
