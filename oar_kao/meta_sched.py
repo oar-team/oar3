@@ -79,7 +79,7 @@ config.setdefault_config(DEFAULT_CONFIG)
 # waiting time when a reservation has not all of its nodes
 reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
 
-config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = ':stderr:'
 # Log category
 logger = get_logger('oar.kao.meta_sched')
 

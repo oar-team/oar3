@@ -105,5 +105,5 @@ def main():
 
 
 if __name__ == '__main__':  # pragma: no cover
-    logger = get_logger("oar.kamelot_basic", stdout=True)
+    logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     main()

@@ -7,7 +7,7 @@ from oar.kao.scheduling import (schedule_id_jobs_ct, set_slots_with_prev_schedul
 from oar.kao.job import JobPseudo
 
 from oar.lib import config
-config['LOG_FILE'] = '/dev/stdout'
+config['LOG_FILE'] = ':stderr:'
 
 
 def set_assign_func(job, name):

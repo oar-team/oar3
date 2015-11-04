@@ -13,5 +13,5 @@ def main():
     meta_schedule()
 
 if __name__ == '__main__':  # pragma: no cover
-    logger = get_logger("oar.kao", stdout=True)
+    logger = get_logger("oar.kao", forward_stderr=True)
     main()
