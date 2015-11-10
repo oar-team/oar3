@@ -13,6 +13,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobDependencie, GanttJobsResource, JobType,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config)
+from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.compat import iteritems, itervalues
 
 from oar.lib.tools import (update_current_scheduler_priority, add_new_event)
@@ -539,6 +540,29 @@ def save_assigns(jobs, resource_set):
 
     # INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES
     # INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES
+
+
+def save_assigns_bulk(jobs, resource_set):
+
+    if len(jobs) > 0:
+        logger.debug("nb job to save: " + str(len(jobs)))
+        mld_id_start_time_s = []
+        mld_id_rid_s = []
+        for j in itervalues(jobs):
+            logger.debug("first job_id  to save: " + str(j.id))
+            mld_id_start_time_s.append((j.moldable_id, j.start_time))
+            riods = itvs2ids(j.res_set)
+            mld_id_rid_s.extend(
+                [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods])
+
+        logger.info("save assignements")
+
+        with db.engine.connect() as to_conn:
+            cursor = to_conn.connection.cursor()
+            pg_bulk_insert(cursor, db['gantt_jobs_predictions'], mld_id_start_time_s,
+                           ('moldable_job_id', 'start_time'), binary=True)
+            pg_bulk_insert(cursor, db['queues'], mld_id_rid_s,
+                           ('moldable_job_id', 'resource_id'), binary=True)
 
 
 def get_current_jobs_dependencies(jobs):
