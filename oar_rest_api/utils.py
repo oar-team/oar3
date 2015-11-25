@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+import os
 import sys
 
 
 from flask import request, abort
+
+from oar.lib import config
 from oar.lib.compat import reraise, to_unicode, iteritems, integer_types
 
 
@@ -13,8 +16,14 @@ class WSGIProxyFix(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        user = environ.pop('HTTP_X_REMOTE_IDENT', None)
-        environ['USER'] = user
+        user = os.environ.get('AUTHENTICATE_UID', None)
+        if user is not None:
+            environ['USER'] = user
+        else:
+            if config.get('API_TRUST_IDENT', 0) == 1:
+                user = environ.pop('HTTP_X_REMOTE_IDENT', None)
+                if user not in ("", "unknown", "(null)"):
+                    environ['USER'] = user
         return self.app(environ, start_response)
 
 

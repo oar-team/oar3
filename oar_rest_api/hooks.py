@@ -23,10 +23,7 @@ def register_hooks(app):
         db.reflect()
 
     def authenticate():
-        if app.debug:
-            g.current_user = 'docker'
-        else:
-            g.current_user = request.environ.get('USER', None)
+        g.current_user = request.environ.get('USER', None)
         if g.current_user is not None:
             os.environ['OARDO_USER'] = g.current_user
         else:

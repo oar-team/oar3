@@ -8,7 +8,6 @@ from functools import wraps
 
 from flask import Blueprint as FlaskBlueprint, Response, g, abort
 
-from oar.lib import config
 from oar.lib.database import BaseModel
 from oar.lib.compat import json
 from oar.lib.utils import JSONEncoder
@@ -119,8 +118,7 @@ class Blueprint(FlaskBlueprint):
         def decorator(func):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
-                if (config.get('API_TRUST_IDENT') or
-                        g.current_user is not None):
+                if g.current_user is not None:
                     return func(*proxy_args, **proxy_kwargs)
                 else:
                     abort(403)
