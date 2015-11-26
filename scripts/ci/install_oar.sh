@@ -100,8 +100,4 @@ chmod a+r /etc/oar/oar.conf
 
 echo "Init database"
 
-if [ ${DB} = 'postgresql' ]; then
-    /usr/local/sbin/oar-database --create --db-admin-user postgres --db-is-local
-else
-    /usr/local/sbin/oar-database --create --db-admin-user root --db-is-local
-fi
+/usr/local/sbin/oar-database --create --db-admin-user postgres --db-is-local
