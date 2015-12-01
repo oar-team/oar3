@@ -22,7 +22,7 @@ DEFAULT_VALUE = {
     'directory': os.getcwd(),
     'project': 'default',
     'signal': 12
-    }
+}
 
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
@@ -33,7 +33,7 @@ DEFAULT_CONFIG = {
     'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': 'cpuset',
     'CPUSET_PATH': '/oar',
     'DEFAULT_JOB_WALLTIME': '3600'
-    }
+}
 config.setdefault_config(DEFAULT_CONFIG)
 
 
@@ -437,7 +437,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     # Print job_id list
     if len(job_id_lst) == 1:
-            print('OAR_JOB_ID=', job_id_lst[0])
+        print('OAR_JOB_ID=', job_id_lst[0])
     else:
         job = db['Job'].query.filter(Job.id == job_id_lst[0]).one()
         oar_array_id = job.array_id

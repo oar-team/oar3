@@ -55,7 +55,6 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
     'QUOTAS': 'no'
-    
 }
 
 
