@@ -35,21 +35,36 @@ Main features
 Installation
 ------------
 
-Install from source on git repos
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Kao depends of a standard oar's server proper installation and python oar-lib
+module. For the first follow the standard documentation. For the second follow
+the instructions below:
 
-Kao depends of a standard oar's server proper installation and python-oar-lib module. For the first follow the standard
-documentation. For the second follow the instructions below:
+*Supports Python 2.7 and 3.4+.*
 
-  git clone https://gforge.inria.fr/git/oar/oar-docker.git
-  cd python-oar-lib
-  sudo python setup.py install
+.. code:: bash
 
-To install Kao:
+    $ pip install [--user] oar-kao
+    $ pip install [--user] --upgrade oar-kao
+    $ pip uninstall oar-kao
 
-  git clone https://gforge.inria.fr/git/oar/oar-kao.git
-  cd kao
-  sudo python setup.py install
+Or from git (last development version)
+
+.. code:: bash
+
+    $ pip install [--user] git+https://github.com/oar-team/oar-kao.git
+
+Or if you already pulled the sources
+
+.. code:: bash
+
+    $ git clone https://github.com/oar-team/oar-kao.git
+    $ python oar-kao/setup.py install # or pip install ./oar-kao
+
+Or if you don't have pip
+
+.. code:: bash
+
+    $ easy_install oar-kao
 
 After you need to configure a queue use kamelot
 
