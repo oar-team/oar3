@@ -6,6 +6,7 @@ import sys
 import socket
 import signal
 import click
+click.disable_unicode_literals_warning = True
 
 from oar.lib import config
 
