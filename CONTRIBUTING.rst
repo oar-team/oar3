@@ -13,7 +13,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/oar-team/python-oar-rest-api/issues.
+Report bugs at https://github.com/oar-team/oar-rest-api/issues.
 
 If you are reporting a bug, please include:
 
@@ -43,7 +43,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/oar-team/python-oar-rest-api/issues.
+The best way to send feedback is to file an issue at https://github.com/oar-team/oar-rest-api/issues.
 
 If you are proposing a feature:
 
@@ -60,12 +60,12 @@ Ready to contribute? Here's how to set up `oar-rest-api` for local development.
 1. Fork the `oar-rest-api` repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/python-oar-rest-api.git oar-rest-api
+    $ git clone git@github.com:your_name_here/oar-rest-api.git oar-rest-api
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv oar_rest_api
-    $ cd python-oar-rest-api.git
+    $ mkvirtualenv oar
+    $ cd oar-rest-api.git
     $ make init
 
 4. Create a branch for local development::
@@ -76,7 +76,7 @@ Ready to contribute? Here's how to set up `oar-rest-api` for local development.
 
 5. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
 
-    $ flake8 oar_rest_api tests
+    $ flake8 oar tests
     $ py.test
     $ tox
 
@@ -100,7 +100,7 @@ Before you submit a pull request, check that it meets these guidelines:
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
 3. The pull request should work for Python 2.6, 2.7, 3.3, and 3.4, and for PyPy. Check
-   https://travis-ci.org/oar-team/python-oar-rest-api/pull_requests
+   https://travis-ci.org/oar-team/oar-rest-api/pull_requests
    and make sure that the tests pass for all supported Python versions.
 
 Tips

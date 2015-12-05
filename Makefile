@@ -64,7 +64,7 @@ ci:  ## Run all tests and get junitxml report for CI (Travis, Jenkins...)
 	py.test --junitxml=junit.xml
 
 coverage: ## Check code coverage quickly with the default Python
-	py.test --verbose --cov-report term --cov-report html --cov=oar_rest_api || true
+	py.test --verbose --cov-report term --cov-report html --cov=oar.rest_api || true
 	$(open) htmlcov/index.html
 
 lint:  ## Check style with flake8

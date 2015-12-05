@@ -24,7 +24,7 @@ requirements = [
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                    read(op.join('oar_rest_api', '__init__.py')),
+                    read(op.join('oar', 'rest_api', '__init__.py')),
                     re.MULTILINE).group(1)
 
 if not version:

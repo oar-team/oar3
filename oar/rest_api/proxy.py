@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-oar_rest_api.views.resource
+oar.rest_api.views.resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Proxy to Perl Rest API

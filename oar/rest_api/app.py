@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-oar_rest_api.app
+oar.rest_api.app
 ~~~~~~~~~~~~~~~~
 
-oar_rest_api application package
+OAR rest_api application package
 
 """
 from flask import Flask

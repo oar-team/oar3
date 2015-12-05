@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: utf-8 -*-
 """
-oar_rest_api.views.resource
+oar.rest_api.views.resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Define resources api interaction
