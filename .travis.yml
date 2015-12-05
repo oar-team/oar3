@@ -1,8 +1,7 @@
 # Config file for automatic testing at travis-ci.org
 
 sudo: required
-dist: precise
-group: edge
+dist: trusty
 
 addons:
   hosts:
@@ -17,7 +16,6 @@ python:
   - "3.4"
 
 env:
-  - OAR_VERSION=2.5.3   DB=postgresql
   - OAR_VERSION=2.5.4   DB=postgresql
   - OAR_VERSION=2.5     DB=postgresql
   - OAR_VERSION=master  DB=postgresql
