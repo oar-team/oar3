@@ -1,8 +1,14 @@
 # Config file for automatic testing at travis-ci.org
 
 sudo: required
-dist: precise
-group: edge
+dist: trusty
+
+addons:
+  hosts:
+    - node1
+    - node2
+    - server
+    - frontend
 
 language: python
 
@@ -11,24 +17,52 @@ python:
   - "3.4"
 
 env:
-  - DB_TYPE=postgresql
-#  - DB_TYPE=sqlite
+  - OAR_VERSION=2.5.4   DB=postgresql
+  - OAR_VERSION=2.5     DB=postgresql
+  - OAR_VERSION=master  DB=postgresql
+
 
 before_install:
- - sudo mkdir -p /etc/oar
- - sudo chown -R $USER /etc/oar
+  - sudo apt-get update
+  - >
+    sudo apt-get -y install --no-install-recommends
+    taktuk libdbi-perl libsort-versions-perl libdbd-pg-perl libdatetime-perl
+    libsort-naturally-perl libappconfig-perl libtie-ixhash-perl
+  - sudo pip install tox coverage
 
 install:
-  - pip install tox coverage
   - coverage erase
 
 before_script:
-  - psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';"
-  - psql -U postgres -c "CREATE DATABASE oar;"
-  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
+  - sudo bash ./scripts/ci/install_oar.sh $OAR_VERSION
+  - sudo service oar-server start
+  - sudo service oar-node start
+
+  - sudo oarproperty -c -a host || true
+  - sudo oarproperty -a cpu || true
+  - sudo oarproperty -a core || true
+  - sudo oarproperty -a mem || true
+
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=1 -p cpuset=0 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=2 -p cpuset=1 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=3 -p cpuset=2 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=4 -p cpuset=3 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=5 -p cpuset=4 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=6 -p cpuset=5 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=7 -p cpuset=6 -p mem=8
+  - sudo oarnodesetting -a -h node1 -p host=node1 -p cpu=1 -p core=8 -p cpuset=7 -p mem=8
+
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=1 -p cpuset=0 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=2 -p cpuset=1 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=3 -p cpuset=2 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=4 -p cpuset=3 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=5 -p cpuset=4 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=6 -p cpuset=5 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=7 -p cpuset=6 -p mem=8
+  - sudo oarnodesetting -a -h node2 -p host=node2 -p cpu=2 -p core=8 -p cpuset=7 -p mem=8
 
 script:
-  - tox -e py-$DB_TYPE
+  - sudo tox -e py-$DB
 
 after_success:
     - coverage combine
