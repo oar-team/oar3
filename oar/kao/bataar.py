@@ -206,6 +206,7 @@ def db_initialization(nb_res, node_size=None):
     for i in range(nb_res):
         db.add(Resource(network_address="localhost"))
 
+    db.commit()
 
 class BatEnv(object):
 

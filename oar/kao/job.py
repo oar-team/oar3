@@ -537,6 +537,7 @@ def save_assigns(jobs, resource_set):
         db.session.execute(
             GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        db.commit()
 
     # INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES
     # INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES
@@ -600,12 +601,14 @@ def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
     # jid)
     db.query(Job).filter(Job.id == jid).update(
         {Job.start_time: start_time, Job.assigned_moldable_job: moldable_id})
+    db.commit()
 
 
 def set_jobs_start_time(tuple_jids, start_time):
 
     db.query(Job).filter(Job.id.in_(tuple_jids)).update(
         {Job.start_time: start_time}, synchronize_session=False)
+    db.commit()
 
 
 def set_job_state(jid, state):
@@ -619,6 +622,7 @@ def set_job_state(jid, state):
                           .filter(Job.state != 'Terminated')\
                           .filter(Job.state != state)\
                           .update({Job.state: state})
+    db.commit()
 
     if result == 1:  # OK for sqlite
         logger.debug(
@@ -630,6 +634,7 @@ def set_job_state(jid, state):
         db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
                              .filter(JobStateLog.job_id == jid)\
                              .update({JobStateLog.date_stop: date})
+        db.commit()
         req = db.insert(JobStateLog).values(
             {'job_id': jid, 'job_state': state, 'date_start': date})
         db.session.execute(req)
@@ -649,6 +654,7 @@ def set_job_state(jid, state):
                 if job.stop_time < job.start_time:
                     db.query(Job).filter(Job.id == jid)\
                                  .update({Job.stop_time: job.start_time})
+                    db.commit()
 
                 if job.assigned_moldable_job != "0":
                     # Update last_job_date field for resources used
@@ -670,6 +676,7 @@ def set_job_state(jid, state):
                         else:
                             db.query(Resource).update(
                                 {Resource.suspended_jobs: 'NO'})
+                        db.commit()
 
                     tools.notify_user(
                         job, "ERROR", "Job stopped abnormally or an OAR error occured.")
@@ -700,7 +707,7 @@ def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
                            'resource_id': res_mld_id.resource_id} for res_mld_id in resources_mld_ids]
 
     db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
-
+    db.commit()
 
 def add_resource_job_pairs(moldable_id):
     resources_mld_ids = db.query(GanttJobsResource)\
@@ -711,7 +718,7 @@ def add_resource_job_pairs(moldable_id):
                            'resource_id': res_mld_id.resource_id} for res_mld_id in resources_mld_ids]
 
     db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
-
+    db.commit()
 
 # Return the list of resources where there are Suspended jobs
 # args: base
@@ -767,6 +774,7 @@ def log_job(job):  # pragma: no cover
           .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
           .update({AssignedResource.index: 'LOG'},
                   synchronize_session=False)
+    db.commit()
 
 
 def get_gantt_waiting_interactive_prediction_date():
@@ -917,6 +925,7 @@ def frag_job(jid):
             date = tools.get_date()
             frajob = FragJob(job_id=jid, date=date)
             db.add(frajob)
+            db.commit()
             add_new_event("FRAG_JOB_REQUEST",
                           jid, "User %s requested to frag the job %s"
                           % (luser, str(jid)))
@@ -935,10 +944,12 @@ def set_job_resa_state(job_id, state):
     side effects : changes the field state of the job in the table Jobs
     '''
     db.query(Job).filter(Job.id == job_id).update({Job.reservation: state})
+    db.commit()
 
 
 def set_job_message(job_id, message):
     db.query(Job).filter(Job.id == job_id).update({Job.message: message})
+    db.commit()
 
 
 def get_waiting_reservation_jobs_specific_queue(queue_name):
@@ -970,6 +981,7 @@ def update_scheduler_last_job_date(date, moldable_id):
         db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
                           .filter(Resource.id == AssignedResource.resource_id)\
                           .update({Resource.last_job_date: date}, synchronize_session=False)
+    db.commit()
 
 
 # Get all waiting reservation jobs
@@ -1040,6 +1052,8 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
         db.query(GanttJobsPrediction).delete()
         db.query(GanttJobsResource).delete()
 
+    db.commit()
+
 
 def get_jobs_in_multiple_states(states, resource_set):
 
@@ -1087,6 +1101,8 @@ def set_moldable_job_max_time(moldable_id, walltime):
       .filter(MoldableJobDescription.id == moldable_id)\
       .update({MoldableJobDescription.walltime: walltime})
 
+    db.commit()
+
 
 # Update start_time in gantt for a specified job
 def set_gantt_job_start_time(moldable_id, current_time_sec):
@@ -1094,6 +1110,8 @@ def set_gantt_job_start_time(moldable_id, current_time_sec):
     db.query(GanttJobsPrediction)\
       .filter(GanttJobsPrediction.moldable_id == moldable_id)\
       .update({GanttJobsPrediction.start_time: current_time_sec})
+
+    db.commit()
 
 
 def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
@@ -1105,6 +1123,8 @@ def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
       .filter(GanttJobsResource.moldable_id == moldable_id)\
       .filter(~GanttJobsResource.resource_id.in_(tuple(resource_ids)))\
       .delete(synchronize_session=False)
+
+    db.commit()
 
 
 def is_timesharing_for_two_jobs(j1, j2):
@@ -1163,6 +1183,8 @@ def resume_job_action(job_id):
     else:
         db.query(Resource)\
           .update({Resource.suspended_jobs: 'NO'}, synchronize_session=False)
+
+    db.commit()
 
 
 # get_cpuset_values_for_a_moldable_job

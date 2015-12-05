@@ -224,6 +224,7 @@ def test_db_all_in_one_AR_3(monkeypatch):
     set_jobs_start_time(tuple([job.id]), new_start_time)
     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
                                          synchronize_session=False)
+    db.commit()
 
     meta_schedule('internal')
 
@@ -241,6 +242,7 @@ def test_db_all_in_one_AR_4(monkeypatch):
 
     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
                                          synchronize_session=False)
+    db.commit()
 
     meta_schedule('internal')
 
@@ -259,8 +261,10 @@ def test_db_all_in_one_AR_5(monkeypatch):
     set_jobs_start_time(tuple([job.id]), new_start_time)
     db.query(GanttJobsPrediction).update({GanttJobsPrediction.start_time: new_start_time},
                                          synchronize_session=False)
+    db.commit()
 
     db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
+    db.commit()
 
     meta_schedule('internal')
 
@@ -399,6 +403,7 @@ def test_db_all_in_one_wakeup_node_1(monkeypatch):
     # Suspend nodes
     db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
                               synchronize_session=False)
+    db.commit()
     meta_schedule('internal')
 
     job = db['Job'].query.one()
@@ -419,6 +424,7 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
     # pdb.set_trace()
     db.query(Resource).update({Resource.available_upto: now + 50000},
                               synchronize_session=False)
+    db.commit()
     meta_schedule('internal')
 
     job = db['Job'].query.one()
@@ -439,6 +445,7 @@ def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     # Suspend nodes
     db.query(Resource).update({Resource.state: 'Absent', Resource.available_upto: now + 1000},
                               synchronize_session=False)
+    db.commit()
     meta_schedule('internal')
 
     job = db['Job'].query.one()
@@ -459,6 +466,7 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     # pdb.set_trace()
     db.query(Resource).update({Resource.available_upto: now + 50000},
                               synchronize_session=False)
+    db.commit()
     meta_schedule('internal')
 
     job = db['Job'].query.one()

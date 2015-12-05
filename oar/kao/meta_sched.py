@@ -469,6 +469,7 @@ def update_gantt_visualization():
 
     db.query(GanttJobsPredictionsVisu).delete()
     db.query(GanttJobsResourcesVisu).delete()
+    db.commit()
 
     sql_queries = ["INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
                    "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"

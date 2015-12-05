@@ -199,6 +199,8 @@ def main():
         schedule_cycle(plt, plt.get_time())
 
     logger.info("That's all folks")
+    from oar.lib import db
+    db.commit()
 
 
 if __name__ == '__main__':  # pragma: no cover
