@@ -32,7 +32,7 @@ if sys.version_info[0] == 2:
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                    read(op.join('oar_cli', '__init__.py')),
+                    read(op.join('oar', 'cli', '__init__.py')),
                     re.MULTILINE).group(1)
 
 if not version:
@@ -65,8 +65,8 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    oar-database-migrate=oar_cli.db.commands.migrate:cli
-    oar-database-archive=oar_cli.db.commands.archive:cli
-    oarsub=oar_cli.oarsub:cli
+    oar-database-migrate=oar.cli.db.commands.migrate:cli
+    oar-database-archive=oar.cli.db.commands.archive:cli
+    oarsub=oar.cli.oarsub:cli
     ''',
 )

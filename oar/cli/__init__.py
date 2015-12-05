@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    oar-cli
+    oar.cli
     ~~~~~~~
 
     OAR Command line interface
