@@ -19,7 +19,7 @@ __version__ = '0.5.0.dev0'
 
 # import mapping to objects in other modules
 all_by_module = {
-    'oar_lib.models': [
+    'oar.lib.models': [
         'db', 'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
         'EventLog', 'EventLogHostname', 'File', 'FragJob',
         'GanttJobsPrediction', 'GanttJobsPredictionsLog',
@@ -29,17 +29,17 @@ all_by_module = {
         'JobStateLog', 'JobType', 'MoldableJobDescription', 'Queue',
         'Resource', 'ResourceLog', 'Scheduler',
     ],
-    'oar_lib.exceptions': [
+    'oar.lib.exceptions': [
         'OARException', 'InvalidConfiguration', 'DatabaseError',
         'DoesNotExist',
     ],
-    'oar_lib.database': ['Database'],
-    'oar_lib.logging': ['create_logger', 'get_logger'],
-    'oar_lib.configuration': ['Configuration'],
-    'oar_lib.utils': ['cached_property', 'Command', 'JSONEncoder',
+    'oar.lib.database': ['Database'],
+    'oar.lib.logging': ['create_logger', 'get_logger'],
+    'oar.lib.configuration': ['Configuration'],
+    'oar.lib.utils': ['cached_property', 'Command', 'JSONEncoder',
                       'render_query', 'ResultProxyIter', 'row2dict'],
-    'oar_lib.globals': ['config', 'logger'],
-    'oar_lib.fixture': ['load_fixtures', 'dump_fixtures'],
+    'oar.lib.globals': ['config', 'logger'],
+    'oar.lib.fixture': ['load_fixtures', 'dump_fixtures'],
 }
 
 # modules that should be imported when accessed as attributes of oar
@@ -64,7 +64,7 @@ class Module(ModuleType):
                 setattr(self, extra_name, getattr(module, extra_name))
             return getattr(module, name)
         elif name in attribute_modules:
-            __import__('oar_lib.' + name)
+            __import__('oar.lib.' + name)
         return ModuleType.__getattribute__(self, name)
 
     def __dir__(self):
@@ -76,14 +76,14 @@ class Module(ModuleType):
         return result
 
 # keep a reference to this module so that it's not garbage collected
-old_module = sys.modules['oar_lib']
+old_module = sys.modules['oar.lib']
 
 
 # setup the new module and patch it into the dict of loaded modules
-new_module = sys.modules['oar_lib'] = Module('oar_lib')
+new_module = sys.modules['oar.lib'] = Module('oar.lib')
 new_module.__dict__.update({
     '__file__': __file__,
-    '__package__': 'oar_lib',
+    '__package__': 'oar.lib',
     '__path__': __path__,  # noqa
     '__doc__': __doc__,
     '__version__': __version__,

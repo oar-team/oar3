@@ -63,7 +63,7 @@ Ready to contribute? Here's how to set up `oar-lib` for local development.
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv oar_lib
+    $ mkvirtualenv oar
     $ cd oar-lib/
     $ make init
 
@@ -75,7 +75,7 @@ Ready to contribute? Here's how to set up `oar-lib` for local development.
 
 5. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
 
-    $ flake8 oar_lib tests
+    $ flake8 oar tests
     $ py.test
     $ tox
 

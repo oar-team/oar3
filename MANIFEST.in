@@ -3,7 +3,7 @@ include CONTRIBUTING.rst
 include CHANGES.rst
 include LICENSE
 include README.rst
-include oar_lib/judas_notify_user.pl
+include oar/lib/judas_notify_user.pl
 
 recursive-include tests *
 recursive-exclude * __pycache__

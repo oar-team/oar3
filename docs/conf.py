@@ -71,7 +71,7 @@ copyright = u'2015, Laboratoire d\'Informatique de Grenoble (http://www.liglab.f
 # the built documents.
 #
 version_file = os.path.join(HERE, os.pardir,
-                            'oar_lib', '__init__.py')
+                            'oar', 'lib', '__init__.py')
 
 release = re.search("__version__ = '([^']+)'",
                     open(version_file).read().strip()).group(1)

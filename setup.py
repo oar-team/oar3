@@ -6,7 +6,7 @@ import os.path as op
 
 
 from codecs import open
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read(fname):
@@ -29,7 +29,7 @@ if sys.version_info[0] == 2:
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                    read(op.join('oar_lib', '__init__.py')),
+                    read(op.join('oar', 'lib', '__init__.py')),
                     re.MULTILINE).group(1)
 
 if not version:
@@ -45,7 +45,7 @@ setup(
     long_description=readme + '\n\n' + changelog,
     keywords='oar-lib',
     url='https://github.com/oar-team/oar-lib',
-    packages=['oar', 'oar_lib'],
+    packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
