@@ -98,6 +98,7 @@ def schedule_cycle(plt, queue='default'):
 # Main function
 #
 def main():
+    logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_cycle(plt)

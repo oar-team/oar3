@@ -111,6 +111,8 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 # Main function
 #
 def main():
+    config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+    logger = get_logger("oar.kamelot_fifo", forward_stderr=True)
     config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_fifo_cycle(plt, "default")
@@ -118,5 +120,4 @@ def main():
 
 
 if __name__ == '__main__':  # pragma: no cover
-    logger = get_logger("oar.kamelot_fifo", forward_stderr=True)
     main()

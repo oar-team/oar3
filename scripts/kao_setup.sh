@@ -15,23 +15,21 @@ LIGHTGRAY='\033[00;37m'
 
 function install_local_base {
     apt-get install -y python-dev # TODO move to oar-docker
-    pip install git+https://github.com/oar-team/python-oar-lib.git
-
-    cd /home/docker/oar-kao; pip install .
-    ln -s /home/docker/oar-kao/oar_kao/kamelot.py /usr/local/lib/oar/schedulers/kamelot
-    ln -s /home/docker/oar-kao/oar_kao/kao.py /usr/local/lib/oar/kao
-    ln -s /home/docker/oar-kao/oar_kao/fakekao /usr/local/lib/oar/fakekao
-    # ln -s /home/docker/oar-kao/oar_kao/judas_notify_user.pl /usr/local/lib/oar/judas_notify_user.pl
+    git clone https://github.com/oar-team/oar-lib.git
+    pip install -e /home/docker/oar-lib
+    pip install -e /home/docker/oar-kao
+    ln -s /usr/local/bin/kamelot /usr/local/lib/oar/schedulers/kamelot
+    ln -s /usr/local/bin/kao /usr/local/lib/oar/kao
+    ln -s /usr/local/bin/fakekao /usr/local/lib/oar/fakekao
 }
 
 function install_base {
     apt-get install -y python-dev # TODO move to oar-docker
     pip install git+https://github.com/oar-team/oar-lib.git
     pip install git+https://github.com/oar-team/oar-kao.git
-    ln -s /home/docker/oar-kao/oar_kao/kamelot.py /usr/local/lib/oar/schedulers/kamelot
-    ln -s /home/docker/oar-kao/oar_kao/kao.py /usr/local/lib/oar/kao
-    ln -s /home/docker/oar-kao/oar_kao/fakekao /usr/local/lib/oar/fakekao
-    # ln -s /home/docker/oar-kao/oar_kao/judas_notify_user.pl /usr/local/lib/oar/judas_notify_user.pl
+    ln -s /usr/local/bin/kamelot /usr/local/lib/oar/schedulers/kamelot
+    ln -s /usr/local/bin/kao /usr/local/lib/oar/kao
+    ln -s /usr/local/bin/fakekao /usr/local/lib/oar/fakekao
 }
 
 function redis {
@@ -48,15 +46,15 @@ function kamelot_queue_default {
 }
 
 function meta_sched_fakekao {
-    service oar-server stop
+    systemctl stop oardocker-server
     echo 'META_SCHED_CMD="fakekao"' >> /etc/oar/oar.conf
-    service oar-server start
+    systemctl start oardocker-server
 }
 
 function meta_sched_kao {
-    service oar-server stop
+    systemctl stop oardocker-server
     echo 'META_SCHED_CMD="kao"' >> /etc/oar/oar.conf
-    service oar-server start
+    systemctl start oardocker-server
 }
 
 

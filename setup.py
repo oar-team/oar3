@@ -25,7 +25,7 @@ requirements = [
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                    read(op.join('oar_kao', '__init__.py')),
+                    read(op.join('oar', 'kao', '__init__.py')),
                     re.MULTILINE).group(1)
 
 if not version:
@@ -55,9 +55,9 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    kao=oar_kao.kao:main
-    kamelot=oar_kao.kamelot:main
-    kamelot_fifo=oar_kao.kamelot_fifo:main
-    bataar=oar_kao.bataar:bataar
+    kao=oar.kao.kao:main
+    kamelot=oar.kao.kamelot:main
+    kamelot_fifo=oar.kao.kamelot_fifo:main
+    bataar=oar.kao.bataar:bataar
     ''',
 )
