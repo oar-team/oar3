@@ -1,6 +1,8 @@
 # Config file for automatic testing at travis-ci.org
+
 sudo: required
-dist: trusty
+dist: precise
+group: edge
 
 addons:
   hosts:
