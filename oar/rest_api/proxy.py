@@ -7,9 +7,14 @@ Proxy to Perl Rest API
 
 """
 import sys
-import httplib
-import urllib
-import urlparse
+if sys.version_info[0] == 3:
+    from http import client as httplib
+    from urllib import parse as urlencode
+    from urllib import parse as urlparse
+else:
+    from urlparse import urlparse
+    from urllib import urlencode
+    import httplib
 
 from flask import request, Response, url_for, abort
 from werkzeug.datastructures import Headers
@@ -46,7 +51,7 @@ def proxy_request(path, proxy_host, proxy_port, proxy_prefix):
                 (proxy_host, proxy_port, proxy_path))
     if request.method == "POST" or request.method == "PUT":
         form_data = list(iterform(request.form))
-        form_data = urllib.urlencode(form_data)
+        form_data = urlencode(form_data)
         request_headers["Content-Length"] = len(form_data)
     else:
         form_data = None
@@ -76,8 +81,8 @@ def proxy_request(path, proxy_host, proxy_port, proxy_prefix):
     # If this is a redirect, munge the Location URL
     if "location" in response_headers:
         redirect = response_headers["location"]
-        parsed = urlparse.urlparse(request.url)
-        redirect_parsed = urlparse.urlparse(redirect)
+        parsed = urlparse(request.url)
+        redirect_parsed = urlparse(redirect)
 
         redirect_host = redirect_parsed.netloc
         if not redirect_host:
