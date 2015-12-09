@@ -24,7 +24,7 @@ class Slot(object):
         # timesharing ts_itvs: [user] * [job_name] * itvs
         self.ts_itvs = ts_itvs
         self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
-        if config['QUOTAS'] == 'yes':
+        if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
             self.quotas = qts.Quotas()
 
     def show(self):

@@ -14,7 +14,6 @@ CYAN='\033[00;36m'
 LIGHTGRAY='\033[00;37m'
 
 function install_local_base {
-    apt-get install -y python-dev # TODO move to oar-docker
     git clone https://github.com/oar-team/oar-lib.git
     pip install -e /home/docker/oar-lib
     pip install -e /home/docker/oar-kao
@@ -24,7 +23,6 @@ function install_local_base {
 }
 
 function install_base {
-    apt-get install -y python-dev # TODO move to oar-docker
     pip install git+https://github.com/oar-team/oar-lib.git
     pip install git+https://github.com/oar-team/oar-kao.git
     ln -s /usr/local/bin/kamelot /usr/local/lib/oar/schedulers/kamelot
@@ -58,8 +56,8 @@ function meta_sched_kao {
 }
 
 
-default_cmds=(install_local_base meta_sched_kao kamelot_queue_default)
-#default_cmds=(install_base kamelot_queue_default)
+#default_cmds=(install_local_base meta_sched_kao kamelot_queue_default)
+default_cmds=(install_base meta_sched_kao kamelot_queue_default)
 
 if [ $# -eq 0 ]
 then

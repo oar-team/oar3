@@ -326,7 +326,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             itvs = find_resource_hierarchies_job(
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
-            if config['QUOTAS'] == 'yes':
+            if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
                 nb_res = itvs_size(intersec(itvs, resource_set.default_resource_itvs))
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
