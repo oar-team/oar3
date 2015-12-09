@@ -33,7 +33,7 @@ before_script:
   - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
 
 script:
-  - sudo tox -e py-$DB
+  - tox -e py-$DB
 
 after_success:
     - coverage combine
