@@ -8,12 +8,12 @@ from oar.lib.interval import (intersec, itvs_size, extract_n_scattered_block_itv
 # assign_resources_mld_job_split_slots, find_resource_hierarchies_job
 
 
-def find_default(itvs_avail, hy_res_rqts, hy):
+def find_default(itvs_avail, hy_res_rqts, hy, *find_args, **find_kwargs):
     """Simple wrap function to default function for test purpose"""
     return oar.kao.scheduling.find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
 
-def assign_default(slots_set, job, hy, min_start_time):
+def assign_default(slots_set, job, hy, min_start_time, *assign_args, **assign_kwargs):
     """Simple wrap function to default function for test purpose"""
     return oar.kao.scheduling.assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 

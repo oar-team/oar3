@@ -179,7 +179,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         # print("itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy)
         if job.find:
             # Use specialized find resource function
-            itvs = job.find_func(itvs_avail, hy_res_rqts, hy)
+            itvs = job.find_func(itvs_avail, hy_res_rqts, hy,
+                                 *job.find_args, **job.find_kwargs)
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
@@ -307,7 +308,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
             if job.assign:
                 # Use specialized assign function
-                job.assign_func(slots_set, job, hy, min_start_time)
+                job.assign_func(slots_set, job, hy, min_start_time,
+                                *job.assign_args, **job.assign_kwargs)
             else:
                 assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 
