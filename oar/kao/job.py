@@ -17,10 +17,12 @@ from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.compat import iteritems, itervalues
 
 from oar.lib.tools import (update_current_scheduler_priority, add_new_event)
-
 import oar.lib.tools as tools
-
 from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
+
+
+from oar.kao.helpers import extract_find_assign_args
+
 
 logger = get_logger("oar.kamelot")
 
@@ -60,7 +62,11 @@ class JobPseudo(object):
     ts = False
     ph = 0
     assign = False
+    assign_args = ()
+    assign_kwargs = {}
     find = False
+    find_args = ()
+    find_kwargs = {}
     queue_name = 'default'
     user = ''
     project = ''
@@ -120,16 +126,14 @@ def get_jobs_types(jids, jobs):
             job.ph_name = t_v[1]
         elif t == "assign":
             job.assign = True
-            f_p = t_v[1].split(':')
-            job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + f_p[0])
-            if len(f_p) == 2:
-                job.assign_params = f_p[1]
+            raw_args = '='.join(t_v[1:])
+            funcname, job.assign_args, job.assign_kwargs = extract_find_assign_args(raw_args)
+            job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_%s' % funcname)
         elif t == "find":
             job.find = True
-            f_p = t_v[1].split(':')
-            job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + f_p[0])
-            if len(f_p) == 2:
-                job.find_params = f_p[1]
+            raw_args = '='.join(t_v[1:])
+            funcname, job.find_args, job.find_kwargs = extract_find_assign_args(raw_args)
+            job.find_func = getattr(oar.kao.advanced_scheduling, 'find_%s' % funcname)
         else:
             if len(t_v) == 2:
                 v = t_v[1]

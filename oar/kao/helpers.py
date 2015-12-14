@@ -4,8 +4,6 @@ from __future__ import unicode_literals, print_function
 import random
 import colorsys
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatch
 
 from oar.lib.compat import iteritems
 
@@ -29,7 +27,8 @@ def annotate(ax, rect, annot):
 
 
 def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
-
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatch
     fig, ax = plt.subplots()
 
     if slots_set:
@@ -95,6 +94,23 @@ def slots_all_2_val_ref(slots):
         sid = slot.next
         if (sid == 0):
             break
+
+
+def extract_find_assign_args(raw_args):
+    funcname = raw_args.split(':')[0]
+    kwargs = {}
+    args = []
+    for arg in raw_args.split(':')[1:]:
+        item = arg.split('=')
+        if len(item) >= 2:
+            if item[0] != "":
+                kwargs[item[0]] = '='.join(item[1:])
+            else:
+                args.append(arg)
+        else:
+            args.append(arg)
+    return funcname, args, kwargs
+
 
 # j1 = Job(1,"", 10, 10, "", "", "", {}, [(10, 20), (25,30)], 1, [])
 # j2 = Job(2,"", 5, 5, "", "", "", {}, [(1, 10), (15,20)], 1, [])
