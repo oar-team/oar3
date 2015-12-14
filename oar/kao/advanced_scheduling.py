@@ -5,6 +5,11 @@ import oar.kao.scheduling
 from oar.lib.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
                               aggregate_itvs)
 
+try:
+    from oar.coorm.server_scheduling import find_coorm, assign_coorm  # noqa
+except ImportError:
+    pass
+
 # assign_resources_mld_job_split_slots, find_resource_hierarchies_job
 
 
