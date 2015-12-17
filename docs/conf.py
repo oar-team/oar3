@@ -66,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Python OAR REST API'
-copyright = u'2015, Laboratoire d\'Informatique de Grenoble (http://www.liglab.fr)'
+copyright = u'2015, Laboratoire d\'Informatique de Grenoble (http://www.liglab.fr)'  # noqa
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -269,7 +269,7 @@ man_pages = [
 texinfo_documents = [
     ('index', 'oar_rest_api',
      u'Python OAR REST API Documentation',
-     u'Salem Harrache',
+     u', '.join(AUTHORS),
      'oar-rest-api',
      'One line description of project.',
      'Miscellaneous'),
