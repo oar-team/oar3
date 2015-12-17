@@ -29,7 +29,7 @@ class Configuration(dict):
         'SQLALCHEMY_MAX_OVERFLOW': None,
         'LOG_LEVEL': 3,
         'LOG_FILE': None,
-        'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
+        'LOG_FORMAT': '[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s',
     }
 
     def __init__(self, defaults=None):
