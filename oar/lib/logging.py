@@ -9,57 +9,59 @@ from logging import (getLogger, NullHandler, FileHandler, StreamHandler,
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
 
-class DeferredHandler(NullHandler):
-
-    def __init__(self, logger):
-        self.logger = logger
-        super(NullHandler, self).__init__()
-
-    def emit(self, record):
-        from . import config
-
-        self.logger.setLevel(LEVELS[config['LOG_LEVEL']])
-        # configure the handler
-        log_file = config.get('LOG_FILE', None)
-        if log_file is not None:
-            if log_file == ":stdout:":
-                handler = StreamHandler(sys.stdout)
-            if log_file == ":stderr:":
-                handler = StreamHandler(sys.stderr)
-            else:
-                handler = FileHandler(log_file)
-            handler.setLevel(LEVELS[config['LOG_LEVEL']])
-            handler.setFormatter(Formatter(config['LOG_FORMAT']))
-
-            self.logger.handlers = []
-            self.logger.addHandler(handler)
-            handler.emit(record)
+STREAM_HANDLER = {"stdout": None, "stderr": None}
 
 
 def create_logger():
     """Creates a new logger object."""
-    logger = getLogger("oar")
-    logger.setLevel(DEBUG)
+    from . import config
 
-    # just in case that was not a new logger, get rid of all the handlers
-    # already attached to it.
+    logger = getLogger("oar")
     del logger.handlers[:]
 
-    logger.addHandler(DeferredHandler(logger))
+    logger.setLevel(LEVELS[config['LOG_LEVEL']])
+
+    log_file = config.get('LOG_FILE', None)
+    if log_file is not None:
+        if log_file == ":stdout:":
+            handler = get_global_stream_handler("stdout")
+        if log_file == ":stderr:":
+            handler = get_global_stream_handler("stderr")
+        else:
+            handler = FileHandler(log_file)
+
+        if handler in logger.handlers:
+            logger.addHandler(handler)
+    else:
+        logger.addHandler(NullHandler())
+
+    logger.propagate = False
+
     return logger
 
 
 def get_logger(*args, **kwargs):
     """ Returns sub logger once the root logger is configured."""
-    kwargs.setdefault('forward_stderr', False)
-    from . import config
+    global STREAM_HANDLER
+    forward_stderr = kwargs.pop('forward_stderr', False)
     # Make sure that the root logger is configured
-    from . import logger  # noqa
-    if kwargs.pop('forward_stderr'):
-        sublogger = getLogger(*args, **kwargs)
-        handler = StreamHandler()
-        handler.setLevel(LEVELS[config['LOG_LEVEL']])
-        handler.setFormatter(Formatter(config['LOG_FORMAT']))
-        logger.addHandler(handler)
-        return sublogger
-    return getLogger(*args, **kwargs)
+    sublogger = getLogger(*args, **kwargs)
+    sublogger.propage = False
+    if forward_stderr:
+        stream_handler = get_global_stream_handler("stderr")
+        if stream_handler not in logger.handlers:
+            sublogger.addHandler(stream_handler)
+    return sublogger
+
+
+def get_global_stream_handler(output="stderr"):
+    from . import config
+    global STREAM_HANDLER
+    if STREAM_HANDLER[output] is None:
+        STREAM_HANDLER[output] = StreamHandler(getattr(sys, output, "stderr"))
+        STREAM_HANDLER[output].setLevel(LEVELS[config['LOG_LEVEL']])
+        STREAM_HANDLER[output].setFormatter(Formatter(config['LOG_FORMAT']))
+    return STREAM_HANDLER[output]
+
+
+logger = create_logger()
