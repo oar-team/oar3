@@ -41,11 +41,14 @@ def db(request, monkeypatch):
 
 
 def test_simple_namespace():
-    namespace = SimpleNamespace(a="a", b="b")
+    namespace = SimpleNamespace(dict(a="a", b="b"))
     assert namespace.a == "a"
     assert namespace.b == "b"
     assert namespace['b'] == "b"
     assert namespace['a'] == "a"
+    namespace.new_key = "new_value"
+    assert namespace.new_key == "new_value"
+    assert namespace['new_key'] == "new_value"
     assert dict(namespace) == namespace.__dict__
 
 
