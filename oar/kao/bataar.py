@@ -79,22 +79,16 @@ nb_res = 0
 
 
 def create_uds(uds_name):
-    # Make sure the socket does not already exist
-    try:
-        os.unlink(uds_name)
-    except OSError:
-        if os.path.exists(uds_name):
-            raise
 
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
-    # Bind the socket to the port
-    print('starting up on %s' % uds_name, file=sys.stderr)
-    sock.bind(uds_name)
-
-    # Listen for incoming connections
-    sock.listen(1)
-
+    logger.info('connecting to', uds_name)
+    try:
+        sock.connect(uds_name)
+        logger.info('connected')
+    except socket.error:
+        print("socket error: ", uds_name)
+        logger.error("socket error", uds_name)
+        sys.exit(1)
     return sock
 
 
@@ -230,8 +224,6 @@ class BatSched(object):
         self.jobs = jobs
         self.nb_jobs = len(jobs)
         self.sock = create_uds(uds_name)
-        logger.info('waiting for a connection')
-        self.connection, self.client_address = self.sock.accept()
 
         self.platform.running_jids = []
         if sys.version_info[0] == 2:
@@ -246,7 +238,7 @@ class BatSched(object):
         while nb_completed_jobs < self.nb_jobs:
 
             now_str, jobs_submitted, new_jobs_completed = read_bat_msg(
-                self.connection)
+                self.sock)
 
             # now_str = "10"
             # jobs_submitted = [1]
@@ -314,7 +306,7 @@ class BatSched(object):
 
             now += self.sched_delay
             self.env.now = now
-            send_bat_msg(self.connection, now, jids_to_launch, self.jobs)
+            send_bat_msg(self.sock, now, jids_to_launch, self.jobs)
 
     def run(self):
         self.sched_loop()
@@ -433,7 +425,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         #
         mld_id = 1
         print("Genererate jobs")
-        
+
         for j in json_jobs:
             jid = int(j['id'])
             rqb = [([('resource_id', j['res'])], [(0, nb_res - 0)])]
