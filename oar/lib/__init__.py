@@ -34,11 +34,11 @@ all_by_module = {
         'DoesNotExist',
     ],
     'oar.lib.database': ['Database'],
-    'oar.lib.logging': ['create_logger', 'get_logger'],
+    'oar.lib.logging': ['create_logger', 'get_logger', 'logger'],
     'oar.lib.configuration': ['Configuration'],
     'oar.lib.utils': ['cached_property', 'Command', 'JSONEncoder',
                       'render_query', 'ResultProxyIter', 'row2dict'],
-    'oar.lib.globals': ['config', 'logger'],
+    'oar.lib.globals': ['config'],
     'oar.lib.fixture': ['load_fixtures', 'dump_fixtures'],
 }
 
