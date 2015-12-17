@@ -178,6 +178,8 @@ def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
     # job.start_time , job.walltime, job.mld_id
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
+    # returns value other than None value to indicate successful assign
+    return prev_sid_left, prev_sid_right, job
 
 
 def assign_one_time_find(slots_set, job, hy, min_start_time):
@@ -235,3 +237,5 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
     # job.start_time , job.walltime, job.mld_id
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
+    # returns value other than None value to indicate successful assign
+    return prev_sid_left, prev_sid_right, job
