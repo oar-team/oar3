@@ -28,9 +28,15 @@ class Slot(object):
             self.quotas = qts.Quotas()
 
     def show(self):
-        print("(id:", self.id, "p:", self.prev, "n:", self.next, ") itvs:",
-              self.itvs, "b:", self.b, "e:", self.e,
-              "ts_itvs:", self.ts_itvs, "ph_itvs:", self.ph_itvs)
+        print("%s" % self)
+
+    def __str__(self):
+        repr_string = "id=%(id)s, prev=%(prev)s, next=%(next)s, itvs=%(itvs)s, " \
+                      "b=%(b)s, e=%(e)s, ts_itvs=%(ts_itvs)s, ph_itvs=%(ph_itvs)s"
+        return "Slot(%s)" % (repr_string % vars(self))
+
+    def __repr__(self):
+        return "<%s>" % self
 
 
 def intersec_slots(slots):  # not used TO REMOVE?
@@ -110,11 +116,20 @@ class SlotSet:
         #  (same requested resources w/ constraintes)
         self.cache = {}
 
-    def show_slots(self):
+    def __str__(self):
+        lines = []
         for i, slot in iteritems(self.slots):
-            print(i)
-            slot.show()
-        print('---')
+            lines.append("[%s] %s" % (i, slot))
+        max_length = max([len(line) for line in lines])
+        lines.append("%s" % ("-" * max_length))
+        lines.insert(0, ('{:-^%d}' % max_length).format(' SlotSet '))
+        return '\n'.join(lines)
+
+    def __repr__(self):
+        return "%s" % self
+
+    def show_slots(self):
+        print("%s" % self)
 
     # Split slot accordingly with job resource assignment *)
     # new slot A + B + C (A, B and C can be null)         *)
