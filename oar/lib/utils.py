@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
 
+import os
 import sys
 import re
 import threading
@@ -41,6 +42,14 @@ def to_json(obj, **kwargs):
     kwargs.setdefault('indent', 4)
     kwargs.setdefault('separators', (',', ': '))
     return json.dumps(obj, **kwargs)
+
+
+def touch(fname, times=None):
+    dirname = '/'.join(fname.split('/')[:-1])
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    with open(fname, 'a'):
+        os.utime(fname, times)
 
 
 class SimpleNamespace(dict):

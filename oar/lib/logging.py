@@ -5,6 +5,7 @@ import sys
 
 from logging import (getLogger, NullHandler, FileHandler, StreamHandler,
                      Formatter, INFO, ERROR, WARN, DEBUG)
+from .utils import touch
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 
@@ -28,6 +29,7 @@ def create_logger():
         if log_file == ":stderr:":
             handler = get_global_stream_handler("stderr")
         else:
+            touch(log_file)
             handler = FileHandler(log_file)
 
         if handler in logger.handlers:
