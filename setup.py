@@ -39,6 +39,9 @@ setup(
     version=version,
     url='https://github.com/oar-team/kao',
     install_requires=requirements,
+    extras_require={
+        "coorm": ["zerorpc", "requests"]
+    },
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
