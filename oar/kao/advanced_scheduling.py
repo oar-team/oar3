@@ -2,15 +2,21 @@
 from __future__ import unicode_literals, print_function
 from copy import deepcopy
 import oar.kao.scheduling
+
+from oar.lib import config
 from oar.lib.interval import (intersec, itvs_size, extract_n_scattered_block_itv,
                               aggregate_itvs)
-
+import pickle
 try:
-    from oar.coorm.server_scheduling import find_coorm, assign_coorm  # noqa
+    import zerorpc
 except ImportError:
-    pass
+    zerorpc = None
 
-# assign_resources_mld_job_split_slots, find_resource_hierarchies_job
+
+# Set undefined config value to default one
+config.setdefault_config({
+    'COORM_DEFAULT_TIMEOUT': 10,
+})
 
 
 def find_default(itvs_avail, hy_res_rqts, hy, *find_args, **find_kwargs):
@@ -238,4 +244,56 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
     # returns value other than None value to indicate successful assign
+    return prev_sid_left, prev_sid_right, job
+
+
+def find_coorm(itvs_avail, hy_res_rqts, hy, *find_args, **find_kwargs):
+    if zerorpc is None:
+        return find_default(itvs_avail, hy_res_rqts, hy)
+    c = zerorpc.Client()
+    protocol, ip, port = find_args[:3]
+    c.connect("%s://%s:%s" % (protocol, ip, port))
+    return c.find_resource_hierarchies(
+        itvs_avail,
+        hy_res_rqts,
+        hy,
+    )
+
+
+def assign_coorm(slots_set, job, hy, min_start_time,
+                 *assign_args, **assign_kwargs):
+    if zerorpc is None:
+        return assign_default(slots_set, job, hy, min_start_time)
+    timeout = assign_kwargs.get('timeout', None)
+    if timeout is not None and timeout.isdigit():
+        default_timeout = int(timeout)
+        if config['COORM_DEFAULT_TIMEOUT'] < default_timeout:
+            default_timeout = config['COORM_DEFAULT_TIMEOUT']
+    # Init connetion with COORM application
+    c = zerorpc.Client(timeout=default_timeout)
+    protocol, ip, port = assign_args[:3]
+    c.connect("%s://%s:%s" % (protocol, ip, port))
+
+    # Convert the job to dict, to preserve values after de/serialisation
+    missing = object()
+    dict_job = job.to_dict()
+    for k in ('mld_res_rqts', 'key_cache', 'ts', 'ph', 'find'):
+        if getattr(job, k, missing) is not missing:
+            dict_job[k] = getattr(job, k)
+
+    # Remote call
+    prev_sid_left, prev_sid_right, dict_job = c.assign_resources(
+        pickle.dumps(slots_set),
+        dict_job,
+        hy,
+        min_start_time,
+    )
+
+    # Propage modified job values outside
+    for k in ('moldable_id', 'res_set', 'start_time', 'walltime'):
+        if k in dict_job:
+            setattr(job, k, dict_job.get(k))
+
+    # Split SlotSet to add our reservation
+    slots_set.split_slots(prev_sid_left, prev_sid_right, job)
     return prev_sid_left, prev_sid_right, job
