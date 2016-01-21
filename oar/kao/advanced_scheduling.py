@@ -269,6 +269,8 @@ def assign_coorm(slots_set, job, hy, min_start_time,
         default_timeout = int(timeout)
         if config['COORM_DEFAULT_TIMEOUT'] < default_timeout:
             default_timeout = config['COORM_DEFAULT_TIMEOUT']
+    else:
+        default_timeout = None
     # Init connetion with COORM application
     c = zerorpc.Client(timeout=default_timeout)
     protocol, ip, port = assign_args[:3]
