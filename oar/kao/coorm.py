@@ -6,6 +6,7 @@ import requests
 import zerorpc
 
 from oar.lib.utils import SimpleNamespace
+from oar.lib.tools import duration_to_hms
 
 
 class CoormApplication(object):
@@ -18,10 +19,10 @@ class CoormApplication(object):
     :param api_credentials: A optional username/password tuple.
     :param zeromq_bind_uri:  ZeroMQ bind URI.
     :param nodes: The initial needed number of nodes (default: 0)
-    :param walltime:  The default walltime (default: 1:00:00).
+    :param walltime:  The default walltime in sec (default: 3600).
     """
     def __init__(self, command, api_host, zeromq_bind_uri,
-                 api_credentials=None, nodes=1, walltime="1:00:00", **kwargs):
+                 api_credentials=None, nodes=1, walltime=3600, **kwargs):
         self.nodes = 1
         self.command = command
         self.walltime = walltime
@@ -62,8 +63,9 @@ class CoormApplication(object):
         zmq_ip = self.zeromq_bind_uri.split('://')[1].split(':')[0]
         zmq_port = self.zeromq_bind_uri.split('://')[1].split(':')[1]
         job_type = "assign=coorm:%s:%s:%s" % (zmq_protocol, zmq_ip, zmq_port)
+        walltime_hms = "%.2d:%.2d:%.2d" % duration_to_hms(self.walltime)
         data = {
-            'resource': '/nodes=%s,walltime=%s' % (self.nodes, self.walltime),
+            'resource': '/nodes=%s,walltime=%s' % (self.nodes, walltime_hms),
             'command': self.command,
             'type': job_type,
         }
