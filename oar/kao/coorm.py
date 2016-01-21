@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement, absolute_import, unicode_literals
+import time
 import pickle
+
+from multiprocessing import Process
 
 import requests
 import zerorpc
@@ -81,17 +84,25 @@ class CoormApplication(object):
                 self.logger.error(line)
             return
 
-    def run(self):
-        job_id = self.submit()
-        if job_id is not None:
-            s = zerorpc.Server(_CoormApplicationProxy(self))
-            self.logger.info("Running ZeroMQ RPC server : %s" %
-                             self.zeromq_bind_uri)
-            s.bind(self.zeromq_bind_uri)
-            s.run()
-            return 0
-        else:
-            return 1
+    def run(self, submit_iteration=1, submit_interval=10):
+        def batch_submission(iteration, interval):
+            for i in range(iteration):
+                if i > 0:
+                    time.sleep(interval)
+                job_id = self.submit()
+                if job_id is not None:
+                    self.logger.info("[%s] New job submission" % (job_id))
+
+        submission_process = Process(target=batch_submission, args=(submit_iteration, submit_interval,))
+        submission_process.start()
+        rpc_server = zerorpc.Server(_CoormApplicationProxy(self))
+        self.logger.info("Running ZeroMQ RPC server : %s" %
+                         self.zeromq_bind_uri)
+        rpc_server.bind(self.zeromq_bind_uri)
+        rpc_server.run()
+        if submission_process.is_alive():
+            submission_process.terminate()
+        submission_process.join()
 
 
 class _CoormApplicationProxy(object):
