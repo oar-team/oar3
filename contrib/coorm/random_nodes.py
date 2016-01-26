@@ -15,6 +15,7 @@ class RandomNodes(CoormApplication):
 
     def __init__(self, **kwargs):
         super(RandomNodes, self).__init__(**kwargs)
+        self.ref_walltime = self.walltime
 
     @property
     def rqt_nodes(self):
@@ -28,6 +29,12 @@ class RandomNodes(CoormApplication):
         for mld_res_rqt in job.mld_res_rqts:
             mld_res_rqt[2][0][0][0][1] = self.rqt_nodes
         return job.mld_res_rqts
+
+    def submit(self):
+        """ Submit a new OAR job from the Rest API"""
+        self.walltime = self.ref_walltime * randint(1, 10)
+        self.command = "sleep %s" % (randint(1, self.walltime))
+        super(RandomNodes, self).submit()
 
     def assign_resources(self, slots_set, job, hy, min_start_time):
         '''Assign resources to a job and update by splitting the concerned
@@ -88,7 +95,7 @@ def cli(zeromq_bind_uri, api_host, username,
     else:
         raise click.ClickException("Invalid range of nodes")
 
-    command = "sleep %s" % (randint(1, 360))
+    command = "sleep %s" % walltime
     app = RandomNodes(command=command, api_host=api_host,
                       zeromq_bind_uri=zeromq_bind_uri,
                       api_credentials=api_credentials, nodes=max_nodes,
