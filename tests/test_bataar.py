@@ -53,14 +53,15 @@ class FakeSocket(object):
     def __init__(self, socket_type, socket_mode):
         pass
 
-    def bind(self, name):
+    def connect(self, uds_name):
+        self.connection = FakeConnection()
         pass
 
-    def listen(self, nb):
-        pass
+    def recv(self, nb):
+        return self.connection.recv(nb)
 
-    def accept(self):
-        return(FakeConnection(), None)
+    def sendall(self, msg):
+        return self.connection.sendall(msg)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -87,8 +88,8 @@ def exec_gene(options):
     args.extend(options)
     runner = CliRunner()
     result = runner.invoke(bataar, args)
-    print(result.exit_code)
-    # print(result.output)
+    print("exit code:", result.exit_code)
+    print(result.output)
     print("Messages sent:", sent_msgs)
     return (result, sent_msgs)
 

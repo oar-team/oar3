@@ -6,7 +6,6 @@ from __future__ import unicode_literals, print_function
 import struct
 import socket
 import sys
-import os
 import json
 import click
 
@@ -202,6 +201,7 @@ def db_initialization(nb_res, node_size=None):
 
     db.commit()
 
+
 class BatEnv(object):
 
     def __init__(self, now):
@@ -342,7 +342,7 @@ class BatSched(object):
               * Allocated resources which belongs to the same node. Node's size must be provided,\
               job's sizes are not allowed to exceed node's size.")
 def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, types):
-    # pdb.set_trace()
+    # import pdb; pdb.set_trace()
     if database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
@@ -463,7 +463,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                                 find=find, find_func=find_func)
 
             # print("jobs: ", jid, " mld_res_rqts: ", mld_res_rqts)
-
+        # import pdb; pdb.set_trace()
         BatSched(res_set, jobs, 'simu', {}, 5, socket).run()
 
     elif database_mode == 'memory':
@@ -499,7 +499,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
             db_jid2s_jid[i + 1] = jid
 
         db.flush()  # TO REMOVE ???
-
+        # import pdb; pdb.set_trace()
         BatSched([], jobs, 'batsim-db', db_jid2s_jid, 5, socket).run()
 
         if __name__ != '__main__':
