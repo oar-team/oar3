@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import click
+import time
 
 if sys.version_info[0] == 2:
     from sets import Set
@@ -262,9 +263,9 @@ class BatSched(object):
                 if self.mode_platform == 'batsim-db':
                     set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
-            now = int(now_str)
+            now = float(now_str)
             self.env.now = now  # TODO can be remove ???
-            real_time = time.now()
+            real_time = time.time()
 
             print("jobs running: %s" % self.platform.running_jids)
             print("jobs waiting: %s" % self.waiting_jids)
@@ -304,7 +305,7 @@ class BatSched(object):
                     self.jobs[jid].state = "Running"
                     print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
-            real_sched_time = time.now() - real_time
+            real_sched_time = time.time() - real_time
             # now += self.sched_delay
             now += real_sched_time
             self.env.now = now
