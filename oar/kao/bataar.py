@@ -264,6 +264,7 @@ class BatSched(object):
 
             now = int(now_str)
             self.env.now = now  # TODO can be remove ???
+            real_time = time.now()
 
             print("jobs running: %s" % self.platform.running_jids)
             print("jobs waiting: %s" % self.waiting_jids)
@@ -303,8 +304,9 @@ class BatSched(object):
                     self.jobs[jid].state = "Running"
                     print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
-
-            now += self.sched_delay
+            real_sched_time = time.now() - real_time
+            # now += self.sched_delay
+            now += real_sched_time
             self.env.now = now
             send_bat_msg(self.sock, now, jids_to_launch, self.jobs)
 
