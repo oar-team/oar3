@@ -8,6 +8,7 @@ import socket
 import sys
 import json
 import click
+import time
 
 if sys.version_info[0] == 2:
     from sets import Set
@@ -262,8 +263,9 @@ class BatSched(object):
                 if self.mode_platform == 'batsim-db':
                     set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
-            now = int(now_str)
+            now = float(now_str)
             self.env.now = now  # TODO can be remove ???
+            real_time = time.time()
 
             print("jobs running: %s" % self.platform.running_jids)
             print("jobs waiting: %s" % self.waiting_jids)
@@ -303,8 +305,9 @@ class BatSched(object):
                     self.jobs[jid].state = "Running"
                     print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
-
-            now += self.sched_delay
+            real_sched_time = time.time() - real_time
+            # now += self.sched_delay
+            now += real_sched_time
             self.env.now = now
             send_bat_msg(self.sock, now, jids_to_launch, self.jobs)
 
@@ -404,7 +407,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         # generate ResourceSet
         #
 
-        hy_resource_id = [[(i, i)] for i in range(nb_res)]
+        hy_resource_id = [[(i, i)] for i in range(1,nb_res+1)]
         hierarchy = {'resource_id': hy_resource_id}
         if node_size > 0:
             node_id = [[(node_size*i, node_size*(i+1)-1)] for i in range(int(nb_res/node_size))]
@@ -413,11 +416,11 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         print('hierarchy: ', hierarchy)
 
         res_set = ResourceSetSimu(
-            rid_i2o=range(nb_res),
-            rid_o2i=range(nb_res),
-            roid_itvs=[(0, nb_res - 1)],
+            rid_i2o=range(nb_res+1),
+            rid_o2i=range(nb_res+1),
+            roid_itvs=[(1, nb_res)],
             hierarchy=hierarchy,
-            available_upto={2147483600: [(0, nb_res - 1)]}
+            available_upto={2147483600: [(1, nb_res)]}
         )
 
         #
@@ -428,8 +431,8 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
 
         for j in json_jobs:
             jid = int(j['id'])
-            rqb = [([('resource_id', j['res'])], [(0, nb_res - 0)])]
-            rqbh = [([('node', 1), ('resource_id', j['res'])], [(0, nb_res - 0)])]
+            rqb = [([('resource_id', j['res'])], [(1, nb_res)])]
+            rqbh = [([('node', 1), ('resource_id', j['res'])], [(1, nb_res)])]
 
             if add_1h:
                 if add_mld:
@@ -488,7 +491,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                                 moldable_id=0,
                                 mld_res_rqts=[(jid, j["walltime"],
                                                [([("resource_id", j["res"])],
-                                                 [(0, nb_res - 0)])])],
+                                                 [(1, nb_res - 0)])])],
                                 run_time=0,
                                 db_jid=i + 1,
                                 assign=False,
