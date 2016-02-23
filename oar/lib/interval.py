@@ -15,7 +15,6 @@ def ordered_ids2itvs(ids):
                 b = i
             e = i
         itvs.append((b, e))
-
     return itvs
 
 
@@ -28,8 +27,18 @@ def itvs2ids(itvs):
     for itv in itvs:
         b, e = itv
         ids.extend(range(b, e + 1))
-
     return ids
+
+
+def itvs2batsim_str(itvs):
+    batsim_str = ''
+    for itv in itvs:
+        b, e = itv
+        if b == e:
+            batsim_str += "%d," % b
+        else:
+            batsim_str += "%d-%d," % itv
+    return batsim_str.rstrip(',')
 
 
 def equal_and_sub_prefix_itvs(prefix_itvs, itvs):

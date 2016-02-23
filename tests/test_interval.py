@@ -4,7 +4,8 @@ from oar.lib.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
                               equal_itvs, equal_and_sub_prefix_itvs,
                               equal_itvs2ids, equal_itvs_same_segmentation,
-                              aggregate_itvs, itvs_size, sub_intervals, unordered_ids2itvs)
+                              aggregate_itvs, itvs_size, sub_intervals,
+                              unordered_ids2itvs, itvs2batsim_str)
 
 
 def test_intersec():
@@ -152,3 +153,9 @@ def test_subintervals_2():
     y = [(2, 5), (24, 27)]
     r = [(1, 1), (6, 10), (20, 23), (28, 30)]
     assert sub_intervals(x, y) == r
+
+
+def test_itvs2batsim_str():
+    itvs = [(1, 1), (4, 5), (7, 7), (8, 10)]
+    bat_str = '1,4-5,7,8-10'
+    assert itvs2batsim_str(itvs) == bat_str
