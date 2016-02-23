@@ -38,7 +38,7 @@ BATSIM_DEFAULT_CONFIG = {
     'LOG_FILE': '',
     'LOG_FORMAT': '[%(levelname)s] [%(asctime)s] [%(name)s]: %(message)s',
     'LOG_LEVEL': 3,
-    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'HIERARCHY_LABELS': 'resource_id,network_address',
     'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
     'SCHEDULER_JOB_SECURITY_TIME': '60',
     'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',

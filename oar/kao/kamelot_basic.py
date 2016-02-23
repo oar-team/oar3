@@ -11,7 +11,7 @@ from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'HIERARCHY_LABELS': 'resource_id,network_address',
     'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
     'SCHEDULER_JOB_SECURITY_TIME': '60',
 }

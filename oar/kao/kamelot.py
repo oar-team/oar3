@@ -3,6 +3,8 @@
 from __future__ import unicode_literals, print_function
 
 import sys
+import time
+
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo
@@ -18,7 +20,7 @@ besteffort_duration = 300  # TODO conf ???
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'HIERARCHY_LABEL': 'resource_id,network_address',
+    'HIERARCHY_LABELS': 'resource_id,network_address',
     'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
     'SCHEDULER_JOB_SECURITY_TIME': '60',
     'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
@@ -159,7 +161,6 @@ def schedule_cycle(plt, now, queue="default"):
                                                job_security_time,
                                                now,
                                                filter_besteffort)
-
         #
         # Scheduled
         #
@@ -177,7 +178,6 @@ def schedule_cycle(plt, now, queue="default"):
         plt.save_assigns(waiting_jobs, resource_set)
     else:
         logger.info("no waiting jobs")
-
 
 #
 # Main function
