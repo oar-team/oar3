@@ -19,7 +19,7 @@ from oar.lib.compat import iteritems
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.lib.interval import itvs2ids
+from oar.lib.interval import itvs2batsim_str
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
@@ -28,7 +28,6 @@ import oar.kao.advanced_scheduling
 from oar.kao.meta_sched import meta_schedule
 import oar.lib.tools
 
-offset_idx = 0
 plt = None
 orig_func = {}
 
@@ -144,11 +143,7 @@ def send_bat_msg(connection, now, jids_to_launch, jobs):
     if jids_to_launch:
         msg += str(now) + ":J:"
         for jid in jids_to_launch:
-            msg += str(jid) + "="
-            for r in itvs2ids(jobs[jid].res_set):
-                msg += str(r - offset_idx) + ","
-            # replace last comma by semicolon separtor between jobs
-            msg = msg[:-1] + ";"
+            msg += str(jid) + "=" + itvs2batsim_str(jobs[jid].res_set) + ";"
         msg = msg[:-1]  # remove last semicolon
 
     else:  # Do nothing
@@ -211,7 +206,7 @@ class BatEnv(object):
 
 class BatSched(object):
 
-    def __init__(self, res_set, jobs, mode_platform="simu", db_jid2s_jid={}, sched_delay=5,
+    def __init__(self, res_set, jobs, mode_platform="simu", db_jid2s_jid={}, sched_delay=-1,
                  uds_name='/tmp/bat_socket'):
 
         self.mode_platform = mode_platform
@@ -306,8 +301,10 @@ class BatSched(object):
                     print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
             real_sched_time = time.time() - real_time
-            # now += self.sched_delay
-            now += real_sched_time
+            if self.sched_delay == -1:
+                now += real_sched_time
+            else:
+                now += self.sched_delay
             self.env.now = now
             send_bat_msg(self.sock, now, jids_to_launch, self.jobs)
 
@@ -344,8 +341,11 @@ class BatSched(object):
               LOCAL | 4 |\
               * Allocated resources which belongs to the same node. Node's size must be provided,\
               job's sizes are not allowed to exceed node's size.")
-def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, types):
-    # import pdb; pdb.set_trace()
+@click.option('-t', '--scheduler_delay', default=-1, type=click.INT,
+              help="set the delay in seconds taken by scheduler to schedule all jobs. By default \
+              the actual delay of scheduler is used")
+def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, types, scheduler_delay):
+    #    import pdb; pdb.set_trace()
     if database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
@@ -467,7 +467,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
 
             # print("jobs: ", jid, " mld_res_rqts: ", mld_res_rqts)
         # import pdb; pdb.set_trace()
-        BatSched(res_set, jobs, 'simu', {}, 5, socket).run()
+        BatSched(res_set, jobs, 'simu', {}, scheduler_delay, socket).run()
 
     elif database_mode == 'memory':
 
@@ -503,7 +503,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
 
         db.flush()  # TO REMOVE ???
         # import pdb; pdb.set_trace()
-        BatSched([], jobs, 'batsim-db', db_jid2s_jid, 5, socket).run()
+        BatSched([], jobs, 'batsim-db', db_jid2s_jid, scheduler_delay, socket).run()
 
         if __name__ != '__main__':
             # If used oar.lib.tools' functions are used after we need to undo monkeypatching.
