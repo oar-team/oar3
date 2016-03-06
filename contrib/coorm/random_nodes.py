@@ -67,8 +67,6 @@ def get_default_bind():
 @click.option('-w', '--walltime', default=10)
 @click.option('-n', '--nodes', default="1",
               help="Number of required nodes (may be a range like x:y)")
-@click.option('-n', '--nodes', default="1",
-              help='Number of required nodes (may be a range like x:y)')
 @click.option('-s', '--submit-count', type=int, default=1,
               help="number of job submissions")
 @click.option('-i', '--submit-interval', type=int, default=10,

@@ -27,7 +27,7 @@ def create_db():
     config['DB_BASE_LOGIN'] = 'oar'
     config['DB_HOSTNAME'] = 'localhost'
 
-    # db.create_all()
+    db.create_all()
 
 
 def delete_tables():
@@ -84,21 +84,47 @@ def save_assigns_redis_0(jobs, resource_set):
 
 
 def save_assigns_redis_pipeline_0(jobs, resource_set):
+    print('# save_assigns_redis_pipeline_0')
+    t = 0
     if len(jobs) > 0:
         r = redis.Redis()
         pipe = r.pipeline()
         mld_id_start_time_s = []
         for j in itervalues(jobs):
+            t0 = time.time()
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
             riods = itvs2ids(j.res_set)
             str_mld_id_rids = ','.join(map(lambda x: str(resource_set.rid_o2i[x]), riods))
-
+            t += (time.time() - t0)
             pipe.set(str(j.moldable_id),  str_mld_id_rids)
 
         db.session.execute(
             GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         pipe.execute()
+    print("Cumlated mld_id_start_time_s.append time:", t)
+
+def save_assigns_redis_pipeline_1(jobs, resource_set):
+    print('# save_assigns_redis_pipeline_1 compact')
+    t = 0
+    if len(jobs) > 0:
+        r = redis.Redis()
+        pipe = r.pipeline()
+        mld_id_start_time_s = []
+        for j in itervalues(jobs):
+            t0 = time.time()
+            mld_id_start_time_s.append(
+                {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
+            # riods = itvs2ids(j.res_set)
+            str_mld_id_rids = j.res_set
+
+            t += (time.time() - t0)
+            pipe.set(str(j.moldable_id),  str_mld_id_rids)
+
+        db.session.execute(
+            GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
+        pipe.execute()
+    print("Cumlated mld_id_start_time_s.append time:", t)
 
 
 def bench_job_same(nb_job_exp=10, job_size=100, save_assign='default'):
@@ -115,14 +141,26 @@ def bench_job_same(nb_job_exp=10, job_size=100, save_assign='default'):
             save_assigns_bulk_0(jobs, rs)
         elif save_assign == 'redis_0':
             save_assigns_redis_0(jobs, rs)
+        elif save_assign == 'redis_pipeline_0':
+            save_assigns_redis_pipeline_0(jobs, rs)
+        elif save_assign == 'redis_pipeline_1':
+            save_assigns_redis_pipeline_1(jobs, rs)
         else:
             save_assigns(jobs, rs)
         end = time.time()
         print(nb_j, job_size, end - start)
         delete_tables()
 
-# bench_job_same(12, 100, 'redis_0')
+
+create_db()
+nb_jobs_exp = 10
+job_size = 10000
+# bench_job_sxsame(12, 100, 'redis_0')
 # bench_job_same(16, 100, 'redis_pipeline_0')
-bench_job_same(5, 10000, 'default')
-bench_job_same(5, 10000, 'save_assigns_bulk')
-# bench_job_same('save_assigns_redis')
+bench_job_same(nb_jobs_exp, job_size, 'default')
+bench_job_same(nb_jobs_exp, job_size, 'bulk_0')
+# bench_job_same(nb_jobs_exp, job_size, 'save_assigns_redis')
+# bench_job_same(nb_jobs_exp, job_size, 'redis_0')
+# bench_job_same(nb_jobs_exp, job_size, 'redis_pipeline_0')
+bench_job_same(nb_jobs_exp, job_size, 'redis_pipeline_1')
+# bench_job_same(nb_jobs_exp, job_size, 'save_assigns_redis_0')
