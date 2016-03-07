@@ -1,0 +1,33 @@
+# Config file for automatic testing at travis-ci.org
+sudo: false
+
+language: python
+
+python:
+  - "2.7"
+  - "3.4"
+
+env:
+  - DB_TYPE=postgresql
+  - DB_TYPE=sqlite
+
+install:
+  - pip install tox coverage
+  - coverage erase
+
+before_script:
+  - psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';"
+  - psql -U postgres -c "CREATE USER oar_ro WITH PASSWORD 'oar_ro';"
+  - psql -U postgres -c "CREATE DATABASE oar;"
+  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
+  - psql -U postgres -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO oar_ro;"
+
+script:
+  - tox -e py-$DB_TYPE
+
+after_success:
+    - coverage combine
+    # Report coverage results to codecov.io
+    - pip install codecov
+    - codecov
+
