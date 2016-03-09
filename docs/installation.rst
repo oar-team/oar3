@@ -1,24 +1,31 @@
-============
 Installation
 ============
 
 Requirements:
   - python >= 2.7
 
-You can install, upgrade, uninstall oar3 with these commands::
+You can install, upgrade, uninstall oar with these commands
 
-  $ pip install [--user] oar3
-  $ pip install [--user] --upgrade oar3
-  $ pip uninstall oar3
+.. code:: bash
 
-Or from git (last development version)::
+      $ pip install [--user] oar
+      $ pip install [--user] --upgrade oar
+      $ pip uninstall oar
 
-  $ pip install git+https://github.com/oar-team/oar3.git
+Or from git (last development version)
 
-Or if you already pulled the sources::
+.. code:: bash
 
-  $ pip install path/to/sources
+    $ pip install git+https://github.com/oar-team/oar3.git
 
-Or if you don't have pip::
+Or if you already pulled the sources
 
-  $ easy_install oar3
+.. code:: bash
+
+    $ pip install path/to/sources
+
+Or if you don't have pip
+
+.. code:: bash
+
+    $ easy_install oar

@@ -17,16 +17,7 @@ OAR next generation
     :target: https://readthedocs.org/projects/oar3/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://landscape.io/github/oar-team/oar3/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/oar-team/oar3/master
-    :alt: Code Health
-
 OAR next generation
 
 * Free software: BSD license
 * Documentation: https://oar3.readthedocs.org.
-
-Features
---------
-
-* TODO
