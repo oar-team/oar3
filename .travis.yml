@@ -1,5 +1,14 @@
 # Config file for automatic testing at travis-ci.org
-sudo: false
+
+sudo: required
+dist: trusty
+
+addons:
+  hosts:
+    - node1
+    - node2
+    - server
+    - frontend
 
 language: python
 
@@ -7,13 +16,26 @@ python:
   - "2.7"
   - "3.4"
 
+env:
+  - DB=postgresql
+
+before_install:
+ - sudo mkdir -p /etc/oar
+ - sudo chown -R $USER /etc/oar
+
 install:
   - pip install tox coverage
   - coverage erase
 
-# command to run tests, e.g. python setup.py test
+before_script:
+  - psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';"
+  - psql -U postgres -c "CREATE DATABASE oar;"
+  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
+  - psql -U postgres -c "CREATE USER oar_ro WITH PASSWORD 'oar_ro';"
+  - PGPASSWORD=oar psql -U oar -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO oar_ro;" -h localhost
+
 script:
-  - tox -e py
+  - tox -e py-$DB oar tests
 
 after_success:
     - coverage combine
