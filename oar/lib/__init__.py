@@ -9,9 +9,7 @@
 from types import ModuleType
 import sys
 
-from .compat import iteritems
-
-__version__ = '0.5.0.dev0'
+import six
 
 # The implementation of a lazy-loading module in this file replaces the
 # oar package when imported from within.  Attribute access to the oar
@@ -49,7 +47,7 @@ attribute_modules = frozenset(['configuration', 'database', 'exceptions',
 
 
 object_origins = {}
-for module, items in iteritems(all_by_module):
+for module, items in six.iteritems(all_by_module):
     for item in items:
         object_origins[item] = module
 
@@ -86,8 +84,6 @@ new_module.__dict__.update({
     '__package__': 'oar.lib',
     '__path__': __path__,  # noqa
     '__doc__': __doc__,
-    '__version__': __version__,
     '__all__': tuple(object_origins) + tuple(attribute_modules),
     '__docformat__': 'restructuredtext en',
-    'VERSION': __version__,
 })

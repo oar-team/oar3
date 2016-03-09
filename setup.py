@@ -26,6 +26,7 @@ requirements = [
     'tabulate',
     'click',
     'simpy',
+    'six',
 ]
 
 if sys.version_info[0] == 2:
