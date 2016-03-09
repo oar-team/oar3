@@ -4,8 +4,10 @@ from __future__ import division
 import oar.lib
 from flask import url_for, g
 
+from oar import VERSION
+
 from . import Blueprint
-from .. import API_VERSION, VERSION
+from .. import API_VERSION
 
 app = Blueprint('frontend', __name__)
 
