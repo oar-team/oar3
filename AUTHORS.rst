@@ -5,6 +5,7 @@ Credits
 Development Lead
 ----------------
 
+* Olivier Richard <olivier.richard@imag.fr>
 * Salem Harrache <salem.harrache@inria.fr>
 
 Contributors
