@@ -30,9 +30,7 @@ requirements = [
 ]
 
 if sys.version_info[0] == 2:
-    # TODO: put python2-only package requirements
-    # requirements.append('example-package')
-    pass
+    requirements.append('subprocess32')
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
