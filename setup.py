@@ -49,6 +49,9 @@ setup(
     url='https://github.com/oar-team/oar3',
     packages=find_packages(),
     install_requires=requirements,
+    extras_require={
+        "coorm": ["zerorpc", "requests"]
+    },
     include_package_data=True,
     zip_safe=False,
     description="OAR next generation",
@@ -65,4 +68,14 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Clustering',
     ],
+    entry_points='''
+    [console_scripts]
+    oar-database-migrate=oar.cli.db.commands.migrate:cli
+    oar-database-archive=oar.cli.db.commands.archive:cli
+    oarsub=oar.cli.oarsub:cli
+    kao=oar.kao.kao:main
+    kamelot=oar.kao.kamelot:main
+    kamelot_fifo=oar.kao.kamelot_fifo:main
+    bataar=oar.kao.bataar:bataar
+    ''',
 )
