@@ -19,7 +19,7 @@ from oar.lib.compat import iteritems
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.lib.interval import itvs2batsim_str
+from oar.lib.interval import itvs2batsim_str0
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
@@ -143,7 +143,7 @@ def send_bat_msg(connection, now, jids_to_launch, jobs):
     if jids_to_launch:
         msg += str(now) + ":J:"
         for jid in jids_to_launch:
-            msg += str(jid) + "=" + itvs2batsim_str(jobs[jid].res_set) + ";"
+            msg += str(jid) + "=" + itvs2batsim_str0(jobs[jid].res_set) + ";"
         msg = msg[:-1]  # remove last semicolon
 
     else:  # Do nothing
