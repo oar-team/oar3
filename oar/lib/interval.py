@@ -41,6 +41,17 @@ def itvs2batsim_str(itvs):
     return batsim_str.rstrip(',')
 
 
+def itvs2batsim_str0(itvs):
+    batsim_str = ''
+    for itv in itvs:
+        b, e = itv
+        if b == e:
+            batsim_str += "%d," % (b-1)
+        else:
+            batsim_str += "%d-%d," % (itv[0]-1, itv[1]-1)
+    return batsim_str.rstrip(',')
+
+
 def equal_and_sub_prefix_itvs(prefix_itvs, itvs):
     # need of sub_intervals
     lx = len(prefix_itvs)
