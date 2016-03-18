@@ -10,14 +10,14 @@ import signal
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'META_SCHED_CMD' = 'kao',
-    'SERVER_HOSTNAME' = 'localhost',
-    'SERVER_PORT' = '6666',
-    'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS' = '1',
-    'FINAUD_FREQUENCY' = '300',
-    'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING' = '25',
-    'DETACH_JOB_FROM_SERVER' = '0',
-    'LOG_FILE' = '/var/log/oar.log'
+    'META_SCHED_CMD': 'kao',
+    'SERVER_HOSTNAME': 'localhost',
+    'SERVER_PORT': '6666',
+    'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
+    'FINAUD_FREQUENCY': '300',
+    'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
+    'DETACH_JOB_FROM_SERVER': '0',
+    'LOG_FILE': '/var/log/oar.log'
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
@@ -56,7 +56,9 @@ def signal_handler():
 
 
 # To avoid zombie processes
-signal.signal(signal.SIGCHLD, signal.SIG_IGN) # Surely useless, ignoring SIGCHLD is the common default setting
+#
+# Surely useless, ignoring SIGCHLD is the common default setting
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 signal.signal(signal.SIGUSR1, handler)
 signal.signal(signal.SIGINT, handler)
@@ -103,7 +105,7 @@ max_successive_read = 100
 schedulertimeout = 60
 # Min waiting time before 2 scheduling attempts
 scheduler_min_time_between_2_calls = config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS']
-scheduler_wanted = 0 # 1 if the scheduler must be run next time update
+scheduler_wanted = 0  # 1 if the scheduler must be run next time update
 
 # Max waiting time before check for jobs whose time allowed has elapsed
 villainstimeout = 10
@@ -118,7 +120,7 @@ Detach_oarexec = config['DETACH_JOB_FROM_SERVER']
 # Maximum duration a a bipbip process (after that time the process is killed)
 Max_bipbip_process_duration = 30*60
 
-Log_file = config['LOG_FILE'], "/var/log/oar.log")
+Log_file = config['LOG_FILE']
 
 # Regexp of the notification received from oarexec processes
 #   $1: job id
@@ -144,62 +146,93 @@ appendice_pid = None
 
 energy_pid = 0
 
-# launch the command line passed in parameter
+
 def launch_command(command):
+    '''launch the command line passed in parameter'''
+
+    global finishTag
+
     logger.debug('Launching command : [' + command + ']')
     # $ENV{PATH}="/bin:/usr/bin:/usr/local/bin";
-    ####### THE LINE BELOW SHOULD NOT BE COMMENTED IN NORMAL USE ##### ??? TODO (BELOW -> ABOVE ???)
+    #  ###### THE LINE BELOW SHOULD NOT BE COMMENTED IN NORMAL USE ##### ??? TODO (BELOW -> ABOVE ???)
     signal.signal(signal.SIGCHLD, signal.SIG_DFL)
     # system $command; ??? TODO  to remove ?
 
     pid = os.fork()
     if pid == 0:
-         #CHILD
-         signal.signal(signal.SIGUSR1, signal.SIG_IGN)
-         signal.signal(signal.SIGINT, signal.SIG_IGN)
-         signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        # CHILD
+        signal.signal(signal.SIGUSR1, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        os.execv(command, ['Almighty: ' + command])
 
-    #
-    # TODO USE subprocess ??? TOFINISH
-    #
+    status = 0
+    while True:
+        kid, status = os.wait()
+        if kid == pid:
+            break
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    exit_value = status >> 8
+    signal_num = status & 127
+    dumped_core = status & 128
 
-# listening procedure used by the appendice, a forked process dedicated
-# to the listening of commands
-def qget_appendice():
-    # TODO to finish
+    logger.debug(command + ' terminated')
+    logger.debug('Exit value : ' + exit_value)
+    logger.debug('Signal num : ' + signal_num)
+    logger.debug('Core dumped : ' + dumped_core)
+
+    if signal_num or dumped_core:
+        logger.error('Something wrong occured (signal or core dumped) when trying to call [' +
+                     command + '] command')
+        finishTag = 1
+
+    return exit_value
+
+
+def qget_appendice():  # TODO
+    '''listening procedure used by the appendice, a forked process dedicated
+    to the listening of commands'''
+
     pass
 
-# main body of the appendice, a forked process dedicated
-# to the listening of commands
-# the interest of such a forked process is to ensure that clients get their
-# notification as soon as possible (i.e. reactivity) even if the almighty is
-# performing some other internal task in the meantime
-def comportement_appendice(): # TODO
+
+def comportement_appendice():  # TODO
+    '''main body of the appendice, a forked process dedicated
+    to the listening of commands
+    the interest of such a forked process is to ensure that clients get their
+    notification as soon as possible (i.e. reactivity) even if the almighty is
+    performing some other internal task in the meantime
+    '''
     pass
 
-# hulot module forking
-def start_hulot(): # TODO
+
+def start_hulot():  # TODO
+    '''hulot module forking'''
     pass
 
-# check the hulot process
+
 def check_hulot():
-  return os.kill(energy_pid, 0)
+    '''check the hulot process'''
+    return os.kill(energy_pid, 0)
 
-# Clean ipcs
-def ipc_clean(): # TODO
+
+def ipc_clean():  # TODO
+    '''Clean ipcs'''
     pass
 
-# initial stuff that has to be done
-def init(): # TODO
+
+def init():  # TODO
     pass
 
-# function used by the main automaton to get notifications pending
-# inside the appendice
-def qget(timeout): # TODO
+
+def qget(timeout):  # TODO
+    '''function used by the main automaton to get notifications pending
+    inside the appendice'''
     pass
 
-# functions for managing the file of commands pending
+
 def add_command(command):
+    '''functions for managing the file of commands pending'''
     # as commands are just notifications that will
     # handle all the modifications in the base up to now, we should
     # avoid duplication in the command file
@@ -225,7 +258,7 @@ def scheduler():
     return launch_command(scheduler_command)
 
 
-def time_update:
+def time_update():
     current = time.time()  # ---> TODO my $current = time; -> ???
 
     logger.debug('Timeouts check : ' + str(current))
@@ -238,7 +271,7 @@ def time_update:
         add_command('Scheduling')
 
     if current >= (lastvillains + villainstimeout):
-        logger.debug("[Almighty] Villains check timeout\n");
+        logger.debug('Villains check timeout')
         # lastvillains =  current +  villainstimeout
         add_command('Villains')
 
@@ -264,13 +297,15 @@ def nodeChangeState():
     return launch_command(nodeChangeState_command)
 
 
-
 def init():
+    pass
 
 
 def main():
-    state = 'Init'
 
+    global finishTag
+
+    state = 'Init'
     while True:
         logger.debug("Current state [" + state + "]")
         # We stop Almighty and its child
