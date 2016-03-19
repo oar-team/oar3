@@ -6,6 +6,7 @@ import os
 import re
 import time
 import signal
+from pwd import getpwnam
 
 
 # Set undefined config value to default one
@@ -218,7 +219,13 @@ def check_hulot():
 
 def ipc_clean():  # TODO
     '''Clean ipcs'''
-    pass
+    oar_uid = getpwnam('oar').pw_uid
+    with open('/proc/sysvipc/msg') as f_ipcs:
+        for line in f_ipcs:
+            ipcs = line.slip()
+            if int(ipcs[7]) == oar_uid:
+                logger.debug('cleaning ipc ' + ipc[7])
+                os.system('/usr/bin/ipcrm -q ' + ipc[7])
 
 
 def init():  # TODO
@@ -298,6 +305,21 @@ def nodeChangeState():
 
 
 def init():
+    sys.stdout.flush()
+    try
+    r, w = os.pipe()
+    catch
+    sys.exit(5)
+
+    if(!(pipe (READ, WRITE))){
+        oar_error("[Almighty] Cannot open pipe !!!\n");
+        exit(5);
+    }
+
+    autoflush READ 1;
+    autoflush WRITE 1;
+
+
     pass
 
 
