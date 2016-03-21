@@ -15,7 +15,7 @@ if is_py2:
 else:
     from subprocess import (Popen, call, TimeoutExpired)  # noqa
 
-logger = get_logger("oar.kao.utils")
+logger = get_logger("oar.kao.tools")
 
 almighty_socket = None
 

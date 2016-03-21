@@ -209,7 +209,23 @@ def comportement_appendice():  # TODO
 
 def start_hulot():  # TODO
     '''hulot module forking'''
-    pass
+    try:
+        energy_pid = os.fork()
+    if(!defined($energy_pid)){
+        oar_error("[Almighty] Cannot fork Hulot, the energy saving module\n");
+        exit(6);
+    }
+    if (!$energy_pid){
+        $SIG{CHLD} = 'DEFAULT';
+        $SIG{USR1}  = 'IGNORE';
+        $SIG{INT}  = 'IGNORE';
+        $SIG{TERM}  = 'IGNORE';
+        $0="Almighty: hulot";
+        OAR::Modules::Hulot::start_energy_loop();
+        oar_error("[Almighty] Energy saving loop (hulot) exited. This should not happen.\n");
+        exit(7);
+    }
+}
 
 
 def check_hulot():

@@ -111,7 +111,7 @@ class ResultProxyIter(list):
     next = __next__
 
 
-class Command(object):
+class Command(object):  # TODO TOREMOVE
     """
     Run subprocess commands in a different thread with TIMEOUT option.
     Based on jcollado's solution:
