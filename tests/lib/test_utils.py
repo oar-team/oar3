@@ -11,7 +11,7 @@ from decimal import Decimal
 from oar.lib import Database
 from oar.lib.utils import (SimpleNamespace, cached_property, ResultProxyIter,
                            try_convert_decimal, row2dict, merge_dicts,
-                           get_table_name, render_query, to_json, Command)
+                           get_table_name, render_query, to_json)
 from oar.lib.compat import is_pypy
 from .. import assert_raises
 
@@ -191,13 +191,3 @@ def test_to_json():
             def __repr__(self):
                 return "<SimpleObject>"
         assert to_json(SimpleObject()) == expected_json
-
-
-def test_command():
-    assert Command("false").run() == 1
-    assert Command("true").run() == 0
-    cmd = Command("sleep 0.02; echo hello; echo world 1>&2")
-    assert cmd(timeout=1) == 0
-    assert cmd.stdout == "hello\n"
-    assert cmd.stderr == "world\n"
-    assert cmd(timeout=0.01) != 0
