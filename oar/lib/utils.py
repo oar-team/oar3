@@ -4,8 +4,6 @@ from __future__ import with_statement, absolute_import, unicode_literals
 import os
 import sys
 import re
-import threading
-import subprocess
 import decimal
 import datetime
 
@@ -109,47 +107,6 @@ class ResultProxyIter(list):
         return self
 
     next = __next__
-
-
-class Command(object):  # TODO TOREMOVE
-    """
-    Run subprocess commands in a different thread with TIMEOUT option.
-    Based on jcollado's solution:
-    http://stackoverflow.com/questions/1191374/subprocess-with-timeout/4825933#4825933
-    """
-    def __init__(self, cmd):
-        from . import logger
-        self.cmd = cmd
-        self.process = None
-        self.logger = logger
-        self.stdout = self.stderr = None
-
-    def run(self, timeout=None):
-        def target():
-            self.process = subprocess.Popen(self.cmd, shell=True,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE)
-            stdout, stderr = self.process.communicate()
-            self.stdout = to_unicode(stdout)
-            self.stderr = to_unicode(stderr)
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        if timeout is None:
-            thread.join()
-        else:
-            thread.join(timeout)
-            if thread.is_alive():
-                self.logger.error('Timeout: Terminating process "%s"'
-                                  % self.cmd)
-                self.process.terminate()
-                thread.join()
-
-        return self.process.returncode
-
-    def __call__(self, *args, **kwargs):
-        return self.run(*args, **kwargs)
 
 
 def try_convert_decimal(raw_value):
