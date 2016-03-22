@@ -51,7 +51,7 @@ function meta_sched_fakekao {
 
 function meta_sched_kao {
     systemctl stop oardocker-server
-    echo 'META_SCHED_CMD="kao"' >> /etc/oar/oar.conf
+    echo 'META_SCHED_CMD="/usr/local/bin/kao"' >> /etc/oar/oar.conf
     systemctl start oardocker-server
 }
 
