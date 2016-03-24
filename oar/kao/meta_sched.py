@@ -476,6 +476,7 @@ def update_gantt_visualization():
                    ]
     for query in sql_queries:
         db.session.execute(query)
+    db.commit()
 
 
 def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
