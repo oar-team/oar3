@@ -288,10 +288,10 @@ def assign_coorm(slots_set, job, hy, min_start_time,
         pickle.dumps(slots_set),
         dict_job,
         hy,
-        min_start_time,
+        min_start_time
     )
 
-    # Propage modified job values outside
+    # Propagate modified job values outside
     for k in ('moldable_id', 'res_set', 'start_time', 'walltime'):
         if k in dict_job:
             setattr(job, k, dict_job.get(k))

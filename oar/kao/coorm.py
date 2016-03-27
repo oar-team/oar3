@@ -9,6 +9,7 @@ import requests
 import zerorpc
 
 from oar.lib.utils import SimpleNamespace
+from oar.lib.compat import iteritems
 from oar.lib.tools import duration_to_hms
 
 
@@ -121,6 +122,9 @@ class _CoormApplicationProxy(object):
         slots_set = pickle.loads(proxy_args[0])
         job_dict = proxy_args[1]
         job = SimpleNamespace(job_dict)
+        hy = {}
+        for res_label in iteritems(proxy_args[2]):
+            hy[res_label] = [tuple(i) for i in proxy_args[2][res_label]]
 
         self.app.logger.debug("┃ Before COORM scheduling")
         for line in ("%s" % slots_set).split('\n'):
@@ -128,7 +132,7 @@ class _CoormApplicationProxy(object):
 
         try:
             prev_sid_left, prev_sid_right, job = \
-                self.app.assign_resources(slots_set, job, *proxy_args[2:])
+                self.app.assign_resources(slots_set, job, *proxy_args[3:])
         except Exception:
             import pdb; pdb.set_trace()  # noqa
         self.app.logger.debug("┃ After COORM scheduling")
@@ -137,4 +141,5 @@ class _CoormApplicationProxy(object):
 
         self.app.logger.info("┻ Returns : [%s, %s]" %
                              (prev_sid_left, prev_sid_right))
+        self.app.logger.debug("JOBRET: %s %s %s" % (str(job.id), str(job.res_set), str(job.start_time)))
         return prev_sid_left, prev_sid_right, dict(job)
