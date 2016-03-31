@@ -130,11 +130,9 @@ class _CoormApplicationProxy(object):
         for line in ("%s" % slots_set).split('\n'):
             self.app.logger.debug("┃ %s" % line)
 
-        try:
-            prev_sid_left, prev_sid_right, job = \
-                self.app.assign_resources(slots_set, job, *proxy_args[3:])
-        except Exception:
-            import pdb; pdb.set_trace()  # noqa
+        prev_sid_left, prev_sid_right, job = \
+            self.app.assign_resources(slots_set, job, *proxy_args[3:])
+
         self.app.logger.debug("┃ After COORM scheduling")
         for line in ("%s" % slots_set).split('\n'):
             self.app.logger.debug("┃ %s" % line)
