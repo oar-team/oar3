@@ -11,11 +11,11 @@ from oar.lib import (db, config, get_logger, Resource, AssignedResource,
 from oar.lib.compat import is_py2
 
 if is_py2:
-    from subprocess32 import (Popen, call, TimeoutExpired)
+    from subprocess32 import (Popen, call, PIPE, TimeoutExpired)
 else:
-    from subprocess import (Popen, call, TimeoutExpired)  # noqa
+    from subprocess import (Popen, call, PIPE, TimeoutExpired)  # noqa
 
-logger = get_logger("oar.kao.tools")
+logger = get_logger("oar.lib.tools")
 
 almighty_socket = None
 
