@@ -50,7 +50,8 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
-        "coorm": ["zerorpc", "requests"]
+        'coorm': ['zerorpc', 'requests'],
+        'dev': ['zeropc', 'resuests']
     },
     include_package_data=True,
     zip_safe=False,
