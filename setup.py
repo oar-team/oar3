@@ -51,7 +51,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],
-        'dev': ['zeropc', 'resuests']
+        'dev': ['zeropc', 'requests']
     },
     include_package_data=True,
     zip_safe=False,
