@@ -9,6 +9,7 @@ import sys
 import json
 import click
 import time
+import math
 
 if sys.version_info[0] == 2:
     from sets import Set
@@ -233,7 +234,7 @@ class BatSched(object):
         nb_completed_jobs = 0
         while nb_completed_jobs < self.nb_jobs:
 
-            now_str, jobs_submitted, new_jobs_completed = read_bat_msg(
+            now_float, jobs_submitted, new_jobs_completed = read_bat_msg(
                 self.sock)
 
             # now_str = "10"
@@ -258,7 +259,7 @@ class BatSched(object):
                 if self.mode_platform == 'batsim-db':
                     set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
-            now = float(now_str)
+            now = int(now_float)
             self.env.now = now  # TODO can be remove ???
             real_time = time.time()
 
@@ -275,8 +276,8 @@ class BatSched(object):
                 # retrieve jobs to launch
                 jids_to_launch = []
                 for jid, job in iteritems(self.platform.assigned_jobs):
-                    print(">>>>>>> job.start_time %s" % job.start_time)
-                    if job.start_time == now:
+                    print("job.start_time %s" % job.start_time)
+                    if (job.start_time == now) and (job.state=='Waiting'):
                         self.waiting_jids.remove(jid)
                         jids_to_launch.append(jid)
                         job.state = "Running"
@@ -300,13 +301,13 @@ class BatSched(object):
                     self.jobs[jid].state = "Running"
                     print("_tolaunch: %s" % jid)
                     self.platform.running_jids.append(jid)
+
             real_sched_time = time.time() - real_time
             if self.sched_delay == -1:
-                now += real_sched_time
+                now_float += real_sched_time
             else:
-                now += self.sched_delay
-            self.env.now = now
-            send_bat_msg(self.sock, now, jids_to_launch, self.jobs)
+                now_float += self.sched_delay
+            send_bat_msg(self.sock, now_float, jids_to_launch, self.jobs)
 
     def run(self):
         self.sched_loop()
@@ -431,22 +432,23 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
 
         for j in json_jobs:
             jid = int(j['id'])
+            walltime = int(math.ceil(float(j["walltime"])))
             rqb = [([('resource_id', j['res'])], [(1, nb_res)])]
             rqbh = [([('node', 1), ('resource_id', j['res'])], [(1, nb_res)])]
 
             if add_1h:
                 if add_mld:
-                    mld_res_rqts = [(mld_id, j["walltime"], rqbh), (mld_id+1, j["walltime"], rqb)]
+                    mld_res_rqts = [(mld_id, walltime, rqbh), (mld_id+1, walltime, rqb)]
                     mld_id += 2
                 else:
-                    mld_res_rqts = [(mld_id, j["walltime"], rqbh)]
+                    mld_res_rqts = [(mld_id, walltime, rqbh)]
                     mld_id += 1
             else:
                 if add_mld:
-                    mld_res_rqts = [(mld_id, j["walltime"], rqb), (mld_id+1, j["walltime"], rqb)]
+                    mld_res_rqts = [(mld_id, walltime, rqb), (mld_id+1, walltime, rqb)]
                     mld_id += 2
                 else:
-                    mld_res_rqts = [(mld_id, j["walltime"], rqb)]
+                    mld_res_rqts = [(mld_id, walltime, rqb)]
                     mld_id += 1
 
             jobs[jid] = JobSimu(id=jid,
@@ -483,13 +485,14 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
         print("Prepare jobs")
         for i, j in enumerate(json_jobs):
             jid = int(j["id"])
+            walltime = int(math.ceil(float(j["walltime"])))
             jobs[jid] = JobSimu(id=jid,
                                 state="Waiting",
                                 queue="test",
                                 start_time=0,
                                 walltime=0,
                                 moldable_id=0,
-                                mld_res_rqts=[(jid, j["walltime"],
+                                mld_res_rqts=[(jid, walltime,
                                                [([("resource_id", j["res"])],
                                                  [(1, nb_res - 0)])])],
                                 run_time=0,
@@ -497,7 +500,7 @@ def bataar(wkp_filename, database_mode, socket, node_size, scheduler_policy, typ
                                 assign=False,
                                 find=False)
 
-            insert_job(res=[(j["walltime"], [('resource_id=' + str(j["res"]), "")])],
+            insert_job(res=[(walltime, [('resource_id=' + str(j["res"]), "")])],
                        state='Hold', properties='', user='')
             db_jid2s_jid[i + 1] = jid
 
