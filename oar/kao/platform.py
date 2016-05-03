@@ -108,6 +108,7 @@ class Platform(object):
         return self.env.now
 
     def get_waiting_jobs_simu(self, queue):
+
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []
@@ -117,6 +118,8 @@ class Platform(object):
             waiting_jobs[jid] = job
             waiting_jids_lst.append(jid)
             nb_waiting_jobs += 1
+
+        waiting_jids_lst = sorted(waiting_jids_lst)
 
         print(waiting_jobs, waiting_jids_lst, nb_waiting_jobs)
 
