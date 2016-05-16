@@ -25,6 +25,7 @@ DEFAULT_VALUE = {
     'signal': 12
 }
 
+
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
     'SERVER_PORT': '6666',
@@ -35,21 +36,11 @@ DEFAULT_CONFIG = {
     'CPUSET_PATH': '/oar',
     'DEFAULT_JOB_WALLTIME': '3600'
 }
-config.setdefault_config(DEFAULT_CONFIG)
 
 
-# When the walltime of a job is not defined
-default_job_walltime = str(config['DEFAULT_JOB_WALLTIME'])
-
-log_warning = ''  # TODO
-log_error = ''
-log_info = ''
-log_std = ''
-
-
-def lstrip_none(str):
-    if str:
-        return str.lstrip()
+def lstrip_none(s):
+    if s:
+        return s.lstrip()
     else:
         return None
 
@@ -172,9 +163,19 @@ def cli(command, interactive, queue, resource, reservation, connect,
         use_job_key, import_job_key_from_file, import_job_key_inline, export_job_key_to_file,
         stdout, stderr, hold, version):
     """Submit a job to OAR batch scheduler."""
+    
+    config.setdefault_config(DEFAULT_CONFIG)
+    # import pdb; pdb.set_trace()
 
-    # pdb.set_trace()
-    print(resource)
+    # print(resource)
+    # When the walltime of a job is not defined
+
+    default_job_walltime = str(config['DEFAULT_JOB_WALLTIME'])
+
+    log_warning = ''  # TODO
+    log_error = ''
+    log_info = ''
+    log_std = ''
 
     remote_host = config['SERVER_HOSTNAME']
     remote_port = int(config['SERVER_PORT'])
