@@ -51,7 +51,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],
-        'dev': ['zerorpc', 'requests']
+        'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask']
     },
     include_package_data=True,
     zip_safe=False,
