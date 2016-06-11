@@ -12,6 +12,7 @@ logger = get_logger("oar.kamelot")
 def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
     priority_config = json.loads(str_config)
 
+    # import pdb; pdb.set_trace()
     if 'WAITING_TIME_WEIGHT' in config:
         waiting_time_weight = float(priority_config['WAITING_TIME_WEIGHT'])
     else:
@@ -19,7 +20,7 @@ def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
 
 
     #
-    # compute karma for each job
+    # establish  job priori 
     #
 
     for job in itervalues(jobs):
