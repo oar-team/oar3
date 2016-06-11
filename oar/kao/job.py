@@ -692,8 +692,8 @@ def set_job_state(jid, state):
                 # $dbh is valid so these 2 variables must be defined
                 nb_sent = tools.notify_almighty("ChState")
                 if nb_sent == 0:
-                    logger.warn("Not able to notify almighty to launch the job " +
-                                str(job.id) + " (socket error)")
+                    logger.warning("Not able to notify almighty to launch the job " +
+                                   str(job.id) + " (socket error)")
 
     else:
         logger.warning("Job is already termindated or in error or wanted state, job_id: " +
@@ -903,7 +903,7 @@ def get_job(job_id):  # pragma: no cover
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
     except Exception as e:
-        logger.warn("get_job(" + str(job_id) + ") raises execption: " + str(e))
+        logger.warning("get_job(" + str(job_id) + ") raises execption: " + str(e))
         return None
     else:
         return job
@@ -1195,7 +1195,7 @@ def resume_job_action(job_id):
 # get cpuset values for each nodes of a MJob
 def get_cpuset_values(cpuset_field, moldable_id):
     # TODO TOFINISH
-    logger.warn("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
+    logger.warning("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
     sql_where_string = "\'0\'"
     if "SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE" in config:
         resources_to_always_add_type = config["SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE"]
