@@ -102,14 +102,17 @@ class SlotSet:
         if type(slots) == dict:
             self.slots = slots
             s = slots[1]
+            self.begin = s.b
             while (s.next != 0):
                 s = slots[s.next]
             self.last_id = s.id
         elif type(slots) == tuple:
             itvs, b = slots
+            self.begin = b
             self.slots = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
         else:
             self.slots = {1: slots}
+            self.begin = slots.b
 
         # cache the last sid_left given for by walltime => not used
         # cache the last sid_left given for same previous job

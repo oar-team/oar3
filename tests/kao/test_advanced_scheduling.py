@@ -344,3 +344,28 @@ def test_find_contiguous_sorted_1h_2():
     print(j1.res_set)
 
     assert j1.res_set == [(1, 16)]
+
+
+def test_find_begin():
+
+    res = [(1, 62)]
+    ss = SlotSet(Slot(1, 0, 0, deepcopy(res), 0, 200))
+    all_ss = {"default": ss}
+    hy = {'resource_id': [[(i, i)] for i in range(1, 33)]}
+
+    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(1, 60,[([("resource_id", 32)], res)])])
+    
+    j2 = JobPseudo(id=1, types={}, deps=[], key_cache={},
+                   mld_res_rqts=[(2, 60,[([("resource_id", 32)], res)])])
+
+    set_find_func(j1, 'begin')
+    set_find_func(j2, 'begin')
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1,2], 20)
+
+    print(j1.res_set)
+    print(j2.res_set)
+    
+    assert j1.res_set == [(1, 32)]
+    assert j2.res_set == [(1, 16)]
+  

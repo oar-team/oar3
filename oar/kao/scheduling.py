@@ -178,8 +178,9 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         # print("itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy)
         if job.find:
+            beginning_slotset = True if (sid_left == 1) and (slots_set.begin == slots[1].b) else False
             # Use specialized find resource function
-            itvs = job.find_func(itvs_avail, hy_res_rqts, hy,
+            itvs = job.find_func(itvs_avail, hy_res_rqts, hy, beginning_slotset,
                                  *job.find_args, **job.find_kwargs)
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)

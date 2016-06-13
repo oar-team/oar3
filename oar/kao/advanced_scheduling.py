@@ -19,7 +19,7 @@ config.setdefault_config({
 })
 
 
-def find_default(itvs_avail, hy_res_rqts, hy, *find_args, **find_kwargs):
+def find_default(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs):
     """Simple wrap function to default function for test purpose"""
     return oar.kao.scheduling.find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
@@ -29,7 +29,16 @@ def assign_default(slots_set, job, hy, min_start_time, *assign_args, **assign_kw
     return oar.kao.scheduling.assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 
 
-def find_contiguous_1h(itvs_avail, hy_res_rqts, hy):
+def find_begin(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs):
+    """Simple function to test beginning value which is set to True is the slot begins the slotset (slotset.begin == slots[1].b).
+    It's only for test/example purpose"""
+
+    if beginning:
+        return oar.kao.scheduling.find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy) 
+    else:
+        return [(1,16)]
+
+def find_contiguous_1h(itvs_avail, hy_res_rqts, hy, beginning):
     # NOT FOR PRODUCTION USE
     # Notes support only one resource group and ordered resource_id hierarchy level
 
@@ -49,7 +58,7 @@ def find_contiguous_1h(itvs_avail, hy_res_rqts, hy):
     return result
 
 
-def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy):
+def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy, beginning):
     # NOT FOR PRODUCTION USE
     # Notes support only one resource group and ordered resource_id hierarchy level
 
@@ -112,7 +121,7 @@ def find_resource_hierarchies_scattered_local(itvs, hy, rqts):
         return find_resource_n_h_local(itvs, hy, rqts, hy[0], 0, l_hy)
 
 
-def find_local(itvs_slots, hy_res_rqts, hy):
+def find_local(itvs_slots, hy_res_rqts, hy, beginning):
     """ 2 Level of Hierarchy supported with sorting by increasing blocks' size"""
     result = []
     for hy_res_rqt in hy_res_rqts:
@@ -247,7 +256,7 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
     return prev_sid_left, prev_sid_right, job
 
 
-def find_coorm(itvs_avail, hy_res_rqts, hy, *find_args, **find_kwargs):
+def find_coorm(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs):
     if zerorpc is None:
         return find_default(itvs_avail, hy_res_rqts, hy)
     c = zerorpc.Client()
@@ -299,3 +308,9 @@ def assign_coorm(slots_set, job, hy, min_start_time,
     # Split SlotSet to add our reservation
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
     return prev_sid_left, prev_sid_right, job
+
+
+
+#
+#
+#
