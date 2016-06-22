@@ -71,6 +71,15 @@ def main():
         '''
         # bipbip_launcher_pid=fork();
     
+        answer += recv
+        if recv.endswith('\n'):
+            # Do we need to clean up the answer ? Below code extracted from perl version
+            # cleans the answer of all unwanted trailing characters
+            # while ($answer && $carac !~ '[a-zA-Z0-9]'){
+            #    $carac=chop $answer;
+            # }
+            print(answer[:-1])
+            break
+
 if __name__ == '__main__':  # pragma: no cover
     main()
-

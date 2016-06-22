@@ -73,6 +73,7 @@ setup(
     [console_scripts]
     oar-database-migrate=oar.cli.db.commands.migrate:cli
     oar-database-archive=oar.cli.db.commands.archive:cli
+    Almighty3=oar.modules.almighty:main
     oarsub3=oar.cli.oarsub:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main

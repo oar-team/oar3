@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 from __future__ import unicode_literals, print_function
 from oar.lib import (config, get_logger)
 from oar.lib.tools import (Popen, PIPE)
 
+import zmq
 import os
 import re
 import time
@@ -15,7 +17,9 @@ from pwd import getpwnam
 DEFAULT_CONFIG = {
     'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
-    'SERVER_PORT': '6666',
+    'ZMQ_SERVER_PORT': '6667', # new endpoint which replace appendice
+    'APPENDICE_PROXY_SERVER_PORT': '6668', # endpoint for from 
+    
     'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
     'FINAUD_FREQUENCY': '300',
     'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
@@ -94,7 +98,7 @@ read_commands_timeout = 10
 # appendice before proceeding with internal work
 # should not be set at a too high value as this would make the
 # Almighty weak against flooding
-max_successive_read = 100
+my $max_successive_read = 100;
 
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
@@ -139,6 +143,7 @@ energy_pid = 0
 def launch_command(command):
     '''launch the command line passed in parameter'''
 
+    #TODO move to oar.lib.tools
     global finishTag
 
     logger.debug('Launching command : [' + command + ']')
@@ -239,15 +244,27 @@ def nodeChangeState():
 
 class Almighty(object):
 
-    def __init__(self):
+    def __init__(self):  
         self.state = 'Init'
         logger.debug("Current state [" + self.state + "]")
-        # launch appendice
+        
+        # Activate appendice socket
+        self.context = zmq.Context()
+        self.appendice = self.context.socket(zmq.PULL)
         try:
-            self.appendice = Popen(appendice_command, bufsize=0, stdout=PIPE)
-        except OSError as e:
-            logger.error('Failed to launch appendice: ' + str(e))
+            self.appendice.bind('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['SERVER_PORT'])
+        except:
+            logger.error('Failed to activate appendice endpoint')
 
+        self.set_appendice_timeout(read_commands_timeout)
+
+        self.appendice_proxy = self.context.socket(zmq.PULL)
+        try:
+            self.appendice_proxy.bind('tcp://' + config['SERVER_HOSTNAME'] + ':'
+                                      + config['APPENDICE_PROXY_SERVER_PORT'])
+        except:
+            logger.error('Failed to activate appendice proxy endpoint')
+        
         # Starting of Hulot, the Energy saving module
         if config['ENERGY_SAVING_INTERNAL'] == 'yes':
             start_hulot()
@@ -282,19 +299,28 @@ class Almighty(object):
             # lastchecknodes = -current + checknodestimeout
             self.add_command('Finaud')
 
+    def set_appendice_timeout(self, timeout):
+        '''Set timeout appendice socket'''
+        self.appendice.RCVTIMEO = timeout
+
+
     def qget(self, timeout):
-        '''function used by the main automaton to get notifications pending
-        inside the appendice'''
+        '''function used by the main automaton to get notifications from appendice'''
 
-        answer = ''
+        self. set_appendice_timeout(timeout)
 
-        while True:
-            try:
-                (res, _) = self.appendice.communicate(None, timeout)
-            except Timeouterror:
-                logger.error("Timeout error from appendice's pipe read")
-                return "Time"
-   
+        answer = None
+
+        try:
+            answer = self.appendice.recv_json()
+        except zmq.error.Again as e:
+            logger.debug("Timeout from appendice:" + str(e))
+            return "Time"
+        except zmq.ZMQError as e:
+            logger.error("Something is worng with appendice" + str(e))
+            exit(15)
+        return answer['cmd']
+
     def add_command(self, command):
         '''as commands are just notifications that will
         handle all the modifications in the base up to now, we should
@@ -320,7 +346,7 @@ class Almighty(object):
         while (command != 'Time') and remaining:
             if remaining != max_successive_read:
                 timeout = 0
-            command = qget(timeout)
+            command = self.qget(timeout)
             self.add_command(command)
             remaining -= 1
             logger.debug('Got command ' + command + ', ' + str(remaining) + ' remaining')
