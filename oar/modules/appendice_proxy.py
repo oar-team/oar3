@@ -36,13 +36,13 @@ if __name__ == '__main__':
 
 
 
-          context = zmq.Context()
-    socket = context.socket(zmq.ROUTER)
-    socket.bind("tcp://127.0.0.1:%i" % port)
+    #      context = zmq.Context()
+    #socket = context.socket(zmq.ROUTER)
+    #socket.bind("tcp://127.0.0.1:%i" % port)
 
-    while True:
-        message = socket.recv_multipart()
-        req_id = message[0]
-        print("Received request: %s" % str(type(message[1:][0])))
-        print("message: %s" % message[1:][0].decode('utf8'))
-        time.sleep(1)
+    #while True:
+    #    message = socket.recv_multipart()
+    #    req_id = message[0]
+    #    print("Received request: %s" % str(type(message[1:][0])))
+    #    print("message: %s" % message[1:][0].decode('utf8'))
+    #    time.sleep(1)

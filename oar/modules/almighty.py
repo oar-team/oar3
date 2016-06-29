@@ -98,7 +98,7 @@ read_commands_timeout = 10
 # appendice before proceeding with internal work
 # should not be set at a too high value as this would make the
 # Almighty weak against flooding
-my $max_successive_read = 100;
+max_successive_read = 100;
 
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
