@@ -32,7 +32,7 @@ def create_logger():
             touch(log_file)
             handler = FileHandler(log_file)
 
-        if handler in logger.handlers:
+        if handler not in logger.handlers:
             logger.addHandler(handler)
     else:
         logger.addHandler(NullHandler())
