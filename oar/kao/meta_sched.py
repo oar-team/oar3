@@ -70,7 +70,9 @@ DEFAULT_CONFIG = {
     'RESERVATION_WAITING_RESOURCES_TIMEOUT': '300',
     'SCHEDULER_TIMEOUT': '10',
     'ENERGY_SAVING_INTERNAL': 'no',
-    'SCHEDULER_NODE_MANAGER_WAKEUP_TIME': 1
+    'SCHEDULER_NODE_MANAGER_WAKEUP_TIME': 1,
+    'EXTRA_METASCHED': 'default',
+    'EXTRA_METASCHED_CONFIG': ''
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
@@ -592,17 +594,36 @@ def meta_schedule(mode='internal', plt=Platform()):
         logger.warning(
             "OARDIR env variable must be defined, " + binpath + " is used by default")
 
+
+    if ("EXTRA_METASCHED" in config) and (config["EXTRA_METASCHED"] != "default"):
+        extra_metasched_func = getattr(oar.kao.advanced_metasched,
+                                       'extra_sched_%s' % config["EXTRA_METASCHED"])
+        extra_metasched_config = config["EXTRA_METASCHED_CONFIG"] 
+    else:
+        extra_metasched_func = lambda *args: None # null function
+        extra_metasched_config = ''
+
+    prev_queue = None
+
     for queue in db.query(Queue).order_by(text('priority DESC')).all():
 
+        extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
+                             job_security_time, queue, initial_time_sec,
+                             extra_metasched_config)
+                             
         if queue.state == 'Active':
+            
             logger.debug("Queue " + queue.name + ": Launching scheduler " +
                          queue.scheduler_policy + " at time " + initial_time_sql)
-
+            prev_queue = queue
+    
             if mode == 'external':  # pragma: no cover
                 call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                         resource_set, job_security_time, queue,
                                         initial_time_sec, initial_time_sql)
             else:
+
+                    
                 call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
                                         job_security_time, queue, initial_time_sec)
 
@@ -612,6 +633,15 @@ def meta_schedule(mode='internal', plt=Platform()):
             # handle_new_AR_jobs
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
+
+
+    extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
+                         job_security_time, queue, initial_time_sec,
+                         extra_metasched_config)
+
+
+            
+                         
 
     jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
                                                                                      job_security_time,
