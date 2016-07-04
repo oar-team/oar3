@@ -53,7 +53,7 @@ class ResourceSet(object):
 
         default_rids = []
 
-        # retreive resource in order from DB
+        # retrieve resource in order from DB
         self.resources_db = db.query(Resource).order_by(text(order_by_clause)).all()
 
         # fill the different structures

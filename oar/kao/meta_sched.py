@@ -50,7 +50,7 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 # for quotas
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
-
+import oar.kao.advanced_extra_metasched
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
@@ -596,9 +596,12 @@ def meta_schedule(mode='internal', plt=Platform()):
 
 
     if ("EXTRA_METASCHED" in config) and (config["EXTRA_METASCHED"] != "default"):
-        extra_metasched_func = getattr(oar.kao.advanced_metasched,
-                                       'extra_sched_%s' % config["EXTRA_METASCHED"])
-        extra_metasched_config = config["EXTRA_METASCHED_CONFIG"] 
+        extra_metasched_func = getattr(oar.kao.advanced_extra_metasched,
+                                       'extra_metasched_%s' % config["EXTRA_METASCHED"])
+        if "EXTRA_METASCHED_CONFIG" in config:
+            extra_metasched_config = config["EXTRA_METASCHED_CONFIG"] 
+        else:
+            extra_metasched_config = ''
     else:
         extra_metasched_func = lambda *args: None # null function
         extra_metasched_config = ''
