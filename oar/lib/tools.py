@@ -11,9 +11,9 @@ from oar.lib import (db, config, get_logger, Resource, AssignedResource,
 from oar.lib.compat import is_py2
 
 if is_py2:
-    from subprocess32 import (Popen, run, PIPE, TimeoutExpired)
+    from subprocess32 import (Popen, call, PIPE, TimeoutExpired)
 else:
-    from subprocess import (Popen, run, PIPE, TimeoutExpired)  # noqa
+    from subprocess import (Popen, call, PIPE, TimeoutExpired)  # noqa
 
 logger = get_logger("oar.lib.tools")
 

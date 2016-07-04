@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
-from oar.lib.tools import (Popen, run, TimeoutExpired)
+from oar.lib.tools import (Popen, call, TimeoutExpired)
 from oar.lib.compat import iteritems
 
 from oar.kao.job import (get_current_not_waiting_jobs,
@@ -763,7 +763,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                                  script + " " + str(job.id) + "'")
                     return_code = -1
                     try:
-                        return_code = run([script, str(job.id)] , shell=True, timeout=timeout)
+                        return_code = call([script, str(job.id)] , shell=True, timeout=timeout)
                     except TimeoutExpired as e:
                         logger.error(str(e) + "[" + str(job.id) + "] Suspend script timeouted")
                         add_new_event('RESUME_SCRIPT_ERROR', job.id, "Suspend script timeouted")

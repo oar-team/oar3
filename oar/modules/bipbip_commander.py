@@ -6,7 +6,7 @@
    LEONEXTERMINATE_REGEXP //  'LEONEXTERMINATE_(\d+)'
 """
 from oar.lib import (config, get_logger)
-from oar.lib.tools import run
+from oar.lib.tools import call
 
 import time
 import zmq
@@ -38,7 +38,7 @@ logger.info('Start Bipbip Commander')
 
 def bipbip_leon_executor(command, args):
     logger.debug('[bipbip_commander] Launching' + command['cmd'])
-    run(command["cmd"].split(), shell=True)
+    call(command["cmd"].split(), shell=True)
 
 def bipbip_commander():
     # Initialize a zeromq context
