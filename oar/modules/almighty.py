@@ -18,8 +18,7 @@ DEFAULT_CONFIG = {
     'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
     'ZMQ_SERVER_PORT': '6667', # new endpoint which replace appendice
-    'APPENDICE_PROXY_SERVER_PORT': '6668', # endpoint for from 
-    
+    'APPENDICE_PROXY_SERVER_PORT': '6668', # endpoint for appendice proxy
     'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
     'FINAUD_FREQUENCY': '300',
     'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',

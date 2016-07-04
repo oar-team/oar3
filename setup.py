@@ -74,6 +74,8 @@ setup(
     oar-database-migrate=oar.cli.db.commands.migrate:cli
     oar-database-archive=oar.cli.db.commands.archive:cli
     Almighty3=oar.modules.almighty:main
+    bipbip_commander=oar.modules.bipbip_commander:main
+    appendice_proxy=oar.modules.appendice_proxy:main
     oarsub3=oar.cli.oarsub:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
