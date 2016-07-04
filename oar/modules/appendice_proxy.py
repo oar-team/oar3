@@ -14,13 +14,13 @@ DEFAULT_CONFIG = {
     'SERVER_PORT': '6666',
     'APPENDICE_PROXY_SERVER_PORT': '6668',
 }
+
 config.setdefault_config(DEFAULT_CONFIG)
 
-if __name__ == '__main__':
-
+def main():
     context = zmq.Context()
     socket = context.socket(zmq.STREAM)
-    socket.bind("tcp://*:" + config[SERVER_PORT])
+    socket.bind("tcp://*:" + str(config['SERVER_PORT']))
 
     appendice_proxy = context.socket(zmq.PUSH)
     appendice_proxy.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
@@ -46,3 +46,5 @@ if __name__ == '__main__':
     #    print("Received request: %s" % str(type(message[1:][0])))
     #    print("message: %s" % message[1:][0].decode('utf8'))
     #    time.sleep(1)
+if __name__ == '__main__':
+    main()
