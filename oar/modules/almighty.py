@@ -503,6 +503,10 @@ class Almighty(object):
                 logger.error('Almighty just falled into an unknown state !!!.')
                 finishTag = 1
 
-if __name__ == '__main__':  # pragma: no cover
+
+def main():
     almighty = Almighty()
     almighty.run()
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
