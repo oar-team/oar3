@@ -100,37 +100,43 @@ def test_bataar_no_db():
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
 
-
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
 
-
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_basic():
     result, sent_msgs = exec_gene(['-pBASIC', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
 
-
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_local():
     result, sent_msgs = exec_gene(['-pLOCAL', '-n4', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
 
-
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_best_effort_local():
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_LOCAL', '-n4', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
-
-
+    
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_contiguous():
     result, sent_msgs = exec_gene(['-pCONTIGUOUS', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
     assert result.exit_code == 0
 
-
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
 def test_bataar_db_best_effot_contiguous():
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
