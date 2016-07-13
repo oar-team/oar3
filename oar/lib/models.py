@@ -109,7 +109,7 @@ class EventLog(db.Model):
     __tablename__ = 'event_logs'
 
     id = db.Column('event_id', db.Integer, primary_key=True)
-    type = db.Column(db.String(50), index=True, server_default='')
+    type = db.Column(db.String(100), index=True, server_default='')
     job_id = db.Column(db.Integer, index=True, server_default='0')
     date = db.Column(db.Integer, server_default='0')
     description = db.Column(db.String(255), server_default='')
