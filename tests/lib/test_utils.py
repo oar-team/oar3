@@ -5,6 +5,8 @@ import random
 import pytest
 import datetime
 
+import sys
+
 from collections import OrderedDict
 from decimal import Decimal
 
@@ -171,6 +173,23 @@ def test_to_json():
     "name": "Monkey D. Luffy",
     "birthday": "2015-07-19T09:14:22.140921",
     "level": 90,
+    "length": "177.85",
+    "parents": {
+        "father": {
+            "name": "Monkey D. Dragon"
+        },
+        "mother": {
+            "name": "Unknown"
+        }
+    }
+}
+""".strip()
+
+    expected_json_3_6 = """
+{
+    "name": "Monkey D. Luffy",
+    "birthday": "2015-07-19T09:14:22.140921",
+    "level": 90,
     "length": 177.85,
     "parents": {
         "father": {
@@ -190,4 +209,7 @@ def test_to_json():
         class SimpleObject(object):
             def __repr__(self):
                 return "<SimpleObject>"
-        assert to_json(SimpleObject()) == expected_json
+        if sys.version_info >= (3,6):
+            assert to_json(SimpleObject()) == expected_json_3_6
+        else:
+            assert to_json(SimpleObject()) == expected_json

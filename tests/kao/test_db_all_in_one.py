@@ -337,7 +337,6 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     meta_schedule('internal')
 
     jobs = db['Job'].query.all()
-
     print(jobs[0].state, jobs[1].state)
 
     print("frag...", db['FragJob'].query.one())
