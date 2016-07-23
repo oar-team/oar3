@@ -294,35 +294,7 @@ class Almighty(object):
             except Timeouterror:
                 logger.error("Timeout error from appendice's pipe read")
                 return "Time"
-    my $rinTmp = '';
-    my $carac;
-    vec($rin,fileno(READ),1) = 1;
-    my $res = select($rinTmp = $rin, undef, undef, $timeout);
-    if ($res > 0){
-        $carac="OAR";
-        while ($carac ne "\n"){
-            if ((!defined(sysread(READ, $carac, 1))) || ($carac eq "")){
-                oar_error("[Almighty] Error while reading in pipe : I guess Appendice has died\n");
-                exit(8);
-            }
-            if ($carac ne "\n"){
-                $answer = $answer.$carac;
-            }
-        }
-    }elsif ($res < 0){
-        if ($finishTag == 1){
-            oar_debug("[Almighty] Premature end of select cmd. res = $res. It is normal, Almighty is stopping\n");
-            $answer = "Time";
-        }else{
-            oar_error("[Almighty] Error while reading in pipe : I guess Appendice has died, the result code of select = $res\n");
-            exit(15);
-        }
-    }else{
-        $answer = "Time";
-    }
-    return $answer;
-}
-
+   
     def add_command(self, command):
         '''as commands are just notifications that will
         handle all the modifications in the base up to now, we should
