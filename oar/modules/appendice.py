@@ -31,7 +31,7 @@ else:
 
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((config['SERVER_HOSTNAME'], config['SERVER_PORT']))
+server.bind(config['SERVER_HOSTNAME'], config['SERVER_PORT'])
 server.listen(servermaxconnect)
 
 while True:
