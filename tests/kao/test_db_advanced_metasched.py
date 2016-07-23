@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, print_function
 import pytest
 
-from oar.lib import config, db
+from oar.lib import config, db, Job
 from oar.kao.job import insert_job
 from oar.kao.meta_sched import meta_schedule
 
@@ -46,14 +46,14 @@ def test_db_extra_metasched_1():
     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
 
     for job in  db['Job'].query.all():
-        print('job state:', job.state)
+        print('job state:', job.state, job.id)
 
     meta_schedule()
 
     for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
-    states = [job.state for job in db['Job'].query.all()]
+    states = [job.state for job in db['Job'].query.order_by(Job.id).all()]
     print(states)
     assert states == ['toLaunch', 'Waiting', 'toLaunch']
     
