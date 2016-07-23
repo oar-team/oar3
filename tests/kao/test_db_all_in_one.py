@@ -502,6 +502,6 @@ def test_db_all_in_one_simple_interactive_waiting_1(monkeypatch):
     for i in db['GanttJobsPrediction'].query.all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
-    jobs = db['Job'].query.all()
+    jobs = db['Job'].query.order_by(db['Job'].id).all()
     assert (jobs[0].state == 'toLaunch')
     assert (jobs[1].state == 'Waiting')
