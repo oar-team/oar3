@@ -40,6 +40,7 @@ def test_db_job_sorting_simple_priority_no_waiting_time():
                    submission_time=now,
                    types=['priority='+priority])
 
+        
     schedule_cycle(plt, plt.get_time())
 
     req = db['GanttJobsPrediction'].query\

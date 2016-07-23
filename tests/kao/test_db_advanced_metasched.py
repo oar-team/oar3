@@ -56,4 +56,3 @@ def test_db_extra_metasched_1():
     states = [job.state for job in db['Job'].query.order_by(Job.id).all()]
     print(states)
     assert states == ['toLaunch', 'Waiting', 'toLaunch']
-    
