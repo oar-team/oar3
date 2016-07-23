@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
 config.setdefault_config(DEFAULT_CONFIG)
 
 # retrieve umask and set new one
-old_umask = os.umask(022)
+old_umask = os.umask(0o022)
 
 # TODO
 # my $oldfh = select(STDERR); $| = 1; select($oldfh);
