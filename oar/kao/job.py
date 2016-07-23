@@ -528,13 +528,14 @@ def save_assigns(jobs, resource_set):
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in itervalues(jobs):
-            logger.debug("first job_id  to save: " + str(j.id))
-            mld_id_start_time_s.append(
-                {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
-            riods = itvs2ids(j.res_set)
-            mld_id_rid_s.extend(
-                [{'moldable_job_id': j.moldable_id,
-                  'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
+            if j.start_time > -1:
+                logger.debug("job_id to save: " + str(j.id))
+                mld_id_start_time_s.append(
+                    {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
+                riods = itvs2ids(j.res_set)
+                mld_id_rid_s.extend(
+                    [{'moldable_job_id': j.moldable_id,
+                      'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
 
         logger.info("save assignements")
 
@@ -554,11 +555,12 @@ def save_assigns_bulk(jobs, resource_set):
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in itervalues(jobs):
-            logger.debug("first job_id  to save: " + str(j.id))
-            mld_id_start_time_s.append((j.moldable_id, j.start_time))
-            riods = itvs2ids(j.res_set)
-            mld_id_rid_s.extend(
-                [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods])
+            if j.start_time > -1:
+                logger.debug("job_id  to save: " + str(j.id))
+                mld_id_start_time_s.append((j.moldable_id, j.start_time))
+                riods = itvs2ids(j.res_set)
+                mld_id_rid_s.extend(
+                    [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods])
 
         logger.info("save assignements")
 
