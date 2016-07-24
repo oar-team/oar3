@@ -4,8 +4,9 @@
 between version 2.x OAR's modules and version 3.x
 """
 
-from oar.lib import (config, get_logger)
 import zmq
+from oar.lib import (config, get_logger)
+
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -17,23 +18,24 @@ DEFAULT_CONFIG = {
 
 config.setdefault_config(DEFAULT_CONFIG)
 
-def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.STREAM)
-    socket.bind("tcp://*:" + str(config['SERVER_PORT']))
+class AppendiceProxy(object):
+    def __init__(self):
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.STREAM)
+        self.socket.bind("tcp://*:" + str(config['SERVER_PORT']))
 
-    appendice_proxy = context.socket(zmq.PUSH)
-    appendice_proxy.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
-                       + config['APPENDICE_PROXY_SERVER_PORT'])
+        self.proxy = self.context.socket(zmq.PUSH)
+        self.proxy.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
+                           + config['APPENDICE_PROXY_SERVER_PORT'])
 
-    while True:
-        clientid, message = socket.recv_multipart()
+    def run(self):
+        while True:
+            clientid, message = self.socket.recv_multipart()
 
-        print("id: %r" % clientid)
-        print("request: %s" % message.decode('utf8'))
+            print("id: %r" % clientid)
+            print("request: %s" % message.decode('utf8'))
 
-        appendice_proxy.send(message)
-
+            self.proxy.send(message)
 
 
     #      context = zmq.Context()
@@ -46,5 +48,10 @@ def main():
     #    print("Received request: %s" % str(type(message[1:][0])))
     #    print("message: %s" % message[1:][0].decode('utf8'))
     #    time.sleep(1)
-if __name__ == '__main__':
+
+def main():
+    appendice_proxy = AppendiceProxy()
+    appendice_proxy.run()
+
+if __name__ == '__main__':  # pragma: no cover
     main()
