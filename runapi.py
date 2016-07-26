@@ -13,7 +13,15 @@ DEFAULT_BIND = "127.0.0.1"
 
 def parse_proxy_url(url):
     """Parses strings like host[:port]/path"""
-    host_prefix = url.split('/', 1)
+    host_auth = url.split('@', 1)
+    if len(host_auth) == 1:
+        auth = ""
+        u = host_auth[0]
+    else:
+        auth = host_auth[0]
+        u = host_auth[1]
+
+    host_prefix = u.split('/', 1)
     if len(host_prefix) == 1:
         prefix = ""
         h = host_prefix[0]
@@ -26,7 +34,7 @@ def parse_proxy_url(url):
         v = (h, 80, prefix)
     else:
         v = host_port[0], int(host_port[1]), prefix
-    return {'proxy_host': v[0], 'proxy_port': v[1], 'proxy_prefix': v[2]}
+    return {'proxy_host': v[0], 'proxy_port': v[1], 'proxy_prefix': v[2], 'proxy_auth': auth}
 
 
 if __name__ == '__main__':
@@ -42,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-debug', action="store_true", default=False,
                         help='Disable debugger')
     parser.add_argument('--old-api-proxy', action="store",
-                        default="localhost:80/oarapi",
+                        default="localhost:6668/oarapi-priv",
                         help='Set the binding address')
     args = parser.parse_args()
     # Disable PIN (Never enable the debugger in production!)

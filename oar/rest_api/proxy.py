@@ -7,6 +7,7 @@ Proxy to Perl Rest API
 
 """
 import sys
+import base64
 if sys.version_info[0] == 3:
     from http import client as httplib
     from urllib import parse as urlencode
@@ -32,7 +33,7 @@ def iterform(multidict):
             yield (key.encode("utf8"), value.encode("utf8"))
 
 
-def proxy_request(path, proxy_host, proxy_port, proxy_prefix):
+def proxy_request(path, proxy_host, proxy_port, proxy_prefix, proxy_auth):
     request_headers = {}
     for h in ["Cookie", "Referer", "X-Csrf-Token"]:
         if h in request.headers:
@@ -47,11 +48,12 @@ def proxy_request(path, proxy_host, proxy_port, proxy_prefix):
     else:
         proxy_path = "/%s" + path
 
-    logger.info("Forward request to : '%s:%s%s" %
-                (proxy_host, proxy_port, proxy_path))
+    logger.info("Forward request to : '%s@%s:%s%s" %
+                (proxy_auth,proxy_host, proxy_port, proxy_path))
+    request_headers["Authorization"] = 'Basic %s' % base64.b64encode(proxy_auth)
+    request_headers["Content-Type"] = 'application/json'
     if request.method == "POST" or request.method == "PUT":
-        form_data = list(iterform(request.form))
-        form_data = urlencode(form_data)
+        form_data = json.dumps(request.json)
         request_headers["Content-Length"] = len(form_data)
     else:
         form_data = None
@@ -69,7 +71,7 @@ def proxy_request(path, proxy_host, proxy_port, proxy_prefix):
     for key, value in resp.getheaders():
         logger.debug(" | %s: %s" % (key, value))
         d[key.lower()] = value
-        if key in ["content-length", "connection", "content-type"]:
+        if key in ["content-length", "connection", "content-type", "transfer-encoding","connection"]:
             continue
 
         if key == "set-cookie":
@@ -123,13 +125,14 @@ def register_proxy(app, **kwargs):
     proxy_host = kwargs.get('proxy_host')
     proxy_port = kwargs.get('proxy_port')
     proxy_prefix = kwargs.get('proxy_prefix')
+    proxy_auth = kwargs.get('proxy_auth')
 
     @app.route('/', defaults={'path': ''}, methods=methods)
     @app.route('/p/<path:path>', methods=methods)
     @app.route('/<path:path>', methods=methods)
     def proxy_old_api(path):
         try:
-            return proxy_request(path, proxy_host, proxy_port, proxy_prefix)
+            return proxy_request(path, proxy_host, proxy_port, proxy_prefix, proxy_auth)
         except IOError as e:
             msg = ("502 Bad Gateway. %s ('%s:%d')" % (e, proxy_host,
                                                       proxy_port))
