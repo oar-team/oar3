@@ -49,9 +49,6 @@ class AppendiceProxy(object):
     #    print("message: %s" % message[1:][0].decode('utf8'))
     #    time.sleep(1)
 
-def main():
+if __name__ == '__main__':  # pragma: no cover
     appendice_proxy = AppendiceProxy()
     appendice_proxy.run()
-
-if __name__ == '__main__':  # pragma: no cover
-    main()
