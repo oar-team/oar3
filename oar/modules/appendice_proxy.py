@@ -10,7 +10,6 @@ from oar.lib import (config, get_logger)
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
     'SERVER_PORT': '6666',
     'APPENDICE_PROXY_SERVER_PORT': '6668',
@@ -21,22 +20,23 @@ config.setdefault_config(DEFAULT_CONFIG)
 class AppendiceProxy(object):
     def __init__(self):
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.STREAM)
-        self.socket.bind("tcp://*:" + str(config['SERVER_PORT']))
+        self.socket_proxy = self.context.socket(zmq.STREAM)
+        self.socket_proxy.bind("tcp://*:" + str(config['SERVER_PORT']))
 
-        self.proxy = self.context.socket(zmq.PUSH)
-        self.proxy.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
+        self.appendice = self.context.socket(zmq.PUSH)
+        self.appendice.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
                            + config['APPENDICE_PROXY_SERVER_PORT'])
 
-    def run(self):
+    def run(self, loop=True):
         while True:
-            clientid, message = self.socket.recv_multipart()
+            client_id, message = self.socket_proxy.recv_multipart()
 
-            print("id: %r" % clientid)
+            print("id: %r" % client_id)
             print("request: %s" % message.decode('utf8'))
 
-            self.proxy.send(message)
-
+            self.appendice.send(message)
+            if not loop:
+                break
 
     #      context = zmq.Context()
     #socket = context.socket(zmq.ROUTER)
