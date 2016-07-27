@@ -10,7 +10,7 @@ from flask import Flask
 
 from oar.lib import db, config
 from .query import APIQuery, APIQueryCollection
-from .utils import WSGIProxyFix
+from .utils import WSGIProxyFix, PrefixMiddleware
 from .views import register_blueprints
 from .errors import register_error_handlers
 from .extensions import register_extensions
@@ -30,6 +30,7 @@ def create_app(**kwargs):
     """Return the OAR API application instance."""
     app = Flask(__name__)
     app.wsgi_app = WSGIProxyFix(app.wsgi_app)
+    app.wsgi_app = PrefixMiddleware(app.wsgi_app)
     config.setdefault_config(default_config)
     app.config.update(config)
     db.query_class = APIQuery

@@ -26,6 +26,16 @@ class WSGIProxyFix(object):
                     environ['USER'] = user
         return self.app(environ, start_response)
 
+class PrefixMiddleware(object):
+    def __init__(self, app, prefix=''):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        if self.prefix == '':
+            self.prefix = environ.pop('HTTP_X_API_PATH_PREFIX', '')
+        environ['SCRIPT_NAME'] = self.prefix
+        return self.app(environ, start_response)
 
 class Arg(object):
     """Request argument type."""
