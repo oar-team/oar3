@@ -27,14 +27,13 @@ class WSGIProxyFix(object):
         return self.app(environ, start_response)
 
 class PrefixMiddleware(object):
-    def __init__(self, app, prefix=''):
+    def __init__(self, app):
         self.app = app
-        self.prefix = prefix
 
     def __call__(self, environ, start_response):
-        if self.prefix == '':
-            self.prefix = environ.pop('HTTP_X_API_PATH_PREFIX', '')
-        environ['SCRIPT_NAME'] = self.prefix
+        prefix = environ.pop('HTTP_X_API_PATH_PREFIX', None)
+        if prefix is not None:
+            environ['SCRIPT_NAME'] = prefix
         return self.app(environ, start_response)
 
 class Arg(object):
