@@ -78,10 +78,9 @@ if not m:
     meta_sched_command = binpath + meta_sched_command
 check_for_villains_command = binpath + 'sarko'
 check_for_node_changes = binpath + 'finaud'
-leon_command = binpath + 'leon'
 nodeChangeState_command = binpath + 'NodeChangeState'
-bipbip_command = binpath + 'bipbip'
-appendice_command = binpath + 'appendice'
+
+
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of

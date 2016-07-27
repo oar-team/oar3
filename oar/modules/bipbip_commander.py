@@ -52,6 +52,14 @@ Max_bipbip_process_duration = 30*60
 logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
 logger.info('Start Bipbip Commander')
 
+if 'OARDIR' in os.environ:
+    binpath = os.environ['OARDIR'] + '/'
+else:
+    binpath = '/usr/local/lib/oar/'
+    logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
+
+leon_command = binpath + 'leon'
+bipbip_command = binpath + 'bipbip'
 
 class BipbipCommander(object):
     
