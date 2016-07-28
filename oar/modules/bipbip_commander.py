@@ -19,15 +19,16 @@
 }
 
 """
+
 from multiprocessing import Process
 
+import os
+import re
 import socket
 import zmq
 
-
 from oar.lib import (config, get_logger)
-from oar.lib.tools import call
-
+import oar.lib.tools as tools
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -80,9 +81,15 @@ class BipbipCommander(object):
         self.bipbip_leon_executors = {}
 
     def bipbip_leon_executor(*args, **command):
-            logger.debug('[bipbip_commander] Launching' + str(command))
-            print('[bipbip_commander] Launching', command['cmd'], command['args'])
-            #call(command["cmd"].split(), shell=True)
+        logger.debug('Launching' + str(command))
+        job_id = command['job_id']
+        
+        if command['cmd'] == 'LEONEXTERMINATE':
+            cmd_arg = [leon_command, str(job_id)]
+        else:
+            cmd_arg = [bipbip_command] + [str(job_id)] + command['args']
+                    
+        tools.call(cmd_arg)
 
     
     def run(self, loop=True):
@@ -92,7 +99,7 @@ class BipbipCommander(object):
             command = self.notification.recv_json()
 
             logger.debug("bipbip commander received notification:" + str(command))
-
+            #import pdb; pdb.set_trace()
             self.bipbip_leon_commands_to_run.append(command)
 
             while len(self.bipbip_leon_commands_to_run) > 0 and \
@@ -114,6 +121,7 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
+                    print("executor:", command)
                     executor = Process(target=self.bipbip_leon_executor, args=(), kwargs=command)
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor

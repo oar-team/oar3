@@ -1,11 +1,20 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
-from oar.modules.appendice_proxy import AppendiceProxy
+import oar.lib.tools
+from oar.modules.bipbip_commander import BipbipCommander
 from oar.lib import config
 
 import pytest
 
 import zmq
+import oar.lib.tools
+
+called_command = []
+
+def fake_call(cmd):
+    global called_cmd
+    called_command = cmd
+
 
 class FakeZmqSocketMessage(object):
     def __init__(self, msg):
@@ -34,6 +43,9 @@ class FakeZmqSocket(object):
     def send_json(self, msg):
         print("send_json",self.num, msg)
         FakeZmq.sent_msgs[self.num].append(msg)
+
+    def recv_json(self):
+        return FakeZmq.recv_msgs[self.num].pop()
         
     def recv_multipart(self):
         print('recv_multipart:', self.num, FakeZmq.recv_msgs)
@@ -54,56 +66,32 @@ class FakeZmq(object):
         FakeZmq.i += 1
         return s
 
-
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
+    monkeypatch.setattr(oar.lib.tools, 'call', fake_call) # TO DEBUG, doesn't work
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    config['APPENDICE_PROXY_SERVER_PORT'] = '6668'
+    config['SERVER_HOSTNAME'] = 'localhost'
+    config['ZMQ_SERVER_PORT'] = '6667'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
+
     @request.addfinalizer
     def teardown():
-        del config['APPENDICE_PROXY_SERVER_PORT']
+        del config['SERVER_HOSTNAME'] 
+        del config['ZMQ_SERVER_PORT']
         del config['BIPBIP_COMMANDER_SERVER']
         del config['BIPBIP_COMMANDER_PORT']
-        FakeZmq.i = 0
-        FakeZmq.sent_msgs = {}
-        FakeZmq.recv_msgs = {}
-def test_appendice_proxy_simple(monkeypatch):
 
-    FakeZmq.recv_msgs[0] = ['yop']
+def test_bipbip_commander_OAREXEC(monkeypatch):
+    FakeZmq.recv_msgs[1] =[{'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}]
+    bipbip_commander = BipbipCommander()
+    bipbip_commander.run(False)
+    bipbip_commander.bipbip_leon_executors[10].join()
+    exitcode = bipbip_commander.bipbip_leon_executors[10].exitcode 
+    print(exitcode)
+    # TODEBUG assert ['/usr/local/lib/oar/bipbip', '10', '2', 'N', '34'] == called_command
+    assert exitcode == 0
 
-    appendice_proxy =  AppendiceProxy()
-    appendice_proxy.run(False)
-    
-    assert FakeZmq.sent_msgs[1][0] == {'msg': 'yop'}
-
-def test_appendice_proxy_OAREXEC(monkeypatch):
-
-    FakeZmq.recv_msgs[0] = ['OAREXEC_10_2_N_34']
-    
-    appendice_proxy = AppendiceProxy()
-    appendice_proxy.run(False)
-    
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}
-
-def test_appendice_proxy_OARRUNJOB(monkeypatch):
-
-    FakeZmq.recv_msgs[0] = ['OARRUNJOB_42']
-    
-    appendice_proxy = AppendiceProxy()
-    appendice_proxy.run(False)
-    
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'OARRUNJOB'}
-
-def test_appendice_proxy_LEONEXTERMINATE(monkeypatch):
-
-    FakeZmq.recv_msgs[0] = ['LEONEXTERMINATE_42']
-    
-    appendice_proxy = AppendiceProxy()
-    appendice_proxy.run(False)
-    
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'LEONEXTERMINATE'}

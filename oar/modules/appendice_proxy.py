@@ -49,22 +49,22 @@ class AppendiceProxy(object):
     def run(self, loop=True):
         while True:
             client_id, message = self.socket_proxy.recv_multipart()
-            msg=message.decode('utf8')
-            
+            msg = message.decode('utf8')
+
             print("id: %r" % client_id)
             print("request: %s" % message.decode('utf8'))
-            
-            # if OAREXEC or OARRUNJOB or LEONEXTERMINATE is received forward it to bipbip commander 
+
+            # if OAREXEC or OARRUNJOB or LEONEXTERMINATE is received forward it to bipbip commander
             m = re.search(OAR_EXEC_RUNJOB_LEON,  msg)
             if m:
                 command = m.group(1)
                 job_id = m.group(2)
-                args= m.group(3).split('_')[1:]
+                args = m.group(3).split('_')[1:]
                 self.bipbip_commander.send_json({'job_id': int(job_id), 'cmd': command, 'args': args})
 
             else:
                 self.appendice.send_json({'msg': message.decode('utf8')})
-            
+
             if not loop:
                 break
 
