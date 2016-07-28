@@ -503,9 +503,6 @@ class Almighty(object):
                 finishTag = 1
 
 
-def main():
+if __name__ == '__main__':  # pragma: no cover
     almighty = Almighty()
     almighty.run()
-
-if __name__ == '__main__':  # pragma: no cover
-    main()
