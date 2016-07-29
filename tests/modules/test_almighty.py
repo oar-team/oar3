@@ -48,9 +48,13 @@ def test_almighty_state_Qget(command, state, monkeypatch):
     almighty.run(False)
     assert almighty.state == state
 
+def test_almighty_state_Scheduler(monkeypatch):
+    # TODO
+    pass
 
-#def test_almighty_state_Schj(command, state, monkeypatch):
-#    FakeZmq.recv_msgs[0] = [{'cmd': command}]
-#    almighty = Almighty()
-#    almighty.run(False)
-#    assert almighty.state == state
+def test_almighty_state_Time_update(monkeypatch):
+    #FakeZmq.recv_msgs[0] = [{'cmd': command}]
+    almighty = Almighty()
+    almighty.state = 'Time update'
+    almighty.run(False)
+    assert almighty.state == 'Qget'
