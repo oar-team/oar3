@@ -29,9 +29,28 @@ def setup(request):
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
 
-def test_almighty(monkeypatch):
-    FakeZmq.recv_msgs[0] = [{'cmd': 'FOO'}]
+@pytest.mark.parametrize("command, state", [
+    ('FOO', 'Qget'),
+    ('Qsub', 'Scheduler'),
+    ('Term', 'Scheduler'),
+    ('BipBip', 'Scheduler'),
+    ('Scheduling', 'Scheduler'),
+    ('Qresume', 'Scheduler'),
+    ('Qdel', 'Leon'),
+    ('Villains', 'Check for villains'),
+    ('Finaud', 'Check node states'),
+    ('Time', 'Time update'),
+    ('ChState', 'Change node state')
+    ])
+def test_almighty_state_Qget(command, state, monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': command}]
     almighty = Almighty()
     almighty.run(False)
-    assert almighty.state == 'Qget'
+    assert almighty.state == state
 
+
+#def test_almighty_state_Schj(command, state, monkeypatch):
+#    FakeZmq.recv_msgs[0] = [{'cmd': command}]
+#    almighty = Almighty()
+#    almighty.run(False)
+#    assert almighty.state == state

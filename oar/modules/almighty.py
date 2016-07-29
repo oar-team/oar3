@@ -376,7 +376,7 @@ class Almighty(object):
                    or (command == 'Scheduling') or (command == 'Qresume'):
                     self.state = 'Scheduler'
                 elif command == 'Qdel':
-                    self.state == 'Leon'
+                    self.state = 'Leon'
                 elif command == 'Villains':
                     self.state = 'Check for villains'
                 elif command == 'Finaud':
