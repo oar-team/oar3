@@ -38,7 +38,7 @@ old_umask = os.umask(0o022)
 
 
 # Everything is run by oar user (The real uid of this process.)
-os.environ['OARDO_UID'] = str(os.geteuid())
+#os.environ['OARDO_UID'] = str(os.geteuid())
 
 # TODO
 # my $Redirect_STD_process = OAR::Modules::Judas::redirect_everything();
@@ -65,9 +65,6 @@ def signal_handler():
 
 # To avoid zombie processes
 #
-# Surely useless, ignoring SIGCHLD is the common default setting
-signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-
 signal.signal(signal.SIGUSR1, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
@@ -103,7 +100,7 @@ max_successive_read = 100;
 schedulertimeout = 60
 # Min waiting time before 2 scheduling attempts
 scheduler_min_time_between_2_calls = config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS']
-scheduler_wanted = 0  # 1 if the scheduler must be run next time update
+
 
 # Max waiting time before check for jobs whose time allowed has elapsed
 villainstimeout = 10
@@ -112,28 +109,13 @@ villainstimeout = 10
 checknodestimeout = config['FINAUD_FREQUENCY']
 
 # Max number of concurrent bipbip processes
-Max_bipbip_processes = config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING']
-Detach_oarexec = config['DETACH_JOB_FROM_SERVER']
+max_bipbip_processes = config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING']
+detach_oarexec = config['DETACH_JOB_FROM_SERVER']
 
 # Maximum duration a a bipbip process (after that time the process is killed)
-Max_bipbip_process_duration = 30*60
+max_bipbip_process_duration = 30*60
 
 Log_file = config['LOG_FILE']
-
-# Regexp of the notification received from oarexec processes
-#   $1: job id
-#   $2: oarexec exit code
-#   $3: job script exit code
-#   $4: secret string that identifies the oarexec process (for security)
-OAREXEC_REGEXP = r'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
-
-# Regexp of the notification received when a job must be launched
-#   $1: job id
-OARRUNJOB_REGEXP = r'OARRUNJOB_(\d+)'
-
-# Regexp of the notification received when a job must be exterminate
-#   $1: job id
-LEONEXTERMINATE_REGEXP = r'LEONEXTERMINATE_(\d+)'
 
 energy_pid = 0
 
@@ -250,7 +232,7 @@ class Almighty(object):
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
         try:
-            self.appendice.bind('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['SERVER_PORT'])
+            self.appendice.bind('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['ZMQ_SERVER_PORT'])
         except:
             logger.error('Failed to activate appendice endpoint')
 
@@ -270,7 +252,9 @@ class Almighty(object):
         self.lastscheduler = 0
         self.lastvillains = 0
         self.lastchecknodes = 0
-        self.internal_command_file = []
+        self.command_queue = []
+
+        self.scheduler_wanted = 0 # 1 if the scheduler must be run next time update
 
         logger.debug('Init done')
         self.state = 'Qget'
@@ -281,7 +265,7 @@ class Almighty(object):
         logger.debug('Timeouts check : ' + str(current))
         # check timeout for scheduler
         if (current >= (self.lastscheduler + schedulertimeout))\
-           or (scheduler_wanted >= 1)\
+           or (self.scheduler_wanted >= 1)\
            and (current >= (self.lastscheduler + scheduler_min_time_between_2_calls)):
             logger.debug('Scheduling timeout')
             # lastscheduler = current + schedulertimeout
@@ -305,19 +289,17 @@ class Almighty(object):
     def qget(self, timeout):
         '''function used by the main automaton to get notifications from appendice'''
 
-        self. set_appendice_timeout(timeout)
-
-        answer = None
+        self.set_appendice_timeout(timeout)
 
         try:
             answer = self.appendice.recv_json()
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
-            return "Time"
+            return {'cmd': 'Time'}
         except zmq.ZMQError as e:
-            logger.error("Something is worng with appendice" + str(e))
+            logger.error("Something is wrong with appendice" + str(e))
             exit(15)
-        return answer['cmd']
+        return answer
 
     def add_command(self, command):
         '''as commands are just notifications that will
@@ -326,30 +308,32 @@ class Almighty(object):
 
         m = re.compile('^' + command + '$')
         flag = True
-        for cmd in self.internal_command_file:
+        for cmd in self.command_queue:
             if re.match(m, cmd):
                 flag = False
                 break
 
         if flag:
-            self.internal_command_file += command
+            self.command_queue.append(command)
 
     def read_commands(self, timeout):  # TODO
         ''' read commands until reaching the maximal successive read value or
         having read all of the pending commands'''
 
-        command = ''
+        command = None
         remaining = max_successive_read
 
         while (command != 'Time') and remaining:
             if remaining != max_successive_read:
                 timeout = 0
             command = self.qget(timeout)
-            self.add_command(command)
+            if command is None:
+                break
+            self.add_command(command['cmd'])
             remaining -= 1
-            logger.debug('Got command ' + command + ', ' + str(remaining) + ' remaining')
+            logger.debug('Got command ' + command['cmd'] + ', ' + str(remaining) + ' remaining')
 
-    def run(self):
+    def run(self, loop=True):
 
         global finishTag
         while True:
@@ -379,15 +363,14 @@ class Almighty(object):
 
             # QGET
             elif self.state == 'Qget':
-                if self.internal_command_file != []:
+                if len(self.command_queue) > 0:
                     self.read_commands(0)
                 else:
                     self.read_commands(read_commands_timeout)
 
-                logger.debug('Command queue : ' + str(self.internal_command_file))
-                current_command = self.internal_command_file.pop(0)
-                command, arg1, arg2, arg3 = re.split(' ', current_command)
-
+                logger.debug('Command queue : ' + str(self.command_queue))
+                command = self.command_queue.pop(0)
+                
                 logger.debug('Qtype = [' + command + ']')
                 if (command == 'Qsub') or (command == 'Term') or (command == 'BipBip')\
                    or (command == 'Scheduling') or (command == 'Qresume'):
@@ -403,7 +386,7 @@ class Almighty(object):
                 elif command == 'ChState':
                     self.state = 'Change node state'
                 else:
-                    logger.debug('Unknown command found in queue : ' + command)
+                    logger.error('Unknown command found in queue : ' + command)
 
             # SCHEDULER
             elif self.state == 'Scheduler':
@@ -502,6 +485,8 @@ class Almighty(object):
                 logger.error('Almighty just falled into an unknown state !!!.')
                 finishTag = 1
 
+            if not loop:
+                break
 
 if __name__ == '__main__':  # pragma: no cover
     almighty = Almighty()

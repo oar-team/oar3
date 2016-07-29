@@ -30,11 +30,20 @@ class FakeZmqSocket(object):
         FakeZmq.sent_msgs[self.num].append(msg)
 
     def recv_json(self):
-        return FakeZmq.recv_msgs[self.num].pop()
+        msgs = FakeZmq.recv_msgs[self.num]
+        if len(msgs)==0:
+            msg = None
+        else:
+            msg = msgs.pop()
+        return msg
         
     def recv_multipart(self):
         print('recv_multipart:', self.num, FakeZmq.recv_msgs)
-        msg = FakeZmqSocketMessage(FakeZmq.recv_msgs[self.num].pop())
+        msgs = FakeZmq.recv_msgs[self.num]
+        if len(msgs)==0:
+            msg = None
+        else:
+            msg = FakeZmqSocketMessage(msgs.pop())
         client_id = 1
         return(client_id, msg)
 
