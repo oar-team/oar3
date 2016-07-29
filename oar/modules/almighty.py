@@ -106,7 +106,7 @@ scheduler_min_time_between_2_calls = config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS'
 villainstimeout = 10
 
 # Max waiting time before check node states
-checknodestimeout = config['FINAUD_FREQUENCY']
+checknodestimeout = int(config['FINAUD_FREQUENCY'])
 
 # Max number of concurrent bipbip processes
 max_bipbip_processes = config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING']

@@ -58,3 +58,9 @@ def test_almighty_state_Time_update(monkeypatch):
     almighty.state = 'Time update'
     almighty.run(False)
     assert almighty.state == 'Qget'
+
+
+# CHECK FOR VILLAINS
+# CHECK NODE STATES
+# LEON
+# Change state for dynamic nodes
