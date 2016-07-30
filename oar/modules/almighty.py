@@ -4,6 +4,7 @@
 from __future__ import unicode_literals, print_function
 from oar.lib import (config, get_logger)
 from oar.lib.tools import (Popen, PIPE)
+import oar.lib.tools as tools
 
 import zmq
 import os
@@ -54,6 +55,9 @@ else:
     binpath = '/usr/local/lib/oar/'
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
+
+leon_command = binpath + 'leon'
+
 # Signal handle
 finishTag = False
 
@@ -99,7 +103,7 @@ max_successive_read = 100;
 # no notification)
 schedulertimeout = 60
 # Min waiting time before 2 scheduling attempts
-scheduler_min_time_between_2_calls = config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS']
+scheduler_min_time_between_2_calls = int(config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS'])
 
 
 # Max waiting time before check for jobs whose time allowed has elapsed
@@ -109,8 +113,8 @@ villainstimeout = 10
 checknodestimeout = int(config['FINAUD_FREQUENCY'])
 
 # Max number of concurrent bipbip processes
-max_bipbip_processes = config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING']
-detach_oarexec = config['DETACH_JOB_FROM_SERVER']
+max_bipbip_processes = int(config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING'])
+detach_oarexec = int(config['DETACH_JOB_FROM_SERVER'])
 
 # Maximum duration a a bipbip process (after that time the process is killed)
 max_bipbip_process_duration = 30*60
@@ -127,33 +131,19 @@ def launch_command(command):
     global finishTag
 
     logger.debug('Launching command : [' + command + ']')
-    # $ENV{PATH}="/bin:/usr/bin:/usr/local/bin";
-    #  ###### THE LINE BELOW SHOULD NOT BE COMMENTED IN NORMAL USE ##### ??? TODO (BELOW -> ABOVE ???)
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-    # system $command; ??? TODO  to remove ?
 
-    pid = os.fork()
-    if pid == 0:
-        # CHILD
-        signal.signal(signal.SIGUSR1, signal.SIG_IGN)
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        os.execv(command, ['Almighty: ' + command])
+    #import pdb; pdb.set_trace()
+    
+    status = tools.call(command)
 
-    status = 0
-    while True:
-        kid, status = os.wait()
-        if kid == pid:
-            break
-    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
     exit_value = status >> 8
     signal_num = status & 127
     dumped_core = status & 128
 
     logger.debug(command + ' terminated')
-    logger.debug('Exit value : ' + exit_value)
-    logger.debug('Signal num : ' + signal_num)
-    logger.debug('Core dumped : ' + dumped_core)
+    logger.debug('Exit value : ' + str(exit_value))
+    logger.debug('Signal num : ' + str(signal_num))
+    logger.debug('Core dumped : ' + str(dumped_core))
 
     if signal_num or dumped_core:
         logger.error('Something wrong occured (signal or core dumped) when trying to call [' +

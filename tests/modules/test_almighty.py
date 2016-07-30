@@ -4,13 +4,22 @@ from __future__ import unicode_literals, print_function
 from oar.modules.almighty import Almighty
 from oar.lib import config
 from .fakezmq import FakeZmq
+import oar.lib.tools
 
 import pytest
 import zmq
 
+called_command = ''
+
+def fake_call(cmd):
+    global called_command
+    called_command = cmd
+    return 0
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
+    monkeypatch.setattr(oar.lib.tools, 'call', fake_call)
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
@@ -48,18 +57,31 @@ def test_almighty_state_Qget(command, state, monkeypatch):
     almighty.run(False)
     assert almighty.state == state
 
-def test_almighty_state_Scheduler(monkeypatch):
+def test_almighty_state_Scheduler_1(monkeypatch):
     # TODO
-    pass
+    almighty = Almighty()
+    almighty.state = 'Scheduler'
+    print(called_command)
+    almighty.run(False)
 
+    assert called_command == '/usr/local/lib/oar/kao'
+    assert almighty.state == 'Time update'
+    
 def test_almighty_state_Time_update(monkeypatch):
     #FakeZmq.recv_msgs[0] = [{'cmd': command}]
     almighty = Almighty()
     almighty.state = 'Time update'
     almighty.run(False)
     assert almighty.state == 'Qget'
+    
+def test_almighty_state_Check_for_villains_1(monkeypatch):
 
-
+    almighty = Almighty()
+    almighty.state = 'Check for villains'
+    almighty.run(False)
+    assert called_command == '/usr/local/lib/oar/sarko'
+    assert almighty.state == 'Time update'
+    
 # CHECK FOR VILLAINS
 # CHECK NODE STATES
 # LEON

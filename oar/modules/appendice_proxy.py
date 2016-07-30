@@ -63,7 +63,7 @@ class AppendiceProxy(object):
                 self.bipbip_commander.send_json({'job_id': int(job_id), 'cmd': command, 'args': args})
 
             else:
-                self.appendice.send_json({'msg': message.decode('utf8')})
+                self.appendice.send_json({'cmd': message.decode('utf8')})
 
             if not loop:
                 break

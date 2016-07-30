@@ -23,7 +23,6 @@
 from multiprocessing import Process
 
 import os
-import re
 import socket
 import zmq
 
@@ -88,7 +87,8 @@ class BipbipCommander(object):
             cmd_arg = [leon_command, str(job_id)]
         else:
             cmd_arg = [bipbip_command] + [str(job_id)] + command['args']
-                    
+
+        # TODO returncode,
         tools.call(cmd_arg)
 
     
