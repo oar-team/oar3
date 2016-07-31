@@ -13,6 +13,7 @@ import time
 import signal
 from pwd import getpwnam
 
+import pdb
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -55,32 +56,15 @@ else:
     binpath = '/usr/local/lib/oar/'
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
-
-leon_command = binpath + 'leon'
-
-# Signal handle
-finishTag = False
-
-
-def signal_handler():
-    global finishTag
-    finishTag = True
-
-
-# To avoid zombie processes
-#
-signal.signal(signal.SIGUSR1, signal_handler)
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
-
 meta_sched_command = config['META_SCHED_CMD']
 m = re.match(r'^\/', meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
+    
+leon_command = binpath + 'leon'
 check_for_villains_command = binpath + 'sarko'
 check_for_node_changes = binpath + 'finaud'
 nodeChangeState_command = binpath + 'NodeChangeState'
-
 
 
 # This timeout is used to slowdown the main automaton when the
@@ -122,6 +106,19 @@ max_bipbip_process_duration = 30*60
 Log_file = config['LOG_FILE']
 
 energy_pid = 0
+
+# Signal handle
+finishTag = False
+
+def signal_handler():
+    global finishTag
+    finishTag = True
+
+# To avoid zombie processes
+#
+signal.signal(signal.SIGUSR1, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 
 def launch_command(command):
@@ -324,7 +321,7 @@ class Almighty(object):
             logger.debug('Got command ' + command['cmd'] + ', ' + str(remaining) + ' remaining')
 
     def run(self, loop=True):
-
+        
         global finishTag
         while True:
             logger.debug("Current state [" + self.state + "]")

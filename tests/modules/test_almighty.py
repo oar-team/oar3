@@ -11,6 +11,11 @@ import zmq
 
 called_command = ''
 
+KAO = '/usr/local/lib/oar/kao'
+FINAUD = '/usr/local/lib/oar/finaud'
+SARKO = '/usr/local/lib/oar/sarko'
+LEON = '/usr/local/lib/oar/leon'
+NODE_CHANGE_STATE =  '/usr/local/lib/oar/NodeChangeState'
 def fake_call(cmd):
     global called_command
     called_command = cmd
@@ -49,7 +54,8 @@ def setup(request):
     ('Villains', 'Check for villains'),
     ('Finaud', 'Check node states'),
     ('Time', 'Time update'),
-    ('ChState', 'Change node state')
+    ('ChState', 'Change node state'),
+    ('Time update', 'Qget')
     ])
 def test_almighty_state_Qget(command, state, monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': command}]
@@ -57,32 +63,18 @@ def test_almighty_state_Qget(command, state, monkeypatch):
     almighty.run(False)
     assert almighty.state == state
 
-def test_almighty_state_Scheduler_1(monkeypatch):
-    # TODO
-    almighty = Almighty()
-    almighty.state = 'Scheduler'
-    print(called_command)
-    almighty.run(False)
 
-    assert called_command == '/usr/local/lib/oar/kao'
-    assert almighty.state == 'Time update'
-    
-def test_almighty_state_Time_update(monkeypatch):
-    #FakeZmq.recv_msgs[0] = [{'cmd': command}]
+@pytest.mark.parametrize("state_in, state_out, called_cmd", [
+    ('Scheduler', 'Time update', KAO), # Scheduler_1
+    ('Check for villains', 'Time update', SARKO),
+    ('Check node states', 'Time update', FINAUD),
+    ('Leon', 'Time update', LEON), # Leon 1
+    ('Change node state', 'Time update', NODE_CHANGE_STATE)
+])
+def test_almighty_state_called_command(state_in, state_out, called_cmd, monkeypatch):
     almighty = Almighty()
-    almighty.state = 'Time update'
+    almighty.state = state_in
     almighty.run(False)
-    assert almighty.state == 'Qget'
-    
-def test_almighty_state_Check_for_villains_1(monkeypatch):
+    assert called_command == called_cmd
+    assert almighty.state == state_out
 
-    almighty = Almighty()
-    almighty.state = 'Check for villains'
-    almighty.run(False)
-    assert called_command == '/usr/local/lib/oar/sarko'
-    assert almighty.state == 'Time update'
-    
-# CHECK FOR VILLAINS
-# CHECK NODE STATES
-# LEON
-# Change state for dynamic nodes
