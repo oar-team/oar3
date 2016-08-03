@@ -11,7 +11,7 @@ import pytest
 import zmq
 import oar.lib.tools
 
-called_command = []
+called_command = None
 
 def fake_call(cmd):
     global called_cmd

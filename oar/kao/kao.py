@@ -10,6 +10,7 @@ logger = get_logger("oar.kao")
 
 def main():
     logger.info("Starting Kao Meta Scheduler")
+    import pdb; pdb.set_trace()
     meta_schedule()
 
 if __name__ == '__main__':  # pragma: no cover

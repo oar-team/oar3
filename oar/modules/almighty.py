@@ -6,6 +6,7 @@ from oar.lib import (config, get_logger)
 from oar.lib.tools import (Popen, PIPE)
 import oar.lib.tools as tools
 
+import socket
 import zmq
 import os
 import re
@@ -75,13 +76,13 @@ nodeChangeState_command = binpath + 'NodeChangeState'
 # dramatically (because it blocks only when nothing else is to be done).
 # Nevertheless it is closely related to the precision at which the
 # internal counters are checked
-read_commands_timeout = 10
+read_commands_timeout = 10 * 1000 # in ms
 
 # This parameter sets the number of pending commands read from
 # appendice before proceeding with internal work
 # should not be set at a too high value as this would make the
 # Almighty weak against flooding
-max_successive_read = 100;
+max_successive_read = 10;
 
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
@@ -182,8 +183,8 @@ def ipc_clean():  # TODO do we need it ?
     oar_uid = getpwnam('oar').pw_uid
     with open('/proc/sysvipc/msg') as f_ipcs:
         for line in f_ipcs:
-            ipcs = line.slip()
-            if int(ipcs[7]) == oar_uid:
+            ipcs = line.split()
+            if ipcs[7].isdigit() and int(ipcs[7]) == oar_uid:
                 logger.debug('cleaning ipc ' + ipcs[7])
                 os.system('/usr/bin/ipcrm -q ' + ipcs[7])
 
@@ -218,19 +219,13 @@ class Almighty(object):
         # Activate appendice socket
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
+        ip_addr_server = socket.gethostbyname(config['SERVER_HOSTNAME'])
         try:
-            self.appendice.bind('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['ZMQ_SERVER_PORT'])
+            self.appendice.bind('tcp://' + ip_addr_server + ':' + config['ZMQ_SERVER_PORT'])
         except:
             logger.error('Failed to activate appendice endpoint')
 
         self.set_appendice_timeout(read_commands_timeout)
-
-        self.appendice_proxy = self.context.socket(zmq.PULL)
-        try:
-            self.appendice_proxy.bind('tcp://' + config['SERVER_HOSTNAME'] + ':'
-                                      + config['APPENDICE_PROXY_SERVER_PORT'])
-        except:
-            logger.error('Failed to activate appendice proxy endpoint')
         
         # Starting of Hulot, the Energy saving module
         if config['ENERGY_SAVING_INTERNAL'] == 'yes':
@@ -311,9 +306,9 @@ class Almighty(object):
         remaining = max_successive_read
 
         while (command != 'Time') and remaining:
+            command = self.qget(timeout)
             if remaining != max_successive_read:
                 timeout = 0
-            command = self.qget(timeout)
             if command is None:
                 break
             self.add_command(command['cmd'])
@@ -330,8 +325,6 @@ class Almighty(object):
                 if energy_pid:
                     logger.debug("kill child process " + str(energy_pid))
                     os.kill(energy_pid, signal.SIGKILL)
-                logger.debug("kill child process " + str(self.appendice_pid))
-                os.kill(self.appendice_pid, signal.SIGKILL)
                 # TODO:  $Redirect_STD_process = OAR::Modules::Judas::redirect_everything();
                 Redirect_STD_process = False
                 if Redirect_STD_process:
