@@ -32,7 +32,7 @@ import oar.lib.tools as tools
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
-    'ZMQ_SERVER_PORT': '6667',
+    'APPENDICE_SERVER_PORT': '6668',
     'BIPBIP_COMMANDER_SERVER': 'localhost',
     'BIPBIP_COMMANDER_PORT': '6669',
     'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
@@ -68,7 +68,7 @@ class BipbipCommander(object):
         # Initialize a zeromq context
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PUSH) # to signal Almighty
-        self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['ZMQ_SERVER_PORT'])
+        self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
 
 
         # IP addr is required when bind function is used on zmq socket

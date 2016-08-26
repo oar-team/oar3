@@ -24,13 +24,15 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    config['ZMQ_SERVER_PORT'] = '6667'
+    config['SERVER_HOSTNAME'] = 'localhost'
+    config['APPENDICE_SERVER_PORT'] = '6668'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
 
     @request.addfinalizer
     def teardown():
-        del config['ZMQ_SERVER_PORT']
+        del config['SERVER_HOSTNAME']
+        del config['APPENDICE_SERVER_PORT']  
         del config['BIPBIP_COMMANDER_SERVER']
         del config['BIPBIP_COMMANDER_PORT']
         FakeZmq.i = 0
