@@ -36,7 +36,7 @@ DEFAULT_CONFIG = {
     'BIPBIP_COMMANDER_SERVER': 'localhost',
     'BIPBIP_COMMANDER_PORT': '6669',
     'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
-    'DETACH_JOB_FROM_SERVER': '0',
+    'DETACH_JOB_FROM_SERVER': '1',
     'LOG_FILE': '/var/log/oar.log'
 }
 
@@ -56,6 +56,7 @@ if 'OARDIR' in os.environ:
     binpath = os.environ['OARDIR'] + '/'
 else:
     binpath = '/usr/local/lib/oar/'
+    os.environ['OARDIR'] = binpath
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
 leon_command = binpath + 'leon'
@@ -80,14 +81,16 @@ class BipbipCommander(object):
         self.bipbip_leon_executors = {}
 
     def bipbip_leon_executor(*args, **command):
-        logger.debug('Launching' + str(command))
+        
         job_id = command['job_id']
         
         if command['cmd'] == 'LEONEXTERMINATE':
             cmd_arg = [leon_command, str(job_id)]
         else:
-            cmd_arg = [bipbip_command] + [str(job_id)] + command['args']
+            cmd_arg = [bipbip_command, str(job_id)] + command['args']
 
+        logger.debug('Launching: ' + str(cmd_arg))
+            
         # TODO returncode,
         tools.call(cmd_arg)
 
@@ -110,18 +113,17 @@ class BipbipCommander(object):
                 flag_exec = True
 
                 if job_id in self.bipbip_leon_executors:
-                    if not self.bipbip_leon_executors[job_id].is_alive:
+                    if not self.bipbip_leon_executors[job_id].is_alive():
                         del self.bipbip_leon_executors[job_id]
                     else:
                         flag_exec = False
                         # requeue command
-                        logger.debug("[bipbip_commander] A process is already running for the job " +
+                        logger.debug("A process is already running for the job " +
                                      str(job_id) + ". We requeue: " + str(command))
                         self.bipbip_leon_commands_to_requeue.append(command)
 
                 if flag_exec:
                     # exec
-                    print("executor:", command)
                     executor = Process(target=self.bipbip_leon_executor, args=(), kwargs=command)
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor

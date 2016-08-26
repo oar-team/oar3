@@ -20,12 +20,9 @@ import pdb
 DEFAULT_CONFIG = {
     'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
-    'ZMQ_SERVER_PORT': '6667', # new endpoint which replace appendice
-    'APPENDICE_PROXY_SERVER_PORT': '6668', # endpoint for appendice proxy
+    'APPENDICE_SERVER_PORT': '6668', #new endpoint which replace appendic
     'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
     'FINAUD_FREQUENCY': '300',
-    'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
-    'DETACH_JOB_FROM_SERVER': '0',
     'LOG_FILE': '/var/log/oar.log',
     'ENERGY_SAVING_INTERNAL': 'no'
 }
@@ -82,7 +79,7 @@ read_commands_timeout = 10 * 1000 # in ms
 # appendice before proceeding with internal work
 # should not be set at a too high value as this would make the
 # Almighty weak against flooding
-max_successive_read = 10;
+max_successive_read = 1;
 
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
@@ -96,13 +93,6 @@ villainstimeout = 10
 
 # Max waiting time before check node states
 checknodestimeout = int(config['FINAUD_FREQUENCY'])
-
-# Max number of concurrent bipbip processes
-max_bipbip_processes = int(config['MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING'])
-detach_oarexec = int(config['DETACH_JOB_FROM_SERVER'])
-
-# Maximum duration a a bipbip process (after that time the process is killed)
-max_bipbip_process_duration = 30*60
 
 Log_file = config['LOG_FILE']
 
@@ -221,7 +211,7 @@ class Almighty(object):
         self.appendice = self.context.socket(zmq.PULL)
         ip_addr_server = socket.gethostbyname(config['SERVER_HOSTNAME'])
         try:
-            self.appendice.bind('tcp://' + ip_addr_server + ':' + config['ZMQ_SERVER_PORT'])
+            self.appendice.bind('tcp://' + ip_addr_server + ':' + config['APPENDICE_SERVER_PORT'])
         except:
             logger.error('Failed to activate appendice endpoint')
 
@@ -271,8 +261,11 @@ class Almighty(object):
     def qget(self, timeout):
         '''function used by the main automaton to get notifications from appendice'''
 
+        timeout = 10 * 1000
         self.set_appendice_timeout(timeout)
 
+        logger.debug("Timeout value:" + str(timeout))
+        
         try:
             answer = self.appendice.recv_json()
         except zmq.error.Again as e:

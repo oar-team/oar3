@@ -6,6 +6,7 @@ between version 2.x OAR's modules and version 3.x
 
 import re
 import zmq
+import time
 from oar.lib import (config, get_logger)
 
 
@@ -13,7 +14,7 @@ from oar.lib import (config, get_logger)
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
     'SERVER_PORT': '6666',
-    'APPENDICE_PROXY_SERVER_PORT': '6668',
+    'APPENDICE_SERVER_PORT': '6668',
     'BIPBIP_COMMANDER_SERVER': 'localhost',
     'BIPBIP_COMMANDER_PORT': '6669',
 }
@@ -39,7 +40,7 @@ class AppendiceProxy(object):
 
         self.appendice = self.context.socket(zmq.PUSH)
         self.appendice.connect("tcp://" + config['SERVER_HOSTNAME'] + ":"
-                               + config['APPENDICE_PROXY_SERVER_PORT'])
+                               + config['APPENDICE_SERVER_PORT'])
 
         self.bipbip_commander = self.context.socket(zmq.PUSH)
         self.bipbip_commander.connect("tcp://" + config['BIPBIP_COMMANDER_SERVER'] + ":"
@@ -50,20 +51,24 @@ class AppendiceProxy(object):
         while True:
             client_id, message = self.socket_proxy.recv_multipart()
             msg = message.decode('utf8')
-
-            print("id: %r" % client_id)
-            print("request: %s" % message.decode('utf8'))
-
-            # if OAREXEC or OARRUNJOB or LEONEXTERMINATE is received forward it to bipbip commander
-            m = re.search(OAR_EXEC_RUNJOB_LEON,  msg)
-            if m:
-                command = m.group(1)
-                job_id = m.group(2)
-                args = m.group(3).split('_')[1:]
-                self.bipbip_commander.send_json({'job_id': int(job_id), 'cmd': command, 'args': args})
-
+            if msg == u'':
+                logger.info("(de)connexion from from id: %r" % client_id)
             else:
-                self.appendice.send_json({'cmd': message.decode('utf8')})
+                msg = msg.rstrip()
+                logger.info("received from id: %r" % client_id)
+                logger.info("request_str: %s" % msg)
+
+                # if OAREXEC or OARRUNJOB or LEONEXTERMINATE is received forward it to bipbip commander
+                m = re.search(OAR_EXEC_RUNJOB_LEON,  msg)
+                if m:
+                    command = m.group(1)
+                    job_id = m.group(2)
+                    args = m.group(3).split('_')[1:]
+                    self.bipbip_commander.send_json({'job_id': int(job_id), 'cmd': command, 'args': args})
+                    
+                else:
+                    logger.debug("send to appendice request: %s" % msg)
+                    self.appendice.send_json({'cmd': msg})
 
             if not loop:
                 break
