@@ -28,6 +28,6 @@ def register_error_handlers(app):
         return response
 
     for code in iterkeys(default_exceptions):
-        app.error_handler_spec[None][code] = make_json_error
+        app.errorhandler(code)(make_json_error)
 
     return app
