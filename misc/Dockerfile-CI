@@ -1,0 +1,39 @@
+#
+# Aims of this Dockerfile is to reproduce environment similiar to one
+# use during Travis CI. 
+#
+FROM ubuntu:14.04
+MAINTAINER Olivier Richard "olivier.richard@imag.fr"
+
+ENV container docker
+ENV CONTAINER_LIB_PATH /var/lib/container
+ENV HOME /root
+ENV LC_ALL C
+ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_PRIORITY critical
+ENV DEBCONF_NOWARNINGS yes
+ENV COLOR green
+
+ENV DB=postgresql
+ENV PGPASSWORD=oar
+    
+RUN echo "export COLOR=green" > /etc/hostname.color
+
+RUN apt-get update
+RUN apt-get -y install \
+    git python python-virtualenv postgresql libpq-dev python-dev
+
+RUN mkdir -p /etc/oar
+RUN virtualenv -p python $HOME/virtualenv
+RUN /bin/bash -c "source $HOME/virtualenv/bin/activate"
+RUN pip install tox coverage pytest psycopg2 sphinx pytest-flask pytest-cov
+
+RUN sed -i 's/peer/trust/g' /etc/postgresql/9.3/main/pg_hba.conf
+
+RUN /etc/init.d/postgresql start && psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';" \
+    && psql -U postgres -c "CREATE DATABASE oar;" \
+    && psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;" \
+    && psql -U postgres -c "CREATE USER oar_ro WITH PASSWORD 'oar_ro';" \
+    && psql -U oar -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO oar_ro;" -h localhost
+
+RUN git clone --depth=50 --branch=master https://github.com/oar-team/oar3.git /root/oar3
