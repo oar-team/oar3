@@ -139,7 +139,7 @@ class BaseQueryCollection(object):
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
-        columns = ("id",)
+        columns = ("id","network_address",)
         job_id_column = AssignedResource.moldable_id.label('job_id')
         query = db.query(job_id_column, Resource)\
                   .options(Load(Resource).load_only(*columns))\

@@ -40,6 +40,7 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
         attach_links(item)
         if detailed:
             attach_resources(item, jobs_resources)
+            attach_nodes(item, jobs_resources)
         g.data['items'].append(item)
 
 
@@ -67,6 +68,7 @@ def show(job_id,detailed=None):
         job.id=job_id
         job_resources = db.queries.get_assigned_jobs_resources([job])
         attach_resources(g.data, job_resources)
+        attach_nodes(g.data, job_resources)
     attach_links(g.data)
 
 
@@ -95,6 +97,18 @@ def attach_resources(job, jobs_resources):
         resource = resource.asdict(ignore_keys=('network_address',))
         attach_links(resource)
         job['resources'].append(resource)
+
+def attach_nodes(job, jobs_resources):
+    job['nodes'] = []
+    network_addresses = []
+    from .resource import attach_links
+    for node in jobs_resources[job['id']]:
+        node = node.asdict(ignore_keys=('id',))
+        if node['network_address'] not in network_addresses:
+            attach_links(node)
+            job['nodes'].append(node)
+            network_addresses.append(node['network_address'])
+
 
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
