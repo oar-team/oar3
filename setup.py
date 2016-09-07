@@ -78,6 +78,7 @@ setup(
     bipbip_commander=oar.modules.bipbip_commander:main
     appendice_proxy=oar.modules.appendice_proxy:main
     oarsub3=oar.cli.oarsub:cli
+    oarstat3=oar.cli.oarstat:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
     kamelot_fifo=oar.kao.kamelot_fifo:main
