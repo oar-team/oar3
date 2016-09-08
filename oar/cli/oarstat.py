@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import oar.lib.tools as tools
-
+import datetime
 import requests
 from oar.lib import config
 import click
@@ -27,16 +27,38 @@ STATE2CHAR = {
     'NA': '-'
     }
 
+
+class OarApi(object):
+    def __init__(self):
+        self.oarapi_url = config['OARAPI_URL']
+
+    def http_error(self, r):
+        pass
+        
+    def get(self, params):
+        r = requests.get(self.oarapi_url + params)
+        if r.status_code != 200:
+            self.http_error(r)
+        else:
+            return(r)
+    
+        
 def print_jobs(legacy, jobs):
     if legacy:
         print('Job id    S User     Duration   System message\n' +
               '--------- - -------- ---------- ------------------------------------------------')
-
+        # api_timestamp = jobs.json()['api_timestamp']
         job_items = jobs.json()['items']
         for job in job_items:
+            if job['start_time']:      
+                duration = job['api_timestamp'] - job['start_time']
+            else:
+                duration = 0
+            
             print('{:9}'.format(str(job['id'])) + ' ' + STATE2CHAR[job['state']] + ' ' +
                   '{:8}'.format(str(job['owner'])) + ' ' +
-                  '{:8}'.format(str(job['owner']))
+                  '{:>10}'.format(str(datetime.timedelta(seconds=duration))) + ' ' +
+                  '{:48}'.format(job['message'])
             )
     else:
         print(jobs.text)
@@ -44,35 +66,37 @@ def print_jobs(legacy, jobs):
 def http_error(r):
     pass
 
+def print_oar_version():
+    # TODO
+    pass
+
 
 @click.command()
 @click.option('-j', '--job', type=click.INT, multiple=True,
               help='show informations only for the specified job')
-@click.option('-f', '--full', type=click., help='show full informations')
-
-@click.option('-s', '--state', type=click., help='show only the state of a job (optimized query)')
-@click.option('-u', '--user', type=click., help='show informations for this user only')
-@click.option('-a', '--array', type=click., help='show informations for the specified array_job(s) and toggle array view in')
-@click.option('-c', '--compact', type=click., help='prints a single line for array jobs')
-@click.option('-g', '--gantt', type=click., help='show job informations between two date-times')
-@click.option('-e', '---events', type=click., help='show job events')
-@click.option('-p', '--properties', type=click., help='show job properties')
-@click.option('-A', '--accounting', type=click., help='show accounting informations between two dates')
-@click.option('-S', '--sql', type=click.,
+@click.option('-f', '--full', is_flag=True, help='show full informations')
+@click.option('-s', '--state', type=click.STRING, help='show only the state of a job (optimized query)')
+@click.option('-u', '--user', is_flag=True, help='show informations for this user only')
+@click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
+@click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
+@click.option('-g', '--gantt', type=click.STRING, help='show job informations between two date-times')
+@click.option('-e', '--events', type=click.STRING, help='show job events')
+@click.option('-p', '--properties', type=click.STRING, help='show job properties')
+@click.option('-A', '--accounting', type=click.STRING, help='show accounting informations between two dates')
+@click.option('-S', '--sql', type=click.STRING,
               help='restricts display by applying the SQL where clause on the table jobs (ex: "project = \'p1\'")')
-@click.option('-F', '--format', type=click., help='select the text output format. Available values 1 an 2')
-@click.option('-J', '--json,', type=click. help='print result in JSON format')
-@click.option('-Y', '--yaml', type=click. help='print result in YAML format')
-def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml):
+@click.option('-F', '--format', type=int, help='select the text output format. Available values 1 an 2')
+@click.option('-J', '--json', is_flag=True, help='print result in JSON format')
+@click.option('-Y', '--yaml', is_flag=True, help='print result in YAML format')
+@click.option('-V', '--version', is_flag=True, help='print OAR version number')
+def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml, version):
+    
     config.setdefault_config(DEFAULT_CONFIG)
 
-    oarapi_url = config['OARAPI_URL']
+    oarapi = OarApi()
 
     if not job:
-        r = requests.get(oarapi_url + 'jobs.json')
-        if r.status_code != 200:
-            http_error(r)
-        else:
-            print_jobs(True, r)
+        answer = oarapi.get('jobs/details.json')
+        print_jobs(True, answer)
 
 
