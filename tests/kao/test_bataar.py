@@ -4,14 +4,17 @@ import pytest
 from click.testing import CliRunner
 from oar.kao.bataar import bataar
 import socket
+import redis
 import struct
 import sys
 import os
+import pdb
+
 from oar.lib import db
 
 recv_msgs = []
 sent_msgs = []
-
+data_storage = {}
 
 class FakeConnection(object):
     msg_idx = 0
@@ -63,29 +66,37 @@ class FakeSocket(object):
     def sendall(self, msg):
         return self.connection.sendall(msg)
 
+class FakeRedis(object):
+    def __init__(self, host='localchost', port='6379'):
+        pass
 
+    def get(self, key):
+        return data_storage[key]
+    
 @pytest.fixture(scope="function", autouse=True)
-def monkeypatch_socket_socket():
+def monkeypatch_uds_datastorage():
     socket.socket = FakeSocket
-
+    redis.StrictRedis = FakeRedis
+    
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         yield
 
-
 def exec_gene(options):
     global recv_msgs
     recv_msgs = [
-        '0:10|10:S:1',
-        '0:19|19:C:1'
+        '0:05|05:A',
+        '0:10|10:S:foo!1',
+        '0:19|19:C:foo!1',
+        '0:25|25:Z'
     ]
-    path = os.path.dirname(os.path.abspath(__file__))
-    wpf = path + '/batsim-workload.json'
-    print(wpf)
-    args = [wpf]
-    args.extend(options)
+    global data_storage
+    data_storage = { '/tmp/bat_socket:nb_res': b'4',
+                     '/tmp/bat_socket:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}'
+    }
+    args = options
     args.append('--scheduler_delay=5')
     runner = CliRunner()
     result = runner.invoke(bataar, args)
@@ -97,7 +108,8 @@ def exec_gene(options):
 
 def test_bataar_no_db():
     result, sent_msgs = exec_gene(['-dno-db'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N']
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",

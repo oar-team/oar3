@@ -163,14 +163,13 @@ class SchedPolicyParams(object):
 
         
 class BatSched(BatsimScheduler):
-    def __init__(self, scheduler_policy, types, node_size, sched_delay=-1,
+    def __init__(self, scheduler_policy, types, sched_delay, node_size,
                  database_mode='no-db', platform_model="simu"):
         self.scheduler_policy = scheduler_policy
         self.platform_model = platform_model
         self.database_mode = database_mode
         self.node_size = node_size
         self.sched_delay = sched_delay
-
         self.jobs = {}
         self.db_jid2s_jid = {}
 
@@ -215,7 +214,7 @@ class BatSched(BatsimScheduler):
         else:
             raise NotImplementedError('Database mode: ' + self.database_mode)
 
-        self.env = BatEnv(0)
+        self.env = BatEnv(0) #???
         self.platform = Platform(self.platform_model, env=self.env, resource_set=res_set,
                                  jobs=self.jobs, db_jid2s_jid=self.db_jid2s_jid)
         #global plt
@@ -236,7 +235,7 @@ class BatSched(BatsimScheduler):
 
     def generateJob(self, data_storage_job):
         j = data_storage_job
-        jid = int(re.search(r'\d!(\d)', j.id).group(1))
+        jid = int(re.search(r'\w!(\d)', j.id).group(1))
         walltime = int(math.ceil(float(j.requested_time)))
         res = j.requested_resources
         rqb = [([('resource_id', res)], [(1, self.nb_res)])]
@@ -306,13 +305,16 @@ class BatSched(BatsimScheduler):
 
 
         print("Ids of jobs to launch: ", *jids_to_launch)
-
+        print("Time befort scheduling round: ", self.bs._current_time, self.sched_delay)
         # update time
         if self.sched_delay == -1:
             self.bs.consume_time(real_sched_time) #TODO
         else:
             self.bs.consume_time(self.sched_delay)
+
+        self.env.now = self.bs._current_time
         
+        print("Time after scheduling round: ", self.bs._current_time)
         # send to uds
         if len(jids_to_launch) > 0:
             scheduled_jobs = []
@@ -346,7 +348,7 @@ class BatSched(BatsimScheduler):
         data_storage_jobs = [data_storage_job] # TODO vectorize in batsim.py !!!
 
         for job in data_storage_jobs:
-            jid = int(re.search(r'\d!(\d)', job.id).group(1))
+            jid = int(re.search(r'\w!(\d)', job.id).group(1))
             self.jobs_completed.append(jid)
             if jid in self.platform.running_jids:
                 self.platform.running_jids.remove(jid)
@@ -490,7 +492,7 @@ class BatSched_old(object):
               LOCAL | 4 |\
               * Allocated resources which belongs to the same node. Node's size must be provided,\
               job's sizes are not allowed to exceed node's size.")
-@click.option('-t', '--scheduler_delay', default=0.05, type=click.INT,
+@click.option('-t', '--scheduler_delay', default=0.05, type=click.INT, #TODO default=-1
               help="set the delay in seconds taken by scheduler to schedule all jobs. By default \
               the actual delay of scheduler is used")
 @click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
@@ -506,15 +508,12 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
 
     print("Starting simulation...")
     print("Scheduler Policy:", scheduler_policy)
-
-    time_start = time.time()
-
+    print("Scheduler delay:", scheduler_delay)
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
     bs = Batsim(scheduler, validatingmachine=None, server_address=socket,
                 verbose=verbose, redis_port=redis_port)
 
     bs.start()
-
     #elif database_mode == 'memory':
 
     #    global offset_idx
@@ -552,11 +551,10 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     #    # import pdb; pdb.set_trace()
     #    BatSched([], jobs, 'batsim-db', db_jid2s_jid, scheduler_delay, socket).run()
 
-    if __name__ != '__main__':
+    if __name__ != '__main__' and database_mode == 'memory':
         # If used oar.lib.tools' functions are used after we need to undo monkeypatching.
         # Main use case is suite testing evaluation
         restore_oar_lib_tools()
-
 
 if __name__ == '__main__':
     bataar()
