@@ -116,7 +116,8 @@ def test_bataar_no_db():
                     reason="not designed to work with postgresql database")
 def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N']
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",

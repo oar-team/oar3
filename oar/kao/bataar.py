@@ -273,6 +273,7 @@ class BatSched(BatsimScheduler):
 
     def scheduleJobs(self):
         print("Sheduling Round")
+        real_time = time.time()
         if self.platform_model == 'simu':
             schedule_cycle(self.platform, self.env.now, "default")
 
@@ -307,6 +308,7 @@ class BatSched(BatsimScheduler):
         print("Ids of jobs to launch: ", *jids_to_launch)
         print("Time befort scheduling round: ", self.bs._current_time, self.sched_delay)
         # update time
+        real_sched_time = time.time() - real_time
         if self.sched_delay == -1:
             self.bs.consume_time(real_sched_time) #TODO
         else:
