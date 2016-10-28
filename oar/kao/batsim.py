@@ -150,8 +150,6 @@ class Batsim(object):
     def _read_bat_msg(self):
         lg_str = self._connection.recv(4)
 
-        do_close = False
-        
         if not lg_str:
             print("[BATSIM]: connection closed by batsim core")
             return False
@@ -182,7 +180,6 @@ class Batsim(object):
                 print("All jobs have been submitted and completed!")
                 print("TODO: inform schedulers about it...")
                 self.scheduler.onEnd()
-                do_close = True
             elif data[1] == 'R':
                 self.scheduler.onJobRejection()
             elif data[1] == 'N':
@@ -215,9 +212,6 @@ class Batsim(object):
                 raise Exception("Only the server can receive this kind of message")
             else:
                 raise Exception("Unknow submessage type " + data[1] )
-
-        if do_close:
-            return False
             
         msg = "0:" + self._time_to_str(self._current_time) + "|"
         if len(self._msgs_to_send) > 0:
