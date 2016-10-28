@@ -26,8 +26,8 @@ class FakeConnection(object):
         sent_msgs = []
 
     def recv(self, nb):
-        #if self.msg_idx == len(recv_msgs):
-        #    return None
+        if self.msg_idx == len(recv_msgs):
+            return None
         if not self.lg_sent:
             self.lg_sent = True
             lg = len(recv_msgs[self.msg_idx])
