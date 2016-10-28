@@ -223,8 +223,15 @@ class SlotSet:
 
     def split_slots(self, sid_left, sid_right, job, sub=True):
         sid = sid_left
+        we_will_break = False
         while True:
             slot = self.slots[sid]
+
+            if (sid == sid_right):
+                we_will_break = True
+            else:
+                sid = slot.next
+
             # print("split", slot.show())
             if job.start_time > slot.b:
                 # Generate AB | ABC
@@ -272,10 +279,8 @@ class SlotSet:
                         # add resources
                         self.add_slot_during_job(slot, job)
 
-            if (sid == sid_right):
+            if we_will_break:
                 break
-            else:
-                sid = slot.next
 
     def split_slots_jobs(self, ordered_jobs, sub=True):
         """
