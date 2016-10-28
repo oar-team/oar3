@@ -235,7 +235,7 @@ class BatSched(BatsimScheduler):
 
     def generateJob(self, data_storage_job):
         j = data_storage_job
-        jid = int(re.search(r'\w!(\d)', j.id).group(1))
+        jid = int(re.search(r'\w!(\d+)', j.id).group(1))
         walltime = int(math.ceil(float(j.requested_time)))
         res = j.requested_resources
         rqb = [([('resource_id', res)], [(1, self.nb_res)])]
