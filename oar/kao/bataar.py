@@ -172,6 +172,7 @@ class BatSched(BatsimScheduler):
         self.sched_delay = sched_delay
         self.jobs = {}
         self.db_jid2s_jid = {}
+        self.ujid_l = []
 
         self.env = None
         self.platform = None
@@ -235,7 +236,9 @@ class BatSched(BatsimScheduler):
 
     def generateJob(self, data_storage_job):
         j = data_storage_job
-        jid = int(re.search(r'\w!(\d+)', j.id).group(1))
+        new_ujid = len(self.ujid_l)
+        self.ujid_l.append(j.id)
+        jid = new_ujid
         walltime = int(math.ceil(float(j.requested_time)))
         res = j.requested_resources
         rqb = [([('resource_id', res)], [(1, self.nb_res)])]
@@ -350,7 +353,7 @@ class BatSched(BatsimScheduler):
         data_storage_jobs = [data_storage_job] # TODO vectorize in batsim.py !!!
 
         for job in data_storage_jobs:
-            jid = int(re.search(r'\w!(\d)', job.id).group(1))
+            jid = self.ujid_l.index(job.id)
             self.jobs_completed.append(jid)
             if jid in self.platform.running_jids:
                 self.platform.running_jids.remove(jid)
