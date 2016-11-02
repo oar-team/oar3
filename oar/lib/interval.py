@@ -99,7 +99,6 @@ def equal_itvs(itvs1, itvs2):
     ly = len(itvs2)
 
     if (lx == 0) and (ly == 0):
-    if (lx == 0) and (lx == 0):
         return True
 
     ix = 0
