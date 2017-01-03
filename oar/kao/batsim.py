@@ -252,6 +252,13 @@ class DataStorage(object):
         return Job(json_dict["id"], json_dict["subtime"], json_dict["walltime"],
                    json_dict["res"], json_dict["profile"])
 
+    def set_job(self, job_id, subtime, walltime, res):
+        real_key = '{iprefix}:{ukey}'.format(iprefix = self.prefix,
+                                             ukey = job.id)
+        json_job =  json.dumps({"id": job_id, "subtime": subtime,
+                                "walltime": walltime, "res": res})
+        self.redis.set(real_key, json_job)
+                               
 
 class Job(object):
     def __init__(self, id, subtime, walltime, res, profile):

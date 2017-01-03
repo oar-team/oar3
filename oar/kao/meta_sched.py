@@ -51,6 +51,8 @@ from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 import oar.kao.advanced_extra_metasched
+from oar.kao.batsched import BatSched
+
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
@@ -541,7 +543,11 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                            job_security_time, initial_time_sec,
                                            filter_besteffort)
 
-
+def call_external_batsched(plt, scheduled_jobs, all_slot_sets, job_security_time,
+                            queue, now):
+    batsched = BatSched(queue_name, now)
+    batsched.ask_schedule()
+    
 def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
 
@@ -624,6 +630,8 @@ def meta_schedule(mode='internal', plt=Platform()):
                 call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                         resource_set, job_security_time, queue,
                                         initial_time_sec, initial_time_sql)
+            if mode == 'batsched':
+                call_external_batsched(queue, initial_time_sec, initial_time_sql)
             else:
 
                     

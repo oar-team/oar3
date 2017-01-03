@@ -1100,6 +1100,21 @@ def get_jobs_in_multiple_states(states, resource_set):
     return jobs
 
 
+def get_jobs_ids_in_multiple_states(states):
+
+    result = db.query(Job.id, Job.states)\
+               .filter(Job.state.in_(tuple(states)))\
+               .order_by(Job.id).all()
+
+    jids_states = {}
+
+    if result:
+        for x in result:
+            jid, state = x
+            jids_states[jid] = state
+    return jids_states
+
+
 # set walltime for a moldable job
 def set_moldable_job_max_time(moldable_id, walltime):
 
