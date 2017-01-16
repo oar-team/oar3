@@ -1,4 +1,5 @@
 # coding: utf-8
+""" Functions to manage jobs """
 from __future__ import unicode_literals, print_function
 
 import os

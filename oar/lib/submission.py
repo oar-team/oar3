@@ -636,7 +636,7 @@ def add_micheline_jobs(job_vars, reservation_date, use_job_key,
         print_error('invalid username:', job_vars['user'])
         sub_exit(-11)
 
-    # TVerify notify syntax
+    # Verify notify syntax
     if job_vars['notify'] and not re.match(r'^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$',
                                            job_vars['notify']):
         print_error('bad syntax for the notify option.')

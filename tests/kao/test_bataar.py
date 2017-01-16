@@ -101,6 +101,7 @@ def exec_gene(options):
     args = options
     args.append('--scheduler_delay=5')
     runner = CliRunner()
+
     result = runner.invoke(bataar, args)
     print("exit code:", result.exit_code)
     print(result.output)

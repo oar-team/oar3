@@ -3,6 +3,7 @@
 # BatAar: BatSim Adaptor for OAR
 from __future__ import unicode_literals, print_function
 
+import pdb
 import sys
 import re
 import time
@@ -102,7 +103,7 @@ def db_initialization(nb_res, node_size=None):
 
     db.commit()
 
-class BatEnv(object):
+class BatEnvTime(object):
 
     def __init__(self, now):
         self.now = now
@@ -191,7 +192,7 @@ class BatSched(BatsimScheduler):
         self.nb_res = self.bs.nb_res
         nb_res = self.nb_res
         node_size = self.node_size
-        
+        # import pdb; pdb.set_trace()
         if self.database_mode == 'no-db':
             hy_resource_id = [[(i, i)] for i in range(1, nb_res+1)]
             hierarchy = {'resource_id': hy_resource_id}
@@ -211,11 +212,15 @@ class BatSched(BatsimScheduler):
         elif self.database_mode == 'memory':
             monkeypatch_oar_lib_tools()
             db_initialization(nb_res)
+            self.platform_model = 'batsim-db'
+            res_set = None
 
         else:
             raise NotImplementedError('Database mode: ' + self.database_mode)
 
-        self.env = BatEnv(0) #???
+        #import pdb; pdb.set_trace()
+        
+        self.env = BatEnvTime(0) #???
         self.platform = Platform(self.platform_model, env=self.env, resource_set=res_set,
                                  jobs=self.jobs, db_jid2s_jid=self.db_jid2s_jid)
         #global plt
@@ -293,6 +298,7 @@ class BatSched(BatsimScheduler):
 
         else:
             print("call meta_schedule('internal')")
+            pdb.set_trace()
             meta_schedule('internal', plt)
 
             result = db.query(Job).filter(Job.state == 'toLaunch')\
@@ -500,11 +506,13 @@ class BatSched_old(object):
 @click.option('-t', '--scheduler_delay', default=0.05, type=click.INT, #TODO default=-1
               help="set the delay in seconds taken by scheduler to schedule all jobs. By default \
               the actual delay of scheduler is used")
+@click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
 @click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
+@click.option('-k', '--redis_key_prefix', default=None, type=click.STRING, help="Set redis key prefix.")
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
 #@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .") 
-def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_delay, redis_port,
-           verbose):
+def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
+           redis_port, redis_key_prefix, verbose):
     """Adaptor to Batsim Simulator."""
     #    import pdb; pdb.set_trace()
     if database_mode == 'memory':
@@ -514,11 +522,15 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     print("Starting simulation...")
     print("Scheduler Policy:", scheduler_policy)
     print("Scheduler delay:", scheduler_delay)
-    scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
-    bs = Batsim(scheduler, validatingmachine=None, server_address=socket,
-                verbose=verbose, redis_port=redis_port)
 
-    bs.start()
+    verbose_level = 0
+    if verbose:
+        verbose_level = 2
+    #import pdb; pdb.set_trace() 
+    scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
+    batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port,
+                None, socket, verbose_level)
+    batsim.start()
     #elif database_mode == 'memory':
 
     #    global offset_idx

@@ -109,7 +109,7 @@ class Batsim(object):
                 if ps == pe:
                     parts.append( str(ps) + "=" + str(new_pstate))
                 else:
-                    parts.append( str(ps)+"-"+str(pe) + "=" + str(new_pstate))
+                    parts.append( str(ps) + "-" + str(pe) + "=" + str(new_pstate))
             for part in parts:
                 self._msgs_to_send.append( ( self.time(), "P:" + part ) )
 
