@@ -571,8 +571,8 @@ def save_assigns_bulk(jobs, resource_set):
                            ('moldable_job_id', 'start_time'), binary=True)
             pg_bulk_insert(cursor, db['queues'], mld_id_rid_s,
                            ('moldable_job_id', 'resource_id'), binary=True)
-
-
+    
+            
 def get_current_jobs_dependencies(jobs):
     # retrieve jobs dependencies *)
     # return an hashtable, key = job_id, value = list of required jobs *)
