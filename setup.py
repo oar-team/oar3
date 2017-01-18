@@ -85,5 +85,6 @@ setup(
     kamelot=oar.kao.kamelot:main
     kamelot_fifo=oar.kao.kamelot_fifo:main
     bataar=oar.kao.bataar:bataar
+    oar-batsim-sched-proxy=oar.kao.batsim_sched_proxy:cli
     ''',
 )

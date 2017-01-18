@@ -3,15 +3,17 @@
 
 import json
 import zmq
+import click
 
 from oar.lib import (config, get_logger)
+from oar.lib.tools import get_date
 from oar.kao.batsim import DataStorage
 from oar.kao.job import (get_jobs_ids_in_multiple_states, JobPseudo)
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'BATSCHED_ENDPOINT': '6679',
+    'BATSCHED_ENDPOINT': 'tcp://localhost:6679',
     'REDIS_HOSTNAME': 'localhost',
     'REDIS_PORT': '6379',
     'SCHEDULER_JOB_SECURITY_TIME': '60',
@@ -22,7 +24,6 @@ DEFAULT_CONFIG = {
 config.setdefault_config(DEFAULT_CONFIG)
 
 logger = get_logger("oar.kao.batsim_sched_proxy", forward_stderr=True)
-logger.info('Start Batsched')
 
 class BatsimSchedProxy(object):
 
@@ -44,6 +45,7 @@ class BatsimSchedProxy(object):
 
         
     def ask_schedule(self):
+        logger.debug('Start ask_schedule')
         next_active_jids = []
         finished_jids = []
         # Retrieve cached list of active id jobs from Redis
@@ -154,4 +156,25 @@ class BatsimSchedProxy(object):
                 raise Exception("Un submessage type " + data[1])            
 
 
+@click.command()
+@click.option('-s', '--send', default='A',
+              help="send Batsim protocol commands to scheduler. \
+              Two commands are supported A (defafor start  or Z for stop.")
+def cli(send):
+    """Command to send start/stop sequence to Batsim compatible scheduler"""
 
+    print("Command to send to Batsim compatible scheduler: ", send)
+
+    # open zmq socket (REQ/REP)
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect(config['BATSCHED_ENDPOINT'])
+
+    # send command
+    now = str(get_date())
+    msg = '2:' + now + '|' + now + ':' + send
+    logger.info("Batsim_sched_proxy CLI send: " + msg)
+    socket.send_string(msg)
+
+    msg = socket.recv()
+    logger.info("Batsim_sched_proxy CLI recv: " + msg)
