@@ -13,8 +13,8 @@ import struct
 import sys
 import redis
 
-class Batsim(object):
 
+class Batsim(object):
 
     def __init__(self, scheduler, redis_prefix=None,
                  redis_hostname='localhost', redis_port=6379,
@@ -246,7 +246,7 @@ class DataStorage(object):
     def get_job(self, job_id):
         key = 'job_{job_id}'.format(job_id = job_id)
         job_str = self.get(key)
-        print("====> ", job_str)
+        #print("====> ", job_str)
 
         json_dict = json.loads(job_str.decode('utf-8'))
         return Job(json_dict["id"], json_dict["subtime"], json_dict["walltime"],
@@ -254,7 +254,7 @@ class DataStorage(object):
 
     def set_job(self, job_id, subtime, walltime, res):
         real_key = '{iprefix}:{ukey}'.format(iprefix = self.prefix,
-                                             ukey = job.id)
+                                             ukey = job_id)
         json_job =  json.dumps({"id": job_id, "subtime": subtime,
                                 "walltime": walltime, "res": res})
         self.redis.set(real_key, json_job)

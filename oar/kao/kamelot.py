@@ -3,7 +3,6 @@
 from __future__ import unicode_literals, print_function
 
 import sys
-import time
 
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
@@ -34,12 +33,10 @@ DEFAULT_CONFIG = {
 
 logger = get_logger("oar.kamelot")
 
-
 if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
     if 'QUOTAS_FILE' not in config:
         config['QUOTAS_FILE'] = './quotas_conf.json'
     load_quotas_rules()
-
 
 
 def karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt):

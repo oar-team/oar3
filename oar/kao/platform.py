@@ -18,7 +18,7 @@ class Platform(object):
     def __init__(self, mode="default", **kwargs):
         if mode == "default":
             self.get_time = self.get_time_default
-            self.resource_set = self.resource_set_default
+            self.resource_set = self.resource_set_default #TODO get_resource_set ???
             self.get_waiting_jobs = self.get_waiting_jobs_default
             self.get_data_jobs = self.get_data_jobs_default
             self.get_scheduled_jobs = self.get_scheduled_jobs_default

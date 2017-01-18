@@ -543,9 +543,11 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                            job_security_time, initial_time_sec,
                                            filter_besteffort)
 
-def call_external_batsim_sched(plt, scheduled_jobs, all_slot_sets, job_security_time,
+def call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
-    batsim_sched_proxy = BatsimSchedProxy(queue, now)
+    
+    batsim_sched_proxy = BatsimSchedProxy(plt, scheduled_jobs, all_slot_sets,
+                                          job_security_time, queue, now)
     batsim_sched_proxy.ask_schedule()
 
 def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_time,
@@ -630,8 +632,9 @@ def meta_schedule(mode='internal', plt=Platform()):
                 call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                         resource_set, job_security_time, queue,
                                         initial_time_sec, initial_time_sql)
-            elif mode == 'batsched':
-                call_external_batsched(queue, initial_time_sec, initial_time_sql)
+            elif mode == 'batsim_sched_proxy':
+                call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets,
+                                        job_security_time, queue, initial_time_sec)
             else:       
                 call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
                                         job_security_time, queue, initial_time_sec)

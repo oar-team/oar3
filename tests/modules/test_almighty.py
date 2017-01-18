@@ -15,7 +15,8 @@ KAO = '/usr/local/lib/oar/kao'
 FINAUD = '/usr/local/lib/oar/finaud'
 SARKO = '/usr/local/lib/oar/sarko'
 LEON = '/usr/local/lib/oar/leon'
-NODE_CHANGE_STATE =  '/usr/local/lib/oar/NodeChangeState'
+NODE_CHANGE_STATE = '/usr/local/lib/oar/NodeChangeState'
+
 def fake_call(cmd):
     global called_command
     called_command = cmd

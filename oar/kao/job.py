@@ -528,7 +528,7 @@ def save_assigns(jobs, resource_set):
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
-        for j in itervalues(jobs):
+        for j in itervalues(jobs) if isinstance(jobs, dict) else jobs:
             if j.start_time > -1:
                 logger.debug("job_id to save: " + str(j.id))
                 mld_id_start_time_s.append(
@@ -1103,7 +1103,7 @@ def get_jobs_in_multiple_states(states, resource_set):
 
 def get_jobs_ids_in_multiple_states(states):
 
-    result = db.query(Job.id, Job.states)\
+    result = db.query(Job.id, Job.state)\
                .filter(Job.state.in_(tuple(states)))\
                .order_by(Job.id).all()
 
