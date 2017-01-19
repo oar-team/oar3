@@ -2,12 +2,19 @@
 from __future__ import unicode_literals, print_function
 import pytest
 
-from oar.lib import db
+from oar.lib import config, db
 from oar.kao.job import insert_job
 from oar.kao.kao import main
 
 import oar.lib.tools  # for monkeypatching
 
+@pytest.fixture(scope="function", autouse=True)
+def setup(request):
+    config['METASCHEDULER_MODE'] = 'internal'
+
+    @request.addfinalizer
+    def teardown():
+        config['METASCHEDULER_MODE']
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -29,7 +36,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
 
 
-def test_db_koa_simple_1(monkeypatch):
+def test_db_kao_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
     print('job state:', job.state)
