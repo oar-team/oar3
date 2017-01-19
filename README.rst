@@ -13,8 +13,8 @@ OAR next generation
     :target: http://codecov.io/github/oar-team/oar3?branch=master
     :alt: Coverage Status
 
-.. image:: https://readthedocs.org/projects/oar/badge/?version=latest
-    :target: https://readthedocs.org/projects/oar/?badge=latest
+.. image:: https://readthedocs.org/projects/oar-3/badge/?version=latest
+    :target: https://readthedocs.org/projects/oar-3/?badge=latest
     :alt: Documentation Status
 
 OAR next generation
