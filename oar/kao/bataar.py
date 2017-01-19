@@ -298,7 +298,7 @@ class BatSched(BatsimScheduler):
 
         else:
             print("call meta_schedule('internal')")
-            pdb.set_trace()
+            # pdb.set_trace()
             meta_schedule('internal', plt)
 
             result = db.query(Job).filter(Job.state == 'toLaunch')\
@@ -573,5 +573,3 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
         # Main use case is suite testing evaluation
         restore_oar_lib_tools()
 
-if __name__ == '__main__':
-    bataar()
