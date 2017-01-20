@@ -132,33 +132,38 @@ def test_bataar_db_memory():
                     reason="not designed to work with postgresql database")
 def test_bataar_db_basic():
     result, sent_msgs = exec_gene(['-pBASIC', '-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_local():
+def test_bataar_db_local(): #TODO a really for this specific casr
     result, sent_msgs = exec_gene(['-pLOCAL', '-n4', '-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_best_effort_local():
+def test_bataar_db_best_effort_local(): #TODO a really for this specific casr
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_LOCAL', '-n4', '-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
     
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_contiguous():
+def test_bataar_db_contiguous(): #TODO a really for this specific casr
     result, sent_msgs = exec_gene(['-pCONTIGUOUS', '-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_best_effort_contiguous():
+def test_bataar_db_best_effort_contiguous(): #TODO a really for this specific casr
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
-    assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
+    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
+                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
