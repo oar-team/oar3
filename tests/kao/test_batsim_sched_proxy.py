@@ -40,19 +40,19 @@ def setup(request):
     def teardown():
         del config['BATSCHED_ENDPOINT']
         del config['DS_PREFIX']
-        config['WLOAD_BATSIM']
+        del config['WLOAD_BATSIM']
         FakeZmq.i = 0
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
 
-    @pytest.yield_fixture(scope='function', autouse=True)
-    def minimal_db_initialization(request):
-        with db.session(ephemeral=True):
-            db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
-
-            # add some resources
-            for i in range(5):
-                db['Resource'].create(network_address="localhost")
+@pytest.yield_fixture(scope='function', autouse=True)
+def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+            
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost")
         yield
 
 
@@ -77,7 +77,7 @@ def test_simple_submission(monkeypatch):
     print('job state:', job.state)
 
     FakeZmq.recv_msgs[0] = ['2:' + now + '|' + now + ':J:oar!' + str(job.id) +'=1-4']
-    
+
     meta_schedule('batsim_sched_proxy')
 
     for i in db['GanttJobsPrediction'].query.all():
