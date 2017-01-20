@@ -588,7 +588,7 @@ def meta_schedule(mode='internal', plt=Platform()):
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
-
+    
     gantt_init_results = gantt_init_with_running_jobs(plt, initial_time_sec,
                                                       job_security_time)
     all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results

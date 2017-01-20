@@ -119,6 +119,11 @@ def test_bataar_no_db():
                     reason="not designed to work with postgresql database")
 def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
+    print("yop")
+    job = db['Job'].query.one()
+    print(job.id, job.state)
+    print("poy")
+    
     assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
                          '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0
@@ -153,7 +158,7 @@ def test_bataar_db_contiguous():
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_best_effot_contiguous():
+def test_bataar_db_best_effort_contiguous():
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
     assert sent_msgs == ['0:15.0|15.0:J:1=0-3', '0:24.0|24.0:N', '0:25.000000|25.000000:N']
     assert result.exit_code == 0

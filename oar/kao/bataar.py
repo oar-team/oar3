@@ -100,7 +100,6 @@ def db_initialization(nb_res, node_size=None):
     # add some resources
     for i in range(nb_res):
         db.add(Resource(network_address="localhost"))
-
     db.commit()
 
 class BatEnvTime(object):
@@ -172,8 +171,12 @@ class BatSched(BatsimScheduler):
         self.node_size = node_size
         self.sched_delay = sched_delay
         self.jobs = {}
-        self.db_jid2s_jid = {}
-        self.ujid_l = []
+
+        self.db_jid2s_jid = {}     #TODO verify
+        self.index_simu2db_jid = 0 #TODO verify
+        self.offset_simu2db_jid = 1 #TODO verify/parametrize
+        
+        self.ujid_l = [] #TODO ???
 
         self.env = None
         self.platform = None
@@ -262,8 +265,8 @@ class BatSched(BatsimScheduler):
 
         job = JobSimu(id=jid,
                       ds_job=j,
-                      state="Waiting",
-                      queue="test",
+                      state='Waiting',
+                      queue='default',
                       start_time=0,
                       walltime=0,
                       types={},
@@ -275,18 +278,26 @@ class BatSched(BatsimScheduler):
                       key_cache={},
                       ts=False, ph=0,
                       assign=self.sp_params.assign, assign_func=self.sp_params.assign_func,
-                      find=self.sp_params.find, find_func=self.sp_params.find_func)
+                      find=self.sp_params.find, find_func=self.sp_params.find_func,
+                      db_jid=jid+1 # TODO First job is 0 in DB ?
+        )
+
+        if self.platform_model == 'batsim-db':
+            insert_job(queue_name='default', res=[(walltime, [('resource_id=' + str(res), "")])],
+                       state='Waiting', properties='', user='')
+            self.db_jid2s_jid[self.index_simu2db_jid + self.offset_simu2db_jid] = jid
+            self.index_simu2db_jid += 1
         return job
 
 
     def scheduleJobs(self):
-        print("Sheduling Round")
+        print("Scheduling Round")
+        jids_to_launch = [] 
         real_time = time.time()
         if self.platform_model == 'simu':
             schedule_cycle(self.platform, self.env.now, "default")
 
             # retrieve jobs to launch
-            jids_to_launch = []
             for jid, job in iteritems(self.platform.assigned_jobs):
                 print("job.start_time %s" % job.start_time)
                 if (job.start_time == self.env.now) and (job.state == 'Waiting'):
@@ -298,11 +309,12 @@ class BatSched(BatsimScheduler):
 
         else:
             print("call meta_schedule('internal')")
-            # pdb.set_trace()
-            meta_schedule('internal', plt)
+            #pdb.set_trace()
+            meta_schedule('internal', self.platform)
+            #pdb.set_trace()
 
             result = db.query(Job).filter(Job.state == 'toLaunch')\
-                                      .order_by(Job.id).all()
+                                  .order_by(Job.id).all()
 
             for job_db in result:
                 set_job_state(job_db.id, 'Running')
@@ -526,22 +538,24 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     verbose_level = 0
     if verbose:
         verbose_level = 2
-    #import pdb; pdb.set_trace() 
+    #import pdb; pdb.set_trace()
+    #if database_mode == 'no-db':
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
     batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port,
-                None, socket, verbose_level)
+                    None, socket, verbose_level)
     batsim.start()
+    
     #elif database_mode == 'memory':
 
-    #    global offset_idx
-    #    offset_idx = 1
+    #   global offset_idx
+    # offset_idx = 1
     #    monkeypatch_oar_lib_tools()
     #    db_initialization(nb_res)
 
-    #    #
-    #    # prepare jobs
-    #    #
-    #    db_jid2s_jid = {}
+    #
+    # prepare jobs
+    #
+    #     db_jid2s_jid = {}
     #    print("Prepare jobs")
     #    for i, j in enumerate(json_jobs):
     #        jid = int(j["id"])

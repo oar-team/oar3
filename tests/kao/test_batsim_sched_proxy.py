@@ -45,14 +45,14 @@ def setup(request):
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
 
-@pytest.yield_fixture(scope='function', autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+    @pytest.yield_fixture(scope='function', autouse=True)
+    def minimal_db_initialization(request):
+        with db.session(ephemeral=True):
+            db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
 
-        # add some resources
-        for i in range(5):
-            db['Resource'].create(network_address="localhost")
+            # add some resources
+            for i in range(5):
+                db['Resource'].create(network_address="localhost")
         yield
 
 

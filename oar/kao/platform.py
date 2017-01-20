@@ -16,6 +16,7 @@ from oar.kao.karma import (get_sum_accounting_window, get_sum_accounting_by_proj
 class Platform(object):
 
     def __init__(self, mode="default", **kwargs):
+        self.mode = mode
         if mode == "default":
             self.get_time = self.get_time_default
             self.resource_set = self.resource_set_default #TODO get_resource_set ???
