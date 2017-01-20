@@ -6,7 +6,7 @@ from oar.lib.interval import (intersec, extract_n_scattered_block_itv,
                               equal_itvs2ids, equal_itvs_same_segmentation,
                               aggregate_itvs, itvs_size, sub_intervals,
                               unordered_ids2itvs, itvs2batsim_str,
-                              itvs2batsim_str0)
+                              itvs2batsim_str0, batsim_str2itvs)
 
 
 def test_intersec():
@@ -166,3 +166,8 @@ def test_itvs2batsim_str0():
     itvs = [(1, 1), (4, 5), (7, 7), (8, 10)]
     bat_str = '0,3-4,6,7-9'
     assert itvs2batsim_str0(itvs) == bat_str
+
+def test_batsim_str2itvs():
+    itvs = [(1, 1), (4, 5), (7, 7), (8, 10)]
+    bat_str = '1,4-5,7,8-10'
+    assert batsim_str2itvs(bat_str) == itvs

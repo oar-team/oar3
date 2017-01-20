@@ -7,6 +7,7 @@ import click
 
 from oar.lib import (config, get_logger)
 from oar.lib.tools import get_date
+from oar.lib.interval import batsim_str2itvs
 from oar.kao.batsim import DataStorage
 from oar.kao.job import (get_jobs_ids_in_multiple_states, JobPseudo)
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
@@ -120,6 +121,9 @@ class BatsimSchedProxy(object):
         data = sub_msgs[0].split(":")
         version = data[0]
 
+        nodes_2_halt = []
+        nodes_2_wakeup = []
+        
         #sched_time = float(data[1])
         logger.debug("From scheduler: version: " + version)
 
@@ -128,17 +132,10 @@ class BatsimSchedProxy(object):
             if data[1] == 'J':
                 jobs = []
                 for job_alloc in data[2].split(';'):
+
                     jid_alloc = job_alloc.split('=')
                     jid = int(jid_alloc[0].split('!')[1])
-
-                    res_set = []
-                    for res_alloc in jid_alloc[1].split(','):
-                        res = res_alloc.split('-')
-                        if len(res) == 1:
-                            res_set.append((int(res[0]), int(res[0])))
-                        else:
-                            res_set.append((int(res[0]), int(res[1])))
-
+                    res_set = batsim_str2itvs(jid_alloc[1])
                     json_dict = json.loads(self.data_store.get(jid))
                     walltime = json_dict["walltime"]
 
@@ -152,6 +149,10 @@ class BatsimSchedProxy(object):
 
             elif data[1] == 'N':
                 pass
+
+            elif data[1] == 'P':
+                subdata = data[2].split('=')
+                
             else:
                 raise Exception("Un submessage type " + data[1])            
 
