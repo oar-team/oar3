@@ -74,7 +74,8 @@ DEFAULT_CONFIG = {
     'ENERGY_SAVING_INTERNAL': 'no',
     'SCHEDULER_NODE_MANAGER_WAKEUP_TIME': 1,
     'EXTRA_METASCHED': 'default',
-    'EXTRA_METASCHED_CONFIG': ''
+    'EXTRA_METASCHED_CONFIG': '',
+    'ENERGY_SAVING_MODE': ''
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
@@ -562,6 +563,11 @@ def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_tim
     internal_schedule_cycle(plt, now, all_slot_sets, job_security_time,
                             queue.name)
 
+def nodes_energing_saving():
+    #TODO
+    pass
+
+    
 
 def meta_schedule(mode='internal', plt=Platform()):
 
@@ -652,8 +658,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                          extra_metasched_config)
 
 
-            
-                         
+
 
     jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
                                                                                      job_security_time,
@@ -671,7 +676,20 @@ def meta_schedule(mode='internal', plt=Platform()):
     # Update visu gantt tables
     update_gantt_visualization()
 
-    # Manage dynamic node feature
+    
+    # Manage dynamic node feature for energy saving:
+    if ('ENERGY_SAVING_MODE' in config) and config['ENERGY_SAVING_MODE']:
+        if config['ENERGY_SAVING_MODE'] == 'metascheduler_decision_making':
+            nodes_2_change = nodes_energing_saving()
+        elif config['ENERGY_SAVING_MODE'] == 'batsim_scheduler_proxy_decision_making':
+            #TODO
+            #nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
+            pass
+        else:
+            logger.error("Error ENERGY_SAVING_MODE unknown: " + config['ENERGY_SAVING_MODE']) 
+
+    #TODO...........
+            
     flag_hulot = False
     timeout_cmd = int(config['SCHEDULER_TIMEOUT'])
 

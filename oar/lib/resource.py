@@ -50,9 +50,11 @@ class ResourceSet(object):
         self.available_upto = {}
 
         roids = []
-
         default_rids = []
 
+        self.roid_2_network_address = {}
+        
+        
         # retrieve resource in order from DB
         self.resources_db = db.query(Resource).order_by(text(order_by_clause)).all()
 
@@ -84,6 +86,8 @@ class ResourceSet(object):
                 # fill resource available for suspended job
                 if r.type in res_suspend_types:
                     suspendable_roids.append(roid)
+
+            self.roid_2_network_address[roid] = r.network_address
 
         # global ordered resources intervals
         # print roids

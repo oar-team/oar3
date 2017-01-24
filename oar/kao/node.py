@@ -9,6 +9,13 @@ from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
 logger = get_logger("oar.kao")
 
 
+def get_nodes_with_state(nodes):
+    result = db.query(Resource.network_address, (Resource.state))\
+           .filter(Resource.network_address.in_(tuple(nodes)))\
+           .all()
+    return result
+
+
 def search_idle_nodes(date):
     result = db.query(Resource.network_address)\
                .filter(Resource.id == GanttJobsResource.resource_id)\
