@@ -46,6 +46,7 @@ def active_quotas(request):
 
 @pytest.fixture(scope="function")
 def active_energy_saving(request):
+    config['ENERGY_SAVING_MODE'] = 'metascheduler_decision_making'
     config['SCHEDULER_NODE_MANAGER_SLEEP_CMD'] = 'sleep_node_command'
     config['SCHEDULER_NODE_MANAGER_SLEEP_TIME'] = '15'
     config['SCHEDULER_NODE_MANAGER_IDLE_TIME'] = '30'
@@ -58,6 +59,7 @@ def active_energy_saving(request):
         del config['SCHEDULER_NODE_MANAGER_IDLE_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
+        del config['ENERGY_SAVING_MODE']
 
     request.addfinalizer(teardown)
 

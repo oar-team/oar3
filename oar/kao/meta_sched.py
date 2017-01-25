@@ -95,6 +95,10 @@ to_launch_jobs_already_treated = {}
 
 # order_part = config['SCHEDULER_RESOURCE_ORDER']
 
+
+batsim_sched_proxy = None 
+
+
 ##########################################################################
 # Initialize Gantt tables with scheduled reservation jobs, Running jobs,
 # toLaunch jobs and Launching jobs;
@@ -546,10 +550,12 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
 
 def call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
-    
+
+    global batsim_sched_proxy
     batsim_sched_proxy = BatsimSchedProxy(plt, scheduled_jobs, all_slot_sets,
                                           job_security_time, queue, now)
     batsim_sched_proxy.ask_schedule()
+
 
 def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
@@ -563,11 +569,46 @@ def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_tim
     internal_schedule_cycle(plt, now, all_slot_sets, job_security_time,
                             queue.name)
 
-def nodes_energing_saving():
-    #TODO
-    pass
+def nodes_energing_saving(current_time_sec):
 
+    nodes_2_halt = []
+    nodes_2_wakeup = []
     
+    if ((('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
+         ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
+          ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))) and
+        (('SCHEDULER_NODE_MANAGER_SLEEP_TIME' in config)
+         and ('SCHEDULER_NODE_MANAGER_IDLE_TIME' in config))):
+
+        # Look at nodes that are unused for a duration
+        idle_duration = int(config['SCHEDULER_NODE_MANAGER_IDLE_TIME'])
+        sleep_duration = int(config['SCHEDULER_NODE_MANAGER_SLEEP_TIME'])
+
+        idle_nodes = search_idle_nodes(current_time_sec)
+        tmp_time = current_time_sec - idle_duration
+
+        # Determine nodes to halt
+        nodes_2_halt = []
+        for node, idle_duration in iteritems(idle_nodes):
+            if idle_duration < tmp_time:
+                # Search if the node has enough time to sleep
+                tmp = get_next_job_date_on_node(node)
+                if (tmp is None) or (tmp - sleep_duration > current_time_sec):
+                    # Search if node has not been woken up recently
+                    wakeup_date = get_last_wake_up_date_of_node(node)
+                    if (wakeup_date is None) or (wakeup_date < tmp_time):
+                        nodes_2_halt.append(node)
+
+    if (('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
+        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
+         ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))):
+        # Get nodes which the scheduler wants to schedule jobs to,
+        # but which are in the Absent state, to wake them up
+        wakeup_time = int(config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME'])
+        nodes_2_wakeup = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
+
+    return {'halt':nodes_2_halt, 'wakeup':nodes_2_wakeup}
+
 
 def meta_schedule(mode='internal', plt=Platform()):
 
@@ -613,7 +654,7 @@ def meta_schedule(mode='internal', plt=Platform()):
         extra_metasched_func = getattr(oar.kao.advanced_extra_metasched,
                                        'extra_metasched_%s' % config["EXTRA_METASCHED"])
         if "EXTRA_METASCHED_CONFIG" in config:
-            extra_metasched_config = config["EXTRA_METASCHED_CONFIG"] 
+            extra_metasched_config = config["EXTRA_METASCHED_CONFIG"]
         else:
             extra_metasched_config = ''
     else:
@@ -627,13 +668,13 @@ def meta_schedule(mode='internal', plt=Platform()):
         extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
                              job_security_time, queue, initial_time_sec,
                              extra_metasched_config)
-                             
+
         if queue.state == 'Active':
-            
+
             logger.debug("Queue " + queue.name + ": Launching scheduler " +
                          queue.scheduler_policy + " at time " + initial_time_sql)
             prev_queue = queue
-    
+
             if mode == 'external':  # pragma: no cover
                 call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                         resource_set, job_security_time, queue,
@@ -641,7 +682,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             elif mode == 'batsim_sched_proxy':
                 call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets,
                                         job_security_time, queue, initial_time_sec)
-            else:       
+            else:
                 call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
                                         job_security_time, queue, initial_time_sec)
 
@@ -656,8 +697,6 @@ def meta_schedule(mode='internal', plt=Platform()):
     extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
                          job_security_time, queue, initial_time_sec,
                          extra_metasched_config)
-
-
 
 
     jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
@@ -676,88 +715,58 @@ def meta_schedule(mode='internal', plt=Platform()):
     # Update visu gantt tables
     update_gantt_visualization()
 
-    
+    #
     # Manage dynamic node feature for energy saving:
+    #
     if ('ENERGY_SAVING_MODE' in config) and config['ENERGY_SAVING_MODE']:
         if config['ENERGY_SAVING_MODE'] == 'metascheduler_decision_making':
-            nodes_2_change = nodes_energing_saving()
+            nodes_2_change = nodes_energing_saving(current_time_sec)
         elif config['ENERGY_SAVING_MODE'] == 'batsim_scheduler_proxy_decision_making':
-            #TODO
-            #nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
-            pass
+            nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
         else:
-            logger.error("Error ENERGY_SAVING_MODE unknown: " + config['ENERGY_SAVING_MODE']) 
+            logger.error("Error ENERGY_SAVING_MODE unknown: " + config['ENERGY_SAVING_MODE'])
 
-    #TODO...........
-            
-    flag_hulot = False
-    timeout_cmd = int(config['SCHEDULER_TIMEOUT'])
+        flag_hulot = False
+        timeout_cmd = int(config['SCHEDULER_TIMEOUT'])
 
-    if ((('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
-         ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
-          ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))) and
-        (('SCHEDULER_NODE_MANAGER_SLEEP_TIME' in config)
-         and ('SCHEDULER_NODE_MANAGER_IDLE_TIME' in config))):
-
-        # Look at nodes that are unused for a duration
-        idle_duration = int(config['SCHEDULER_NODE_MANAGER_IDLE_TIME'])
-        sleep_duration = int(config['SCHEDULER_NODE_MANAGER_SLEEP_TIME'])
-
-        idle_nodes = search_idle_nodes(current_time_sec)
-        tmp_time = current_time_sec - idle_duration
-
-        node_halt = []
-
-        for node, idle_duration in iteritems(idle_nodes):
-            if idle_duration < tmp_time:
-                # Search if the node has enough time to sleep
-                tmp = get_next_job_date_on_node(node)
-                if (tmp is None) or (tmp - sleep_duration > current_time_sec):
-                    # Search if node has not been woken up recently
-                    wakeup_date = get_last_wake_up_date_of_node(node)
-                    if (wakeup_date is None) or (wakeup_date < tmp_time):
-                        node_halt.append(node)
-
-        if node_halt != []:
-            logger.debug("Powering off some nodes (energy saving): " + str(node_halt))
+        # Command Hulot to halt selected nodes
+        nodes_2_halt = nodes_2_change['halt']
+        if nodes_2_halt != []:
+            logger.debug("Powering off some nodes (energy saving): " + str(nodes_2_halt))
             # Using the built-in energy saving module to shut down nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if kao_tools.send_to_hulot('HALT', ' '.join(node_halt)):
+                if kao_tools.send_to_hulot('HALT', ' '.join(nodes_2_halt)):
                     logger.error("Communication problem with the energy saving module (Hulot)\n")
-                flag_hulot = 1
+                flag_hulot = True
             else:
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
-                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, node_halt):
+                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_halt):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to  poweroff some nodes")
 
-    if (('SCHEDULER_NODE_MANAGER_SLEEP_CMD' in config) or
-        ((config['ENERGY_SAVING_INTERNAL'] == 'yes') and
-         ('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' in config))):
-        # Get nodes which the scheduler wants to schedule jobs to,
-        # but which are in the Absent state, to wake them up
-        wakeup_time = int(config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME'])
-        nodes = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
+        # Command Hulot to wake up selected nodes
+        nodes_2_wakeup = nodes_2_change['wakeup']
 
-        if nodes != []:
-            logger.debug("Awaking some nodes: " + str(nodes))
+        if nodes_2_wakeup != []:
+            logger.debug("Awaking some nodes: " + str(nodes_2_change))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if kao_tools.send_to_hulot('WAKEUP', ' '.join(nodes)):
+                if kao_tools.send_to_hulot('WAKEUP', ' '.join(nodes_2_wakeup)):
                     logger.error("Communication problem with the energy saving module (Hulot)")
-                flag_hulot = 1
+                flag_hulot = True
             else:
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
-                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes):
+                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_wakeup):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to wake-up some nodes ")
 
-    # Send CHECK signal to Hulot if needed
-    if not flag_hulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
-        if kao_tools.send_to_hulot('CHECK', []):
-            logger.error("Communication problem with the energy saving module (Hulot)")
+        # Send CHECK signal to Hulot if needed
+        if not flag_hulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
+            if kao_tools.send_to_hulot('CHECK', []):
+                logger.error("Communication problem with the energy saving module (Hulot)")
+
 
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.
     jobs_by_state = get_current_not_waiting_jobs()
