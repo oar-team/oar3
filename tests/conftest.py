@@ -44,12 +44,15 @@ def setup_config(request):
         config['DB_HOSTNAME'] = 'localhost'
 
     def dump_configuration(filename):
+        folder = os.path.dirname(filename)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         with open(filename, 'w', encoding='utf-8') as fd:
             for key, value in six.iteritems(config):
                 if not key.startswith('SQLALCHEMY_'):
                     fd.write("%s=%s\n" % (key, str(value)))
 
-    dump_configuration('/etc/oar/oar.conf')
+    dump_configuration('/tmp/oar.conf')
     db.metadata.drop_all(bind=db.engine)
     db.create_all(bind=db.engine)
     kw = {"nullable": True}

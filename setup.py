@@ -29,7 +29,8 @@ requirements = [
     'six',
     'pyzmq',
     'redis',
-    'requests'
+    'requests',
+    'interval_set'
 ]
 
 if sys.version_info[0] == 2:
