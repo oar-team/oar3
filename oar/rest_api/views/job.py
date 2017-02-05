@@ -24,7 +24,9 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
            'state': Arg([str, ','], dest='states'),
            'array': Arg(int, dest='array_id'),
            'ids': Arg([int, ':'], dest='job_ids')})
-@app.need_authentication()
+
+# TOREMOVE @app.need_authentication()
+#@app.need_authentication()
 def index(offset, limit, user, start_time, stop_time, states, array_id,
           job_ids, detailed=None):
     query = db.queries.get_jobs_for_user(user, start_time, stop_time,
