@@ -493,7 +493,7 @@ class BatSched_old(object):
               help='select database mode (no-db, memory, oarconf)')
 @click.option('-t', '--types', default='',
               help="types added to each jobs ex 'find=contiguous_1h,assign=one_time_find'")
-@click.option('-s', '--socket', default='/tmp/bat_socket',
+@click.option('-s', '--socket-endpoint', default='tcp://*:28000',
               help="name of socket to comminication with BatSim simulator")
 @click.option('-n', '--node_size', default=0,
               help="size of node used for 2 levels hierarachy")
@@ -523,7 +523,7 @@ class BatSched_old(object):
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
 #@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
 
-def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
+def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
            redis_port, redis_key_prefix, verbose):
     """Adaptor to Batsim Simulator."""
     #    import pdb; pdb.set_trace()
@@ -542,7 +542,7 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     #if database_mode == 'no-db':
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
     batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port,
-                    None, socket, verbose_level)
+                    None, socket_endpoint, verbose_level)
     batsim.start()
 
     #elif database_mode == 'memory':
@@ -580,7 +580,7 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     #
     #    db.flush()  # TO REMOVE ???
     #    # import pdb; pdb.set_trace()
-    #    BatSched([], jobs, 'batsim-db', db_jid2s_jid, scheduler_delay, socket).run()
+    #    BatSched([], jobs, 'batsim-db', db_jid2s_jid, scheduler_delay, socket_endpoint).run()
 
     if __name__ != '__main__' and database_mode == 'memory':
         # If used oar.lib.tools' functions are used after we need to undo monkeypatching.
