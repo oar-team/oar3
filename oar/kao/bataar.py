@@ -152,7 +152,6 @@ class SchedPolicyParams(object):
                     print("type find with function: ", v)
                     find = True
                     find_func = getattr(oar.kao.advanced_scheduling, 'find_' + v)
-   
         self.assign = assign
         self.assign_func = assign_func
         self.find = find
@@ -161,7 +160,7 @@ class SchedPolicyParams(object):
         self.add_1h = add_1h
         self.add_mld = add_mld
 
-        
+
 class BatSched(BatsimScheduler):
     def __init__(self, scheduler_policy, types, sched_delay, node_size,
                  database_mode='no-db', platform_model="simu"):
@@ -175,7 +174,7 @@ class BatSched(BatsimScheduler):
         self.db_jid2s_jid = {}     #TODO verify
         self.index_simu2db_jid = 0 #TODO verify
         self.offset_simu2db_jid = 1 #TODO verify/parametrize
-        
+
         self.ujid_l = [] #TODO ???
 
         self.env = None
@@ -189,7 +188,7 @@ class BatSched(BatsimScheduler):
         self.nb_res = 0
 
         self.sp_params = SchedPolicyParams(scheduler_policy, types)
-        
+
     def onAfterBatsimInit(self):
 
         self.nb_res = self.bs.nb_res
@@ -222,7 +221,7 @@ class BatSched(BatsimScheduler):
             raise NotImplementedError('Database mode: ' + self.database_mode)
 
         #import pdb; pdb.set_trace()
-        
+
         self.env = BatEnvTime(0) #???
         self.platform = Platform(self.platform_model, env=self.env, resource_set=res_set,
                                  jobs=self.jobs, db_jid2s_jid=self.db_jid2s_jid)
@@ -336,7 +335,7 @@ class BatSched(BatsimScheduler):
             self.bs.consume_time(self.sched_delay)
 
         self.env.now = self.bs._current_time
-        
+
         print("Time after scheduling round: ", self.bs._current_time)
         # send to uds
         if len(jids_to_launch) > 0:
@@ -347,9 +346,9 @@ class BatSched(BatsimScheduler):
                 res = itvs2batsim_str0(self.jobs[jid].res_set) 
                 scheduled_jobs.append(ds_job)
                 jobs_res[ds_job.id] = res
-            
+
             self.bs.start_jobs(scheduled_jobs, jobs_res)
-        
+
         #real_sched_time = time.time() - real_time
         #if self.sched_delay == -1:
         #    now_float += real_sched_time
@@ -379,7 +378,7 @@ class BatSched(BatsimScheduler):
                 set_job_state(self.jobs[jid].db_jid, 'Terminated')
 
         self.scheduleJobs()
-        
+
 class BatSched_old(object):
 
     def __init__(self, res_set, jobs, platform_model="simu", db_jid2s_jid={}, sched_delay=-1,
@@ -522,7 +521,8 @@ class BatSched_old(object):
 @click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
 @click.option('-k', '--redis_key_prefix', default=None, type=click.STRING, help="Set redis key prefix.")
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
-#@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .") 
+#@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
+
 def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
            redis_port, redis_key_prefix, verbose):
     """Adaptor to Batsim Simulator."""
@@ -544,7 +544,7 @@ def bataar(database_mode, socket, node_size, scheduler_policy, types, scheduler_
     batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port,
                     None, socket, verbose_level)
     batsim.start()
-    
+
     #elif database_mode == 'memory':
 
     #   global offset_idx
