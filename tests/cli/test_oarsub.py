@@ -87,7 +87,7 @@ def test_oarsub_admission_name_1(monkeypatch):
 def test_oarsub_admission_queue_1(monkeypatch):
 
     db['AdmissionRule'].create(rule=("if user == 'yop':"
-                                     "    queue_name= 'default'"))
+                                     "    queue= 'default'"))
 
     runner = CliRunner()
     result = runner.invoke(cli, ['-q noexist', '"sleep 1"'])

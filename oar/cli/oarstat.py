@@ -34,15 +34,15 @@ class OarApi(object):
 
     def http_error(self, r):
         pass
-        
+
     def get(self, params):
         r = requests.get(self.oarapi_url + params)
         if r.status_code != 200:
             self.http_error(r)
         else:
             return(r)
-    
-        
+
+
 def print_jobs(legacy, jobs):
     if legacy:
         print('Job id    S User     Duration   System message\n' +

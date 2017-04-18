@@ -3,7 +3,8 @@ from __future__ import division
 
 from flask import url_for, g
 
-from oar.lib import db, Job
+from oar.lib import db, Job, Submission
+#from oar.lib.submission import Submission
 
 from . import Blueprint
 from ..utils import Arg
@@ -24,7 +25,6 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
            'state': Arg([str, ','], dest='states'),
            'array': Arg(int, dest='array_id'),
            'ids': Arg([int, ':'], dest='job_ids')})
-
 # TOREMOVE @app.need_authentication()
 #@app.need_authentication()
 def index(offset, limit, user, start_time, stop_time, states, array_id,
@@ -44,6 +44,20 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
         g.data['items'].append(item)
+
+@app.route('/', methods=['POST'])
+@app.args({'resource': Arg(str),
+           'command': Arg(str),
+           'workdir': Arg(str),
+           'param_file': Arg(str)})
+def submit(resource, command, workdir, param_file):
+    """Job submission"""
+    print("data:", resource, command, workdir, param_file)
+    job_variables = {
+        }
+    submission = Submission(job_variables, cli=False)
+    job_id = submission.submit()
+    g.data['id'] = job_id
 
 
 @app.route('/<int:job_id>/resources', methods=['GET'])

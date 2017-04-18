@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division, absolute_import, unicode_literals
 import re
-import os
 import sys
+import os
 import socket
 import signal
 import click
@@ -12,44 +12,21 @@ from oar.lib import config
 
 from oar.lib import (db, Job)
 
-from oar.lib.submission import (print_warning, print_error, print_info, sub_exit,
-                                parse_resource_descriptions, add_micheline_jobs)
+from oar.lib.submission import (JobParameters, Submission, lstrip_none,
+                                check_reservation, default_submission_config)
 
-from oar.lib.tools import sql_to_local
 import oar.lib.tools as tools
 
 
 DEFAULT_VALUE = {
-    'directory': os.getcwd(),
-    'project': 'default',
-    'signal': 12
+    'directory': os.getcwd()
 }
-
-
-DEFAULT_CONFIG = {
-    'SERVER_HOSTNAME': 'localhost',
-    'SERVER_PORT': '6666',
-    'OPENSSH_CMD': 'ssh',
-    'OAR_SSH_CONNECTION_TIMEOUT': '200',
-    'STAGEIN_DIR': '/tmp',
-    'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': 'cpuset',
-    'CPUSET_PATH': '/oar',
-    'DEFAULT_JOB_WALLTIME': '3600'
-}
-
-
-def lstrip_none(s):
-    if s:
-        return s.lstrip()
-    else:
-        return None
-
 
 def init_tcp_server():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((socket.getfqdn(), 0))
-    s.listen(5)
-    return s
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((socket.getfqdn(), 0))
+    sock.listen(5)
+    return sock
 
 
 def qdel(signal, frame):
@@ -69,9 +46,30 @@ def connect_job(job_id, stop_oarexec, openssh_cmd):
 
 
 def resubmit_job(job_id):
+    # TODO
     print('TODO resubmit_job')
-    # TODO resubmit_job
+    return ((-42, "Not yet implemented"), -1)
 
+
+def print_warning(*objs):
+    print('# WARNING: ', *objs, file=sys.stderr)
+
+
+def print_error(*objs):
+    print('# ERROR: ', *objs, file=sys.stderr)
+
+
+def print_info(*objs):
+    print('# INFO: ', *objs, file=sys.stderr)
+
+
+def print_error_exit(error, show_usage=True):
+    """Print error message, usage, and exit with the provided error code"""
+    error_code, error_msg = error
+    print_error(error_msg)
+    if show_usage:
+        usage()
+    exit(error_code)
 
 def usage():
     '''Print usage message.'''
@@ -80,7 +78,6 @@ def usage():
 
 
 # Move to oar.lib.tool
-
 def signal_almighty(remote_host, remote_port, msg):
     print('TODO signal_almighty')
     return 1
@@ -164,31 +161,19 @@ def cli(command, interactive, queue, resource, reservation, connect,
         stdout, stderr, hold, version):
     """Submit a job to OAR batch scheduler."""
     
-    config.setdefault_config(DEFAULT_CONFIG)
+    #set default config for submission
+    default_submission_config(DEFAULT_VALUE)
+
     # import pdb; pdb.set_trace()
-
-    # print(resource)
-    # When the walltime of a job is not defined
-
-    default_job_walltime = str(config['DEFAULT_JOB_WALLTIME'])
 
     log_warning = ''  # TODO
     log_error = ''
     log_info = ''
     log_std = ''
 
+    # TODO
     remote_host = config['SERVER_HOSTNAME']
     remote_port = int(config['SERVER_PORT'])
-
-    if 'OARSUB_DEFAULT_RESOURCES' in config:
-        default_resources = config['OARSUB_DEFAULT_RESOURCES']
-    else:
-        default_resources = '/resource_id=1'
-
-    if 'OARSUB_NODES_RESOURCES' in config:
-        nodes_resources = config['OARSUB_NODES_RESOURCES']
-    else:
-        nodes_resources = 'resource_id'
 
     # TODO Deploy_hostname / Cosystem_hostname
     # $Deploy_hostname = get_conf("DEPLOY_HOSTNAME");
@@ -220,7 +205,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
         binpath = os.environ['OARDIR'] + '/'
     else:
         print_error('OARDIR environment variable is not defined.')
-        sub_exit(1)
+        exit(1)
 
     openssh_cmd = config['OPENSSH_CMD']
     ssh_timeout = int(config['OAR_SSH_CONNECTION_TIMEOUT'])
@@ -232,40 +217,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
     # OAR version
     # TODO: OAR is now a set of composition...
 
-    #
-    types = type
-
-    properties = lstrip_none(property)
-    if not directory:
-        launching_directory = ''
-    else:
-        launching_directory = lstrip_none(directory)
-
-    initial_request = ' '.join(sys.argv[1:])
-    queue_name = lstrip_none(queue)
-    reservation_date = lstrip_none(reservation)
-
-    if reservation_date:
-        m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
-                      reservation)
-        if m:
-            reservation_date = sql_to_local(m.group(1) + ' ' + m.group(2))
-        else:
-            print_error('syntax error for the advance reservation start date \
-            specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
-            sub_exit(7)
-
-    if array:
-        array_nb = array
-    else:
-        array_nb = 1
-
-    # Check the default name of the key if we have to generate it
-    if ('OARSUB_FORCE_JOB_KEY' in config) and config['OARSUB_FORCE_JOB_KEY'] == 'yes':
-        use_job_key = True
-    else:
-        use_job_key = False
-
     # TODO ssh_private_key, ssh_public_key,
     # ssh_private_key = ''
     # ssh_public_key = ''
@@ -276,60 +227,34 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     if resubmit:
         print('# Resubmitting job ', resubmit, '...')
-        ret = resubmit_job(resubmit)
-        if ret > 0:
-            job_id = ret
+        error, job_id = resubmit_job(resubmit)
+        if error[0] == 0:
             print(' done.\n')
             print('OAR_JOB_ID=' + str(job_id))
             if signal_almighty(remote_host, remote_port, 'Qsub') > 0:
-                print_error('cannot connect to executor ' + str(remote_host) + ':' +
-                            str(remote_port) + '. OAR server might be down.')
-                sub_exit(3)
+                error_msg = 'cannot connect to executor ' + str(remote_host) + ':' +\
+                            str(remote_port) + '. OAR server might be down.'
+                print_error_exit((3, error_msg))
             else:
-                sub_exit(0)
+                # It's all good
+                exit(0)
+                
         else:
-            print(' error.')
-            if ret == -1:
-                print_error('interactive jobs and advance reservations cannot be resubmitted.')
-            elif ret == -2:
-                print_error('only jobs in the Error or Terminated state can be resubmitted.')
-            elif ret == -3:
-                print_error('resubmitted job user mismatch.')
-            elif ret == -4:
-                print_error('another active job is using the same job key.')
-            else:
-                print_error('unknown error.')
-            sub_exit(4)
+            print_error_exit(error, False)
+            # TODO
+            #print(' error.')
+            #if ret == -1:
+            #    print_error('interactive jobs and advance reservations cannot be resubmitted.')
+            #elif ret == -2:
+            #    print_error('only jobs in the Error or Terminated state can be resubmitted.')
+            #elif ret == -3:
+            #    print_error('resubmitted job user mismatch.')
+            #elif ret == -4:
+            #    print_error('another active job is using the same job key.')
+            #else:
+            #    print_error('unknown error.')
+            #exit(4)
 
-    if not command and not interactive and not reservation and not connect:
-        usage()
-        sub_exit(5)
-
-    if interactive and reservation:
-        print_error('an advance reservation cannot be interactive.')
-        usage()
-        sub_exit(7)
-
-    if interactive and any(re.match(r'^desktop_computing$', t) for t in type):
-        print_error(' a desktop computing job cannot be interactive')
-        usage()
-        sub_exit(17)
-
-    if any(re.match(r'^noop$', t) for t in type):
-        if interactive:
-            print_error('a NOOP job cannot be interactive.')
-            sub_exit(17)
-        elif connect:
-            print_error('a NOOP job does not have a shell to connect to.')
-            sub_exit(17)
-
-    # notify : check insecure character
-    if notify and re.match(r'^.*exec\s*:.+$'):
-        m = re.search(r'.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', notify)
-        if not m:
-            print_error('insecure characters found in the notification method \
-            (the allowed regexp is: [a-zA-Z0-9_.\/ -]+).')
-            sub_exit(16)
 
     # TODO   Connect to a reservation
     # Connect to a reservation
@@ -338,40 +263,66 @@ def cli(command, interactive, queue, resource, reservation, connect,
     #  $SIG{HUP} = 'DEFAULT';
     #  OAR::Sub::close_db_connection(); exit(connect_job($connect_job,0,$Openssh_cmd));
     # }
+    
+    properties = lstrip_none(property)
+    types = type
+    initial_request = ' '.join(sys.argv[1:])
+    queue_name = lstrip_none(queue)    
 
-    if not project:
-        project = DEFAULT_VALUE['project']
-    if not signal:
-        signal = DEFAULT_VALUE['signal']
-    if not directory:
-        directory = DEFAULT_VALUE['directory']
+    reservation_date = check_reservation(lstrip_none(reservation))
 
-    resource_request = parse_resource_descriptions(resource, default_resources, nodes_resources)
+    # TODO import_job_key_file, export_job_key_file
+    import_job_key_file = ''
+    export_job_key_file = ''
 
-    job_vars = {
-        'job_type': None,
-        'resource_request': resource_request,
-        'command': command,
-        'info_type': None,
-        'queue_name': queue_name,
-        'properties': properties,
-        'checkpoint': checkpoint,
-        'signal': signal,
-        'notify': notify,
-        'name': name,
-        'types': types,
-        'launching_directory': launching_directory,
-        'dependencies': after,
-        'stdout': stdout,
-        'stderr': stderr,
-        'hold': hold,
-        'project': project,
-        'initial_request': initial_request,
-        'user': os.environ['OARDO_USER'],
-        'array_id': 0,
-        'start_time': '0',
-        'reservation_field': None,
-    }
+    user = os.environ['OARDO_USER']
+    
+    # TODO verify if all need parameters are identifed and present for submission 
+    job_parameters = JobParameters(job_type=None,
+                                   resource=resource,
+                                   command=command,
+                                   info_type=None,
+                                   queue=queue_name,
+                                   properties=properties,
+                                   checkpoint=checkpoint,
+                                   signal=signal,
+                                   notify=notify,
+                                   name=name,
+                                   types=types,
+                                   directory=directory,
+                                   dependencies=after,
+                                   stdout=stdout,
+                                   stderr=stderr,
+                                   hold=hold,
+                                   project=project,
+                                   initial_request=initial_request,
+                                   user=user,
+                                   interactive=interactive,
+                                   reservation=reservation_date,
+                                   connect=connect,
+                                   scanscript=scanscript,
+                                   array=array,
+                                   array_param_file=array_param_file,
+                                   use_job_key=use_job_key,
+                                   import_job_key_inline=import_job_key_inline,
+                                   import_job_key_file=import_job_key_file,
+                                   export_job_key_file=export_job_key_file)
+    
+
+    #import pdb; pdb.set_trace()
+
+    error = job_parameters.check_parameters()
+    if error[0]!=0:
+        print_error_exit(error)
+
+    #import pdb; pdb.set_trace()
+    submission = Submission(job_parameters)
+
+    # TO REMOVE
+    # command, initial_request, interactive, queue, resource,
+    # type, checkpoint, property, resubmit, scanscript, project,
+    # directory, name, after, notify, array, array_param_
+    # export_job_key_to_file, stdout, stderr, hold)
 
     if not interactive and command:
 
@@ -388,17 +339,17 @@ def cli(command, interactive, queue, resource, reservation, connect,
         # $array_params_ref = OAR::Sub::read_array_param_file($array_param_file);
         # $array_nb = scalar @{$array_params_ref};
 
-        if array_nb == 0:
-            print_error('an array of job must have a number of sub-jobs greater than 0.')
-            usage()
-            sub_exit(6)
+        #if array_nb == 0:
+        #    print_error('an array of job must have a number of sub-jobs greater than 0.')
+        #    usage()
+        #    exit(6)
 
-        job_vars['info_type'] = "$Host:$server_port"  # TODO  "$Host:$server_port"
-        job_vars['job_type'] = 'PASSIVE'
-        (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
-                                               import_job_key_inline, import_job_key_file,
-                                               export_job_key_file,
-                                               initial_request, array_nb, array_params)
+        submission.job_parameters.info_type = "$Host:$server_port"  # TODO  "$Host:$server_port"
+        submission.job_parameters.job_type = 'PASSIVE'
+
+
+        (error, job_id_lst) = submission.submit()
+
     else:
         # TODO interactive
         if command:
@@ -407,33 +358,28 @@ def cli(command, interactive, queue, resource, reservation, connect,
         cmd_executor = 'Qsub -I'
 
         if array_param_file:
-            print_error('a array job with parameters given in a file cannot be interactive.')
-            usage()
-            sub_exit(9)
+            print_error_exit((9,'a array job with parameters given in a file cannot be interactive.'))
 
-        if array_nb != 1:
-            print_error('an array job cannot be interactive.')
-            usage()
-            sub_exit(8)
+        if array != 1:
+            print_error_exit((8, 'an array job cannot be interactive.'))
 
         if reservation:
             # Test if this job is a reservation and the syntax is right
             # TODO Pass
             pass
+
         socket_server = init_tcp_server()
         (server, server_port) = socket_server.getsockname()
-        job_vars['info_type'] = server + ':' + str(server_port)
-        job_vars['job_type'] = 'INTERACTIVE'
-        (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
-                                               import_job_key_inline,
-                                               import_job_key_file, export_job_key_file,
-                                               initial_request, array_nb, array_params)
+        
+        submission.job_parameters.info_type = server + ':' + str(server_port)
+        submission.job_parameters.job_type = 'INTERACTIVE'
+
+        (error, job_id_lst) = submission.submit()
 
     # pdb.set_trace()
 
-    if err != 0:
-        print_error('command failed, please verify your syntax.')
-        sub_exit(err, '')
+    if error[0] != 0:
+        print_error_exit(error)
 
     oar_array_id = 0
 
@@ -461,7 +407,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             print_info('advance reservation is GRANTED.')
         else:
             print_info('advance reservation is REJECTED ', answer[:-1])
-            sub_exit(10)
+            exit(10)
     elif interactive:
         # Interactive mode
         print_info('interactive mode: waiting...')
@@ -487,6 +433,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
             # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
             pass
         else:
-            sub_exit(11)
+            exit(11)
 
-    sub_exit(0, result)
+    exit(0)
