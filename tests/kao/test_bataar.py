@@ -1,72 +1,33 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pytest
+from ..modules.fakezmq import FakeZmq
 from click.testing import CliRunner
 from oar.kao.bataar import bataar
-import socket
+
 import redis
+import zmq
 import struct
 import sys
 import os
-import pdb
+import json
 
 from oar.lib import db
 
-recv_msgs = []
-sent_msgs = []
+def order_json_str_arrays(a):
+    return [json.dumps(json.loads(x), sort_keys=True) for x in a]
+
+SENT_MSGS_1 = order_json_str_arrays([
+    '{"now": 5.0, "events": []}',
+    '{"now": 15.0, "events": [{"type": "EXECUTE_JOB", "data": {"alloc": "0 - 3", "job_id": "foo!1"}, "timestamp": 15.0}]}',
+    '{"now": 24.0, "events": []}',
+    '{"now": 25.0, "events": []}'
+])
+
 data_storage = {}
 
-class FakeConnection(object):
-    msg_idx = 0
-    lg_sent = False
-    lg_recv = False
-
-    def __init__(self):
-        global sent_msgs
-        sent_msgs = []
-
-    def recv(self, nb):
-        if self.msg_idx == len(recv_msgs):
-            return None
-        if not self.lg_sent:
-            self.lg_sent = True
-            lg = len(recv_msgs[self.msg_idx])
-            return struct.pack("i", int(lg))
-        else:
-            self.lg_sent = False
-            if sys.version_info[0] == 2:
-                msg = recv_msgs[self.msg_idx]
-            else:
-                msg = recv_msgs[self.msg_idx].encode("utf-8")
-            self.msg_idx += 1
-            return msg
-
-    def sendall(self, msg):
-        if not self.lg_recv:
-            self.lg_recv = True
-        else:
-            global sent_msgs
-            if sys.version_info[0] == 2:
-                sent_msgs.append(msg)
-            else:
-                # print(type(msg), msg)
-                sent_msgs.append(msg.decode("utf-8"))
-            self.lg_recv = False
-
-
-class FakeSocket(object):
-    def __init__(self, socket_type, socket_mode):
-        pass
-
-    def connect(self, uds_name):
-        self.connection = FakeConnection()
-        pass
-
-    def recv(self, nb):
-        return self.connection.recv(nb)
-
-    def sendall(self, msg):
-        return self.connection.sendall(msg)
+def order_json_str_arrays(a):
+    return [json.dumps(json.loads(x), sort_keys=True) for x in a]
 
 class FakeRedis(object):
     def __init__(self, host='localchost', port='6379'):
@@ -76,10 +37,18 @@ class FakeRedis(object):
         return data_storage[key]
     
 @pytest.fixture(scope="function", autouse=True)
-def monkeypatch_uds_datastorage():
-    socket.socket = FakeSocket
+def monkeypatch_datastore_zmq():
     redis.StrictRedis = FakeRedis
-    
+    zmq.Context = FakeZmq
+    #monkeypatch.setattr(zmq, 'Context', FakeZmq)
+
+@pytest.fixture(scope="function", autouse=True)
+def setup(request):
+    @request.addfinalizer
+    def teardown():
+        FakeZmq.num_socket = 0
+        FakeZmq.sent_msgs = {}
+        FakeZmq.recv_msgs = {}
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -87,16 +56,19 @@ def minimal_db_initialization(request):
         yield
 
 def exec_gene(options):
-    global recv_msgs
-    recv_msgs = [
-        '0:05|05:A',
-        '0:10|10:S:foo!1',
-        '0:19|19:C:foo!1',
-        '0:25|25:Z'
-    ]
+    FakeZmq.recv_msgs = {0:[
+        '{"now":5.0, "events":\
+        [{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":{}}}]}',
+        '{"now":10.0, "events":\
+        [{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}]}',
+        '{"now":19.0, "events":\
+        [{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS"}}]}',
+        '{"now":25.0, "events":\
+        [{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
+    ]}
+    
     global data_storage
-    data_storage = { '/tmp/bat_socket:nb_res': b'4',
-                     '/tmp/bat_socket:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}'
+    data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}'
     }
     args = options
     args.append('--scheduler_delay=5')
@@ -105,65 +77,63 @@ def exec_gene(options):
     result = runner.invoke(bataar, args)
     print("exit code:", result.exit_code)
     print(result.output)
-    print("Messages sent:", sent_msgs)
-    return (result, sent_msgs)
+    print("Messages sent:", FakeZmq.sent_msgs)
+    return (result,  FakeZmq.sent_msgs)
 
 
 def test_bataar_no_db():
     result, sent_msgs = exec_gene(['-dno-db'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+    
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
+
 def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
-    print("yop")
     job = db['Job'].query.one()
     print(job.id, job.state)
-    print("poy")
-    
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
 def test_bataar_db_basic():
     result, sent_msgs = exec_gene(['-pBASIC', '-dmemory'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_local(): #TODO a really for this specific casr
+def test_bataar_db_local(): #TODO need better test to verify allocation policy 
     result, sent_msgs = exec_gene(['-pLOCAL', '-n4', '-dmemory'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_best_effort_local(): #TODO a really for this specific casr
+def test_bataar_db_best_effort_local(): #TODO need better test to verify allocation policy 
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_LOCAL', '-n4', '-dmemory'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
-    assert result.exit_code == 0
-    
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
-                    reason="not designed to work with postgresql database")
-def test_bataar_db_contiguous(): #TODO a really for this specific casr
-    result, sent_msgs = exec_gene(['-pCONTIGUOUS', '-dmemory'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-def test_bataar_db_best_effort_contiguous(): #TODO a really for this specific casr
+def test_bataar_db_contiguous(): #TODO need better test to verify allocation policy 
+    result, sent_msgs = exec_gene(['-pCONTIGUOUS', '-dmemory'])
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
+    assert result.exit_code == 0
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
+                    reason="not designed to work with postgresql database")
+def test_bataar_db_best_effort_contiguous(): #TODO need better test to verify allocation policy 
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
-    assert sent_msgs == ['0:5.000000|5.000000:N', '0:15.000000|15.000000:J:foo!1=0-3',
-                         '0:24.000000|24.000000:N', '0:25.000000|25.000000:N']
+
+    assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0

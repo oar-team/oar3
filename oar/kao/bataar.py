@@ -23,7 +23,7 @@ from oar.lib.interval import itvs2batsim_str0 # TOREMOVE ?
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
-from oar.kao.batsim import  BatsimScheduler, Batsim
+from batsim.batsim import BatsimScheduler, Batsim
 
 import oar.kao.advanced_scheduling
 
@@ -343,7 +343,7 @@ class BatSched(BatsimScheduler):
             jobs_res = {}
             for jid in jids_to_launch:
                 ds_job = self.jobs[jid].ds_job
-                res = itvs2batsim_str0(self.jobs[jid].res_set) 
+                res = itvs2batsim_str0(self.jobs[jid].res_set)
                 scheduled_jobs.append(ds_job)
                 jobs_res[ds_job.id] = res
 
@@ -379,113 +379,6 @@ class BatSched(BatsimScheduler):
 
         self.scheduleJobs()
 
-class BatSched_old(object):
-
-    def __init__(self, res_set, jobs, platform_model="simu", db_jid2s_jid={}, sched_delay=-1,
-                 uds_name='/tmp/bat_socket'):
-
-        self.platform_model = platform_model
-        self.sched_delay = sched_delay
-        self.db_jid2s_jid = db_jid2s_jid
-        self.env = BatEnv(0)
-        self.platform = Platform(
-            platform_model, env=self.env, resource_set=res_set, jobs=jobs, db_jid2s_jid=db_jid2s_jid)
-        global plt
-        plt = self.platform
-        self.jobs = jobs
-        self.nb_jobs = len(jobs)
-        self.sock = create_uds(uds_name)
-
-        self.platform.running_jids = []
-        if sys.version_info[0] == 2:
-            self.waiting_jids = Set()
-        else:
-            self.waiting_jids = set()
-        self.platform.waiting_jids = self.waiting_jids
-        self.platform.completed_jids = []
-
-    def sched_loop(self):
-        nb_completed_jobs = 0
-        while nb_completed_jobs < self.nb_jobs:
-
-            now_float, jobs_submitted, new_jobs_completed = read_bat_msg(
-                self.sock)
-
-            # now_str = "10"
-            # jobs_submitted = [1]
-            # new_jobs_completed = []
-
-            if jobs_submitted:
-                for jid in jobs_submitted:
-                    self.waiting_jids.add(jid)
-                    if self.platform_model == 'batsim-db':
-                        print('set_job_state("Waiting"):', self.jobs[jid].db_jid)
-                        set_job_state(self.jobs[jid].db_jid, 'Waiting')
-
-            nb_completed_jobs += len(new_jobs_completed)
-
-            print("new job completed: %s" % new_jobs_completed)
-
-            for jid in new_jobs_completed:
-                jobs_completed.append(jid)
-                if jid in self.platform.running_jids:
-                    self.platform.running_jids.remove(jid)
-                if self.platform_model == 'batsim-db':
-                    set_job_state(self.jobs[jid].db_jid, 'Terminated')
-
-            now = int(now_float)
-            self.env.now = now  # TODO can be remove ???
-            real_time = time.time()
-
-            print("jobs running: %s" % self.platform.running_jids)
-            print("jobs waiting: %s" % self.waiting_jids)
-            print("jobs completed: %s" % jobs_completed)
-
-            jids_to_launch = []
-
-            if self.platform_model == 'simu':
-                print("call schedule_cycle.... %s" % now)
-                schedule_cycle(self.platform, now, "default")
-
-                # retrieve jobs to launch
-                jids_to_launch = []
-                for jid, job in iteritems(self.platform.assigned_jobs):
-                    print("job.start_time %s" % job.start_time)
-                    if (job.start_time == now) and (job.state=='Waiting'):
-                        self.waiting_jids.remove(jid)
-                        jids_to_launch.append(jid)
-                        job.state = "Running"
-                        print("tolaunch: %s" % jid)
-                        self.platform.running_jids.append(jid)
-
-            else:
-                print("call meta_schedule('internal')")
-                meta_schedule('internal', plt)
-                # Launching phase
-                # Retrieve job to Launch
-
-                result = db.query(Job).filter(Job.state == 'toLaunch')\
-                                      .order_by(Job.id).all()
-
-                for job_db in result:
-                    set_job_state(job_db.id, 'Running')
-                    jid = self.db_jid2s_jid[job_db.id]
-                    self.waiting_jids.remove(jid)
-                    jids_to_launch.append(jid)
-                    self.jobs[jid].state = "Running"
-                    print("_tolaunch: %s" % jid)
-                    self.platform.running_jids.append(jid)
-
-            real_sched_time = time.time() - real_time
-            if self.sched_delay == -1:
-                now_float += real_sched_time
-            else:
-                now_float += self.sched_delay
-            send_bat_msg(self.sock, now_float, jids_to_launch, self.jobs)
-
-    def run(self):
-        self.sched_loop()
-
 ##############
 
 @click.command()
@@ -519,14 +412,14 @@ class BatSched_old(object):
               the actual delay of scheduler is used")
 @click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
 @click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
-@click.option('-k', '--redis_key_prefix', default=None, type=click.STRING, help="Set redis key prefix.")
+@click.option('-k', '--redis_key_prefix', default='default', type=click.STRING, help="Set redis key prefix.")
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
 #@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
 
 def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
            redis_port, redis_key_prefix, verbose):
     """Adaptor to Batsim Simulator."""
-    #    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     if database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
@@ -540,8 +433,11 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
         verbose_level = 2
     #import pdb; pdb.set_trace()
     #if database_mode == 'no-db':
+    
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
-    batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port,
+    #TODO support batsim usage without redis
+    redis_enabled = True 
+    batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port, redis_enabled,
                     None, socket_endpoint, verbose_level)
     batsim.start()
 

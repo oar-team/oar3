@@ -11,10 +11,10 @@ class FakeZmqSocketMessage(object):
 
     
 class FakeZmqSocket(object):
-    def __init__(self, num):
+    def __init__(self, socket_id):
         print("FakeZmqSocket")
-        self.num = num
-        FakeZmq.sent_msgs[num] = []
+        self.socket_id = socket_id
+        FakeZmq.sent_msgs[socket_id] = []
 
     def bind(self, url):
         pass
@@ -22,48 +22,50 @@ class FakeZmqSocket(object):
     def connect(self, url):
         pass
 
+    def close(self):
+        pass
+
     def send(self, msg):
-        print("send", self.num, msg)
-        FakeZmq.sent_msgs[self.num].append(msg)
+        print("send", self.socket_id, msg)
+        FakeZmq.sent_msgs[self.socket_id].append(msg)
 
     def send_string(self, msg):
-        print("send_string", self.num, msg)
-        FakeZmq.sent_msgs[self.num].append(msg)
+        print("send_string", self.socket_id, msg)
+        FakeZmq.sent_msgs[self.socket_id].append(msg)
 
     def send_json(self, msg):
-        print("send_json", self.num, msg)
-        FakeZmq.sent_msgs[self.num].append(msg)
+        print("send_json", self.socket_id, msg)
+        FakeZmq.sent_msgs[self.socket_id].append(msg)
 
-    def recv_json(self):
-        msgs = FakeZmq.recv_msgs[self.num]
+    def _pop_msg(self):
+        msgs = FakeZmq.recv_msgs[self.socket_id]
         if len(msgs) == 0:
             msg = None
         else:
-            msg = msgs.pop()
-        return msg
+            msg = FakeZmqSocketMessage(msgs.pop(0))
+        return msg 
+        
+    def recv_json(self):
+        return self._pop_msg()
 
     def recv(self):
         return self.recv_json()
 
     def recv_multipart(self):
-        print('recv_multipart:', self.num, FakeZmq.recv_msgs)
-        msgs = FakeZmq.recv_msgs[self.num]
-        if len(msgs) == 0:
-            msg = None
-        else:
-            msg = FakeZmqSocketMessage(msgs.pop())
+        print('recv_multipart:', self.socket_id, FakeZmq.recv_msgs)
+        msg = self._pop_msg()
         client_id = 1
         return(client_id, msg)
 
 
 class FakeZmq(object):
-    i = 0
+    num_socket = 0
     sent_msgs = {}
     recv_msgs = {}
     def __init__(self):
         pass
 
     def socket(self, socket_type):
-        sock = FakeZmqSocket(FakeZmq.i)
-        FakeZmq.i += 1
+        sock = FakeZmqSocket(FakeZmq.num_socket)
+        FakeZmq.num_socket += 1
         return sock
