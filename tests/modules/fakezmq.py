@@ -6,10 +6,10 @@ class FakeZmqSocketMessage(object):
         print("FakeZmqSocketMessage", msg)
         self.msg = msg
 
-    def decode(self, fmt):
+    def decode(self, _):
         return self.msg
 
-    
+
 class FakeZmqSocket(object):
     def __init__(self, socket_id):
         print("FakeZmqSocket")
@@ -43,8 +43,8 @@ class FakeZmqSocket(object):
             msg = None
         else:
             msg = FakeZmqSocketMessage(msgs.pop(0))
-        return msg 
-        
+        return msg
+
     def recv_json(self):
         return self._pop_msg()
 
@@ -62,10 +62,16 @@ class FakeZmq(object):
     num_socket = 0
     sent_msgs = {}
     recv_msgs = {}
+
     def __init__(self):
         pass
 
-    def socket(self, socket_type):
+    def reset():
+        FakeZmq.num_socket = 0
+        FakeZmq.sent_msgs = {}
+        FakeZmq.recv_msgs = {}
+
+    def socket(fake_self, _):
         sock = FakeZmqSocket(FakeZmq.num_socket)
         FakeZmq.num_socket += 1
         return sock

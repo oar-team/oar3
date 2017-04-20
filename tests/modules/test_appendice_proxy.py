@@ -17,16 +17,14 @@ def setup(request):
     config['APPENDICE_SERVER_PORT'] = '6668'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
-
+    FakeZmq.reset()
+    
     @request.addfinalizer
     def teardown():
         del config['SERVER_HOSTNAME']
         del config['APPENDICE_SERVER_PORT']  
         del config['BIPBIP_COMMANDER_SERVER']
         del config['BIPBIP_COMMANDER_PORT']
-        FakeZmq.num_socket = 0
-        FakeZmq.sent_msgs = {}
-        FakeZmq.recv_msgs = {}
 
 def test_appendice_proxy_simple(monkeypatch):
 

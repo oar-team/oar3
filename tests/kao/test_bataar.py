@@ -44,11 +44,7 @@ def monkeypatch_datastore_zmq():
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    @request.addfinalizer
-    def teardown():
-        FakeZmq.num_socket = 0
-        FakeZmq.sent_msgs = {}
-        FakeZmq.recv_msgs = {}
+    FakeZmq.reset()
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
