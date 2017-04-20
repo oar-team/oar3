@@ -267,7 +267,7 @@ class Almighty(object):
         logger.debug("Timeout value:" + str(timeout))
         
         try:
-            answer = self.appendice.recv_json()
+            answer = self.appendice.recv_json().decode('utf-8')
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
             return {'cmd': 'Time'}

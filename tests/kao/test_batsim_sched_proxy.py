@@ -45,7 +45,7 @@ def setup(request):
         del config['BATSCHED_ENDPOINT']
         del config['DS_PREFIX']
         del config['WLOAD_BATSIM']
-        FakeZmq.i = 0
+        FakeZmq.num = 0
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
 

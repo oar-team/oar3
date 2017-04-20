@@ -40,7 +40,7 @@ def setup(request):
         del config['APPENDICE_SERVER_PORT']  
         del config['BIPBIP_COMMANDER_SERVER']
         del config['BIPBIP_COMMANDER_PORT']
-        FakeZmq.i = 0
+        FakeZmq.num_socket = 0
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
 
