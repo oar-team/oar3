@@ -39,15 +39,13 @@ def setup(request):
     config['BATSCHED_ENDPOINT'] = 'tcp://localhost:6679'
     config['DS_PREFIX'] = 'oar'
     config['WLOAD_BATSIM'] = 'oar'
+    FakeZmq.reset()
 
     @request.addfinalizer
     def teardown():
         del config['BATSCHED_ENDPOINT']
         del config['DS_PREFIX']
         del config['WLOAD_BATSIM']
-        FakeZmq.num = 0
-        FakeZmq.sent_msgs = {}
-        FakeZmq.recv_msgs = {}
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -69,7 +67,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
     
-
+@pytest.mark.skip(reason='need to update protocol')
 def test_simple_submission(monkeypatch):
 
     now = str(get_date())
