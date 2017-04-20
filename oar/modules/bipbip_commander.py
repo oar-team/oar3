@@ -99,7 +99,7 @@ class BipbipCommander(object):
         # TODO: add a shutdown procedure
         while True:
             #add_timeout if bipbip_leon_commands_to_run is not empty
-            command = self.notification.recv_json()
+            command = self.notification.recv_json().decode('utf-8')
 
             logger.debug("bipbip commander received notification:" + str(command))
             #import pdb; pdb.set_trace()
