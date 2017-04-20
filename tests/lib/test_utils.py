@@ -173,7 +173,7 @@ def test_to_json():
     "name": "Monkey D. Luffy",
     "birthday": "2015-07-19T09:14:22.140921",
     "level": 90,
-    "length": "177.85",
+    "length": 177.85,
     "parents": {
         "father": {
             "name": "Monkey D. Dragon"

@@ -5,8 +5,13 @@ import pytest
 import os
 
 from oar.lib import (db, AdmissionRule)
-from oar.lib.submission import (parse_resource_descriptions, add_micheline_jobs, set_not_cli)
+from oar.lib.submission import (JobParameters, parse_resource_descriptions, add_micheline_jobs,
+                                default_submission_config)
 
+
+@pytest.fixture(scope='function', autouse=True)
+def builtin_config(request):
+    default_submission_config()
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -23,122 +28,95 @@ def minimal_db_initialization(request):
         yield
 
 
-@pytest.fixture(scope='function', autouse=True)
-def not_cli():
-    set_not_cli()
-
-
-def default_job_vars(resource_request):
-    return {
-        'job_type': 'PASSIVE',
-        'resource_request': resource_request,
-        'name': 'yop',
-        'project': 'yop',
-        'command': 'sleep',
-        'info_type': '',
-        'queue_name': 'default',
-        'properties': '',
-        'checkpoint': 0,
-        'signal': 12,
-        'notify': '',
-        'types': None,
-        'launching_directory': '/tmp',
-        'dependencies': None,
-        'stdout': None,
-        'stderr': None,
-        'hold': None,
-        'initial_request': 'foo',
-        'user': os.environ['USER'],
-        'array_id': 0,
-        'start_time': '0',
-        'reservation_field': None
-    }
-
+def default_job_parameters(resource_request):
+    return  JobParameters(
+        job_type='PASSIVE',
+        resource=resource_request,
+        name='yop',
+        project='yop',
+        command='sleep',
+        info_type='',
+        queue='default',
+        properties='',
+        checkpoint=0,
+        signal=12,
+        notify='',
+        types=None,
+        directory='/tmp',
+        dependencies=None,
+        stdout=None,
+        stderr=None,
+        hold=None,
+        initial_request='foo',
+        user=os.environ['USER'],
+        array_id=0,
+        start_time=0,
+        reservation_field=None
+    )
 
 def test_add_micheline_jobs_1():
 
-    default_resources = '/resource_id=1'
-    resource_request = parse_resource_descriptions(None, default_resources, 'resource_id')
-    job_vars = default_job_vars(resource_request)
-
-    reservation_date = ''
-    use_job_key = False
+    job_parameters = default_job_parameters(None)
     import_job_key_inline = ''
     import_job_key_file = ''
     export_job_key_file = ''
-    initial_request = 'yop'
-    array_nb = 0
-    array_params = []
-
-    # print(job_vars)
-
-    (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
-                                           import_job_key_inline, import_job_key_file,
-                                           export_job_key_file,
-                                           initial_request, array_nb, array_params)
+    (error, job_id_lst) = add_micheline_jobs(job_parameters, import_job_key_inline,\
+                                           import_job_key_file, export_job_key_file)
 
     print("job id:", job_id_lst)
+    print("error:", error)
+    assert error == (0, '')
     assert len(job_id_lst) == 1
 
 
 def test_add_micheline_jobs_2():
 
-    default_resources = '/resource_id=1'
-    resource_request = parse_resource_descriptions(None, default_resources, 'resource_id')
-    job_vars = default_job_vars(resource_request)
-    job_vars['stdout'] = 'yop'
-    job_vars['stderr'] = 'poy'
-    job_vars['types'] = 'foo'
-
-    reservation_date = ''
-    use_job_key = False
+    job_parameters = default_job_parameters(None)
     import_job_key_inline = ''
     import_job_key_file = ''
     export_job_key_file = ''
-    initial_request = 'yop'
-    array_nb = 0
-    array_params = []
+    job_parameters.stdout = 'yop'
+    job_parameters.stderr = 'poy'
+    job_parameters.types = ['foo']
 
-    # print(job_vars)
-
-    (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
-                                           import_job_key_inline, import_job_key_file,
-                                           export_job_key_file,
-                                           initial_request, array_nb, array_params)
+    (error, job_id_lst) = add_micheline_jobs(job_parameters, import_job_key_inline, \
+                                           import_job_key_file, export_job_key_file)
 
     print("job id:", job_id_lst)
+    print("error:", error)
+    assert error == (0, '')
     assert len(job_id_lst) == 1
-
 
 def test_add_micheline_simple_array_job():
 
-    default_resources = 'network_address=2/resource_id=1+/resource_id=2'
-    resource_request = parse_resource_descriptions(None, default_resources, 'resource_id')
-    job_vars = default_job_vars(resource_request)
-    job_vars['types'] = 'foo'
+    additional_config = {
+        'OARSUB_DEFAULT_RESOURCES': 'network_address=2/resource_id=1+/resource_id=2',
+        'OARSUB_NODES_RESOURCES': 'resource_id'
+    }
+    default_submission_config(additional_config)
 
-    reservation_date = ''
-    use_job_key = False
+    job_parameters = default_job_parameters(None)
     import_job_key_inline = ''
     import_job_key_file = ''
     export_job_key_file = ''
-    initial_request = 'yop'
-    array_nb = 5
-    array_params = [str(i) for i in range(array_nb)]
+    job_parameters.types = ['foo']
+
+    job_parameters.array_nb = 5
+    job_parameters.array_params = [str(i) for i in range(job_parameters.array_nb)]
 
     # print(job_vars)
 
-    (err, job_id_lst) = add_micheline_jobs(job_vars, reservation_date, use_job_key,
-                                           import_job_key_inline, import_job_key_file,
-                                           export_job_key_file,
-                                           initial_request, array_nb, array_params)
+    (error, job_id_lst) = add_micheline_jobs(job_parameters, import_job_key_inline, \
+                                           import_job_key_file, export_job_key_file)
 
-    r = db['JobResourceGroup'].query.all()
-    for item in r:
+    res = db['JobResourceGroup'].query.all()
+    for item in res:
         print(item.to_dict())
-    r = db['JobResourceDescription'].query.all()
-    for item in r:
+    res = db['JobResourceDescription'].query.all()
+    for item in res:
         print(item.to_dict())
 
     print("job id:", job_id_lst)
+    print("error:", error)
+    assert error == (0, '')
     assert len(job_id_lst) == 5

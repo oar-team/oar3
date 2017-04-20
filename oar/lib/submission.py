@@ -34,8 +34,9 @@ DEFAULT_CONFIG = {
     'signal': 12
 }
 
-def default_submission_config(default_value):
-    DEFAULT_CONFIG.update(default_value)
+def default_submission_config(default_value=None):
+    if default_value:
+        DEFAULT_CONFIG.update(default_value)
     config.setdefault_config(DEFAULT_CONFIG)
 
 def lstrip_none(s):
@@ -509,7 +510,7 @@ def add_micheline_simple_array_job(job_parameters,
 
     walltime = resource_request[0][1]
     if not walltime:
-        walltime = config('DEFAULT_JOB_WALLTIME')
+        walltime = config['DEFAULT_JOB_WALLTIME']
 
     for job_id in job_id_list:
         random_number = random.randint(1, 1000000000000)
