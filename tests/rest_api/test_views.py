@@ -2,10 +2,10 @@
 import pytest
 from flask import url_for
 from oar.rest_api.app import create_app
+from oar.rest_api.query import APIQuery
 
 from oar.lib import db
 from oar.kao.job import (insert_job, set_job_state)
-
 
 @pytest.yield_fixture(scope='function')
 def minimal_db_initialization(request):
@@ -19,6 +19,8 @@ def minimal_db_initialization(request):
 @pytest.fixture
 def app():
     app = create_app()
+    # force to use APIQuery needed when all tests are launched and previous ones have set BaseQuery
+    db.sessionmaker.configure(query_cls=APIQuery)
     return app
 
 def test_app_frontend_index(client):
