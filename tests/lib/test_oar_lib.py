@@ -16,7 +16,7 @@ def test_all_module_api():
         'InvalidConfiguration', 'JSONEncoder', 'Job', 'JobDependencie',
         'JobResourceDescription', 'JobResourceGroup', 'JobStateLog', 'JobType',
         'MoldableJobDescription', 'OARException', 'Queue', 'Resource',
-        'ResourceLog', 'ResultProxyIter', 'Submission', 'Scheduler', '__all__', 
+        'ResourceLog', 'ResultProxyIter', 'Scheduler', '__all__', 
         '__doc__', '__docformat__', '__file__', '__name__', '__package__',
         '__path__', '__version__', 'basequery', 'cached_property', 'compat',
         'config', 'configuration', 'create_logger', 'database', 'db',

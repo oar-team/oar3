@@ -38,7 +38,6 @@ all_by_module = {
                       'render_query', 'ResultProxyIter', 'row2dict'],
     'oar.lib.globals': ['config'],
     'oar.lib.fixture': ['load_fixtures', 'dump_fixtures'],
-    'oar.lib.submission': ['Submission']
 }
 
 # modules that should be imported when accessed as attributes of oar

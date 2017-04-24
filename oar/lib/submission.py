@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
     'DEFAULT_JOB_WALLTIME': 3600,
     'OARSUB_DEFAULT_RESOURCES': '/resource_id=1',
     'OARSUB_NODES_RESOURCES': 'resource_id',
+    'queue': 'default',
     'project': 'default',
     'signal': 12
 }
@@ -758,6 +759,9 @@ class JobParameters():
         else:
             self.array_nb = 1
 
+        if not self.queue:
+            self.queue = config['queue']
+            
         if not self.project:
             self.project = config['project']
 
