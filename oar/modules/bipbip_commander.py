@@ -26,6 +26,7 @@ import os
 import socket
 import zmq
 
+from oar.lib.compat import iterkeys
 from oar.lib import (config, get_logger)
 import oar.lib.tools as tools
 
@@ -62,10 +63,25 @@ else:
 leon_command = binpath + 'leon'
 bipbip_command = binpath + 'bipbip'
 
+
+def bipbip_leon_executor(*args, **command):
+    
+    job_id = command['job_id']
+    
+    if command['cmd'] == 'LEONEXTERMINATE':
+        cmd_arg = [leon_command, str(job_id)]
+    else:
+        cmd_arg = [bipbip_command, str(job_id)] + command['args']
+
+    logger.debug('Launching: ' + str(cmd_arg))
+            
+    # TODO returncode,
+    tools.call(cmd_arg)
+
 class BipbipCommander(object):
     
     def __init__(self):
-        # Initialize a zeromq context
+        # Initialize zeromq context
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PUSH) # to signal Almighty
         self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
@@ -79,20 +95,6 @@ class BipbipCommander(object):
         self.bipbip_leon_commands_to_run = []
         self.bipbip_leon_commands_to_requeue = []
         self.bipbip_leon_executors = {}
-
-    def bipbip_leon_executor(*args, **command):
-        
-        job_id = command['job_id']
-        
-        if command['cmd'] == 'LEONEXTERMINATE':
-            cmd_arg = [leon_command, str(job_id)]
-        else:
-            cmd_arg = [bipbip_command, str(job_id)] + command['args']
-
-        logger.debug('Launching: ' + str(cmd_arg))
-            
-        # TODO returncode,
-        tools.call(cmd_arg)
 
     
     def run(self, loop=True):
@@ -124,7 +126,7 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
-                    executor = Process(target=self.bipbip_leon_executor, args=(), kwargs=command)
+                    executor = Process(target=bipbip_leon_executor, args=(), kwargs=command)
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor
 
@@ -132,6 +134,12 @@ class BipbipCommander(object):
             self.bipbip_leon_commands_to_run += self.bipbip_leon_commands_to_requeue
             self.bipbip_leon_commands_to_requeue = []
 
+
+            # Remove finished executors:
+            for job_id in iterkeys(self.bipbip_leon_executors):
+                if not self.bipbip_leon_executors[job_id].is_alive():
+                    del self.bipbip_leon_executors[job_id]
+            
             if not loop:
                 break
 

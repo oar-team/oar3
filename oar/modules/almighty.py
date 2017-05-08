@@ -167,18 +167,6 @@ def check_hulot():
     '''check the hulot process'''
     return os.kill(energy_pid, 0)
 
-
-def ipc_clean():  # TODO do we need it ?
-    '''Clean ipcs'''
-    oar_uid = getpwnam('oar').pw_uid
-    with open('/proc/sysvipc/msg') as f_ipcs:
-        for line in f_ipcs:
-            ipcs = line.split()
-            if ipcs[7].isdigit() and int(ipcs[7]) == oar_uid:
-                logger.debug('cleaning ipc ' + ipcs[7])
-                os.system('/usr/bin/ipcrm -q ' + ipcs[7])
-
-
 # functions associated with each state of the automaton
 def meta_scheduler():
     return launch_command(meta_sched_command)
@@ -331,7 +319,6 @@ class Almighty(object):
             if energy_pid and not check_hulot():
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
                 time.sleep(5)
-                ipc_clean()
                 start_hulot()
 
             # QGET
@@ -380,7 +367,6 @@ class Almighty(object):
                         if (energy_pid > 0) and not check_hulot():
                             logger.warning('Energy saving module (hulot) died. Restarting it.')
                             time.sleep(5)
-                            ipc_clean()
                             start_hulot()
 
                         scheduler_result = meta_scheduler()
