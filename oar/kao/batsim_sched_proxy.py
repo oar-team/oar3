@@ -51,7 +51,7 @@ from oar.lib import (config, get_logger)
 from oar.lib.tools import get_date
 from oar.lib.interval import (batsim_str2itvs, itvs2ids, itvs2batsim_str)
 from batsim.batsim import DataStorage
-from oar.kao.node import get_nodes_with_state
+from oar.lib.node import get_nodes_with_state
 from oar.kao.job import (get_jobs_ids_in_multiple_states, JobPseudo)
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
 

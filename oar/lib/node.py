@@ -7,8 +7,7 @@ from __future__ import unicode_literals, print_function
 from sqlalchemy import func
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,
-                     AssignedResource)
-                     get_logger)
+                     AssignedResource, get_logger)
 
 logger = get_logger("oar.kao.node")
 

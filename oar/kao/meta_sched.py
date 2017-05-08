@@ -44,7 +44,7 @@ from oar.kao.kamelot import internal_schedule_cycle
 
 from oar.lib.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itvs_size)
 
-from oar.kao.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
+from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
 # for quotas
