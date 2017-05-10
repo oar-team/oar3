@@ -5,9 +5,10 @@ import time
 import re
 import os
 import socket
-from sqlalchemy import func, distinct
-from oar.lib import (db, config, get_logger, Resource, AssignedResource,
-                     EventLog)
+from sqlalchemy import distinct
+from oar.lib import (db, config, get_logger, Resource, AssignedResource)
+from oar.lib.event import (add_new_event, is_an_event_exists) 
+
 from oar.lib.compat import is_py2
 
 if is_py2:
@@ -75,10 +76,12 @@ def create_almighty_socket():  # pragma: no cover
         sys.exit(1)
 
 
+# TODO: refactor to use zmq
 def notify_almighty(message):  # pragma: no cover
     return almighty_socket.send(message)
 
 
+# TODO: refactor to use zmq
 def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -235,7 +238,7 @@ def update_current_scheduler_priority(job, value, state):
            ((state == 'STOP') and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0))):
 
             coeff = 1
-            if ('besteffort' in job.types) and (not ('timesharing' in job.types)):
+            if ('besteffort' in job.types) and ('timesharing' not in job.types):
                 coeff = 10
 
             index = 0
@@ -272,30 +275,6 @@ def update_scheduler_last_job_date(date, moldable_id):
     db.query(Resource).filter(AssignedResource.Moldable_job_id == moldable_id)\
                       .filter(AssignedResource.Resource_id == Resource.resource_id)\
                       .update({Resource.last_job_date: date})
-
-
-# EVENTS LOG MANAGEMENT
-
-# add a new entry in event_log table
-# args : database ref, event type, job_id , description
-def add_new_event(type, job_id, description):
-    event_data = EventLog(type=type, job_id=job_id, date=get_date(),
-                          description=description[:255])
-    db.add(event_data)
-
-
-def is_an_event_exists(job_id, event):
-    res = db.query(func.count(EventLog.id)).filter(EventLog.job_id == job_id)\
-                                           .filter(EventLog.type == event)\
-                                           .scalar()
-    return res
-
-
-def get_job_events(job_id):
-    '''Get events for the specified job
-    '''
-    result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
-    return result
 
 
 def send_checkpoint_signal(job):

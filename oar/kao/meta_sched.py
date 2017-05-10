@@ -27,7 +27,9 @@ from oar.kao.job import (get_current_not_waiting_jobs,
                          resume_job_action, is_timesharing_for_two_jobs)
 
 from oar.lib.tools import (local_to_sql, add_new_event, duration_to_sql,
-                           get_job_events, send_checkpoint_signal)
+                           send_checkpoint_signal)
+
+from oar.lib.event import get_job_events
 
 import oar.lib.tools as tools
 

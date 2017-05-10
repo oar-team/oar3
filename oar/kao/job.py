@@ -17,7 +17,9 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.compat import iteritems, itervalues
 
-from oar.lib.tools import (update_current_scheduler_priority, add_new_event)
+from oar.lib.tools import update_current_scheduler_priority
+from oar.lib.event import add_new_event
+
 import oar.lib.tools as tools
 from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
 
@@ -25,7 +27,7 @@ from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
 from oar.kao.helpers import extract_find_assign_args
 
 
-logger = get_logger("oar.kamelot")
+logger = get_logger("oar.kamelot.job")
 
 ''' Use
 

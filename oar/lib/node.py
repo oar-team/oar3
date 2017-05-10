@@ -1,15 +1,15 @@
 # coding: utf-8
 
-#TODO move to oar.lib
-
 from __future__ import unicode_literals, print_function
 
-from sqlalchemy import func
+from sqlalchemy import (func, text, distinct)
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,
                      AssignedResource, get_logger)
 
-logger = get_logger("oar.kao.node")
+import oar.lib.tools as tools
+
+logger = get_logger('oar.lib.node')
 
 
 def get_nodes_with_state(nodes):
@@ -20,7 +20,7 @@ def get_nodes_with_state(nodes):
 
 
 def search_idle_nodes(date):
-    result = db.query(Resource.network_address).distinct()\
+    result = db.query(distinct(Resource.network_address))\
                .filter(Resource.id == GanttJobsResource.resource_id)\
                .filter(GanttJobsPrediction.start_time <= date)\
                .filter(Resource.network_address != '')\
@@ -89,9 +89,10 @@ def get_last_wake_up_date_of_node(hostname):
 
     return result
 
+
 def get_alive_nodes_with_jobs():
     """Returns the list of occupied nodes"""
-    result = db.query(Resource.network_address).distinct()\
+    result = db.query(distinct(Resource.network_address))\
                .filter(Resource.id == AssignedResource.resource_id)\
                .filter(AssignedResource.moldable_id == MoldableJobDescription.moldable_id)\
                .filter(MoldableJobDescription.moldable_id == Job.id)\
@@ -101,3 +102,36 @@ def get_alive_nodes_with_jobs():
                .all()
     return result
 
+
+def get_nodes_that_can_be_waked_up(date):
+    """Returns the list nodes that can be waked up from to the given date"""
+    result = db.query(distinct(Resource.network_address))\
+               .filter(Resource.state == 'Absent')\
+               .filter(Resource.available_upto > date)\
+               .all()
+    return result
+
+
+def get_nodes_with_given_sql(properties):
+    """Gets the nodes list with the given sql properties"""
+    result = db.query(Resource.network_address)\
+               .distinct()\
+               .filter(text(properties))\
+               .all()
+    return result
+
+
+def set_node_nextState(hostname, next_state):
+    """Sets the nextState field of a node identified by its network_address"""
+    db.query(Resource).filter(Resource.network_address == hostname).update(
+        {Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
+    db.commit()
+
+
+
+def change_node_state(node, state, config):
+    """Changes node state and notify central automaton"""
+    set_node_nextState(node, state)
+    remote_host = config('SERVER_HOSTNAME')
+    remote_port = config('SERVER_PORT')
+    tools.notify_tcp_socket(remote_host, remote_port, "ChState")

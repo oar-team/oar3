@@ -2,7 +2,22 @@
 # coding: utf-8
 """
 
-Examples:
+ This module is responsible of waking up / shutting down nodes
+ when the scheduler decides it (writes it on a named pipe)
+
+ CHECK command is sent on the zmq PULL socket oh Hulot:
+
+  - by MetaScheduler if there is no node to wake up / shut down in order:
+      - to check timeout and check memorized nodes list <TODO>
+      - to check booting nodes status
+
+  TOFINISH: Hulot will integrate window guarded launching processes
+  - by windowForker module:
+      - to avoid zombie process
+      - to messages received in queue (IPC)
+
+
+Example of received message:
 {
  "cmd": "WAKEUP",
  "nodes": ["node1", "node2" ] 
@@ -15,7 +30,10 @@ Examples:
 from multiprocessing import Process
 from oar.lib.compat import iterkeys
 from oar.lib import (config, get_logger)
-from oar.kao.node import (get_alive_nodes_with_jobs)
+from oar.lib.node import (get_alive_nodes_with_jobs, get_nodes_with_given_sql,
+                          change_node_state)
+from oar.lib.event import (add_new_event, add_new_event_with_host) 
+import oar.lib.tools as tools
 import zmq
 
 # Set undefined config value to default one
@@ -39,23 +57,18 @@ logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 def execute_action(command, nodes, cmd, forker_type):
     if nodes:
-        
+        pass
+    
 
+def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)):
+    # Checks if some nodes in list_to_remind can be processed 
+    for node, cmd_info in iteritems(nodes_list_to_remind):
+        if node not in nodes_list_running:
+            # move this node from reminded list to list to process
+            logger.debug("Adding '" + node + '=>' + cmd_info  + "' to list to process.")
+            nodes_list_to_process[node] = {'command': cmd_info['command'], 'timeout': -1}}
+            del nodes_list_to_remind[node]
 
-
-
-# Sends 'check' signal on the named pipe to Hulot
-def check():
-    #my @tab = ();
-    #return send_cmd_to_fifo( \@tab, "CHECK" );
-    pass
-
-def halt_nodes(nodes):
-    # return send_cmd_to_fifo( $nodes, "HALT" );
-    pass
-
-def wake_up_nodes(nodes):
-pass
 
 #Fill the timeouts hash with the different timeouts
 def fill_timeouts(str_timeouts):
@@ -109,6 +122,20 @@ class HulotClient(object):
             logger.error('Failed to connect to Hulot')
             exit(1)
 
+    # Sends 'check' signal on the named pipe to Hulot
+    def check(self):
+        #my @tab = ();
+        #return send_cmd_to_fifo( \@tab, "CHECK" );
+        pass
+
+    def halt_nodes(self, nodes):
+        # return send_cmd_to_fifo( $nodes, "HALT" );
+        pass
+
+    def wake_up_nodes(self, nodes):
+        pass
+
+            
 class Hulot(object):
 
     def __init__(self):
@@ -132,7 +159,8 @@ class Hulot(object):
             self.max_executors = -1
         else:
             self.max_executors = int(config('ENERGY_SAVING_WINDOW_FORKER_SIZE'))
-        
+
+        # TODO
         # Load state if exists
         
         #    if (-s "$runtime_directory/hulot_status.dump") {
@@ -163,32 +191,34 @@ class Hulot(object):
         # List of nodes corresponding to properties:
         #     $keepalive{<properties>}{"nodes"}=@;
 
-        
-        # Creates the fifo if it doesn't exist
-        #unless ( -p $FIFO ) {
-        #    unlink $FIFO;
-        #    system( 'mknod', '-m', '600', $FIFO, 'p' );
-        #}
-        #
-        ## Test if the FIFO has been correctly created
-        #unless ( -p $FIFO ) {
-        #    oar_error("[Hulot] Could not create the fifo $FIFO!\n");
-        #    exit(1);
-        #}
-        #
-        ## Create message queue for Inter Processus Communication
-        #$id_msg_hulot = msgget( IPC_PRIVATE, IPC_CREAT | S_IRUSR | S_IWUSR );
-        #if ( !defined $id_msg_hulot ) {
-        #        oar_error("[Hulot] Cannot create message queue : msgget failed\n");
-        #        exit(1);
-        #}
-        #
+        keepalive = {}
+        str_keepalive = config('ENERGY_SAVING_NODES_KEEPALIVE')
+
+        if not re.match(r'.+:\d+,*', str_keepalive):
+            logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
+            exit(3)
+        else:
+            for keepalive_item in re.split('\s*\&\s*', str_keepalive):
+                prop_nb = keepalive_item.strip(':')
+                properties = prop_nb[0]
+                nb_nodes = prop_nb[1]
+                if not re.match(r'^(\d+)$'):
+                    logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE ! (not an integer)')
+                    exit(2)
+                keepalive[properties] = {'nodes': [], 'min': nb_nodes}
+                logger.debug('Keepalive(' + properties + ') => ' + nb_nodes)
+                
+        # TODO
         #my $count_cycles;
         #
 
         
     def run(self, loop=True):
         logger.info("Starting Hulot's main loop")
+
+        nodes_list_to_process = {}
+        nodes_list_to_remind = {}
+        nodes_list_running = {}
 
         while True:
 
@@ -207,73 +237,146 @@ class Hulot(object):
 
             # Identify idle and occupied nodes 
             all_occupied_nodes = get_alive_nodes_with_jobs()
-            nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(get_date())
+            nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(tools.get_date())
+
+            for properties in iterkeys(keepalive):
+                occupied_nodes = []
+                idle_nodes = []
+                keepalive[properties]['nodes'] = [p for in get_nodes_with_given_sql(properties)]
+                keepalive[properties]['current_idle'] = 0
+                alive_nodes = get_nodes_with_given_sql(properties +
+                                                       "and (state='Alive' or next_state='Alive')")
+                for alive_node in alive_nodes:
+                    if alive_node in all_occupied_nodes:
+                        occupied_nodes.append(alive_node)
+                    else:
+                        keepalive[properties]['current_idle'] += 1
+                        idle_nodes.append(alive_node)
+                        
+                logger.debug('current_idle('+ properties + ') => ' + keepalive[properties]['current_idle'])
 
 
-            #for properties in iterkeys(keepalive):
-                
-            
-            # Identify idle and occupied nodes           
- #           my @all_occupied_nodes=OAR::IO::get_alive_nodes_with_jobs($base);
- #           my @nodes_that_can_be_waked_up=OAR::IO::get_nodes_that_can_be_waked_up($base,OAR::IO::get_date($base));
- #           foreach my $properties (keys %keepalive) {
- #             my @occupied_nodes;
- #             my @idle_nodes;
- #             $keepalive{$properties}{"nodes"} =
- #                [ OAR::IO::get_nodes_with_given_sql($base,$properties) ];
- #             $keepalive{$properties}{"cur_idle"}=0;
- #             foreach my $alive_node (OAR::IO::get_nodes_with_given_sql($base,
- #                                       $properties. " and (state='Alive' or next_state='Alive')")) {
- #               if (grep(/^$alive_node$/,@all_occupied_nodes)) {
- #                 push(@occupied_nodes,$alive_node);
- #               }else{
- #                 $keepalive{$properties}{"cur_idle"}+=1;
- #                 push(@idle_nodes,$alive_node);
- #               }
- #             }
- #             #oar_debug("[Hulot] cur_idle($properties) => "
- #             #     .$keepalive{$properties}{"cur_idle"}."\n");
- #
- #             #print DUMP "point 3:"; print `ps -p $pid -o rss h >> /tmp/hulot_dump`; 
- #
- #             # Wake up some nodes corresponding to properties if needed
- #             my $ok_nodes=$keepalive{$properties}{"cur_idle"}
- #                           - $keepalive{$properties}{"min"};
- #             my $wakeable_nodes=@{$keepalive{$properties}{"nodes"}}
- #                           - @idle_nodes - @occupied_nodes;
- #             while ($ok_nodes < 0 && $wakeable_nodes > 0) {
- #               foreach my $node (@{$keepalive{$properties}{"nodes"}}) {
- #                 unless (grep(/^$node$/,@idle_nodes) || grep(/^$node$/,@occupied_nodes)) {
- #                   # we have a good candidate to wake up
- #                   # now, check if the node has a good status
- #                   $wakeable_nodes--;
- #                   if (grep(/^$node$/,@nodes_that_can_be_waked_up)) {
- #                     $ok_nodes++;
- #                     # add WAKEUP:$node to list of commands if not already
- #                     # into the current command list
- #                     if (not defined($nodes_list_running{$node})) {
- #                       $nodes_list_to_process{$node} =
- #                         { 'command' => "WAKEUP", 'timeout' => -1 };
- #                       oar_debug("[Hulot] Waking up $node to satisfy '$properties' keepalive (ok_nodes=$ok_nodes, wakeable_nodes=$wakeable_nodes)\n");
- #                     }else{
- #                        if ($nodes_list_running{$node}->{'command'} ne "WAKEUP") {
- #                        oar_debug("[Hulot] Wanted to wake up $node to satisfy '$properties' keepalive, but a command is already running on this node. So doing nothing and waiting for the next cycles to converge.\n");
- #                        }
- #                     }
- #                   }
- #                   last if ($ok_nodes >=0 || $wakeable_nodes <= 0);
- #                 }
- #               }
- #             }
- #           }
- #
+                # Wake up some nodes corresponding to properties if needed
+                ok_nodes = keepalive[properties]['current_idle'] -  keepalive[properties]['min']
+                nodes = keepalive[properties]['nodes']
+                wakeable_nodes = [n for n in nodes if (n not in occupied_nodes) and (n not in idle_nodes)]
 
-
-######################
-
-
-
+                for node in wakeable_nodes:
+                    if ok_nodes >= 0:
+                        break
+                    # we have a good candidate to wake up
+                    # now, check if the node has a good status
+                    if node in nodes_that_can_be_waked_up:
+                        ok_nodes += 1
+                        # add WAKEUP: node to list of commands if not already
+                        # into the current command list
+                        if node not in nodes_list_running:
+                            nodes_list_running[node] =  { 'command': 'WAKEUP', 'timeout': -1 }
+                            logger.debug('Waking up ' + node + " to satisfy '" + properties + "' keepalive (ok_nodes=" +\
+                                         ok_nodes + ', wakeable_nodes=' + len(wakeable_nodes))
+                        else:
+                            if nodes_list_running[node]['command'] != 'WAKEUP':
+                                logger.debug('Wanted to wake up ' + node + " to satisfy '" + properties +\
+                                             "' keepalive, but a command is already running on this node. " +\
+                                             'So doing nothing and waiting for the next cycles to converge.')
  
+            # Retrieve list of nodes having at least one resource Alive
+            nodes_alive = get_nodes_with_given_sql("state='Alive'")
+            
+            # Checks if some booting nodes need to be suspected
+            for node, cmd_info in iteritems(nodes_list_running):
+                if cmd_info['command'] == 'WAKEUP':
+                    if node in nodes_alive:
+                        logger.debug("Booting node '" + node + "' seems now up, so removing it from running list.")
+                        # Remove node from the list running nodes
+                        del nodes_list_running[node]
+                    elif tools.get_date > cmd_info['timeout']:
+                         change_node_state(node, 'Suspected', config)
+                         str = '[Hulot] Node ' + node + 'was suspected because it did not wake up before the end of the timeout'
+                         add_new_event_with_host('LOG_SUSPECTED', 0, str, [node])
+                         # Remove suspected node from the list running nodes
+                         del nodes_list_running[node]
+                         # Remove this node from received list (if node is present) because it was suspected
+                         del nodes[node]
+                         
+            # Check if some nodes in list_to_remind can be processed
+            check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)
+
+            # Checking if each couple node/command was already received or not
+            for node in nodes:
+                node_finded = False
+                node_toAdd = False
+                node_toRemind = False
+                if nodes_list_running:
+                    # Checking
+                    for node_running, cmd_info in iteritems(nodes_list_running):
+                        if node == node_running:
+                            node_finded = True
+                            if command != cmd_info['command']:
+                                # This node is already planned for an other action
+                                # We have to keep in memory this new couple node/command
+                                node_toRemind = True
+                            else:
+                                logger.debug("Command '" + cmd_info['command'] + "' is already running on node '" + node + "'")
+                                
+                    if not node_finded:
+                        node_toAdd = True
+                                
+                else:
+                    node_toAdd = True
+
+                if node_toAdd:
+                    # Adding couple node/command to the list to process
+                    logger.debug("Adding '" + node + '=>' + command +"' to list to process")
+                    nodes_list_to_process[node] = {'command':command, 'timeout': -1}
+                    
+                if node_toRemind:
+                    # Adding couple node/command to the list to remind
+                    logger.debug("Adding '" + node + '=>' + command +"' to list to remember")
+                    nodes_list_to_remind[node] = {'command': command, 'timeout': -1}
+
+                    
+            # Creating command list
+            command_toLaunch = []
+            match = False
+            # Get the timeout taking into account the number of nodes
+            # already waking up + the number of nodes to wake up
+            timeout = get_timeout(timeouts, len(nodes_list_running) + len(nodes_list_to_process))
+
+            for node, cmd_info in iteritems(nodes_list_to_process):
+                cmd = cmd_info['command']
+                if cmd == 'WAKEUP':
+                    #Save the timeout for the nodes to be processed.
+                    cmd_info['timeout'] = tools.get_date() + timeout
+                    command_toLaunch.append('WAKEUP:' + node)
+                elif cmd =='HALT':
+                    # Don't halt nodes that needs to be kept alive
+                    match = False
+                    for properties, prop_info in iteritems(keepalive):
+                        nodes = prop_info['nodes']
+                        if node in nodes:
+                          if prop_info['current_idle'] <= prop_info['min']:
+                              logger.debug("Not halting '" + node + "' because I need to keep alive " +\
+                                            prop_info['min'] + " nodes having '" + properties + "'")
+                              match = True
+                              del nodes_list_running[node]
+                              del nodes_list_to_process[node]
+                    # If the node is ok to be halted
+                    if not match:
+                        # Update the keepalive counts
+                        for properties, prop_info in iteritems(keepalive):
+                            nodes = prop_info['nodes']
+                            if node in nodes:
+                                prop_info['current_idle'] -= 1
+                                
+                        # Change state node to "Absent" and halt it
+                        change_node_state(node, 'Absent')
+                        logger.debug("Hulot module puts node '" + node + "' in energy saving mode (state~Absent)")
+                        command_toLaunch.append('HALT:' + node)
+                         
+                else:
+                   logger.error("Unknown command: '" + cmd + "' for node '" + node + "'")     
+                   exit(1)            
             
             logger.debug('Launching commands to nodes')
             # Launching commands
@@ -288,10 +391,7 @@ class Hulot(object):
                         if not executor.is_alive():
                             executors.remove(executor)
                     # sleep a little
-                    
-                        
-                
-
+            
 
             # From Hulot.pm
             # Suicide to workaround memory leaks. Almighty will restart hulot.
