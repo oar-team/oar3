@@ -26,6 +26,8 @@ Example of received message:
 
 """
 
+import os
+import os.path
 
 from multiprocessing import Process
 from oar.lib.compat import iterkeys
@@ -162,22 +164,16 @@ class Hulot(object):
 
         # TODO
         # Load state if exists
-        
-        #    if (-s "$runtime_directory/hulot_status.dump") {
-        #      my $ref = do "$runtime_directory/hulot_status.dump";
-        #      if ($ref) {
-        #        if (defined($ref->[0]) && defined($ref->[1]) &&
-        #            ref($ref->[0]) eq "HASH" && ref($ref->[1]) eq "HASH") {
-        #          oar_debug("[Hulot] State file found, loading it\n");
-        #          %nodes_list_running = %{$ref->[0]};
-        #          %nodes_list_to_remind = %{$ref->[1]};
-        #        }
-        #      }
-        #    }
-        #    unlink "$runtime_directory/hulot_status.dump";
-        #
+        hulot_status_dump_name = runtime_directory + 'hulot_status.dump'
+        if os.path.isfile(hulot_status_dump_name):
+            with open(hulot_status_dump_name, 'rb') as f:
+                hulot_status_dump = pickle.load(f)
+                nodes_list_running = hulot_status_dump['nodes_list_running']
+                nodes_list_to_remind = hulot_status_dump['nodes_list_to_remind']
 
-        ############################################
+                #with open('obj/'+ name + '.pkl', 'wb') as f:
+                #
+            os.remove(hulot_status_dump_name)
         
         # Init keepalive values ie construct a hash:
         #      sql properties => number of nodes to keepalive
@@ -390,12 +386,28 @@ class Hulot(object):
                     for executor in executors:
                         if not executor.is_alive():
                             executors.remove(executor)
-                    # sleep a little
-            
+                    # TODO, sleep a little
 
-            # From Hulot.pm
-            # Suicide to workaround memory leaks. Almighty will restart hulot.
-            # TODO ?
+
+        # Adds to running list last new launched commands
+        for node, cmd_info in iteritems(nodes_list_to_process):
+            nodes_list_running[node] = cmd_info
+
+        # Cleaning the list to process
+        nodes_list_to_process = {}
+
+        # From Hulot.pm
+        # Suicide to workaround eventaul memory leaks. Almighty will restart hulot.
+        # TODO ? do we need it ?
+        count_cycles += 1
+
+        if count_cycles >= max_cycles:
+            # Save state
+            with open(hulot_status_dump_name, 'wb') as f:
+                hulot_status_dump_name = {'nodes_list_running': nodes_list_running,
+                                          'nodes_list_to_remind': nodes_list_to_remind }
+                pickle.dump(hulot_status_dump_name, f, pickle.HIGHEST_PROTOCOL)
+            exit(42)
             
         if not loop:
             break

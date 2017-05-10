@@ -17,7 +17,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.compat import iteritems, itervalues
 
-from oar.lib.tools import update_current_scheduler_priority
+from oar.kao.tools import update_current_scheduler_priority
 from oar.lib.event import add_new_event
 
 import oar.lib.tools as tools
