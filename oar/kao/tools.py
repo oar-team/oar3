@@ -1,7 +1,8 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
-from oar.lib import (db, config, get_logger)
+from sqlalchemy import distinct
+from oar.lib import (db, config, get_logger, AssignedResource, Resource,)
 from oar.lib.event import (add_new_event, is_an_event_exists) 
 
 logger = get_logger("oar.kao.tools")

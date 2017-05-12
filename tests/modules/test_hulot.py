@@ -12,8 +12,6 @@ import zmq
 import oar.lib.tools
 
 
-
-
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'HULOT_SERVER': 'localhost',
