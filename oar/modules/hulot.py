@@ -27,13 +27,16 @@ Example of received message:
 
 import os
 import os.path
+import re
+import pickle
+import socket
 
 from multiprocessing import (Process, Pool, TimeoutError)
 
-from oar.lib.compat import iterkeys
+from oar.lib.compat import (iterkeys, iteritems)
 from oar.lib import (config, get_logger)
 from oar.lib.node import (get_alive_nodes_with_jobs, get_nodes_with_given_sql,
-                          change_node_state)
+                          change_node_state, get_nodes_that_can_be_waked_up)
 from oar.lib.event import (add_new_event, add_new_event_with_host) 
 import oar.lib.tools as tools
 import zmq
@@ -58,28 +61,31 @@ config.setdefault_config(DEFAULT_CONFIG)
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 
-def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)):
+def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process):
     # Checks if some nodes in list_to_remind can be processed 
     for node, cmd_info in iteritems(nodes_list_to_remind):
         if node not in nodes_list_running:
             # move this node from reminded list to list to process
             logger.debug("Adding '" + node + '=>' + cmd_info  + "' to list to process.")
-            nodes_list_to_process[node] = {'command': cmd_info['command'], 'timeout': -1}}
+            nodes_list_to_process[node] = {'command': cmd_info['command'], 'timeout': -1}
             del nodes_list_to_remind[node]
 
 
 #Fill the timeouts hash with the different timeouts
 def fill_timeouts(str_timeouts):
-
-    # Timeout to consider a node broken (suspected) if it has not woken up
-    # The value can be an integer of seconds or a set of pairs.
-    # For example, "1:500 11:1000 21:2000" will produce a timeout of 500
-    # seconds if 1 to 10 nodes have to wakeup, 1000 seconds if 11 t 20 nodes
-    # have to wake up and 2000 seconds otherwise.
-    #ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT="900"
+    """
+     Timeout to consider a node broken (suspected) if it has not woken up
+     The value can be an integer of seconds or a set of pairs.
+     For example, "1:500 11:1000 21:2000" will produce a timeout of 500
+     seconds if 1 to 10 nodes have to wakeup, 1000 seconds if 11 t 20 nodes
+     have to wake up and 2000 seconds otherwise.
+     ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT="900"
+    """
 
     timeouts = {}
-    if re.match(r'^\s*\d+\s*$', str_timeouts):
+    if isinstance(str_timeouts, int):
+        timeouts[1] = str_timeouts
+    elif re.match(r'^\s*\d+\s*$', str_timeouts):
         timeouts[1] = int(str_timeouts)
     else:
         #Remove front and final spaces
@@ -94,7 +100,7 @@ def fill_timeouts(str_timeouts):
     if not timeouts:
         timeouts[1] = 900
         logger.warning('Timeout not properly defined, using default value: ' + str(timeouts[1]))
-        
+
     return timeouts
 
 #Choose a timeout based on the number of nodes to wake up
@@ -102,7 +108,7 @@ def get_timeout(timeouts, nb_nodes):
 
     timeout = timeouts[1]
     #Search for the timeout of the corresponding interval
-    for nb in iterkeys(timeouts).sort():
+    for nb in sorted(iterkeys(timeouts)):
         if nb_nodes < nb:
             break
         timeout = timeouts[nb]
@@ -115,23 +121,19 @@ class HulotClient(object):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUSH) # to signal Almighty
         try:
-            self.socket.connect('tcp://' + config['HULOT_SERVER'] + ':' + config['HULOT_PORT'])
+            self.socket.connect('tcp://' + config['HULOT_SERVER'] + ':' + str(config['HULOT_PORT']))
         except:
             logger.error('Failed to connect to Hulot')
             exit(1)
 
-    # Sends 'check' signal on the named pipe to Hulot
     def check(self):
-        #my @tab = ();
-        #return send_cmd_to_fifo( \@tab, "CHECK" );
-        pass
+        self.socket.send_json({'cmd':'CHECK'})
 
     def halt_nodes(self, nodes):
-        # return send_cmd_to_fifo( $nodes, "HALT" );
-        pass
-
+        self.socket.send_json({'cmd':'HALT', 'nodes':nodes})
+        
     def wake_up_nodes(self, nodes):
-        pass
+        self.socket.send_json({'cmd':'WAKEUP', 'nodes':nodes})
 
             
 class Hulot(object):
@@ -145,18 +147,19 @@ class Hulot(object):
         ip_addr_hulot = socket.gethostbyname(config['HULOT_SERVER'])
         self.socket = self.context.socket(zmq.PULL)
         try:
-            self.socket.bind('tcp://' + ip_addr_hulot + ':' + config['HULOT_PORT'])
-         except:
+            self.socket.bind('tcp://' + ip_addr_hulot + ':' + str(config['HULOT_PORT']))
+        except:
             logger.error('Failed to bind Hulot endpoint')
             exit(1)
 
-        self.executors_socket = self.context.socket(zmq.PULL)
-        try:
-            self.socket.bind('ipc://tmp/oar3_executor_notification')
-         except:
-            logger.error('Failed to bind Hulot endpoint to receive executor notifications')
-            exit(1)
-        self.executors_socket.RCVTIMEO = 0 # Set to non-blocking socket
+        #self.executors_socket = self.context.socket(zmq.PULL)
+        #try:
+        #    self.socket.bind('ipc://tmp/oar3_executor_notification')
+        #except:
+        #    logger.error('Failed to bind Hulot endpoint to receive executor notifications')
+        #    exit(1)
+
+        #self.executors_socket.RCVTIMEO = 0 # Set to non-blocking socket
         
         self.timeouts = fill_timeouts(config['ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT'])
 
@@ -167,16 +170,18 @@ class Hulot(object):
         self.max_executors = int(config['ENERGY_SAVING_WINDOW_FORKER_SIZE'])
 
         # Load state if exists
-        hulot_status_dump_name = runtime_directory + 'hulot_status.dump'
-        if os.path.isfile(hulot_status_dump_name):
-            with open(hulot_status_dump_name, 'rb') as f:
+        self.nodes_list_running = {}
+        self.nodes_list_to_remind = {}
+        self.hulot_status_dump_name = config['OAR_RUNTIME_DIRECTORY'] + 'hulot_status.dump'
+        if os.path.isfile(self.hulot_status_dump_name):
+            with open(self.hulot_status_dump_name, 'rb') as f:
                 hulot_status_dump = pickle.load(f)
-                nodes_list_running = hulot_status_dump['nodes_list_running']
-                nodes_list_to_remind = hulot_status_dump['nodes_list_to_remind']
+                self.nodes_list_running = hulot_status_dump['nodes_list_running']
+                self.nodes_list_to_remind = hulot_status_dump['nodes_list_to_remind']
 
                 #with open('obj/'+ name + '.pkl', 'wb') as f:
                 #
-            os.remove(hulot_status_dump_name)
+            os.remove(self.hulot_status_dump_name)
         
         # Init keepalive values ie construct a hash:
         #      sql properties => number of nodes to keepalive
@@ -190,34 +195,36 @@ class Hulot(object):
         # List of nodes corresponding to properties:
         #     $keepalive{<properties>}{"nodes"}=@;
 
-        keepalive = {}
+        self.keepalive = {}
         str_keepalive = config['ENERGY_SAVING_NODES_KEEPALIVE']
 
         if not re.match(r'.+:\d+,*', str_keepalive):
             logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
             exit(3)
         else:
-            for keepalive_item in re.split('\s*\&\s*', str_keepalive):
-                prop_nb = keepalive_item.strip(':')
+            for keepalive_item in re.split(r'\s*\&\s*', str_keepalive):
+                prop_nb = keepalive_item.split(':')
                 properties = prop_nb[0]
                 nb_nodes = prop_nb[1]
-                if not re.match(r'^(\d+)$'):
+                if not re.match(r'^(\d+)$', nb_nodes):
                     logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE ! (not an integer)')
                     exit(2)
-                keepalive[properties] = {'nodes': [], 'min': nb_nodes}
+                self.keepalive[properties] = {'nodes': [], 'min': int(nb_nodes)}
                 logger.debug('Keepalive(' + properties + ') => ' + nb_nodes)
-                
+
         # TODO
         #my $count_cycles;
         #
 
-        
+
     def run(self, loop=True):
         logger.info("Starting Hulot's main loop")
 
         nodes_list_to_process = {}
-        nodes_list_to_remind = {}
-        nodes_list_running = {}
+        nodes_list_to_remind = self.nodes_list_to_remind
+        nodes_list_running = self.nodes_list_running
+        keepalive = self.keepalive
+        count_cycles = 1
 
         while True:
 
@@ -229,19 +236,19 @@ class Hulot(object):
                 nodes = message['nodes']
 
             if command == 'CHECK':
-                logger.debug('Got request: ' + command) 
+                logger.debug('Got request: ' + command)
             else:
                 logger.debug('Got request: ' + command + ' for nodes: ' + str(nodes))
 
 
-            # Identify idle and occupied nodes 
+            # Identify idle and occupied nodes
             all_occupied_nodes = get_alive_nodes_with_jobs()
             nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(tools.get_date())
 
             for properties in iterkeys(keepalive):
                 occupied_nodes = []
                 idle_nodes = []
-                keepalive[properties]['nodes'] = [p for in get_nodes_with_given_sql(properties)]
+                keepalive[properties]['nodes'] = [p for p in get_nodes_with_given_sql(properties)]
                 keepalive[properties]['current_idle'] = 0
                 alive_nodes = get_nodes_with_given_sql(properties +
                                                        "and (state='Alive' or next_state='Alive')")
@@ -251,8 +258,9 @@ class Hulot(object):
                     else:
                         keepalive[properties]['current_idle'] += 1
                         idle_nodes.append(alive_node)
-                        
-                logger.debug('current_idle('+ properties + ') => ' + keepalive[properties]['current_idle'])
+
+                logger.debug('current_idle('+ properties + ') => ' +\
+                             str(keepalive[properties]['current_idle']))
 
 
                 # Wake up some nodes corresponding to properties if needed
@@ -270,18 +278,19 @@ class Hulot(object):
                         # add WAKEUP: node to list of commands if not already
                         # into the current command list
                         if node not in nodes_list_running:
-                            nodes_list_running[node] =  { 'command': 'WAKEUP', 'timeout': -1 }
-                            logger.debug('Waking up ' + node + " to satisfy '" + properties + "' keepalive (ok_nodes=" +\
-                                         ok_nodes + ', wakeable_nodes=' + len(wakeable_nodes))
+                            nodes_list_running[node] = {'command': 'WAKEUP', 'timeout': -1}
+                            logger.debug('Waking up ' + node + " to satisfy '" + properties +\
+                                         "' keepalive (ok_nodes=" + ok_nodes +\
+                                         ', wakeable_nodes=' + len(wakeable_nodes))
                         else:
                             if nodes_list_running[node]['command'] != 'WAKEUP':
                                 logger.debug('Wanted to wake up ' + node + " to satisfy '" + properties +\
                                              "' keepalive, but a command is already running on this node. " +\
                                              'So doing nothing and waiting for the next cycles to converge.')
- 
+
             # Retrieve list of nodes having at least one resource Alive
             nodes_alive = get_nodes_with_given_sql("state='Alive'")
-            
+
             # Checks if some booting nodes need to be suspected
             for node, cmd_info in iteritems(nodes_list_running):
                 if cmd_info['command'] == 'WAKEUP':
@@ -290,14 +299,15 @@ class Hulot(object):
                         # Remove node from the list running nodes
                         del nodes_list_running[node]
                     elif tools.get_date > cmd_info['timeout']:
-                         change_node_state(node, 'Suspected', config)
-                         str = '[Hulot] Node ' + node + 'was suspected because it did not wake up before the end of the timeout'
-                         add_new_event_with_host('LOG_SUSPECTED', 0, str, [node])
-                         # Remove suspected node from the list running nodes
-                         del nodes_list_running[node]
-                         # Remove this node from received list (if node is present) because it was suspected
-                         del nodes[node]
-                         
+                        change_node_state(node, 'Suspected', config)
+                        info = 'Node ' + node +\
+                               'was suspected because it did not wake up before the end of the timeout'
+                        add_new_event_with_host('LOG_SUSPECTED', 0, info, [node])
+                        # Remove suspected node from the list running nodes
+                        del nodes_list_running[node]
+                        # Remove this node from received list (if node is present) because it was suspected
+                        del nodes[node]
+ 
             # Check if some nodes in list_to_remind can be processed
             check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)
 
@@ -328,19 +338,19 @@ class Hulot(object):
                     # Adding couple node/command to the list to process
                     logger.debug("Adding '" + node + '=>' + command +"' to list to process")
                     nodes_list_to_process[node] = {'command':command, 'timeout': -1}
-                    
+
                 if node_toRemind:
                     # Adding couple node/command to the list to remind
                     logger.debug("Adding '" + node + '=>' + command +"' to list to remember")
                     nodes_list_to_remind[node] = {'command': command, 'timeout': -1}
 
-                    
+
             # Creating command list
             command_toLaunch = []
             match = False
             # Get the timeout taking into account the number of nodes
             # already waking up + the number of nodes to wake up
-            timeout = get_timeout(timeouts, len(nodes_list_running) + len(nodes_list_to_process))
+            timeout = get_timeout(self.timeouts, len(nodes_list_running) + len(nodes_list_to_process))
 
             for node, cmd_info in iteritems(nodes_list_to_process):
                 cmd = cmd_info['command']
@@ -348,18 +358,20 @@ class Hulot(object):
                     #Save the timeout for the nodes to be processed.
                     cmd_info['timeout'] = tools.get_date() + timeout
                     command_toLaunch.append(('WAKEUP', node))
-                elif cmd =='HALT':
+                elif cmd == 'HALT':
                     # Don't halt nodes that needs to be kept alive
                     match = False
                     for properties, prop_info in iteritems(keepalive):
                         nodes = prop_info['nodes']
                         if node in nodes:
-                          if prop_info['current_idle'] <= prop_info['min']:
-                              logger.debug("Not halting '" + node + "' because I need to keep alive " +\
-                                            prop_info['min'] + " nodes having '" + properties + "'")
-                              match = True
-                              del nodes_list_running[node]
-                              del nodes_list_to_process[node]
+                            if prop_info['current_idle'] <= prop_info['min']:
+                                logger.debug("Not halting '" + node +
+                                             "' because I need to keep alive " +
+                                             prop_info['min'] + " nodes having '" +\
+                                             properties + "'")
+                            match = True
+                            del nodes_list_running[node]
+                            del nodes_list_to_process[node]
                     # If the node is ok to be halted
                     if not match:
                         # Update the keepalive counts
@@ -367,16 +379,18 @@ class Hulot(object):
                             nodes = prop_info['nodes']
                             if node in nodes:
                                 prop_info['current_idle'] -= 1
-                                
+
                         # Change state node to "Absent" and halt it
-                        change_node_state(node, 'Absent')
-                        logger.debug("Hulot module puts node '" + node + "' in energy saving mode (state~Absent)")
+                        change_node_state(node, 'Absent', config)
+                        logger.debug("Hulot module puts node '" + node +\
+                                     "' in energy saving mode (state~Absent)")
                         command_toLaunch.append(('HALT', node))
-                         
+
                 else:
-                   logger.error("Unknown command: '" + cmd + "' for node '" + node + "'")     
-                   exit(1)            
-            
+                    logger.error("Unknown command: '" + cmd +\
+                                 "' for node '" + node + "'")
+                    exit(1)
+
             logger.debug('Launching commands to nodes')
             # Launching commands
             if command_toLaunch:
@@ -384,7 +398,7 @@ class Hulot(object):
                     #Strings that will be passed to wakeup and shutdown commands
                     nodes_toWakeUp = []
                     nodes_toShutDown = []
-                    
+
                     #Build strings to pass to wakeup and shutdown commands
                     for cmd_node in command_toLaunch:
                         cmd, node = cmd_node
@@ -396,41 +410,42 @@ class Hulot(object):
                             nodes_toWakeUp.append(node)
                             add_new_event_with_host('WAKEUP_NODE', 0,
                                                     'Node ' + node + ' wake-up request', [node])
-                    
-                        executor = Process(target=command_executor, cmd_node)
+
+                        executor = Process(target=command_executor, args=(cmd_node,))
                         executor.start()
                         executor.join()
-                        #TODO add Timeout
+                        # TODO add Timeout
                 else:
                     # Use the window forker to execute commands in parallel
                     logger.debug('Launching commands to nodes by using WindowForker')
-                    window_forker = Process(target=window_forker, command_toLaunch)
-                    window_forker.start()
-                    window_forker.join()
+                    w_forker = Process(target=window_forker, args=(command_toLaunch,))
+                    w_forker.start()
+                    w_forker.join()
 
-        # Adds to running list last new launched commands
-        for node, cmd_info in iteritems(nodes_list_to_process):
-            nodes_list_running[node] = cmd_info
 
-        # Cleaning the list to process
-        nodes_list_to_process = {}
+            # Adds to running list last new launched commands
+            for node, cmd_info in iteritems(nodes_list_to_process):
+                nodes_list_running[node] = cmd_info
 
-        # From Hulot.pm
-        # Suicide to workaround eventaul memory leaks. Almighty will restart hulot.
-        # TODO ? do we need it ?
-        count_cycles += 1
+            # Cleaning the list to process
+            nodes_list_to_process = {}
 
-        if count_cycles >= max_cycles:
-            # Save state
-            with open(hulot_status_dump_name, 'wb') as f:
-                hulot_status_dump_name = {'nodes_list_running': nodes_list_running,
-                                          'nodes_list_to_remind': nodes_list_to_remind }
-                pickle.dump(hulot_status_dump_name, f, pickle.HIGHEST_PROTOCOL)
-            exit(42)
-            
-        if not loop:
-            break
-        
+            # From Hulot.pm
+            # Suicide to workaround eventaul memory leaks. Almighty will restart hulot.
+            # TODO ? do we need it ?
+            count_cycles += 1
+
+            if count_cycles >= config['ENERGY_MAX_CYCLES_UNTIL_REFRESH']:
+                # Save state
+                with open(self.hulot_status_dump_name, 'wb') as dump_file:
+                    hulot_status_dump_name = {'nodes_list_running': nodes_list_running,
+                                              'nodes_list_to_remind': nodes_list_to_remind}
+                    pickle.dump(hulot_status_dump_name, dump_file, pickle.HIGHEST_PROTOCOL)
+                exit(42)
+
+            if not loop:
+                break
+
 if __name__ == '__main__':  # pragma: no cover
     hulot = Hulot()
     hulot.run()
@@ -446,7 +461,7 @@ def command_executor(cmd_node):
     # TODO returncode,
     exit_code = tools.call(command_to_exec, shell=True)
     return exit_code
-    
+
 def window_forker(commands, window_size, timeout):
     if not commands:
         logger.warning('WindowForker: /!\\ No command specified')
@@ -469,10 +484,10 @@ def window_forker(commands, window_size, timeout):
             add_new_event_with_host('WAKEUP_NODE', 0,
                                     'Node ' + node + ' wake-up request', [wakeup_nodes])
 
-        pool = Pool(processes=window_size) 
-        executors = { pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in range(commands)}
+        pool = Pool(processes=window_size)
+        executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in range(commands)}
 
-        for executor, cmd in iteritems(executors):
+        for executor, cmd_node in iteritems(executors):
             try:
                 executor.wait(timeout)
             except TimeoutError:

@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals, print_function
 
-from sqlalchemy import (func, text, distinct)
+from sqlalchemy import (func, text, distinct, or_)
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,
                      AssignedResource, get_logger)
@@ -94,8 +94,8 @@ def get_alive_nodes_with_jobs():
     """Returns the list of occupied nodes"""
     result = db.query(distinct(Resource.network_address))\
                .filter(Resource.id == AssignedResource.resource_id)\
-               .filter(AssignedResource.moldable_id == MoldableJobDescription.moldable_id)\
-               .filter(MoldableJobDescription.moldable_id == Job.id)\
+               .filter(AssignedResource.moldable_id == MoldableJobDescription.id)\
+               .filter(MoldableJobDescription.job_id == Job.id)\
                .filter(Job.state.in_(('Waiting', 'Hold', 'toLaunch', 'toError', 'toAckReservation',
                                       'Launching', 'Running ', 'Suspended ', 'Resuming ')))\
                .filter(or_(Resource.state == 'Alive', Resource.next_state == 'Alive'))\

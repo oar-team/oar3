@@ -11,6 +11,9 @@
      LEONEXTERMINATE
 
 
+ TODO: Doit ton 
+
+
    Example
 {
    "job_id": 5,
@@ -83,8 +86,10 @@ class BipbipCommander(object):
     def __init__(self):
         # Initialize zeromq context
         self.context = zmq.Context()
-        self.appendice = self.context.socket(zmq.PUSH) # to signal Almighty
-        self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
+
+        # TODO signal Almighty
+        #self.appendice = self.context.socket(zmq.PUSH) # to signal Almighty
+        #self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
 
 
         # IP addr is required when bind function is used on zmq socket

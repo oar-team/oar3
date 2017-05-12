@@ -310,7 +310,7 @@ class Almighty(object):
                 Redirect_STD_process = False
                 if Redirect_STD_process:
                     os.kill(Redirect_STD_process, signal.SIGKILL)
-                ipc_clean()
+                #TODO ipc_clean()
                 logger.warning("Stop Almighty\n")
                 # TODO: send_log_by_email("Stop OAR server", "[Almighty] Stop Almighty")
                 exit(10)
