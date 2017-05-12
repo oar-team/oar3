@@ -65,5 +65,14 @@ def test_hulot_check_1(monkeypatch):
     hulot = Hulot()
     hulot.run(False)
 
-# TODO
-# test fill_timeout 
+def test_hulot_halt_1(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['node1']}]
+    hulot = Hulot()
+    hulot.run(False)
+    # TODO TOFINISH
+
+def test_hulot_wakup_1(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['node1']}]
+    hulot = Hulot()
+    hulot.run(False)
+    # TODO TOFINISH
