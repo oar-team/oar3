@@ -30,7 +30,8 @@ requirements = [
     'pyzmq',
     'redis',
     'requests',
-    'interval_set'
+    'interval_set',
+    'pybatsim'
 ]
 
 if sys.version_info[0] == 2:
