@@ -34,15 +34,37 @@ def app(request):
     def teardown():
         db.sessionmaker.configure(query_cls=BaseQuery)
 
-    
     return app
 
 def test_app_frontend_index(client):
-    assert client.get(url_for('frontend.index')).status_code == 200
+    res = client.get(url_for('frontend.index'))
+    print(res.json)
+    assert res.status_code == 200 and 'api_timestamp' in res.json
+    assert 'links' in res.json
+
+def test_app_frontend_version(client):
+    res = client.get(url_for('frontend.version'))
+    print(res.json)
+    assert res.status_code == 200 and 'api_timestamp' in res.json
+    assert 'apilib_version' in res.json
+    
+    
+def test_app_frontend_whoami(client):
+    res = client.get(url_for('frontend.whoami'))
+    print(res.json)
+    assert res.status_code == 200 and 'api_timestamp' in res.json
+
+def test_app_fronend_timezone(client):
+    res = client.get(url_for('frontend.timezone'))
+    print(res.json)
+    assert res.status_code == 200 and 'api_timestamp' in res.json
 
 def test_app_resources_index(client):
-    assert client.get(url_for('resources.index')).status_code == 200
-    
+    res = client.get(url_for('resources.index'))
+    print(res.json)
+    assert res.status_code == 200 and 'api_timestamp' in res.json
+
+
 def test_app_jobs_index(client):
     assert client.get(url_for('jobs.index')).status_code == 200
 

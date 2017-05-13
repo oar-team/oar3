@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 from __future__ import division
 
@@ -34,12 +36,12 @@ def index():
 def version():
     """Give OAR and OAR API version.
 
-    Also gives the timezone of the API server.
+    TODO: Also gives the timezone of the API server.
     """
-    g.data['oar_server'] = '3.0.0 (Big Blue)'
-    g.data['oar_lib'] = oar.lib.VERSION
-    g.data['api'] = API_VERSION
-    g.data['api_lib'] = VERSION
+    g.data['oar_server_version'] = '3.0.0 (Big Blue)'
+    g.data['oar_lib_version'] = VERSION
+    g.data['api_version'] = API_VERSION
+    g.data['apilib_version'] = VERSION
 
 
 @app.route('/whoami')
@@ -53,29 +55,6 @@ def whoami():
 
 @app.route('/timezone')
 def timezone():
+    """Gives the timezone of the OAR API server. The api_timestamp given in each query is an UTC timestamp (epoch unix time). This timezone information allows you to re-construct the local time. Time is send by defaut (see __init__.py)"""
+   
     pass
-
-
-# @api.route('/jobs')
-# def jobs():
-#     pass
-
-
-# @api.route('/jobs/details')
-# def detailed_jobs():
-#     pass
-
-
-# @api.route('/jobs/table')
-# def jobs_table():
-#     pass
-
-
-# @api.route('/config')
-# def config():
-#     pass
-
-
-# @api.route('/admission_rules')
-# def admission_rules():
-#     pass
