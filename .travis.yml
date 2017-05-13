@@ -13,8 +13,9 @@ addons:
 language: python
 
 python:
+  # unused ? 
   - "2.7"
-  - "3.4"
+  - "3.5"
 
 env:
   - DB=postgresql
