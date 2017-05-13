@@ -8,7 +8,6 @@ from flask import url_for, g
 from oar.lib import db, Job
 from oar.lib.submission import (JobParameters, Submission,
                                 check_reservation, default_submission_config)
-#from oar.lib.submission import Submission
 
 from . import Blueprint
 from ..utils import Arg
@@ -22,8 +21,8 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 @app.route('/', methods=['GET'])
 @app.route('/<any(details, table):detailed>', methods=['GET'])
-@app.route('/nodes/<string:network_address>', methods=['GET'])
-@app.route('/ressources/<string:resource_id>/details', methods=['GET'])
+#@app.route('/nodes/<string:network_address>', methods=['GET'])  # TODO TOREMOVE ?
+#@app.route('/ressources/<string:resource_id>/details', methods=['GET']) # TODO TOREMOVE ?
 @app.args({'offset': Arg(int, default=0),
            'limit': Arg(int),
            'user': Arg(str),
@@ -32,7 +31,7 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
            'state': Arg([str, ','], dest='states'),
            'array': Arg(int, dest='array_id'),
            'ids': Arg([int, ':'], dest='job_ids')})
-
+# TODO network_address & resource_id
 # TOREMOVE @app.need_authentication() NOT MANDATORY
 #@app.need_authentication()
 def index(offset, limit, user, start_time, stop_time, states, array_id,
@@ -238,6 +237,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 @app.route('/<int:job_id>/resources', methods=['GET'])
 @app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
 def resources(job_id, offset, limit):
+   #TODO job_id 
     query = db.queries.get_job_resources()
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
@@ -251,7 +251,7 @@ def resources(job_id, offset, limit):
 
 @app.route('/<int:job_id>', methods=['GET'])
 @app.route('/<int:job_id>/<any(details, table):detailed>', methods=['GET'])
-def show(job_id,detailed=None):
+def show(job_id, detailed=None):
     job = db.query(Job).get_or_404(job_id)
     g.data.update(job.asdict())
     if detailed:
@@ -266,6 +266,7 @@ def show(job_id,detailed=None):
 @app.route('/<int:job_id>/nodes', methods=['GET'])
 @app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
 def nodes(job_id, offset, limit):
+    # TODO
     pass
 
 

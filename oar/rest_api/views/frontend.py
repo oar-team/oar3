@@ -18,12 +18,11 @@ app = Blueprint('frontend', __name__)
 def index():
     """ Get all main url section pages. """
     g.data['api_version'] = API_VERSION
-    g.data['apilib_version'] = VERSION
-    g.data['oar_version'] = '2.5.4 (Froggy Summer)'
+    g.data['apilib_version'] = API_VERSION
+    g.data['oar_version'] = VERSION
     g.data['links'] = []
-    endpoints = ('resources', 'full_resources', 'jobs',
-                 'detailed_jobs', 'jobs_table', 'config', 'admission_rules')
-    endpoints = ('resources',)
+    #endpoints = ('resources', 'jobs', 'config', 'admission_rules')
+    endpoints = ('resources', 'jobs')
     for endpoint in endpoints:
         g.data['links'].append({
             'rel': 'collection',
@@ -35,13 +34,13 @@ def index():
 @app.route('/version')
 def version():
     """Give OAR and OAR API version.
-
-    TODO: Also gives the timezone of the API server.
+       Also gives the timezone of the API server.
     """
-    g.data['oar_server_version'] = '3.0.0 (Big Blue)'
+    g.data['oar_server_version'] = VERSION
+    g.data['oar_version'] = VERSION
     g.data['oar_lib_version'] = VERSION
     g.data['api_version'] = API_VERSION
-    g.data['apilib_version'] = VERSION
+    g.data['apilib_version'] = API_VERSION
 
 
 @app.route('/whoami')

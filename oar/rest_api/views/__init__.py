@@ -129,6 +129,8 @@ class Blueprint(FlaskBlueprint):
         g.request_args = {}
         g.data = OrderedDict()
         g.data['api_timezone'] = 'UTC'
+        # timestamp is the time in seconds since the epoch
+        # (January 1, 1970, 00:00:00 (UTC)) as a int.
         g.data['api_timestamp'] = int(time.time())
 
     def _json_dumps(self, obj, **kwargs):

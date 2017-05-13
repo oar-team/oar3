@@ -1,0 +1,38 @@
+# -*- coding: utf-8 -*-
+
+import pytest
+
+from oar.rest_api.app import create_app
+from oar.rest_api.query import APIQuery
+
+from oar.lib import db
+from oar.lib.basequery  import BaseQuery
+
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj
+
+@pytest.yield_fixture(scope='function')
+def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost" + str(int(i / 2)))
+        yield
+
+@pytest.fixture
+def app(request):
+    app = create_app()
+    # force to use APIQuery needed when all tests are launched and previous ones have set BaseQuery
+    db.sessionmaker.configure(query_cls=APIQuery)
+
+    @request.addfinalizer
+    def teardown():
+        db.sessionmaker.configure(query_cls=BaseQuery)
+
+    return app
