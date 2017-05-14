@@ -32,18 +32,26 @@ def test_app_jobs_table(client):
     res = client.get(url_for('jobs.index', detailed='table'))
     print(res.json, len(res.json['items']))
     assert res.json['items'][0]['type'] == 'PASSIVE'
-    
+
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_jobs_get_one(client):
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     res = client.get(url_for('jobs.index', job_id=job_id))
     print(res.json, len(res.json['items']))
     assert res.json['items'][0]['id'] == job_id
-    
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_jobs_get_one_details(client):
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    res = client.get(url_for('jobs.index', job_id=job_id, detailed='details'))
+    print(res.json, len(res.json['items']))
+    assert res.json['items'][0]['id'] == job_id
+    assert res.json['items'][0]['type'] == 'PASSIVE'
+
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_forbidden(client):
     data = {'resource':[], 'command':'sleep "1"'}
-    res = client.post(url_for('jobs.submit'), data=data)  
+    res = client.post(url_for('jobs.submit'), data=data)
     assert res.status_code == 403
 
 @pytest.mark.usefixtures("minimal_db_initialization")
