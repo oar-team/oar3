@@ -302,6 +302,14 @@ def attach_nodes(job, jobs_resources):
             job['nodes'].append(node)
             network_addresses.append(node['network_address'])
 
+            
+@app.route('/<int:job_id>', methods=['DELETE'])]
+@app.route('/<any(array):array>/<int:job_id>', methods=['DELETE'])]
+@app.route('/<int:job_id>/deletions/new', methods=['POST'])]
+@app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST'])]
+def delete(id, array=None):
+    # TODO
+    pass
 
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
