@@ -151,7 +151,7 @@ class BaseQueryCollection(object):
     def get_gantt_visu_scheduled_jobs_resources(self, jobs):
         """Returns network_address allocated to a (waiting) reservation."""
         columns = ("id",)
-        job_id_column = MoldableJobDescription.moldable_id.label('job_id')
+        job_id_column = MoldableJobDescription.id.label('job_id')
         query = db.query(job_id_column.label('job_id'), Resource)\
                   .options(Load(Resource).load_only(*columns))\
                   .filter(Resource.id == GanttJobsResourcesVisu.resource_id)\

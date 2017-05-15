@@ -12,4 +12,4 @@ def test_app_resources_get_all(client):
     res = client.get(url_for('resources.index'))
     print(res.json, len(res.json['items']))
     assert res.status_code == 200
-    assert len(res.json['items']) == 5    
+    assert len(res.json['items']) == 10    

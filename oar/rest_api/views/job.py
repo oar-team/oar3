@@ -237,8 +237,9 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 @app.route('/<int:job_id>/resources', methods=['GET'])
 @app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
 def resources(job_id, offset, limit):
-   #TODO job_id 
-    query = db.queries.get_job_resources()
+    job = Job()
+    job.id = job_id
+    query = db.queries.get_assigned_one_job_resources([job])
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = page.links

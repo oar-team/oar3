@@ -5,6 +5,7 @@ import pytest
 from oar.rest_api.app import create_app
 from oar.rest_api.query import APIQuery
 
+import oar.lib.tools  # for monkeypatching
 from oar.lib import db
 from oar.lib.basequery  import BaseQuery
 
@@ -16,12 +17,28 @@ def ordered(obj):
     else:
         return obj
 
+#TODO TOREPLACE    
+node_list = []
+def assign_node_list(nodes): #TODO TOREPLACE
+    global node_list
+    node_list = nodes
+    
+@pytest.fixture(scope='function')
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'init_judas_notify_user', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
+    monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
+    monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
+    monkeypatch.setattr(oar.kao.tools, 'fork_and_feed_stdin',
+                        lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
+    
 @pytest.yield_fixture(scope='function')
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
         # add some resources
-        for i in range(5):
+        for i in range(10):
             db['Resource'].create(network_address="localhost" + str(int(i / 2)))
         yield
 
