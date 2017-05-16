@@ -970,7 +970,8 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
     prev_jid = 0
     roids = []
 
-    global job
+    job = None # global job
+
     if result:
         for x in result:
             j, start_time, resource_id, walltime, moldable_id = x
@@ -1032,7 +1033,7 @@ def get_jobs_in_multiple_states(states, resource_set):
     prev_jid = 0
     roids = []
 
-    global job
+    job = None # global job
 
     if result:
         for x in result:
