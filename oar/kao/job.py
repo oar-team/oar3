@@ -2,7 +2,6 @@
 """ Functions to manage jobs """
 from __future__ import unicode_literals, print_function
 
-import os
 from copy import deepcopy
 
 from sqlalchemy import distinct
@@ -18,7 +17,6 @@ from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.compat import iteritems, itervalues
 
 from oar.kao.tools import update_current_scheduler_priority
-from oar.lib.event import add_new_event
 
 import oar.lib.tools as tools
 from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
@@ -232,7 +230,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     res_constraints = []
     prev_mld_id_walltime = 0
 
-    global job
+    job = None # Global
 
     for x in result:
         # remove res_order
@@ -378,7 +376,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
     roids = []
     rid2jid = {}
 
-    global job
+    job = None # global job
 
     # (job, a, b, c) = req[0]
     if result:
@@ -903,49 +901,6 @@ def insert_job(**kwargs):
 
     return job_id
 
-
-def get_job(job_id):  # pragma: no cover
-    try:
-        job = db.query(Job).filter(Job.id == job_id).one()
-    except Exception as e:
-        logger.warning("get_job(" + str(job_id) + ") raises execption: " + str(e))
-        return None
-    else:
-        return job
-
-
-# frag_job
-def frag_job(jid):
-
-    if 'OARDO_USER' in os.environ:
-        luser = os.environ['OARDO_USER']
-    else:
-        luser = os.environ['USER']
-
-    job = get_job(jid)
-
-    if (job is not None) and ((luser == job.user)
-                              or (luser == 'oar')
-                              or (luser == 'root')):
-        res = db.query(FragJob).filter(FragJob.job_id == jid).all()
-
-        if len(res) == 0:
-
-            date = tools.get_date()
-            frajob = FragJob(job_id=jid, date=date)
-            db.add(frajob)
-            db.commit()
-            add_new_event("FRAG_JOB_REQUEST",
-                          jid, "User %s requested to frag the job %s"
-                          % (luser, str(jid)))
-            return 0
-        else:
-            # Job already killed
-            return -2
-    else:
-        return -1
-
-
 def set_job_resa_state(job_id, state):
     ''' sets the reservation field of the job of id passed in parameter
     parameters : base, jobid, state
@@ -1228,7 +1183,7 @@ def get_cpuset_values(cpuset_field, moldable_id):
 
     results = db.query(Resource)\
                 .filter(AssignedResource.moldable_id == moldable_id)\
-                .filter(AssignedResource.resource_id == Resource.id)\
+                .filter(AssignedResource.resource_id == Resource.id)
 
 
     # my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field

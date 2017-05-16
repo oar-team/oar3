@@ -6,6 +6,8 @@ import os
 import socket
 import signal
 import click
+from .utils import (print_warning, print_error, print_info, print_error_exit)
+
 click.disable_unicode_literals_warning = True
 
 from oar.lib import config
@@ -49,33 +51,6 @@ def resubmit_job(job_id):
     # TODO
     print('TODO resubmit_job')
     return ((-42, "Not yet implemented"), -1)
-
-
-def print_warning(*objs):
-    print('# WARNING: ', *objs, file=sys.stderr)
-
-
-def print_error(*objs):
-    print('# ERROR: ', *objs, file=sys.stderr)
-
-
-def print_info(*objs):
-    print('# INFO: ', *objs, file=sys.stderr)
-
-
-def print_error_exit(error, show_usage=True):
-    """Print error message, usage, and exit with the provided error code"""
-    error_code, error_msg = error
-    print_error(error_msg)
-    if show_usage:
-        usage()
-    exit(error_code)
-
-def usage():
-    '''Print usage message.'''
-    ctx = click.get_current_context()
-    click.echo(ctx.get_help())
-
 
 # Move to oar.lib.tool
 def signal_almighty(remote_host, remote_port, msg):

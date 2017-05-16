@@ -77,6 +77,8 @@ def create_almighty_socket():  # pragma: no cover
 
 # TODO: refactor to use zmq
 def notify_almighty(message):  # pragma: no cover
+    if not almighty_socket:
+        create_almighty_socket()
     return almighty_socket.send(message)
 
 

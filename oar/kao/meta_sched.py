@@ -12,11 +12,13 @@ from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
 from oar.lib.tools import (Popen, call, TimeoutExpired)
 from oar.lib.compat import iteritems
 
+from oar.lib.job_handling import (frag_job)
+
 from oar.kao.job import (get_current_not_waiting_jobs,
                          get_gantt_jobs_to_launch,
                          add_resource_job_pairs, set_job_state,
                          get_gantt_waiting_interactive_prediction_date,
-                         frag_job, set_job_resa_state, set_job_message,
+                         set_job_resa_state, set_job_message,
                          get_waiting_reservations_already_scheduled,
                          ALLOW, NO_PLACEHOLDER, JobPseudo,
                          save_assigns, set_job_start_time_assigned_moldable_id,
