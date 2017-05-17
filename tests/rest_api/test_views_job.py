@@ -3,6 +3,7 @@ import pytest
 from .conftest import ordered
 
 from flask import url_for
+from oar.lib import (db, Job)
 from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
@@ -74,7 +75,9 @@ def test_app_job_post(client):
     data = {'resource':[], 'command':'sleep "1"'}
     res = client.post(url_for('jobs.submit'), data=data, headers={'X_REMOTE_IDENT': 'bob'})
     print(res.json)
-    assert ordered(res.json['links'])==ordered([{'rel': 'rel', 'href': '/jobs/1'}])
+    job_ids = db.query(Job.id).all()
+    href = '/jobs/{}'.format(job_ids[0][0])
+    assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
     assert res.status_code == 200
 
 #@pytest.mark.usefixtures("minimal_db_initialization")
