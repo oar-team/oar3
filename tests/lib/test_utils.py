@@ -168,7 +168,24 @@ def test_to_json():
         def to_dict(self):
             return a
 
-    expected_json = """
+    expected_json_2x = """
+{
+    "name": "Monkey D. Luffy",
+    "birthday": "2015-07-19T09:14:22.140921",
+    "level": 90,
+    "length": "177.85",
+    "parents": {
+        "father": {
+            "name": "Monkey D. Dragon"
+        },
+        "mother": {
+            "name": "Unknown"
+        }
+    }
+}
+""".strip()
+
+    expected_json_3_5 = """
 {
     "name": "Monkey D. Luffy",
     "birthday": "2015-07-19T09:14:22.140921",
@@ -184,24 +201,12 @@ def test_to_json():
     }
 }
 """.strip()
-
-    expected_json_3_6 = """
-{
-    "name": "Monkey D. Luffy",
-    "birthday": "2015-07-19T09:14:22.140921",
-    "level": 90,
-    "length": 177.85,
-    "parents": {
-        "father": {
-            "name": "Monkey D. Dragon"
-        },
-        "mother": {
-            "name": "Unknown"
-        }
-    }
-}
-""".strip()
-
+    
+    if sys.version_info >= (3,5,1):
+        expected_json = expected_json_3_5
+    else:
+        expected_json = expected_json_2x
+    
     assert to_json(a) == expected_json
     assert to_json(FakeDict()) == expected_json
 
@@ -209,7 +214,4 @@ def test_to_json():
         class SimpleObject(object):
             def __repr__(self):
                 return "<SimpleObject>"
-        if sys.version_info >= (3,5):
-            assert to_json(SimpleObject()) == expected_json_3_5
-        else:
-            assert to_json(SimpleObject()) == expected_json
+        assert to_json(SimpleObject()) == expected_json
