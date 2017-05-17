@@ -36,6 +36,8 @@ requirements = [
 
 if sys.version_info[0] == 2:
     requirements.append('subprocess32')
+else:
+    requirements.append('simplejson')
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
