@@ -4,8 +4,7 @@ from __future__ import unicode_literals, print_function
 
 from copy import deepcopy
 
-from sqlalchemy import distinct
-from sqlalchemy import text
+from sqlalchemy import (text, distinct)
 from sqlalchemy.orm import aliased
 
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
