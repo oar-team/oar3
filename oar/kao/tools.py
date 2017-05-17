@@ -2,8 +2,9 @@
 from __future__ import unicode_literals, print_function
 
 from sqlalchemy import distinct
-from oar.lib import (db, config, get_logger, AssignedResource, Resource,)
-from oar.lib.event import (add_new_event, is_an_event_exists) 
+from oar.lib import (db, config, get_logger, AssignedResource, Resource)
+from oar.lib.event import (add_new_event, is_an_event_exists)
+from oar.lib.job_handling import get_job_types
 
 logger = get_logger("oar.kao.tools")
 
@@ -22,13 +23,19 @@ def update_current_scheduler_priority(job, value, state):
 
     if "SCHEDULER_PRIORITY_HIERARCHY_ORDER" in config:
         sched_priority = config["SCHEDULER_PRIORITY_HIERARCHY_ORDER"]
-        if ((('besteffort' in job.types) or ('timesharing' in job.types)) and
+        
+        try:
+            job_types = job.types
+        except AttributeError:
+            job_types = get_job_types(job.id)
+            
+        if ((('besteffort' in job_types) or ('timesharing' in job_types)) and
            (((state == 'START') and
              is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
            ((state == 'STOP') and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0))):
 
             coeff = 1
-            if ('besteffort' in job.types) and ('timesharing' not in job.types):
+            if ('besteffort' in job_types) and ('timesharing' not in job_types):
                 coeff = 10
 
             index = 0
