@@ -209,7 +209,7 @@ def test_to_json():
         class SimpleObject(object):
             def __repr__(self):
                 return "<SimpleObject>"
-        if sys.version_info >= (3,6):
-            assert to_json(SimpleObject()) == expected_json_3_6
+        if sys.version_info >= (3,5):
+            assert to_json(SimpleObject()) == expected_json_3_5
         else:
             assert to_json(SimpleObject()) == expected_json
