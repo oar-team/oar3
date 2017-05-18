@@ -9,6 +9,8 @@ from oar.lib import db, Job
 from oar.lib.submission import (JobParameters, Submission,
                                 check_reservation, default_submission_config)
 
+from oar.cli.oardel import oardel
+
 from . import Blueprint
 from ..utils import Arg
 
@@ -307,10 +309,18 @@ def attach_nodes(job, jobs_resources):
 @app.route('/<any(array):array>/<int:job_id>', methods=['DELETE'])
 @app.route('/<int:job_id>/deletions/new', methods=['POST'])
 @app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST'])
-def delete(id, array=None):
-    # TODO
-    pass
+@app.need_authentication()
+def delete(job_id, array=None):
+    
+    user = g.current_user
+    if array:
+        exit_value = oardel(None, None, None, None, job_id,
+                            None, None, None, user)
+    else:
+        exit_value = oardel([job_id], None, None, None, None,
+                            None, None, None, user)
 
+    
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
 # def index(offset=0, limit=None):

@@ -14,24 +14,8 @@ import oar.lib.tools as tools
 
 click.disable_unicode_literals_warning = True
 
-@click.command()
-@click.argument('job_id', nargs=-1)
-@click.option('-c', '--checkpoint', is_flag=True,
-              help='Send the checkpoint signal designed from the "--signal"\
-              oarsub command option (default is SIGUSR2) to the process launched by the job "job_id".')
-@click.option('-s', '--signal', type=click.STRING,
-              help='Send signal  to the process launched by the selected jobs.')
-@click.option('-b', '--besteffort', is_flag=True, help='Change jobs to besteffort (or remove them if they are already besteffort)')
-@click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
-@click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
-@click.option('--force-terminate-finishing-job',
-              help='Force jobs stuck in the Finishing state to switch to Terminated \
-              (Warning: only use as a last resort). This using this option indicates \
-              that something nasty happened, nodes where the jobs were executing will \
-              subsequently be turned into Suspected.')
-@click.option('-V', '--version',  help='Print OAR version.')
-def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version):
 
+def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None):
     job_ids = job_id
 
     exit_value = 0
@@ -126,5 +110,26 @@ def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_fini
                 print_info('The job(s) {}  will be deleted in the near future.'\
                            .format(jobs_registred))
 
-    exit(exit_value)
+    return exit_value
 
+
+@click.command()
+@click.argument('job_id', nargs=-1)
+@click.option('-c', '--checkpoint', is_flag=True,
+              help='Send the checkpoint signal designed from the "--signal"\
+              oarsub command option (default is SIGUSR2) to the process launched by the job "job_id".')
+@click.option('-s', '--signal', type=click.STRING,
+              help='Send signal  to the process launched by the selected jobs.')
+@click.option('-b', '--besteffort', is_flag=True, help='Change jobs to besteffort (or remove them if they are already besteffort)')
+@click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
+@click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
+@click.option('--force-terminate-finishing-job',
+              help='Force jobs stuck in the Finishing state to switch to Terminated \
+              (Warning: only use as a last resort). This using this option indicates \
+              that something nasty happened, nodes where the jobs were executing will \
+              subsequently be turned into Suspected.')
+@click.option('-V', '--version',  help='Print OAR version.')
+def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version):
+
+    exit_value = oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, None)
+    exit(exit_value)

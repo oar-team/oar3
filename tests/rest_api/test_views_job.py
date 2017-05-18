@@ -3,9 +3,16 @@ import pytest
 from .conftest import ordered
 
 from flask import url_for
-from oar.lib import (db, Job)
+from oar.lib import (db, Job, FragJob)
 from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
+
+import oar.lib.tools  # for monkeypatching
+
+@pytest.fixture(scope='function', autouse=True)
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
 
 # TODO test PAGINATION
 # nodes / resources
@@ -79,6 +86,18 @@ def test_app_job_post(client):
     href = '/jobs/{}'.format(job_ids[0][0])
     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
     assert res.status_code == 200
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_jobs_delete(client):
+    # TODO """DELETE /jobs/<id>"""
+    """POST /jobs/<id>/deletions/new"""
+    job_id =insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.delete', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
+    assert fragjob_id[0] == job_id
 
 #@pytest.mark.usefixtures("minimal_db_initialization")
 #@pytest.mark.usefixtures("monkeypatch_tools")
