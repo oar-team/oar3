@@ -54,7 +54,9 @@ from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 import oar.kao.advanced_extra_metasched
-from oar.kao.batsim_sched_proxy import BatsimSchedProxy
+
+if sys.version_info >= (3,4):
+    from oar.kao.batsim_sched_proxy import BatsimSchedProxy
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -553,6 +555,8 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
 
 def call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
+    
+    #from oar.kao.batsim_sched_proxy import BatsimSchedProxy
 
     global batsim_sched_proxy
     batsim_sched_proxy = BatsimSchedProxy(plt, scheduled_jobs, all_slot_sets,

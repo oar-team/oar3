@@ -3,7 +3,6 @@ from __future__ import unicode_literals, print_function
 import pytest
 from ..modules.fakezmq import FakeZmq
 from click.testing import CliRunner
-from oar.kao.bataar import bataar
 
 import redis
 import zmq
@@ -13,6 +12,12 @@ import os
 import json
 
 from oar.lib import db
+
+if sys.version_info >= (3,4):
+    from oar.kao.bataar import bataar
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3,4) , reason='Bataar need Python 3')
+
 
 def order_json_str_arrays(a):
     return [json.dumps(json.loads(x), sort_keys=True) for x in a]

@@ -65,13 +65,15 @@ class FakeZmq(object):
 
     def __init__(self):
         pass
-
-    def reset():
+    
+    @classmethod
+    def reset(cls):
         FakeZmq.num_socket = 0
         FakeZmq.sent_msgs = {}
         FakeZmq.recv_msgs = {}
-
-    def socket(fake_self, _):
+        
+    @classmethod
+    def socket(cls, _):
         sock = FakeZmqSocket(FakeZmq.num_socket)
         FakeZmq.num_socket += 1
         return sock
