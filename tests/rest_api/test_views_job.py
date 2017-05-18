@@ -7,13 +7,6 @@ from oar.lib import (db, Job, FragJob)
 from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
-import oar.lib.tools  # for monkeypatching
-
-@pytest.fixture(scope='function', autouse=True)
-def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
-
 # TODO test PAGINATION
 # nodes / resources
 
@@ -63,7 +56,7 @@ def test_app_jobs_get_all_paginate(client):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_get_one_details(client, monkeypatch):
+def test_app_jobs_get_one_details(client):
     """GET /jobs/show/<id>/details"""
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     meta_schedule('internal')
@@ -89,7 +82,8 @@ def test_app_job_post(client):
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_delete(client):
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_delete(client, monkeypatch):
     # TODO """DELETE /jobs/<id>"""
     """POST /jobs/<id>/deletions/new"""
     job_id =insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
