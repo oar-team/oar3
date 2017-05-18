@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 import os
 
-from oar.lib import (db, FragJob)
+from oar.lib import (db, FragJob, Job)
 from oar.cli.oardel import cli
 from oar.kao.job import insert_job
                          
@@ -51,3 +51,14 @@ def test_oardel_simple_bad_user():
     runner = CliRunner()
     result = runner.invoke(cli, [str(job_id)])
     assert result.exit_code == 1
+
+def test_oardel_array():
+    os.environ['OARDO_USER'] = 'oar'
+    array_id = 1234 # Arbitrarily chosen
+    for _ in range(5):
+        insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=array_id, user='toto')
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--array', '1234'])
+    assert result.exit_code == 0
+    assert len(db.query(FragJob.job_id).all()) == 5
+    

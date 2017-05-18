@@ -36,9 +36,8 @@ def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_fini
 
     exit_value = 0
 
-    # import pdb; pdb.set_trace()
     
-    if not job_ids and not sql:
+    if not job_ids and not sql and not array:
         usage()
         exit(1)
     
@@ -46,7 +45,8 @@ def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_fini
         print('OAR version : ' + VERSION)
 
     if array:
-        job_ids = get_array_job_ids(job_ids)
+        job_ids = get_array_job_ids(array)
+
         if not job_ids:
             print_warning("There are no job for this array job ({})".format(array))
             exit_value = 4
@@ -92,6 +92,7 @@ def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_fini
         notify_almighty = False
         jobs_registred = []
         for job_id in job_ids:
+            # TODO array of errors and error messages
             print_info("Deleting the job = {} ...".format(job_id))
             error = frag_job(job_id)
             error_msg = ''
@@ -102,8 +103,10 @@ def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_fini
                 error_msg = 'Cannot frag {} ; This job was already killed.'.format(job_id)
                 notify_almighty = True
                 exit_value = 6
-            if error != 0:
+            if error == -3:
+                error_msg = 'Cannot frag {} ; Job does not exist.'.format(job_id)
                 print_warning(error_msg)
+                exit_value = 7
             else:
                 print_info(error_msg)
                 notify_almighty = True

@@ -23,7 +23,8 @@ def get_array_job_ids(array_id):
     """ Get all the job_ids of a given array of job identified by its id"""
     results = db.query(Job.id).filter(Job.array_id == array_id)\
                 .order_by(Job.id).all()
-    return results
+    job_ids = [r[0] for r in results]
+    return job_ids
 
 def get_job_ids_with_given_properties(sql_property):
     """Returns the job_ids with specified properties parameters : base, where SQL constraints."""
@@ -51,7 +52,10 @@ def frag_job(job_id, user=None):
 
     job = get_job(job_id)
 
-    if job and ((user == job.user) or (user == 'oar') or (user == 'root')):
+    if not job:
+        return -3
+
+    if (user == job.user) or (user == 'oar') or (user == 'root'):
         res = db.query(FragJob).filter(FragJob.job_id == job_id).all()
 
         if len(res) == 0:
