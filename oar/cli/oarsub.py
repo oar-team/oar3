@@ -202,7 +202,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     export_job_key_file = ''
 
     if resubmit:
-        cmd_ret.print('# Resubmitting job ' + str(resubmit) + '...')
+        cmd_ret.print_('# Resubmitting job ' + str(resubmit) + '...')
         error, job_id = resubmit_job(resubmit)
         if error[0] == 0:
             print(' done.\n')

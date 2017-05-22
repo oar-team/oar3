@@ -46,7 +46,7 @@ class CommandReturns(object):
         else:
             self._print((tag, msg, error))
 
-    def print(self, objs):
+    def print_(self, objs):
         print(objs)
 
     def info(self, objs, error=0, exit_value=0):
