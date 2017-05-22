@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """oardel - delete or checkpoint job(s)."""
 
-from __future__ import print_function
 import click
 from oar import (VERSION)
-from .utils import (print_warning, print_error, print_info, print_error_exit, usage)
+from .utils import CommandReturns
 
 from oar.lib.job_handling import (get_array_job_ids, ask_checkpoint_signal_job,
                                   get_job_ids_with_given_properties,
@@ -15,46 +14,41 @@ import oar.lib.tools as tools
 click.disable_unicode_literals_warning = True
 
 
-def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None):
+def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None, cli=True):
     job_ids = job_id
 
-    exit_value = 0
+    cmd_ret = CommandReturns(cli)
 
-    
     if not job_ids and not sql and not array:
-        usage()
-        exit(1)
-    
+        cmd_ret.usage(1)
+        return cmd_ret
+
     if version:
-        print('OAR version : ' + VERSION)
+        cmd_ret.print('OAR version : ' + VERSION)
+        return cmd_ret
 
     if array:
         job_ids = get_array_job_ids(array)
 
         if not job_ids:
-            print_warning("There are no job for this array job ({})".format(array))
-            exit_value = 4
+            cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
 
     if sql:
         job_ids = get_job_ids_with_given_properties(sql)
         if not job_ids:
-            print_warning("There are no job for this SQL WHERE clause ({})".format(array))
-            exit_value = 4
+            cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(array), 4)
 
     if checkpoint:
         for job_id in job_ids:
-            print_info("Checkpointing the job {} ...".format(job_id))
+            cmd_ret.info("Checkpointing the job {} ...".format(job_id))
             error, error_msg = ask_checkpoint_signal_job(job_id)
             if error > 0:
                 if error == 1:
-                    print_error(error_msg, 1)
-                    exit_value = 1
+                    cmd_ret.error(error_msg, error, 1)
                 elif error == 3:
-                    print_error(error_msg, 7)
-                    exit_value = 7
+                    cmd_ret.error(error_msg, error, 7)
                 else:
-                    print_error(error_msg, 5)
-                    exit_value = 5
+                    cmd_ret.error(error_msg, error, 5)
             else:
                 # Retrieve node names used by the job
                 nodes = get_job_current_hostnames(job_id)
@@ -77,22 +71,21 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
         jobs_registred = []
         for job_id in job_ids:
             # TODO array of errors and error messages
-            print_info("Deleting the job = {} ...".format(job_id))
+            cmd_ret.info("Deleting the job = {} ...".format(job_id))
             error = frag_job(job_id)
             error_msg = ''
             if error == -1:
                 error_msg = 'Cannot frag {} ; You are not the right user.'.format(job_id)
-                exit_value = 1
-            if error == -2:
+                cmd_ret.error(error_msg, -1, 1)
+            elif error == -2:
                 error_msg = 'Cannot frag {} ; This job was already killed.'.format(job_id)
                 notify_almighty = True
-                exit_value = 6
-            if error == -3:
+                cmd_ret.warning(error_msg, -2, 6)
+            elif error == -3:
                 error_msg = 'Cannot frag {} ; Job does not exist.'.format(job_id)
-                print_warning(error_msg)
-                exit_value = 7
+                cmd_ret.warning(error_msg, -3, 7)
             else:
-                print_info(error_msg)
+                cmd_ret.info(error_msg)
                 notify_almighty = True
                 jobs_registred.append(job_id)
 
@@ -104,13 +97,12 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
                 tools.notify_almighty('Qdel')
 
             if nb_sent <= 0:
-                print_error('Unablde to notify Almighty')
-                exit_value = 2
+                cmd_ret.error('Unablde to notify Almighty', nb_sent, 2)
             else:
-                print_info('The job(s) {}  will be deleted in the near future.'\
+                cmd_ret.info('The job(s) {}  will be deleted in the near future.'\
                            .format(jobs_registred))
 
-    return exit_value
+    return cmd_ret
 
 
 @click.command()
@@ -131,5 +123,6 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
 @click.option('-V', '--version',  help='Print OAR version.')
 def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version):
 
-    exit_value = oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, None)
-    exit(exit_value)
+    cmd_ret = oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, None)
+
+    cmd_ret.exit()

@@ -6,7 +6,7 @@ import os
 import socket
 import signal
 import click
-from .utils import (print_warning, print_error, print_info, print_error_exit)
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
@@ -140,7 +140,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
     default_submission_config(DEFAULT_VALUE)
 
     # import pdb; pdb.set_trace()
-
+    cmd_ret = CommandReturns()
+    
     log_warning = ''  # TODO
     log_error = ''
     log_info = ''
@@ -179,8 +180,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
     if 'OARDIR' in os.environ:
         binpath = os.environ['OARDIR'] + '/'
     else:
-        print_error('OARDIR environment variable is not defined.')
-        exit(1)
+        cmd_ret.error('OARDIR environment variable is not defined.', 0, 1)
+        cmd_ret.exit()
 
     openssh_cmd = config['OPENSSH_CMD']
     ssh_timeout = int(config['OAR_SSH_CONNECTION_TIMEOUT'])
@@ -201,7 +202,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     export_job_key_file = ''
 
     if resubmit:
-        print('# Resubmitting job ', resubmit, '...')
+        cmd_ret.print('# Resubmitting job ' + str(resubmit) + '...')
         error, job_id = resubmit_job(resubmit)
         if error[0] == 0:
             print(' done.\n')
@@ -209,13 +210,15 @@ def cli(command, interactive, queue, resource, reservation, connect,
             if signal_almighty(remote_host, remote_port, 'Qsub') > 0:
                 error_msg = 'cannot connect to executor ' + str(remote_host) + ':' +\
                             str(remote_port) + '. OAR server might be down.'
-                print_error_exit((3, error_msg))
+                cmd_ret.error(error_msg, 0, 3)
+                cmd_ret.exit()
             else:
                 # It's all good
-                exit(0)
+                cmd_ret.exit()
                 
         else:
-            print_error_exit(error, False)
+            cmd_ret.error('TODO', 0, error)
+            cmd_ret.exit()
             # TODO
             #print(' error.')
             #if ret == -1:
@@ -287,8 +290,9 @@ def cli(command, interactive, queue, resource, reservation, connect,
     #import pdb; pdb.set_trace()
 
     error = job_parameters.check_parameters()
-    if error[0]!=0:
-        print_error_exit(error)
+    if error[0] != 0:
+        cmd_ret.error('', 0, error)
+        cmd_ret.exit()
 
     #import pdb; pdb.set_trace()
     submission = Submission(job_parameters)
@@ -328,15 +332,16 @@ def cli(command, interactive, queue, resource, reservation, connect,
     else:
         # TODO interactive
         if command:
-            print_warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
+            cmd_ret.warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
 
         cmd_executor = 'Qsub -I'
 
         if array_param_file:
-            print_error_exit((9,'a array job with parameters given in a file cannot be interactive.'))
-
+            cmd_ret.error('a array job with parameters given in a file cannot be interactive.', 0, 9)
+            cmd_ret.exit()
         if array != 1:
-            print_error_exit((8, 'an array job cannot be interactive.'))
+            cmd_ret.error('an array job cannot be interactive.', 0, 8)
+            cmd_ret.exit()
 
         if reservation:
             # Test if this job is a reservation and the syntax is right
@@ -354,7 +359,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
     # pdb.set_trace()
 
     if error[0] != 0:
-        print_error_exit(error)
+        cmd_ret.error('unamed error', 0, error) #TODO
+        cmd_ret.exit()
 
     oar_array_id = 0
 
@@ -375,17 +381,17 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     if reservation:
         # Reservation mode
-        print_info("advance reservation request: waiting for approval from the scheduler...")
+        cmd_ret.info("advance reservation request: waiting for approval from the scheduler...")
+
         (conn, address) = socket_server.accept()
         answer = conn.recv(1024)
         if answer[:-1] == 'GOOD RESERVATION':
-            print_info('advance reservation is GRANTED.')
+            cmd_ret.info('advance reservation is GRANTED.')
         else:
-            print_info('advance reservation is REJECTED ', answer[:-1])
-            exit(10)
+            cmd_ret.info('advance reservation is REJECTED ' + answer[:-1], 0, 10)
     elif interactive:
         # Interactive mode
-        print_info('interactive mode: waiting...')
+        cmd_ret.info('interactive mode: waiting...')
 
         prev_str = ''
         while True:
@@ -395,10 +401,10 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
             m = re.search(r'\](.*)$', answer)
             if m and m.group(1) != prev_str:
-                print_info(answer)
+                cmd_ret.info(answer)
                 prev_str = m.group(1)
             elif answer != 'GOOD JOB':
-                print_info(answer)
+                cmd_ret.info(answer)
 
             if (answer == 'GOOD JOB') or (answer == 'BAD JOB') or\
                (answer == 'JOB KILLE') or re.match(r'^ERROR', answer):
@@ -408,6 +414,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
             # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
             pass
         else:
-            exit(11)
+            cmd_ret.exit(11)
 
-    exit(0)
+    cmd_ret.exit(0)

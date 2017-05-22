@@ -41,7 +41,8 @@ def monkeypatch_tools(request, monkeypatch):
 def test_oarsub_void():
     runner = CliRunner()
     result = runner.invoke(cli)
-    assert result.exit_code == 5
+    assert result.exception.code == \
+        (5, 'Command or interactive flag or advance reservation time or connection directive must be provided')
 
 
 def test_oarsub_sleep_1(monkeypatch):
@@ -102,18 +103,18 @@ def test_oarsub_sleep_not_enough_resources_1(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '-l resource_id=10', '"sleep 1"'])
     print(result.output)
-    assert result.exit_code == -5
+    assert result.exception.code == (-5, 'There are not enough resources for your request')
 
 
 def test_oarsub_sleep_property_error(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '-l resource_id=4', '-p yopyop SELECT', '"sleep 1"'])
     print(result.output)
-    assert result.exit_code == -5
+    assert result.exception.code[0] == -5
 
 
 def test_oarsub_sleep_queue_error(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q queue_doesnot_exist', '"sleep 1"'])
     print(result.output)
-    assert result.exit_code == -8
+    assert result.exception.code == (-8, 'queue queue_doesnot_exist does not exist')
