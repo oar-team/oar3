@@ -24,7 +24,7 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
         return cmd_ret
 
     if version:
-        cmd_ret.print('OAR version : ' + VERSION)
+        cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
     if array:
