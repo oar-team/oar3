@@ -311,7 +311,7 @@ def attach_nodes(job, jobs_resources):
 @app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST'])
 @app.need_authentication()
 def delete(job_id, array=None):
-    
+    #import pdb; pdb.set_trace()
     user = g.current_user
     if array:
         cmd_ret = oardel(None, None, None, None, job_id,
