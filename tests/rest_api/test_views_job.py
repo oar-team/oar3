@@ -83,8 +83,7 @@ def test_app_job_post(client):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_delete(client, monkeypatch):
-    # TODO """DELETE /jobs/<id>"""
+def test_app_jobs_delete_1(client, monkeypatch):
     """POST /jobs/<id>/deletions/new"""
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
     res = client.post(url_for('jobs.delete', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
@@ -96,9 +95,20 @@ def test_app_jobs_delete(client, monkeypatch):
     
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_array_delete(client, monkeypatch):
+def test_app_jobs_delete_2(client, monkeypatch):
+    """DELETE /jobs/<id>"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.delete(url_for('jobs.delete', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
+    assert fragjob_id[0] == job_id
+    assert res.json['exit_status'] == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_array_delete_1(client, monkeypatch):
     """POST /jobs/array/<id>/deletions/new"""
-    # TODO """DELETE /array/<id>"""
     array_id = 1
     for _ in range(5):
         insert_job(res=[(60, [('resource_id=4', '')])], properties='', user='bob',
@@ -110,6 +120,24 @@ def test_app_array_delete(client, monkeypatch):
     fragjob_id = db.query(FragJob.job_id).all()
     assert len(fragjob_id) == 5
     assert res.json['exit_status'] == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_array_delete_2(client, monkeypatch):
+    """DELETE /jobs/array/<id>/deletions/new"""
+    array_id = 1
+    for _ in range(5):
+        insert_job(res=[(60, [('resource_id=4', '')])], properties='', user='bob',
+                   array_id=array_id)
+    res = client.delete(url_for('jobs.delete',  array='array', job_id=array_id),
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    fragjob_id = db.query(FragJob.job_id).all()
+    assert len(fragjob_id) == 5
+    assert res.json['exit_status'] == 0
+
+    
 #@pytest.mark.usefixtures("minimal_db_initialization")
 #@pytest.mark.usefixtures("monkeypatch_tools")
 #def test_app_jobs_get_one_resources(client, monkeypatch):

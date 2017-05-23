@@ -307,8 +307,8 @@ def attach_nodes(job, jobs_resources):
             
 @app.route('/<int:job_id>', methods=['DELETE'])
 @app.route('/<any(array):array>/<int:job_id>', methods=['DELETE'])
-@app.route('/<int:job_id>/deletions/new', methods=['POST'])
-@app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST'])
+@app.route('/<int:job_id>/deletions/new', methods=['POST','DELETE'])
+@app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST','DELETE'])
 @app.need_authentication()
 def delete(job_id, array=None):
     #import pdb; pdb.set_trace()
