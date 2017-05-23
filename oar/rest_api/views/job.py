@@ -314,13 +314,15 @@ def delete(job_id, array=None):
     
     user = g.current_user
     if array:
-        exit_value = oardel(None, None, None, None, job_id,
-                            None, None, None, user)
+        cmd_ret = oardel(None, None, None, None, job_id,
+                         None, None, None, user, False)
     else:
-        exit_value = oardel([job_id], None, None, None, None,
-                            None, None, None, user)
+        cmd_ret = oardel([job_id], None, None, None, None,
+                            None, None, None, user, False)
 
-    
+    g.data['id'] = job_id
+    g.data['cmd_output'] = cmd_ret.to_str()
+    g.data['exit_status'] = cmd_ret.get_exit_value()
 # @app.route('/', methods=['GET'])
 # @app.args({'offset': int, 'limit': int})
 # def index(offset=0, limit=None):

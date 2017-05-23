@@ -92,6 +92,7 @@ def test_app_jobs_delete(client, monkeypatch):
     assert res.status_code == 200
     fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
     assert fragjob_id[0] == job_id
+    assert res.json['exit_status'] == 0
 
 #@pytest.mark.usefixtures("minimal_db_initialization")
 #@pytest.mark.usefixtures("monkeypatch_tools")

@@ -6,11 +6,11 @@ import click
 
 
 class CommandReturns(object):
-
-    INFO = 0
-    WARNING = 1
-    ERROR = 2
-    TAG2STR = {INFO: '#INFO: ', WARNING: '#WARNING: ', ERROR: '#ERROR: '}
+    PRINT = 0
+    INFO = 1
+    WARNING = 2
+    ERROR = 3
+    TAG2STR = {PRINT: '', INFO: '', WARNING: '#WARNING: ', ERROR: '#ERROR: '}
 
     def __init__(self, cli=True):
         self.cli = cli
@@ -21,9 +21,21 @@ class CommandReturns(object):
 
     def _print(self, msg_typed_value):
         tag, objs, error = msg_typed_value
-        print(CommandReturns.TAG2STR[tag], objs, error, file=sys.stderr)
+        if tag == CommandReturns.PRINT:
+            print(objs)
+        else:
+            print(CommandReturns.TAG2STR[tag], objs, error, file=sys.stderr)
 
-
+    def to_str(self):
+        str_out = ''
+        for  msg_typed_value in self.buffer:
+            tag, objs, error = msg_typed_value
+            str_out += CommandReturns.TAG2STR[tag] + objs
+            if error !=0:
+                str_out += ' ' + error
+            str_out += '\n'
+        return str_out
+        
     def get_exit_value(self):
         if self.final_exit == 0:
             prev_ev = 0
@@ -47,7 +59,8 @@ class CommandReturns(object):
             self._print((tag, msg, error))
 
     def print_(self, objs):
-        print(objs)
+        self.print_or_push(CommandReturns.PRINT, objs, 0, 0)
+
 
     def info(self, objs, error=0, exit_value=0):
         self.print_or_push(CommandReturns.INFO, objs, error, exit_value)
