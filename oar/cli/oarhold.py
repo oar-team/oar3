@@ -91,7 +91,7 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 @click.option('-r', '--running', is_flag=True,
               help='enable suspending running jobs (administrator only)')
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
-@click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = 'p1'")')
+@click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
 @click.option('-V', '--version',  help='Print OAR version.')
 def cli(job_id, running, array, sql, version):
     
