@@ -59,7 +59,7 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
                 cmd_ret.warning('This job is of the deploy type. We cannot suspend this kind of jobs.', 4, 2)
                 return cmd_ret
         
-        error = hold_job(job_id, running)
+        error = hold_job(job_id, running, user)
         if error:
             error_msg = "/!\\ Cannot hold {} : ".format(job_id)
             if error == -1:

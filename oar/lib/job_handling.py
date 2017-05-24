@@ -163,6 +163,30 @@ def hold_job(job_id, running, user=None):
 
     job = get_job(job_id)
 
+    user_allowed_hold_resume = False
+    if 'USERS_ALLOWED_HOLD_RESUME' in config and  config['USERS_ALLOWED_HOLD_RESUME'] == 'yes':
+        user_allowed_hold_resume = True
+
+    event_type = 'HOLD_WAITING_JOB'
+    if running:
+        event_type = 'HOLD_RUNNING_JOB'
+
+    if job:
+        if running and (not user_allowed_hold_resume) and (user != 'oar') and (user != 'root'):
+            return -4
+        elif (user == job.user) or (user == 'oar') or (user == 'root'):
+            if ((job.state == 'Waiting') or (job.state == 'Resuming')) or\
+               (running and (job.state == 'toLaunch' or job.state == 'Launching' or job.state == 'Running')):
+                add_new_event(event_type, job_id,
+                              'User {} launched oarhold on the job {}'.format(user, job_id))
+                return 0
+            else:
+                return -3
+        else:
+            return -2
+    else:
+        return -1
+    
     return 0
 
 ## hold_job
