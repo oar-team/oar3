@@ -159,7 +159,7 @@ class Database(object):
 
     @property
     def op(self):
-        ctx = MigrationContext.configure(self.engine)
+        ctx = MigrationContext.configure(self.engine.connect())
         return Operations(ctx)
 
     @cached_property
