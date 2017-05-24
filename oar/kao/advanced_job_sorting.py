@@ -28,7 +28,7 @@ def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
             try:
                 priority = float(job.types['priority'])
             except ValueError:
-                logger.warn("job priority failed to convert to float: " % job.types['priority'])
+                logger.warning("job priority failed to convert to float: " % job.types['priority'])
                 priority = 0.0
 
         job.karma = priority + waiting_time_weight * float(now-job.submission_time) / float(now)

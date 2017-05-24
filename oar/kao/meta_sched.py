@@ -189,7 +189,7 @@ def notify_to_run_job(jid):
                 to_launch_jobs_already_treated[jid] = 1
                 logger.debug("Notify almighty to launch the job" + str(jid))
             else:
-                logger.warn(
+                logger.warning(
                     "Not able to notify almighty to launch the job " + str(jid) + " (socket error)")
 
 
@@ -232,7 +232,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
         # Test if AR job is expired and handle it
         if (current_time_sec > (job.start_time + walltime)):
-            logger.warn("[" + str(job.id) +
+            logger.warning("[" + str(job.id) +
                         "] set job state to Error: avdance reservation expired and couldn't be started")
             set_job_state(job.id, 'Error')
             set_job_message(job.id, "Reservation expired and couldn't be started.")
@@ -243,7 +243,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
             # Test if the AR job is waiting to be launched due to nodes' unavailabilities
             if (avail_res == []) and (job.start_time < current_time_sec):
-                logger.warn("[%s] advance reservation is waiting because no resource is present"
+                logger.warning("[%s] advance reservation is waiting because no resource is present"
                             % str(job.id))
 
                 # Delay launching time
@@ -254,7 +254,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                     if not equal_itvs(avail_res, job.res_set):
                         # The expected ressources are not all available,
                         # wait the specified timeout
-                        logger.warn("[" + str(job.id) +
+                        logger.warning("[" + str(job.id) +
                                     "] advance reservation is waiting because not all \
                                     resources are available yet")
                         set_gantt_job_start_time(moldable_id, current_time_sec + 1)
@@ -263,7 +263,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                     missing_resources_itvs = sub_intervals(job.res_set, avail_res)
                     remove_gantt_resource_job(moldable_id, missing_resources_itvs,
                                               resource_set)
-                    logger.warn("[" + str(job.id) +
+                    logger.warning("[" + str(job.id) +
                                 "remove some resources assigned to this advance reservation, \
                                 because there are not Alive")
 
@@ -307,7 +307,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
 
             # test if reservation is too old
             if current_time_sec >= (job.start_time + walltime):
-                logger.warn(
+                logger.warning(
                     "[" + str(job.id) + "] Canceling job: reservation is too old")
                 set_job_message(job.id, "Reservation too old")
                 set_job_state(job.id, 'toError')
@@ -355,7 +355,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
 
             if itvs == []:
                 # not enough resource available
-                logger.warn("[" + str(job.id) +
+                logger.warning("[" + str(job.id) +
                             "] advance reservation cannot be validated, not enough resources")
                 set_job_state(job.id, 'toError')
                 set_job_message(job.id, "This advance reservation cannot run")
@@ -459,7 +459,7 @@ def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql
 
             set_moldable_job_max_time(job.moldable_id, max_time)
             set_gantt_job_start_time(job.moldable_id, current_time_sec)
-            logger.warn("Reduce walltime of job " + str(job.id) +
+            logger.warning("Reduce walltime of job " + str(job.id) +
                         "to " + str(max_time) + "(was  " + str(walltime) + " )")
 
             add_new_event('REDUCE_RESERVATION_WALLTIME', job.id,
@@ -523,7 +523,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
 
     except OSError as e:
         child_launched = False
-        logger.warn(str(e) + " Cannot run: " + cmd_scheduler + " " + queue.name + " " +
+        logger.warning(str(e) + " Cannot run: " + cmd_scheduler + " " + queue.name + " " +
                     str(initial_time_sec) + " " + initial_time_sql)
 
     if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core != 0):
@@ -786,7 +786,7 @@ def meta_schedule(mode='internal', plt=Platform()):
     # TODO: TOFINISH
     #
     if 'Resuming' in jobs_by_state:
-        logger.warn("Resuming job is NOT ENTIRELY IMPLEMENTED")
+        logger.warning("Resuming job is NOT ENTIRELY IMPLEMENTED")
         for job in jobs_by_state['Resuming']:
             other_jobs = get_jobs_on_resuming_job_resources(job.id)
             # TODO : look for timesharing other jobs. What do we do?????
@@ -870,7 +870,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                 nb_sent1 = tools.notify_tcp_socket(addr, port, job.message + '\n')
                 nb_sent2 = tools.notify_tcp_socket(addr, port, 'BAD JOB' + '\n')
                 if (nb_sent1 == 0) or (nb_sent2 == 0):
-                    logger.warn(
+                    logger.warning(
                         "Cannot open connection to oarsub client for" + str(job.id))
             logger.debug("Set job " + str(job.id) + " to state Error")
             set_job_state(job.id, 'Error')
@@ -885,7 +885,7 @@ def meta_schedule(mode='internal', plt=Platform()):
             nb_sent = tools.notify_tcp_socket(addr, port, 'GOOD RESERVATION' + '\n')
 
             if nb_sent == 0:
-                logger.warn(
+                logger.warning(
                     "Frag job " + str(job.id) + ", I cannot notify oarsub for the reservation")
                 add_new_event('CANNOT_NOTIFY_OARSUB', str(
                     job.id), "Can not notify oarsub for the job " + str(job.id))

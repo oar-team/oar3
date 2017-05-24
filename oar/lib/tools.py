@@ -307,5 +307,5 @@ def sql_to_duration(t):
 
 def send_checkpoint_signal(job):
     logger.debug("Send checkpoint signal to the job " + str(job.id))
-    logger.warn("Send checkpoint signal NOT YET IMPLEMENTED ")
+    logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl

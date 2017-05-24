@@ -73,7 +73,7 @@ class Configuration(dict):
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
             if silent:
                 from . import logger
-                logger.warn(e.strerror)
+                logger.warning(e.strerror)
                 return False
             else:
                 exc_type, exc_value, tb = sys.exc_info()
