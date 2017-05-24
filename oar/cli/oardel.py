@@ -26,11 +26,9 @@ DEFAULT_CONFIG = {
 click.disable_unicode_literals_warning = True
 
 
-def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None, cli=True):
+def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None, cli=True):
     
     config.setdefault_config(DEFAULT_CONFIG)
-    
-    job_ids = job_id
 
     cmd_ret = CommandReturns(cli)
 

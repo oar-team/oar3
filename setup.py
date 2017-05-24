@@ -87,6 +87,7 @@ setup(
     oarsub3=oar.cli.oarsub:cli
     oarstat3=oar.cli.oarstat:cli
     oardel3=oar.cli.oardel:cli
+    oarhold3=oar.cli.oarhold:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
     kamelot_fifo=oar.kao.kamelot_fifo:main

@@ -145,3 +145,101 @@ def get_job_types(job_id):
                 res[t] = True
     return res
 
+
+
+def hold_job(job_id, running, user=None):
+    """sets the state field of a job to 'Hold'
+    equivalent to set_job_state(base,jobid,"Hold") except for permissions on user
+    parameters : jobid, running, user
+    return value : 0 on success, -1 on error (if the user calling this method
+    is not the user running the job)
+    side effects : changes the field state of the job to 'Hold' in the table Jobs.
+"""
+    if not user:
+        if 'OARDO_USER' in os.environ:
+            user = os.environ['OARDO_USER']
+        else:
+            user = os.environ['USER']
+
+    job = get_job(job_id)
+
+    return 0
+
+## hold_job
+## sets the state field of a job to 'Hold'
+## equivalent to set_job_state(base,jobid,"Hold") except for permissions on user
+## parameters : base, jobid
+## return value : 0 on success, -1 on error (if the user calling this method
+##                is not the user running the job)
+## side effects : changes the field state of the job to 'Hold' in the table Jobs
+#sub hold_job($$$) {
+#    my $dbh = shift;
+#    my $job_id = shift;
+#    my $waiting_and_running = shift;
+#
+#    my $lusr = $ENV{OARDO_USER};
+#
+#    my $job = get_job($dbh, $job_id);
+#  
+#    my $user_allowed_hold_resume =  (lc(get_conf("USERS_ALLOWED_HOLD_RESUME")) eq "yes");
+#  
+#    my $event_type = "HOLD_WAITING_JOB";
+#    $event_type = "HOLD_RUNNING_JOB" if (defined($waiting_and_running));
+#    if (defined($job)){
+#        if (defined($waiting_and_running) and (not $user_allowed_hold_resume) and ($lusr ne "oar") and ($lusr ne "root")){
+#            return(-4);
+#        }elsif (($lusr eq $job->{job_user}) || ($lusr eq "oar") || ($lusr eq "root")){
+#            if (($job->{'state'} eq "Waiting") or ($job->{'state'} eq "Resuming")){
+#                add_new_event($dbh, $event_type, $job_id, "User $lusr launched oarhold on the job $job_id");
+#                return 0;
+#            }elsif((defined($waiting_and_running)) and (($job->{state} eq "toLaunch") or ($job->{state} eq "Launching") or ($job->{state} eq "Running"))){
+#                add_new_event($dbh, $event_type, $job_id, "User $lusr launched oarhold on the job $job_id");
+#                return 0;
+#            }else{
+#                return(-3);
+#            }
+#        }else{
+#            return(-2);
+#        }
+#    }else{
+#        return(-1);
+#    }
+#}
+#
+#
+#
+## resume_job
+## returns the state of the job from 'Hold' to 'Waiting'
+## equivalent to set_job_state(base,jobid,"Waiting") except for permissions on
+## user and the fact the job must already be in 'Hold' state
+## parameters : base, jobid
+## return value : 0 on success, -1 on error (if the user calling this method
+##                is not the user running the job)
+## side effects : changes the field state of the job to 'Waiting' in the table
+##                Jobs
+#sub resume_job($$) {
+#    my $dbh = shift;
+#    my $job_id = shift;
+#
+#    my $lusr = $ENV{OARDO_USER};
+#
+#    my $job = get_job($dbh, $job_id);
+#
+#    my $user_allowed_hold_resume =  (lc(get_conf("USERS_ALLOWED_HOLD_RESUME")) eq "yes");
+#
+#    if (defined($job)){
+#        if (($job->{'state'} eq "Suspended") and (not $user_allowed_hold_resume) and ($lusr ne "oar") and ($lusr ne "root")){
+#            return(-4);
+#        }elsif (($lusr eq $job->{job_user}) || ($lusr eq "oar") || ($lusr eq "root")){
+#            if (($job->{'state'} eq "Hold") or ($job->{'state'} eq "Suspended")){
+#                add_new_event($dbh, "RESUME_JOB", $job_id, "User $lusr launched oarresume on the job $job_id");
+#                return(0);
+#            }
+#            return(-3);
+#        }
+#        return(-2);
+#    } else {
+#        return(-1);
+#    }
+#}
+#    
