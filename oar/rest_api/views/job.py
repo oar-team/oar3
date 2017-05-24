@@ -5,7 +5,7 @@ import os
 
 from flask import url_for, g
 
-from oar.lib import db, Job
+from oar.lib import (db, Job)
 from oar.lib.submission import (JobParameters, Submission,
                                 check_reservation, default_submission_config)
 
@@ -311,7 +311,6 @@ def attach_nodes(job, jobs_resources):
 @app.route('/<any(array):array>/<int:job_id>/deletions/new', methods=['POST','DELETE'])
 @app.need_authentication()
 def delete(job_id, array=None):
-    #import pdb; pdb.set_trace()
     user = g.current_user
     if array:
         cmd_ret = oardel(None, None, None, None, job_id,
@@ -323,25 +322,25 @@ def delete(job_id, array=None):
     g.data['id'] = job_id
     g.data['cmd_output'] = cmd_ret.to_str()
     g.data['exit_status'] = cmd_ret.get_exit_value()
-# @app.route('/', methods=['GET'])
-# @app.args({'offset': int, 'limit': int})
-# def index(offset=0, limit=None):
-#     pass
-#
-#
-# @app.route('/', methods=['GET'])
-# @app.args({'offset': int, 'limit': int})
-# def index(offset=0, limit=None):
-#     pass
-#
-#
-# @app.route('/', methods=['GET'])
-# @app.args({'offset': int, 'limit': int})
-# def index(offset=0, limit=None):
-#     pass
-#
-#
-# @app.route('/', methods=['GET'])
-# @app.args({'offset': int, 'limit': int})
-# def index(offset=0, limit=None):
-#     pass
+
+
+@app.route('/<int:job_id>/checkpoints/new', methods=['POST'])
+@app.route('/<int:job_id>/signal/<int:signal>', methods=['POST'])
+@app.need_authentication()
+def signal(job_id, signal=None):
+
+    user = g.current_user
+
+    if signal:
+        checkpointing = False
+    else:
+        checkpointing = True
+        
+    cmd_ret = oardel([job_id], checkpointing, signal, None, None,
+                     None, None, None, user, False)
+
+    g.data['id'] = job_id
+    g.data['cmd_output'] = cmd_ret.to_str()
+    g.data['exit_status'] = cmd_ret.get_exit_value()
+
+    

@@ -32,7 +32,7 @@ class CommandReturns(object):
             tag, objs, error = msg_typed_value
             str_out += CommandReturns.TAG2STR[tag] + objs
             if error !=0:
-                str_out += ' ' + error
+                str_out += ' ' + str(error)
             str_out += '\n'
         return str_out
         

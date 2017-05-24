@@ -5,16 +5,31 @@ import click
 from oar import (VERSION)
 from .utils import CommandReturns
 
+from oar.lib import config
+
 from oar.lib.job_handling import (get_array_job_ids, ask_checkpoint_signal_job,
                                   get_job_ids_with_given_properties,
-                                  get_job_types, get_job_current_hostnames, frag_job)
+                                  get_job_types, get_job_current_hostnames, frag_job,
+                                  add_new_event)
 
 import oar.lib.tools as tools
+
+DEFAULT_CONFIG = {
+    'COSYSTEM_HOSTNAME': '127.0.0.1',
+    'DEPLOY_HOSTNAME': '127.0.0.1',
+    'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
+    'OAR_SSH_CONNECTION_TIMEOUT': 200,
+    'OAR_RUNTIME_DIRECTORY': '/var/lib/oar',
+}
+
 
 click.disable_unicode_literals_warning = True
 
 
 def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None, cli=True):
+    
+    config.setdefault_config(DEFAULT_CONFIG)
+    
     job_ids = job_id
 
     cmd_ret = CommandReturns(cli)
@@ -38,11 +53,20 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
         if not job_ids:
             cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(array), 4)
 
-    if checkpoint:
+    if checkpoint or signal:
         for job_id in job_ids:
-            cmd_ret.info("Checkpointing the job {} ...".format(job_id))
-            error, error_msg = ask_checkpoint_signal_job(job_id)
+            if checkpoint:
+                tag = 'CHECKPOINT'
+                cmd_ret.print_('Checkpointing the job {} ...'.format(job_id))
+            else:
+                tag = 'SIG'
+                cmd_ret.print_('Signaling the job {} with {} signal {}.'\
+                               .format(job_id, signal, user))
+
+            error, error_msg = ask_checkpoint_signal_job(job_id, signal, user)
+
             if error > 0:
+                cmd_ret.print_('ERROR')
                 if error == 1:
                     cmd_ret.error(error_msg, error, 1)
                 elif error == 3:
@@ -50,15 +74,35 @@ def oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_f
                 else:
                     cmd_ret.error(error_msg, error, 5)
             else:
-                # Retrieve node names used by the job
-                nodes = get_job_current_hostnames(job_id)
+                # Retrieve hostnames used by the job
+                hosts = get_job_current_hostnames(job_id)
                 types = get_job_types(job_id)
-                # TODO
+                host_to_connect = hosts[0]
+                if 'cosystem' in types:
+                    host_to_connect = config['COSYSTEM_HOSTNAME']
+                elif 'deploy' in types:
+                    host_to_connect = config['DEPLOY_HOSTNAME']
 
-
-    elif signal:
-        # TODO
-        pass
+                timeout_ssh = config['OAR_SSH_CONNECTION_TIMEOUT']
+                # TODO 
+                error = tools.signal_oarexec(host_to_connect, job_id, 'SIGUSR2',
+                                             timeout_ssh, config['OPENSSH_CMD'], '')
+                if error != 0:
+                    cmd_ret.print_('ERROR')
+                    if error == 3:
+                        comment = 'Cannot contact {}, operation timouted ({} s).'.\
+                                  format(host_to_connect, timeout_ssh)
+                        cmd_ret.error(comment, 3, 3)
+                    else:
+                        comment = 'An unknown error occured.'
+                        cmd_ret.error(comment, error, 1)
+                    add_new_event('{}_ERROR'.format(tag), job_id, comment)
+                else:
+                    cmd_ret.print_('DONE')
+                    comment = 'The job {} was notified to checkpoint itself on {}.'.\
+                              format(job_id, host_to_connect)
+                    add_new_event('{}_SUCCESS'.format(tag), job_id, comment)
+            
     elif force_terminate_finishing_job:
         # TODO
         pass

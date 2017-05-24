@@ -96,7 +96,7 @@ def test_app_jobs_delete_1(client, monkeypatch):
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_delete_2(client, monkeypatch):
-    """DELETE /jobs/<id>"""
+    """DELETE /jobs/<id>/deletions/new"""
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
     res = client.delete(url_for('jobs.delete', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
     print(res.json)
@@ -137,6 +137,52 @@ def test_app_array_delete_2(client, monkeypatch):
     assert len(fragjob_id) == 5
     assert res.json['exit_status'] == 0
 
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_ckeckpoint_1(client, monkeypatch):
+    """POST /jobs/<id>/checkpoints/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.signal', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    # Can not checkpoint job is not running
+    assert res.json['exit_status'] == 5
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_signal_1(client, monkeypatch):
+    """POST /jobs/<id>/signal/<signal>"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.signal', job_id=job_id, signal=12), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    # Can not checkpoint job is not running
+    assert res.json['exit_status'] == 5
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_ckeckpoint_2(client, monkeypatch):
+    """POST /jobs/<id>/checkpoints/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    meta_schedule('internal')
+    set_job_state(job_id, 'Running')
+    res = client.post(url_for('jobs.signal', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_signal_2(client, monkeypatch):
+    """POST /jobs/<id>/signal/<signal>"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    meta_schedule('internal')
+    set_job_state(job_id, 'Running')
+    res = client.post(url_for('jobs.signal', job_id=job_id, signal=12), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 0
     
 #@pytest.mark.usefixtures("minimal_db_initialization")
 #@pytest.mark.usefixtures("monkeypatch_tools")
