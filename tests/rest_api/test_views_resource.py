@@ -1,5 +1,7 @@
 import pytest
-#from .conftest import ordered
+
+from oar.kao.job import (insert_job, set_job_state)
+from oar.kao.meta_sched import meta_schedule
 
 from flask import url_for
 def test_app_resources_index(client):
@@ -41,3 +43,15 @@ def test_app_resources_nodes(client):
     print(res.json)
     assert len(res.json['items']) == 2
     assert res.status_code == 200
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_resources_jobs(client, monkeypatch):
+    """GET /resources/<id>/jobs"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    meta_schedule('internal')
+    set_job_state(job_id, 'Running')
+    res = client.get(url_for('resources.jobs', resource_id=3))
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['items'][0]['id'] == job_id

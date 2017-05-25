@@ -82,6 +82,7 @@ class PaginationQuery(object):
         """Returns the next url for the current endpoint."""
         if self.has_next:
             kwargs = g.request_args.copy()
+            kwargs.update(request.view_args.copy())
             kwargs['offset'] = self.offset + self.limit
             kwargs['limit'] = self.limit
             return url_for(request.endpoint, **kwargs)
@@ -91,6 +92,7 @@ class PaginationQuery(object):
         """Returns the next previous for the current endpoint."""
         if self.has_previous:
             kwargs = g.request_args.copy()
+            kwargs.update(request.view_args.copy())
             kwargs['offset'] = self.offset - self.limit
             kwargs['limit'] = self.limit
             return url_for(request.endpoint, **kwargs)
@@ -99,6 +101,7 @@ class PaginationQuery(object):
     def current_url(self):
         """Returns the url for the current endpoint."""
         kwargs = g.request_args.copy()
+        kwargs.update(request.view_args.copy())
         kwargs['offset'] = self.offset
         if self.limit > 0:
             kwargs['limit'] = self.limit

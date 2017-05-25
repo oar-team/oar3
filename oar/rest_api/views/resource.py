@@ -57,9 +57,18 @@ def show(resource_id):
 
 
 @app.route('/<int:resource_id>/jobs', methods=['GET'])
-def jobs(resource_id):
-    g.data.update(Resource.query.get_or_404(resource_id).asdict())
+@app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
+def jobs(offset, limit, resource_id=None):
 
+    query = db.queries.get_jobs_resource(resource_id)
+    page = query.paginate(offset, limit)
+    g.data['total'] = page.total
+    g.data['links'] = page.links
+    g.data['offset'] = offset
+    g.data['items'] = []
+    for item in page:
+        attach_job(item)
+        g.data['items'].append(item)
 
 def attach_links(resource):
     rel_map = (
@@ -78,3 +87,14 @@ def attach_links(resource):
                           resource_id=resource['id'])
             links.append({'rel': rel, 'href': url, 'title': title})
     resource['links'] = links
+
+def attach_job(job):
+    rel_map = (
+        ("show", "self", "show"),
+        ("nodes", "collection", "nodes"),
+        ("resources", "collection", "resources"),
+    )
+    job['links'] = []
+    for title, rel, endpoint in rel_map:
+        url = url_for('%s.%s' % ('jobs', endpoint), job_id=job['id'])
+        job['links'].append({'rel': rel, 'href': url, 'title': title})

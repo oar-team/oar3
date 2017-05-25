@@ -159,3 +159,12 @@ class BaseQueryCollection(object):
                   .filter(job_id_column.in_([job.id for job in jobs]))\
                   .order_by(job_id_column.asc())
         return self.groupby_jobs_resources(jobs, query)
+
+
+    def get_jobs_resource(self, resource_id):
+        """Returns job ids associated to a resource which is allocated to."""
+        query = db.query(Job.id)\
+                  .filter(AssignedResource.resource_id == resource_id)\
+                  .filter(MoldableJobDescription.id == AssignedResource.moldable_id)\
+                  .filter(MoldableJobDescription.job_id == Job.id)
+        return query.order_by(Job.id)
