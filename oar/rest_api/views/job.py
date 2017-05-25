@@ -10,6 +10,7 @@ from oar.lib.submission import (JobParameters, Submission,
                                 check_reservation, default_submission_config)
 
 from oar.cli.oardel import oardel
+from oar.cli.oarhold import oarhold
 
 from . import Blueprint
 from ..utils import Arg
@@ -344,3 +345,18 @@ def signal(job_id, signal=None):
     g.data['exit_status'] = cmd_ret.get_exit_value()
 
     
+@app.route('/<int:job_id>/<any(hold, rhold):hold>', methods=['POST'])
+@app.need_authentication()
+def hold(job_id, hold):
+
+    user = g.current_user
+    
+    running = False
+    if hold == 'rhold':
+        running = True
+
+    cmd_ret = oarhold([job_id], running, None, None, None,  user, False)
+
+    g.data['id'] = job_id
+    g.data['cmd_output'] = cmd_ret.to_str()
+    g.data['exit_status'] = cmd_ret.get_exit_value()

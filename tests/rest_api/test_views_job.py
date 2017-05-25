@@ -183,8 +183,49 @@ def test_app_jobs_signal_2(client, monkeypatch):
     print(res.json)
     assert res.status_code == 200
     assert res.json['exit_status'] == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_hold_1(client, monkeypatch):
+    """POST /jobs/<id>/holds/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.hold', job_id=job_id, hold='hold'), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_hold_2(client, monkeypatch):
+    """POST /jobs/<id>/holds/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    meta_schedule('internal')
+    set_job_state(job_id, 'Running')
+    res = client.post(url_for('jobs.hold', job_id=job_id, hold='hold'), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 1
     
-#@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_rhold_user_not_allowed_1(client, monkeypatch):
+    """POST /jobs/<id>/rholds/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.hold', job_id=job_id, hold='rhold'), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 1
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_rhold_2(client, monkeypatch):
+    """POST /jobs/<id>/rholds/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.hold', job_id=job_id, hold='rhold'), headers={'X_REMOTE_IDENT': 'oar'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 0
+
 #@pytest.mark.usefixtures("monkeypatch_tools")
 #def test_app_jobs_get_one_resources(client, monkeypatch):
 #    """GET /jobs/<id>/resources"""
