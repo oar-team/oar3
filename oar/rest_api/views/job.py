@@ -11,6 +11,7 @@ from oar.lib.submission import (JobParameters, Submission,
 
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
+from oar.cli.oarresume import oarresume
 
 from . import Blueprint
 from ..utils import Arg
@@ -356,6 +357,19 @@ def hold(job_id, hold):
         running = True
 
     cmd_ret = oarhold([job_id], running, None, None, None,  user, False)
+
+    g.data['id'] = job_id
+    g.data['cmd_output'] = cmd_ret.to_str()
+    g.data['exit_status'] = cmd_ret.get_exit_value()
+
+
+@app.route('/<int:job_id>/resumptions/new', methods=['POST'])
+@app.need_authentication()
+def resume(job_id):
+    """Asks to resume a holded job"""
+    user = g.current_user
+
+    cmd_ret = oarresume([job_id], None, None, None, user, False)
 
     g.data['id'] = job_id
     g.data['cmd_output'] = cmd_ret.to_str()

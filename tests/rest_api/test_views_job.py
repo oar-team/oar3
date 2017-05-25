@@ -226,6 +226,40 @@ def test_app_jobs_rhold_2(client, monkeypatch):
     assert res.status_code == 200
     assert res.json['exit_status'] == 0
 
+    
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_resume_bad_nohold(client, monkeypatch):
+    """POST /jobs/<id>/resumptions/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    res = client.post(url_for('jobs.resume', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 1
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_resume_not_allowed(client, monkeypatch):
+    """POST /jobs/<id>/resumptions/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    set_job_state(job_id, 'Suspended')
+    res = client.post(url_for('jobs.resume', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 1  
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_resume(client, monkeypatch):
+    """POST /jobs/<id>/resumptions/new"""
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    set_job_state(job_id, 'Suspended')
+    res = client.post(url_for('jobs.resume', job_id=job_id), headers={'X_REMOTE_IDENT': 'oar'})
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['exit_status'] == 0
+    
 #@pytest.mark.usefixtures("monkeypatch_tools")
 #def test_app_jobs_get_one_resources(client, monkeypatch):
 #    """GET /jobs/<id>/resources"""
