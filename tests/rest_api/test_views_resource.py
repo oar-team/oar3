@@ -33,3 +33,11 @@ def test_app_resources_get_details_paginate(client):
     assert len(res2.json['items']) == 3
     assert 'suspended_jobs' in res1.json['items'][0]
     assert 'suspended_jobs' in res2.json['items'][0]
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_resources_nodes(client):
+    """GET /resources/nodes/<network_address>"""
+    res = client.get(url_for('resources.index', network_address='localhost2'))
+    print(res.json)
+    assert len(res.json['items']) == 2
+    assert res.status_code == 200
