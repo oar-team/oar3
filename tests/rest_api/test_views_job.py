@@ -47,12 +47,12 @@ def test_app_jobs_get_one(client):
 def test_app_jobs_get_all_paginate(client):
     for i in range(10):
         insert_job(res=[(60, [('resource_id=4', "")])], properties="")
-    res = client.get(url_for('jobs.index', offset=0, limit=5))
-    print(res.json, len(res.json['items']))
-    res1 = client.get(url_for('jobs.index', offset=7, limit=5))
-    print(res1.json, len(res.json['items']))
-    assert len(res.json['items']) == 5
-    assert len(res1.json['items']) == 3
+    res1 = client.get(url_for('jobs.index', offset=0, limit=5))
+    print(res1.json, len(res1.json['items']))
+    res2 = client.get(url_for('jobs.index', offset=7, limit=5))
+    print(res2.json, len(res2.json['items']))
+    assert len(res1.json['items']) == 5
+    assert len(res2.json['items']) == 3
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
