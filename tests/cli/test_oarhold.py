@@ -1,14 +1,14 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
+import os
 import pytest
 
 from click.testing import CliRunner
 
-from oar.lib import (db, Job)
+from oar.lib import (db, Job, EventLog)
 from oar.cli.oardel import cli
 from oar.kao.job import insert_job
-
 
 import oar.lib.tools  # for monkeypatching
 
@@ -31,3 +31,19 @@ def test_oarhold_void():
     runner = CliRunner()
     result = runner.invoke(cli)
     assert result.exit_code == 1
+
+def test_oarhold_simple_bad_user():
+    os.environ['OARDO_USER'] = 'Zorglub'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    runner = CliRunner()
+    result = runner.invoke(cli, [str(job_id)])
+    assert result.exit_code == 1
+
+def test_oarhold_simple():
+    os.environ['OARDO_USER'] = 'oar'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    runner = CliRunner()
+    result = runner.invoke(cli, [str(job_id)])
+    event_job_id = db.query(EventLog.job_id).filter(EventLog.job_id == job_id).one()
+    assert event_job_id[0] == job_id
+    assert result.exit_code == 0

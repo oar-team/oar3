@@ -1,11 +1,10 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
+import os
 import pytest
 
 from click.testing import CliRunner
-
-import os
 
 from oar.lib import (db, FragJob, Job)
 from oar.cli.oardel import cli
