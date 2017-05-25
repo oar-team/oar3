@@ -13,3 +13,11 @@ def test_app_resources_get_all(client):
     print(res.json, len(res.json['items']))
     assert res.status_code == 200
     assert len(res.json['items']) == 10    
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_resources_get_details(client):
+    res = client.get(url_for('resources.index', detailed='details'))
+    print(res.json, len(res.json['items']))
+    assert res.status_code == 200
+    assert len(res.json['items']) == 10
+    assert 'suspended_jobs' in res.json['items'][0]
