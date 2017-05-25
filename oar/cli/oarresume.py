@@ -20,7 +20,7 @@ DEFAULT_CONFIG = {
 click.disable_unicode_literals_warning = True
 
 def oarresume(job_ids, array, sql, version, user=None, cli=True):
-    
+
     config.setdefault_config(DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
@@ -78,7 +78,7 @@ def oarresume(job_ids, array, sql, version, user=None, cli=True):
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
 @click.option('-V', '--version',  help='Print OAR version.')
-def cli(job_id, running, array, sql, version):
+def cli(job_id, array, sql, version):
 
     cmd_ret = oarresume(job_id, array, sql, version, None)
     cmd_ret.exit()
