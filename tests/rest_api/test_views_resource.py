@@ -1,7 +1,12 @@
 import pytest
 
+import json
+
+from flask import url_for
+from oar.lib import (db, Resource)
 from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
+
 
 from flask import url_for
 def test_app_resources_index(client):
@@ -55,3 +60,21 @@ def test_app_resources_jobs(client, monkeypatch):
     print(res.json)
     assert res.status_code == 200
     assert res.json['items'][0]['id'] == job_id
+
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_create_resource(client):
+    """POST /resources"""
+    props = json.dumps({'cpu':2, 'core':3})
+
+    res = client.post(url_for('resources.create', hostname='akira', properties=props),\
+                      headers={'X_REMOTE_IDENT': 'oar'})
+
+    r = db.query(Resource.network_address, Resource.cpu, Resource.core)\
+          .filter(Resource.network_address == 'akira').one()
+    
+    print(res.json)
+    assert res.status_code == 200
+    assert r == ('akira', 2, 3)
+    

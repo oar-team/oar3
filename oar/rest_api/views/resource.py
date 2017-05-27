@@ -10,12 +10,12 @@ Define resources api interaction
 from __future__ import division
 
 from flask import url_for, g
-from oar.lib import db
-from oar.lib.models import Resource
+from oar.lib import (db, Resource)
 
 from . import Blueprint
 from ..utils import Arg
 
+import json
 
 app = Blueprint('resources', __name__, url_prefix="/resources")
 
@@ -98,3 +98,24 @@ def attach_job(job):
     for title, rel, endpoint in rel_map:
         url = url_for('%s.%s' % ('jobs', endpoint), job_id=job['id'])
         job['links'].append({'rel': rel, 'href': url, 'title': title})
+
+
+@app.route('/', methods=['POST'])
+@app.args({'hostname': Arg(str), 'properties': Arg(None)})
+@app.need_authentication()
+def create(hostname, properties):
+    """POST /resources"""
+    props = json.loads(properties)
+    user = g.current_user
+    if (user == 'oar') or (user == 'root'):
+        resource_fields = {'network_address': hostname}
+        resource_fields.update(props)
+        ins = Resource.__table__.insert().values(**resource_fields)
+        result = db.session.execute(ins)
+        resource_id = result.inserted_primary_key[0]
+        g.data['id'] = resource_id
+        g.data['uri'] = url_for('%s.%s' % (app.name, 'show'), resource_id=resource_id)
+        g.data['status'] = 'ok'
+    else:
+        g.data['status'] = 'Bad user'
+
