@@ -79,7 +79,7 @@ def exec_gene(options):
     print("Messages sent:", FakeZmq.sent_msgs)
     return (result,  FakeZmq.sent_msgs)
 
-
+@pytest.mark.skip(reason='need lastest version pybatsim ')
 def test_bataar_no_db():    
     result, sent_msgs = exec_gene(['-dno-db'])
     
