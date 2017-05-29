@@ -2,7 +2,8 @@
 from __future__ import unicode_literals, print_function
 import pytest
 from ..modules.fakezmq import FakeZmq
-#import socket
+
+import sys
 import redis
 import zmq
 
@@ -14,6 +15,8 @@ from oar.kao.meta_sched import meta_schedule
 import oar.lib.tools  # for monkeypatching
 from oar.lib.tools import get_date
 from oar.lib.compat import is_py2
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3,4) , reason='Bataar need Python 3')
 
 data_store = {}
 
