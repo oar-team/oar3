@@ -20,13 +20,17 @@
     - Check_pstate_changes
     - Determine new submitted jobs
     - Determine new completed jobs
-    - Send Bastim message w/ submessage: S(submit),C(completed), p(pstate changes completed), N(nop)
+    - Send Bastim message w/ submessage:
+         - JOB_SUBMITTED
+         - JOB_COMPLETED
+         - RESOURCE_STATE_CHANGED
+         - Nop
     - Wait for Bastim compatible scheduler's answer
     - Handle answer
-     - J: Save jobs' allocations in DS
-     - P: Save pstate to apply in resources_pstate_2_change_str[] (retrieve by Metasched through
-          retrieve_pstate_changes_to_apply
-     - N: Nop
+     - EXECUTE_JOB: Save jobs' allocations in DS (ready to by executed)
+     - SET_RESOURCE_STATE: Save pstate to apply in resources_pstate_2_change_str[] 
+                          (retrieve by Metasched through retrieve_pstate_changes_to_apply
+     - Nop
 
  2.1.3) Metascheduler manage pstate/energy
     - Call retrieve_pstate_changes_to_apply
@@ -43,6 +47,7 @@
 
 """
 
+import copy
 import json
 import zmq
 import click
@@ -95,12 +100,10 @@ class BatsimSchedProxy(object):
             self.data_store.redis.set('check_resources_2_' + pstate, '')
 
     def check_pstate_changes(self):
-        ####
-        # check and notify if previously pstate changes are finished
-        #
+        """  check and notify if previously pstate changes are finished
 
-        # *WARNING:* it's assume that there is only one resource by node
-
+        *WARNING:* it's assume that there is only one resource by node
+        """
         resources_pstate_changed_str = {'halt': "", 'wakeup': ""}
 
         #nodes_2_check = {}
@@ -124,8 +127,8 @@ class BatsimSchedProxy(object):
                 resources_unchanged = []
 
                 for r in get_nodes_with_state(nodes_2_check):
-                    if ((pstate=='halt') and (r.state == 'Absent')) or\
-                       ((pstate=='wakeup') and (r.state == 'Alive')):
+                    if ((pstate == 'halt') and (r.state == 'Absent')) or\
+                       ((pstate == 'wakeup') and (r.state == 'Alive')):
                         resources_changed.append(node2roid[r.network_address])
                     else:
                         resources_unchanged.append(node2roid[r.network_address])
@@ -145,7 +148,7 @@ class BatsimSchedProxy(object):
 
     def retrieve_pstate_changes_to_apply(self):
         # call be metascheduler afer scheduling round
-        # *WARNING:* it's assume that there is only one resource by node
+        # *WARNING:* it's assume that there is only one resource per node
         nodes_2_change = {}
         for pstate in ['halt', 'wakeup']:
             if (pstate in self.resources_pstate_2_change_str) and self.resources_pstate_2_change_str[pstate]:
@@ -193,21 +196,31 @@ class BatsimSchedProxy(object):
         # Save active_job_ids in redis
         self.data_store.redis.set("active_job_ids", json.dumps(cached_active_jids))
 
-        batmsg_body = ""
         now = float(self.now)
         now_event = now
+
+        batmsg = {'now': now}
+
+        events = []
 
         # Check resource/node pstate changes and prepare annoncement if any
         resources_pstate_changed_str = self.check_pstate_changes()
         for pstate in ['halt', 'wakeup']:
             if (pstate in resources_pstate_changed_str) and resources_pstate_changed_str[pstate]:
-                batmsg_body += str(now_event) + ':p:' + resources_pstate_changed_str[pstate]\
-                               + '=' + self.pstate2batsim[pstate] + '|'
+                event = {'timestamp': now_event}
+                event['type'] = 'RESOURCE_STATE_CHANGED'
+                event['data'] = {'resource': resources_pstate_changed_str[pstate],
+                                 'state': self.pstate2batsim[pstate]}
+                events.append(event.copy())
                 now_event += 0.0001
 
         if len(finished_jids) > 0:
             for jid in finished_jids:
-                batmsg_body += str(now_event) + ':C:' + self.wload + '!' + str(jid) + '|'
+                event = {'timestamp': now_event}
+                event['type'] = 'JOB_COMPLETED'
+                event['data'] = {'job_id':'{}!{}'.format(self.wload, jid),
+                                 'status': 'SUCCESS'} # TODO
+                events.append(event.copy())
                 now_event += 0.0001
 
         if len(waiting_jids) > 0:
@@ -223,74 +236,65 @@ class BatsimSchedProxy(object):
                 mld_res_rqts = waiting_jobs[waiting_jid].mld_res_rqts
                 subtime = waiting_jobs[waiting_jid].submission_time,
                 walltime = mld_res_rqts[0][1]  # walltime
-                res = mld_res_rqts[0][2][0][0][0][1]  # take the first requested resource number (2 from above example)
+                # take the first requested resource number (2 from above example)
+                res = mld_res_rqts[0][2][0][0][0][1]
 
                 self.data_store.set_job(waiting_jid, subtime, walltime, res)
 
-                batmsg_body += str(now_event) + ':S:' + self.wload + '!' + str(waiting_jid) + '|'
+                event = {'timestamp': now_event}
+                event['type'] = 'JOB_SUBMITTED'
+                event['data'] = {'job_id':'{}!{}'.format(self.wload, waiting_jid)}
                 now_event += 0.0001
 
-        batmsg_header = '2:' + str(now) + '|'
-
-        if batmsg_body == '':
-            batmsg_body = str(now) + ':N|'
-
-        batmsg_req = batmsg_header + batmsg_body[:-1]
+        batmsg['events'] = copy.deepcopy(events)
 
         # send req
-        logger.debug("Message sent to Batsim compatible scheduler:\n" + batmsg_req)
-        self.socket.send_string(batmsg_req)
+        logger.debug("Message sent to Batsim compatible scheduler:\n" + str(batmsg))
+        self.socket.send_string(json.dumps(batmsg))
 
         # recv rep
         logger.debug("Waiting response from scheduler")
-        batmsg_rep = self.socket.recv()
-        logger.debug("Message from scheduler:\n" + batmsg_rep)
+        batmsg_rep = json.loads(self.socket.recv().decode('utf-8'))
 
-        sub_msgs = batmsg_rep.split('|')
-        data = sub_msgs[0].split(":")
-        version = data[0]
+        logger.debug("Message from scheduler:\n" + str(batmsg_rep))
 
-        resources_2_halt = ""
-        resources_2_wakeup = ""
+        events = batmsg_rep['events']
+
+        resources_2_halt = ''
+        resources_2_wakeup = ''
 
         #sched_time = float(data[1])
-        logger.debug("From scheduler: version: " + version)
+        logger.debug('From scheduler')
 
-        for i in range(1, len(sub_msgs)):
-            data = sub_msgs[i].split(':')
-            if data[1] == 'J':
-                jobs = []
-                for job_alloc in data[2].split(';'):
+        for event in events:
+            ev_type = event['type']
+            if 'data' in event:
+                ev_data = event['data']
+            if ev_type == 'EXECUTE_JOB':
+                jid = int(ev_data['job_id'].split('!')[1])
+                res_set = batsim_str2itvs(ev_data['alloc'])
+                json_dict = json.loads(self.data_store.get(jid).decode('utf-8'))
+                walltime = json_dict["walltime"]
 
-                    jid_alloc = job_alloc.split('=')
-                    jid = int(jid_alloc[0].split('!')[1])
-                    res_set = batsim_str2itvs(jid_alloc[1])
-                    json_dict = json.loads(self.data_store.get(jid).decode('utf-8'))
-                    walltime = json_dict["walltime"]
+                jobs = [JobPseudo(id=jid, moldable_id=jid, start_time=self.now,\
+                                  walltime=walltime, res_set=res_set)]
 
-                    jobs.append(JobPseudo(id=jid, moldable_id=jid, start_time=self.now,
-                                          walltime=walltime, res_set=res_set))
+                set_slots_with_prev_scheduled_jobs(self.all_slot_sets, jobs,
+                                                   self.job_security_time)
+                self.plt.save_assigns(jobs, self.resource_set)
 
-                if jobs:
-                    set_slots_with_prev_scheduled_jobs(self.all_slot_sets, jobs,
-                                                       self.job_security_time)
-                    self.plt.save_assigns(jobs, self.resource_set)
-
-            elif data[1] == 'N':
-                pass
-
-            elif data[1] == 'P':
-                subdata = data[2].split('=')
-                if subdata[0] == '0':
-                    resources_2_halt += subdata[1] + ','
+            elif ev_type == 'SET_RESOURCE_STATE':
+                resources = event['data']['resources']
+                if event['data']['state'] == '0':
+                    resources_2_halt += resources + ','
                 else:
-                    resources_2_wakeup += subdata[1] + ','
-            
+                    resources_2_wakeup += resources + ','
+
             #TODO elif data[1] == 'R': #job rejection
             #  pass
-                    
+
             else:
-                raise Exception("Unsupported submessage type " + data[1])
+                raise Exception("Unsupported submessage type: " + ev_type)
 
         if resources_2_halt:
             self.resources_pstate_2_change_str['halt'] = resources_2_halt[:1]
@@ -301,13 +305,12 @@ class BatsimSchedProxy(object):
 
 
 @click.command()
-@click.option('-s', '--send', default='A',
-              help="send Batsim protocol commands to scheduler. \
-              Two commands are supported A (defafor start  or Z for stop.")
-def cli(send):
+@click.option('-e', '--event', default='SIMULATION_BEGINS',
+              help="send Batsim event to scheduler. Default event is 'SIMULATION_BEGINS'.")
+@click.option('-d', '--data', default='{}',
+              help="Data sent with events (ex '{\"nb_resources\":4,\"config\":{}}'")
+def cli(event, data):
     """Command to send start/stop sequence to Batsim compatible scheduler"""
-
-    print("Command to send to Batsim compatible scheduler: ", send)
 
     # open zmq socket (REQ/REP)
     context = zmq.Context()
@@ -316,9 +319,11 @@ def cli(send):
 
     # send command
     now = str(get_date())
-    msg = '2:' + now + '|' + now + ':' + send
-    logger.info("Batsim_sched_proxy CLI send: " + msg)
-    socket.send_string(msg)
 
-    msg = socket.recv()
-    logger.info("Batsim_sched_proxy CLI recv: " + msg)
+    msg = {'now':now, 'events': [{'timestamp':now, 'type':event, 'data': json.loads(data)}]}
+
+    logger.info("Batsim_sched_proxy CLI send: " + str(msg))
+    socket.send_string(json.dumps(msg))
+
+    msg = json.loads(socket.recv().decode('utf-8'))
+    logger.info("Batsim_sched_proxy CLI recv: " + str(msg))

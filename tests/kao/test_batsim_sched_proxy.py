@@ -66,19 +66,22 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
-    
-@pytest.mark.skip(reason='need to update protocol')
+
 def test_simple_submission(monkeypatch):
 
     now = str(get_date())
-    
+
     #2:1484687842.0|1484687842.0:S:1
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
     print('job state:', job.state)
 
-    FakeZmq.recv_msgs[0] = ['2:' + now + '|' + now + ':J:oar!' + str(job.id) +'=1-4']
+    msg = '{"now":' + now + ', "events": [{"timestamp": ' + now +\
+          ', "type": "EXECUTE_JOB", "data": {"job_id": "oar!' + str(job.id) +\
+          '", "alloc": "1-4"}}]}'
+
+    FakeZmq.recv_msgs = {0: [msg]}
 
     meta_schedule('batsim_sched_proxy')
 

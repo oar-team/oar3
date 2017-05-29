@@ -92,7 +92,7 @@ setup(
     oarnodes3=oar.cli.oarnodes:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
-    kamelot_fifo=oar.kao.kamelot_fifo:main
+    kamelot-fifo=oar.kao.kamelot_fifo:main
     bataar=oar.kao.bataar:bataar
     oar-batsim-sched-proxy=oar.kao.batsim_sched_proxy:cli
     ''',
