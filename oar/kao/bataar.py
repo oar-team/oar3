@@ -410,14 +410,13 @@ class BatSched(BatsimScheduler):
 @click.option('-t', '--scheduler_delay', default=0.05, type=click.INT, #TODO default=-1
               help="set the delay in seconds taken by scheduler to schedule all jobs. By default \
               the actual delay of scheduler is used")
-@click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
-@click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
-@click.option('-k', '--redis_key_prefix', default='default', type=click.STRING, help="Set redis key prefix.")
+#@click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
+#@click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
+#@click.option('-k', '--redis_key_prefix', default='default', type=click.STRING, help="Set redis key prefix.")
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
 #@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
 
-def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, redis_hostname,
-           redis_port, redis_key_prefix, verbose):
+def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, verbose):
     """Adaptor to Batsim Simulator."""
     #import pdb; pdb.set_trace()
     if database_mode == 'memory':
@@ -431,14 +430,15 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
     verbose_level = 0
     if verbose:
         verbose_level = 2
-    #import pdb; pdb.set_trace()
-    #if database_mode == 'no-db':
     
+    #if database_mode == 'no-db':
+
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
     #TODO support batsim usage without redis
-    redis_enabled = True 
-    batsim = Batsim(scheduler, redis_key_prefix, redis_hostname, redis_port, redis_enabled,
-                    None, socket_endpoint, verbose_level)
+    
+    batsim = Batsim(scheduler, None, socket_endpoint, verbose_level)
+
+    #import pdb; pdb.set_trace()
     batsim.start()
 
     #elif database_mode == 'memory':

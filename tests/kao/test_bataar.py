@@ -31,11 +31,8 @@ SENT_MSGS_1 = order_json_str_arrays([
 
 data_storage = {}
 
-def order_json_str_arrays(a):
-    return [json.dumps(json.loads(x), sort_keys=True) for x in a]
-
 class FakeRedis(object):
-    def __init__(self, host='localchost', port='6379'):
+    def __init__(self, host='localhost', port='6379'):
         pass
 
     def get(self, key):
@@ -59,13 +56,14 @@ def minimal_db_initialization(request):
 def exec_gene(options):
     FakeZmq.recv_msgs = {0:[
         '{"now":5.0, "events":\
-        [{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":{}}}]}',
-        '{"now":10.0, "events":\
-        [{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}]}',
-        '{"now":19.0, "events":\
-        [{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS"}}]}',
-        '{"now":25.0, "events":\
-        [{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
+[{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
+{"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}}}}]}',
+'{"now":10.0, "events":\
+[{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}]}',
+'{"now":19.0, "events":\
+[{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS"}}]}',
+'{"now":25.0, "events":\
+[{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
     ]}
     
     global data_storage
@@ -82,7 +80,7 @@ def exec_gene(options):
     return (result,  FakeZmq.sent_msgs)
 
 
-def test_bataar_no_db():
+def test_bataar_no_db():    
     result, sent_msgs = exec_gene(['-dno-db'])
     
     assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
