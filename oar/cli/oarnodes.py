@@ -37,7 +37,7 @@ def oarnodes(resource, state, liste, events, sql, json, version, cli):
 @click.option('-s', '--state', help='show the states of the nodes')
 @click.option('-l', '--list', help='show the nodes list')
 @click.option('-e', '--events',
-              help='show the events recorded for a node either since the date given as parameter or the last 20 minutes'
+              help='show the events recorded for a node either since the date given as parameter or the last 20 minutes')
 @click.option('-J', '--json', help='print result in JSON format')
 @click.option('-V', '--version',  help='Print OAR version.')
 def cli(resource, state, liste, events, sql, json, version, cli=True):
