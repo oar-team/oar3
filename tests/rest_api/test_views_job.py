@@ -85,8 +85,7 @@ def test_app_jobs_get_state(client):
 def test_app_jobs_get_ids(client):
     job_id1 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bob')
     job_id2 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='alice')
-    res = client.get(url_for('jobs.index', ids="1:2"))
-                             #["job_id1, job_id2]))
+    res = client.get(url_for('jobs.index', ids='{}:{}'.format(job_id1, job_id2)))
     print(res.json, len(res.json['items']))
     assert len(res.json['items']) == 2
     
