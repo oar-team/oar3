@@ -40,8 +40,9 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
 #@app.need_authentication()
 def index(offset, limit, user, start_time, stop_time, states, array_id,
           job_ids, detailed=None):
+    
     query = db.queries.get_jobs_for_user(user, start_time, stop_time,
-                                         states, array_id, job_ids, detailed)
+                                         states, job_ids, array_id, detailed)
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = page.links

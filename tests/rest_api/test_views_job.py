@@ -76,12 +76,20 @@ def test_app_jobs_get_user(client):
 def test_app_jobs_get_state(client):
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bob')
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='alice')
-    #meta_schedule('internal')
     set_job_state(job_id, 'Hold')
     res = client.get(url_for('jobs.index', state=['Waiting', 'Running']))
     print(res.json, len(res.json['items']))
     assert len(res.json['items']) == 1
-
+    
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_jobs_get_ids(client):
+    job_id1 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bob')
+    job_id2 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='alice')
+    res = client.get(url_for('jobs.index', ids="1:2"))
+                             #["job_id1, job_id2]))
+    print(res.json, len(res.json['items']))
+    assert len(res.json['items']) == 2
+    
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_forbidden(client):
     data = {'resource':[], 'command':'sleep "1"'}
