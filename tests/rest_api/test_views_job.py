@@ -88,7 +88,16 @@ def test_app_jobs_get_ids(client):
     res = client.get(url_for('jobs.index', ids='{}:{}'.format(job_id1, job_id2)))
     print(res.json, len(res.json['items']))
     assert len(res.json['items']) == 2
-    
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_jobs_get_array(client):
+    job_id1 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
+    job_id2 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
+    res = client.get(url_for('jobs.index', array=3))
+    print(res.json, len(res.json['items']))
+    assert len(res.json['items']) == 2
+
+
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_forbidden(client):
     data = {'resource':[], 'command':'sleep "1"'}
