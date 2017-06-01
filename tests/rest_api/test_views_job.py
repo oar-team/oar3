@@ -6,6 +6,7 @@ from flask import url_for
 from oar.lib import (db, Job, FragJob)
 from oar.kao.job import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
+from oar.lib.tools import get_date
 
 # TODO test PAGINATION
 # nodes / resources
@@ -91,12 +92,27 @@ def test_app_jobs_get_ids(client):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_jobs_get_array(client):
-    job_id1 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
-    job_id2 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
+    insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
     res = client.get(url_for('jobs.index', array=3))
     print(res.json, len(res.json['items']))
     assert len(res.json['items']) == 2
 
+@pytest.mark.skip(reason='debug pending')    
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_get_from_to_ar(client):
+    t0 = get_date()
+    insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', start_time=t0+10,\
+               info_type='localhost:4242')
+    insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', start_time=t0+70,\
+               info_type='localhost:4242')
+    insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', start_time=t0+200,\
+               info_type='localhost:4242')
+    meta_schedule('internal')
+    res = client.get(url_for('jobs.index', start_time=t0+50, stop_time=t0+70, detailed='details'))
+    print(res.json, len(res.json['items']))
+    assert len(res.json['items']) == 2
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_forbidden(client):

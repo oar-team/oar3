@@ -32,6 +32,8 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
            'user': Arg(str),
            'from': Arg(int, dest='start_time'),
            'to': Arg(int, dest='stop_time'),
+           'start_time': Arg(int),
+           'stop_time': Arg(int),
            'state': Arg([str, ','], dest='states'),
            'array': Arg(int, dest='array_id'),
            'ids': Arg([int, ':'], dest='job_ids')})
@@ -40,7 +42,7 @@ app = Blueprint('jobs', __name__, url_prefix='/jobs')
 #@app.need_authentication()
 def index(offset, limit, user, start_time, stop_time, states, array_id,
           job_ids, detailed=None):
-    
+    #import pdb; pdb.set_trace()
     query = db.queries.get_jobs_for_user(user, start_time, stop_time,
                                          states, job_ids, array_id, detailed)
     page = query.paginate(offset, limit)
