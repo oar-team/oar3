@@ -50,8 +50,8 @@ if not version:
 
 setup(
     name='oar3',
-    author="Salem Harrache",
-    author_email='salem.harrache@inria.fr',
+    author="Olivier Richard, Salem Harrache",
+    author_email='oar-devel@lists.gforge.inria.fr',
     version=version,
     url='https://github.com/oar-team/oar3',
     packages=find_packages(),
