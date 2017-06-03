@@ -79,7 +79,11 @@ def exec_gene(options):
     print("Messages sent:", FakeZmq.sent_msgs)
     return (result,  FakeZmq.sent_msgs)
 
-@pytest.mark.skip(reason='need lastest version pybatsim ')
+
+
+
+
+#@pytest.mark.skip(reason='need lastest version pybatsim ')
 def test_bataar_no_db():    
     result, sent_msgs = exec_gene(['-dno-db'])
     
@@ -135,4 +139,44 @@ def test_bataar_db_best_effort_contiguous(): #TODO need better test to verify al
     result, sent_msgs = exec_gene(['-pBEST_EFFORT_CONTIGUOUS', '-dmemory'])
 
     assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
+    assert result.exit_code == 0
+
+
+
+def exec_gene_tokens(options):
+    FakeZmq.recv_msgs = {0:[
+        '{"now":5.0, "events":\
+[{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
+{"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}}}}]}',
+'{"now":10.5, "events":\
+[{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}\
+[{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!2"}}\
+[{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!3"}}]}',
+'{"now":19.0, "events":\
+[{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS"}}]}',
+'{"now":25.0, "events":\
+[{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
+    ]}
+    
+    global data_storage
+    data_storage = { 'default:job_foo!1':
+                     b'{"id":"foo!1","subtime":10,"walltime":100,"res":2,"tokens":3,"profile":"1"}',
+                     'default:job_foo!1':
+                     b'{"id":"foo!2","subtime":10,"walltime":100,"res":2,"tokens":2,"profile":"1"}',
+                     'default:job_foo!1':
+                     b'{"id":"foo!3","subtime":10,"walltime":100,"res":2,"profile":"1"}'
+    }
+    args = options
+    args.append('--scheduler_delay=5')
+    runner = CliRunner()
+
+    result = runner.invoke(bataar, args)
+    print("exit code:", result.exit_code)
+    print(result.output)
+    return (result,  FakeZmq.sent_msgs)
+
+def test_bataar_tokens_no_db():
+    result, sent_msgs = exec_gene_tokens(['-dno-db', '-tokens 4'])
+    print("Messages sent:", sent_msgs)
+    #assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0

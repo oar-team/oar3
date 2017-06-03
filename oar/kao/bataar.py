@@ -19,7 +19,7 @@ from oar.lib.compat import iteritems
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.lib.interval import itvs2batsim_str0 # TOREMOVE ?
+from oar.lib.interval import (itvs2batsim_str0, intersec) # TOREMOVE ?
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
@@ -163,7 +163,7 @@ class SchedPolicyParams(object):
 
 class BatSched(BatsimScheduler):
     def __init__(self, scheduler_policy, types, sched_delay, node_size,
-                 database_mode='no-db', platform_model="simu"):
+                 database_mode='no-db', platform_model="simu", tokens=0):
         self.scheduler_policy = scheduler_policy
         self.platform_model = platform_model
         self.database_mode = database_mode
@@ -171,11 +171,11 @@ class BatSched(BatsimScheduler):
         self.sched_delay = sched_delay
         self.jobs = {}
 
-        self.db_jid2s_jid = {}     #TODO verify
-        self.index_simu2db_jid = 0 #TODO verify
-        self.offset_simu2db_jid = 1 #TODO verify/parametrize
+        self.db_jid2s_jid = {}      # TODO verify
+        self.index_simu2db_jid = 0  # TODO verify
+        self.offset_simu2db_jid = 1 # TODO verify/parametrize
 
-        self.ujid_l = [] #TODO ???
+        self.ujid_l = [] # TODO ???
 
         self.env = None
         self.platform = None
@@ -186,14 +186,21 @@ class BatSched(BatsimScheduler):
             self.waiting_jids = set()
         self.jobs_completed = []
         self.nb_res = 0
+        self.itvs_res_default = []
+        
+        if tokens > 0:
+            print('Tokens are present : ', self.tokens)
 
+        self.tokens = tokens
+        self.itvs_res_tokens = []
         self.sp_params = SchedPolicyParams(scheduler_policy, types)
 
     def onAfterBatsimInit(self):
-
+        """Initialiaze OAR's structures related to plaform (as resources and theirs hierarchies)"""
         self.nb_res = self.bs.nb_res
         nb_res = self.nb_res
         node_size = self.node_size
+
         # import pdb; pdb.set_trace()
         if self.database_mode == 'no-db':
             hy_resource_id = [[(i, i)] for i in range(1, nb_res+1)]
@@ -204,14 +211,26 @@ class BatSched(BatsimScheduler):
 
             print('hierarchy: ', hierarchy)
 
+            tokens = self.tokens
+            if tokens > 0:
+                print('Tokens are present : ', self.tokens)
+
+            all_res = nb_res + tokens
             res_set = ResourceSetSimu(
-                rid_i2o=range(nb_res+1),
-                rid_o2i=range(nb_res+1),
-                roid_itvs=[(1, nb_res)],
+                rid_i2o=range(all_res + 1),
+                rid_o2i=range(all_res + +1),
+                roid_itvs=[(1, all_res)],
                 hierarchy=hierarchy,
-                available_upto={2147483600: [(1, nb_res)]}
+                available_upto={2147483600: [(1, all_res)]}
             )
+            self.itvs_res_default = [(1, nb_res)]
+            self.itvs_tokens = [(nb_res +1, all_res)]
+
+            
         elif self.database_mode == 'memory':
+            if self.tokens > 0:
+                raise NotImplementedError('Tokens are not supported with this Database mode: '
+                                          + self.database_mode)
             monkeypatch_oar_lib_tools()
             db_initialization(nb_res)
             self.platform_model = 'batsim-db'
@@ -248,8 +267,15 @@ class BatSched(BatsimScheduler):
         jid = new_ujid
         walltime = int(math.ceil(float(j.requested_time)))
         res = j.requested_resources
-        rqb = [([('resource_id', res)], [(1, self.nb_res)])]
-        rqbh = [([('node', 1), ('resource_id', res)], [(1, self.nb_res)])]
+        rqb = [([('resource_id', res)], self.itvs_res_default)]
+        rqbh = [([('node', 1), ('resource_id', res)], self.itvs_res_default)]
+
+        if self.tokens:
+            requested_tokens = j.json_dict['tokens']
+            if  requested_tokens > 0:
+                rq_tokens = ([('resource_id', requested_tokens)], self.itvs_tokens)
+                rqb.append(rq_tokens)
+                rqbh.append(rq_tokens)
 
         if self.sp_params.add_1h:
             if self.sp_params.add_mld:
@@ -343,7 +369,12 @@ class BatSched(BatsimScheduler):
             jobs_res = {}
             for jid in jids_to_launch:
                 ds_job = self.jobs[jid].ds_job
-                res = itvs2batsim_str0(self.jobs[jid].res_set)
+                res_set = self.jobs[jid].res_set
+                if self.tokens:
+                    # Keep only default type resource
+                    res_set = intersec(res_set, self.itvs_res_default)
+
+                res = itvs2batsim_str0(res_set)
                 scheduled_jobs.append(ds_job)
                 jobs_res[ds_job.id] = res
 
@@ -407,16 +438,20 @@ class BatSched(BatsimScheduler):
               LOCAL | 4 |\
               * Allocated resources which belongs to the same node. Node's size must be provided,\
               job's sizes are not allowed to exceed node's size.")
-@click.option('-t', '--scheduler_delay', default=0.05, type=click.INT, #TODO default=-1
+@click.option('--scheduler_delay', default=0.05, type=click.INT, #TODO default=-1
               help="set the delay in seconds taken by scheduler to schedule all jobs. By default \
               the actual delay of scheduler is used")
+@click.option('--token', type=click.INT,
+              help=' define a number of allocable tokens by jobs. Theses tokens are extra resources manage by OAR in intern.\
+              Add a token parameter in job definition : {"id":"foo!1","subtime":10,"walltime":100,"res":4,"token": 4, "profile":"1"}. Note: only available with no-db mode (default)')
+
 #@click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
 #@click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
 #@click.option('-k', '--redis_key_prefix', default='default', type=click.STRING, help="Set redis key prefix.")
 @click.option('-v', '--verbose', is_flag=True, help="Be more verbose.")
 #@click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
 
-def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, verbose):
+def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, token, verbose):
     """Adaptor to Batsim Simulator."""
     #import pdb; pdb.set_trace()
     if database_mode == 'memory':
@@ -433,7 +468,7 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
     
     #if database_mode == 'no-db':
 
-    scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode)
+    scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, token, database_mode)
     #TODO support batsim usage without redis
     
     batsim = Batsim(scheduler, None, socket_endpoint, verbose_level)
