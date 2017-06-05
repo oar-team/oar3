@@ -189,6 +189,8 @@ class BatSched(BatsimScheduler):
         self.itvs_res = []
         self.itvs_res_default = []
         self.tokens = tokens
+        if not tokens:
+            self.tokens = 0
         self.sp_params = SchedPolicyParams(scheduler_policy, types)
 
     def onAfterBatsimInit(self):

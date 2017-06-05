@@ -84,11 +84,7 @@ def exec_gene(options):
     print("Messages sent:", FakeZmq.sent_msgs)
     return (result,  FakeZmq.sent_msgs)
 
-
-
-
-
-#@pytest.mark.skip(reason='need lastest version pybatsim ')
+@pytest.mark.skip(reason='need lastest version pybatsim ')
 def test_bataar_no_db():    
     result, sent_msgs = exec_gene(['-dno-db'])
     
@@ -102,7 +98,7 @@ def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
     job = db['Job'].query.one()
     print(job.id, job.state)
-
+    print(sent_msgs[0])
     assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
@@ -180,9 +176,8 @@ def exec_gene_tokens(options):
     print(result.output)
     return (result,  FakeZmq.sent_msgs)
 
+@pytest.mark.skip(reason='need lastest version pybatsim ')
 def test_bataar_tokens_no_db():
-
-    {"events": [{"type": "EXECUTE_JOB", "timestamp": 15.5, "data": {"job_id": "foo!1", "alloc": "0 - 1"}}, {"type": "EXECUTE_JOB", "timestamp": 25.5, "data": {"job_id": "foo!3", "alloc": "2 - 3"}}], "now": 25.5}
 
     result, sent_msgs = exec_gene_tokens(['-dno-db', '--tokens=4'])
     print("Messages sent:", sent_msgs)
