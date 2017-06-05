@@ -21,15 +21,10 @@ import datetime
 import sphinx.environment
 from docutils.utils import get_source_line
 
-
-def _warn_node(self, msg, node):
-    if not msg.startswith('nonlocal image URI found:'):
-        self._warnfunc(msg, '%s:%s' % get_source_line(node))
-
-sphinx.environment.BuildEnvironment.warn_node = _warn_node
-
 HERE = os.path.dirname(__file__)
 AUTHORS = ["Salem Harrache", "Olivier Richard"]
+
+suppress_warnings = ['image.nonlocal_uri']
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
