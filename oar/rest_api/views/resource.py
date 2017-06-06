@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 """
 oar.rest_api.views.resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -11,6 +10,9 @@ from __future__ import division
 
 from flask import url_for, g
 from oar.lib import (db, Resource)
+from oar.lib.resource_handling import set_resource_state
+
+import oar.lib.tools as tools
 
 from . import Blueprint
 from ..utils import Arg
@@ -119,3 +121,24 @@ def create(hostname, properties):
     else:
         g.data['status'] = 'Bad user'
 
+
+@app.route('/<int:resource_id>/state', methods=['POST'])
+@app.args({'state': Arg(str)})
+@app.need_authentication()
+def state(resource_id, state):
+    """POST /resources/<id>/state
+    Change the state
+    """
+    user = g.current_user
+    if (user == 'oar') or (user == 'root'):
+
+        set_resource_state(resource_id, state, 'NO')
+
+        tools.notify_almighty('ChState')
+        tools.notify_almighty('Term')
+
+        g.data['id'] = resource_id
+        g.data['uri'] = url_for('%s.%s' % (app.name, 'show'), resource_id=resource_id)
+        g.data['status'] = 'Change state request registered'
+    else:
+        g.data['status'] = 'Bad user'
