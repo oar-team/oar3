@@ -80,3 +80,18 @@ def test_app_create_resource(client):
     assert res.status_code == 200
     assert r == ('akira', 2, 3)
     
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_resource_state(client):
+    """POST /resources/<id>/state"""
+    r_id = 4
+    r1 = db.query(Resource.state).filter(Resource.id==r_id).one()
+    print(r1)
+    res = client.post(url_for('resources.state', resource_id=r_id, state='Dead'),\
+                      headers={'X_REMOTE_IDENT': 'oar'})
+
+    r2 = db.query(Resource.state).filter(Resource.id==r_id).one()
+    print(r2)
+    print(res.json)
+    assert (r1==('Alive',) and r2==('Dead',))
+    assert res.status_code == 200
