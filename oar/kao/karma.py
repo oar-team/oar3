@@ -103,10 +103,11 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
         # TODO NOT UDSED
         # fairsharing_nb_job_limit = 100000
 
-    karma_window_size = 3600 * 30 * 24  # TODO in conf ???
+
 
     # Set undefined config value to default one
     default_config = {
+        "SCHEDULER_FAIRSHARING_WINDOW_SIZE": 3600 * 30 * 24, 
         "SCHEDULER_FAIRSHARING_PROJECT_TARGETS": "{default => 21.0}",
         "SCHEDULER_FAIRSHARING_USER_TARGETS": "{default => 22.0}",
         "SCHEDULER_FAIRSHARING_COEF_PROJECT": "0",
@@ -115,6 +116,8 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
     }
     config.setdefault_config(default_config)
 
+    karma_window_size = config["SCHEDULER_FAIRSHARING_WINDOW_SIZE"]
+    
     # get fairsharing config if any
     karma_proj_targets = perl_hash_2_dict(
         config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])
