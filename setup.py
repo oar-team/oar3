@@ -90,6 +90,7 @@ setup(
     oarhold3=oar.cli.oarhold:cli
     oarresume3=oar.cli.oarresume:cli
     oarnodes3=oar.cli.oarnodes:cli
+    oarremoveresource3=oar.cli.oarremoveresource:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
     kamelot-fifo=oar.kao.kamelot_fifo:main

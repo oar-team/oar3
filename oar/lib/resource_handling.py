@@ -32,3 +32,5 @@ def  set_resource_state(resource_id, state, finaud_decision):
     db.session.execute(ins)
 
 
+def remove_resource(resource_id):
+    """Remove resource"""
