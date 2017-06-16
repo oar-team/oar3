@@ -142,3 +142,36 @@ def state(resource_id, state):
         g.data['status'] = 'Change state request registered'
     else:
         g.data['status'] = 'Bad user'
+
+
+@app.route('/<int:resource_id>', methods=['DELETE'])
+@app.need_authentication()
+def delete(resource_id):
+    """DELETE /resources/<id>
+    Delete the resource identified by *d)
+    """
+    user = g.current_user
+    if user == 'oar':
+
+        set_resource_state(resource_id, state, 'NO')
+
+        tools.notify_almighty('ChState')
+        tools.notify_almighty('Term')
+
+        g.data['id'] = resource_id
+        g.data['status'] = 'Deleted'
+    else:
+        g.data['status'] = 'Only the oar user can delete resources'
+
+
+
+    # Check if the resource exists
+    #my $query;
+    #my $Resource;
+    #if ($id == 0) {
+    #  $query="WHERE network_address = \"$node\" AND cpuset = $cpuset";
+    #}
+    #else {
+    #  $query="WHERE resource_id=$id";
+    #}
+    #my $sth = $base->prepare("SELECT resource_id FROM resources $query");
