@@ -10,12 +10,12 @@ click.disable_unicode_literals_warning = True
 @click.command()
 @click.argument('resource', required=True,  type=int,)
 def cli(resource):
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     resource_id = resource
     cmd_ret = CommandReturns(cli)
     if resource_id:
-        remove_resource(resource_id)
+        error, error_msg = remove_resource(resource_id)
+        cmd_ret.error(error_msg, error, error)
         cmd_ret.exit()
     else:
         cmd_ret.exit(1)
-    

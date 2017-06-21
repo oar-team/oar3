@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import sys
+import pwd
 import time
 import re
 import os
@@ -309,3 +310,6 @@ def send_checkpoint_signal(job):
     logger.debug("Send checkpoint signal to the job " + str(job.id))
     logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
+
+def get_username(): # NOTUSED
+    return pwd.getpwuid( os.getuid() ).pw_name

@@ -3,6 +3,7 @@ from __future__ import with_statement, absolute_import, unicode_literals
 
 import os
 import sys
+import pwd
 import re
 import decimal
 import datetime
@@ -147,14 +148,12 @@ def render_query(statement, bind=None, reindent=True):
     except ImportError:  # pragma: no cover
         return raw_sql
 
-
 def merge_dicts(*dict_args):
     """Merge given dicts into a new dict."""
     result = {}
     for dictionary in dict_args:
         result.update(dictionary)
     return result
-
 
 def get_table_name(name):
     def _join(match):
@@ -163,3 +162,4 @@ def get_table_name(name):
             return ('_%s_%s' % (word[:-1], word[-1])).lower()
         return '_' + word.lower()
     return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
+

@@ -1,7 +1,8 @@
 # coding: utf-8
 """ Functions to handle resource"""
-
 from __future__ import unicode_literals, print_function
+
+import os
 
 from oar.lib import (db, Resource, ResourceLog, Job, AssignedResource,
                      EventLog, FragJob, get_logger)
@@ -32,8 +33,18 @@ def set_resource_state(resource_id, state, finaud_decision):
     db.session.execute(ins)
 
 
-def remove_resource(resource_id):
+def remove_resource(resource_id, user=None):
     """Remove resource"""
+
+    if not user: 
+        if 'OARDO_USER' in os.environ:
+            user = os.environ['OARDO_USER']
+        else:
+            user = os.environ['USER']
+
+    if (user != 'oar') and (user != 'root'):
+        return (4, 'You are not the right user.')
+    
     # get resources
     res = db.query(Resource.state).filter(Resource.id == resource_id).one()
     state = res[0]
@@ -55,8 +66,8 @@ def remove_resource(resource_id):
         db.query(Resource).filter(Resource.id == resource_id).delete()
 
         db.session.expire_all() #???
-
+        return(0, None)
     else:
-        #return(error)
-        pass
+        return(3, 'Resource must be in DEAD state.')
+
 
