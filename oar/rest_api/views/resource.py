@@ -10,7 +10,7 @@ from __future__ import division
 
 from flask import url_for, g
 from oar.lib import (db, Resource)
-from oar.lib.resource_handling import set_resource_state
+from oar.lib.resource_handling import set_resource_state, remove_resource
 
 import oar.lib.tools as tools
 
@@ -20,7 +20,6 @@ from ..utils import Arg
 import json
 
 app = Blueprint('resources', __name__, url_prefix="/resources")
-
 
 @app.route('/', methods=['GET'])
 @app.route('/<any(details, full):detailed>', methods=['GET'])
@@ -150,28 +149,24 @@ def delete(resource_id):
     """DELETE /resources/<id>
     Delete the resource identified by *d)
     """
-    user = g.current_user
-    if user == 'oar':
-
-        set_resource_state(resource_id, state, 'NO')
-
-        tools.notify_almighty('ChState')
-        tools.notify_almighty('Term')
-
-        g.data['id'] = resource_id
-        g.data['status'] = 'Deleted'
-    else:
-        g.data['status'] = 'Only the oar user can delete resources'
-
-
-
-    # Check if the resource exists
-    #my $query;
-    #my $Resource;
+    # TODO: DELETE /resources/<node>/<cpuset_id>
+    #
     #if ($id == 0) {
     #  $query="WHERE network_address = \"$node\" AND cpuset = $cpuset";
     #}
-    #else {
-    #  $query="WHERE resource_id=$id";
-    #}
-    #my $sth = $base->prepare("SELECT resource_id FROM resources $query");
+
+    user = g.current_user
+
+    if resource_id:
+        error, error_msg = remove_resource(resource_id, user)
+        g.data['id'] = resource_id
+        if error == 0:
+            g.data['status'] = 'Deleted'
+        else:
+            g.data['status'] = error_msg
+        g.data['exit_value'] = error
+
+    else:
+        g.data['status'] = 'Can not determine resource id'
+        g.data['exit_value'] = 1
+

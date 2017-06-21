@@ -95,3 +95,15 @@ def test_app_resource_state(client):
     print(res.json)
     assert (r1==('Alive',) and r2==('Dead',))
     assert res.status_code == 200
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_resource_delete(client):
+    """DELETE /resources/<id>"""
+    db['Resource'].create(network_address="localhost", state="Dead")
+    nb_res1 = len(db.query(Resource).all())
+    res = client.delete(url_for('resources.delete', resource_id=11),\
+                        headers={'X_REMOTE_IDENT': 'oar'})
+    nb_res2 = len(db.query(Resource).all())
+    assert nb_res1 == 11
+    assert nb_res2 == 10
+    assert res.status_code == 200

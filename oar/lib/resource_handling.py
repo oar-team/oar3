@@ -43,7 +43,7 @@ def remove_resource(resource_id, user=None):
             user = os.environ['USER']
 
     if (user != 'oar') and (user != 'root'):
-        return (4, 'You are not the right user.')
+        return (4, 'Only the oar or root users can delete resources')
     
     # get resources
     res = db.query(Resource.state).filter(Resource.id == resource_id).one()
