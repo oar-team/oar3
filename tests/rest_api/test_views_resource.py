@@ -84,6 +84,7 @@ def test_app_create_resource(client):
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_resource_state(client):
     """POST /resources/<id>/state"""
+    db.commit()
     r_id = 4
     r1 = db.query(Resource.state).filter(Resource.id==r_id).one()
     print(r1)

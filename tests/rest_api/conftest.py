@@ -41,7 +41,6 @@ def minimal_db_initialization(request):
         for i in range(10):
             db['Resource'].create(network_address="localhost" + str(int(i / 2)))
 
-        db.commit()
         yield
 
 @pytest.fixture
