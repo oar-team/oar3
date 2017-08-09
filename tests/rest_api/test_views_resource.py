@@ -49,7 +49,6 @@ def test_app_resources_nodes(client):
     assert len(res.json['items']) == 2
     assert res.status_code == 200
 
-@pytest.mark.skip(reason='debug pending')
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_resources_jobs(client, monkeypatch):
@@ -58,7 +57,8 @@ def test_app_resources_jobs(client, monkeypatch):
     meta_schedule('internal')
     set_job_state(job_id, 'Running')
     db.commit()
-    res = client.get(url_for('resources.jobs', resource_id=3))
+    first_id = db.query(Resource).first().id
+    res = client.get(url_for('resources.jobs', resource_id=first_id+3))
     print(res.json)
     assert res.status_code == 200
     assert res.json['items'][0]['id'] == job_id
@@ -85,7 +85,8 @@ def test_app_create_resource(client):
 def test_app_resource_state(client):
     """POST /resources/<id>/state"""
     db.commit()
-    r_id = 4
+    first_id = db.query(Resource).first().id
+    r_id =  first_id + 4
     r1 = db.query(Resource.state).filter(Resource.id==r_id).one()
     print(r1)
     res = client.post(url_for('resources.state', resource_id=r_id, state='Dead'),\
@@ -102,7 +103,8 @@ def test_app_resource_delete(client):
     """DELETE /resources/<id>"""
     db['Resource'].create(network_address="localhost", state="Dead")
     nb_res1 = len(db.query(Resource).all())
-    res = client.delete(url_for('resources.delete', resource_id=11),\
+    first_id = db.query(Resource).first().id
+    res = client.delete(url_for('resources.delete', resource_id=first_id+nb_res1-1),\
                         headers={'X_REMOTE_IDENT': 'oar'})
     nb_res2 = len(db.query(Resource).all())
     assert nb_res1 == 11

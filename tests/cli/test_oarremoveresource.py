@@ -33,8 +33,9 @@ def test_oarremoveresource_bad_user():
 
 def test_oarremoveresource_not_dead():
     os.environ['OARDO_USER'] = 'oar'
+    first_id = db.query(Resource).first().id
     runner = CliRunner()
-    result = runner.invoke(cli,['1'])
+    result = runner.invoke(cli,[str(first_id)])
     assert result.exit_code == 3
     
 def test_oarremoveresource_simple():
@@ -42,7 +43,10 @@ def test_oarremoveresource_simple():
     runner = CliRunner()
     db['Resource'].create(network_address="localhost", state="Dead")
     nb_res1 = len(db.query(Resource).all())
-    result = runner.invoke(cli, ['6'])
+    first_id = db.query(Resource).first().id
+    dead_rid = first_id + 5
+    
+    result = runner.invoke(cli, [str(dead_rid)])
     nb_res2 = len(db.query(Resource).all())
     assert nb_res1 == 6
     assert nb_res2 == 5
