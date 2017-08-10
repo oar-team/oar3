@@ -17,7 +17,7 @@ def test_all_module_api():
         'MoldableJobDescription', 'OARException', 'Queue', 'Resource',
         'ResourceLog', 'ResultProxyIter', 'Scheduler', '__all__', 
         '__doc__', '__docformat__', '__file__', '__name__', '__package__',
-        '__path__', '__version__', 'basequery', 'cached_property', 'compat',
+        '__path__', '__version__', 'basequery', 'cached_property', 
         'config', 'configuration', 'create_logger', 'database', 'db',
         'dump_fixtures', 'exceptions', 'fixture', 'get_logger',
         'load_fixtures', 'logger', 'logging', 'models', 'psycopg2',
