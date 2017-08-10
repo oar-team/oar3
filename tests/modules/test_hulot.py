@@ -1,5 +1,5 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
+
 import oar.lib.tools
 from oar.modules.hulot import (Hulot, HulotClient, fill_timeouts, get_timeout)
 from oar.lib import config

@@ -29,7 +29,6 @@ import os
 import socket
 import zmq
 
-from oar.lib.compat import iterkeys
 from oar.lib import (config, get_logger)
 import oar.lib.tools as tools
 
@@ -141,7 +140,7 @@ class BipbipCommander(object):
 
 
             # Remove finished executors:
-            for job_id in iterkeys(self.bipbip_leon_executors):
+            for job_id in self.bipbip_leon_executors.keys():
                 if not self.bipbip_leon_executors[job_id].is_alive():
                     del self.bipbip_leon_executors[job_id]
             

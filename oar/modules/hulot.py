@@ -33,7 +33,6 @@ import socket
 
 from multiprocessing import (Process, Pool, TimeoutError)
 
-from oar.lib.compat import (iterkeys, iteritems)
 from oar.lib import (config, get_logger)
 from oar.lib.node import (get_alive_nodes_with_jobs, get_nodes_with_given_sql,
                           change_node_state, get_nodes_that_can_be_waked_up)
@@ -63,7 +62,7 @@ logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process):
     # Checks if some nodes in list_to_remind can be processed 
-    for node, cmd_info in iteritems(nodes_list_to_remind):
+    for node, cmd_info in nodes_list_to_remind.items():
         if node not in nodes_list_running:
             # move this node from reminded list to list to process
             logger.debug("Adding '" + node + '=>' + cmd_info  + "' to list to process.")
@@ -108,7 +107,7 @@ def get_timeout(timeouts, nb_nodes):
 
     timeout = timeouts[1]
     #Search for the timeout of the corresponding interval
-    for nb in sorted(iterkeys(timeouts)):
+    for nb in sorted(timeouts.keys()):
         if nb_nodes < nb:
             break
         timeout = timeouts[nb]
@@ -245,7 +244,7 @@ class Hulot(object):
             all_occupied_nodes = get_alive_nodes_with_jobs()
             nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(tools.get_date())
 
-            for properties in iterkeys(keepalive):
+            for properties in keepalive.keys():
                 occupied_nodes = []
                 idle_nodes = []
                 keepalive[properties]['nodes'] = [p for p in get_nodes_with_given_sql(properties)]
@@ -292,7 +291,7 @@ class Hulot(object):
             nodes_alive = get_nodes_with_given_sql("state='Alive'")
 
             # Checks if some booting nodes need to be suspected
-            for node, cmd_info in iteritems(nodes_list_running):
+            for node, cmd_info in nodes_list_running.items():
                 if cmd_info['command'] == 'WAKEUP':
                     if node in nodes_alive:
                         logger.debug("Booting node '" + node + "' seems now up, so removing it from running list.")
@@ -318,7 +317,7 @@ class Hulot(object):
                 node_toRemind = False
                 if nodes_list_running:
                     # Checking
-                    for node_running, cmd_info in iteritems(nodes_list_running):
+                    for node_running, cmd_info in nodes_list_running.items():
                         if node == node_running:
                             node_finded = True
                             if command != cmd_info['command']:
@@ -352,7 +351,7 @@ class Hulot(object):
             # already waking up + the number of nodes to wake up
             timeout = get_timeout(self.timeouts, len(nodes_list_running) + len(nodes_list_to_process))
 
-            for node, cmd_info in iteritems(nodes_list_to_process):
+            for node, cmd_info in nodes_list_to_process.items():
                 cmd = cmd_info['command']
                 if cmd == 'WAKEUP':
                     #Save the timeout for the nodes to be processed.
@@ -361,7 +360,7 @@ class Hulot(object):
                 elif cmd == 'HALT':
                     # Don't halt nodes that needs to be kept alive
                     match = False
-                    for properties, prop_info in iteritems(keepalive):
+                    for properties, prop_info in keepalive.items():
                         nodes = prop_info['nodes']
                         if node in nodes:
                             if prop_info['current_idle'] <= prop_info['min']:
@@ -375,7 +374,7 @@ class Hulot(object):
                     # If the node is ok to be halted
                     if not match:
                         # Update the keepalive counts
-                        for properties, prop_info in iteritems(keepalive):
+                        for properties, prop_info in keepalive.items():
                             nodes = prop_info['nodes']
                             if node in nodes:
                                 prop_info['current_idle'] -= 1
@@ -424,7 +423,7 @@ class Hulot(object):
 
 
             # Adds to running list last new launched commands
-            for node, cmd_info in iteritems(nodes_list_to_process):
+            for node, cmd_info in nodes_list_to_process.items():
                 nodes_list_running[node] = cmd_info
 
             # Cleaning the list to process
@@ -487,7 +486,7 @@ def window_forker(commands, window_size, timeout):
         pool = Pool(processes=window_size)
         executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in range(commands)}
 
-        for executor, cmd_node in iteritems(executors):
+        for executor, cmd_node in executors.items():
             try:
                 executor.wait(timeout)
             except TimeoutError:
