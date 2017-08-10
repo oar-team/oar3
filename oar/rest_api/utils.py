@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import os
 import sys
 
@@ -8,7 +6,7 @@ import sys
 from flask import request, abort
 
 from oar.lib import config
-from oar.lib.compat import reraise, to_unicode, iteritems, integer_types
+from oar.lib.utils import reraise, to_unicode, integer_types
 
 
 class WSGIProxyFix(object):
@@ -156,7 +154,7 @@ class ArgParser(object):
         """Parses the request arguments."""
         parsed_kwargs = {}
         raw_kwargs = {}
-        for argname, argobj in iteritems(self.argmap):
+        for argname, argobj in self.argmap.items():
             dest = argobj.dest if argobj.dest is not None else argname
             parsed_value = self.parse_arg(argname, argobj)
             if parsed_value is not self.MISSING:
@@ -168,7 +166,7 @@ class ArgParser(object):
                            "URI is not supported. %s" % (argname, e))
                     try:
                         abort(400)
-                    except:
+                    except Exception:
                         exc_type, exc_value, tb = sys.exc_info()
                         exc_value.data = msg
                         reraise(exc_type, exc_value, tb.tb_next)

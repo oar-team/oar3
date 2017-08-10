@@ -8,20 +8,17 @@ Proxy to Perl Rest API
 """
 import sys
 import base64
-if sys.version_info[0] == 3:
-    from http import client as httplib
-    from urllib import parse as urlencode
-    from urllib import parse as urlparse
-else:
-    from urlparse import urlparse
-    from urllib import urlencode
-    import httplib
+
+from http import client as httplib
+from urllib import parse as urlencode
+from urllib import parse as urlparse
+
 
 from flask import request, Response, url_for, abort
 from werkzeug.datastructures import Headers
 
 from oar.lib.utils import JSONEncoder
-from oar.lib.compat import json, reraise
+from oar.lib.utils import json, reraise
 from oar.lib import get_logger
 
 logger = get_logger("oar.rest-api.proxy", forward_stderr=True)

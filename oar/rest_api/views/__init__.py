@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import
-
 import os
 import time
 from collections import OrderedDict
@@ -9,8 +7,7 @@ from functools import wraps
 from flask import Blueprint as FlaskBlueprint, Response, g, abort
 
 from oar.lib.database import BaseModel
-from oar.lib.compat import json
-from oar.lib.utils import JSONEncoder
+from oar.lib.utils import json, JSONEncoder
 
 from ..utils import ArgParser
 

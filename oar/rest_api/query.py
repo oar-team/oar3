@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import
-
 from math import ceil
 
 from flask import abort, current_app, request, url_for, g

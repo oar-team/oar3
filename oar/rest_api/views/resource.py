@@ -6,7 +6,6 @@ oar.rest_api.views.resource
 Define resources api interaction
 
 """
-from __future__ import division
 
 from flask import url_for, g
 from oar.lib import (db, Resource)

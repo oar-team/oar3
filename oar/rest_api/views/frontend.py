@@ -1,8 +1,4 @@
-
-
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import oar.lib
 from flask import url_for, g
 

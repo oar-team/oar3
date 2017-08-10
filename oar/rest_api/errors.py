@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, unicode_literals
-
 from flask import jsonify
 from werkzeug.exceptions import default_exceptions
 from werkzeug.exceptions import HTTPException
 
-from oar.lib.compat import iterkeys, to_unicode
+from oar.lib.utils import to_unicode
 
 
 def register_error_handlers(app):
@@ -27,7 +25,7 @@ def register_error_handlers(app):
         response.status_code = code
         return response
 
-    for code in iterkeys(default_exceptions):
+    for code in default_exceptions.keys():
         app.errorhandler(code)(make_json_error)
 
     return app
