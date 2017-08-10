@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 from oar.lib import config
 
 from oar.kao.simsim import (ResourceSetSimu, JobSimu,

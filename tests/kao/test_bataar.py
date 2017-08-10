@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 import pytest
 from ..modules.fakezmq import FakeZmq
 from click.testing import CliRunner

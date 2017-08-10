@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import, unicode_literals
 import time
 import pickle
 
@@ -9,7 +8,6 @@ import requests
 import zerorpc
 
 from oar.lib.utils import SimpleNamespace
-from oar.lib.compat import iteritems
 from oar.lib.tools import duration_to_hms
 
 
@@ -123,7 +121,7 @@ class _CoormApplicationProxy(object):
         job_dict = proxy_args[1]
         job = SimpleNamespace(job_dict)
         hy = {}
-        for res_label in iteritems(proxy_args[2]):
+        for res_label in (proxy_args[2]).items():
             hy[res_label] = [tuple(i) for i in proxy_args[2][res_label]]
 
         self.app.logger.debug("┃ Before COORM scheduling")

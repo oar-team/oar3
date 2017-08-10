@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 from copy import deepcopy
 from oar.kao.slot import Slot, SlotSet
 from oar.lib.interval import equal_itvs

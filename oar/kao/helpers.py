@@ -1,11 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 import random
 import colorsys
-
-
-from oar.lib.compat import iteritems
 
 NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
@@ -32,7 +27,7 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
     fig, ax = plt.subplots()
 
     if slots_set:
-        for sid, slot in iteritems(slots_set.slots):
+        for sid, slot in slots_set.slots.items():
             col = "blue"
             if (sid % 2):
                 col = "red"
@@ -47,7 +42,7 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
                 ax.add_artist(rect)
 
     if jobs:
-        for jid, job in iteritems(jobs):
+        for jid, job in jobs.items():
             col = RGB_tuples[random.randint(0, NB_COLORS - 1)]
             duration = job.walltime
             if hasattr(job, 'run_time'):

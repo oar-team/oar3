@@ -6,7 +6,7 @@ from struct import pack
 
 from sqlalchemy import types as sa_types
 
-from oar.lib.utils import is_bytes, str, basestring
+from oar.lib.utils import is_bytes, basestring
 
 
 def serialize_rows_to_csv(rows, null_value, output):

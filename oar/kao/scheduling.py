@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
 
@@ -8,7 +6,6 @@ from oar.lib.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 
 from oar.lib import get_logger, config
-from oar.lib.compat import iteritems
 
 # for quotas
 import oar.lib.resource as rs
@@ -66,8 +63,8 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
 
             jobs_slotsets[ss_name].append(job)
 
-    for ss_name, slot_set in iteritems(slots_sets):
-        logger.debug(" slots_sets.iteritems():" + ss_name)
+    for ss_name, slot_set in slots_sets.items():
+        logger.debug(" slots_sets.items():" + ss_name)
         if ss_name in jobs_slotsets:
             slot_set.split_slots_jobs(jobs_slotsets[ss_name])
 
@@ -258,7 +255,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     '''Schedule loop with support for jobs container - can be recursive (recursivity has not be tested)'''
 
-    #    for k,job in iteritems(jobs):
+    #    for k,job in jobs.items():
     # print("*********j_id:", k, job.mld_res_rqts[0])
 
     for jid in id_jobs:

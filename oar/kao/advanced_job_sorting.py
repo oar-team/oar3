@@ -1,8 +1,6 @@
 # coding: utf-8
 """Collection of Job Sorting functions to provide priority policies
 """
-from __future__ import unicode_literals, print_function
-from oar.lib.compat import itervalues
 from oar.lib import (get_logger, config)
 
 import json
@@ -23,7 +21,7 @@ def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
     # establish  job priori 
     #
 
-    for job in itervalues(jobs):
+    for job in jobs.values():
         if 'priority' in job.types:
             try:
                 priority = float(job.types['priority'])

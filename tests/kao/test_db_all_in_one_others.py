@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, print_function
+# coding: utf-8
 import pytest
 
 from oar.lib import db

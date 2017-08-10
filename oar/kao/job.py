@@ -1,7 +1,5 @@
 # coding: utf-8
 """ Functions to manage jobs """
-from __future__ import unicode_literals, print_function
-
 from copy import deepcopy
 
 from sqlalchemy import (text, distinct)
@@ -13,7 +11,6 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config)
 from oar.lib.psycopg2 import pg_bulk_insert
-from oar.lib.compat import iteritems, itervalues
 
 from oar.kao.tools import update_current_scheduler_priority
 
@@ -73,7 +70,7 @@ class JobPseudo(object):
 
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
-        for key, value in iteritems(kwargs):
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
     def simple_req(self, resources_req, walltime, resources_constraint):
@@ -144,7 +141,7 @@ def get_jobs_types(jids, jobs):
 
             (jobs_types[jid])[t] = v
 
-    for job in itervalues(jobs):
+    for job in jobs.values():
         if job.id in jobs_types:
             job.types = jobs_types[job.id]
         else:
@@ -163,7 +160,7 @@ def set_jobs_cache_keys(jobs):
     For jobs with dependencies, they do not update the cache entries.
 
     """
-    for job_id, job in iteritems(jobs):
+    for job_id, job in jobs.items():
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
             for res_rqt in job.mld_res_rqts:
                 (moldable_id, walltime, hy_res_rqts) = res_rqt
@@ -527,7 +524,7 @@ def save_assigns(jobs, resource_set):
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
-        for j in itervalues(jobs) if isinstance(jobs, dict) else jobs:
+        for j in jobs.values() if isinstance(jobs, dict) else jobs:
             if j.start_time > -1:
                 logger.debug("job_id to save: " + str(j.id))
                 mld_id_start_time_s.append(
@@ -554,7 +551,7 @@ def save_assigns_bulk(jobs, resource_set):
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
-        for j in itervalues(jobs):
+        for j in jobs.values():
             if j.start_time > -1:
                 logger.debug("job_id  to save: " + str(j.id))
                 mld_id_start_time_s.append((j.moldable_id, j.start_time))
@@ -815,7 +812,7 @@ def insert_job(**kwargs):
 
     default_values = {'launching_directory': "", 'checkpoint_signal': 0, 'properties': ""}
 
-    for k, v in iteritems(default_values):
+    for k, v in default_values.items():
         if k not in kwargs:
             kwargs[k] = v
 

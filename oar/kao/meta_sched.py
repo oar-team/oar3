@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 import sys
 import os
 import re
@@ -10,7 +8,7 @@ from sqlalchemy import text
 from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
 from oar.lib.tools import (Popen, call, TimeoutExpired)
-from oar.lib.compat import iteritems
+from subprocess import PIPE
 
 from oar.lib.job_handling import (frag_job)
 
@@ -55,8 +53,7 @@ from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 import oar.kao.advanced_extra_metasched
 
-if sys.version_info >= (3,4):
-    from oar.kao.batsim_sched_proxy import BatsimSchedProxy
+from oar.kao.batsim_sched_proxy import BatsimSchedProxy
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -395,7 +392,7 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch, current_tim
 
     fragged_jobs = []
 
-    for rid, job_id in iteritems(rid2jid_to_launch):
+    for rid, job_id in rid2jid_to_launch.items():
         if rid in besteffort_rid2job:
             be_job = besteffort_rid2job[rid]
             job_to_launch = jobs_to_launch[job_id]
@@ -506,7 +503,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
     sched_dumped_core = 0
     try:
         child = Popen([cmd_scheduler, queue.name, str(
-            initial_time_sec), initial_time_sql], stdout=subprocess.PIPE)
+            initial_time_sec), initial_time_sql], stdout=PIPE)
 
         for line in iter(child.stdout.readline, ''):
             logger.debug("Read on the scheduler output:" + str(line.rstrip()))
@@ -596,7 +593,7 @@ def nodes_energing_saving(current_time_sec):
 
         # Determine nodes to halt
         nodes_2_halt = []
-        for node, idle_duration in iteritems(idle_nodes):
+        for node, idle_duration in idle_nodes.items():
             if idle_duration < tmp_time:
                 # Search if the node has enough time to sleep
                 tmp = get_next_job_date_on_node(node)

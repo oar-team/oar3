@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.job import NO_PLACEHOLDER, JobPseudo

@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 from oar.kao.helpers import extract_find_assign_args
 
 

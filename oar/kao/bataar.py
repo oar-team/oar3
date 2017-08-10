@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 # BatAar: BatSim Adaptor for OAR
-from __future__ import unicode_literals, print_function
 
 import pdb
 import sys
@@ -14,7 +13,6 @@ if sys.version_info[0] == 2:
     from sets import Set
 
 from oar.lib import (db, config, get_logger, Job, Resource, Queue)
-from oar.lib.compat import iteritems
 
 from oar.kao.job import (insert_job, set_job_state)
 
@@ -323,7 +321,7 @@ class BatSched(BatsimScheduler):
             schedule_cycle(self.platform, self.env.now, "default")
 
             # retrieve jobs to launch
-            for jid, job in iteritems(self.platform.assigned_jobs):
+            for jid, job in self.platform.assigned_jobs.items():
                 print("job.start_time %s" % job.start_time)
                 if (job.start_time == self.env.now) and (job.state == 'Waiting'):
                     self.waiting_jids.remove(jid)

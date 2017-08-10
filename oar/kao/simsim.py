@@ -1,12 +1,9 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 import re
 import simpy
 from simpy.events import AnyOf
 
 from oar.lib import config
-from oar.lib.compat import iteritems
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
@@ -56,7 +53,7 @@ class SimSched(object):
             any_of_events = AnyOf(self.env, events)
             ev = yield any_of_events
 
-            for k, v in iteritems(ev.todict()):
+            for k, v in (ev.todict()).items():
                 if k == next_job_arrival:
                     print("job arrives !", v)
                     for jid in v:
@@ -85,7 +82,7 @@ class SimSched(object):
             schedule_cycle(self.platform, now, "test")
 
             # launch jobs if needed
-            for jid, job in iteritems(self.platform.assigned_jobs):
+            for jid, job in self.platform.assigned_jobs.items():
                 if job.start_time == now:
                     self.waiting_jids.remove(jid)
                     job.state = "Running"
@@ -108,14 +105,14 @@ class SimSched(object):
 class ResourceSetSimu(object):
 
     def __init__(self, **kwargs):
-        for key, value in iteritems(kwargs):
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
 
 class JobSimu(object):
 
     def __init__(self, **kwargs):
-        for key, value in iteritems(kwargs):
+        for key, value in kwargs.items():
             setattr(self, key, value)
 '''
 SWF Format (extracted from http://www.cs.huji.ac.il/labs/parallel/workload/swf.html)

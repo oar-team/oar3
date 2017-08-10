@@ -1,10 +1,8 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-import json
+import simplejson as json
 from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
-from oar.lib.compat import iteritems
 from oar.lib.interval import itvs_size, intersec
 import oar.lib.resource as rs
 
@@ -124,7 +122,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def show_counters(self, msg=''):  # pragma: no cover
         print('show_counters:', msg)
-        for k, v in iteritems(self.counters):
+        for k, v in self.counters.items():
             print(k, ' = ', v)
 
     def update(self, job, prev_nb_res=0, prev_duration=0):
@@ -178,7 +176,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def combine(self, quotas):
         # self.show_counters('combine before')
-        for key, value in iteritems(quotas.counters):
+        for key, value in quotas.counters.items():
             self.counters[key][0] = max(self.counters[key][0], value[0])
             self.counters[key][1] = max(self.counters[key][1], value[1])
             self.counters[key][2] += value[2]
@@ -187,11 +185,11 @@ account (but the inner jobs are used to compute the quotas).
     def check(self, job):
         global quotas_rules
         # self.show_counters('before check, job id: ' + str(job.id))
-        for rl_fields, rl_quotas in iteritems(quotas_rules):
+        for rl_fields, rl_quotas in quotas_rules.items():
             # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, counters in iteritems(self.counters):
+            for fields, counters in self.counters.items():
                 queue, project, job_type, user = fields
                 nb_resources, nb_jobs, resources_time = counters
                 # match queue
@@ -261,7 +259,7 @@ def load_quotas_rules():
     quotas_rules_filename = config['QUOTAS_FILE']
     with open(quotas_rules_filename) as json_file:
         json_quotas = json.load(json_file)
-        for k, v in iteritems(json_quotas['quotas']):
+        for k, v in json_quotas['quotas'].items():
             quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
         if 'quotas_job_types' in json_quotas:
             quotas_job_types.extend(json_quotas['quotas_job_types'])

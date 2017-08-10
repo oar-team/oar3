@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 import pytest
 from ..modules.fakezmq import FakeZmq
 
@@ -14,9 +13,6 @@ from oar.kao.meta_sched import meta_schedule
 
 import oar.lib.tools  # for monkeypatching
 from oar.lib.tools import get_date
-from oar.lib.compat import is_py2
-
-pytestmark = pytest.mark.skipif(sys.version_info < (3,4) , reason='Bataar need Python 3')
 
 data_store = {}
 
@@ -25,10 +21,7 @@ class FakeRedis(object):
         pass
 
     def set(self, key, value):
-        if is_py2:
-            data_store[key] = value
-        else:
-            data_store[key] = bytes(value, 'utf8')
+        data_store[key] = bytes(value, 'utf8')
 
     def get(self, key):
         return data_store[key]

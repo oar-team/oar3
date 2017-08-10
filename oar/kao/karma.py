@@ -1,8 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 
 from oar.lib import config, db, Accounting
-from oar.lib.compat import itervalues
 from sqlalchemy import func
 import re
 
@@ -147,7 +145,7 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
     # compute karma for each job
     #
 
-    for job in itervalues(jobs):
+    for job in jobs.values():
         if job.project in karma_projects_used:
             karma_proj_used_j = karma_projects_used[job.project]
         else:

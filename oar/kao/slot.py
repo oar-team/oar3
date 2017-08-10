@@ -1,7 +1,5 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 from oar.lib import config
-from oar.lib.compat import iteritems
 from functools import reduce
 
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
@@ -121,7 +119,7 @@ class SlotSet:
 
     def __str__(self):
         lines = []
-        for i, slot in iteritems(self.slots):
+        for i, slot in self.slots.items():
             lines.append("[%s] %s" % (i, slot))
         max_length = max([len(line) for line in lines])
         lines.append("%s" % ("-" * max_length))

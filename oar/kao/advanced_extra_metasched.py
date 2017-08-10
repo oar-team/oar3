@@ -1,8 +1,6 @@
 # coding: utf-8
 """Extra metascheduling functions which can be called between each queue handling
 """
-from __future__ import unicode_literals, print_function
-
 from oar.lib import (db, get_logger, config, Resource)
 
 logger = get_logger("oar.extra_metasched")
