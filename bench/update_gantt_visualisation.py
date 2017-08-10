@@ -1,8 +1,6 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 from oar.lib import (config, db, GanttJobsPrediction)
 from oar.lib.interval import itvs2ids
-from oar.lib.compat import itervalues
 from oar.kao.job import JobPseudo, save_assigns
 from oar.kao.simsim import ResourceSetSimu
 from oar.lib.psycopg2 import pg_bulk_insert
@@ -60,7 +58,7 @@ def save_assigns_bulk_0(jobs, resource_set):
     if len(jobs) > 0:
         mld_id_start_time_s = []
         mld_id_rid_s = []
-        for j in itervalues(jobs):
+        for j in jobs.values():
             mld_id_start_time_s.append((j.moldable_id, j.start_time))
             riods = itvs2ids(j.res_set)
             mld_id_rid_s.extend(
@@ -78,7 +76,7 @@ def save_assigns_redis_0(jobs, resource_set):
     if len(jobs) > 0:
         r = redis.Redis()
         mld_id_start_time_s = []
-        for j in itervalues(jobs):
+        for j in jobs.values():        
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
             riods = itvs2ids(j.res_set)
@@ -95,7 +93,7 @@ def save_assigns_redis_pipeline_0(jobs, resource_set):
         r = redis.Redis()
         pipe = r.pipeline()
         mld_id_start_time_s = []
-        for j in itervalues(jobs):
+        for j in jobs.values():        
             mld_id_start_time_s.append(
                 {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
             riods = itvs2ids(j.res_set)
