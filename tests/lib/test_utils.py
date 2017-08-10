@@ -14,7 +14,7 @@ from oar.lib import Database
 from oar.lib.utils import (SimpleNamespace, cached_property, ResultProxyIter,
                            try_convert_decimal, row2dict, merge_dicts,
                            get_table_name, render_query, to_json)
-from oar.lib.compat import is_pypy
+from oar.lib.utils import is_pypy
 from .. import assert_raises
 
 

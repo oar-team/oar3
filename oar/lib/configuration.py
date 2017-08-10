@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import, unicode_literals
-
 import sys
 import pprint
 
 from io import open
 
-from .compat import iteritems, reraise
-from .utils import try_convert_decimal
+from .utils import try_convert_decimal, reraise
 from .exceptions import InvalidConfiguration
 
 
@@ -57,7 +54,7 @@ class Configuration(dict):
             with open(filename, encoding="utf-8") as config_file:
                 for line in config_file:
                     if comment_char in line:
-                        line, comment = line.split(comment_char, 1)
+                        line, _ = line.split(comment_char, 1)
                     if equal_char in line:
                         key, value = line.split(equal_char, 1)
                         key = key.strip()
@@ -67,7 +64,7 @@ class Configuration(dict):
                         conf[key] = value
             if clear:
                 self.clear()
-            for k, v in iteritems(conf):
+            for k, v in conf.items():
                 self[k] = v
         except IOError as e:
             e.strerror = 'Unable to load configuration file (%s)' % e.strerror
@@ -106,7 +103,7 @@ class Configuration(dict):
             raise InvalidConfiguration("Cannot find %s" % keys)
 
     def setdefault_config(self, default_config):
-        for k, v in iteritems(default_config):
+        for k, v in default_config.items():
             self.setdefault(k, v)
 
     def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
@@ -136,7 +133,7 @@ class Configuration(dict):
         dictionary should not include the namespace
         """
         rv = {}
-        for k, v in iteritems(self):
+        for k, v in self.items():
             if not k.startswith(namespace):
                 continue
             if trim_namespace:

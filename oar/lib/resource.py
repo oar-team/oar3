@@ -1,10 +1,7 @@
 # coding: utf-8
-from __future__ import print_function
-
 from sqlalchemy import text
 
 from oar.lib import config, db, Resource
-from oar.lib.compat import iteritems
 from oar.lib.hierarchy import Hierarchy
 from oar.lib.interval import ordered_ids2itvs, unordered_ids2itvs
 
@@ -101,7 +98,7 @@ class ResourceSet(object):
         self.hierarchy = Hierarchy(hy_rid=hy_roid).hy
 
         # transform available_upto
-        for k, v in iteritems(available_upto):
+        for k, v in available_upto.items():
             self.available_upto[k] = ordered_ids2itvs(v)
 
         #
@@ -110,4 +107,5 @@ class ResourceSet(object):
         default_roids = [self.rid_i2o[i] for i in default_rids]
         self.default_resource_itvs = unordered_ids2itvs(default_roids)
         # update global variable
+        #TODO
         default_resource_itvs = self.default_resource_itvs

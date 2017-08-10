@@ -3,6 +3,7 @@ import pytest
 import time
 import datetime
 
+from io import StringIO
 from codecs import open
 
 from sqlalchemy import event, Table
@@ -13,8 +14,8 @@ from collections import OrderedDict
 
 from oar.lib import fixture
 from oar.lib.database import Database, SessionProperty, QueryProperty
-from oar.lib.compat import StringIO, to_unicode, json
-from oar.lib.utils import to_json
+
+from oar.lib.utils import to_json, to_unicode, json
 
 from .. import assert_raises
 

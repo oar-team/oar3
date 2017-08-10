@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import
-
 from sqlalchemy.orm import Query, Load
 
 from .exceptions import DoesNotExist
@@ -9,8 +7,6 @@ from .models import (Job, MoldableJobDescription, AssignedResource,
                      GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
                      Resource)
 from .utils import render_query
-from .compat import str
-
 
 __all__ = ['BaseQuery', 'BaseQueryCollection']
 

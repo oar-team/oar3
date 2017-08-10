@@ -9,8 +9,6 @@
 from types import ModuleType
 import sys
 
-import six
-
 # The implementation of a lazy-loading module in this file replaces the
 # oar package when imported from within.  Attribute access to the oar
 # module will then lazily import from the modules that implement the objects.
@@ -43,11 +41,11 @@ all_by_module = {
 # modules that should be imported when accessed as attributes of oar
 attribute_modules = frozenset(['configuration', 'database', 'exceptions',
                                'logging', 'models', 'utils', 'fixture',
-                               'psycopg2', 'compat', 'basequery'])
+                               'psycopg2', 'basequery'])
 
 
 object_origins = {}
-for module, items in six.iteritems(all_by_module):
+for module, items in all_by_module.items():
     for item in items:
         object_origins[item] = module
 

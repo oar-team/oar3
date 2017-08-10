@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 import re
 import time
 
@@ -8,7 +6,7 @@ from codecs import open
 from collections import OrderedDict
 from datetime import datetime
 
-from .compat import json, iteritems, itervalues, iterkeys
+import simplejson as json
 from .utils import JSONEncoder, ResultProxyIter
 
 
@@ -26,7 +24,7 @@ class JsonSerializer(object):
             return self.ref_time - self.old_ref_time
 
     def convert_datetime(self, dct):
-        for key, value in iteritems(dct):
+        for key, value in dct.items():
             try:
                 dct[key] = datetime(*map(int, re.split('[^\d]', value)[:-1]))
             except Exception:
@@ -62,8 +60,8 @@ class JsonSerializer(object):
 
 
 def get_defined_tables(db):
-    all_tables = set([table_name for table_name in iterkeys(db.tables)])
-    tables_from_models = set([m.__table__.name for m in itervalues(db.models)])
+    all_tables = set([table_name for table_name in db.tables.keys()])
+    tables_from_models = set([m.__table__.name for m in db.models.values()])
     tables_only = list(all_tables - tables_from_models)
     tables = {}
     for table_name in tables_only:
@@ -90,12 +88,12 @@ def dump_fixtures(db, filename, ref_time=None):
     ref_time = int(time.time()) if ref_time is None else ref_time
     tables = get_defined_tables(db)
     data = []
-    for table_name, table in iteritems(tables):
+    for table_name, table in tables.items():
         entry = OrderedDict()
         entry['table'] = table_name
         entry['records'] = ResultProxyIter(db.session.execute(table.select()))
         data.append(entry)
-    for model_name, model in iteritems(db.models):
+    for model_name, model in db.models.items():
         entry = OrderedDict()
         entry['model'] = model_name
         entry['records'] = db.query(model).all()

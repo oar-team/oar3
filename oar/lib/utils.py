@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import, unicode_literals
 
 import os
 import sys
@@ -9,10 +8,59 @@ import decimal
 import datetime
 
 from decimal import Decimal, InvalidOperation
-from collections import OrderedDict
+from collections import OrderedDict, Callable
 
-from .compat import numeric_types, to_unicode, json, reraise
+import simplejson as json
 
+basestring = (str, bytes)
+integer_types = (int, )
+numeric_types = integer_types + (float, )
+builtin_str = str
+
+try:  # pragma: no cover
+    import __pypy__
+    is_pypy = True
+except:  # pragma: no cover
+    __pypy__ = None
+    is_pypy = False
+
+def with_metaclass(meta, base=object):
+    return meta("NewBase", (base,), {})
+
+def to_unicode(obj, encoding='utf-8'):
+    """
+    Convert ``obj`` to unicode"""
+    # unicode support
+    if isinstance(obj, str):
+        return obj
+
+    # bytes support
+    if is_bytes(obj):
+        if hasattr(obj, 'tobytes'):
+            return str(obj.tobytes(), encoding)
+        return str(obj, encoding)
+
+    # string support
+    if isinstance(obj, basestring):
+        if hasattr(obj, 'decode'):
+            return obj.decode(encoding)
+        else:
+            return str(obj, encoding)
+
+    return str(obj)
+
+def reraise(tp, value, tb=None):
+    if value.__traceback__ is not tb:
+        raise value.with_traceback(tb)
+    raise value
+
+def is_bytes(x):
+    return isinstance(x, (bytes, memoryview, bytearray))
+
+
+
+def callable(obj):
+    return isinstance(obj, Callable)
 
 class JSONEncoder(json.JSONEncoder):
     """JSON Encoder class that handles conversion for a number of types not

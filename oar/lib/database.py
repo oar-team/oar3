@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement, absolute_import
-
 import sys
 import threading
 
@@ -19,9 +17,7 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
-from .utils import cached_property, merge_dicts, get_table_name, to_json
-from .compat import iteritems, itervalues, iterkeys, reraise
-
+from .utils import cached_property, merge_dicts, get_table_name, to_json, reraise
 
 __all__ = ['Database']
 
@@ -37,7 +33,7 @@ class BaseModel(object):
     @classmethod
     def create(cls, **kwargs):
         record = cls()
-        for key, value in iteritems(kwargs):
+        for key, value in kwargs.items():
             setattr(record, key, value)
         try:
             cls._db.session.add(record)
@@ -65,8 +61,8 @@ class BaseModel(object):
 
     def __iter__(self):
         """Return an iterable that supports .next()"""
-        for (k, v) in iteritems(self.asdict()):
-            yield (k, v)
+        for (key, value) in (self.asdict()).items():
+            yield (key, value)
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, inspect(self).identity)
@@ -235,7 +231,7 @@ class Database(object):
                         ','.join(table.name
                                  for table in self.tables.values())))
                 else:
-                    for table in itervalues(self.tables):
+                    for table in self.tables.values():
                         con.execute(table.delete())
                 trans.commit()
             except:
@@ -264,7 +260,7 @@ class Database(object):
 
     def show(self):
         """ Return small database content representation."""
-        for model_name in sorted(iterkeys(self.models)):
+        for model_name in sorted(self.models.keys()):
             data = [inspect(i).identity
                     for i in self.models[model_name].query.all()]
             print(model_name.ljust(25), data)

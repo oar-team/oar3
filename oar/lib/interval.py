@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import print_function, absolute_import, unicode_literals
 from interval_set import interval_set
 
 from itertools import islice

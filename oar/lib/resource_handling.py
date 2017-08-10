@@ -1,7 +1,5 @@
 # coding: utf-8
 """ Functions to handle resource"""
-from __future__ import unicode_literals, print_function
-
 import os
 
 from oar.lib import (db, Resource, ResourceLog, Job, AssignedResource,

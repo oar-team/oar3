@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 
 import os
 import tempfile
@@ -8,11 +7,9 @@ import shutil
 from codecs import open
 
 import pytest
-import six
 
 from oar.lib import config, db
 from . import DEFAULT_CONFIG
-
 
 @pytest.yield_fixture(scope='session', autouse=True)
 def setup_config(request):
@@ -48,7 +45,7 @@ def setup_config(request):
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(filename, 'w', encoding='utf-8') as fd:
-            for key, value in six.iteritems(config):
+            for key, value in config.items():
                 if not key.startswith('SQLALCHEMY_'):
                     fd.write("%s=%s\n" % (key, str(value)))
 

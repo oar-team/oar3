@@ -1,9 +1,6 @@
 # coding: utf-8
 """ Functions to handle job"""
-
 # TODO move some functions from oar/kao/job.py
-from __future__ import unicode_literals, print_function
-
 import os
 import re
 from sqlalchemy import (text, distinct)

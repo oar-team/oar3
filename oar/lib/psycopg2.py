@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, absolute_import, unicode_literals
-
 import random
 
 from tempfile import NamedTemporaryFile
@@ -8,7 +6,7 @@ from struct import pack
 
 from sqlalchemy import types as sa_types
 
-from oar.lib.compat import is_bytes, str, basestring
+from oar.lib.utils import is_bytes, str, basestring
 
 
 def serialize_rows_to_csv(rows, null_value, output):

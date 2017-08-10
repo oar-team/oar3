@@ -1,7 +1,4 @@
 # coding: utf-8
-
-from __future__ import unicode_literals, print_function
-
 from sqlalchemy import (func, text, distinct, or_)
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,

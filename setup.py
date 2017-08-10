@@ -26,7 +26,6 @@ requirements = [
     'tabulate',
     'click',
     'simpy',
-    'six',
     'pyzmq',
     'redis',
     'requests',

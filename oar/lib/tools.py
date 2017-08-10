@@ -1,5 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
 import sys
 import pwd
 import time
@@ -9,12 +8,7 @@ import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
-from oar.lib.compat import is_py2
-
-if is_py2:
-    from subprocess32 import (Popen, call, PIPE, TimeoutExpired)
-else:
-    from subprocess import (Popen, call, PIPE, TimeoutExpired)  # noqa
+from subprocess import (Popen, call, PIPE, TimeoutExpired)
 
 logger = get_logger("oar.lib.tools")
 

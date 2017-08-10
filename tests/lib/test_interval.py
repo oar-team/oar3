@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals, print_function
 from oar.lib.interval import (intersec, extract_n_scattered_block_itv,
                               ordered_ids2itvs, itvs2ids, add_intervals,
                               equal_itvs, equal_and_sub_prefix_itvs,

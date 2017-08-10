@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-
 from oar.lib.submission import parse_resource_descriptions
 
 default_res = '/resource_id=1'
