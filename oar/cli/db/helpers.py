@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import sys
 import re
 import click
@@ -12,7 +10,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from oar.lib import config
-from oar.lib.compat import reraise
+from oar.lib.utils import reraise
 
 
 magenta = lambda x, **kwargs: click.style("%s" % x, fg="magenta", **kwargs)

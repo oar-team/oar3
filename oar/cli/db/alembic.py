@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, absolute_import, unicode_literals
-
-
 from sqlalchemy import MetaData
 
-from oar.lib.compat import to_unicode
+from oar.lib.utils import to_unicode
 
 from .helpers import yellow, blue, red
 

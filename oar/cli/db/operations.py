@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, absolute_import, unicode_literals
-
 import sys
 import re
 from copy import copy
@@ -17,7 +15,7 @@ from sqlalchemy_utils.functions import (database_exists, create_database,
 from sqlalchemy.ext.declarative import declarative_base
 
 from oar.lib import models
-from oar.lib.compat import to_unicode, iterkeys, reraise
+from oar.lib.utils import to_unicode, reraise
 from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
 
 from .helpers import green, magenta, yellow, blue, red
@@ -520,5 +518,5 @@ def inspect_db(ctx):
              to_unicode(infos[k]["current_db_size"]),
              to_unicode(infos[k]["archive_db_size"]),
              to_unicode(infos[k]["diff"]))
-            for k in iterkeys(infos)]
+            for k in infos.keys()]
     return sorted(rows, key=lambda x: x[0]), headers
