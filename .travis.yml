@@ -14,8 +14,7 @@ language: python
 
 python:
   # unused ? 
-  - "2.7"
-  - "3.5"
+  - "3.6"
 
 env:
   - DB=postgresql
