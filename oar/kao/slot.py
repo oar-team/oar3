@@ -2,10 +2,11 @@
 from oar.lib import config
 from functools import reduce
 
+from procset import ProcSet
+
 from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
-from oar.lib.interval import intersec, sub_intervals, add_intervals
+
 import oar.kao.quotas as qts
-from copy import deepcopy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
 
@@ -39,7 +40,7 @@ class Slot(object):
 
 def intersec_slots(slots):  # not used TO REMOVE?
     "Return intersection of intervals from a slot list"
-    return reduce(lambda itvs_acc, s: intersec(itvs_acc, s.itvs),
+    return reduce(lambda itvs_acc, s: itvs_acc & s.itvs,
                   slots,
                   slots[0].itvs)
 
@@ -50,7 +51,7 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
     while (sid != sid_right):
         sid = slots[sid].next
-        itvs_acc = intersec(itvs_acc, slots[sid].itvs)
+        itvs_acc = itvs_acc & slots[sid].itvs
 
     return itvs_acc
 
@@ -58,7 +59,7 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
 
     sid = sid_left
-    itvs_acc = []
+    itvs_acc = ProcSet()
     while True:
         slot = slots[sid]
         itvs = slot.itvs
@@ -66,24 +67,23 @@ def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
         if job.ts:
             if "*" in slot.ts_itvs:  # slot.ts_itvs[user][name]
                 if "*" in slot.ts_itvs["*"]:
-                    itvs = add_intervals(itvs, slot.ts_itvs["*"]["*"])
+                    itvs = itvs | slot.ts_itvs["*"]["*"]
                 elif job.name in slot.ts_itvs["*"]:
-                    itvs = add_intervals(itvs, slot.ts_itvs["*"][job.name])
+                    itvs = itvs | slot.ts_itvs["*"][job.name]
             elif job.user in slot.ts_itvs:
                 if "*" in slot.ts_itvs[job.user]:
-                    itvs = add_intervals(itvs, slot.ts_itvs[job.user]["*"])
+                    itvs = itvs | slot.ts_itvs[job.user]["*"]
                 elif job.name in slot.ts_itvs[job.user]:
-                    itvs = add_intervals(
-                        itvs, slot.ts_itvs[job.user][job.name])
+                    itvs =  itvs | slot.ts_itvs[job.user][job.name]
 
         if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
-                itvs = add_intervals(itvs, slot.ph_itvs[job.ph_name])
+                itvs = itvs | slot.ph_itvs[job.ph_name]
 
         if not itvs_acc:
             itvs_acc = itvs
         else:
-            itvs_acc = intersec(itvs_acc, itvs)
+            itvs_acc = itvs_acc & itvs
 
         if sid == sid_right:
             break
@@ -145,9 +145,10 @@ class SlotSet:
         s_id = slot.id
         self.last_id += 1
         n_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, n_id, slot.itvs[:],
+        a_slot = Slot(s_id, slot.prev, n_id, ProcSet(*list(slot.itvs)),
                       slot.b, job.start_time - 1,
-                      deepcopy(slot.ts_itvs), deepcopy(slot.ph_itvs))
+                      # copy ProcSet
+                      ProcSet(*list(slot.ts_itvs)), ProcSet(*list(slot.ph_itvs)))
         slot.prev = s_id
         self.slots[s_id] = a_slot
         # slot_id is changed so we have always the rightmost slot (min slot.b)
@@ -162,21 +163,21 @@ class SlotSet:
     def sub_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
-        slot.itvs = sub_intervals(slot.itvs, job.res_set)
+        slot.itvs = slot.itvs - job.res_set
         if job.ts:
             if job.ts_user not in slot.ts_itvs:
                 slot.ts_itvs[job.ts_user] = {}
 
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
-                slot.ts_itvs[job.ts_user][job.ts_name] = job.res_set[:]
+                slot.ts_itvs[job.ts_user][job.ts_name] =  ProcSet(*list(job.res_set))
 
         if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
                 slot.ph_itvs[job.ph_name] = \
-                    sub_intervals(slot.ph_itvs[job.ph_name], job.res_set)
+                    slot.ph_itvs[job.ph_name] - job.res_set
 
         if job.ph == PLACEHOLDER:
-            slot.ph_itvs[job.ph_name] = job.res_set[:]
+            slot.ph_itvs[job.ph_name] =  ProcSet(*list(job.res_set))
 
         if hasattr(slot, 'quotas') and not ("container" in job.types):
             slot.quotas.update(job)
@@ -187,22 +188,21 @@ class SlotSet:
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
-            slot.itvs = add_intervals(slot.itvs, job.res_set[:])
+            slot.itvs = slot.itvs | job.res_set
         if job.ts:
             if job.ts_user not in slot.ts_itvs:
                 slot.ts_itvs[job.ts_user] = {}
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
-                slot.ts_itvs[job.ts_user][job.ts_name] = job.res_set[:]
+                slot.ts_itvs[job.ts_user][job.ts_name] = ProcSet(*list(job.res_set))
             else:
                 itvs = slot.ts_itvs[job.ts_user][job.ts_name]
-                slot.ts_itvs[job.ts_user][job.ts_name] = add_intervals(itvs, job.res_set[:])
+                slot.ts_itvs[job.ts_user][job.ts_name] = itvs | job.res_set
 
         if job.ph == PLACEHOLDER:
             if job.ph_name in slot.ph_itvs:
-                slot.ph_itvs[job.ph_name] = \
-                    add_intervals(slot.ph_itvs[job.ph_name], job.res_set)
+                slot.ph_itvs[job.ph_name] = slot.ph_itvs[job.ph_name] | job.res_set
             else:
-                slot.ph_itvs[job.ph_name] = job.res_set[:]
+                slot.ph_itvs[job.ph_name] = ProcSet(*list(job.res_set))
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
@@ -210,9 +210,9 @@ class SlotSet:
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, slot.itvs[:],
+        c_slot = Slot(s_id, slot.id, slot.next, ProcSet(*list(slot.itvs)),
                       job.start_time + job.walltime, slot.e,
-                      deepcopy(slot.ts_itvs), deepcopy(slot.ph_itvs))
+                      ProcSet(*list(slot.ts_itvs)), ProcSet(*list(slot.ph_itvs)))
         slot.next = s_id
         self.slots[s_id] = c_slot
 
