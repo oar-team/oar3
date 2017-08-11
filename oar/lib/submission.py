@@ -4,9 +4,7 @@ import os
 import sys
 import random
 
-from copy import deepcopy
 from sqlalchemy import text, exc
-
 from procset import ProcSet
 
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
@@ -171,7 +169,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
         if not walltime:
             walltime = str(config['DEFAULT_JOB_WALLTIME'])
 
-        result = []
+        estimated_nb_res = 0
 
         for prop_res in resource_desc:
             jrg_grp_property = prop_res['property']
@@ -182,7 +180,8 @@ def estimate_job_nb_resources(resource_request, j_properties):
             #
             if (not j_properties) and \
                (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
-                constraints = deepcopy(resource_set.roid_itvs)
+                #deepcopy itvs
+                constraints = ProcSet(*list(resource_set.roid_itvs))
             else:
                 if not j_properties or not jrg_grp_property:
                     and_sql = ""
@@ -201,7 +200,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
                     return(error, None, None)
 
                 roids = [resource_set.rid_i2o[int(y[0])] for y in request_constraints]
-                constraints = unordered_ids2itvs(roids)
+                constraints = ProcSet(*roids)
 
             hy_levels = []
             hy_nbs = []
@@ -214,15 +213,14 @@ def estimate_job_nb_resources(resource_request, j_properties):
             cts_resources_itvs = constraints & resources_itvs
             res_itvs = find_resource_hierarchies_scattered(cts_resources_itvs, hy_levels, hy_nbs)
             if res_itvs:
-                result.extend(res_itvs)
+                estimated_nb_res = len(res_itvs)
             else:
-                result = []
+                estimated_nb_res = 0
             break
 
-        if result:
+        if estimated_nb_res > 0:
             resource_available = True
 
-        estimated_nb_res = itvs_size(result)
         estimated_nb_resources.append((estimated_nb_res, walltime))
         print_info('Moldable instance: ', mld_idx,
                    ' Estimated nb resources: ', estimated_nb_res,
