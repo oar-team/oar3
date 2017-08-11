@@ -1,9 +1,10 @@
 # coding: utf-8
 from sqlalchemy import text
 
+from procset import ProcSet
+
 from oar.lib import config, db, Resource
 from oar.lib.hierarchy import Hierarchy
-from oar.lib.interval import ordered_ids2itvs, unordered_ids2itvs
 
 from array import array
 from collections import OrderedDict
@@ -88,7 +89,7 @@ class ResourceSet(object):
 
         # global ordered resources intervals
         # print roids
-        self.roid_itvs = ordered_ids2itvs(roids)
+        self.roid_itvs = ProcSet(*roids) #TODO
 
         if "id" in hy_roid:
             hy_roid["resource_id"] = hy_roid["id"]
@@ -99,13 +100,13 @@ class ResourceSet(object):
 
         # transform available_upto
         for k, v in available_upto.items():
-            self.available_upto[k] = ordered_ids2itvs(v)
+            self.available_upto[k] = ProcSet(*v)
 
         #
-        self.suspendable_roid_itvs = ordered_ids2itvs(suspendable_roids)
+        self.suspendable_roid_itvs = ProcSet(*suspendable_roids)
 
         default_roids = [self.rid_i2o[i] for i in default_rids]
-        self.default_resource_itvs = unordered_ids2itvs(default_roids)
+        self.default_resource_itvs = ProcSet(*default_roids)
         # update global variable
         #TODO
         default_resource_itvs = self.default_resource_itvs

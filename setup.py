@@ -29,7 +29,7 @@ requirements = [
     'pyzmq',
     'redis',
     'requests',
-    'interval_set',
+    'procset',
     'pybatsim',
     'simplejson'
 ]

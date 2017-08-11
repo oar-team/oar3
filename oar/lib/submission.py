@@ -7,6 +7,8 @@ import random
 from copy import deepcopy
 from sqlalchemy import text, exc
 
+from procset import ProcSet
+
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, Resource,
@@ -14,7 +16,6 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
 
 from oar.lib.resource import ResourceSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.interval import intersec, unordered_ids2itvs, itvs_size
 from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
 
@@ -210,7 +211,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
                 hy_levels.append(resource_set.hierarchy[res_name])
                 hy_nbs.append(int(value))
 
-            cts_resources_itvs = intersec(constraints, resources_itvs)
+            cts_resources_itvs = constraints & resources_itvs
             res_itvs = find_resource_hierarchies_scattered(cts_resources_itvs, hy_levels, hy_nbs)
             if res_itvs:
                 result.extend(res_itvs)

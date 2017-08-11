@@ -13,19 +13,22 @@ def test_intersec():
     y = intersec(x, x)
     assert y == x
 
-
+###############################################################################
 def test_extract_n_scattered_block_itv_1():
-    y = [[(1, 4), (6, 9)], [(10, 17)], [(20, 30)]]
+    y = [ ProcSet(*[(1, 4), (6,9)]), ProcSet(*[(10,17)]), ProcSet(*[(20,30)]) ]
     a = extract_n_scattered_block_itv([(1, 30)], y, 3)
-    assert a == [(1, 4), (6, 17), (20, 30)]
-
-
+    assert a == ProcSet(*[(1, 4), (6, 17), (20, 30)])
+    
 def test_extract_n_scattered_block_itv_2():
-    y = [[(1, 4), (10, 17)], [(6, 9), (19, 22)], [(25, 30)]]
-    a = extract_n_scattered_block_itv([(1, 30)], y, 2)
-    assert a == [(1, 4), (6, 9), (10, 17), (19, 22)]
+    y = [ ProcSet(*[(1, 4), (10, 17)]), ProcSet(*[(6, 9), (19, 22)]), ProcSet(*[(25, 30)])]
+    a = extract_n_scattered_block_itv(ProcSet(*[(1, 30)]), y, 2)
+    assert a == ProcSet(*[(1, 4), (6, 17), (19, 22)])
 
 
+####################################################################################
+
+
+    
 def test_ordered_ids2itvs():
     y = [1, 3, 4, 5, 7, 10, 11, 12, 23]
     r = [(1, 1), (3, 5), (7, 7), (10, 12), (23, 23)]

@@ -97,7 +97,7 @@ def equal_itvs_same_segmentation(itvs1, itvs2):
     return True
 
 
-def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
+def extract_n_scattered_block_itv_old(itvs1, itvs_ref, n):
     # itv_l_a lst_itvs_reference n
     # need of test_and_sub_prefix_itvs:
     lr = len(itvs_ref)
@@ -123,6 +123,36 @@ def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
     else:
         return []
 
+    
+# y = [ [(1, 4), (6,9)],  [(10,17)], [(20,30)] ]
+# extract_n_scattered_block_itv([(1,30)], y, 3)
+# [(1, 4), (6, 9), (10, 17), (20, 30)]
+
+# extract_n_scattered_block_itv ([(1, 12), (15,32)], y, 2)
+
+# y = [ [(1, 4), (10,17)],  [(6,9), (19,22)], [(25,30)] ]
+
+def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
+    # itv_l_a lst_itvs_reference n
+    # need of test_and_sub_prefix_itvs:
+    lr = len(itvs_ref)
+    i = 0
+    itvs = ProcSet()
+
+    while (n > 0) and (i < lr):
+        x = itvs_ref[i]
+        y = itvs1 & x
+        if x == y:
+            itvs = itvs | y
+            n -= 1
+        i += 1
+
+    if (n == 0):
+        return itvs
+    else:
+        return ProcSet()
+
+    
 # y = [ [(1, 4), (6,9)],  [(10,17)], [(20,30)] ]
 # extract_n_scattered_block_itv([(1,30)], y, 3)
 # [(1, 4), (6, 9), (10, 17), (20, 30)]
