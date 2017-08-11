@@ -1,9 +1,9 @@
 # coding: utf-8
 """ Functions to manage jobs """
-from copy import deepcopy
-
 from sqlalchemy import (text, distinct)
 from sqlalchemy.orm import aliased
+
+from procset import ProcSet
 
 from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
@@ -15,8 +15,6 @@ from oar.lib.psycopg2 import pg_bulk_insert
 from oar.kao.tools import update_current_scheduler_priority
 
 import oar.lib.tools as tools
-from oar.lib.interval import unordered_ids2itvs, itvs2ids, sub_intervals
-
 
 from oar.kao.helpers import extract_find_assign_args
 
@@ -83,7 +81,7 @@ class JobPseudo(object):
             res_req = [resources_req]
         else:
             res_req = resources_req
-        self.mld_res_rqts = [(1, walltime, [(res_req, deepcopy(resources_constraint))])]
+        self.mld_res_rqts = [(1, walltime, [(res_req, ProcSet(*resources_constraint))])]
 
 
 def get_waiting_jobs(queue, reservation='None'):
@@ -304,7 +302,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
             # determine resource constraints
             #
             if (j_properties == "" and (jrg_grp_property == "" or jrg_grp_property == "type = 'default'")):
-                res_constraints = deepcopy(resource_set.roid_itvs)
+                res_constraints = ProcSet(*list(resource_set.roid_itvs))
             else:
                 if j_properties == "" or jrg_grp_property == "":
                     and_sql = ""
@@ -319,7 +317,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                         Resource.id).filter(text(sql_constraints)).all()
                     roids = [resource_set.rid_i2o[int(y[0])]
                              for y in request_constraints]
-                    res_constraints = unordered_ids2itvs(roids)
+                    res_constraints = ProcSet(*roids)
                     cache_constraints[sql_constraints] = res_constraints
         else:
             # add next res_type , res_value
@@ -380,7 +378,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
             j, moldable_id, start_time, walltime, r_id = x
             if j.id != prev_jid:
                 if prev_jid != 0:
-                    job.res_set = unordered_ids2itvs(roids)
+                    job.res_set = ProcSet(*roids)
                     jobs_lst.append(job)
                     jids.append(job.id)
                     jobs[job.id] = job
@@ -402,10 +400,9 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
             roids.append(roid)
             rid2jid[roid] = j.id
 
-        job.res_set = unordered_ids2itvs(roids)
+        job.res_set = ProcSet(*roids)
         if job.state == "Suspended":
-            job.res_set = sub_intervals(
-                job.res_set, resource_set.suspendable_roid_itvs)
+            job.res_set = job.res_set - resource_set.suspendable_roid_itvs
 
         jobs_lst.append(job)
         jids.append(job.id)
@@ -529,7 +526,7 @@ def save_assigns(jobs, resource_set):
                 logger.debug("job_id to save: " + str(j.id))
                 mld_id_start_time_s.append(
                     {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
-                riods = itvs2ids(j.res_set)
+                riods = list(j.res_set)
                 mld_id_rid_s.extend(
                     [{'moldable_job_id': j.moldable_id,
                       'resource_id': resource_set.rid_o2i[rid]} for rid in riods])
@@ -555,7 +552,7 @@ def save_assigns_bulk(jobs, resource_set):
             if j.start_time > -1:
                 logger.debug("job_id  to save: " + str(j.id))
                 mld_id_start_time_s.append((j.moldable_id, j.start_time))
-                riods = itvs2ids(j.res_set)
+                riods = list(j.res_set)
                 mld_id_rid_s.extend(
                     [(j.moldable_id, resource_set.rid_o2i[rid]) for rid in riods])
 
@@ -976,7 +973,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
                 if first_job:
                     first_job = False
                 else:
-                    job.res_set = unordered_ids2itvs(roids)
+                    job.res_set = ProcSet(*roids)
                     jids.append(job.id)
                     jobs[job.id] = job
                     roids = []
@@ -988,7 +985,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
 
             roids.append(resource_set.rid_i2o[resource_id])
 
-        job.res_set = unordered_ids2itvs(roids)
+        job.res_set = ProcSet(*roids)
 
         jids.append(job.id)
         jobs[job.id] = job
@@ -1039,7 +1036,7 @@ def get_jobs_in_multiple_states(states, resource_set):
                 if first_job:
                     first_job = False
                 else:
-                    job.res_set = unordered_ids2itvs(roids)
+                    job.res_set = ProcSet(*roids)
                     jobs[job.id] = job
                     roids = []
 
@@ -1049,7 +1046,7 @@ def get_jobs_in_multiple_states(states, resource_set):
 
             roids.append(resource_set.rid_i2o[resource_id])
 
-        job.res_set = unordered_ids2itvs(roids)
+        job.res_set = ProcSet(*roids)
         jobs[job.id] = job
 
     return jobs
@@ -1092,7 +1089,7 @@ def set_gantt_job_start_time(moldable_id, current_time_sec):
 
 def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
 
-    riods = itvs2ids(job_res_set)
+    riods = list(job_res_set)
     resource_ids = [resource_set.rid_o2i[rid] for rid in riods]
 
     db.query(GanttJobsResource)\

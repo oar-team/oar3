@@ -1,7 +1,6 @@
 # coding: utf-8
-
+from procset import ProcSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.interval import intersec
 from oar.kao.slot import intersec_itvs_slots, Slot
 
 
@@ -10,7 +9,7 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     Find resources in interval for all resource subrequests of a moldable
     instance of a job
     '''
-    result = []
+    result = ProcSet()
     for hy_res_rqt in hy_res_rqts:
         (hy_level_nbs, constraints) = hy_res_rqt
         hy_levels = []
@@ -20,10 +19,10 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             hy_levels.append(hy[l_name])
             hy_nbs.append(n)
 
-        itvs_cts_slots = intersec(constraints, itvs_slots)
-        result.extend(find_resource_hierarchies_scattered(itvs_cts_slots,
-                                                          hy_levels,
-                                                          hy_nbs))
+        itvs_cts_slots = constraints & itvs_slots
+        result = result | find_resource_hierarchies_scattered(itvs_cts_slots,
+                                                              hy_levels,
+                                                              hy_nbs)
 
     return result
 
@@ -31,7 +30,7 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     '''find first_suitable_contiguous_slot '''
     (mld_id, walltime, hy_res_rqts) = res_rqt
-    itvs = []
+    itvs = ProcSet()
 
     slots = slots_set.slots
     cache = slots_set.cache
@@ -70,7 +69,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
-        if (itvs != []):
+        if (len(itvs) != 0):
             break
 
         sid_left = slots[sid_left].next
@@ -87,8 +86,8 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     moldable version
     '''
     prev_t_finish = 2 ** 32 - 1  # large enough
-    prev_res_set = []
-    prev_res_rqt = []
+    prev_res_set = ProcSet()
+    prev_res_rqt = ProcSet()
 
     slots = slots_set.slots
     prev_start_time = slots[1].b
