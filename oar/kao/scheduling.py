@@ -1,8 +1,8 @@
 # coding: utf-8
+from procset import ProcSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.kao.job import ALLOW, JobPseudo
 
-from oar.lib.interval import intersec, itvs_size
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 
 from oar.lib import get_logger, config
@@ -11,6 +11,7 @@ from oar.lib import get_logger, config
 import oar.lib.resource as rs
 from oar.kao.quotas import check_slots_quotas
 
+from oar.lib.utils import ps_copy
 
 logger = get_logger("oar.kamelot")
 
@@ -40,7 +41,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
                 logger.debug("container:" + ss_name)
 
                 if ss_name not in slots_sets:
-                    slots_sets[ss_name] = SlotSet(([], 1))
+                    slots_sets[ss_name] = SlotSet((ProcSet(), 1))
 
                 if job.start_time < now:
                     start_time = now
@@ -72,7 +73,7 @@ def set_slots_with_prev_scheduled_jobs(slots_sets, jobs, job_security_time,
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     '''find resources in interval for all resource subrequests of a moldable
     instance of a job'''
-    result = []
+    result = ProcSet()
     for hy_res_rqt in hy_res_rqts:
         (hy_level_nbs, constraints) = hy_res_rqt
         hy_levels = []
@@ -82,12 +83,12 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             hy_levels.append(hy[l_name])
             hy_nbs.append(n)
 
-        itvs_cts_slots = intersec(constraints, itvs_slots)
+        itvs_cts_slots = constraints & itvs_slots
         res = find_resource_hierarchies_scattered(itvs_cts_slots, hy_levels, hy_nbs)
         if res:
-            result.extend(res)
+            result = result | res
         else:
-            return []
+            return ProcSet()
 
     return result
 
@@ -112,7 +113,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
     (mld_id, walltime, hy_res_rqts) = res_rqt
 
-    itvs = []
+    itvs = ProcSet()
 
     slots = slots_set.slots
     cache = slots_set.cache
@@ -153,7 +154,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             # print("TODO error can't schedule job.id:", job.id)
             logger.info(
                 "can't schedule job with id:" + str(job.id) + ", due resources")
-            return ([], -1, -1)
+            return (ProcSet(), -1, -1)
 
         while ((slot_e - slot_b + 1) < walltime):
             sid_right = slots[sid_right].next
@@ -162,7 +163,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             else:
                 logger.info(
                     "can't schedule job with id:" + str(job.id) + ", due time")
-                return ([], -1, -1)
+                return (ProcSet(), -1, -1)
 
         #        if not updated_cache and (slots[sid_left].itvs != []):
         #            cache[walltime] = sid_left
@@ -182,9 +183,9 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
-        if itvs != []:
+        if len(itvs) != 0:
             if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-                nb_res = itvs_size(intersec(itvs, rs.default_resource_itvs))
+                nb_res = len(itvs & rs.default_resource_itvs)
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
@@ -212,8 +213,8 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     '''Assign resources to a job and update by spliting the concerned slots - moldable version'''
     prev_t_finish = 2 ** 32 - 1  # large enough
-    prev_res_set = []
-    prev_res_rqt = []
+    prev_res_set = ProcSet()
+    prev_res_rqt = ProcSet()
 
     slots = slots_set.slots
     prev_start_time = slots[1].b
@@ -222,8 +223,8 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
         mld_id, walltime, hy_res_rqts = res_rqt
         res_set, sid_left, sid_right = find_first_suitable_contiguous_slots(
             slots_set, job, res_rqt, hy, min_start_time)
-        if res_set == []:  # no suitable time*resources found
-            job.res_set = []
+        if len(res_set) == 0:  # no suitable time*resources found
+            job.res_set = ProcSet()
             job.start_time = -1
             job.moldable_id = -1
             return
@@ -327,7 +328,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     slots_sets[ss_name].split_slots_jobs([j], False)
 
                 else:
-                    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
+                    slot = Slot(1, 0, 0, ps_copy(job.res_set), job.start_time,
                                 job.start_time + job.walltime - job_security_time)
                     # slot.show()
                     slots_sets[ss_name] = SlotSet(slot)

@@ -10,6 +10,8 @@ import datetime
 from decimal import Decimal, InvalidOperation
 from collections import OrderedDict, Callable
 
+from procset import ProcSet
+
 import simplejson as json
 
 basestring = (str, bytes)
@@ -23,6 +25,12 @@ try:  # pragma: no cover
 except:  # pragma: no cover
     __pypy__ = None
     is_pypy = False
+
+def ps_copy(itvs):
+    return ProcSet(*list(itvs))
+
+def dict_ps_copy(dict_ps):
+    return {k: ps_copy(v) for k,v in dict_ps.items()}
 
 def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
