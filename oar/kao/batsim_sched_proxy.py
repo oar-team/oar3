@@ -54,11 +54,12 @@ import click
 
 from oar.lib import (config, get_logger)
 from oar.lib.tools import get_date
-from oar.lib.interval import (batsim_str2itvs, itvs2ids, itvs2batsim_str)
+
 from batsim.batsim import DataStorage
 from oar.lib.node import get_nodes_with_state
 from oar.kao.job import (get_jobs_ids_in_multiple_states, JobPseudo)
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
+from procset import ProcSet
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -114,7 +115,7 @@ class BatsimSchedProxy(object):
             b_check_resources_2_change = self.data_store.redis.get('check_resources_2_' + pstate)
             if b_check_resources_2_change:
                 resources_2_check = b_check_resources_2_change.decode('utf-8')
-                roid_ids = itvs2ids(itvs2batsim_str(resources_2_check))
+                roid_ids = list(resources_2_check)
 
                 for i in roid_ids:
                     node = self.resource_set.roid_2_network_address(i)
@@ -153,7 +154,7 @@ class BatsimSchedProxy(object):
         for pstate in ['halt', 'wakeup']:
             if (pstate in self.resources_pstate_2_change_str) and self.resources_pstate_2_change_str[pstate]:
                 resources_2_change_str = self.resources_pstate_2_change_str[pstate]
-                roid_ids = itvs2ids(itvs2batsim_str(resources_2_change_str))
+                roid_ids = list(resources_2_change_str)
                 nodes_2_change[pstate] = [self.resource_set.roid_2_network_address(i) for i in roid_ids]
 
                 #Add resources_pstate to check
@@ -272,7 +273,7 @@ class BatsimSchedProxy(object):
                 ev_data = event['data']
             if ev_type == 'EXECUTE_JOB':
                 jid = int(ev_data['job_id'].split('!')[1])
-                res_set = batsim_str2itvs(ev_data['alloc'])
+                res_set = ProcSet.from_str(ev_data['alloc'], '-', ',')
                 json_dict = json.loads(self.data_store.get(jid).decode('utf-8'))
                 walltime = json_dict["walltime"]
 
