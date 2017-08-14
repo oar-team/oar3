@@ -1,10 +1,11 @@
 # coding: utf-8
-from oar.lib import config
-
-from oar.kao.simsim import (ResourceSetSimu, JobSimu,
-                            SimSched, SWFWorkload)
 import os
 import pytest
+
+from oar.lib import config
+from oar.kao.simsim import (ResourceSetSimu, JobSimu,
+                            SimSched, SWFWorkload)
+from procset import ProcSet
 
 
 def test_simsim_1():
@@ -27,13 +28,13 @@ def test_simsim_1():
     #
     # generate ResourceSet
     #
-    hy_resource_id = [[(i, i)] for i in range(1, nb_res + 1)]
+    hy_resource_id = [ProcSet(i) for i in range(1, nb_res + 1)]
     res_set = ResourceSetSimu(
         rid_i2o=range(nb_res + 1),
         rid_o2i=range(nb_res + 1),
-        roid_itvs=[(1, nb_res)],
+        roid_itvs=ProcSet(*[(1, nb_res)]),
         hierarchy={'resource_id': hy_resource_id},
-        available_upto={2147483600: [(1, nb_res)]}
+        available_upto={2147483600: ProcSet(*[(1, nb_res)])}
     )
 
     #
@@ -51,10 +52,10 @@ def test_simsim_1():
                           start_time=0,
                           walltime=0,
                           types={},
-                          res_set=[],
+                          res_set=ProcSet(),
                           moldable_id=0,
                           mld_res_rqts=[
-                              (i, 60, [([("resource_id", 15)], [(0, nb_res - 1)])])],
+                              (i, 60, [([("resource_id", 15)], ProcSet(*[(0, nb_res - 1)]))])],
                           run_time=20 * i,
                           deps=[],
                           key_cache={},

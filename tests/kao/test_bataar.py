@@ -88,7 +88,6 @@ def test_bataar_no_db():
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'",
                     reason="not designed to work with postgresql database")
-
 def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
     job = db['Job'].query.one()

@@ -30,7 +30,14 @@ def ps_copy(itvs):
     return ProcSet(*list(itvs))
 
 def dict_ps_copy(dict_ps):
-    return {k: ps_copy(v) for k,v in dict_ps.items()}
+    d = {}
+    for key, value in dict_ps.items():
+        if type(value) == dict:
+            d[key] = {k: ps_copy(v) for k,v in value.items()}
+        else:
+            d[key] = value
+    return d
+    # return {k: ps_copy(v) for k,v in dict_ps.items()}
 
 def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})

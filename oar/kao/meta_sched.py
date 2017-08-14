@@ -160,7 +160,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     for job in scheduled_jobs:
         #  print("job.id:", job.id, job.queue_name, job.types, job.res_set, job.start_time)
         if 'besteffort' in job.types:
-            for r_id in len(job.res_set):
+            for r_id in list(job.res_set):
                 besteffort_rid2job[r_id] = job
 
     # Create and fill gantt

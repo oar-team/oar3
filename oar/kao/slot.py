@@ -13,7 +13,7 @@ MAX_TIME = 2147483648  # (* 2**31 *)
 
 class Slot(object):
 
-    def __init__(self, id, prev, next, itvs, b, e, ts_itvs={}, ph_itvs={}):
+    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None):
         self.id = id
         self.prev = prev
         self.next = next
@@ -21,8 +21,14 @@ class Slot(object):
         self.b = b
         self.e = e
         # timesharing ts_itvs: [user] * [job_name] * itvs
-        self.ts_itvs = ts_itvs
-        self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
+        if ts_itvs == None:
+            self.ts_itvs = {}
+        else:
+            self.ts_itvs = ts_itvs
+        if ph_itvs == None:
+            self.ph_itvs = {}
+        else:
+            self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
         if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
             self.quotas = qts.Quotas()
 
@@ -160,7 +166,7 @@ class SlotSet:
                 slot.ts_itvs[job.ts_user] = {}
 
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
-                slot.ts_itvs[job.ts_user][job.ts_name] =  ps_copy(job.res_set)
+                slot.ts_itvs[job.ts_user][job.ts_name] = ps_copy(job.res_set)
 
         if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:

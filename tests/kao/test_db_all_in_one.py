@@ -320,7 +320,7 @@ def test_db_all_in_one_BE(monkeypatch):
     print(job.state)
     assert (job.state == 'toLaunch')
 
-@pytest.mark.skip(reason='debug pending')
+    
 def test_db_all_in_one_BE_to_kill(monkeypatch):
 
     os.environ['USER'] = 'root'  # to allow fragging
