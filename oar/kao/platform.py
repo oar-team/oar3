@@ -4,9 +4,10 @@ import time
 from oar.lib.resource import ResourceSet
 from oar.kao.job import (get_waiting_jobs, get_data_jobs, get_scheduled_jobs,
                          save_assigns)
-from oar.lib.interval import itvs2ids, unordered_ids2itvs
 from oar.kao.karma import (get_sum_accounting_window, get_sum_accounting_by_project,
                            get_sum_accounting_by_user)
+from procset import ProcSet
+
 
 
 class Platform(object):
@@ -139,8 +140,8 @@ class Platform(object):
         for jid, job in jobs.items():
             jres_set = job.res_set
             print("job.res_set before", jid, job.res_set)
-            r_ids = [resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set)]
-            job.res_set = unordered_ids2itvs(r_ids)
+            r_ids = [resource_set.rid_o2i[roid] for roid in list(jres_set)]
+            job.res_set = ProcSet(*r_ids)
         self.assigned_jobs = jobs
 
     def save_assigns_simu_and_default(self, jobs, resource_set):
@@ -150,8 +151,8 @@ class Platform(object):
             sid = self.db_jid2s_jid[jid]
             jobsimu = self.jobs[sid]
             jres_set = job.res_set
-            r_ids = [resource_set.rid_o2i[roid] for roid in itvs2ids(jres_set)]
-            jobsimu.res_set = unordered_ids2itvs(r_ids)
+            r_ids = [resource_set.rid_o2i[roid] for roid in list(jres_set)]
+            jobsimu.res_set = ProcSet(*r_ids)
             print("save assign jid, sid, res_set: ", jid, " ", sid, " ", jobsimu.res_set)
             jobsimu.start_time = job.start_time
             jobsimu.walltime = job.walltime

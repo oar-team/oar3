@@ -4,7 +4,6 @@ import oar.kao.scheduling
 
 from oar.lib import config
 from oar.lib.hierarchy import extract_n_scattered_block_itv
-#from oar.lib.interval import (intersec, itvs_size, aggregate_itvs)
 from oar.lib.utils import ps_copy
 
 import pickle

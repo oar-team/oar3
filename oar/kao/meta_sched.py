@@ -43,8 +43,6 @@ from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs, get_encompas
 
 from oar.kao.kamelot import internal_schedule_cycle
 
-from oar.lib.interval import (intersec, equal_itvs, sub_intervals, itvs2ids, itvs_size)
-
 from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
@@ -54,6 +52,8 @@ from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 import oar.kao.advanced_extra_metasched
 
 from oar.kao.batsim_sched_proxy import BatsimSchedProxy
+
+from procset import ProcSet
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -160,7 +160,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     for job in scheduled_jobs:
         #  print("job.id:", job.id, job.queue_name, job.types, job.res_set, job.start_time)
         if 'besteffort' in job.types:
-            for r_id in itvs2ids(job.res_set):
+            for r_id in len(job.res_set):
                 besteffort_rid2job[r_id] = job
 
     # Create and fill gantt
@@ -236,10 +236,10 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
         else:
 
             # Determine current available ressources
-            avail_res = intersec(resource_set.roid_itvs, job.res_set)
+            avail_res = resource_set.roid_itvs & job.res_set
 
             # Test if the AR job is waiting to be launched due to nodes' unavailabilities
-            if (avail_res == []) and (job.start_time < current_time_sec):
+            if (len(avail_res) == 0) and (job.start_time < current_time_sec):
                 logger.warning("[%s] advance reservation is waiting because no resource is present"
                             % str(job.id))
 
@@ -248,7 +248,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
             elif (job.start_time < current_time_sec):
 
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
-                    if not equal_itvs(avail_res, job.res_set):
+                    if avail_res != job.res_set:
                         # The expected ressources are not all available,
                         # wait the specified timeout
                         logger.warning("[" + str(job.id) +
@@ -257,7 +257,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                         set_gantt_job_start_time(moldable_id, current_time_sec + 1)
                 else:
                     # It's time to launch the AR job, remove missing ressources
-                    missing_resources_itvs = sub_intervals(job.res_set, avail_res)
+                    missing_resources_itvs = job.res_set - avail_res
                     remove_gantt_resource_job(moldable_id, missing_resources_itvs,
                                               resource_set)
                     logger.warning("[" + str(job.id) +
@@ -269,7 +269,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                                   "[MetaSched] Reduce the number of resources for the job "
                                   + str(job.id))
 
-                    nb_res = itvs_size(job.res_set) - itvs_size(missing_resources_itvs)
+                    nb_res = len(job.res_set) - len(missing_resources_itvs)
                     new_message = re.sub(r'R=\d+', 'R=' + str(nb_res), job.message)
                     if new_message != job.message:
                         set_job_message(job.id, new_message)
@@ -338,11 +338,11 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
             if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-                nb_res = itvs_size(intersec(itvs, resource_set.default_resource_itvs))
+                nb_res = len(itvs & resource_set.default_resource_itvs)
                 res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
-                    itvs = []
+                    itvs = ProcSet()
                     logger.info("Quotas limitaion reached, job:" + str(job.id) +
                                 ", " + quotas_msg + ", rule: " + str(rule) +
                                 ", value: " + str(value))
@@ -350,7 +350,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                     set_job_message(job.id,
                                     "This advance reservation cannot run due to quotas")
 
-            if itvs == []:
+            if len(itvs) == 0:
                 # not enough resource available
                 logger.warning("[" + str(job.id) +
                             "] advance reservation cannot be validated, not enough resources")
