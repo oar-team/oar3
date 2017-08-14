@@ -9,24 +9,22 @@ import time
 import math
 import click
 
-if sys.version_info[0] == 2:
-    from sets import Set
-
 from oar.lib import (db, config, get_logger, Job, Resource, Queue)
 
 from oar.kao.job import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.lib.interval import (itvs2batsim_str0, intersec) # TOREMOVE ?
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
 from batsim.batsim import BatsimScheduler, Batsim
-
 import oar.kao.advanced_scheduling
 
 from oar.kao.meta_sched import meta_schedule
+from procset import ProcSet
+
 import oar.lib.tools
+
 
 plt = None
 orig_func = {}
@@ -184,8 +182,8 @@ class BatSched(BatsimScheduler):
             self.waiting_jids = set()
         self.jobs_completed = []
         self.nb_res = 0
-        self.itvs_res = []
-        self.itvs_res_default = []
+        self.itvs_res = ProcSet()
+        self.itvs_res_default = ProcSet()
         self.tokens = tokens
         if not tokens:
             self.tokens = 0
@@ -199,10 +197,10 @@ class BatSched(BatsimScheduler):
 
         #import pdb; pdb.set_trace()
         if self.database_mode == 'no-db':
-            hy_resource_id = [[(i, i)] for i in range(1, nb_res+1)]
+            hy_resource_id = [ProcSet(i) for i in range(1, nb_res+1)]
             hierarchy = {'resource_id': hy_resource_id}
             if node_size > 0:
-                node_id = [[(node_size*i, node_size*(i+1)-1)] for i in range(int(nb_res/node_size))]
+                node_id = [ProcSet((node_size*i, node_size*(i+1)-1)) for i in range(int(nb_res/node_size))]
                 hierarchy['node'] = node_id
 
             print('hierarchy: ', hierarchy)
@@ -212,17 +210,17 @@ class BatSched(BatsimScheduler):
 
             if tokens > 0:
                 print('Tokens are present : ', str(self.tokens))
-                hierarchy['token'] = [[(i, i)] for i in range(nb_res + 1, all_res + 1)]
+                hierarchy['token'] = [ProcSet(i) for i in range(nb_res + 1, all_res + 1)]
 
             res_set = ResourceSetSimu(
                 rid_i2o=range(all_res + 1),
                 rid_o2i=range(all_res + +1),
-                roid_itvs=[(1, all_res)],
+                roid_itvs=ProcSet(*[(1, all_res)]),
                 hierarchy=hierarchy,
-                available_upto={2147483600: [(1, all_res)]}
+                available_upto={2147483600: ProcSet(*[(1, all_res)])}
             )
-            self.itvs_res = [(1, all_res)]
-            self.itvs_res_default = [(1, nb_res)]
+            self.itvs_res = ProcSet(*[(1, all_res)])
+            self.itvs_res_default = ProcSet(*[(1, nb_res)])
 
         elif self.database_mode == 'memory':
             if self.tokens > 0:
@@ -292,7 +290,7 @@ class BatSched(BatsimScheduler):
                       start_time=0,
                       walltime=0,
                       types={},
-                      res_set=[],
+                      res_set=ProcSet(),
                       moldable_id=0,
                       mld_res_rqts=mld_res_rqts,
                       run_time=0,
@@ -370,9 +368,9 @@ class BatSched(BatsimScheduler):
                 res_set = self.jobs[jid].res_set
                 if self.tokens:
                     # Keep only default type resource
-                    res_set = intersec(res_set, self.itvs_res_default)
-
-                res = itvs2batsim_str0(res_set)
+                    res_set = res_set & self.itvs_res_default
+                # transforms oar ids to str batsim ids (ex. [1,2,3,5] -> '0-2,4')
+                res = format(ProcSet(*[(i-1) for i in list(res_set)]), '-,')
                 scheduled_jobs.append(ds_job)
                 jobs_res[ds_job.id] = res
 

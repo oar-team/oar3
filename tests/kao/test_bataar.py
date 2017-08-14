@@ -12,11 +12,7 @@ import json
 
 from oar.lib import db
 
-if sys.version_info >= (3,4):
-    from oar.kao.bataar import bataar
-
-pytestmark = pytest.mark.skipif(sys.version_info < (3,4) , reason='Bataar need Python 3')
-
+from oar.kao.bataar import bataar
 
 def order_json_str_arrays(a):
     return [json.dumps(json.loads(x), sort_keys=True) for x in a]
