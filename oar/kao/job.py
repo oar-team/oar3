@@ -18,6 +18,8 @@ import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args
 
+from oar.lib.utils import ps_copy
+
 
 logger = get_logger("oar.kamelot.job")
 
@@ -302,7 +304,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
             # determine resource constraints
             #
             if (j_properties == "" and (jrg_grp_property == "" or jrg_grp_property == "type = 'default'")):
-                res_constraints = ProcSet(*list(resource_set.roid_itvs))
+                res_constraints = ps_copy(resource_set.roid_itvs)
             else:
                 if j_properties == "" or jrg_grp_property == "":
                     and_sql = ""

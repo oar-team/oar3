@@ -1,18 +1,21 @@
 # coding: utf-8
 import pytest
 
+from procset import ProcSet
+
 from codecs import open
 from copy import deepcopy
 from tempfile import mkstemp
 from oar.kao.job import JobPseudo
 from oar.kao.slot import Slot, SlotSet
-from oar.lib.interval import equal_itvs
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
 import oar.kao.quotas as qts
 import oar.lib.resource as rs
 
 from oar.lib import config, get_logger
+from oar.lib.utils import ps_copy
+
 # import pdb
 
 config['LOG_FILE'] = ':stderr:'
@@ -34,7 +37,7 @@ def compare_slots_val_ref(slots, v):
         slot = slots[sid]
         (b, e, itvs) = v[i]
         if ((slot.b != b) or (slot.e != e)
-                or not equal_itvs(slot.itvs, itvs)):
+                or not slot.itvs == itvs):
             return False
         sid = slot.next
         if (sid == 0):
@@ -62,12 +65,12 @@ def reset_quotas():
 def test_quotas_one_job_no_rules():
     config['QUOTAS'] = 'yes'
 
-    v = [(0, 59, [(17, 32)]), (60, 100, [(1, 32)])]
+    v = [(0, 59, ProcSet(*[(17, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
-    res = [(1, 32)]
+    res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                    queue='default', user='toto', project='',
@@ -88,12 +91,12 @@ def test_quotas_one_job_rule_nb_res_1():
     # global quotas_rules
     qts.quotas_rules = {('*', '*', '*', '/'): [1, -1, -1]}
 
-    res = [(1, 32)]
-    rs.default_resource_itvs = deepcopy(res)
+    res = ProcSet(*[(1, 32)])
+    rs.default_resource_itvs = ps_copy(res)
 
-    ss = SlotSet(Slot(1, 0, 0, deepcopy(res), 0, 100))
+    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, queue='default', user='toto', project='')
     j1.simple_req(('node', 2), 60, res)
@@ -101,7 +104,7 @@ def test_quotas_one_job_rule_nb_res_1():
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     print(j1.start_time)
-    assert j1.res_set == []
+    assert j1.res_set == ProcSet()
 
 
 def test_quotas_one_job_rule_nb_res_2():
@@ -111,12 +114,12 @@ def test_quotas_one_job_rule_nb_res_2():
     # global quotas_rules
     qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1]}
 
-    res = [(1, 32)]
+    res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=2, types={}, deps=[], key_cache={},
                    queue='default', user='toto', project='',
@@ -128,7 +131,7 @@ def test_quotas_one_job_rule_nb_res_2():
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
-    assert j1.res_set == [(1, 16)]
+    assert j1.res_set == ProcSet(*[(1, 16)])
 
 
 def test_quotas_four_jobs_rule_1():
@@ -139,19 +142,19 @@ def test_quotas_four_jobs_rule_1():
     qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
-    res = [(1, 32)]
-    rs.default_resource_itvs = deepcopy(res)
+    res = ProcSet(*[(1, 32)])
+    rs.default_resource_itvs = ps_copy(res)
 
-    ss = SlotSet(Slot(1, 0, 0, deepcopy(res), 0, 10000))
+    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 10000))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, start_time=0, walltime=20,
                    queue='default', user='toto', project='',
-                   res_set=[(9, 24)], types={}, ts=False, ph=0)
+                   res_set=ProcSet(*[(9, 24)]), types={}, ts=False, ph=0)
     j2 = JobPseudo(id=2, start_time=0, walltime=50,
                    queue='default', user='lulu', project='yop',
-                   res_set=[(1, 8)])
+                   res_set=ProcSet(*[(1, 8)]))
 
     j3 = JobPseudo(id=3, queue='default', user='toto', project='')
     j3.simple_req(('node', 1), 10, res)
@@ -168,9 +171,9 @@ def test_quotas_four_jobs_rule_1():
     print(j3.start_time, j4.start_time)
 
     assert j3.start_time == 20
-    assert j3.res_set == [(9, 16)]
+    assert j3.res_set == ProcSet(*[(9, 16)])
     assert j4.start_time == 50
-    assert j4.res_set == [(1, 8)]
+    assert j4.res_set == ProcSet(*[(1, 8)])
 
 
 def test_quotas_three_jobs_rule_1():
@@ -181,16 +184,16 @@ def test_quotas_three_jobs_rule_1():
     qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('default', '*', '*', '*'): [-1, -1, 2000]}
 
-    res = [(1, 32)]
-    rs.default_resource_itvs = deepcopy(res)
+    res = ProcSet(*[(1, 32)])
+    rs.default_resource_itvs = ps_copy(res)
 
-    ss = SlotSet(Slot(1, 0, 0, deepcopy(res), 0, 10000))
+    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 10000))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, start_time=50, walltime=100,
                    queue='default', user='toto', project='',
-                   res_set=[(17, 24)], types={}, ts=False, ph=0)
+                   res_set=ProcSet(*[(17, 24)]), types={}, ts=False, ph=0)
 
     j2 = JobPseudo(id=2, queue='default', user='toto', project='')
     j2.simple_req(('node', 1), 200, res)
@@ -207,9 +210,9 @@ def test_quotas_three_jobs_rule_1():
     print(j2.start_time, j3.start_time)
 
     assert j2.start_time == 150
-    assert j2.res_set == [(1, 8)]
+    assert j2.res_set == ProcSet(*[(1, 8)])
     assert j3.start_time == 0
-    assert j3.res_set == [(1, 8)]
+    assert j3.res_set == ProcSet(*[(1, 8)])
 
 
 def test_quotas_two_job_rules_nb_res_quotas_file():
@@ -224,12 +227,12 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
     qts.load_quotas_rules()
 
-    res = [(1, 32)]
+    res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
                    queue='default', user='toto', project='',
@@ -249,8 +252,8 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
-    assert j1.res_set == []
-    assert j2.res_set == [(1, 16)]
+    assert j1.res_set == ProcSet()
+    assert j2.res_set == ProcSet(*[(1, 16)])
 
 
 def test_quotas_two_jobs_job_type_proc():
@@ -266,13 +269,13 @@ def test_quotas_two_jobs_job_type_proc():
 
     print(qts.quotas_rules, qts.quotas_job_types)
 
-    res = [(1, 32)]
+    res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]}
-
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    
     j1 = JobPseudo(id=1, queue='default', user='toto', project='', types={'yop'})
     j1.simple_req(('node', 1), 50, res)
     j2 = JobPseudo(id=2, queue='default', user='toto', project='', types={'yop'})

@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 MAX_NB_RESOURCES = 100000
 
-default_resource_itvs = []
+default_resource_itvs = ProcSet()
 
 
 class ResourceSet(object):

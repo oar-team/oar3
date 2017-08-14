@@ -16,6 +16,7 @@ from oar.lib.resource import ResourceSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
+from oar.lib.utils import ps_copy
 
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
@@ -181,7 +182,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
             if (not j_properties) and \
                (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
                 #deepcopy itvs
-                constraints = ProcSet(*list(resource_set.roid_itvs))
+                constraints = ps_copy(resource_set.roid_itvs)
             else:
                 if not j_properties or not jrg_grp_property:
                     and_sql = ""
