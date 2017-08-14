@@ -3,7 +3,7 @@ import simplejson as json
 from collections import defaultdict
 from copy import deepcopy
 from oar.lib import config
-from oar.lib.interval import itvs_size, intersec
+
 import oar.lib.resource as rs
 
 quotas_rules = {}
@@ -134,7 +134,7 @@ account (but the inner jobs are used to compute the quotas).
         # TOREMOVE ?
         if hasattr(job, 'res_set'):
             if not hasattr(self, 'nb_res'):
-                job.nb_res = itvs_size(intersec(job.res_set, rs.default_resource_itvs))
+                job.nb_res = len(job.res_set & rs.default_resource_itvs)
                 nb_resources = job.nb_res
         else:
             nb_resources = prev_nb_res
