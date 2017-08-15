@@ -41,7 +41,9 @@ def alembic_generate_diff(from_engine, to_engine):
     return sorted(all_diffs(), key=key_sort)
 
 
-def alembic_apply_diff(ctx, op, op_name, diff, tables=[]):
+def alembic_apply_diff(ctx, op, op_name, diff, tables=None):
+    if tables is None:
+        tables = []
     tables_dict = dict(((table.name, table) for table in tables))
     supported_operations = SUPPORTED_ALEMBIC_OPERATIONS.keys()
     if op_name not in supported_operations:
@@ -115,8 +117,10 @@ def alembic_apply_diff(ctx, op, op_name, diff, tables=[]):
         ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
 
 
-def alembic_sync_schema(ctx, from_engine, to_engine, tables=[]):
+def alembic_sync_schema(ctx, from_engine, to_engine, tables=None):
     # ctx.current_db.reflect()
+    if tables is None:
+        tables = []
     message = blue('compare') + ' ~> databases schemas'
     ctx.log(message + ' (in progress)')
     diffs = list(alembic_generate_diff(from_engine, to_engine))

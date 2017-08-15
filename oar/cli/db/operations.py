@@ -379,7 +379,9 @@ def merge_table(ctx, table, from_db, to_db):
     to_db.session.commit()
 
 
-def delete_from_table(ctx, table, raw_conn, criterion=[], message=None):
+def delete_from_table(ctx, table, raw_conn, criterion=None, message=None):
+    if criterion is None:
+        criterion = []
     if message:
         ctx.log(message)
     delete_query = table.delete()
@@ -419,7 +421,9 @@ def delete_orphan(ctx, p_table, p_key, f_table, f_key, raw_conn, message=None):
     return count
 
 
-def fix_sequences(ctx, to_engine=None, tables=[]):
+def fix_sequences(ctx, to_engine=None, tables=None):
+    if tables is None:
+        tables = []
     if to_engine is None:
         to_engine = ctx.archive_db.engine
     if not tables:

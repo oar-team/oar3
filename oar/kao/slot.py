@@ -21,11 +21,11 @@ class Slot(object):
         self.b = b
         self.e = e
         # timesharing ts_itvs: [user] * [job_name] * itvs
-        if ts_itvs == None:
+        if ts_itvs is None:
             self.ts_itvs = {}
         else:
             self.ts_itvs = ts_itvs
-        if ph_itvs == None:
+        if ph_itvs is None:
             self.ph_itvs = {}
         else:
             self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs

@@ -20,7 +20,7 @@ class Blueprint(FlaskBlueprint):
         super(Blueprint, self).__init__(*args, **kwargs)
         self.before_request(self._prepare_response)
 
-    def route(self, partial_rule, args={}, jsonify=True, **options):
+    def route(self, partial_rule, args=None, jsonify=True, **options):
         """A decorator that is used to define custom routes, injects parsed
         arguments into a view function or method and jsonify the response.
 
@@ -32,6 +32,8 @@ class Blueprint(FlaskBlueprint):
                 return {'result': math.factorial(x)}
 
         """
+        if args is None:
+            args = {}
         rule = partial_rule
         if self.root_prefix:
             rule = (self.root_prefix + partial_rule)
