@@ -11,8 +11,6 @@ from oar.lib import get_logger, config
 import oar.lib.resource as rs
 from oar.kao.quotas import check_slots_quotas
 
-from oar.lib.utils import ps_copy
-
 logger = get_logger("oar.kamelot")
 
 
@@ -328,7 +326,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     slots_sets[ss_name].split_slots_jobs([j], False)
 
                 else:
-                    slot = Slot(1, 0, 0, ps_copy(job.res_set), job.start_time,
+                    slot = Slot(1, 0, 0, ProcSet(*job.res_set), job.start_time,
                                 job.start_time + job.walltime - job_security_time)
                     # slot.show()
                     slots_sets[ss_name] = SlotSet(slot)

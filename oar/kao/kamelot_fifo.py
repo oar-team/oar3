@@ -4,7 +4,6 @@
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
-from oar.lib.utils import ps_copy
 
 from procset import ProcSet
 # Initialize some variables to default value or retrieve from oar.conf
@@ -46,7 +45,7 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
         # Determine Global Resource Intervals
         #
         resource_set = plt.resource_set()
-        res_itvs = ps_copy(resource_set.roid_itvs)
+        res_itvs = ProcSet(*resource_set.roid_itvs)
 
         #
         # Get  additional waiting jobs' data

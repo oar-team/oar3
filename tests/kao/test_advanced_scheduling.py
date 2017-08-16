@@ -5,7 +5,6 @@ from oar.kao.scheduling import (schedule_id_jobs_ct, set_slots_with_prev_schedul
 from oar.kao.job import JobPseudo
 
 from oar.lib import config
-from oar.lib.utils import ps_copy
 
 config['LOG_FILE'] = ':stderr:'
 
@@ -318,7 +317,7 @@ def test_find_contiguous_sorted_1h_2():
 
     res = ProcSet(*[(1, 32)])
 
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 1000))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 1000))
     all_ss = {"default": ss}
 
     hy = {'resource_id': [[(i, i)] for i in range(1, 32)]}
@@ -347,7 +346,7 @@ def test_find_contiguous_sorted_1h_2():
 def test_find_begin():
 
     res = ProcSet(*[(1, 62)])
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 200))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 200))
     all_ss = {"default": ss}
     hy = {'resource_id': [ProcSet(i) for i in range(1, 33)]}
 

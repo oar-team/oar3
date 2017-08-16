@@ -14,7 +14,6 @@ import oar.kao.quotas as qts
 import oar.lib.resource as rs
 
 from oar.lib import config, get_logger
-from oar.lib.utils import ps_copy
 
 # import pdb
 
@@ -92,9 +91,9 @@ def test_quotas_one_job_rule_nb_res_1():
     qts.quotas_rules = {('*', '*', '*', '/'): [1, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ps_copy(res)
+    rs.default_resource_itvs = ProcSet(*res)
 
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 100))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 100))
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
@@ -143,9 +142,9 @@ def test_quotas_four_jobs_rule_1():
                         ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ps_copy(res)
+    rs.default_resource_itvs = ProcSet(*res)
 
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 10000))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
@@ -185,9 +184,9 @@ def test_quotas_three_jobs_rule_1():
                         ('default', '*', '*', '*'): [-1, -1, 2000]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ps_copy(res)
+    rs.default_resource_itvs = ProcSet(*res)
 
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 10000))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 

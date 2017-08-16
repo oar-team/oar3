@@ -26,14 +26,11 @@ except:  # pragma: no cover
     __pypy__ = None
     is_pypy = False
 
-def ps_copy(itvs):
-    return ProcSet(*list(itvs))
-
 def dict_ps_copy(dict_ps):
     d = {}
     for key, value in dict_ps.items():
         if type(value) == dict:
-            d[key] = {k: ps_copy(v) for k,v in value.items()}
+            d[key] = {k: ProcSet(*v) for k,v in value.items()}
         else:
             d[key] = value
     return d

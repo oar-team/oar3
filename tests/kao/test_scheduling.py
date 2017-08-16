@@ -6,7 +6,6 @@ from oar.kao.scheduling import (assign_resources_mld_job_split_slots,
                                 schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
 from oar.lib import config
-from oar.lib.utils import ps_copy
 # import pdb
 
 config['LOG_FILE'] = ':stderr:'
@@ -140,7 +139,7 @@ def test_schedule_error_1():
     # Be careful you need a deepcopy for resources constraint when declare
     res = ProcSet(*[(1, 32)])
 
-    ss = SlotSet(Slot(1, 0, 0, ps_copy(res), 0, 10000))
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
@@ -150,7 +149,7 @@ def test_schedule_error_1():
     set_slots_with_prev_scheduled_jobs(all_ss, [j2], 10)
 
     j4 = JobPseudo(id=4, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {4: j4}, hy, [4], 5)
@@ -166,11 +165,11 @@ def test_schedule_container1():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={"inner": "1"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 30, [([("node", 1)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 30, [([("node", 1)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 10)
@@ -209,11 +208,11 @@ def test_schedule_container_error2():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={"inner": "1"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 20, [([("node", 3)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 20, [([("node", 3)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
@@ -231,11 +230,11 @@ def test_schedule_container_error3():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={"container": ""}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={"inner": "1"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 70, [([("node", 1)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 70, [([("node", 1)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
@@ -254,18 +253,18 @@ def test_schedule_container_prev_sched():
                    res_set=ProcSet(*[(7, 27)]),
                    start_time=200,
                    walltime=150,
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={"inner": "1"}, deps=[], key_cache={},
                    res_set=ProcSet(*[(9, 16)]),
                    start_time=210,
                    walltime=70,
-                   mld_res_rqts=[(1, 30, [([("node", 1)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 30, [([("node", 1)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     j3 = JobPseudo(id=3, types={"inner": "1"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 30, [([("node", 1)], ps_copy(res) )])],
+                   mld_res_rqts=[(1, 30, [([("node", 1)], ProcSet(*res) )])],
                    ts=False, ph=0)
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 20)
@@ -287,21 +286,21 @@ def test_schedule_container_recursif():
                    types={"container": ""},
                    deps=[],
                    key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2,
                    types={"container": "", "inner": "1"},
                    deps=[],
                    key_cache={},
-                   mld_res_rqts=[(1, 50, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 50, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j3 = JobPseudo(id=2,
                    types={"inner": "2"},
                    deps=[],
                    key_cache={},
-                   mld_res_rqts=[(1, 30, [([("node", 1)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 30, [([("node", 1)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2, 3: j3}, hy, [1, 2, 3], 10)
@@ -334,7 +333,7 @@ def test_schedule_container_prev_sched_recursif():
                    ts=False, ph=0)
 
     j3 = JobPseudo(id=3, types={"inner": "2"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 30, [([("node", 1)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 30, [([("node", 1)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 20)
@@ -369,7 +368,7 @@ def test_schedule_w_temporally_fragmented_container():
                    ts=False, ph=0)
 
     j3 = JobPseudo(id=3, types={"inner": "yop"}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 100, [([("node", 1)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 100, [([("node", 1)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 20)
@@ -390,11 +389,11 @@ def test_simple_dependency():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={}, deps=[(1, "Waiting", 0)], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
@@ -409,11 +408,11 @@ def test_error_dependency():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j2 = JobPseudo(id=2, types={}, deps=[(1, "Error", 0)], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
@@ -428,7 +427,7 @@ def test_terminated_dependency():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j2 = JobPseudo(id=2, types={}, deps=[(1, "Terminated", 0)], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     schedule_id_jobs_ct(all_ss, {2: j2}, hy, [2], 20)
@@ -444,16 +443,16 @@ def test_schedule_placeholder1():
 
     # job type: placeholder="yop"
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 4)], ProcSet(*res))])],
                    ts=False, ph=1, ph_name="yop")
 
     j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 50, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 50, [([("node", 4)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     # Allow type: allow="yop"
     j3 = JobPseudo(id=3, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
                    ts=False, ph=2, ph_name="yop")
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2, 3: j3}, hy, [1, 2, 3], 20)
@@ -471,12 +470,12 @@ def test_schedule_placeholder2():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     # job type: allow="yop"
     j2 = JobPseudo(id=2, types={}, deps=[(1, "Waiting", 0)], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=2, ph_name="yop")
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
@@ -497,15 +496,15 @@ def test_schedule_placeholder_prev_sched():
                    res_set=ProcSet(*[(7, 27)]),
                    start_time=200,
                    walltime=150,
-                   mld_res_rqts=[(1, 60, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=1, ph_name="yop")
 
     j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 150, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 150, [([("node", 4)], ProcSet(*res))])],
                    ts=False, ph=0)
 
     j3 = JobPseudo(id=3, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 500, [([("node", 2)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 500, [([("node", 2)], ProcSet(*res))])],
                    ts=False, ph=2, ph_name="yop")
 
     # pdb.set_trace()
@@ -533,12 +532,12 @@ def test_schedule_timesharing1():
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
                    user="toto", name="yop",
                    ts=True, ts_user="*", ts_name="*", ph=0)
 
     j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 80, [([("node", 4)], ps_copy(res))])],
+                   mld_res_rqts=[(1, 80, [([("node", 4)], ProcSet(*res))])],
                    user="toto", name="yop",
                    ts=True, ts_user="*", ts_name="*", ph=0)
 
