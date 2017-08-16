@@ -1087,16 +1087,15 @@ def set_gantt_job_start_time(moldable_id, current_time_sec):
 
 
 def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
+    if len(job_res_set) != 0:
+        resource_ids = [resource_set.rid_o2i[rid] for rid in job_res_set]
 
-    riods = list(job_res_set)
-    resource_ids = [resource_set.rid_o2i[rid] for rid in riods]
+        db.query(GanttJobsResource)\
+          .filter(GanttJobsResource.moldable_id == moldable_id)\
+          .filter(~GanttJobsResource.resource_id.in_(tuple(resource_ids)))\
+          .delete(synchronize_session=False)
 
-    db.query(GanttJobsResource)\
-      .filter(GanttJobsResource.moldable_id == moldable_id)\
-      .filter(~GanttJobsResource.resource_id.in_(tuple(resource_ids)))\
-      .delete(synchronize_session=False)
-
-    db.commit()
+        db.commit()
 
 
 def is_timesharing_for_two_jobs(j1, j2):

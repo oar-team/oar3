@@ -292,7 +292,7 @@ def test_db_all_in_one_AR_6(monkeypatch):
     job = db['Job'].query.one()
     print('\n', job.id, job.state, ' ', job.reservation, job.start_time)
 
-    assert job.state == 'Waiting'
+    assert job.state == 'toLaunch'
 
 
 def test_db_all_in_one_AR_7(monkeypatch):
