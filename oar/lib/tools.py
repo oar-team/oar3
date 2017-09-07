@@ -51,7 +51,7 @@ def notify_user(job, state, msg):  # pragma: no cover
     addr, port = job.info_type.split(':')
     msg_uds = job.notify + "°" + addr + "°" + job.user + "°" + job.id + "°" +\
         job.name + "°" + state + "°" + msg + "\n"
-    nb_sent = notification_user_socket.send(msg_uds)
+    nb_sent = notification_user_socket.send(msg_uds.encode())
 
     if nb_sent == 0:
         logger.error("notify_user: socket error")
@@ -74,7 +74,7 @@ def create_almighty_socket():  # pragma: no cover
 def notify_almighty(message):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
-    return almighty_socket.send(message)
+    return almighty_socket.send(message.encode())
 
 
 # TODO: refactor to use zmq
@@ -88,7 +88,7 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
         logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                      " raised exception socket.error: " + str(exc))
         return 0
-    nb_sent = tcp_socket.send(message)
+    nb_sent = tcp_socket.send(message.encode())
     tcp_socket.close()
     return nb_sent
 
