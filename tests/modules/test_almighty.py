@@ -13,7 +13,7 @@ called_command = ''
 KAO = '/usr/local/lib/oar/kao'
 FINAUD = '/usr/local/lib/oar/finaud'
 SARKO = '/usr/local/lib/oar/sarko'
-LEON = '/usr/local/lib/oar/leon'
+LEON = '/usr/local/lib/oar/Leon'
 NODE_CHANGE_STATE = '/usr/local/lib/oar/NodeChangeState'
 
 def fake_call(cmd):

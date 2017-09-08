@@ -227,7 +227,7 @@ class Hulot(object):
 
         while True:
 
-            message = self.socket.recv_json().decode('utf-8')
+            message = self.socket.recv_json()
 
             command = message['cmd']
             nodes = []

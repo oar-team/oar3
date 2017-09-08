@@ -32,7 +32,7 @@ def test_appendice_proxy_simple(monkeypatch):
 
     appendice_proxy =  AppendiceProxy()
     appendice_proxy.run(False)
-    
+
     assert FakeZmq.sent_msgs[1][0] == {'cmd': 'yop'}
 
 def test_appendice_proxy_OAREXEC(monkeypatch):

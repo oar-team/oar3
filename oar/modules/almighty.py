@@ -57,7 +57,7 @@ m = re.match(r'^\/', meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
     
-leon_command = binpath + 'leon'
+leon_command = binpath + 'Leon'
 check_for_villains_command = binpath + 'sarko'
 check_for_node_changes = binpath + 'finaud'
 nodeChangeState_command = binpath + 'NodeChangeState'
@@ -253,7 +253,7 @@ class Almighty(object):
         logger.debug("Timeout value:" + str(timeout))
         
         try:
-            answer = self.appendice.recv_json().decode('utf-8')
+            answer = self.appendice.recv_json()
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
             return {'cmd': 'Time'}

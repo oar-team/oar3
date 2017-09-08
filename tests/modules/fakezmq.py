@@ -1,14 +1,5 @@
 # coding: utf-8
 
-class FakeZmqSocketMessage(object):
-    def __init__(self, msg):
-        print("FakeZmqSocketMessage", msg)
-        self.msg = msg
-
-    def decode(self, _):
-        return self.msg
-
-
 class FakeZmqSocket(object):
     def __init__(self, socket_id):
         print("FakeZmqSocket")
@@ -41,8 +32,12 @@ class FakeZmqSocket(object):
         if len(msgs) == 0:
             msg = None
         else:
-            msg = FakeZmqSocketMessage(msgs.pop(0))
-        return msg
+            #msg = FakeZmqSocketMessage(msgs.pop(0))
+            msg = msgs.pop(0)
+            if type(msg) is dict:
+                return msg
+            else:
+                return msg.encode('utf8')
 
     def recv_json(self):
         return self._pop_msg()

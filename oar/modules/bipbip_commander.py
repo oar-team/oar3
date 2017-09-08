@@ -67,16 +67,16 @@ bipbip_command = binpath + 'bipbip'
 
 
 def bipbip_leon_executor(*args, **command):
-    
+
     job_id = command['job_id']
-    
+
     if command['cmd'] == 'LEONEXTERMINATE':
         cmd_arg = [leon_command, str(job_id)]
     else:
         cmd_arg = [bipbip_command, str(job_id)] + command['args']
 
     logger.debug('Launching: ' + str(cmd_arg))
-            
+
     # TODO returncode,
     tools.call(cmd_arg)
 
@@ -90,22 +90,21 @@ class BipbipCommander(object):
         #self.appendice = self.context.socket(zmq.PUSH) # to signal Almighty
         #self.appendice.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
 
-
         # IP addr is required when bind function is used on zmq socket
         ip_addr_bipbip_commander = socket.gethostbyname(config['BIPBIP_COMMANDER_SERVER'])
         self.notification = self.context.socket(zmq.PULL) # receive zmq formatted OAREXEC / OARRUNJOB / LEONEXTERMINATE
         self.notification.bind('tcp://' + ip_addr_bipbip_commander + ':' + config['BIPBIP_COMMANDER_PORT'])
-        
+
         self.bipbip_leon_commands_to_run = []
         self.bipbip_leon_commands_to_requeue = []
         self.bipbip_leon_executors = {}
 
-    
+
     def run(self, loop=True):
         # TODO: add a shutdown procedure
         while True:
             #add_timeout if bipbip_leon_commands_to_run is not empty
-            command = self.notification.recv_json().decode('utf-8')
+            command = self.notification.recv_json()
 
             logger.debug("bipbip commander received notification:" + str(command))
             #import pdb; pdb.set_trace()
@@ -140,7 +139,7 @@ class BipbipCommander(object):
 
 
             # Remove finished executors:
-            for job_id in self.bipbip_leon_executors.keys():
+            for job_id in list(self.bipbip_leon_executors.keys()):
                 if not self.bipbip_leon_executors[job_id].is_alive():
                     del self.bipbip_leon_executors[job_id]
 
@@ -153,4 +152,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
