@@ -143,12 +143,14 @@ class BipbipCommander(object):
             for job_id in self.bipbip_leon_executors.keys():
                 if not self.bipbip_leon_executors[job_id].is_alive():
                     del self.bipbip_leon_executors[job_id]
-            
+
             if not loop:
                 break
 
-
-if __name__ == "__main__":
+def main():
     bipbip_commander = BipbipCommander()
     bipbip_commander.run()
+
+if __name__ == "__main__":
+    main()
 

@@ -445,9 +445,7 @@ class Hulot(object):
             if not loop:
                 break
 
-if __name__ == '__main__':  # pragma: no cover
-    hulot = Hulot()
-    hulot.run()
+
 
 
 def command_executor(cmd_node):
@@ -493,3 +491,11 @@ def window_forker(commands, window_size, timeout):
                 cmd, node = cmd_node
                 logger.warning("Exection of command '" + cmd + "' timeouted on node '" + node + "'") 
                 # TODO kill process               
+
+
+def main(): 
+    hulot = Hulot()
+    hulot.run()
+
+if __name__ == '__main__':  # pragma: no cover
+    main()

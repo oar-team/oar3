@@ -445,6 +445,9 @@ class Almighty(object):
             if not loop:
                 break
 
-if __name__ == '__main__':  # pragma: no cover
+def main():
     almighty = Almighty()
     almighty.run()
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
