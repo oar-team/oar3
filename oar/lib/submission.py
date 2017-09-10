@@ -301,8 +301,6 @@ def add_micheline_subjob(job_parameters,
     
     if array_id > 0:
         kwargs['array_id'] = array_id
-
-    import pdb; pdb.set_trace()
         
     ins = Job.__table__.insert().values(**kwargs)
     result = db.session.execute(ins)
@@ -437,7 +435,6 @@ def add_micheline_simple_array_job(job_parameters,
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
-    # pdb.set_trace()
     properties = job_parameters.properties
     # TODO
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
@@ -614,8 +611,6 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
                  be to change parameters
     '''
 
-
-    #import pdb; pdb.set_trace()
     array_id = 0
 
     if job_parameters.reservation:
@@ -644,7 +639,6 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         error = (-13, 'invalid stderr file name (bad character)')
         return (error, [])
 
-    # pdb.set_trace()
     # Retrieve Micheline's rules from the table
     rules = db.query(AdmissionRule.rule)\
               .filter(AdmissionRule.enabled == 'YES')\
@@ -752,8 +746,6 @@ class JobParameters():
                 setattr(self, key, kwargs[key])
             else:
                 setattr(self, key, None)
-
-        #import pdb; pdb.set_trace()
 
         if not self.initial_request:
             self.initial_request = self.command
