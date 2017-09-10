@@ -303,10 +303,13 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
             if (j_properties == "" and (jrg_grp_property == "" or jrg_grp_property == "type = 'default'")):
                 res_constraints = ProcSet(*resource_set.roid_itvs)
             else:
-                if j_properties == "" or jrg_grp_property == "":
-                    and_sql = ""
-                else:
-                    and_sql = " AND "
+                and_sql = ''
+                if j_properties and jrg_grp_property:
+                    and_sql = ' AND '
+                if j_properties is None:
+                    j_properties = ''
+                if jrg_grp_property is None:
+                    jrg_grp_property  = ''
 
                 sql_constraints = j_properties + and_sql + jrg_grp_property
                 if sql_constraints in cache_constraints:

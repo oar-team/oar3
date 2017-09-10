@@ -322,7 +322,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
         #    usage()
         #    exit(6)
 
-        submission.job_parameters.info_type = "$Host:$server_port"  # TODO  "$Host:$server_port"
+        submission.job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
         submission.job_parameters.job_type = 'PASSIVE'
 
 

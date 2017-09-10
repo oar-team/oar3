@@ -179,14 +179,17 @@ def estimate_job_nb_resources(resource_request, j_properties):
             #
             if (not j_properties) and \
                (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
-                #deepcopy itvs
+                # copy itvs
                 constraints = ProcSet(*resource_set.roid_itvs)
             else:
-                if not j_properties or not jrg_grp_property:
-                    and_sql = ""
-                else:
-                    and_sql = " AND "
-
+                and_sql = ''
+                if j_properties and jrg_grp_property:
+                    and_sql = ' AND '
+                if j_properties is None:
+                    j_properties = ''
+                if jrg_grp_property is None:
+                    jrg_grp_property  = ''
+                    
                 sql_constraints = j_properties + and_sql + jrg_grp_property
 
                 try:
@@ -272,31 +275,35 @@ def add_micheline_subjob(job_parameters,
     stdout = job_parameters.stdout
     if not stdout:
         stdout = 'OAR'
-        if name:
+        if name is not None:
             stdout += '.' + name
         stdout += ".%jobid%.stdout"
-    else:
+    elif name is not None:
         stdout = re.sub(r'%jobname%', name, stdout)
-    job_parameters.stdout = stdout
 
     stderr = job_parameters.stderr
     if not stderr:
         stderr = 'OAR'
-        if name:
+        if name is not None:
             stderr += '.' + name
         stderr += '.%jobid%.stderr'
-    else:
+    elif name is not None:
         stderr = re.sub(r'%jobname%', name, stderr)
-    stderr = job_parameters
+    
     # Insert job
 
     kwargs = job_parameters.kwargs(array_commands[0], date)
     kwargs['message'] = ''  # TODO message
     kwargs['array_index'] = array_index
 
+    kwargs['stdout_file'] = stdout
+    kwargs['stderr_file'] = stderr
+    
     if array_id > 0:
         kwargs['array_id'] = array_id
 
+    import pdb; pdb.set_trace()
+        
     ins = Job.__table__.insert().values(**kwargs)
     result = db.session.execute(ins)
     job_id = result.inserted_primary_key[0]
@@ -454,28 +461,28 @@ def add_micheline_simple_array_job(job_parameters,
     stdout = job_parameters.stdout
     if not stdout:
         stdout = 'OAR'
-        if name:
+        if name is not None:
             stdout += '.' + name
         stdout += ".%jobid%.stdout"
-    else:
+    elif name is not None:
         stdout = re.sub(r'%jobname%', name, stdout)
-    job_parameters.stdout = stdout
 
     stderr = job_parameters.stderr
     if not stderr:
         stderr = 'OAR'
-        if name:
+        if name is not None:
             stderr += '.' + name
         stderr += '.%jobid%.stderr'
-    else:
+    elif name is not None:
         stderr = re.sub(r'%jobname%', name, stderr)
-    stderr = job_parameters.stderr
-
+    
     # Insert job
     kwargs = job_parameters.kwargs(array_commands[0], date)
     kwargs['message'] = ''  # TODO message
     kwargs['array_index'] = array_index
-
+    
+    kwargs['stdout_file'] = stdout
+    kwargs['stderr_file'] = stderr
     # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
@@ -822,8 +829,6 @@ class JobParameters():
         for key in ['job_type', 'info_type', 'properties', 'launching_directory',
                      'start_time', 'checkpoint', 'notify', 'project', 'initial_request',
                      'array_id']:
-            # TODO DEBUG ('stdout', (''"' + stdout + '"'
-            # TODO DEBUG kwargs['stderr', (''"' + stderr + '"'
             
             kwargs[key] = getattr(self, key)
 
@@ -833,7 +838,10 @@ class JobParameters():
         kwargs['job_name'] = self.name
         kwargs['checkpoint_signal'] = self.signal
         kwargs['reservation'] = self.reservation_field
-            
+
+        #TODO: to reconsider
+        #kwargs['stdout_file'] = ''
+        #kwargs['stderr_file'] = ''  
         # print(kwargs)
         return kwargs
 
