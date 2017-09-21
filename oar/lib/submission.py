@@ -238,8 +238,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
 def add_micheline_subjob(job_parameters,
                          ssh_private_key, ssh_public_key,
                          array_id, array_index,
-                         array_commands,
-                         properties_applied_after_validation):
+                         array_commands):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
@@ -255,7 +254,7 @@ def add_micheline_subjob(job_parameters,
         return(error, -1)
 
     # Add admin properties to the job
-    if properties_applied_after_validation:
+    if hasattr(job_parameters, 'properties_applied_after_validation:'):
         if properties:
             properties = '(' + properties + ') AND ' + properties_applied_after_validation
         else:
@@ -421,8 +420,7 @@ def add_micheline_subjob(job_parameters,
 def add_micheline_simple_array_job(job_parameters,
                                    ssh_private_key, ssh_public_key,
                                    array_id, array_index,
-                                   array_commands,
-                                   properties_applied_after_validation):
+                                   array_commands):
 
     job_id_list = []
     date = get_date()
@@ -443,11 +441,11 @@ def add_micheline_simple_array_job(job_parameters,
     
     
     # Add admin properties to the job
-    if properties_applied_after_validation:
+    if hasattr(job_parameters, 'properties_applied_after_validation:'):
         if properties:
-            properties = '(' + properties + ') AND ' + properties_applied_after_validation
+            properties = '(' + properties + ') AND ' + job_parameters.properties_applied_after_validation
         else:
-            properties = properties_applied_after_validation
+            properties = job_parameters.properties_applied_after_validation
     job_parameters.properties = properties
     # TODO format job message
 
@@ -639,17 +637,27 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         error = (-13, 'invalid stderr file name (bad character)')
         return (error, [])
 
-    # Retrieve Micheline's rules from the table
-    rules = db.query(AdmissionRule.rule)\
-              .filter(AdmissionRule.enabled == 'YES')\
-              .order_by(AdmissionRule.priority, AdmissionRule.id)\
-              .all()
-    str_rules = '\n'.join([r[0] for r in rules])
-
-    # This variable is used to add some resources properties restrictions but
-    # after the validation (job is queued even if there are not enough
-    # resources available)
-    properties_applied_after_validation = ''
+    
+    # Retrieve Micheline's rules 
+    str_rules = ''
+    if ('ADMISSION_RULES_IN_FILES' in config) and  (config['ADMISSION_RULES_IN_FILES'] == 'yes'):
+         # Read admission_rules from files
+        rules_dir = '/etc/oar/admission_rules.d/'
+        file_names = os.listdir(rules_dir)
+        
+        file_names.sort()
+        for file_name in file_names:
+            if re.match(r'^\d+_.*', file_name):
+                with open(rules_dir + file_name, 'r') as rule_file:
+                    for line in rule_file:
+                        str_rules += line
+    else:
+        # Retrieve Micheline's rules from database
+        rules = db.query(AdmissionRule.rule)\
+                  .filter(AdmissionRule.enabled == 'YES')\
+                  .order_by(AdmissionRule.priority, AdmissionRule.id)\
+                  .all()
+        str_rules = '\n'.join([r[0] for r in rules])
 
     # Apply rules
     code = compile(str_rules, '<string>', 'exec')
@@ -683,8 +691,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         (error, job_id_list) = add_micheline_simple_array_job(job_parameters,
                                                               ssh_private_key, ssh_public_key,
                                                               array_id, array_index,
-                                                              array_commands,
-                                                              properties_applied_after_validation)
+                                                              array_commands)
 
     else:
         # single job to submit or when job key is used with array job
@@ -700,8 +707,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
             (error, job_id) = add_micheline_subjob(job_parameters,
                                                    ssh_private_key, ssh_public_key,
                                                    array_id, array_index,
-                                                   array_commands,
-                                                   properties_applied_after_validation)
+                                                   array_commands)
 
             if error[0] == 0:
                 job_id_list.append(job_id)
