@@ -2,7 +2,7 @@
 import pytest
 
 from oar.lib import config, db
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
 from oar.kao.kao import main
 
 import oar.lib.tools  # for monkeypatching

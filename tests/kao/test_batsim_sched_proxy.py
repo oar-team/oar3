@@ -8,7 +8,7 @@ import zmq
 
 from oar.lib import config, db
 from oar.lib.tools import get_date
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
 from oar.kao.meta_sched import meta_schedule
 
 import oar.lib.tools  # for monkeypatching

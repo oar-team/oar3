@@ -57,7 +57,7 @@ from oar.lib.tools import get_date
 
 from batsim.batsim import DataStorage
 from oar.lib.node import get_nodes_with_state
-from oar.kao.job import (get_jobs_ids_in_multiple_states, JobPseudo)
+from oar.lib.job_handling import (get_jobs_ids_in_multiple_states, JobPseudo)
 from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
 from procset import ProcSet
 

@@ -11,7 +11,7 @@ import click
 
 from oar.lib import (db, config, get_logger, Job, Resource, Queue)
 
-from oar.kao.job import (insert_job, set_job_state)
+from oar.lib.job_handling import (insert_job, set_job_state)
 
 from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.kamelot import schedule_cycle

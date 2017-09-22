@@ -6,7 +6,7 @@ from procset import ProcSet
 from codecs import open
 from copy import deepcopy
 from tempfile import mkstemp
-from oar.kao.job import JobPseudo
+from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)

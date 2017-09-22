@@ -2,7 +2,7 @@
 import pytest
 
 from oar.lib import  db, config
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
 from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
 

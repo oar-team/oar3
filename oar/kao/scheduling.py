@@ -1,7 +1,7 @@
 # coding: utf-8
 from procset import ProcSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.job import ALLOW, JobPseudo
+from oar.lib.job_handling import ALLOW, JobPseudo
 
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 

@@ -5,7 +5,7 @@ import time
 
 from oar.lib import db
 
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
 from oar.kao.kamelot import main
 
 

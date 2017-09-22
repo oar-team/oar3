@@ -2,7 +2,7 @@
 # coding: utf-8
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
-from oar.kao.job import NO_PLACEHOLDER, JobPseudo
+from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 

@@ -3,7 +3,7 @@
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, AssignedResource, Resource)
 from oar.lib.event import (add_new_event, is_an_event_exists)
-from oar.lib.job_handling import get_job_types
+#from oar.lib.job_handling import get_job_types
 
 logger = get_logger("oar.kao.tools")
 
@@ -12,7 +12,7 @@ logger = get_logger("oar.kao.tools")
 def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources
     """
-
+    from oar.lib.job_handling import get_job_types
     # TO FINISH
     # TODO: MOVE TO resource.py ???
 

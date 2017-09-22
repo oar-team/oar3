@@ -4,7 +4,7 @@ from .conftest import ordered
 
 from flask import url_for
 from oar.lib import (db, Job, FragJob)
-from oar.kao.job import (insert_job, set_job_state)
+from oar.lib.job_handling import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 from oar.lib.tools import get_date
 

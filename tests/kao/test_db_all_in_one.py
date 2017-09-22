@@ -6,7 +6,7 @@ from codecs import open
 from tempfile import mkstemp
 
 from oar.lib import (db, config, GanttJobsPrediction, Resource)
-from oar.kao.job import (insert_job, set_jobs_start_time, set_job_state)
+from oar.lib.job_handling import (insert_job, set_jobs_start_time, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
 import oar.lib.tools  # for monkeypatching

@@ -47,7 +47,7 @@ def default_job_parameters(**kwargs):
 def apply_admission_rules(job_parameters):
 
     # Read admission_rules
-    rules_dir = 'etc/oar/admission_rules.d/'
+    rules_dir = os.path.dirname(__file__) +'/etc/oar/admission_rules.d/'
     file_names = os.listdir(rules_dir)
         
     file_names.sort()

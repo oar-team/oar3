@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from oar.lib import (db, Job, EventLog)
 from oar.cli.oarresume import cli
-from oar.kao.job import (insert_job, set_job_state)
+from oar.lib.job_handling import (insert_job, set_job_state)
 
 import oar.lib.tools  # for monkeypatching
 

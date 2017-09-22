@@ -4,7 +4,7 @@ import sys
 
 from oar.lib import config, get_logger
 from oar.kao.platform import Platform
-from oar.kao.job import NO_PLACEHOLDER, JobPseudo
+from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
                                 schedule_id_jobs_ct)

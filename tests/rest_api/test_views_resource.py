@@ -4,7 +4,7 @@ import json
 
 from flask import url_for
 from oar.lib import (db, Resource)
-from oar.kao.job import (insert_job, set_job_state)
+from oar.lib.job_handling import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
 

@@ -4,7 +4,7 @@ from oar.lib import config
 from procset import ProcSet
 from oar.lib.utils import dict_ps_copy
 
-from oar.kao.job import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
+from oar.lib.job_handling import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 
 import oar.kao.quotas as qts
 

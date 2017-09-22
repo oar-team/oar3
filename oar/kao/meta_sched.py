@@ -12,7 +12,7 @@ from subprocess import PIPE
 
 from oar.lib.job_handling import (frag_job)
 
-from oar.kao.job import (get_current_not_waiting_jobs,
+from oar.lib.job_handling import (get_current_not_waiting_jobs,
                          get_gantt_jobs_to_launch,
                          add_resource_job_pairs, set_job_state,
                          get_gantt_waiting_interactive_prediction_date,

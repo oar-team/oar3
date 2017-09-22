@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from oar.lib import (db, Job, Resource)
 from oar.cli.oarremoveresource import cli
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):

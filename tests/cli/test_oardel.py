@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from oar.lib import (db, FragJob, Job)
 from oar.cli.oardel import cli
-from oar.kao.job import insert_job
+from oar.lib.job_handling import insert_job
                          
 import oar.lib.tools  # for monkeypatching
 
