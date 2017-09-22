@@ -12,6 +12,7 @@ logger = get_logger("oar.kao.tools")
 def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources
     """
+    # TODO: need to adress this s
     from oar.lib.job_handling import get_job_types
     # TO FINISH
     # TODO: MOVE TO resource.py ???
