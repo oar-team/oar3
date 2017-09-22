@@ -40,3 +40,8 @@ def get_job_events(job_id):
     """Get events for the specified job"""
     result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
     return result
+
+def get_to_check_events():
+    """"Get all events with toCheck field on YES"""
+    result = db.query(EventLog).filter(EventLog.to_check == 'YES').order_by(EventLog.id).all()
+    return result

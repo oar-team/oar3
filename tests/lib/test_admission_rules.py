@@ -57,13 +57,6 @@ def apply_admission_rules(job_parameters):
             with open(rules_dir + file_name, 'r') as rule_file:
                 for line in rule_file:
                     rules += line
-    print(rules)
-
-    # TODO: properties_applied_after_validation
-    # This variable is used to add some resources properties restrictions but
-    # after the validation (job is queued even if there are not enough
-    # resources available)
-    properties_applied_after_validation = ''
 
     # Apply rules
     code = compile(rules, '<string>', 'exec')

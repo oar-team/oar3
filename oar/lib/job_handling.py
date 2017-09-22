@@ -12,6 +12,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
 
 from oar.lib.event import add_new_event
 
+from oar.kao.tools import update_current_scheduler_priority
 import oar.lib.tools as tools
 
 logger = get_logger('oar.lib.job_handling')
@@ -29,7 +30,7 @@ def get_job_ids_with_given_properties(sql_property):
                 .order_by(Job.id).all()
     return results
 
-def get_job(job_id):  # pragma: no cover
+def get_job(job_id):
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
     except Exception as e:
@@ -141,6 +142,136 @@ def get_job_types(job_id):
             else:
                 res[t] = True
     return res
+
+# log_job
+# sets the index fields to LOG on several tables
+# this will speed up future queries
+# parameters : base, jobid
+# return value : /
+
+
+def log_job(job):  # pragma: no cover
+    if db.dialect == "sqlite":
+        return
+    db.query(MoldableJobDescription)\
+      .filter(MoldableJobDescription.index == 'CURRENT')\
+      .filter(MoldableJobDescription.job_id == job.id)\
+      .update({MoldableJobDescription.index: 'LOG'}, synchronize_session=False)
+
+    db.query(JobResourceDescription)\
+      .filter(MoldableJobDescription.job_id == job.id)\
+      .filter(JobResourceGroup.moldable_id == MoldableJobDescription.id)\
+      .filter(JobResourceDescription.group_id == JobResourceGroup.id) \
+      .update({JobResourceDescription.index: 'LOG'}, synchronize_session=False)
+
+    db.query(JobResourceGroup)\
+      .filter(JobResourceGroup.index == 'CURRENT')\
+      .filter(MoldableJobDescription.index == 'LOG')\
+      .filter(MoldableJobDescription.job_id == job.id)\
+      .filter(JobResourceGroup.moldable_id == MoldableJobDescription.id)\
+      .update({JobResourceGroup.index: 'LOG'}, synchronize_session=False)
+
+    db.query(JobType)\
+      .filter(JobType.types_index == 'CURRENT')\
+      .filter(JobType.job_id == job.id)\
+      .update({JobType.types_index: 'LOG'}, synchronize_session=False)
+
+    db.query(JobDependencie)\
+      .filter(JobDependencie.index == 'CURRENT')\
+      .filter(JobDependencie.job_id == job.id)\
+      .update({JobDependencie.index: 'LOG'}, synchronize_session=False)
+
+    if job.assigned_moldable_job != "0":
+        db.query(AssignedResource)\
+          .filter(AssignedResource.index == 'CURRENT')\
+          .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
+          .update({AssignedResource.index: 'LOG'},
+                  synchronize_session=False)
+    db.commit()
+
+def set_job_state(jid, state):
+
+    # TODO
+    # TODO Later: notify_user
+    # TODO Later: update_current_scheduler_priority
+
+    result = db.query(Job).filter(Job.id == jid)\
+                          .filter(Job.state != 'Error')\
+                          .filter(Job.state != 'Terminated')\
+                          .filter(Job.state != state)\
+                          .update({Job.state: state})
+    db.commit()
+
+    if result == 1:  # OK for sqlite
+        logger.debug(
+            "Job state updated, job_id: " + str(jid) + ", wanted state: " + state)
+
+        date = tools.get_date()
+
+        # TODO: optimize job log
+        db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
+                             .filter(JobStateLog.job_id == jid)\
+                             .update({JobStateLog.date_stop: date})
+        db.commit()
+        req = db.insert(JobStateLog).values(
+            {'job_id': jid, 'job_state': state, 'date_start': date})
+        db.session.execute(req)
+
+        if state == "Terminated" or state == "Error" or state == "toLaunch" or \
+           state == "Running" or state == "Suspended" or state == "Resuming":
+            job = db.query(Job).filter(Job.id == jid).one()
+            if state == "Suspend":
+                tools.notify_user(job, "SUSPENDED", "Job is suspended.")
+            elif state == "Resuming":
+                tools.notify_user(job, "RESUMING", "Job is resuming.")
+            elif state == "Running":
+                tools.notify_user(job, "RUNNING", "Job is running.")
+            elif state == "toLaunch":
+                update_current_scheduler_priority(job, "+2", "START")
+            else:  # job is "Terminated" or ($state eq "Error")
+                if job.stop_time < job.start_time:
+                    db.query(Job).filter(Job.id == jid)\
+                                 .update({Job.stop_time: job.start_time})
+                    db.commit()
+
+                if job.assigned_moldable_job != "0":
+                    # Update last_job_date field for resources used
+                    update_scheduler_last_job_date(
+                        date, int(job.assigned_moldable_job))
+
+                if state == "Terminated":
+                    tools.notify_user(job, "END", "Job stopped normally.")
+                else:
+                    # Verify if the job was suspended and if the resource
+                    # property suspended is updated
+                    if job.suspended == "YES":
+                        r = get_current_resources_with_suspended_job()
+
+                        if r != ():
+                            db.query(Resource).filter(~Resource.id.in_(r))\
+                                              .update({Resource.suspended_jobs: 'NO'})
+
+                        else:
+                            db.query(Resource).update(
+                                {Resource.suspended_jobs: 'NO'})
+                        db.commit()
+
+                    tools.notify_user(
+                        job, "ERROR", "Job stopped abnormally or an OAR error occured.")
+                #import pdb; pdb.set_trace()
+                update_current_scheduler_priority(job, "-2", "STOP")
+
+                # Here we must not be asynchronously with the scheduler
+                log_job(job)
+                # $dbh is valid so these 2 variables must be defined
+                nb_sent = tools.notify_almighty("ChState")
+                if nb_sent == 0:
+                    logger.warning("Not able to notify almighty to launch the job " +
+                                   str(job.id) + " (socket error)")
+
+    else:
+        logger.warning("Job is already termindated or in error or wanted state, job_id: " +
+                       str(jid) + ", wanted state: " + state)
 
 def hold_job(job_id, running, user=None):
     """sets the state field of a job to 'Hold'
