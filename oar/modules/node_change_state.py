@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.event import get_to_check_events
-from oar.lib.job_handling import (get_job, get_job_types)
+from oar.lib.event import (get_to_check_events, is_an_event_exists)
+from oar.lib.job_handling import (get_job, get_job_types, set_job_state,
+                                  is_job_already_resubmitted, resubmit_job)
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Note Change State')
@@ -38,7 +39,7 @@ class  NodeChangeState(object):
                         and (is_an_event_exists(job_id, 'SEND_KILL_JOB') == 0)
                         and ((job.stop_time - job.start_time) > 60)):
 
-                        new_job_id = resubmit(job_id)
+                        new_job_id = resubmit_job(job_id)
                         logger.warning('Resubmiting job ' + str(job_id) + ' => ' + str(new_job_id) +
                                        '(type idempotent & exit code = 99 & duration > 60s)')
 

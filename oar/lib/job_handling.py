@@ -1,9 +1,14 @@
 # coding: utf-8
-""" Functions to handle job"""
+""" Functions to handle jobs"""
 import os
 import re
-from sqlalchemy import (text, distinct)
+import random
+
+from sqlalchemy import (func, text, distinct)
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.session import make_transient
+
+from sqlalchemy.sql.expression import select
 
 from procset import ProcSet
 
@@ -11,13 +16,14 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
                      JobStateLog, AssignedResource, FragJob,
-                     get_logger, config)
+                     get_logger, config, Challenge)
 
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.event import add_new_event
 
 from oar.kao.tools import update_current_scheduler_priority
 import oar.lib.tools as tools
+from oar.lib.tools import get_date
 
 from oar.kao.helpers import extract_find_assign_args
 
@@ -592,7 +598,7 @@ def get_current_jobs_dependencies(jobs):
 
 
 def get_current_not_waiting_jobs():
-    jobs = db.query(Job).filter(Job.state != "Waiting").all()
+    jobs = db.query(Job).filter(Job.state != 'Waiting').all()
     jobs_by_state = {}
     for job in jobs:
         if job.state not in jobs_by_state:
@@ -770,6 +776,114 @@ def insert_job(**kwargs):
         db.session.execute(JobType.__table__.insert(), ins)
 
     return job_id
+
+def resubmit_job(job_id):
+    """Resubmit a job and give the new job_id"""
+
+    user = os.environ['OARDO_USER']
+    job = get_job(job_id)
+
+    if job is None:
+        return 0
+    if job.type != 'PASSIVE':
+        return -1
+    if (job.state != 'Error') and (job.state != 'Terminated') and (job.state != 'Finishing'):
+        return -2
+    if (user != job.user) and (user != 'oar') and (user != 'root'):
+        return -3
+    
+    # Verify the content of the ssh keys
+    job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
+    if (ssh_public_key != '') or (ssh_private_key != ''):
+        # Check if the keys are used by other jobs
+        if get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key) > 0:
+            return -4
+
+    date = tools.get_date()
+    # Detach and prepare old job to be reinserted
+    db.session.expunge(job)
+    make_transient(job)
+    job.id = None
+    job.state = 'Hold'
+    job.date = date
+    if job.reservation is None:
+        job.start_time = 0
+    job.message = ''
+    job.scheduler_info = ''
+    job.exit_code = None
+    job.assigned_moldable_job = 0
+    
+    db.session.add(job)
+    db.session.flush()
+
+    new_job_id = job.id
+
+    # Insert challenge and ssh_keys
+    random_number = random.randint(1, 1000000000000)
+    ins = Challenge.__table__.insert().values(
+        {'job_id': new_job_id, 'challenge': random_number,
+         'ssh_private_key': ssh_private_key, 'ssh_public_key': ssh_public_key})
+    db.session.execute(ins)
+
+    # Duplicate job resource description requirements
+    # Retrieve modable_job_description
+    modable_job_descriptions = db.query(MoldableJobDescription)\
+                                .filter(MoldableJobDescription.job_id == jobd_id).all()
+
+    for mdl_job_descr in modable_job_descriptions:
+         res = db.session.execute(MoldableJobDescription.__table__.insert(),
+                                  {'moldable_job_id': new_job_id,
+                                   'moldable_walltime': mdl_job_descr.walltime})
+         moldable_id = res.inserted_primary_key[0]
+
+         job_resource_groups = db.query(JobResourceGroup)\
+                                 .filter(JobResourceGroup.moldable_id == mdl_job_descr.id).all()
+         
+         for job_res_grp in job_resource_groups:
+             res = db.session.execute(JobResourceGroup.__table__.insert(),
+                                      {'res_group_moldable_id': moldable_id,
+                                       'res_group_property':  job_res_grp.property})
+             res_group_id = res.inserted_primary_key[0]
+
+             job_resource_descriptions = db.query(JobResourceDescription)\
+                                           .filter(JobResourceDescription.group_id == job_res_grp.id).all()
+
+             for job_res_descr in job_resource_descriptions:
+                 db.session.execute(JobResourceGroup.__table__.insert(),
+                                    {'res_job_group_id': res_group_id,
+                                     'res_job_resource_type': job_res_descr.resource_type,
+                                     'res_job_value': job_res_descr.value,
+                                     'res_job_order': job_res_descr.order})
+                 
+    # Duplicate job types
+    job_types = db.query(JobType).filter(JobType.job_id == job_id).all()
+    new_job_types = [{'job_id': new_job_id, 'type': jt.type} for jt in job_typess]
+
+    db.session.execute(JobType.__table__.insert(), new_job_types)
+
+    # Update job dependencies
+    db.query(JobDependencie).filter(JobDependencie.job_id_required  == job_id)\
+                            .update({'job_id_required ': new_job_id})
+    
+    # Update job state to waintg
+    db.query(Job).filter(Job.id == new_job_id).update({'state': 'Waiting'})
+
+    # Emit job state log
+    db.session.execute(JobStateLog.__table__.insert(),
+                       {'job_id': new_job_id, 'job_state': 'Waiting', 'date_start': date})       
+         
+    db.commit()                                                
+        
+    return new_job_id
+    
+
+def is_job_already_resubmitted(job_id):
+    '''Check if the job was already resubmitted
+    args : db ref, job id'''
+
+    count_query = select([func.count()]).select_from(Job).where(Job.resubmit_job_id == job_id)
+    return db.session.execute(count_query).scalar()
+
 
 def set_job_resa_state(job_id, state):
     ''' sets the reservation field of the job of id passed in parameter
@@ -1051,6 +1165,7 @@ def get_cpuset_values(cpuset_field, moldable_id):
     if resources_to_always_add_type != "":
         sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
 
+    # TODO TOFINISH  
     results = db.query(Resource)\
                 .filter(AssignedResource.moldable_id == moldable_id)\
                 .filter(AssignedResource.resource_id == Resource.id)
@@ -1404,3 +1519,25 @@ def resume_job(job_id, user=None):
     else:
         return -1
 
+def get_job_challenge(job_id):
+    """gets the challenge string of a OAR Job
+    parameters : base, jobid
+    return value : challenge, ssh_private_key, ssh_public_key"""
+    res =  db.query(Challenge).filter(Challenge.job_id == job_id).one()
+    return (res.challenge, res.ssh_private_key, res.ssh_public_key)
+
+def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
+    """return the number of current jobs with the same ssh keys"""
+    count_query = select([func.count(Challenge.job_id)]).select_from(Challenge, Job)\
+                                                         .where(Challenge.job_id == Job.job_id)\
+                                                         .where(Job.state.in_(('Waiting', 'Hold',
+                                                                               'toLaunch','toError',
+                                                                               'toAckReservation',
+                                                                               'Launching','Running',
+                                                                               'Suspended','Resuming')))\
+                                                         .where(Challenge.ssh_private_key == ssh_private_key)\
+                                                         .where(Challenge.ssh_public_key == ssh_public_key)\
+                                                         .where(Job.user != user)\
+                                                         .where(Challenge.ssh_private_key != '')
+                                                                
+    return db.session.execute(count_query).scalar()
