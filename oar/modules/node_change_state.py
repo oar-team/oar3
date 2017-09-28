@@ -119,7 +119,7 @@ class NodeChangeState(object):
                         for resource in get_all_resources_on_node(host):
                             self.resources_to_heal.append(str(resource_id) + ' ' + host)
                         exit_code = 1
-                msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts))
+                msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts)
                 logger.warning(msg)
                 tools.send_log_by_email('Suspecting nodes', msg)
                 
