@@ -18,6 +18,8 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config, Challenge)
 
+from oar.lib.resource_handling import get_current_resources_with_suspended_job
+
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.event import add_new_event
 
@@ -405,7 +407,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 job.ph = NO_PLACEHOLDER
                 job.assign = False
                 job.find = False
-                if job.suspended == "YES":
+                if job.suspended == 'YES':
                     job.walltime += get_job_suspended_sum_duration(job.id, now)
 
             roid = resource_set.rid_i2o[r_id]
@@ -413,7 +415,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
             rid2jid[roid] = j.id
 
         job.res_set = ProcSet(*roids)
-        if job.state == "Suspended":
+        if job.state == 'Suspended':
             job.res_set = job.res_set - resource_set.suspendable_roid_itvs
 
         jobs_lst.append(job)
@@ -489,7 +491,7 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
 
     return jobs_lst
 
-
+# TODO MOVE TO GANTT_HANDLING ???
 def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
 
     # get unlaunchable jobs
@@ -624,8 +626,6 @@ def set_jobs_start_time(tuple_jids, start_time):
 
 
 # NO USED
-
-
 def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
     resources_mld_ids = db.query(GanttJobsResource)\
                           .filter(GanttJobsResource.job_id.in_(tuple_mld_ids))\
@@ -648,18 +648,7 @@ def add_resource_job_pairs(moldable_id):
     db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
     db.commit()
 
-# Return the list of resources where there are Suspended jobs
-# args: base
-def get_current_resources_with_suspended_job():
-    res = db.query(AssignedResource.resource_id).filter(AssignedResource.index == 'CURRENT')\
-                                                .filter(Job.state == 'Suspended')\
-                                                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
-                                                .all()
-
-    return tuple(r for r in res)
-
-
-
+# TODO MOVE TO gantt_handling
 def get_gantt_waiting_interactive_prediction_date():
     req = db.query(Job.id,
                    Job.info_type,
@@ -985,7 +974,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
 
     return (jids, jobs)
 
-
+# TODO MOVE TO GANTT_HANDLING
 def gantt_flush_tables(reservations_to_keep_mld_ids):
     '''Flush gantt tables but keep accepted advance reservations'''
 
@@ -1057,27 +1046,24 @@ def get_jobs_ids_in_multiple_states(states):
             jids_states[jid] = state
     return jids_states
 
-
-# set walltime for a moldable job
 def set_moldable_job_max_time(moldable_id, walltime):
-
+    """Set walltime for a moldable job"""
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.id == moldable_id)\
       .update({MoldableJobDescription.walltime: walltime})
 
     db.commit()
 
-
-# Update start_time in gantt for a specified job
+# TODO MOVE TO GANTT_HANDLING
 def set_gantt_job_start_time(moldable_id, current_time_sec):
-
+    """Update start_time in gantt for a specified job"""
     db.query(GanttJobsPrediction)\
       .filter(GanttJobsPrediction.moldable_id == moldable_id)\
       .update({GanttJobsPrediction.start_time: current_time_sec})
 
     db.commit()
 
-
+# TODO MOVE TO GANTT_HANDLING
 def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
     if len(job_res_set) != 0:
         resource_ids = [resource_set.rid_o2i[rid] for rid in job_res_set]
@@ -1109,7 +1095,7 @@ def is_timesharing_for_two_jobs(j1, j2):
 
     return False
 
-
+#TODO MOVE TO resource_handling
 def get_jobs_on_resuming_job_resources(job_id):
     '''Return the list of jobs running on resources allocated to another given job'''
     j1 = aliased(Job)
@@ -1154,6 +1140,7 @@ def resume_job_action(job_id):
 # get cpuset values for each nodes of a MJob
 def get_cpuset_values(cpuset_field, moldable_id):
     # TODO TOFINISH
+    raise  NotImplementedError('get_cpuset_values is NOT ENTIRELY IMPLEMENTED')
     logger.warning("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
     sql_where_string = "\'0\'"
     if "SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE" in config:
@@ -1541,3 +1528,39 @@ def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
                                                          .where(Challenge.ssh_private_key != '')
                                                                 
     return db.session.execute(count_query).scalar()
+
+
+def get_job_host_log(moldable_id):
+    """Returns the list of hosts associated to the moldable job passed in parameter
+    parameters : base, moldable_id
+    return value : list of distinct hostnames"""
+
+    results = db.query(distinct(Resource.network_address))\
+                .filter(AssignedResource.moldable_id == moldable_id)\
+                .filter(Resource.id == AssignedResource.resource_id)\
+                .filter(Resource.network_address != '')\
+                .filter(Resource.type == 'default').all()
+    return results
+
+def suspend_job_action(job_id, moldable_id):
+    """perform all action when a job is suspended"""
+    set_job_state(job_id, 'Suspended')
+    db.query(Job).filter(Job.id == job_id).update({'suspend': 'YES'})
+    
+    resource_ids = get_current_resources_with_suspended_job()
+    
+    db.query(Resource).filter(Resource.id.in_(tuple(resource_ids))).update({'suspend_jobs': 'YES'})
+    db.commit()
+
+def get_job_cpuset_name(job_id, job=None):
+    """Get the cpuset name for the given job"""
+    user = None
+    if job is None:
+        user = db.query(Job.user).filter(Job.id == job_id).one()
+    else:
+        user = job.user
+
+    return usr + '_' + str(job_id)
+
+def get_cpuset_values_for_a_moldable_job():
+    raise NotImplementedError('TODO get_cpuset_values_for_a_moldable_job')

@@ -255,6 +255,7 @@ class Job(db.DeferredReflectionModel):
     file_id = db.Column(db.Integer, nullable=True)
     accounted = db.Column(db.String(3), index=True, server_default='NO')
     notify = db.Column(db.String(255), nullable=True, server_default=db.text('NULL'))
+    # TODO assigned_moldable_job -> assigned_moldable_id
     assigned_moldable_job = db.Column(db.Integer, nullable=True, server_default='0')
     checkpoint = db.Column(db.Integer, server_default='0')
     checkpoint_signal = db.Column(db.Integer)

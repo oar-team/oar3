@@ -45,3 +45,14 @@ def get_to_check_events():
     """"Get all events with toCheck field on YES"""
     result = db.query(EventLog).filter(EventLog.to_check == 'YES').order_by(EventLog.id).all()
     return result
+
+def check_event(event_type, job_id):
+    """Turn the field toCheck into NO"""
+    db.query(EventLog).filter(EventLog.job_id == job_id)\
+                      .filter(EventLog.type == event_type)\
+                      .filter(EventLog.to_check == 'YES').update({'to_check': 'NO'})
+    db.commit()
+
+def get_hostname_event(event_id):
+    """Get hostnames corresponding to an event Id"""
+    return db.query(EventLogHostname.hostname).filter(EventLogHostname.event_id == event_id).all()

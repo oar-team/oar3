@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.event import (get_to_check_events, is_an_event_exists)
-from oar.lib.job_handling import (get_job, get_job_types, set_job_state,
+from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event)
+from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
                                   is_job_already_resubmitted, resubmit_job)
+from oar.lib.resource_handling import (set_node_state)
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Note Change State')
 
-class  NodeChangeState(object):
+class NodeChangeState(object):
 
     def __init__(self):
         self.resources_to_heal = []
@@ -192,12 +193,17 @@ class  NodeChangeState(object):
 
             
         # Treate nextState field
-            
+        resources_to_change = get_resources_change_state()
+
+        # A Term command must be added in the Almighty
+        
+
+        
     def suspend_job(self, job, event):
         # SUSPEND PART
         
         if self.cpuset_field:
-            cpuset_name = get_job_cpuset_name(job.id)
+            cpuset_name = get_job_cpuset_name(job.id, job)
             cpuset_nodes = get_cpuset_values_for_a_moldable_job(self.cpuset_field, job.assigned_moldable_job)
             if cpuset_nodes:
                 #TODO taktuk command
