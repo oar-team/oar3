@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 from oar.lib import (config, get_logger)
-from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event)
+from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
+                           add_new_event_with_host, add_new_event, get_hostname_event)
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
-                                  is_job_already_resubmitted, resubmit_job)
-from oar.lib.resource_handling import (set_node_state)
+                                  is_job_already_resubmitted, resubmit_job, get_job_host_log)
+from oar.lib.resource_handling import (set_node_state, get_all_resources_on_node)
+import oar.lib.tools. as tools
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Note Change State')
@@ -19,7 +22,7 @@ class NodeChangeState(object):
         self.healing_exec_file = None
         if 'SUSPECTED_HEALING_EXEC_FILE' in config:
            self.healing_exec_file = config['SUSPECTED_HEALING_EXEC_FILE']
-        
+
     def run(self):
         for event in get_to_check_events():
             job_id = event.job_id
@@ -116,7 +119,7 @@ class NodeChangeState(object):
                     if not ((host in already_treated_hosts) or (host == '')):
                         already_treated_hosts[host] = True
                         set_node_state(host, 'Suspected', finaud_tag)
-                        for resource in get_all_resources_on_node(host):
+                        for resource_id in get_all_resources_on_node(host):
                             self.resources_to_heal.append(str(resource_id) + ' ' + host)
                         exit_code = 1
                 msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts)
