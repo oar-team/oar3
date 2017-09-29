@@ -7,7 +7,7 @@ from oar.lib.node import (get_finaud_nodes, set_node_nextState,
 
 from oar.lib.event import add_new_event_with_host
 
-import oar.lib.tools. as tools
+import oar.lib.tools as tools
 
 logger = get_logger("oar.modules.finaud", forward_stderr=True)
 logger.debug('Start Finaud')
@@ -40,7 +40,7 @@ class Finaud(object):
         logger.debug('Testing resource(s) on : ' + ','.join(nodes_to_check.keys()))
         
         # Call the right program to test each nodes
-        bad_nodes = tools.test_hosts(nodes_to_check.keys())}
+        bad_nodes = tools.test_hosts(nodes_to_check.keys())
 
         #Make the decisions
         for node in nodes_to_check.values():
