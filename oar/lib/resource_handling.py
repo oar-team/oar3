@@ -69,11 +69,6 @@ def remove_resource(resource_id, user=None):
         return(3, 'Resource must be in DEAD state.')
 
 
-def get_all_resources_on_node(hostname):
-    """Return the current resources on node whose hostname is passed in parameter"""
-    return db.query(Resource.id).filter(Resource.id == hostname).all()
-
-
 def get_current_resources_with_suspended_job():
     """ Return the list of resources where there are Suspended jobs"""
     res = db.query(AssignedResource.resource_id).filter(AssignedResource.index == 'CURRENT')\
@@ -85,14 +80,10 @@ def get_current_resources_with_suspended_job():
     return res
 
 
-def set_node_state(host, state, finaud_tag):
-    """Sets the state field of some node identified by its hostname in the base.
-    - parameters : base, hostname, state, finaudDecision
-    - side effects : changes the state value in some field of the nodes table"""
-    if state == 'Suspect':
-        raise NotImplementedError(set_node_state)
 
 def  get_resources_change_state():
     """Get resource ids that will change their state"""
     res = db.query(Resource.id, Resource.next_state).filter(Resource.next_state != 'UnChanged').all()
     return {r.id: r.next_state for r in res}
+
+                

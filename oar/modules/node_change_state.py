@@ -6,8 +6,9 @@ from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
                            add_new_event_with_host, add_new_event, get_hostname_event)
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
                                   is_job_already_resubmitted, resubmit_job, get_job_host_log)
-from oar.lib.resource_handling import (set_node_state, get_all_resources_on_node)
-import oar.lib.tools. as tools
+from oar.lib.node import (set_node_state, get_all_resources_on_node)
+
+import oar.lib.tools as tools
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Note Change State')

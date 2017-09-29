@@ -8,6 +8,9 @@ import oar.lib.tools as tools
 
 logger = get_logger('oar.lib.node')
 
+def get_all_resources_on_node(hostname):
+    """Return the current resources on node whose hostname is passed in parameter"""
+    return db.query(Resource.id).filter(Resource.id == hostname).all()
 
 def get_nodes_with_state(nodes):
     result = db.query(Resource.network_address, (Resource.state))\
@@ -158,3 +161,5 @@ def update_node_nextFinaudDecision(network_address, finaud_decision):
     db.query(Resource).filter(Resource.network_address == network_address)\
                       .update({Resource.next_finaud_decision: finaud_decision})
     db.commit()
+
+    
