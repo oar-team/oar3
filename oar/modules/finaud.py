@@ -2,6 +2,10 @@
 # coding: utf-8
 
 from oar.lib import (config, get_logger)
+from oar.lib.node import (get_finaud_nodes, set_node_nextState,
+                          get_current_assigned_nodes, update_node_nextFinaudDecision)
+
+from oar.lib.event import add_new_event_with_host
 
 import oar.lib.tools. as tools
 

@@ -93,6 +93,10 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
     return nb_sent
 
 
+def test_hosts(nodes_to_check):
+    raise NotImplementedError("TODO")
+    return []
+
 
 #TODO
 def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):

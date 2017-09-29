@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import (func, text, distinct, or_)
+from sqlalchemy import (func, text, distinct, or_, and_)
 from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,
                      AssignedResource, get_logger)
@@ -46,7 +46,7 @@ def search_idle_nodes(date):
 
     return idle_nodes
 
-
+#TODO MOVE TO GANTT
 def get_gantt_hostname_to_wake_up(date, wakeup_time):
     '''Get hostname that we must wake up to launch jobs'''
     hostnames = db.query(Resource.network_address)\
@@ -118,17 +118,43 @@ def get_nodes_with_given_sql(properties):
     return result
 
 
+def set_node_state(host, state, finaud_tag):
+    """Sets the state field of some node identified by its hostname in the base.
+    - parameters : base, hostname, state, finaudDecision
+    - side effects : changes the state value in some field of the nodes table"""
+    if state == 'Suspect':
+        raise NotImplementedError(set_node_state)
+
+
 def set_node_nextState(hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""
     db.query(Resource).filter(Resource.network_address == hostname).update(
         {Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
     db.commit()
 
-
-
 def change_node_state(node, state, config):
     """Changes node state and notify central automaton"""
     set_node_nextState(node, state)
-    remote_host = config('SERVER_HOSTNAME')
-    remote_port = config('SERVER_PORT')
-    tools.notify_tcp_socket(remote_host, remote_port, "ChState")
+    tools.notify_almighty('ChState')
+
+def get_finaud_nodes():
+    """Return the list of network address nodes for Finaud"""
+    return  db.query(distinct(Resource.network_address))\
+              .filter(or_(Resource.state == 'Alive', and_(Resource.state == 'Suspected',
+                                                          Resource.finaud_decision == 'YES')))\
+              .filter(Resource.type == 'default')\
+              .filter(Resource.desktop_computing == 'NO')\
+              .filter(Resource.next_state == 'UnChanged').all()
+
+def get_current_assigned_nodes():
+    """Returns the current nodes"""
+    return db.query(distinct(Resource.network_address))\
+             .filter(AssignedResource.index == 'CURRENT')\
+             .filter(Resource.id == AssignedResource.resource_id)\
+             .filter(Resource.type == 'default').all()
+
+def update_node_nextFinaudDecision(network_address, finaud_decision):
+    # Update nextFinaudDecision field
+    db.query(Resource).filter(Resource.network_address == network_address)\
+                      .update({Resource.next_finaud_decision: finaud_decision})
+    db.commit()
