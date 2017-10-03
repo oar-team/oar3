@@ -25,7 +25,6 @@ from oar.lib.event import add_new_event
 
 from oar.kao.tools import update_current_scheduler_priority
 import oar.lib.tools as tools
-from oar.lib.tools import get_date
 
 from oar.kao.helpers import extract_find_assign_args
 
@@ -1560,7 +1559,60 @@ def get_job_cpuset_name(job_id, job=None):
     else:
         user = job.user
 
-    return usr + '_' + str(job_id)
+    return user + '_' + str(job_id)
 
 def get_cpuset_values_for_a_moldable_job():
     raise NotImplementedError('TODO get_cpuset_values_for_a_moldable_job')
+
+def job_arm_leon_timer(job_id):
+    """Set the state to TIMER_ARMED of job"""
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'TIMER_ARMED'})
+    db.commit()
+
+def job_finishing_sequence(epilogue_script, job_id, events):
+    
+    raise NotImplementedError('TODO: job_finishing_sequence')
+
+def get_job_frag_state(job_id):
+    """Get the frag_state value for a specific job"""
+    return db.query(FragJob.state).filter(FragJob.job_id == job_id).one()
+    
+def get_jobs_to_kill():
+    """Return the list of jobs that have their frag state to LEON"""
+    res = db.query(Job).filter(FragJob.state == 'LEON')\
+                       .filter(Job.id == FragJob.job_id)\
+                       .filter(~Job.state.in_(('Error', 'Terminated', 'Finishing'))).all()
+    return res
+
+def set_finish_date(job):
+    """Set the stop time of the job passed in parameter to the current time
+    (will be greater or equal to start time)"""
+    date = tools.get_date()
+    if date < job.start_time:
+        date = job.start_time
+    db.query(Job).filter(Job.id == job.id).update({Job.stop_time: date})
+    db.commit()
+
+def set_running_date(job_id):
+    """Set the starting time of the job passed in parameter to the current time"""
+    date = tools.get_date()
+    #In OAR2 gantt  moldable_id=0 is used to indicate time gantt orign, not in OAR3
+    # gantt_date = get_gantt_date()
+    # if gantt_date < date:
+    #     date = gantt_date
+    db.query(Job).filter(Job.id == job_id).update({Job.start_time: date})
+    db.commit()
+
+    
+def get_to_exterminate_jobs():
+    """"Return the list of jobs that have their frag state to LEON_EXTERMINATE"""
+    res = db.query(Job).filter(FragJob.state == 'LEON_EXTERMINATE')\
+                       .filter(Job.id == FragJob.job_id).all()
+    return res
+
+
+
+
+
+
+

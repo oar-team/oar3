@@ -32,6 +32,8 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
     monkeypatch.setattr(oar.kao.tools, 'fork_and_feed_stdin',
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
+    monkeypatch.setattr(oar.lib.tools, 'signal_oarexec', lambda *x: 0)
+
     
 @pytest.yield_fixture(scope='function')
 def minimal_db_initialization(request):
