@@ -3,18 +3,156 @@
 
 from oar.lib import (config, get_logger)
 
+from oar.lib.job_handling import (get_timer_armed_job, job_fragged, get_frag_date, get_jobs_in_state,
+                                  job_refrag, job_leon_exterminate, get_current_moldable_job,
+                                  get_job_suspended_sum_duration,
+                                  frag_job, get_job_current_hostnames, get_job_types)
+
+from oar.lib.resource_handling import (get_expired_resources, set_resource_nextState, get_resource_info,
+                                       get_absent_suspected_resources_for_a_timeout,
+                                       update_resource_nextFinaudDecision)
+
+from oar.lib.event import add_new_event
+
+import oar.lib.tools as tools
+
+from oar.lib.tools import DEFAULT_CONFIG
+
+logger = get_logger("oar.modules.sarko", forward_stderr=True)
+logger.info('Start Sarko')
 
 class Sarko(object):
 
     def __init__(self):
-        pass
-
+        config.setdefault_config(DEFAULT_CONFIG)
+        self.guilty_found = 0
+        
     def run(self):
-        pass
+        leon_soft_walltime = config['LEON_SOFT_WALLTIME']
+        leon_walltime = config['LEON_WALLTIME']
+
+        if 'JOBDEL_SOFTWALLTIME' in config:
+            leon_soft_walltime = config['JOBDEL_SOFTWALLTIME']
+
+        if 'JOBDEL_WALLTIME' in config:
+            leon_walltime = config['JOBDEL_WALLTIME']
+
+        if leon_walltime <= leon_soft_walltime:
+            leon_walltime = leon_soft_walltime + 10
+            logger.warning('(JOBDEL_WALLTIME <= JOBDEL_SOFTWALLTIME), changes JOBDEL_WALLTIME to ' +
+                           str(leon_walltime))
+
+        deploy_hostname = None
+        if 'DEPLOY_HOSTNAME' in config:
+            deploy_hostname = config['DEPLOY_HOSTNAME']
+
+        cosystem_hostname = None
+
+        if 'COSYSTEM_HOSTNAME' in config:
+            cosystem_hostname = config['COSYSTEM_HOSTNAME']
+
+        openssh_cmd = config['OPENSSH_CMD']
+        ssh_timeout = config['OAR_SSH_CONNECTION_TIMEOUT']
+
+        logger.debug('JOBDEL_SOFTWALLTIME = ' + str(leon_soft_walltime) +
+                     '; JOBDEL_WALLTIME = ' + str(leon_walltime))
+
+        logger.debug('Hello, identity control !!!')
+
+        date = tools.get_date()
+
+        # Look at leon timers
+        # Decide if OAR must retry to delete the job or just change values in the database
+        for job in get_timered_job():
+            if job.state in ['Terminated', 'Error', 'Finishing']:
+                job_fragged(job.id)
+                logger.debug('Set to FRAGGED the job: ' + str(job.id))
+            else:
+                frag_date = get_frag_date(job.id)
+                if (date > (frag_date + leon_soft_walltime)) and  (date <= (frag_date + leon_walltime)):
+                    logger.debug('Leon will RE-FRAG bipbip of job :' + str(job.id))
+                    job_refrag(job.id)
+                    self.guilty_found = 1
+                elif date > (frag_date + leon_walltime):
+                    logger.debug('Leon will EXTERMINATE bipbip of job :' + str(job.id))
+                    job_leon_exterminate(job.id)
+                    self.guilty_found = 1
+                else:
+                    logger.debug('The leon timer is not yet expired for the job :' + str(job.id) +
+                                 '; nothing to do')
+
+
+        # Look at job walltimes
+        for job in get_jobs_in_state('Running'):
+            start_time = job.start_time
+            # Get walltime
+            mold_job = get_current_moldable_job(job.assigned_moldable_job)
+            max_time = mold_job.walltime
+            if job.suspended == 'YES':
+                max_time = get_job_suspended_sum_duration(job.id, date)
+
+            logger.debug('Job: ' + str(job.id) + ' from ' + str(start_time) +
+                         ' with ' + str(max_time) +'; current time=' + str(date))
+
+            if date > (start_time + max_time):
+                logger.debug('--> walltime reached')
+                self.guilty_found = 1
+                frag_job(job.id)
+                add_new_event('WALLTIME', job.id, 'Job: ' + str(job.id) + ' from ' + str(start_time) +
+                              ' with ' + str(max_time) +'; current time=' + str(date) + ' (Elapsed)')
+            elif (job.checkpoint > 0) and (date >= (start_time + max_time + job.checkpoint)):
+                # OAR must notify the job to checkpoint itself
+                logger.debug('Send checkpoint signal to the job:' + str(job.id))
+                # Retrieve node names used by the job
+                hosts = get_job_current_hostnames(job.id)
+                job_types = get_job_types(job.id)        
+                head_host = None
+                #deploy, cosystem and no host part
+                if ('cosystem' in job_types) or (len(hosts) == 0):
+                    head_host = cosystem_hostname
+                elif 'deploy' in job_types:
+                    head_host = deploy_hostname
+                elif len(hosts) != 0:
+                    head_host = hosts[0]
+                    
+                add_new_event('CHECKPOINT', job.id, 'User oar (sarko) requested a checkpoint on the job:' +
+                              str(job.id) + ' on ' + head_host)
+                comment = ''
+                # TODO: add timeout TOFINISH
+                exit_codes = tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '')
+                # TODO: TOFINISH
+
+        # Retrieve nodes with expiry_dates in the past
+        # special for Desktop computing
+        #TODO: TOFINISH or TOREMOVE
+        resource_ids = get_expired_resources()
+        for resource_id in resource_ids:
+            set_resource_nextState(resource_id, 'Suspected')
+            #add_new_event_with_host('LOG_SUSPECTED', 0, '
+            #The DESKTOP COMPUTING resource $r has expired on node
+            #$rinfo->{network_address}", [$rinfo->{network_address}]);
+        if len(resource_ids):
+            tools.notify_almighty('ChState')
+
+        dead_switch_time = config['DEAD_SWITCH_TIME']
+        # Get Absent and Suspected nodes for more than 5 mn (default)
+        if dead_switch_time > 0:
+            notify = False
+            for resource_id in get_absent_suspected_resources_for_a_timeout(dead_switch_time):
+                set_resource_nextState(resource_id, 'Dead')
+                update_resource_nextFinaudDecision(resource_id, 'YES')
+
+                logger.debug('Set the next state of resource: ' + str(resource_id) + ' to Dead')
+                notify = True
+
+            if notify:
+                tools.notify_almighty('ChState')
 
 def main():
     sarko = Sarko()
     sarko.run()
+    return sarko.guilty_found
 
 if __name__ == '__main__':  # pragma: no cover
-    main()
+    guilty_found = main()
+    sys.exit(guilty_found)

@@ -1192,6 +1192,20 @@ def get_job(job_id):
     else:
         return job
 
+def get_running_job(job_id):
+    res = db.query(Job.start_time, MoldableJobDescription.walltime)\
+            .filter(Job.id == job_id)\
+            .filter(Job.state == 'Running')\
+            .filter(Job.assigned_moldable_job == MoldableJobDescription.id)\
+            .one()
+    return res
+
+def get_current_moldable_job(moldable_id):
+   """Return the moldable job of id passed in"""
+   res = db.query(MoldableJobDescription).filter(MoldableJobDescription.current == 'CURRENT')\
+                                         .filter(MoldableJobDescription.id == moldable_id)\
+                                         .one()
+   return res
 
 def frag_job(job_id, user=None):
     """Sets the flag 'ToFrag' of a job to 'Yes' which will threshold job deletion"""
@@ -1529,6 +1543,11 @@ def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
     return db.session.execute(count_query).scalar()
 
 
+def get_jobs_in_state(state):
+    """Return the jobs in the specified state"""
+    return db.query(Job).filter(Job.state == state).all()
+
+
 def get_job_host_log(moldable_id):
     """Returns the list of hosts associated to the moldable job passed in parameter
     parameters : base, moldable_id
@@ -1564,11 +1583,31 @@ def get_job_cpuset_name(job_id, job=None):
 def get_cpuset_values_for_a_moldable_job():
     raise NotImplementedError('TODO get_cpuset_values_for_a_moldable_job')
 
+def job_fragged(job_id):
+    """Set the flag 'ToFrag' of a job to 'No'"""
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'FRAGGED'})
+    db.commit()
+
 def job_arm_leon_timer(job_id):
     """Set the state to TIMER_ARMED of job"""
     db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'TIMER_ARMED'})
     db.commit()
 
+def job_refrag(job_id):
+    """Set the state to LEON of job"""
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON'})
+    db.commit()
+
+def job_leon_exterminate(job_id):
+    """Set the state LEON_EXTERMINATE of job"""
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON_EXTERMINATE'})
+    db.commit()
+
+def get_frag_date(job_id):
+    """Get the date of the frag of a job"""
+    return db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
+
+    
 def job_finishing_sequence(epilogue_script, job_id, events):
     
     raise NotImplementedError('TODO: job_finishing_sequence')
@@ -1611,6 +1650,11 @@ def get_to_exterminate_jobs():
     return res
 
 
+def get_timer_armed_job():
+    """Return the list of jobs that have their frag state to TIMER_ARMED"""
+    res = db.query(Job).filter(FragJob.state == 'TIMER_ARMED')\
+                       .filter(Job.id == FragJob.job_id).all()
+    return res
 
 
 

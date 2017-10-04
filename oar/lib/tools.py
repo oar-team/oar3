@@ -13,26 +13,26 @@ from subprocess import (Popen, call, PIPE, TimeoutExpired)
 
 # Constants
 DEFAULT_CONFIG = {
-    'DEFAULT_LEON_SOFT_WALLTIME': 20,
-    'DEFAULT_LEON_WALLTIME': 300,
+    'LEON_SOFT_WALLTIME': 20,
+    'LEON_WALLTIME': 300,
     'TIMEOUT_SSH': 120,
-    'DEFAULT_SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
+    'SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
     'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
-    'DEFAULT_DEAD_SWITCH_TIME': 0,
-    'DEFAULT_OAREXEC_DIRECTORY': '/tmp/oar_runtime/',
+    'DEAD_SWITCH_TIME': 0,
+    'OAREXEC_DIRECTORY': '/tmp/oar_runtime/',
     'OAREXEC_PID_FILE_NAME': 'pid_of_oarexec_for_jobId_',
     'OARSUB_FILE_NAME_PREFIX': 'oarsub_connections_',
-    'DEFAULT_PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'DEFAULT_SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
+    'PROLOGUE_EPILOGUE_TIMEOUT': 60,
+    'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
-    'DEFAULT_OPENSSH_CMD': 'ssh',
-    'DEFAULT_CPUSET_FILE_MANAGER': '/etc/oar/job_resource_manager.pl',
-    'DEFAULT_MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
-    'DEFAULT_SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
-    'DEFAULT_OAR_SSH_AUTHORIZED_KEYS_FILE': '.ssh/authorized_keys',
-    'DEFAULT_NODE_FILE_DB_FIELD': 'network_address',
-    'DEFAULT_NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
-    'DEFAULT_NOTIFY_TCP_SOCKET_ENABLED': 1
+    'OPENSSH_CMD': 'ssh',
+    'CPUSET_FILE_MANAGER': '/etc/oar/job_resource_manager.pl',
+    'MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
+    'SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
+    'OAR_SSH_AUTHORIZED_KEYS_FILE': '.ssh/authorized_keys',
+    'NODE_FILE_DB_FIELD': 'network_address',
+    'NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
+    'NOTIFY_TCP_SOCKET_ENABLED': 1
     }
 
 logger = get_logger("oar.lib.tools")
