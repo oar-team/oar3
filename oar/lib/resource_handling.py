@@ -11,6 +11,10 @@ State_to_num = {'Alive': 1, 'Absent': 2, 'Suspected': 3, 'Dead': 4}
 
 logger = get_logger('oar.lib.resource_handling')
 
+def get_resource(resource_id):
+    return db.query(Resource).filter(Resource.id == resource_id).one()
+
+
 def set_resource_state(resource_id, state, finaud_decision):
     """sets the state field of a resource"""
     db.query(Resource).filter(Resource.id == resource_id)\
@@ -30,6 +34,11 @@ def set_resource_state(resource_id, state, finaud_decision):
          'date_start': date, 'finaud_decision': finaud_decision})
     db.session.execute(ins)
 
+def set_resource_nextState(resource_id, next_state):
+    """Set the nextState field of a resource identified by its resource_id"""
+    db.query(Resource).filter(Resource.id == resource_id)\
+                      .update({Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
+    db.commit()
 
 def remove_resource(resource_id, user=None):
     """Remove resource"""
@@ -87,3 +96,30 @@ def  get_resources_change_state():
     return {r.id: r.next_state for r in res}
 
                 
+def  get_expired_resources():
+    """Get the list of resources whose expiry_date is in the past and which are not dead yet.
+    0000-00-00 00:00:00 is always considered as in the future. Used for desktop computing schema."""
+    # TODO: UNUSED (Desktop computing)
+    date = tools.get_date()
+
+    res = db(Resource.id).filter(Resource.state == 'Alive')\
+                         .filter(Resource.expiry_date > 0)\
+                         .filter(Resource.desktop_computing == 'YES')\
+                         .filter(Resource.expiry_date < date)\
+                         .all()
+    return res
+
+def get_absent_suspected_resources_for_a_timeout(timeout):
+    date = tools.get_date()
+    res = db(ResourceLog.resource_id).filter(ResourceLog.attribute == 'state')\
+                                     .filter(ResourceLog.date_stop == 0)\
+                                     .filter((ResourceLog.date_start + timeout) <  date)\
+                                     .all()
+    return res
+
+def update_resource_nextFinaudDecision(resource_id, finaud_decision):
+    """Update nextFinaudDecision field"""
+
+    db.query(Resource).filter(Resource.id == resource_id)\
+                      .update({Resource.next_finaud_decision: finaud_decision})
+    db.commit()

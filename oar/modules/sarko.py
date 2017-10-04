@@ -8,7 +8,7 @@ from oar.lib.job_handling import (get_timer_armed_job, job_fragged, get_frag_dat
                                   get_job_suspended_sum_duration,
                                   frag_job, get_job_current_hostnames, get_job_types)
 
-from oar.lib.resource_handling import (get_expired_resources, set_resource_nextState, get_resource_info,
+from oar.lib.resource_handling import (get_expired_resources, set_resource_nextState, get_resource,
                                        get_absent_suspected_resources_for_a_timeout,
                                        update_resource_nextFinaudDecision)
 
@@ -63,7 +63,7 @@ class Sarko(object):
 
         # Look at leon timers
         # Decide if OAR must retry to delete the job or just change values in the database
-        for job in get_timered_job():
+        for job in get_timer_armed_job():
             if job.state in ['Terminated', 'Error', 'Finishing']:
                 job_fragged(job.id)
                 logger.debug('Set to FRAGGED the job: ' + str(job.id))
