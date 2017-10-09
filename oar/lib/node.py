@@ -1,10 +1,13 @@
 # coding: utf-8
-from sqlalchemy import (func, text, distinct, or_, and_)
-from oar.lib import (db, Resource, GanttJobsResource, GanttJobsPrediction, Job,
+
+from sqlalchemy import (func, select, text, distinct, or_, and_)
+from oar.lib import (db, Resource, ResourceLog, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription,
-                     AssignedResource, get_logger)
+                     AssignedResource, get_logger, config)
 
 import oar.lib.tools as tools
+
+STATE2NUM = {'Alive': 1, 'Absent': 2, 'Suspected': 3, 'Dead': 4}
 
 logger = get_logger('oar.lib.node')
 
@@ -121,13 +124,55 @@ def get_nodes_with_given_sql(properties):
     return result
 
 
-def set_node_state(host, state, finaud_tag):
+def set_node_state(hostname, state, finaud_tag):
     """Sets the state field of some node identified by its hostname in the base.
     - parameters : base, hostname, state, finaudDecision
     - side effects : changes the state value in some field of the nodes table"""
     if state == 'Suspect':
-        raise NotImplementedError(set_node_state)
+        query = db.query(Resource).filter(Resource.network_address == hostname)\
+                                  .update({Resource.state: state,
+                                           Resource.finaud_decision: finaud_tag,
+                                           Resource.state_num: STATE2NUM[state]})
 
+        #.filter(or_(Resource.state == 'Alive',
+        #                              and_(Resource.state == 'Suspected',
+        #                                   '$finaud\' = \'NO\' AND finaud_decision = \'YES\')
+        #
+        # TODO:  https://github.com/oar-team/oar/issues/140
+        #        issue from Strange SQL where clause in IO::set_node_state
+        #        AND (state = \'Alive\'
+        #        OR (state = \'Suspected\' AND \'$finaud\' = \'NO\' AND finaud_decision = \'YES\')
+
+        nb_rows = db.execute(query).rowcount
+
+        if nb_rows == 0:
+            logger.debug('Try to turn the node: + ' + hostname +
+                         ' into Suspected but it is not into the Alive state SO we do nothing')
+            return
+
+    else:
+        db.query(Resource).filter(Resource.network_address == hostname)\
+                                  .update({Resource.state: state,
+                                           Resource.finaud_decision: finaud_tag,
+                                           Resource.state_num: STATE2NUM[state]})
+        db.commit()
+    date = tools.get_date()
+    db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
+                         .filter(ResourceLog.attribute == 'state')\
+                         .filter(Resource.network_address == hostname)\
+                         .filter(ResourceLog.resource_id == Resource.id)\
+                         .update({ResourceLog.date_stop: date})
+    db.commit()
+
+    sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\
+         .where(Resource.network_address == hostname)
+
+    ins = ResourceLog.__table__.insert()\
+                               .from_select((ResourceLog.resource_id, ResourceLog.attribute,
+                                             ResourceLog.value, ResourceLog.date_start,
+                                             ResourceLog.finaud_decision), sel)
+
+    db.session.execute(ins)
 
 def set_node_nextState(hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""

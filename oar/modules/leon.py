@@ -41,9 +41,9 @@ class Leon(object):
         
 
         # Test if we must launch a finishing sequence on a specific job
-        if sys.argv[0]:
+        if sys.argv[2]:
             try:
-                job_id = int(sys.argv[0])
+                job_id = int(sys.argv[2])
             except ValueError as ex:
                 logger.error('"%s" cannot be converted to an int' %  ex)
                 self.exit_code = 1
