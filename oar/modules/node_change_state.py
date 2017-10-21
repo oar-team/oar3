@@ -9,7 +9,7 @@ from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
                                   is_job_already_resubmitted, resubmit_job, get_job_host_log)
 from oar.lib.node import (set_node_state, get_all_resources_on_node)
-from oar.lib.resource import (get_resources_change_state)
+from oar.lib.resource_handling import (get_resources_change_state)
 
 import oar.lib.tools as tools
 
