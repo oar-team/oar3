@@ -45,6 +45,9 @@ class FakeZmqSocket(object):
     def recv(self):
         return self.recv_json()
 
+    def recv_string(self):
+        return self.recv_json()
+    
     def recv_multipart(self):
         print('recv_multipart:', self.socket_id, FakeZmq.recv_msgs)
         msg = self._pop_msg()

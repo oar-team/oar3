@@ -123,6 +123,10 @@ def test_hosts(nodes_to_check):
     return []
 
 
+def send_log_by_email(title, message):
+    raise NotImplementedError("TODO")
+
+
 #TODO
 def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):
     raise NotImplementedError('TODO')

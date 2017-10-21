@@ -18,6 +18,7 @@ from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
 from batsim.batsim import BatsimScheduler, Batsim
+from batsim.network import NetworkHandler
 import oar.kao.advanced_scheduling
 
 from oar.kao.meta_sched import meta_schedule
@@ -195,7 +196,6 @@ class BatSched(BatsimScheduler):
         nb_res = self.nb_res
         node_size = self.node_size
 
-        #import pdb; pdb.set_trace()
         if self.database_mode == 'no-db':
             hy_resource_id = [ProcSet(i) for i in range(1, nb_res+1)]
             hierarchy = {'resource_id': hy_resource_id}
@@ -233,8 +233,6 @@ class BatSched(BatsimScheduler):
 
         else:
             raise NotImplementedError('Database mode: ' + self.database_mode)
-
-        #import pdb; pdb.set_trace()
 
         self.env = BatEnvTime(0) #???
         self.platform = Platform(self.platform_model, env=self.env, resource_set=res_set,
@@ -315,7 +313,6 @@ class BatSched(BatsimScheduler):
         jids_to_launch = [] 
         real_time = time.time()
         if self.platform_model == 'simu':
-            # import pdb; pdb.set_trace()
             schedule_cycle(self.platform, self.env.now, "default")
 
             # retrieve jobs to launch
@@ -330,10 +327,8 @@ class BatSched(BatsimScheduler):
 
         else:
             print("call meta_schedule('internal')")
-            #pdb.set_trace()
             meta_schedule('internal', self.platform)
-            #pdb.set_trace()
-
+  
             result = db.query(Job).filter(Job.state == 'toLaunch')\
                                   .order_by(Job.id).all()
 
@@ -347,7 +342,7 @@ class BatSched(BatsimScheduler):
                 self.platform.running_jids.append(jid)
 
 
-        print("Ids of jobs to launch: ", *jids_to_launch)
+        print("Ids of jobs to launch: " + str(*jids_to_launch))
         print("Time befort scheduling round: ", self.bs._current_time, self.sched_delay)
         # update time
         real_sched_time = time.time() - real_time
@@ -449,7 +444,7 @@ class BatSched(BatsimScheduler):
 
 def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, scheduler_delay, tokens, verbose):
     """Adaptor to Batsim Simulator."""
-    #import pdb; pdb.set_trace()
+
     if database_mode == 'memory':
         config.clear()
         config.update(BATSIM_DEFAULT_CONFIG)
@@ -466,8 +461,8 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
 
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode, 'simu', tokens)
     #TODO support batsim usage without redis
-    
-    batsim = Batsim(scheduler, None, socket_endpoint, verbose_level)
+    network_handler = NetworkHandler(socket_endpoint)
+    batsim = Batsim(scheduler, network_handler)
 
     #import pdb; pdb.set_trace()
     batsim.start()

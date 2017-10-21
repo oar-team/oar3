@@ -18,10 +18,11 @@ def order_json_str_arrays(a):
     return [json.dumps(json.loads(x), sort_keys=True) for x in a]
 
 SENT_MSGS_1 = order_json_str_arrays([
-    '{"now": 5.0, "events": []}',
-    '{"now": 15.0, "events": [{"type": "EXECUTE_JOB", "data": {"alloc": "0 - 3", "job_id": "foo!1"}, "timestamp": 15.0}]}',
-    '{"now": 24.0, "events": []}',
-    '{"now": 25.0, "events": []}'])
+    '{"events": [{"data": {"type": "continue_submission"}, "timestamp": 5.0, "type": "NOTIFY"}], "now": 5.0}',
+    '{"events": [{"data": {"alloc": "0 - 3", "job_id": "foo!1"}, "timestamp": 15.0, "type": "EXECUTE_JOB"}, {"data": {"type": "continue_submission"}, "timestamp": 15.0, "type": "NOTIFY"}], "now": 15.0}',
+    '{"events": [{"data": {"type": "submission_finished"}, "timestamp": 24.0, "type": "NOTIFY"}], "now": 24.0}',
+    '{"events": [], "now": 25.0}'])
+
 
 SENT_MSGS_2 = order_json_str_arrays([
     '{"now": 5.0, "events": []}',
@@ -36,6 +37,7 @@ class FakeRedis(object):
         pass
 
     def get(self, key):
+        #import pdb; pdb.set_trace()
         return data_storage[key]
     
 @pytest.fixture(scope="function", autouse=True)
@@ -57,18 +59,19 @@ def exec_gene(options):
     FakeZmq.recv_msgs = {0:[
         '{"now":5.0, "events":\
 [{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
-{"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}}}}]}',
+{"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}},\
+        "allow_time_sharing": true, "resources_data": {} }}]}',
 '{"now":10.0, "events":\
 [{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}]}',
 '{"now":19.0, "events":\
-[{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS"}}]}',
+[{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS", "job_state": "terminated", "kill_reason": "none", "return_code":0}}]}',
 '{"now":25.0, "events":\
 [{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
     ]}
     
     global data_storage
-    data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}'
-    }
+    data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}',
+                     'default:profile_foo!1': b'{}'}
     args = options
     args.append('--scheduler_delay=5')
     runner = CliRunner()
@@ -92,7 +95,6 @@ def test_bataar_db_memory():
     result, sent_msgs = exec_gene(['-dmemory'])
     job = db['Job'].query.one()
     print(job.id, job.state)
-    print(sent_msgs[0])
     assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_1
     assert result.exit_code == 0
 
@@ -170,7 +172,7 @@ def exec_gene_tokens(options):
     print(result.output)
     return (result,  FakeZmq.sent_msgs)
 
-@pytest.mark.skip(reason='need lastest version pybatsim ')
+@pytest.mark.skip(reason='Bug pending........................')
 def test_bataar_tokens_no_db():
 
     result, sent_msgs = exec_gene_tokens(['-dno-db', '--tokens=4'])
