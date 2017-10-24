@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import sys
+import re
+import os
 
 from oar.lib import (config, get_logger)
 from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
@@ -9,7 +11,8 @@ from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
                                   is_job_already_resubmitted, resubmit_job, get_job_host_log)
 from oar.lib.node import (set_node_state, get_all_resources_on_node)
-from oar.lib.resource_handling import (get_resources_change_state)
+from oar.lib.resource_handling import (get_resources_change_state, get_resource, set_resource_state,
+                                       get_resource_job_to_frag, frag_job)
 
 import oar.lib.tools as tools
 
@@ -28,7 +31,6 @@ class NodeChangeState(object):
         if 'SUSPECTED_HEALING_EXEC_FILE' in config:
            self.healing_exec_file = config['SUSPECTED_HEALING_EXEC_FILE']
         
-
     def run(self):
         for event in get_to_check_events():
             job_id = event.job_id
@@ -166,7 +168,7 @@ class NodeChangeState(object):
                     set_job_state(job_id, 'Hold')
                     if job.type == 'INTERACTIVE':
                         addr, port = job.info_type.split(':')
-                        tools.notify_tcp_socket(addr,port,'Start prediction: undefined (Hold)')
+                        tools.notify_tcp_socket(addr, port, 'Start prediction: undefined (Hold)')
                         
                 elif event.type != 'RESUME_JOB' and job.state == 'Resuming':
                     set_job_state(job_id, 'Suspended')
@@ -192,11 +194,7 @@ class NodeChangeState(object):
                     
             # Check if we must notify the user
             if event.type == 'FRAG_JOB_REQUEST':
-                # my ($addr,$port) = split(/:/,$job->{info_type});
-                # OAR::Modules::Judas::notify_user($base,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"INFO","Your job was asked to be deleted - $i->{description}");}
-                #addr, port = job.info_type.split(':')
-                #tools.judas_notify_user(job.notify, addr, job.user, job_idn port,'Start prediction: undefined (Hold)')
-                tools.notify_user(job, 'INFO', 'Your job was asked to be deleted - $i->{description}')
+                tools.notify_user(job, 'INFO', 'Your job was asked to be deleted - ' + event.description)
                                   
             check_event(event.type, job_id)
 
@@ -205,24 +203,117 @@ class NodeChangeState(object):
         resources_to_change = get_resources_change_state()
 
         # A Term command must be added in the Almighty
-        
+        debug_info = {}
+        if resources_to_change:
+            self.exit_code = 1
+            for r_id, next_state in resources_to_change.items():
+                resource = get_resource(r_id)
+                if resource.state != next_state:
+                    set_resource_state(r_id, next_state, resource.next_finaud_decision)
+                    set_resource_nextState(r_id, 'UnChanged')
+                    
+                    if not debug_info[resource.network_address]:
+                        debug_info[resource.network_address] = {}
+                    debug_info[resource.network_address][r_id] = next_state
+                    
+                    if next_state == 'Suspected':
+                        self.resources_to_heal.append(str(r_id) + ' '  + resource.network_address)
 
-        
+                    if (next_state == 'Dead') or  (next_state == 'Absent'):
+                        job_ids = get_resource_job_to_frag()
+                        for job_id in job_ids:
+                            logger.debug(resource.network_address + ': must kill job ' + str(job_id))
+                            frag_job(job_id)
+                            self.exit_code = 2
+                        
+                        else:
+                            logger.debug('(' + resource.network_address + ') ' + str(r_id) +
+                                         'is already in the ' + next_state + ' state')
+                            set_resource_nextState(r_id, 'UnChanged')
+
+        email = None
+        for network_address, rid_next_state in debug_info.items():
+            str_mail = 'state change requested for ' + network_address + ': ' + str(rid_next_state)
+            logger.warning(str_mail)
+            email = '[NodeChangeState] ' + str_mail
+
+        if email:
+            send_log_by_email('Resource state modifications', email)
+
+        timeout = config['SUSPECTED_HEALING_TIMEOUT'] 
+        healing_exec_file = config['SUSPECTED_HEALING_EXEC_FILE']
+        if healing_exec_file and len(resources_to_heal) > 0:
+            logger.warning('Running healing script for suspected resources.')
+            if tools.fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
+                logger.error(' Try to launch the command $Healing_exec_file to heal resources, but the command timed out(' +
+                             ' ' + str(timeout_cmd) + ' s).')
+                
+                            
+                    
     def suspend_job(self, job, event):
         # SUSPEND PART
         
         if self.cpuset_field:
             cpuset_name = get_job_cpuset_name(job.id, job)
             cpuset_nodes = get_cpuset_values_for_a_moldable_job(self.cpuset_field, job.assigned_moldable_job)
-            if cpuset_nodes:
-                #TODO taktuk command
-                raise NotImplementedError('taktuk command for suspend part')
 
-        
+            suspend_data = {
+                'name': cpuset_name,
+                'job_id': job.id,
+                'oarexec_pid_file': tools.get_oar_pid_file_name(job.id)
+            }
+
+            
+            if cpuset_nodes:
+                taktuk_cmd = config['TAKTUK_CMD']
+                openssh_cmd = config['OPENSSH_CMD']
+                if 'OAR_SSH_CONNECTION_TIMEOUT':
+                    tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
+
+                suspend_file = config['SUSPEND_RESUME_FILE']
+                if not re.match(r'^\/', suspend_file):
+                    if 'OARDIR' not in os.environ:
+                        msg = '$OARDIR variable envionment must be defined'
+                        logger.error(msg)
+                        raise (msg)
+                    suspend_file = os.environ['OARDIR'] + '/' + suspend_file
+
+                tag, bad = tools.manage_remote_commands(cpuset_nodes.keys(), suspend_data , suspend_file, 'suspend',
+                                                        openssh_cmd, taktuk_cmd)
+                if tag == 0:
+                    msg = '[SUSPEND_RESUME] [' + str(job.id) + '] bad suspend/resume file: ' + suspend_file
+                    logger.error(msg)
+                    add_new_event('SUSPEND_RESUME_MANAGER_FILE', job.id, '[NodeChangeState] ' + msg)
+                else:
+                    if len(bad) == 0:
+                        suspend_job_action(job.id, job.assigned_moldable_job)
+                        suspend_script = config['JUST_AFTER_SUSPEND_EXEC_FILE']
+                        timeout = config['SUSPEND_RESUME_SCRIPT_TIMEOUT']
+                        if suspend_script:
+                            # Launch admin script
+                            error_msg = tools.exec_with_timeout([suspend_script, str(job.id)], timeout)
+                                
+                            if error_msg:                            
+                                msg = '[' + str(job.id) + '] suspend script error, job will resume:' + error_msg
+                                send_log_by_email('Suspend script error', msg)
+                                add_new_event('SUSPEND_SCRIPT_ERROR', job.id, msg)
+                                set_job_state(job.id, 'Resuming')
+                                tools.notify_almighty('Qresume')
+                    else:
+                        msg = '[SUSPEND_RESUME] [' + str(job.id) + '] error on several nodes: ' + str(bad)
+                        logger.error(msg)
+                        add_new_event_with_('SUSPEND_ERROR', job.id, '[NodeChangeState] ' + msg, bad)
+                        frag_job(job.id)
+                        # A Leon must be run
+                        self.exit_code = 2
+            tools.notify_almighty('Term')
+
+            
 def main():
     node_change_state = NodeChangeState()
     node_change_state.run()
     return node_change_state.exit_code
+
 if __name__ == '__main__':  # pragma: no cover
     exit_code = main()
     sys.exit(exit_code)

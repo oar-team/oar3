@@ -1656,7 +1656,12 @@ def get_timer_armed_job():
                        .filter(Job.id == FragJob.job_id).all()
     return res
 
+def get_resources_jobs(r_id):
+    # returns the list of jobs associated to all resources
+    raise NotImplementedError("TODO")
 
-
+def get_resource_job_to_frag(r_id):
+    # same as get_resource_job but excepts the cosystem jobs
+    raise NotImplementedError("TODO")
 
 

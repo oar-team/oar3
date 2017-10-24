@@ -8,7 +8,7 @@ import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
-from subprocess import (Popen, call, PIPE, TimeoutExpired)
+from subprocess import (check_output, CalledProcessError, TimeoutExpired)
 
 
 # Constants
@@ -29,10 +29,13 @@ DEFAULT_CONFIG = {
     'CPUSET_FILE_MANAGER': '/etc/oar/job_resource_manager.pl',
     'MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
     'SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
+    'OAR_SSH_CONNECTION_TIMEOUT': 120,
     'OAR_SSH_AUTHORIZED_KEYS_FILE': '.ssh/authorized_keys',
     'NODE_FILE_DB_FIELD': 'network_address',
     'NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
-    'NOTIFY_TCP_SOCKET_ENABLED': 1
+    'NOTIFY_TCP_SOCKET_ENABLED': 1,
+    'SUSPECTED_HEALING_TIMEOUT': 10, 
+    'SUSPECTED_HEALING_EXEC_FILE': None
     }
 
 logger = get_logger("oar.lib.tools")
@@ -122,15 +125,35 @@ def test_hosts(nodes_to_check):
     raise NotImplementedError("TODO")
     return []
 
-
 def send_log_by_email(title, message):
     raise NotImplementedError("TODO")
 
 
-#TODO
+def exec_with_timeout(cmd, TIMEOUT_SSH):
+    # Launch admin script
+    error_msg = ''
+    try:
+        check_output(cmd, stderr=STDOUT, timeout=timeout)
+    except CalledProcessError as e:
+        error_msg = e.output + '. Return code: ' + str(e.return_code)
+    except TimeoutExpired as e:
+        error_msg = e.output
+
+    return error_msg
+        
+def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
+    raise NotImplementedError("TODO")
+
+def get_oar_pid_file_name(job_id):
+    raise NotImplementedError("TODO")
+
 def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):
     raise NotImplementedError('TODO')
     return 0
+
+def set_ssh_timeout(timeout):
+    raise NotImplementedError('TODO')
+
 ## Send the given signal to the right oarexec process
 ## args : host name, job id, signal, wait or not (0 or 1), 
 ## DB ref (to close it in the child process), ssh cmd, user defined signal 
@@ -333,8 +356,8 @@ def sql_to_duration(t):
     (hour, min, sec) = sql_to_hms(t)
     return hms_to_duration(hour, min, sec)
 
-
 def send_checkpoint_signal(job):
+    raise NotImplementedError("TODO")
     logger.debug("Send checkpoint signal to the job " + str(job.id))
     logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
