@@ -118,20 +118,35 @@ class Sarko(object):
                 add_new_event('CHECKPOINT', job.id, 'User oar (sarko) requested a checkpoint on the job:' +
                               str(job.id) + ' on ' + head_host)
                 comment = ''
-                # TODO: add timeout TOFINISH
-                exit_codes = tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '')
-                # TODO: TOFINISH
+
+                try:
+                    exit_codes = tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '', tools.get_ssh_timeout)
+                except CalledProcessError as e:
+                    comment = 'The kill command return a bad exit code (' + str(exit_codes)\
+                              + 'for the job ' + str(job.id) +  'on the node $host_to_connect'
+                    logger.warning (comment)
+                    add_new_event('CHECKPOINT_ERROR', job_id, '[Sarko]' + comment)
+                except TimeoutExpired as e:
+                    comment = 'Cannot contact ' + head_host + ', operation timouted (.' + str(tools.get_ssh_timeout())\
+                              + ' s). So I cannot send checkpoint signal to the job ' + str(job.id) + ' on ' + head_host
+                    logger.warning(comment)
+                    add_new_event('CHECKPOINT_ERROR', job.id, '[Sarko]' + comment)
+                    
+                if exit_codes == [0]:
+                    comment = 'The job ' + job.id + ' was notified to checkpoint itself on the node ' + head_host
+                    logger.debug(comment)
+                    add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
 
         # Retrieve nodes with expiry_dates in the past
-        # special for Desktop computing
-        #TODO: TOFINISH or TOREMOVE
+        # special for Desktop computing (UNUSED ?)
         resource_ids = get_expired_resources()
         for resource_id in resource_ids:
             set_resource_nextState(resource_id, 'Suspected')
-            #add_new_event_with_host('LOG_SUSPECTED', 0, '
-            #The DESKTOP COMPUTING resource $r has expired on node
-            #$rinfo->{network_address}", [$rinfo->{network_address}]);
-        if len(resource_ids):
+            resource = get_resource(resource_id)
+            add_new_event_with_host('LOG_SUSPECTED', 0, 'The DESKTOP COMPUTING resource $r has expired on node '\
+                                    + resource.network_address, [resource.network_address])
+
+        if len(resource_ids) > 0:
             tools.notify_almighty('ChState')
 
         dead_switch_time = config['DEAD_SWITCH_TIME']

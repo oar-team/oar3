@@ -154,6 +154,12 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):
 def set_ssh_timeout(timeout):
     raise NotImplementedError('TODO')
 
+def get_ssh_timeout():
+    raise NotImplementedError('TODO')
+
+def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal, timeout):
+    raise NotImplementedError('TODO')
+    return 0
 ## Send the given signal to the right oarexec process
 ## args : host name, job id, signal, wait or not (0 or 1), 
 ## DB ref (to close it in the child process), ssh cmd, user defined signal 
