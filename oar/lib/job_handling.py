@@ -4,7 +4,7 @@ import os
 import re
 import random
 
-from sqlalchemy import (func, text, distinct)
+from sqlalchemy import (func, text, distinct, and_)
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.session import make_transient
 
@@ -1133,41 +1133,34 @@ def resume_job_action(job_id):
 
     db.commit()
 
-
-# get_cpuset_values_for_a_moldable_job
-# get cpuset values for each nodes of a MJob
 def get_cpuset_values(cpuset_field, moldable_id):
-    # TODO TOFINISH
-    raise  NotImplementedError('get_cpuset_values is NOT ENTIRELY IMPLEMENTED')
-    logger.warning("get_cpuset_values is NOT ENTIRELY IMPLEMENTED")
-    sql_where_string = "\'0\'"
+    """get cpuset values for each nodes of a moldable_id
+    Note: this function is called get_cpuset_values_for_a_moldable_job in OAR2.x
+    """
+    sql_where_string = "resources.type = \'default\'"
+    
     if "SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE" in config:
         resources_to_always_add_type = config["SCHEDULER_RESOURCES_ALWAYS_ASSIGNED_TYPE"]
-    else:
-        resources_to_always_add_type = ""
+        sql_where_string = "(" + sql_where_string +  "OR resources.type = \'" + resources_to_always_add_type + "\')"
 
-    # TODO
-    if resources_to_always_add_type != "":
-        sql_where_string = "resources.type = \'$resources_to_always_add_type\'"
-
-    # TODO TOFINISH  
-    results = db.query(Resource)\
+    results = db.query(Resource.network_address, getattr(Resource, cpuset_field))\
                 .filter(AssignedResource.moldable_id == moldable_id)\
-                .filter(AssignedResource.resource_id == Resource.id)
+                .filter(AssignedResource.resource_id == Resource.id)\
+                .filter(Resource.network_address != '')\
+                .filter(text(sql_where_string))\
+                .group_by(Resource.network_address, getattr(Resource, cpuset_field))\
+                .all()
 
+    # hostnames_cpuset_values: {hostname: [array with the content of the database cpuset field]}
+    hostnames_cpuset_fields = {}
+    for hostname_cpuset_field in results:
+        hostname, cpuset_field = hostname_cpuset_field 
+        if hostname not in hostnames_cpuset_fields:
+            hostnames_cpuset_fields[hostname] = [cpuset_field]
+        else:
+            hostnames_cpuset_fields[hostname].append(cpuset_field)
 
-    # my $sth = $dbh->prepare("   SELECT resources.network_address, resources.$cpuset_field
-    #                            FROM resources, assigned_resources
-    #                            WHERE
-    #                                assigned_resources.moldable_job_id = $moldable_job_id AND
-    #                                assigned_resources.resource_id = resources.resource_id AND
-    #                                resources.network_address != \'\' AND
-    #                                (resources.type = \'default\' OR
-    #                                 $sql_where_string)
-    #                            GROUP BY resources.network_address, resources.$cpuset_field
-    #                        ");
-
-    return results
+    return hostnames_cpuset_fields
 
 def get_array_job_ids(array_id):
     """ Get all the job_ids of a given array of job identified by its id"""
@@ -1579,9 +1572,6 @@ def get_job_cpuset_name(job_id, job=None):
 
     return user + '_' + str(job_id)
 
-def get_cpuset_values_for_a_moldable_job():
-    raise NotImplementedError('TODO get_cpuset_values_for_a_moldable_job')
-
 def job_fragged(job_id):
     """Set the flag 'ToFrag' of a job to 'No'"""
     db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'FRAGGED'})
@@ -1661,6 +1651,20 @@ def get_resources_jobs(r_id):
 
 def get_resource_job_to_frag(r_id):
     # same as get_resource_job but excepts the cosystem jobs
-    raise NotImplementedError("TODO")
 
+    subq = db.query(JobType.job_id).filter(JobType.type == 'cosystem')\
+                                   .filter(JobType.types_index == 'CURRENT')\
+                                   .subquery()
+                                           
+    res = db.query(Job.id).filter(AssignedResource.index == 'CURRENT')\
+                          .filter(MoldableJobDescription.index == 'CURRENT')\
+                          .filter(AssignedResource.resource_id == r_id)\
+                          .filter(AssignedResource.moldable_job_id == MoldableJobDescription.id)\
+                          .filter(MoldableJobDescription.job_id == job.id)\
+                          .filter(Job.state != 'Terminated')\
+                          .filter(Job.state != 'Error')\
+                          .filter(job.id.in_(subq))\
+                          .all()
+
+    return res
 

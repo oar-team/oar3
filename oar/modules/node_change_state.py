@@ -10,7 +10,7 @@ from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
                            add_new_event_with_host, add_new_event, get_hostname_event)
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
                                   is_job_already_resubmitted, resubmit_job, get_job_host_log,
-                                  frag_job)
+                                  get_job_cpuset_name, get_cpuset_values, frag_job)
 from oar.lib.node import (set_node_state, get_all_resources_on_node)
 from oar.lib.resource_handling import (get_resources_change_state, get_resource, set_resource_state,
                                        get_resource_job_to_frag)
@@ -258,7 +258,7 @@ class NodeChangeState(object):
         
         if self.cpuset_field:
             cpuset_name = get_job_cpuset_name(job.id, job)
-            cpuset_nodes = get_cpuset_values_for_a_moldable_job(self.cpuset_field, job.assigned_moldable_job)
+            nodes_cpuset_fields = get_cpuset_values(self.cpuset_field, job.assigned_moldable_job)
 
             suspend_data = {
                 'name': cpuset_name,
@@ -266,8 +266,7 @@ class NodeChangeState(object):
                 'oarexec_pid_file': tools.get_oar_pid_file_name(job.id)
             }
 
-            
-            if cpuset_nodes:
+            if nodes_cpuset_fields:
                 taktuk_cmd = config['TAKTUK_CMD']
                 openssh_cmd = config['OPENSSH_CMD']
                 if 'OAR_SSH_CONNECTION_TIMEOUT':
@@ -281,8 +280,8 @@ class NodeChangeState(object):
                         raise (msg)
                     suspend_file = os.environ['OARDIR'] + '/' + suspend_file
 
-                tag, bad = tools.manage_remote_commands(cpuset_nodes.keys(), suspend_data , suspend_file, 'suspend',
-                                                        openssh_cmd, taktuk_cmd)
+                tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(), suspend_data , suspend_file,
+                                                        'suspend', openssh_cmd, taktuk_cmd)
                 if tag == 0:
                     msg = '[SUSPEND_RESUME] [' + str(job.id) + '] bad suspend/resume file: ' + suspend_file
                     logger.error(msg)
