@@ -8,7 +8,7 @@ import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
-from subprocess import (check_output, CalledProcessError, TimeoutExpired)
+from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired)
 
 
 # Constants

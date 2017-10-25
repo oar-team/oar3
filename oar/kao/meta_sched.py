@@ -26,7 +26,7 @@ from oar.lib.job_handling import (get_current_not_waiting_jobs,
                          set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
                          resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.lib.tools import (local_to_sql, duration_to_sql, send_checkpoint_signal)
+from oar.lib.tools import (local_to_sql, duration_to_sql)
 
 from oar.lib.event import (get_job_events, add_new_event)
 
@@ -416,7 +416,7 @@ def check_besteffort_jobs_to_kill(jobs_to_launch, rid2jid_to_launch, current_tim
                         if (checkpoint_first_date == sys.maxsize) or\
                            (current_time_sec <= (checkpoint_first_date + be_job.checkpoint)):
                             skip_kill = 1
-                            send_checkpoint_signal(be_job)
+                            tools.send_checkpoint_signal(be_job)
 
                             logger.debug("Send checkpoint signal to the job " + str(be_job.id))
 

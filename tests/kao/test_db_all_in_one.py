@@ -94,8 +94,9 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
     monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
-    monkeypatch.setattr(oar.kao.tools, 'fork_and_feed_stdin',
+    monkeypatch.setattr(oar.lib.tools, 'fork_and_feed_stdin',
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
+    monkeypatch.setattr(oar.lib.tools, 'send_checkpoint_signal', lambda job: None)
 
 
 @pytest.fixture(scope="function")
