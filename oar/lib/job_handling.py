@@ -18,12 +18,11 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobStateLog, AssignedResource, FragJob,
                      get_logger, config, Challenge)
 
-from oar.lib.resource_handling import get_current_resources_with_suspended_job
-
-from oar.lib.psycopg2 import pg_bulk_insert
+from oar.lib.resource_handling import get_current_resources_with_suspended_job, update_current_scheduler_priority
 from oar.lib.event import add_new_event
 
-from oar.kao.tools import update_current_scheduler_priority
+from oar.lib.psycopg2 import pg_bulk_insert
+
 import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args

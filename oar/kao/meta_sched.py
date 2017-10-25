@@ -32,8 +32,6 @@ from oar.lib.event import (get_job_events, add_new_event)
 
 import oar.lib.tools as tools
 
-import oar.kao.tools as kao_tools
-
 from oar.kao.platform import Platform
 
 from oar.kao.slot import (SlotSet, intersec_ts_ph_itvs_slots, intersec_itvs_slots,
@@ -830,7 +828,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                     suspend_data_hash = {'name': cpuset_name,
                                          'job_id': job.id,
                                          'oarexec_pid_file':
-                                         kao_tools.get_oar_pid_file_name(job.id)}
+                                         tools.get_oar_pid_file_name(job.id)}
                 if cpuset_nodes:
                     # TODO
                     taktuk_cmd = config['TAKTUK_CMD']
@@ -838,7 +836,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                         suspend_file = config['SUSPEND_RESUME_FILE']
                     else:
                         # TODO
-                        suspend_file = kao_tools.get_default_suspend_resume_file()
+                        suspend_file = tools.get_default_suspend_resume_file()
 
     #
     # TODO: TOFINISH
