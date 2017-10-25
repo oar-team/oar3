@@ -19,7 +19,7 @@ def get_resource(resource_id):
 
 
 def set_resource_state(resource_id, state, finaud_decision):
-    """sets the state field of a resource"""
+    """set the state field of a resource"""
     db.query(Resource).filter(Resource.id == resource_id)\
                       .update({Resource.state: state,
                                Resource.finaud_decision: finaud_decision,

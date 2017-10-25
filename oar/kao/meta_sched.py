@@ -3,9 +3,7 @@ import sys
 import os
 import re
 
-from sqlalchemy import text
-
-from oar.lib import (config, db, Queue, get_logger, GanttJobsPredictionsVisu,
+from oar.lib import (config, db, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
 from oar.lib.tools import (Popen, call, TimeoutExpired)
 from subprocess import PIPE
@@ -26,10 +24,11 @@ from oar.lib.job_handling import (get_current_not_waiting_jobs,
                          set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
                          resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.lib.tools import (local_to_sql, duration_to_sql)
+from oar.lib.queue import (get_all_queue_by_priority, stop_a_queue)
 
 from oar.lib.event import (get_job_events, add_new_event)
 
+from oar.lib.tools import (local_to_sql, duration_to_sql)
 import oar.lib.tools as tools
 
 from oar.kao.platform import Platform
@@ -525,14 +524,14 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
         logger.error("Execution of " + queue.scheduler_policy +
                      " failed, inactivating queue " + queue.name + " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter(Queue.name == queue.name).update({'state': 'notActive'})
+        stop_a_queue(queue.name)
 
     if sched_exit_code != 0:
         logger.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " +
                      str(sched_exit_code) + ". Inactivating queue " + queue.scheduler_policy +
                      " (see `oarnotify')")
         # stop queue
-        db.query(Queue).filter(Queue.name == queue.name).update({'state': 'notActive'})
+        stop_a_queue(queue.name)
 
     # retrieve jobs and assignement decision from previous scheduling step
     scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,
@@ -665,7 +664,7 @@ def meta_schedule(mode='internal', plt=Platform()):
 
     prev_queue = None
 
-    for queue in db.query(Queue).order_by(text('priority DESC')).all():
+    for queue in get_all_queue_by_priority():
 
         extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
                              job_security_time, queue, initial_time_sec,

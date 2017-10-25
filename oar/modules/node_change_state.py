@@ -9,10 +9,13 @@ from oar.lib import (config, get_logger)
 from oar.lib.event import (get_to_check_events, is_an_event_exists, check_event,
                            add_new_event_with_host, add_new_event, get_hostname_event)
 from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend_job_action,
-                                  is_job_already_resubmitted, resubmit_job, get_job_host_log)
+                                  is_job_already_resubmitted, resubmit_job, get_job_host_log,
+                                  frag_job)
 from oar.lib.node import (set_node_state, get_all_resources_on_node)
 from oar.lib.resource_handling import (get_resources_change_state, get_resource, set_resource_state,
-                                       get_resource_job_to_frag, frag_job)
+                                       get_resource_job_to_frag)
+from oar.lib.queue import stop_all_queues
+
 
 import oar.lib.tools as tools
 
