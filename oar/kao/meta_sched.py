@@ -739,13 +739,13 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Powering off some nodes (energy saving): " + str(nodes_2_halt))
             # Using the built-in energy saving module to shut down nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if kao_tools.send_to_hulot('HALT', ' '.join(nodes_2_halt)):
+                if tools.send_to_hulot('HALT', ' '.join(nodes_2_halt)):
                     logger.error("Communication problem with the energy saving module (Hulot)\n")
                 flag_hulot = True
             else:
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
-                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_halt):
+                if tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_halt):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to  poweroff some nodes")
 
@@ -756,19 +756,19 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Awaking some nodes: " + str(nodes_2_change))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if kao_tools.send_to_hulot('WAKEUP', ' '.join(nodes_2_wakeup)):
+                if tools.send_to_hulot('WAKEUP', ' '.join(nodes_2_wakeup)):
                     logger.error("Communication problem with the energy saving module (Hulot)")
                 flag_hulot = True
             else:
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
-                if kao_tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_wakeup):
+                if tools.fork_and_feed_stdin(cmd, timeout_cmd, nodes_2_wakeup):
                     logger.error("Command " + cmd + "timeouted (" + str(timeout_cmd)
                                  + "s) while trying to wake-up some nodes ")
 
         # Send CHECK signal to Hulot if needed
         if not flag_hulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
-            if kao_tools.send_to_hulot('CHECK', []):
+            if tools.send_to_hulot('CHECK', []):
                 logger.error("Communication problem with the energy saving module (Hulot)")
 
 
@@ -797,7 +797,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                     script = config['JUST_BEFORE_RESUME_EXEC_FILE']
                     timeout = int(config['SUSPEND_RESUME_SCRIPT_TIMEOUT'])
                     if timeout is None:
-                        timeout = kao_tools.get_default_suspend_resume_script_timeout()
+                        timeout = tools.get_default_suspend_resume_script_timeout()
                     skip = 0
                     logger.debug("[" + str(job.id) + "] Running post suspend script: `" +
                                  script + " " + str(job.id) + "'")

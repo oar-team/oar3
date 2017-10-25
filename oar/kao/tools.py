@@ -72,38 +72,3 @@ def update_scheduler_last_job_date(date, moldable_id):
     db.query(Resource).filter(AssignedResource.Moldable_job_id == moldable_id)\
                       .filter(AssignedResource.Resource_id == Resource.resource_id)\
                       .update({Resource.last_job_date: date})
-
-
-
-
-
-
-def fork_and_feed_stdin(cmd, timeout_cmd, nodes):
-    logger.error("OAR::Tools::fork_and_feed_stdin NOT YET IMPLEMENTED")
-    return True
-
-# TODO
-def send_to_hulot(cmd, data):
-    config.setdefault_config({"FIFO_HULOT": "/tmp/oar_hulot_pipe"})
-    fifoname = config["FIFO_HULOT"]
-    try:
-        with open(fifoname, 'w') as fifo:
-            fifo.write('HALT:%s\n' % data)
-            fifo.flush()
-    except IOError as e:
-        e.strerror = 'Unable to communication with Hulot: %s (%s)' % fifoname % e.strerror
-        logger.error(e.strerror)
-        return 1
-    return 0
-
-
-def get_oar_pid_file_name(job_id):
-    logger.error("get_oar_pid_file_name id not YET IMPLEMENTED")
-
-
-def get_default_suspend_resume_file():
-    logger.error("get_default_suspend_resume_file id not YET IMPLEMENTED")
-
-
-def manage_remote_commands():
-    logger.error("manage_remote_commands id not YET IMPLEMENTED")
