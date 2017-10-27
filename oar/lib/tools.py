@@ -8,6 +8,7 @@ import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
+import signal, psutil
 from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired)
 
 
@@ -140,7 +141,19 @@ def exec_with_timeout(cmd, TIMEOUT_SSH):
         error_msg = e.output
 
     return error_msg
-        
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+    """from: https://stackoverflow.com/questions/3332043/obtaining-pid-of-child-process"""
+    try:
+      parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+      return
+    children = parent.children(recursive=True)
+    for process in children:
+      process.send_signal(sig)
+
+    
+
 def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
     raise NotImplementedError("TODO")
 
@@ -395,3 +408,20 @@ def send_checkpoint_signal(job):
 
 def get_username(): # NOTUSED
     return pwd.getpwuid( os.getuid() ).pw_name
+
+
+def format_ssh_pub_key(key, cpuset, user, job_user=None):
+    """Add right environment variables to the given public key"""
+    if not job_user:
+        job_user = user
+    if not cpuset:
+        cpuset = 'undef'
+
+    formated_key = 'environment="OAR_CPUSET=' + cpuset + '",environment="OAR_JOB_USER='\
+                                 + job_user + '" ' + key + "\n"
+    return formated_key
+
+
+def get_private_ssh_key_file_name(cpuset_name):
+    """Get the name of the file of the private ssh key for the given cpuset name"""
+    return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')

@@ -5,8 +5,7 @@ import re
 
 from oar.lib import (config, db, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
-from oar.lib.tools import (Popen, call, TimeoutExpired)
-from subprocess import PIPE
+from oar.lib.tools import (Popen, call, TimeoutExpired, PIPE)
 
 from oar.lib.job_handling import (frag_job)
 
@@ -510,8 +509,8 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
         # ((get_conf_with_default_param('SCHEDULER_LAUNCHER_OPTIMIZATION',
         # 'yes') eq 'yes') and
 
-        child.wait()
-        rc = child.returncode
+        rc = child.wait()
+
         sched_exit_code, sched_signal_num, sched_dumped_core = rc >> 8, rc & 0x7f, bool(
             rc & 0x80)
 

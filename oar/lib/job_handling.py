@@ -23,6 +23,7 @@ from oar.lib.event import add_new_event
 
 from oar.lib.psycopg2 import pg_bulk_insert
 
+from oar.lib.tools import (Popen, TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
 import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args
@@ -1596,11 +1597,156 @@ def get_frag_date(job_id):
     """Get the date of the frag of a job"""
     return db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
 
+def check_end_of_job(job_id, exit_script_value, error, hosts, remote_host, remote_port, user, launchingDirectory, server_epilogue_script):
+    """check end of job"""
+    raise NotImplementedError('TODO: check_end_of_job')
     
 def job_finishing_sequence(epilogue_script, job_id, events):
-    
-    raise NotImplementedError('TODO: job_finishing_sequence')
+    if epilogue_script:
+        # launch server epilogue
+        cmd = ['epilogue_script',  str(job_id)]
+        logger.debug('[JOB FINISHING SEQUENCE] Launching command : ' + str(cmd))
+        timeout = config['SERVER_PROLOGUE_EPILOGUE_TIMEOUT']
+        
+        try:
+            child = Popen(cmd)
+            return_code = child.wait(timeout)
 
+            if return_code:
+                 msg = '[JOB FINISHING SEQUENCE] Server epilogue exit code: ' + str(return_code)\
+                       + ' (!=0) (cmd: ' + str(cmd) + ')'
+                 logger.error(msg)
+                 events.append(('SERVER_EPILOGUE_EXIT_CODE_ERROR', msg, None))
+            
+        except OSError as e:   
+            logger.error('Cannot run: ' + str(cmd))
+        except TimeoutExpired as e:
+            kill_child_processes(child.pid)
+            msg = '[JOB FINISHING SEQUENCE] Server epilogue timeouted (cmd: ' + str(cmd) + ')'
+            logger.error(msg)
+            events.append(('SERVER_EPILOGUE_TIMEOUT', msg, None))
+
+    
+    job_types = get_job_types(job_id)
+    if ('deploy' not in job_types) and ('cosystem' not in job_types) and ('noop' not in job_types):
+        ###############
+        # CPUSET PART #
+        ###############
+        # Clean all CPUSETs if needed
+        if 'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD' in config:
+            cpuset_name = get_job_cpuset_name(job_id)
+            openssh_cmd = config['OPENSSH_CMD']
+            if 'OAR_SSH_CONNECTION_TIMEOUT':
+                tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
+
+            cpuset_file = ''
+            if 'JOB_RESOURCE_MANAGER_FILE' in config:
+                cpuset_file = config['JOB_RESOURCE_MANAGER_FILE']
+                
+            if not re.match(r'^\/', cpuset_file):
+                if 'OARDIR' not in os.environ:
+                    msg = '$OARDIR variable envionment must be defined'
+                    logger.error(msg)
+                    raise (msg)
+                cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
+
+                cpuset_path = config['CPUSET_PATH']
+                cpuset_full_path = cpuset_path +'/' + cpuset_name
+
+            job = get_job(job_id)
+            nodes_cpuset_fields = get_cpuset_values(self.cpuset_field, job.assigned_moldable_job)
+            if len(nodes_cpuset_fields) > 0:
+                logger.debug('[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job_id) + '] Clean cpuset on each nodes')
+                taktuk_cmd = config['TAKTUK_CMD']
+                job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
+                ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
+
+                cpuset_data_hash = {
+                    'job_id': job.id,
+                    'name': cpuset_name,
+                    'nodes': cpuset_nodes,
+                    'cpuset_path': cpuset_path,
+                    'ssh_keys': {
+                        'public': {
+                            'file_name': config['OAR_SSH_AUTHORIZED_KEYS_FILE'],
+                            'key': ssh_public_key
+                        },
+                        'private': {
+                            'file_name': get_private_ssh_key_file_name(cpuset_name),
+                            'key': ssh_private_key
+                        },
+                    },
+                    'oar_tmp_directory': config['OAREXEC_DIRECTORY'],
+                    
+                    'user': job_user,
+                    'job_user': job_user,
+                    'types': types,
+                    'resources': 'undef',
+                    'node_file_db_fields': 'undef',
+                    'node_file_db_fields_distinct_values': 'undef',
+                    'array_id': job.array_id,
+                    'array_index': job.array_index,
+                    'stdout_file': job.stdout_file.replce('%jobid%', str(job.id)),
+                    'stderr_file': job.stderr_file.replce('%jobid%', str(job.id)),
+                    'launching_directory': job.launching_directory,
+                    'job_name': job.name,
+                    'walltime_seconds': 'undef',
+                    'walltime': 'undef',
+                    'project': job.project,
+                    'log_level': config['LOG_LEVEL']
+                }
+                # dict2hash_w_undef
+
+                tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
+                                                        cpuset_data_hash , cpuset_file,
+                                                        'clean', openssh_cmd, taktuk_cmd)
+                if tag == 0:
+                    msg = '[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job.id)\
+                          + '] Bad cpuset file: ' + cpuset_file
+                    logger.error(msg)
+                    events.append(('CPUSET_MANAGER_FILE', msg, None))
+                elif len(bad) > 0:
+                    logger.error('[job_finishing_sequence] [' + str(job.id)\
+                                 + ' Cpuset error and register event CPUSET_CLEAN_ERROR on nodes : '\
+                                 + str(bad))
+                    events.append(('CPUSET_CLEAN_ERROR',
+                                   '[job_finishing_sequence] OAR suspects nodes for the job '\
+                                   + str(job.id) + ' : ' + str(bad),
+                                   str(bad)))
+        ####################
+        # CPUSET PART, END #
+        ####################
+
+    # Execute PING_CHECKER if asked
+    if ('ACTIVATE_PINGCHECKER_AT_JOB_END' in config) and (config['ACTIVATE_PINGCHECKER_AT_JOB_END'] == 'yes')\
+       and ('deploy' not in job_types) and ('noop' not in job_types):
+        hosts = get_job_current_hostnames(job_id)
+        logger.debug('[job_finishing_sequence] ['+ str(job.id)\
+                     + 'Run pingchecker to test nodes at the end of the job on nodes: '\
+                     + str(hosts))
+        bad_pingchecker = tools.pingchecker(hosts)
+        if len(bad_pingchecker) > 0:
+            logger.error('[job_finishing_sequence] [' + str(job.id)\
+                         + 'PING_CHECKER_NODE_SUSPECTED_END_JOB OAR suspects nodes for the job '\
+                          + str(job.id) + ' : ' + str(bad_pingchecker))
+            events.append(('PING_CHECKER_NODE_SUSPECTED_END_JOB',
+                           '[job_finishing_sequence] OAR suspects nodes for the job '\
+                           + str(job.id) + ' : ' + str(bad_pingchecker),
+                           str(bad_pingchecker)))
+
+    for event in events:
+        ev_type, msg, hosts = events
+        if hosts:
+            add_new_event_with_host(ev_type, msg, hosts)
+        else:
+            add_new_event(ev_type, msg)
+        
+    # Just to force commit (from OAR2, useful for OAR3 ?)
+    db.commit()
+    
+    if len(events) > 0:
+        notify_almighty('ChState')
+        
 def get_job_frag_state(job_id):
     """Get the frag_state value for a specific job"""
     return db.query(FragJob.state).filter(FragJob.job_id == job_id).one()
