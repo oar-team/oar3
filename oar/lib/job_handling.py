@@ -19,7 +19,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      get_logger, config, Challenge)
 
 from oar.lib.resource_handling import get_current_resources_with_suspended_job, update_current_scheduler_priority
-from oar.lib.event import add_new_event
+from oar.lib.event import (add_new_event, add_new_event_with_host)
 
 from oar.lib.psycopg2 import pg_bulk_insert
 
@@ -1384,7 +1384,8 @@ def set_job_state(jid, state):
             job = db.query(Job).filter(Job.id == jid).one()
             if state == "Suspend":
                 tools.notify_user(job, "SUSPENDED", "Job is suspended.")
-            elif state == "Resuming":                tools.notify_user(job, "RESUMING", "Job is resuming.")
+            elif state == "Resuming":
+                tools.notify_user(job, "RESUMING", "Job is resuming.")
             elif state == "Running":
                 tools.notify_user(job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
@@ -1621,7 +1622,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         except OSError as e:   
             logger.error('Cannot run: ' + str(cmd))
         except TimeoutExpired as e:
-            kill_child_processes(child.pid)
+            tools.kill_child_processes(child.pid)
             msg = '[JOB FINISHING SEQUENCE] Server epilogue timeouted (cmd: ' + str(cmd) + ')'
             logger.error(msg)
             events.append(('SERVER_EPILOGUE_TIMEOUT', msg, None))
@@ -1648,10 +1649,10 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     msg = '$OARDIR variable envionment must be defined'
                     logger.error(msg)
                     raise (msg)
-                cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
+            cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
 
-                cpuset_path = config['CPUSET_PATH']
-                cpuset_full_path = cpuset_path +'/' + cpuset_name
+            cpuset_path = config['CPUSET_PATH']
+            cpuset_full_path = cpuset_path +'/' + cpuset_name
 
             job = get_job(job_id)
             nodes_cpuset_fields = get_cpuset_values(self.cpuset_field, job.assigned_moldable_job)
@@ -1680,14 +1681,14 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     
                     'user': job_user,
                     'job_user': job_user,
-                    'types': types,
+                    'types': job_types,
                     'resources': 'undef',
                     'node_file_db_fields': 'undef',
                     'node_file_db_fields_distinct_values': 'undef',
                     'array_id': job.array_id,
                     'array_index': job.array_index,
-                    'stdout_file': job.stdout_file.replce('%jobid%', str(job.id)),
-                    'stderr_file': job.stderr_file.replce('%jobid%', str(job.id)),
+                    'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
+                    'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),
                     'launching_directory': job.launching_directory,
                     'job_name': job.name,
                     'walltime_seconds': 'undef',
@@ -1696,9 +1697,9 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     'log_level': config['LOG_LEVEL']
                 }
                 # dict2hash_w_undef
-
+                cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
                 tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
-                                                        cpuset_data_hash , cpuset_file,
+                                                        cpuset_data_str , cpuset_file,
                                                         'clean', openssh_cmd, taktuk_cmd)
                 if tag == 0:
                     msg = '[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job.id)\

@@ -107,8 +107,11 @@ def notify_almighty(message):  # pragma: no cover
         create_almighty_socket()
     return almighty_socket.send(message.encode())
 
+def notify_interactif_user(job, message):
+    addr, port = job.info_type.split(':')
+    return notify_tcp_socket(addr, port, message)
 
-# TODO: refactor to use zmq
+# TODO: refactor to use zmq,  TO CARE of notify_interactif_user 
 def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -427,3 +430,18 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
 def get_private_ssh_key_file_name(cpuset_name):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')
+
+
+def limited_dict2hash_perl(d):
+    """Serialize python dictionnary to string hash perl representaion"""
+    s = '{'
+    for k,v in d.items():
+        s = s + "'" + k + "' => " 
+        if isinstance(v, dict):
+            s = s + limited_dict2hash_perl(v)
+        elif isinstance(v, str):
+            s = s + "'" + str(v) + "'"
+        else:
+            s = s + str(v)
+        s = s + ','
+    return s[:-1] + '}'
