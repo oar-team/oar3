@@ -41,7 +41,7 @@ class Finaud(object):
         logger.debug('Testing resource(s) on : ' + ','.join(nodes_to_check.keys()))
 
         # Call the right program to test each nodes
-        bad_nodes = tools.test_hosts(nodes_to_check.keys())
+        bad_nodes = tools.pingchecker(nodes_to_check.keys())
 
         #Make the decisions
         for node in nodes_to_check.values():
