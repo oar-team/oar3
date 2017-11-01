@@ -47,7 +47,7 @@ class NodeChangeState(object):
             if (((event.type == 'SWITCH_INTO_TERMINATE_STATE') or (event.type == 'SWITCH_INTO_ERROR_STATE'))
                 and (job.exit_code and  (job.exit_code >> 8) == 99)):
                 job_types = get_job_types(job_id)
-                if 'idempotent' in job_types:
+                if 'idempotent' in job_types.keys():
                     if (job.reservation == 'None'
                         and job.type == 'PASSIVE'
                         and (not is_job_already_resubmitted(job_id))
@@ -179,7 +179,7 @@ class NodeChangeState(object):
                     
                 elif event.type == 'HOLD_WAITING_JOB' and job.state == 'Running':
                     job_types = get_job_types(job_id)
-                    if 'noop' in job_types:
+                    if 'noop' in job_types.keys():
                         suspend_job_action(job_id, job.assigned_moldable_job)
                         logger.debug(str(job_id) + ' suspend job of type noop')
                         tools.notify_almighty('Term')

@@ -10,6 +10,7 @@ from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
 import signal, psutil
 from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired)
+from  pexpect import (spawn, exceptions) 
 
 
 # Constants

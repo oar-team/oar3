@@ -107,7 +107,7 @@ class BipBip(object):
             
         # NOOP jobs
         job_types = get_job_types(job.id)
-        if 'noop' in job_types:
+        if 'noop' in job_types.keys():
             set_job_state(job_id, 'Running')
             logger.debug('[' + str(job.id) + '] User: ' + job.user + ' Set NOOP job to Running')
             call_server_prologue()
@@ -120,7 +120,7 @@ class BipBip(object):
         if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
             tools.notify_interactif_user(job, 'Starting...')
 
-        if ('deploy' not in job_types) and ('cosystem' not in job_types) and (len(hosts) > 0):
+        if ('deploy' not in job_types.keys()) and ('cosystem' not in job_types.keys()) and (len(hosts) > 0):
             bad = []
             event_type = ''
             ###############
@@ -260,16 +260,16 @@ class BipBip(object):
         head_node = hosts[0]
         
         #deploy, cosystem and no host part
-        if ('cosystem' in job_types) or (len(hosts == 0)):
+        if ('cosystem' in job_types.keys()) or (len(hosts == 0)):
             head_node = config['COSYSTEM_HOSTNAME']
-        elif 'deploy' in job_types:
+        elif 'deploy' in job_types.keys():
             head_node = config['DEPLOY_HOSTNAME']
 
 
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
         oarexec_cpuset_path = ''
-        if cpuset_full_path and ('cosystem' not in job_types) and ('deploy' not in job_types) and len(hosts > 0):
+        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and len(hosts > 0):
             # So oarexec will retry several times to contact Almighty until it will be
             # killed by the cpuset manager
             oarexec_cpuset_path = cpuset_full_path
@@ -312,7 +312,7 @@ class BipBip(object):
 
         #timeout = pro_epi_timeout + config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT'] + config['TIMEOUT_SSH']
         cmd = Openssh_cmd
-        if cpuset_full_path and ('cosystem' not in job_types) and ('deploy' not in job_types) and len(hosts > 0):
+        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and len(hosts > 0):
             # for oarsh_shell connection
             os.environ['OAR_CPUSET'] = cpuset_full_path
             cmd = cmd +' -oSendEnv=OAR_CPUSET'

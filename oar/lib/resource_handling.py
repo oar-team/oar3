@@ -157,13 +157,13 @@ def update_current_scheduler_priority(job, value, state):
         except AttributeError:
             job_types = get_job_types(job.id)
             
-        if ((('besteffort' in job_types) or ('timesharing' in job_types)) and
+        if ((('besteffort' in job_types.keys()) or ('timesharing' in job_types.keys())) and
            (((state == 'START') and
              is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") <= 0) or
            ((state == 'STOP') and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0))):
 
             coeff = 1
-            if ('besteffort' in job_types) and ('timesharing' not in job_types):
+            if ('besteffort' in job_types.keys()) and ('timesharing' not in job_types.keys()):
                 coeff = 10
 
             index = 0

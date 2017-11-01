@@ -19,7 +19,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      get_logger, config, Challenge)
 
 from oar.lib.resource_handling import get_current_resources_with_suspended_job, update_current_scheduler_priority
-from oar.lib.event import (add_new_event, add_new_event_with_host)
+from oar.lib.event import (add_new_event, add_new_event_with_host, is_an_event_exists)
 
 from oar.lib.psycopg2 import pg_bulk_insert
 
@@ -1598,9 +1598,142 @@ def get_frag_date(job_id):
     """Get the date of the frag of a job"""
     return db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
 
-def check_end_of_job(job_id, exit_script_value, error, hosts, remote_host, remote_port, user, launchingDirectory, server_epilogue_script):
+def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script):
     """check end of job"""
-    raise NotImplementedError('TODO: check_end_of_job')
+    log_jid = '[' + str(job.id) + '] '
+    job = get_job(job_id)
+
+    do_finishing_sequence = True
+    notify_almighty_term = False
+    events = []    
+    if job.state in ['Running', 'Launching', 'Suspended', 'Resuming']:
+        logger.debug(log_jid + 'Job is ended')
+        set_finish_date(job_id)
+        set_job_state(job_id, 'Finishing')
+        
+        try:
+            set_job_exit_code(job_id, int(exit_script_value))
+        except ValueError:
+            # exit_script_value is not an int ( equal to 'N'),
+            # nothing to do.
+            pass
+
+        if error == 0:
+            logger.debug(log_jid + 'User Launch completed OK')
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))
+            notify_almighty_term = True
+        elif error == 1:
+            # Prologue error
+            events.append(('PROLOGUE_ERROR', log_jid + 'error of oarexec prologue'))
+        elif error == 2:
+            # Epilogue error
+            events.append(('EPILOGUE_ERROR', log_jid + 'error of oarexec epilogue'))
+        elif error == 3:
+            # Oarexec is killed by Leon normaly
+            events.append(('SWITCH_INTO_ERROR_STATE', log_jid + 'Ask to change the job state'))
+            logger.debug(log_jid + 'The job was killed by Leon.')
+            job_types = get_job_types(job_id)
+            if ('besteffort' in job_types.keys()) and ('idempotent' in job_types.keys()):
+                if is_an_event_exists(job_id, 'BESTEFFORT_KILL'):
+                    new_job_id = resubmit_job(job_id)
+                    logger.warning('We resubmit the job ' + str(job_id) + ' (new id = '
+                                   + str(new_job_id) +') because it is a besteffort and idempotent job.')
+                    events.append(('RESUBMIT_JOB_AUTOMATICALLY', log_jid + 'The job ' + str(job_id)
+                                   + ' is a besteffort and idempotent job so we resubmit it (new id = '
+                                   + str(new_job_id)))
+        elif error == 5:
+            # Oarexec is not able to write in the node
+            events.append(('CANNOT_WRITE_NODE_FILE', log_jid + 'oarexec cannot create the node file"'))
+        elif error == 6:
+             # Oarexec can not write its pid file
+            events.append(('CANNOT_WRITE_PID_FILE', log_jid + 'oarexec cannot create its pid file'))
+        elif error == 7:
+            # Can t get shell of user
+            events.append(('USER_SHELL',
+                           log_jid + 'Cannot get shell of user '+ str(user) + ', so I suspect node ' + hosts[0]))
+        elif error == 8:
+            # Oarexec can not create tmp directory
+            events.append(('CANNOT_CREATE_TMP_DIRECTORY',
+                           log_jid + 'oarexec cannot create tmp directory on ' + hosts[0] + ': '
+                           + config['OAREXEC_DIRECTORY']))
+        elif error == 10:
+            # Oarexecuser.sh can not go into working directory
+            events.append(('SWITCH_INTO_ERROR_STATE', log_jid + 'Ask to change the job state'))
+            events.append(('WORKING_DIRECTOR', log_jid + 'Cannot go into the working directory '
+                           + launchingDirectory + ' of the job on node ' + hosts[0]))
+        elif error == 20:
+            # Oarexecuser.sh can not write stdout and stderr files
+            events.append(('SWITCH_INTO_ERROR_STATE', log_jid + 'Ask to change the job state'))
+            events.append(('OUTPUT_FILES', log_jid + 'Cannot create .stdout and .stderr files in '
+                           + launchingDirectory + ' on the node ' + hosts[0]))
+        elif error == 12:
+            # oarexecuser.sh can not go into working directory and epilogue is in error
+            events.append(('SWITCH_INTO_ERROR_STATE', log_jid + 'Ask to change the job state'))
+            warning = log_jid + 'Cannot go into the working directory ' + launchingDirectory\
+                      + ' of the job on node ' + hosts[0] + ' AND epilogue is in error'
+            events.append(('WORKING_DIRECTORY', warning))
+            events.append(('EPILOGUE_ERROR', warning))
+        elif error == 22:
+            # oarexecuser.sh can not create STDOUT and STDERR files and epilogue is in error
+            events.append(('SWITCH_INTO_ERROR_STATE', log_jid + 'Ask to change the job state'))            
+            warning = log_jid + 'Cannot create STDOUT and STDERR files AND epilogue is in error'
+            events.append(('OUTPUT_FILES', warning))
+            events.append(('EPILOGUE_ERROR', warning))
+        elif error == 30:
+            #oarexec timeout on bipbip hashtable transfer via SSH
+            events.append(('SSH_TRANSFER_TIMEOUT', log_jid + 'Timeout SSH hashtable transfer on ' + hosts[0]))     
+        elif error == 31:
+            #oarexec got a bad hashtable dump from bipbip
+            events.append(('BAD_HASHTABLE_DUMP', log_jid + 'Bad hashtable dump on ' + hosts[0]))           
+        elif error == 33:
+            #oarexec received a SIGUSR1 signal and there was an epilogue error
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))           
+            events.append(('EPILOGUE_ERROR',
+                           log_jid + 'oarexec received a SIGUSR1 signal and there was an epilogue error'))
+        elif error == 34:
+            # Oarexec received a SIGUSR1 signal
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))
+            logger.debug(log_jid + 'oarexec received a SIGUSR1 signal; so INTERACTIVE job is ended')
+            notify_almighty_term = True
+        elif error == 50:
+            # launching oarexec timeout
+            events.append(('LAUNCHING_OAREXEC_TIMEOUY', log_jid + 'launching oarexec timeout, exit value = '
+                           + str(error) + '; the job $job_id is in Error and the node ' + hosts[0] + 'is Suspected'))
+        elif error == 40:
+            # oarexec received a SIGUSR2 signal
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))
+            logger.debug(log_jid\
+                         + 'oarexec received a SIGUSR2 signal; so user process has received a checkpoint signal')
+            notify_almighty_term = True
+        elif error == 42:
+            # oarexec received a user signal
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))
+            logger.debug(log_jid\
+                         + 'oarexec received a SIGURG signal; so user process has received the user defined signal')
+            notify_almighty_term = True
+        elif error == 41:
+            # oarexec received a SIGUSR2 signal
+            events.append(('SWITCH_INTO_TERMINATE_STATE', log_jid + 'Ask to change the job state'))
+            warning = log_jid\
+                      + 'oarexec received a SIGUSR2 signal and there was an epilogue error; so user process has received a checkpoint signal'
+            logger.debug(warning)
+            events.append(('EPILOGUE_ERROR', warning))
+            notify_almighty_term = True
+        else:
+            warning = log_jid + 'Error of oarexec, exit value = ' + str(error)\
+                      + '; the job is in Error and the node ' + hosts[0] +\
+                      ' is Suspected; If this job is of type cosystem or deploy, check if the oar server is able to connect to the corresponding nodes, oar-node started'
+            events.append(('EXIT_VALUE_OAREXEC', warning))
+    else:
+        do_finishing_sequence = False
+        logger.debug(log_jid + 'I was previously killed or Terminated but I did not know that!!')
+    
+    if do_finishing_sequence:
+        job_finishing_sequence(epilogue_script, job_id, events)
+    if notify_almighty_term:
+        tools.notify_almighty('Term')
+
+    tools.notify_almighty('BipBip')
     
 def job_finishing_sequence(epilogue_script, job_id, events):
     if epilogue_script:
@@ -1629,7 +1762,8 @@ def job_finishing_sequence(epilogue_script, job_id, events):
 
     
     job_types = get_job_types(job_id)
-    if ('deploy' not in job_types) and ('cosystem' not in job_types) and ('noop' not in job_types):
+    if ('deploy' not in job_types.keys()) and ('cosystem' not in job_types.keys())\
+       and ('noop' not in job_types.keys()):
         ###############
         # CPUSET PART #
         ###############
@@ -1720,7 +1854,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
 
     # Execute PING_CHECKER if asked
     if ('ACTIVATE_PINGCHECKER_AT_JOB_END' in config) and (config['ACTIVATE_PINGCHECKER_AT_JOB_END'] == 'yes')\
-       and ('deploy' not in job_types) and ('noop' not in job_types):
+       and ('deploy' not in job_types.keys()) and ('noop' not in job_types.keys()):
         hosts = get_job_current_hostnames(job_id)
         logger.debug('[job_finishing_sequence] ['+ str(job.id)\
                      + 'Run pingchecker to test nodes at the end of the job on nodes: '\

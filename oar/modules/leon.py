@@ -87,7 +87,7 @@ class Leon(object):
                 logger.debug('Job is terminated or is terminating nothing to do')
             else:
                 job_types = get_job_types(job.id)
-                if 'noop' in job_types:
+                if 'noop' in job_types.keys():
                     logger.debug('Kill the NOOP job: ' + str(job.id))
                     set_finish_date(job)
                     set_job_state(job, 'Terminated')
@@ -97,9 +97,9 @@ class Leon(object):
                     hosts = get_job_current_hostnames(job.id)
                     head_host = None
                     #deploy, cosystem and no host part
-                    if ('cosystem' in job_types) or (len(hosts) == 0):
+                    if ('cosystem' in job_types.keys()) or (len(hosts) == 0):
                         head_host = cosystem_hostname
-                    elif 'deploy' in job_types:
+                    elif 'deploy' in job_types.keys():
                         head_host = deploy_hostname
                     elif len(hosts) != 0:
                         head_host = hosts[0]
