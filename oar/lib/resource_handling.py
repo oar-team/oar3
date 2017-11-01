@@ -93,6 +93,14 @@ def get_current_resources_with_suspended_job():
 
 
 
+def get_current_assigned_job_resources(moldable_id):
+    """ Returns the current resources ref for a job"""
+    res = db(Resource).filter(AssignedResource.index == 'CURRENT')\
+                      .filter(AssignedResource.moldable_job_id == moldable_id)\
+                      .filter(Resource.id == AssignedResource.resource_id)\
+                      .all()
+    return res
+    
 def  get_resources_change_state():
     """Get resource ids that will change their state"""
     res = db.query(Resource.id, Resource.next_state).filter(Resource.next_state != 'UnChanged').all()
