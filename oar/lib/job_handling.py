@@ -1949,3 +1949,11 @@ def get_resource_job_to_frag(r_id):
 
     return res
 
+
+def archive_some_moldable_job_nodes(moldable_id, hosts):
+    """Sets the index fields to LOG in the table assigned_resources"""
+    db.query(AssignedResource).filter(AssignedResource.moldable_job_id == moldable_id)\
+                              .filter(Resource.id == AssignedResource.resource_id)\
+                              .filter(Resource.network_address.in_(tuple(hosts)))\
+                              .update({AssignedResource.index: 'LOG'})
+    db.commit()
