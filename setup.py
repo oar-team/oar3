@@ -32,7 +32,8 @@ requirements = [
     'procset',
     'pybatsim',
     'simplejson',
-    'psutil'
+    'psutil',
+    'pexpect'
 ]
 
 version = ''
