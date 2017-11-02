@@ -9,7 +9,7 @@ from oar.lib import (config, get_logger)
 from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_hostnames, check_end_of_job,
                                   get_current_moldable_job, set_job_state, archive_some_moldable_job_nodes)
 
-from oar.lib.resource_handling import get_current_assigned_job_ressource
+from oar.lib.resource_handling import get_current_assigned_job_resources
 
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl)
 
@@ -105,7 +105,7 @@ class BipBip(object):
             self.exit_code = 1
             return
         
-        resources = get_current_assigned_job_resource(job.assigned_moldable_job)
+        resources = get_current_assigned_job_resources(job.assigned_moldable_job)
         mold_job_description = get_current_moldable_job(job.assigned_moldable_job)
             
         # NOOP jobs
