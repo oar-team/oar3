@@ -18,9 +18,9 @@ DEFAULT_CONFIG = {
     'LEON_SOFT_WALLTIME': 20,
     'LEON_WALLTIME': 300,
     'TIMEOUT_SSH': 120,
+    'OAR_SSH_CONNECTION_TIMEOUT': 120,
     'SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
     'SERVER_PROLOGUE_EXEC_FILE': None,
-    
     'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
     'DEAD_SWITCH_TIME': 0,
     'OAREXEC_DIRECTORY': '/tmp/oar_runtime/',
@@ -164,19 +164,10 @@ def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
     raise NotImplementedError("TODO")
 
 def get_oar_pid_file_name(job_id):
-    raise NotImplementedError("TODO")
+    """Get the name of the file which contains the pid of oarexec"""
+    return config['OAREXEC_DIRECTORY'] + '/' + config['OAREXEC_PID_FILE_NAME'] + str(job_id)
 
 def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):
-    raise NotImplementedError('TODO')
-    return 0
-
-def set_ssh_timeout(timeout):
-    raise NotImplementedError('TODO')
-
-def get_ssh_timeout():
-    raise NotImplementedError('TODO')
-
-def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal, timeout):
     raise NotImplementedError('TODO')
     return 0
 ## Send the given signal to the right oarexec process
@@ -280,17 +271,11 @@ def send_to_hulot(cmd, data):
         return 1
     return 0
 
-
-def get_oar_pid_file_name(job_id):
-    logger.error("get_oar_pid_file_name id not YET IMPLEMENTED")
-
-
 def get_default_suspend_resume_file():
-    logger.error("get_default_suspend_resume_file id not YET IMPLEMENTED")
-
+    raise NotImplementedError("TODO")
 
 def manage_remote_commands():
-    logger.error("manage_remote_commands id not YET IMPLEMENTED")
+    raise NotImplementedError("TODO")
 
 def get_date():
 
@@ -302,77 +287,38 @@ def get_date():
     result = db.session.execute(req).scalar()
     return int(result)
 
-
-# sql_to_local
-# converts a date specified in the format used by the sql database to an
-# integer local time format
-# parameters : date string
-# return value : date integer
-# side effects : /
-
-
 def sql_to_local(date):
-    # Date "year mon mday hour min sec"
+    """Converts a date specified in the format used by the sql database to an
+    integer local time format
+    Date 'year mon mday hour min sec' """
     date = ' '.join(re.findall(r"[\d']+", date))
     t = time.strptime(date, "%Y %m %d %H %m %s")
     return int(time.mktime(t))
 
-
-# local_to_sql
-# converts a date specified in an integer local time format to the format used
-# by the sql database
-# parameters : date integer
-# return value : date string
-# side effects : /
-
 def local_to_sql(local):
+    """Converts a date specified in an integer local time format to the format used
+    by the sql database"""
     return time.strftime("%F %T", time.localtime(local))
 
-# sql_to_hms
-# converts a date specified in the format used by the sql database to hours,
-# minutes, secondes values
-# parameters : date string
-# return value : hours, minutes, secondes
-# side effects : /
-
-
 def sql_to_hms(t):
+    """Converts a date specified in the format used by the sql database to hours,
+    minutes, secondes values"""
     hms = t.split(':')
     return (hms[0], hms[1], hms[2])
 
-# hms_to_sql
-# converts a date specified in hours, minutes, secondes values to the format
-# used by the sql database
-# parameters : hours, minutes, secondes
-# return value : date string
-# side effects : /
-
-
 def hms_to_sql(hour, min, sec):
-
+    """Converts a date specified in hours, minutes, secondes values to the format
+    used by the sql database"""
     return(str(hour) + ":" + str(min) + ":" + str(sec))
-# hms_to_duration
-# converts a date specified in hours, minutes, secondes values to a duration
-# in seconds
-# parameters : hours, minutes, secondes
-# return value : duration
-# side effects : /
-
 
 def hms_to_duration(hour, min, sec):
+    """Converts a date specified in hours, minutes, secondes values to a duration
+    in seconds."""
     return int(hour) * 3600 + int(min) * 60 + int(sec)
 
-
-# duration_to_hms
-# converts a date specified as a duration in seconds to hours, minutes,
-# secondes values
-# parameters : duration
-# return value : hours, minutes, secondes
-# side effects : /
-
-
 def duration_to_hms(t):
-
+    """Converts a date specified as a duration in seconds to hours, minutes,
+    secondes values"""
     sec = t % 60
     t /= 60
     min = t % 60
@@ -380,29 +326,15 @@ def duration_to_hms(t):
 
     return (hour, min, sec)
 
-# duration_to_sql
-# converts a date specified as a duration in seconds to the format used by the
-# sql database
-# parameters : duration
-# return value : date string
-# side effects : /
-
-
 def duration_to_sql(t):
-
+    """converts a date specified as a duration in seconds to the format used by the
+    sql database"""
     hour, min, sec = duration_to_hms(t)
-
     return hms_to_sql(hour, min, sec)
 
-
-# sql_to_duration
-# converts a date specified in the format used by the sql database to a
-# duration in seconds
-# parameters : date string
-# return value : duration
-# side effects : /
-
 def sql_to_duration(t):
+    """Converts a date specified in the format used by the sql database to a
+    duration in seconds."""
     (hour, min, sec) = sql_to_hms(t)
     return hms_to_duration(hour, min, sec)
 

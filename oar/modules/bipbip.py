@@ -40,8 +40,6 @@ class BipBip(object):
             self.oarexec_reattach_script_exit_value = args[2]
         if len(args) >= 4:
             self.oarexec_challenge = args[3]
-            
-        set_ssh_timeout(congig[OAR_SSH_CONNECTION_TIMEOUT]) # TODO ???
         
     def run(self):
         
@@ -337,7 +335,7 @@ class BipBip(object):
 
         # Check End of oarexec script transfer
         try:
-            child.expect('__END__', timeout=int(config['TIMEOUT_SSH']))
+            child.expect('__END__', timeout=int(config['OAR_SSH_CONNECTION_TIMEOUT']))
         except exceptions.TIMEOUT as e:
             pass
         
