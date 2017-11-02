@@ -31,7 +31,8 @@ requirements = [
     'requests',
     'procset',
     'pybatsim',
-    'simplejson'
+    'simplejson',
+    'psutil'
 ]
 
 version = ''
