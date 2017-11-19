@@ -25,6 +25,7 @@ def fake_call(cmd):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
     monkeypatch.setattr(oar.lib.tools, 'call', fake_call)
+    monkeypatch.setattr(oar.lib.tools, 'Popen', lambda x: None)
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):

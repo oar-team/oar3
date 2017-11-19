@@ -50,7 +50,8 @@ if 'OARDIR' in os.environ:
     binpath = os.environ['OARDIR'] + '/'
 else:
     binpath = '/usr/local/lib/oar/'
-    logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
+    logger.warning("OARDIR env variable must be defined, set it to default value:" + binpath)
+    os.environ['OARDIR'] = binpath
 
 meta_sched_command = config['META_SCHED_CMD']
 m = re.match(r'^\/', meta_sched_command)
@@ -62,6 +63,9 @@ check_for_villains_command = binpath + 'sarko'
 check_for_node_changes = binpath + 'finaud'
 nodeChangeState_command = binpath + 'NodeChangeState'
 
+
+proxy_appendice_command = binpath + 'oar3-appendice-proxy'
+bipbip_commander = binpath + 'oar3-bipbip-commander'
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -138,6 +142,8 @@ def launch_command(command):
 
     return exit_value
 
+
+    
 
 def start_hulot():  # TODO
     '''hulot module forking'''
@@ -216,7 +222,16 @@ class Almighty(object):
 
         logger.debug('Init done')
         self.state = 'Qget'
+        
+        self.start_companions()
+        
+        
+    def start_companions(self):
+        """Start appendice proxy  and bipbip commander processes"""
 
+        self.appendice_proxy = tools.Popen(proxy_appendice_command)
+        self.bipbip_commander = tools.Popen(bipbip_commander)
+        
     def time_update(self):
         current = time.time()  # ---> TODO my $current = time; -> ???
 
