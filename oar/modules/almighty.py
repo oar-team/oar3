@@ -345,8 +345,8 @@ class Almighty(object):
                 command = self.command_queue.pop(0)
                 
                 logger.debug('Qtype = [' + command + ']')
-                if (command == 'Qsub') or (command == 'Term') or (command == 'BipBip')\
-                   or (command == 'Scheduling') or (command == 'Qresume'):
+                if (command == 'Qsub') or (command == 'Qsub -I') or (command == 'Term')\
+                   or (command == 'BipBip') or (command == 'Scheduling') or (command == 'Qresume'):
                     self.state = 'Scheduler'
                 elif command == 'Qdel':
                     self.state = 'Leon'
