@@ -28,7 +28,7 @@ DEFAULT_CONFIG = {
 config.setdefault_config(DEFAULT_CONFIG)
 
 # retrieve umask and set new one
-old_umask = os.umask(0o022)
+old_umask = os.umask(0o022) # TODO TOREMOVE ?
 
 # TODO
 # my $oldfh = select(STDERR); $| = 1; select($oldfh);
@@ -36,7 +36,7 @@ old_umask = os.umask(0o022)
 
 
 # Everything is run by oar user (The real uid of this process.)
-#os.environ['OARDO_UID'] = str(os.geteuid())
+os.environ['OARDO_UID'] = str(os.geteuid())
 
 # TODO
 # my $Redirect_STD_process = OAR::Modules::Judas::redirect_everything();
@@ -75,7 +75,7 @@ bipbip_commander = binpath + 'oar3-bipbip-commander'
 # dramatically (because it blocks only when nothing else is to be done).
 # Nevertheless it is closely related to the precision at which the
 # internal counters are checked
-read_commands_timeout = 10 * 1000 # in ms
+read_commands_timeout = 5 * 1000 # in ms
 
 # This parameter sets the number of pending commands read from
 # appendice before proceeding with internal work
@@ -124,21 +124,10 @@ def launch_command(command):
 
     #import pdb; pdb.set_trace()
     
-    status = tools.call(command)
-
-    exit_value = status >> 8
-    signal_num = status & 127
-    dumped_core = status & 128
+    exit_value = tools.call(command)
 
     logger.debug(command + ' terminated')
     logger.debug('Exit value : ' + str(exit_value))
-    logger.debug('Signal num : ' + str(signal_num))
-    logger.debug('Core dumped : ' + str(dumped_core))
-
-    if signal_num or dumped_core:
-        logger.error('Something wrong occured (signal or core dumped) when trying to call [' +
-                     command + '] command')
-        finishTag = 1
 
     return exit_value
 
@@ -262,7 +251,7 @@ class Almighty(object):
     def qget(self, timeout):
         '''function used by the main automaton to get notifications from appendice'''
 
-        timeout = 10 * 1000
+        #timeout = 10 * 1000
         self.set_appendice_timeout(timeout)
 
         logger.debug("Timeout value:" + str(timeout))
@@ -292,7 +281,7 @@ class Almighty(object):
         if flag:
             self.command_queue.append(command)
 
-    def read_commands(self, timeout):  # TODO
+    def read_commands(self, timeout=read_commands_timeout):  # TODO
         ''' read commands until reaching the maximal successive read value or
         having read all of the pending commands'''
 
@@ -336,13 +325,15 @@ class Almighty(object):
 
             # QGET
             elif self.state == 'Qget':
-                if len(self.command_queue) > 0:
-                    self.read_commands(0)
-                else:
-                    self.read_commands(read_commands_timeout)
+                #if len(self.command_queue) > 0:
+                #self.read_commands(0)
+                #    pass
+                #else:
+                self.read_commands(read_commands_timeout)
 
                 logger.debug('Command queue : ' + str(self.command_queue))
                 command = self.command_queue.pop(0)
+                
                 
                 logger.debug('Qtype = [' + command + ']')
                 if (command == 'Qsub') or (command == 'Qsub -I') or (command == 'Term')\

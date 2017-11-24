@@ -95,7 +95,7 @@ def get_current_resources_with_suspended_job():
 
 def get_current_assigned_job_resources(moldable_id):
     """ Returns the current resources ref for a job"""
-    res = db(Resource).filter(AssignedResource.index == 'CURRENT')\
+    res = db.query(Resource).filter(AssignedResource.index == 'CURRENT')\
                       .filter(AssignedResource.moldable_job_id == moldable_id)\
                       .filter(Resource.id == AssignedResource.resource_id)\
                       .all()
@@ -113,19 +113,19 @@ def  get_expired_resources():
     # TODO: UNUSED (Desktop computing)
     date = tools.get_date()
 
-    res = db(Resource.id).filter(Resource.state == 'Alive')\
-                         .filter(Resource.expiry_date > 0)\
-                         .filter(Resource.desktop_computing == 'YES')\
-                         .filter(Resource.expiry_date < date)\
-                         .all()
+    res = db.query(Resource.id).filter(Resource.state == 'Alive')\
+                               .filter(Resource.expiry_date > 0)\
+                               .filter(Resource.desktop_computing == 'YES')\
+                               .filter(Resource.expiry_date < date)\
+                               .all()
     return res
 
 def get_absent_suspected_resources_for_a_timeout(timeout):
     date = tools.get_date()
-    res = db(ResourceLog.resource_id).filter(ResourceLog.attribute == 'state')\
-                                     .filter(ResourceLog.date_stop == 0)\
-                                     .filter((ResourceLog.date_start + timeout) <  date)\
-                                     .all()
+    res = db.query(ResourceLog.resource_id).filter(ResourceLog.attribute == 'state')\
+                                           .filter(ResourceLog.date_stop == 0)\
+                                           .filter((ResourceLog.date_start + timeout) <  date)\
+                                           .all()
     return res
 
 def update_resource_nextFinaudDecision(resource_id, finaud_decision):
