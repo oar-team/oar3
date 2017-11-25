@@ -28,7 +28,7 @@ DEFAULT_CONFIG = {
 config.setdefault_config(DEFAULT_CONFIG)
 
 # retrieve umask and set new one
-old_umask = os.umask(0o022) # TODO TOREMOVE ?
+#old_umask = os.umask(0o022) # TODO TOREMOVE ?
 
 # TODO
 # my $oldfh = select(STDERR); $| = 1; select($oldfh);
@@ -59,7 +59,7 @@ if not m:
     meta_sched_command = binpath + meta_sched_command
     
 leon_command = binpath + 'Leon'
-check_for_villains_command = binpath + 'sarko'
+check_for_villains_command = binpath + 'oar3-sarko'
 check_for_node_changes = binpath + 'finaud'
 nodeChangeState_command = binpath + 'NodeChangeState'
 

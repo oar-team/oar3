@@ -1195,7 +1195,7 @@ def get_running_job(job_id):
 
 def get_current_moldable_job(moldable_id):
    """Return the moldable job of id passed in"""
-   res = db.query(MoldableJobDescription).filter(MoldableJobDescription.current == 'CURRENT')\
+   res = db.query(MoldableJobDescription).filter(MoldableJobDescription.index == 'CURRENT')\
                                          .filter(MoldableJobDescription.id == moldable_id)\
                                          .one()
    return res
