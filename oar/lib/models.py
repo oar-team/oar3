@@ -86,7 +86,7 @@ class AssignedResource(db.Model):
 
     moldable_id = db.Column('moldable_job_id', db.Integer, primary_key=True, autoincrement=False, index=True, server_default='0')
     resource_id = db.Column(db.Integer, primary_key=True, server_default='0')
-    index = db.Column(db.String(7), index=True, server_default='CURRENT')
+    index = db.Column('assigned_resource_index', db.String(7), index=True, server_default='CURRENT')
 
 
 class Challenge(db.Model):
