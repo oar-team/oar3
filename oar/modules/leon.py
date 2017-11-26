@@ -23,7 +23,7 @@ class Leon(object):
         config.setdefault_config(DEFAULT_CONFIG)
         self.exit_code = 0
         
-    def run(self, job_id):
+    def run(self):
         
         deploy_hostname = None
         if 'DEPLOY_HOSTNAME' in config:
@@ -34,16 +34,19 @@ class Leon(object):
         if 'COSYSTEM_HOSTNAME' in config:
             cosystem_hostname = config['COSYSTEM_HOSTNAME']
 
-        epilogue_script = config['SERVER_EPILOGUE_EXEC_FILE']
+        epilogue_script = None
+        if 'SERVER_EPILOGUE_EXEC_FILE' in config:
+            epilogue_script = config['SERVER_EPILOGUE_EXEC_FILE']
+
         openssh_cmd = config['OPENSSH_CMD']
         ssh_timeout = config['OAR_SSH_CONNECTION_TIMEOUT']
         oarexec_directory = config['OAR_RUNTIME_DIRECTORY']
         
 
         # Test if we must launch a finishing sequence on a specific job
-        if sys.argv[2]:
+        if len(sys.argv) >= 2:
             try:
-                job_id = int(sys.argv[2])
+                job_id = int(sys.argv[1])
             except ValueError as ex:
                 logger.error('"%s" cannot be converted to an int' %  ex)
                 self.exit_code = 1

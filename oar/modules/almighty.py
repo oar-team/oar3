@@ -58,7 +58,7 @@ m = re.match(r'^\/', meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
     
-leon_command = binpath + 'Leon'
+leon_command = binpath + 'oar3-leon'
 check_for_villains_command = binpath + 'oar3-sarko'
 check_for_node_changes = binpath + 'finaud'
 nodeChangeState_command = binpath + 'NodeChangeState'
