@@ -1283,7 +1283,7 @@ def get_job_current_hostnames(job_id):
                 .filter(Resource.type == 'default')\
                 .order_by(Resource.network_address).all()
 
-    return results
+    return [r[0] for r in results]
 
 
 

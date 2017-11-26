@@ -107,6 +107,8 @@ class Leon(object):
                     elif len(hosts) != 0:
                         head_host = hosts[0]
 
+                    #import pdb; pdb.set_trace()
+                    
                     if head_host:
                         add_new_event('SEND_KILL_JOB', job.id, 'Send the kill signal to oarexec on ' +
                                       head_host + ' for job ' + str(job.id))
