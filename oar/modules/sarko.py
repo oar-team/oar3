@@ -14,6 +14,7 @@ from oar.lib.resource_handling import (get_expired_resources, set_resource_nextS
 
 from oar.lib.event import add_new_event
 
+from subprocess import (CalledProcessError, TimeoutExpired)
 import oar.lib.tools as tools
 
 from oar.lib.tools import DEFAULT_CONFIG
@@ -69,7 +70,6 @@ class Sarko(object):
                 logger.debug('Set to FRAGGED the job: ' + str(job.id))
             else:
                 frag_date = get_frag_date(job.id)
-                logger.debug('frag_date:.............................................' + str(frag_date))
                 if (date > (frag_date + leon_soft_walltime)) and  (date <= (frag_date + leon_walltime)):
                     logger.debug('Leon will RE-FRAG bipbip of job :' + str(job.id))
                     job_refrag(job.id)
@@ -81,7 +81,6 @@ class Sarko(object):
                 else:
                     logger.debug('The leon timer is not yet expired for the job :' + str(job.id) +
                                  '; nothing to do')
-
 
         # Look at job walltimes
         for job in get_jobs_in_state('Running'):
@@ -123,9 +122,8 @@ class Sarko(object):
                 try:
                     tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '', tools.get_ssh_timeout)
                 except CalledProcessError as e:
-                    comment = 'The kill command return a bad exit code (' + str(e.return_codes)\
-                              + 'for the job ' + str(job.id) +  'on the node ' + head_host\
-                              + ', output: ' + e.output
+                    comment = 'kill command error' + 'for the job ' + str(job.id) +  'on the node ' + head_host\
+                              + ', output: ' + str(e.output)
                     logger.warning(comment)
                     add_new_event('CHECKPOINT_ERROR', job_id, '[Sarko]' + comment)
                 except TimeoutExpired as e:
@@ -134,7 +132,7 @@ class Sarko(object):
                     logger.warning(comment)
                     add_new_event('CHECKPOINT_ERROR', job.id, '[Sarko]' + comment)
                     
-                comment = 'The job ' + job.id + ' was notified to checkpoint itself on the node ' + head_host
+                comment = 'The job ' + str(job.id) + ' was notified to checkpoint itself on the node ' + head_host
                 logger.debug(comment)
                 add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
 

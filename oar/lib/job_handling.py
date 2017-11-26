@@ -1190,7 +1190,7 @@ def get_running_job(job_id):
             .filter(Job.id == job_id)\
             .filter(Job.state == 'Running')\
             .filter(Job.assigned_moldable_job == MoldableJobDescription.id)\
-            .one()
+            .one() # TODO verify tuple usage (Job.start_time, MoldableJobDescription.walltime)
     return res
 
 def get_current_moldable_job(moldable_id):
@@ -1284,8 +1284,6 @@ def get_job_current_hostnames(job_id):
                 .order_by(Resource.network_address).all()
 
     return [r[0] for r in results]
-
-
 
 def get_job_types(job_id):
     """Returns a hash table with all types for the given job ID."""
@@ -1568,7 +1566,8 @@ def get_job_cpuset_name(job_id, job=None):
     """Get the cpuset name for the given job"""
     user = None
     if job is None:
-        user = db.query(Job.user).filter(Job.id == job_id).one()
+        user_tuple = db.query(Job.user).filter(Job.id == job_id).one()
+        user = user_tuple[0]
     else:
         user = job.user
 
@@ -1596,7 +1595,8 @@ def job_leon_exterminate(job_id):
 
 def get_frag_date(job_id):
     """Get the date of the frag of a job"""
-    return db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
+    res = db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
+    return res[0]
 
 def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script):
     """check end of job"""
@@ -1884,8 +1884,12 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         
 def get_job_frag_state(job_id):
     """Get the frag_state value for a specific job"""
-    return db.query(FragJob.state).filter(FragJob.job_id == job_id).one()
-    
+    res = db.query(FragJob.state).filter(FragJob.job_id == job_id).one_or_none()
+    if res:
+        return res[0]
+    else:
+        return None
+
 def get_jobs_to_kill():
     """Return the list of jobs that have their frag state to LEON"""
     res = db.query(Job).filter(FragJob.state == 'LEON')\

@@ -9,7 +9,7 @@ from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
 import signal, psutil
-from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired)
+from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 from  pexpect import (spawn, exceptions) 
 
 
@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     'SERVER_PROLOGUE_EXEC_FILE': None,
     'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
     'DEAD_SWITCH_TIME': 0,
-    'OAREXEC_DIRECTORY': '/tmp/oar_runtime/',
+    'OAREXEC_DIRECTORY': '/var/lib/oar',
     'OAREXEC_PID_FILE_NAME': 'pid_of_oarexec_for_jobId_',
     'OARSUB_FILE_NAME_PREFIX': 'oarsub_connections_',
     'PROLOGUE_EPILOGUE_TIMEOUT': 60,
@@ -142,9 +142,9 @@ def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):
     try:
         check_output(cmd, stderr=STDOUT, timeout=timeout)
     except CalledProcessError as e:
-        error_msg = e.output + '. Return code: ' + str(e.return_code)
+        error_msg = str(e.output) + '. Return code: ' + str(e.returncode)
     except TimeoutExpired as e:
-        error_msg = e.output
+        error_msg = str(e.output)
 
     return error_msg
 
