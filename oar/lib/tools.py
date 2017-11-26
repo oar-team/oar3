@@ -136,7 +136,7 @@ def send_log_by_email(title, message):
     raise NotImplementedError("TODO")
 
 
-def exec_with_timeout(cmd, TIMEOUT_SSH):
+def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):
     # Launch admin script
     error_msg = ''
     try:
@@ -158,7 +158,6 @@ def kill_child_processes(parent_pid, sig=signal.SIGTERM):
     for process in children:
       process.send_signal(sig)
 
-    
 
 def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
     raise NotImplementedError("TODO")
@@ -167,9 +166,30 @@ def get_oar_pid_file_name(job_id):
     """Get the name of the file which contains the pid of oarexec"""
     return config['OAREXEC_DIRECTORY'] + '/' + config['OAREXEC_PID_FILE_NAME'] + str(job_id)
 
-def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal):
-    raise NotImplementedError('TODO')
-    return 0
+def get_oar_user_signal_file_name(job_id):
+    """Get the name of the file which contains the signal given by the user"""
+    return config['OAREXEC_DIRECTORY'] + '/USER_SIGNAL_' + str(job_id)
+
+def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):
+    """Send the given signal to the right oarexec process
+    args : host name, job id, signal, wait or not (0 or 1), 
+    DB ref (to close it in the child process), ssh cmd, user defined signal 
+    for oardel -s (null by default if not used)
+    return an array with exit values.
+    """
+    filename = get_oar_pid_file_name(job_id);
+    cmd = ssh_cmd.split()
+    cmd += ['-x', '-T', host]
+    if user_signal:
+        signal_file = get_oar_user_signal_file_name(job_id)
+        cmd.append("bash -c 'echo " + user_signal + " > " + signal_file + " && test -e " + filename + " && PROC=\$(cat "\
+                   + filename + ") && kill -s CONT \$PROC && kill -s " + signal + " \$PROC'")
+    else:
+        cmd.append("bash -c 'test -e " + filename + " && PROC=\$(cat " + filename + ") && kill -s CONT \$PROC && kill -s "\
+                   + signal + " \$PROC'")
+
+    return check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
+    
 ## Send the given signal to the right oarexec process
 ## args : host name, job id, signal, wait or not (0 or 1), 
 ## DB ref (to close it in the child process), ssh cmd, user defined signal 

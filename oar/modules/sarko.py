@@ -69,6 +69,7 @@ class Sarko(object):
                 logger.debug('Set to FRAGGED the job: ' + str(job.id))
             else:
                 frag_date = get_frag_date(job.id)
+                logger.debug('frag_date:.............................................' + str(frag_date))
                 if (date > (frag_date + leon_soft_walltime)) and  (date <= (frag_date + leon_walltime)):
                     logger.debug('Leon will RE-FRAG bipbip of job :' + str(job.id))
                     job_refrag(job.id)
@@ -120,11 +121,12 @@ class Sarko(object):
                 comment = ''
 
                 try:
-                    exit_codes = tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '', tools.get_ssh_timeout)
+                    tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '', tools.get_ssh_timeout)
                 except CalledProcessError as e:
-                    comment = 'The kill command return a bad exit code (' + str(exit_codes)\
-                              + 'for the job ' + str(job.id) +  'on the node $host_to_connect'
-                    logger.warning (comment)
+                    comment = 'The kill command return a bad exit code (' + str(e.return_codes)\
+                              + 'for the job ' + str(job.id) +  'on the node ' + head_host\
+                              + ', output: ' + e.output
+                    logger.warning(comment)
                     add_new_event('CHECKPOINT_ERROR', job_id, '[Sarko]' + comment)
                 except TimeoutExpired as e:
                     comment = 'Cannot contact ' + head_host + ', operation timouted (.' + str(tools.get_ssh_timeout())\
@@ -132,10 +134,9 @@ class Sarko(object):
                     logger.warning(comment)
                     add_new_event('CHECKPOINT_ERROR', job.id, '[Sarko]' + comment)
                     
-                if exit_codes == [0]:
-                    comment = 'The job ' + job.id + ' was notified to checkpoint itself on the node ' + head_host
-                    logger.debug(comment)
-                    add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
+                comment = 'The job ' + job.id + ' was notified to checkpoint itself on the node ' + head_host
+                logger.debug(comment)
+                add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
 
         # Retrieve nodes with expiry_dates in the past
         # special for Desktop computing (UNUSED ?)
