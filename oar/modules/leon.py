@@ -9,7 +9,6 @@ from oar.lib.job_handling import (get_job_frag_state, job_arm_leon_timer, job_fi
                                   get_to_exterminate_jobs, set_running_date)
 from oar.lib.event import add_new_event
 
-from subprocess import (CalledProcessError, TimeoutExpired)
 import oar.lib.tools as tools
 
 from oar.lib.tools import DEFAULT_CONFIG
@@ -113,17 +112,8 @@ class Leon(object):
                     if head_host:
                         add_new_event('SEND_KILL_JOB', job.id, 'Send the kill signal to oarexec on ' +
                                       head_host + ' for job ' + str(job.id))
-                        try: 
-                            tools.signal_oarexec(head_host, job.id, 'TERM', 0, openssh_cmd, '')
-                        except CalledProcessError as e:
-                            comment = 'The kill command return a bad exit code (' + str(e.returncode)\
-                                      + 'for the job ' + str(job.id) +  'on the node ' + head_host\
-                                      + ', output: ' + str(e.output)
-                            logger.warning(comment)
-                        except TimeoutExpired as e:
-                            comment = 'Cannot contact ' + head_host + ', operation timouted. Cannot send kill signal to the job '\
-                                      + str(job.id) + ' on ' + head_host + ' node'
-                            logger.warning(comment)
+                        comment =  tools.signal_oarexec(head_host, job.id, 'TERM', False, openssh_cmd)
+                        logger.warning(comment)
 
             job_arm_leon_timer(job.id)
             

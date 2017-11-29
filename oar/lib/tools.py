@@ -182,13 +182,32 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):
     cmd += ['-x', '-T', host]
     if user_signal:
         signal_file = get_oar_user_signal_file_name(job_id)
-        cmd.append("bash -c 'echo " + user_signal + " > " + signal_file + " && test -e " + filename + " && PROC=\$(cat "\
-                   + filename + ") && kill -s CONT \$PROC && kill -s " + signal + " \$PROC'")
+        cmd.append('bash -c "echo ' + user_signal + ' > ' + signal_file + ' && test -e ' + filename + ' && PROC=\$(cat '\
+                   + filename + ') && kill -s CONT \$PROC && kill -s ' + signal + ' \$PROC"')
     else:
-        cmd.append("bash -c 'test -e " + filename + " && PROC=\$(cat " + filename + ") && kill -s CONT \$PROC && kill -s "\
-                   + signal + " \$PROC'")
+        cmd.append('bash -c "test -e ' + filename + ' && PROC=\$(cat ' + filename + ') && kill -s CONT \$PROC && kill -s '\
+                   + signal + ' \$PROC"')
 
-    return check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
+    comment = None
+    print(' '.join(cmd))
+    print(cmd)
+    #return
+    if wait:
+        try: 
+            check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
+        except CalledProcessError as e:
+            comment = 'The kill command return a bad exit code (' + str(e.returncode)\
+                      + 'for the job ' + str(job_id) +  'on the node ' + head_host\
+                      + ', output: ' + str(e.output)
+        except TimeoutExpired as e:
+            comment = 'Cannot contact ' + head_host + ', operation timouted. Cannot send kill signal to the job '\
+                      + str(job.id) + ' on ' + head_host + ' node'
+    else:
+        # TODO kill after timeout, note Popen is launch process in background
+        Popen(' '.join(cmd))
+
+    return comment
+
     
 ## Send the given signal to the right oarexec process
 ## args : host name, job id, signal, wait or not (0 or 1), 

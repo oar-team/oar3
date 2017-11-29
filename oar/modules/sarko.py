@@ -14,7 +14,6 @@ from oar.lib.resource_handling import (get_expired_resources, set_resource_nextS
 
 from oar.lib.event import add_new_event
 
-from subprocess import (CalledProcessError, TimeoutExpired)
 import oar.lib.tools as tools
 
 from oar.lib.tools import DEFAULT_CONFIG
@@ -117,24 +116,15 @@ class Sarko(object):
                     
                 add_new_event('CHECKPOINT', job.id, 'User oar (sarko) requested a checkpoint on the job:' +
                               str(job.id) + ' on ' + head_host)
-                comment = ''
-
-                try:
-                    tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd, '', tools.get_ssh_timeout)
-                except CalledProcessError as e:
-                    comment = 'kill command error' + 'for the job ' + str(job.id) +  'on the node ' + head_host\
-                              + ', output: ' + str(e.output)
+                
+                comment = tools.signal_oarexec(head_host, job.id, 'SIGUSR2', 1, openssh_cmd)
+                if comment:
                     logger.warning(comment)
                     add_new_event('CHECKPOINT_ERROR', job_id, '[Sarko]' + comment)
-                except TimeoutExpired as e:
-                    comment = 'Cannot contact ' + head_host + ', operation timouted (.' + str(tools.get_ssh_timeout())\
-                              + ' s). So I cannot send checkpoint signal to the job ' + str(job.id) + ' on ' + head_host
-                    logger.warning(comment)
-                    add_new_event('CHECKPOINT_ERROR', job.id, '[Sarko]' + comment)
-                    
-                comment = 'The job ' + str(job.id) + ' was notified to checkpoint itself on the node ' + head_host
-                logger.debug(comment)
-                add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
+                else:
+                    comment = 'The job ' + str(job.id) + ' was notified to checkpoint itself on the node ' + head_host
+                    logger.debug(comment)
+                    add_new_event('CHECKPOINT_SUCCESSFULL', job.id, '[Sarko]' + comment)
 
         # Retrieve nodes with expiry_dates in the past
         # special for Desktop computing (UNUSED ?)
