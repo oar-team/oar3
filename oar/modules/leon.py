@@ -124,7 +124,7 @@ class Leon(object):
             if job.start_time == 0:
                 set_running_date(job.id)
             set_finish_date(job)
-            set_job_message(job_id, 'Job exterminated by Leon')
+            set_job_message(job.id, 'Job exterminated by Leon')
             tools.notify_almighty('LEONEXTERMINATE_' + str(job.id))
 
 def main():

@@ -182,16 +182,13 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):
     cmd += ['-x', '-T', host]
     if user_signal:
         signal_file = get_oar_user_signal_file_name(job_id)
-        cmd.append('bash -c "echo ' + user_signal + ' > ' + signal_file + ' && test -e ' + filename + ' && PROC=\$(cat '\
-                   + filename + ') && kill -s CONT \$PROC && kill -s ' + signal + ' \$PROC"')
+        cmd.append("bash -c 'echo " + user_signal + " > " + signal_file + " && test -e " + filename + " && PROC=$(cat "\
+                   + filename + ") && kill -s CONT $PROC && kill -s " + signal + " $PROC'")
     else:
-        cmd.append('bash -c "test -e ' + filename + ' && PROC=\$(cat ' + filename + ') && kill -s CONT \$PROC && kill -s '\
-                   + signal + ' \$PROC"')
+        cmd.append("bash -c 'test -e " + filename + " && PROC=$(cat " + filename + ") && kill -s CONT $PROC && kill -s "\
+                   + signal + " $PROC'")
 
     comment = None
-    print(' '.join(cmd))
-    print(cmd)
-    #return
     if wait:
         try: 
             check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
@@ -203,95 +200,10 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):
             comment = 'Cannot contact ' + head_host + ', operation timouted. Cannot send kill signal to the job '\
                       + str(job.id) + ' on ' + head_host + ' node'
     else:
-        # TODO kill after timeout, note Popen is launch process in background
-        Popen(' '.join(cmd))
+        # TODO kill after timeout, note Popen launchs process in background
+        Popen(cmd)
 
     return comment
-
-    
-## Send the given signal to the right oarexec process
-## args : host name, job id, signal, wait or not (0 or 1), 
-## DB ref (to close it in the child process), ssh cmd, user defined signal 
-## for oardel -s (null by default if not used)
-## return an array with exit values
-#sub signal_oarexec($$$$$$$){
-#    my $host = shift;
-#    my $job_id = shift;
-#    my $signal = shift;
-#    my $wait = shift;
-#    my $base = shift;
-#    my $ssh_cmd = shift;
-#    my $user_signal = shift;
-#
-#    my $file = get_oar_pid_file_name($job_id);
-#    #my $cmd = "$ssh_cmd -x -T $host \"test -e $file && cat $file | xargs kill -s $signal\"";
-#    #my $cmd = "$ssh_cmd -x -T $host bash -c \"test -e $file && PROC=\\\$(cat $file) && kill -s CONT \\\$PROC && kill -s $signal \\\$PROC\"";
-#    my ($cmd_name,@cmd_opts) = split(" ",$ssh_cmd);
-#    my @cmd;
-#    my $c = 0;
-#    $cmd[$c] = $cmd_name;$c++;
-#    foreach my $p (@cmd_opts){
-#        $cmd[$c] = $p;$c++;
-#    }
-#    $cmd[$c] = "-x";$c++;
-#    $cmd[$c] = "-T";$c++;
-#    $cmd[$c] = $host;$c++;
-#    if (defined($user_signal) && $user_signal ne ''){
-#        my $signal_file = OAR::Tools::get_oar_user_signal_file_name($job_id);
-#	    $cmd[$c] = "bash -c 'echo $user_signal > $signal_file && test -e $file && PROC=\$(cat $file) && kill -s CONT \$PROC && kill -s $signal \$PROC'";$c++;
-#    }
-#    else {
-#    	$cmd[$c] = "bash -c 'test -e $file && PROC=\$(cat $file) && kill -s CONT \$PROC && kill -s $signal \$PROC'";$c++;
-#    }
-#    $SIG{PIPE}  = 'IGNORE';
-#    my $pid = fork();
-#    if($pid == 0){
-#        #CHILD
-#        undef($base);
-#        my $exit_code;
-#        my $ssh_pid;
-#        eval{
-#            $SIG{PIPE}  = 'IGNORE';
-#            $SIG{ALRM} = sub { die "alarm\n" };
-#            alarm(get_ssh_timeout());
-#            $ssh_pid = fork();
-#            if ($ssh_pid == 0){
-#                exec({$cmd_name} @cmd);
-#                warn("[ERROR] Cannot find @cmd\n");
-#                exit(-1);
-#            }
-#            my $wait_res = -1;
-#            # Avaoid to be disrupted by a signal
-#            while ((defined($ssh_pid)) and ($wait_res != $ssh_pid)){
-#                $wait_res = waitpid($ssh_pid,0);
-#            }
-#            alarm(0);
-#            $exit_code  = $?;
-#        };
-#        if ($@){
-#            if ($@ eq "alarm\n"){
-#                if (defined($ssh_pid)){
-#                    my ($children,$cmd_name) = get_one_process_children($ssh_pid);
-#                    kill(9,@{$children});
-#                }
-#            }
-#        }
-#        # Exit from child
-#        exit($exit_code);
-#    }
-#    if ($wait > 0){
-#        waitpid($pid,0);
-#        my $exit_value  = $? >> 8;
-#        my $signal_num  = $? & 127;
-#        my $dumped_core = $? & 128;
-#
-#        return($exit_value,$signal_num,$dumped_core);
-#    }else{
-#        return(undef);
-#    }
-#}
-#
-#
 
 # get_date
 # returns the current time in the format used by the sql database
