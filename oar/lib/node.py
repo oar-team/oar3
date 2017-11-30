@@ -187,12 +187,14 @@ def change_node_state(node, state, config):
 
 def get_finaud_nodes():
     """Return the list of network address nodes for Finaud"""
-    return  db.query(distinct(Resource.network_address))\
-              .filter(or_(Resource.state == 'Alive', and_(Resource.state == 'Suspected',
-                                                          Resource.finaud_decision == 'YES')))\
-              .filter(Resource.type == 'default')\
-              .filter(Resource.desktop_computing == 'NO')\
-              .filter(Resource.next_state == 'UnChanged').all()
+    #return  db.query(distinct(Resource.network_address))\<
+    # .group_by(Resource.network_address)\
+    return db.query(Resource).distinct(Resource.network_address)\
+                             .filter(or_(Resource.state == 'Alive', and_(Resource.state == 'Suspected',
+                                                                         Resource.finaud_decision == 'YES')))\
+                             .filter(Resource.type == 'default')\
+                             .filter(Resource.desktop_computing == 'NO')\
+                             .filter(Resource.next_state == 'UnChanged').all()
 
 def get_current_assigned_nodes():
     """Returns the current nodes"""
