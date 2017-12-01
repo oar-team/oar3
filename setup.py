@@ -95,7 +95,7 @@ setup(
     oar3-sarko=oar.modules.sarko:main
     oar3-finaud=oar.modules.finaud:main
     oar3-leon=oar.modules.leon:main
-    oar3-node-change-state=oar.modulers.node_change_state:main
+    oar3-node-change-state=oar.modules.node_change_state:main
     oar3-bipbip=oar.modules.bipbip:main
     ''',
 )

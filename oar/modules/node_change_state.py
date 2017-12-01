@@ -19,12 +19,15 @@ from oar.lib.queue import stop_all_queues
 
 import oar.lib.tools as tools
 
+from oar.lib.tools import DEFAULT_CONFIG
+
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Note Change State')
 
 class NodeChangeState(object):
 
     def __init__(self):
+        config.setdefault_config(DEFAULT_CONFIG)
         self.exit_code = 0
         self.resources_to_heal = []
         self.cpuset_field = None
@@ -124,18 +127,18 @@ class NodeChangeState(object):
                             hosts = []
                     add_new_event_with_host('LOG_SUSPECTED', 0, event.description, hosts)
                         
-            if len(hosts) > 0:
-                already_treated_hosts = {}
-                for host in hosts:
-                    if not ((host in already_treated_hosts) or (host == '')):
-                        already_treated_hosts[host] = True
-                        set_node_state(host, 'Suspected', finaud_tag)
-                        for resource_id in get_all_resources_on_node(host):
-                            self.resources_to_heal.append(str(resource_id) + ' ' + host)
-                        self.exit_code = 1
-                msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts)
-                logger.warning(msg)
-                tools.send_log_by_email('Suspecting nodes', msg)
+                if len(hosts) > 0:
+                    already_treated_hosts = {}
+                    for host in hosts:
+                        if not ((host in already_treated_hosts) or (host == '')):
+                            already_treated_hosts[host] = True
+                            set_node_state(host, 'Suspected', finaud_tag)
+                            for resource_id in get_all_resources_on_node(host):
+                                self.resources_to_heal.append(str(resource_id) + ' ' + host)
+                            self.exit_code = 1
+                    msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts)
+                    logger.warning(msg)
+                    tools.send_log_by_email('Suspecting nodes', msg)
                 
             # Check if we must stop the scheduling
             type_to_check = ['SERVER_PROLOGUE_TIMEOUT', 'SERVER_PROLOGUE_EXIT_CODE_ERROR',

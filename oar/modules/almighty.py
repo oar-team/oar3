@@ -61,7 +61,8 @@ if not m:
 leon_command = binpath + 'oar3-leon'
 check_for_villains_command = binpath + 'oar3-sarko'
 check_for_node_changes = binpath + 'oar3-finaud'
-nodeChangeState_command = binpath + 'NodeChangeState'
+#nodeChangeState_command = binpath + 'NodeChangeState'
+nodeChangeState_command = binpath + 'oar3-node-change-state'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
