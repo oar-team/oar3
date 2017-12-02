@@ -53,7 +53,7 @@ def init_judas_notify_user():  # pragma: no cover
 
     logger.debug("init judas_notify_user (launch judas_notify_user.pl)")
 
-    global notify_user_socket
+    global notification_user_socket
     uds_name = "/tmp/judas_notify_user.sock"
     if not os.path.exists(uds_name):
         binary = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -63,12 +63,13 @@ def init_judas_notify_user():  # pragma: no cover
         while(not os.path.exists(uds_name)):
             time.sleep(0.1)
 
-        notification_user_socket = socket.socket(
-            socket.AF_UNIX, socket.SOCK_STREAM)
+        notification_user_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         notification_user_socket.connect(uds_name)
-
+        
 
 def notify_user(job, state, msg):  # pragma: no cover
+    return () # TODO remove init_judas_notify_user()
+
     global notification_user_socket
     # Currently it uses a unix domain sockey to communication to a perl script
     # TODO need to define and develop the next notification system
@@ -81,8 +82,21 @@ def notify_user(job, state, msg):  # pragma: no cover
     # OAR::Modules::Judas::notify_user($dbh,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"SUSPENDED","Job
     # is suspended."
     addr, port = job.info_type.split(':')
-    msg_uds = job.notify + "°" + addr + "°" + job.user + "°" + job.id + "°" +\
-        job.name + "°" + state + "°" + msg + "\n"
+
+    notify = ''
+    if job.notify:
+        notify = job.notify
+    
+    name = ''
+    if job.name:
+        name = job.name
+    
+    msg_uds = notify + "°" + addr + "°" + job.user + "°" + str(job.id) + "°" +\
+              name + "°" + state + "°" + msg + "\n"
+
+    if not notification_user_socket:
+        init_judas_notify_user()
+
     nb_sent = notification_user_socket.send(msg_uds.encode())
 
     if nb_sent == 0:

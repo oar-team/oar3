@@ -1201,7 +1201,7 @@ def get_current_moldable_job(moldable_id):
    return res
 
 def frag_job(job_id, user=None):
-    """Sets the flag 'ToFrag' of a job to 'Yes' which will threshold job deletion"""
+    """Set the flag 'ToFrag' of a job to 'Yes' which will threshold job deletion"""
     if not user: 
         if 'OARDO_USER' in os.environ:
             user = os.environ['OARDO_USER']
@@ -1771,8 +1771,9 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         if 'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD' in config:
             cpuset_name = get_job_cpuset_name(job_id)
             openssh_cmd = config['OPENSSH_CMD']
-            if 'OAR_SSH_CONNECTION_TIMEOUT':
-                tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
+            # TODO
+            #if 'OAR_SSH_CONNECTION_TIMEOUT':
+            #    tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
 
             cpuset_file = ''
             if 'JOB_RESOURCE_MANAGER_FILE' in config:

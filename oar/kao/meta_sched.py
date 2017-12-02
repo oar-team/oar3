@@ -621,7 +621,6 @@ def meta_schedule(mode='internal', plt=Platform()):
             config['QUOTAS_FILE'] = './quotas_conf.json'
         load_quotas_rules()
 
-    tools.init_judas_notify_user()
     tools.create_almighty_socket()
 
     logger.debug(
