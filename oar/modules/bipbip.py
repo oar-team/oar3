@@ -9,15 +9,14 @@ from oar.lib import (config, get_logger)
 
 from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_hostnames, check_end_of_job,
                                   get_current_moldable_job, set_job_state, archive_some_moldable_job_nodes,
-                                  get_job_cpuset_name)
+                                  get_job_cpuset_name, get_job_types, get_cpuset_values)
 
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
-from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl)
+import oar.lib.tools as tools
+from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, Popen, TimeoutExpired, spawn, exceptions)
 
 from oar.lib.event import add_new_event
-
-from oar.lib.tools import (Popen, TimeoutExpired, spawn, exceptions)
                            
 logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
