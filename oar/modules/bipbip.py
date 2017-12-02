@@ -14,7 +14,8 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
 import oar.lib.tools as tools
-from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, Popen, TimeoutExpired, spawn, exceptions)
+from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, Popen, TimeoutExpired, spawn, exceptions,
+                           format_ssh_pub_key)
 
 from oar.lib.event import add_new_event
                            
@@ -35,7 +36,6 @@ class BipBip(object):
         self.oarexec_reattach_script_exit_value = None
         self.oarexec_challenge = None
         if len(args) >= 2:
-            
             self.oarexec_reattach_exit_value = args[1]
         if len(args) >= 3:
             self.oarexec_reattach_script_exit_value = args[2]
@@ -130,7 +130,7 @@ class BipBip(object):
             ###############
             nodes_cpuset_fields = None
             if cpuset_field:
-                nodes_cpuset_fields = get_cpuset_values(self.cpuset_field, job.assigned_moldable_job)
+                nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
                 
             ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
             
