@@ -63,7 +63,7 @@ else:
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
 leon_command = binpath + 'oar3-leon'
-bipbip_command = binpath + 'bipbip'
+bipbip_command = binpath + 'oar3-bipbip'
 
 
 def bipbip_leon_executor(*args, **command):

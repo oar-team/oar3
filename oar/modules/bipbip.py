@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import sys
 import os
 import pkg_resources
 
@@ -429,14 +429,10 @@ class BipBip(object):
             
             
 def main():
-    bipbip = BipBip()
+    bipbip = BipBip(sys.argv[1:])
     bipbip.run()
     return bipbip.exit_code
     
 if __name__ == '__main__':  # pragma: no cover
-    if len(sys.argv) < 2:
-        # TODO
-        sys.exit(1)
-        
-    exit_code = main(sys.argv[1:])
+    exit_code = main()
     sys.exit(exit_code)
