@@ -1769,6 +1769,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         ###############
         # Clean all CPUSETs if needed
         if 'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD' in config:
+            cpuset_field = config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD']
             cpuset_name = get_job_cpuset_name(job_id)
             openssh_cmd = config['OPENSSH_CMD']
             # TODO
@@ -1800,7 +1801,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                 cpuset_data_hash = {
                     'job_id': job.id,
                     'name': cpuset_name,
-                    'nodes': cpuset_nodes,
+                    'nodes': nodes_cpuset_fields,
                     'cpuset_path': cpuset_path,
                     'ssh_keys': {
                         'public': {

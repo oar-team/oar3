@@ -137,7 +137,7 @@ class BipBip(object):
             cpuset_data_hash = {
                 'job_id': job.id,
                 'name': cpuset_name,
-                'nodes': cpuset_nodes,
+                'nodes': nodes_cpuset_fields,
                 'cpuset_path': cpuset_path,
                 'ssh_keys': {
                     'public': {
