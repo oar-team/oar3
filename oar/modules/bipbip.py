@@ -14,7 +14,7 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
 import oar.lib.tools as tools
-from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, Popen, TimeoutExpired, spawn, exceptions,
+from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, TimeoutExpired, exceptions,
                            format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import add_new_event
@@ -114,7 +114,7 @@ class BipBip(object):
         if 'noop' in job_types.keys():
             set_job_state(job_id, 'Running')
             logger.debug('[' + str(job.id) + '] User: ' + job.user + ' Set NOOP job to Running')
-            call_server_prologue()
+            self.call_server_prologue(job)
             return
             
         # HERE we must launch oarexec on the first node
@@ -220,7 +220,7 @@ class BipBip(object):
                 event_type = 'PING_CHECKER_NODE_SUSPECTED'
                 bad = tools.pingchecker(hosts)             
 
-            if bad > 0:
+            if len(bad) > 0:
                 set_job_state(job_id, 'One or several nodes are not responding correctly')
                 logger.error('[' + str(job.id) + ']  /!\ Some nodes are inaccessible (' + event_type\
                              + '):\n' + str(bad))
@@ -250,7 +250,7 @@ class BipBip(object):
                logger.debug('[' + str(job.id) + '] No (enough) bad node')
             # end CHECK
             
-        call_server_prologue(job)
+        self.call_server_prologue(job)
         
         # CALL OAREXEC ON THE FIRST NODE
         pro_epi_timeout = config['PROLOGUE_EPILOGUE_TIMEOUT']
@@ -260,11 +260,13 @@ class BipBip(object):
         
         oarexec_files = (pkg_resources.resource_filename('oar', 'scripts/Tools.pm'),
                          pkg_resources.resource_filename('oar', 'scripts/oarexec'))
-        
-        head_node = hosts[0]
+
+        head_node = None
+        if hosts:
+            head_node = hosts[0]
         
         #deploy, cosystem and no host part
-        if ('cosystem' in job_types.keys()) or (len(hosts == 0)):
+        if ('cosystem' in job_types.keys()) or (len(hosts) == 0):
             head_node = config['COSYSTEM_HOSTNAME']
         elif 'deploy' in job_types.keys():
             head_node = config['DEPLOY_HOSTNAME']
@@ -272,8 +274,11 @@ class BipBip(object):
 
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
+        job_challenge, _, _ = get_job_challenge(job_id)
+        
+        
         oarexec_cpuset_path = ''
-        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and len(hosts > 0):
+        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and (len(hosts) > 0):
             # So oarexec will retry several times to contact Almighty until it will be
             # killed by the cpuset manager
             oarexec_cpuset_path = cpuset_full_path
@@ -291,13 +296,13 @@ class BipBip(object):
                 'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
                 'user': job.user,
                 'job_user': job.user,
-                'types': types,
+                'types': job_types,
                 'name': job.name,
                 'project': job.project,
                 'reservation': job.reservation,
                 'walltime_seconds': mold_job_description.walltime,
                 'command': job.command,
-                'challenge': job.challenge,
+                'challenge': job_challenge,
                 'almighty_hostname': config['SERVER_HOSTNAME'],
                 'almighty_port': config['SERVER_PORT'],
                 'checkpoint_signal': job.checkpoint_signal,
@@ -316,7 +321,7 @@ class BipBip(object):
 
         #timeout = pro_epi_timeout + config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT'] + config['TIMEOUT_SSH']
         cmd = openssh_cmd
-        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and len(hosts > 0):
+        if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and (len(hosts) > 0):
             # for oarsh_shell connection
             os.environ['OAR_CPUSET'] = cpuset_full_path
             cmd = cmd +' -oSendEnv=OAR_CPUSET'
@@ -326,7 +331,9 @@ class BipBip(object):
         cmd = cmd + ' -x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + 'OAREXEC'
 
 
-        child = spawn(cmd)
+        logger.debug(str(cmd))
+        
+        child = tools.Popen(cmd)
 
         for filename in oarexec_files:
             with open(filename, 'r') as f:
@@ -392,7 +399,7 @@ class BipBip(object):
         return
         
         
-    def call_server_prologue(job):
+    def call_server_prologue(self, job):
         # PROLOGUE EXECUTED ON OAR SERVER #
         # Script is executing with job id in arguments
         if self.server_prologue:
@@ -400,7 +407,7 @@ class BipBip(object):
             cmd = [self.server_prologue, str(job.id)]
 
             try:
-                child = Popen(cmd)
+                child = tools.Popen(cmd)
                 return_code = child.wait(timeout)
 
                 if return_code:

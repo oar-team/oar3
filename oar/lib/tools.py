@@ -20,14 +20,16 @@ DEFAULT_CONFIG = {
     'TIMEOUT_SSH': 120,
     'OAR_SSH_CONNECTION_TIMEOUT': 120,
     'SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'SERVER_PROLOGUE_EXEC_FILE': None,
-    'SERVER_EPILOGUE_EXEC_FILE': None,
+    'SERVER_PROLOGUE_EXEC_FILE': '',
+    'SERVER_EPILOGUE_EXEC_FILE': '',
     'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
     'DEAD_SWITCH_TIME': 0,
     'OAREXEC_DIRECTORY': '/var/lib/oar',
     'OAREXEC_PID_FILE_NAME': 'pid_of_oarexec_for_jobId_',
     'OARSUB_FILE_NAME_PREFIX': 'oarsub_connections_',
     'PROLOGUE_EPILOGUE_TIMEOUT': 60,
+    'PROLOGUE_EXEC_FILE': '',
+    'EPILOGUE_EXEC_FILE': '',
     'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
     'OPENSSH_CMD': 'ssh',
@@ -143,8 +145,8 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
     return nb_sent
 
 
-def pingchecker(nodes_to_check):
-    raise NotImplementedError("TODO")
+def pingchecker(hosts):
+    #raise NotImplementedError("TODO")
     return []
 
 def send_log_by_email(title, message):
@@ -240,11 +242,24 @@ def send_to_hulot(cmd, data):
 def get_default_suspend_resume_file():
     raise NotImplementedError("TODO")
 
-def manage_remote_commands():
-    raise NotImplementedError("TODO")
+def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd):
+    
+    # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script, action to perform (start or stop), SSH command to use, taktuk cmd or undef
+    # TODO
+    
+    #my $connect_hosts = shift;
+    #my $data_hash = shift;
+    #my $manage_file = shift;
+    #my $action = shift;
+    #my $ssh_cmd = shift;
+    #my $taktuk_cmd = shift;
+    
+
+    return(1, [])
+    
+    
 
 def get_date():
-
     if db.engine.dialect.name == 'sqlite':
         req = "SELECT strftime('%s','now')"
     else:   # pragma: no cover
