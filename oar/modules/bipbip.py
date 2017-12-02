@@ -15,7 +15,7 @@ from oar.lib.resource_handling import get_current_assigned_job_resources
 
 import oar.lib.tools as tools
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, Popen, TimeoutExpired, spawn, exceptions,
-                           format_ssh_pub_key)
+                           format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import add_new_event
                            
@@ -45,7 +45,9 @@ class BipBip(object):
     def run(self):
         
         job_id = self.job_id
-
+        
+        openssh_cmd = config['OPENSSH_CMD']
+        
         node_file_db_field = config['NODE_FILE_DB_FIELD']
         node_file_db_field_distinct_values = config['NODE_FILE_DB_FIELD_DISTINCT_VALUES']
 
@@ -150,8 +152,8 @@ class BipBip(object):
                     },
                 },
                 'oar_tmp_directory': config['OAREXEC_DIRECTORY'],        
-                'user': job_user,
-                'job_user': job_user,
+                'user': job.user,
+                'job_user': job.user,
                 'types': job_types,
                 'resources': resources,
                 'node_file_db_fields': node_file_db_field,
@@ -313,7 +315,7 @@ class BipBip(object):
         init_done = 0
 
         #timeout = pro_epi_timeout + config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT'] + config['TIMEOUT_SSH']
-        cmd = Openssh_cmd
+        cmd = openssh_cmd
         if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and len(hosts > 0):
             # for oarsh_shell connection
             os.environ['OAR_CPUSET'] = cpuset_full_path

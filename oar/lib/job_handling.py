@@ -1815,8 +1815,8 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     },
                     'oar_tmp_directory': config['OAREXEC_DIRECTORY'],
                     
-                    'user': job_user,
-                    'job_user': job_user,
+                    'user': job.user,
+                    'job_user': job_.ser,
                     'types': job_types,
                     'resources': 'undef',
                     'node_file_db_fields': 'undef',
