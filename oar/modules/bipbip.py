@@ -2,12 +2,14 @@
 # coding: utf-8
 import sys
 import os
+import re
 import pkg_resources
 
 from oar.lib import (config, get_logger)
 
 from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_hostnames, check_end_of_job,
-                                  get_current_moldable_job, set_job_state, archive_some_moldable_job_nodes)
+                                  get_current_moldable_job, set_job_state, archive_some_moldable_job_nodes,
+                                  get_job_cpuset_name)
 
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
