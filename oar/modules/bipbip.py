@@ -13,6 +13,9 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
+
+import pexpect
+
 import oar.lib.tools as tools
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, TimeoutExpired, exceptions,
                            format_ssh_pub_key, get_private_ssh_key_file_name)
@@ -324,35 +327,58 @@ class BipBip(object):
         if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and (len(hosts) > 0):
             # for oarsh_shell connection
             os.environ['OAR_CPUSET'] = cpuset_full_path
-            cmd = cmd +' -oSendEnv=OAR_CPUSET'
+            cmd = cmd + ' -oSendEnv=OAR_CPUSET '
         else:
             os.environ['OAR_CPUSET'] = ''
 
-        cmd = cmd + ' -x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + 'OAREXEC'
+        cmd = cmd + '-x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + ' OAREXEC'
 
+        cmd = '/usr/bin/ssh -p 6667 -x -T node2 perl - 137 OAREXEC'
+        #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET  -x -T node3 perl - 138 OAREXEC'
+        #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET -x -T node2 perl - 139 OAREXEC'
 
-        logger.debug(str(cmd))
+        logger.debug(cmd)
+
+        import pdb; pdb.set_trace()
         
-        child = tools.Popen(cmd)
-
+        
+        child = pexpect.spawn(cmd, encoding='utf8')
+        child.delaybeforesend = None
+        #child.logfile = sys.stdout
+        #child.logfile = open("/tmp/expect", "w")
+        
+        lines = []
         for filename in oarexec_files:
             with open(filename, 'r') as f:
                 for line in f:
-                    child.sendline(line)
+                    lines.append(line)
+                    
+        #import pdb; pdb.set_trace()
 
+        for line in lines:
+            child.sendline(line)
+            try:
+                child.expect('\n')
+            except Exception as e:
+                import pdb; pdb.set_trace()
+                break
+
+        logger.debug('Send __END__')
         # End of oarexec script transfer
-        child.sendline('__END__\n')
+        child.sendline('__END__')
+        import pdb; pdb.set_trace()
 
         # Check End of oarexec script transfer
         try:
-            child.expect('__END__', timeout=int(config['OAR_SSH_CONNECTION_TIMEOUT']))
+            child.expect('__END__', int(config['OAR_SSH_CONNECTION_TIMEOUT']))
         except exceptions.TIMEOUT as e:
             pass
-        
+
+            import pdb; pdb.set_trace()
         # Send data structure for oarexec
         try:
             child.sendline(limited_dict2hash_perl(data_to_transfer) + '\n',
-                           timeout=int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
+                           int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
         except exceptions.TIMEOUT as e:
             pass
         
@@ -407,7 +433,7 @@ class BipBip(object):
             cmd = [self.server_prologue, str(job.id)]
 
             try:
-                child = tools.Popen(cmd)
+                child = Popen(cmd)
                 return_code = child.wait(timeout)
 
                 if return_code:

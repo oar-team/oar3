@@ -187,8 +187,9 @@ def change_node_state(node, state, config):
 
 def get_finaud_nodes():
     """Return the list of network address nodes for Finaud"""
-    # TODO: db.query(Resource).distinct(Resource.network_address) should not work with SQLITE
+    # TODO: db.query(Resource).distinct(Resource.network_address) should not properly work with SQLITE
     # https://stackoverflow.com/questions/17223174/returning-distinct-rows-in-sqlalchemy-with-sqlite
+
     return db.query(Resource).distinct(Resource.network_address)\
                              .filter(or_(Resource.state == 'Alive', and_(Resource.state == 'Suspected',
                                                                          Resource.finaud_decision == 'YES')))\
