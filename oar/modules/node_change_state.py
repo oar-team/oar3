@@ -13,7 +13,7 @@ from oar.lib.job_handling import (get_job, get_job_types, set_job_state, suspend
                                   get_job_cpuset_name, get_cpuset_values, frag_job)
 from oar.lib.node import (set_node_state, get_all_resources_on_node)
 from oar.lib.resource_handling import (get_resources_change_state, get_resource, set_resource_state,
-                                       get_resource_job_to_frag)
+                                       set_resource_nextState, get_resource_job_to_frag)
 from oar.lib.queue import stop_all_queues
 
 
@@ -40,7 +40,7 @@ class NodeChangeState(object):
     def run(self):
         for event in get_to_check_events():
             job_id = event.job_id
-            logger.debug('Check events for the job ' + str(job_id) + 'with type ' + event.type)
+            logger.debug('Check events for the job ' + str(job_id) + ' with type ' + event.type)
             job = get_job(job_id)
 
             # Check if we must resubmit the idempotent jobs
@@ -218,7 +218,7 @@ class NodeChangeState(object):
                     set_resource_state(r_id, next_state, resource.next_finaud_decision)
                     set_resource_nextState(r_id, 'UnChanged')
                     
-                    if not debug_info[resource.network_address]:
+                    if resource.network_address not in debug_info:
                         debug_info[resource.network_address] = {}
                     debug_info[resource.network_address][r_id] = next_state
                     
@@ -244,7 +244,7 @@ class NodeChangeState(object):
             email = '[NodeChangeState] ' + str_mail
 
         if email:
-            send_log_by_email('Resource state modifications', email)
+            tools.send_log_by_email('Resource state modifications', email)
 
         timeout = config['SUSPECTED_HEALING_TIMEOUT'] 
         healing_exec_file = config['SUSPECTED_HEALING_EXEC_FILE']
@@ -300,7 +300,7 @@ class NodeChangeState(object):
                                 
                             if error_msg:                            
                                 msg = '[' + str(job.id) + '] suspend script error, job will resume:' + error_msg
-                                send_log_by_email('Suspend script error', msg)
+                                tools.send_log_by_email('Suspend script error', msg)
                                 add_new_event('SUSPEND_SCRIPT_ERROR', job.id, msg)
                                 set_job_state(job.id, 'Resuming')
                                 tools.notify_almighty('Qresume')
