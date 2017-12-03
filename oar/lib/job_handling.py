@@ -1545,12 +1545,12 @@ def get_job_host_log(moldable_id):
     parameters : base, moldable_id
     return value : list of distinct hostnames"""
 
-    results = db.query(distinct(Resource.network_address))\
-                .filter(AssignedResource.moldable_id == moldable_id)\
-                .filter(Resource.id == AssignedResource.resource_id)\
-                .filter(Resource.network_address != '')\
-                .filter(Resource.type == 'default').all()
-    return results
+    res = db.query(distinct(Resource.network_address))\
+            .filter(AssignedResource.moldable_id == moldable_id)\
+            .filter(Resource.id == AssignedResource.resource_id)\
+            .filter(Resource.network_address != '')\
+            .filter(Resource.type == 'default').all()
+    return [h[0] for h in res]
 
 def suspend_job_action(job_id, moldable_id):
     """perform all action when a job is suspended"""

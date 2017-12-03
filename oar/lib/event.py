@@ -55,4 +55,5 @@ def check_event(event_type, job_id):
 
 def get_hostname_event(event_id):
     """Get hostnames corresponding to an event Id"""
-    return db.query(EventLogHostname.hostname).filter(EventLogHostname.event_id == event_id).all()
+    res = db.query(EventLogHostname.hostname).filter(EventLogHostname.event_id == event_id).all()
+    return [h[0] for h in res]

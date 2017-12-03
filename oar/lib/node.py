@@ -13,7 +13,7 @@ logger = get_logger('oar.lib.node')
 
 def get_all_resources_on_node(hostname):
     """Return the current resources on node whose hostname is passed in parameter"""
-    return db.query(Resource.id).filter(Resource.id == hostname).all()
+    return db.query(Resource.id).filter(Resource.network_address == hostname).all()
 
 def get_nodes_with_state(nodes):
     result = db.query(Resource.network_address, (Resource.state))\
@@ -166,15 +166,28 @@ def set_node_state(hostname, state, finaud_tag):
                          .update({ResourceLog.date_stop: date}, synchronize_session=False)
     db.commit()
 
-    sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\
-         .where(Resource.network_address == hostname)
+    #sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\
+    #     .where(Resource.network_address == hostname)
 
-    ins = ResourceLog.__table__.insert()\
-                               .from_select((ResourceLog.resource_id, ResourceLog.attribute,
-                                             ResourceLog.value, ResourceLog.date_start,
-                                             ResourceLog.finaud_decision), sel)
+    #ins = ResourceLog.__table__.insert()\
+    #                           .from_select((ResourceLog.resource_id, ResourceLog.attribute,
+    #                                         ResourceLog.value, ResourceLog.date_start,
+    #                                         ResourceLog.finaud_decision), sel)
+    #db.session.execute(ins)
 
-    db.session.execute(ins)
+    #sqlalchemy.exc.ProgrammingError: (psycopg2.ProgrammingError) column "suspected" does not exist
+    #LINE 1: ...ud_decision) SELECT resources.resource_id, state, Suspected,...
+    
+    # [SQL: 'INSERT INTO resource_logs (resource_id, attribute, value, date_start, finaud_decision) SELECT resources.resource_id, state, Suspected, 1512296767, NO \nFROM resources \nWHERE resources.network_address = %(network_address_1)s'] [parameters: {'network_address_1': ('node1',)}]
+    # [   DEBUG] [2017-12-03 10:26:07,603] [oar.modules.almighty]: /usr/local/lib/oar/oar3-node-change-state terminated
+
+    cur = db.session
+    cur.execute("""INSERT INTO resource_logs (resource_id,attribute,value,date_start,finaud_decision)
+                SELECT resources.resource_id, 'state', '%s', '%s' , '%s'
+                FROM resources
+                WHERE
+                    resources.network_address = '%s'""" % (state, str(date), finaud_tag, hostname))
+    db.commit()
 
 def set_node_nextState(hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""
