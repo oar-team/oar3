@@ -1791,7 +1791,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
             cpuset_full_path = cpuset_path +'/' + cpuset_name
 
             job = get_job(job_id)
-            nodes_cpuset_fields = get_cpuset_values(self.cpuset_field, job.assigned_moldable_job)
+            nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
             if len(nodes_cpuset_fields) > 0:
                 logger.debug('[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job_id) + '] Clean cpuset on each nodes')
                 taktuk_cmd = config['TAKTUK_CMD']
