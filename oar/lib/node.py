@@ -132,7 +132,8 @@ def set_node_state(hostname, state, finaud_tag):
         query = db.query(Resource).filter(Resource.network_address == hostname)\
                                   .update({Resource.state: state,
                                            Resource.finaud_decision: finaud_tag,
-                                           Resource.state_num: STATE2NUM[state]})
+                                           Resource.state_num: STATE2NUM[state]},
+                                          synchronize_session=False)
 
         #.filter(or_(Resource.state == 'Alive',
         #                              and_(Resource.state == 'Suspected',
@@ -154,14 +155,15 @@ def set_node_state(hostname, state, finaud_tag):
         db.query(Resource).filter(Resource.network_address == hostname)\
                                   .update({Resource.state: state,
                                            Resource.finaud_decision: finaud_tag,
-                                           Resource.state_num: STATE2NUM[state]})
+                                           Resource.state_num: STATE2NUM[state]},
+                                          synchronize_session=False)
         db.commit()
     date = tools.get_date()
     db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
                          .filter(ResourceLog.attribute == 'state')\
                          .filter(Resource.network_address == hostname)\
                          .filter(ResourceLog.resource_id == Resource.id)\
-                         .update({ResourceLog.date_stop: date})
+                         .update({ResourceLog.date_stop: date}, synchronize_session=False)
     db.commit()
 
     sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\
@@ -177,7 +179,8 @@ def set_node_state(hostname, state, finaud_tag):
 def set_node_nextState(hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""
     db.query(Resource).filter(Resource.network_address == hostname).update(
-        {Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
+        {Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'},
+        synchronize_session=False)
     db.commit()
 
 def change_node_state(node, state, config):
@@ -207,7 +210,8 @@ def get_current_assigned_nodes():
 def update_node_nextFinaudDecision(network_address, finaud_decision):
     # Update nextFinaudDecision field
     db.query(Resource).filter(Resource.network_address == network_address)\
-                      .update({Resource.next_finaud_decision: finaud_decision})
+                      .update({Resource.next_finaud_decision: finaud_decision},
+                              synchronize_session=False)
     db.commit()
 
     
