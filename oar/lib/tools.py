@@ -150,8 +150,8 @@ def pingchecker(hosts):
     return []
 
 def send_log_by_email(title, message):
-    raise NotImplementedError("TODO")
-
+    #raise NotImplementedError("TODO")
+    return
 
 def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):
     # Launch admin script
