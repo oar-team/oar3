@@ -1785,7 +1785,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     msg = '$OARDIR variable envionment must be defined'
                     logger.error(msg)
                     raise (msg)
-            cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
+                cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
 
             cpuset_path = config['CPUSET_PATH']
             cpuset_full_path = cpuset_path +'/' + cpuset_name
@@ -1835,7 +1835,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                 # dict2hash_w_undef
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
                 tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
-                                                        cpuset_data_str , cpuset_file,
+                                                        cpuset_data_str, cpuset_file,
                                                         'clean', openssh_cmd, taktuk_cmd)
                 if tag == 0:
                     msg = '[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job.id)\
@@ -1872,10 +1872,11 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                            str(bad_pingchecker)))
 
     for event in events:
-        ev_type, msg, hosts = events
-        if hosts:
+        if len(events) == 3:
+            ev_type, msg, hosts = events
             add_new_event_with_host(ev_type, msg, hosts)
         else:
+            ev_type, msg = events
             add_new_event(ev_type, msg)
         
     # Just to force commit (from OAR2, useful for OAR3 ?)

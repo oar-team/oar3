@@ -35,7 +35,7 @@ DEFAULT_CONFIG = {
     'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
     'OPENSSH_CMD': 'ssh',
-    'CPUSET_FILE_MANAGER': '/etc/oar/job_resource_manager.pl',
+    'JOB_RESOURCE_MANAGER_FILE': '/etc/oar/job_resource_manager_cgroups.pl',
     'MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
     'SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
     'OAR_SSH_CONNECTION_TIMEOUT': 120,
@@ -393,6 +393,20 @@ def get_private_ssh_key_file_name(cpuset_name):
 
 
 def limited_dict2hash_perl(d):
+    """Serialize python dictionnary to string hash perl representaion"""
+    s = "{"
+    for k,v in d.items():
+        s = s + '"' + k + '" => ' 
+        if isinstance(v, dict):
+            s = s + limited_dict2hash_perl(v)
+        elif isinstance(v, str):
+            s = s + '"' + str(v) + '"'
+        else:
+            s = s + str(v)
+        s = s + ","
+    return s[:-1] + "}"
+
+def limited_dict2hash_perl_old(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'
     for k,v in d.items():
