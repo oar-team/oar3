@@ -175,8 +175,9 @@ class BipBip(object):
 
             if len(nodes_cpuset_fields) > 0:
                 taktuk_cmd = config['TAKTUK_CMD']
+                import pdb; pdb.set_trace()
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
-                tag, bad_tmp = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
+                tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                         cpuset_data_str, cpuset_file,
                                                         'init', openssh_cmd, taktuk_cmd)
                 if tag == 0:
@@ -185,7 +186,7 @@ class BipBip(object):
                     logger.error(msg)
                     events.append(('CPUSET_MANAGER_FILE', msg, None))
                 elif len(bad) > 0:
-                    bad = bad + bad_tmp
+                    bad = bad + bad_hosts
                     event_type = 'CPUSET_ERROR'
                     # Clean already configured cpuset
                     tmp_array = nodes_cpuset_fields.keys()
@@ -207,10 +208,10 @@ class BipBip(object):
                             for h in bad:
                                 nodes_cpuset_fields.pop(h)
                             cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
-                            tag, bad_tmp = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
+                            tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                                         cpuset_data_str, cpuset_file,
                                                                         'clean', openssh_cmd, taktuk_cmd)
-                            bad = bad + bad_tmp
+                            bad = bad + bad_hosts
                 
             #####################
             # CPUSET PART, END  #
@@ -374,13 +375,13 @@ class BipBip(object):
         except exceptions.TIMEOUT as e:
             pass
 
-            import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         # Send data structure for oarexec
-        try:
-            child.sendline(limited_dict2hash_perl(data_to_transfer) + '\n',
-                           int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
-        except exceptions.TIMEOUT as e:
-            pass
+        #try:
+        child.sendline(limited_dict2hash_perl(data_to_transfer) + '\n')
+        #                   timeout=int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
+        #except exceptions.TIMEOUT as e:
+        #    pass
         
         # Read oarexec output
 

@@ -23,7 +23,7 @@ from oar.lib.event import (add_new_event, add_new_event_with_host, is_an_event_e
 
 from oar.lib.psycopg2 import pg_bulk_insert
 
-from oar.lib.tools import (Popen, TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
+from oar.lib.tools import (Popen, TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name, limited_dict2hash_perl)
 import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args

@@ -4,6 +4,8 @@ import pwd
 import time
 import re
 import os
+import random
+import string
 import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
@@ -242,21 +244,65 @@ def send_to_hulot(cmd, data):
 def get_default_suspend_resume_file():
     raise NotImplementedError("TODO")
 
-def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd):
-    
-    # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script, action to perform (start or stop), SSH command to use, taktuk cmd or undef
-    # TODO
-    
-    #my $connect_hosts = shift;
-    #my $data_hash = shift;
-    #my $manage_file = shift;
-    #my $action = shift;
-    #my $ssh_cmd = shift;
-    #my $taktuk_cmd = shift;
-    
+def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
+    # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
+    # action to perform (start or stop), SSH command to use, taktuk cmd or undef
 
-    return(1, [])
-    
+    str_to_transfer = ''
+    with open(manage_file, 'r') as mg_file:
+         str_to_transfer = mg_file.read()
+    str_to_transfer += '__END__\n' + data_str
+
+    if not taktuk_cmd:
+        raise NotImplementedError("Taktuk must be used...")
+    else:
+        fifoname = '/tmp/tmp_' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        os.mkfifo(fifoname)
+        cmd = taktuk_cmd\
+              + " -c '" + ssh_command + "'"\
+              + ' -o status=\'"STATUS $host $line\\n"\''\
+              + ' -f '\
+              + fifoname\
+              + ' broadcast exec [ perl - '\
+              + action\
+              + ' ], broadcast input file [ - ], broadcast input close'
+        #+ ' -o output -o connector -f '\
+        print(cmd)
+        
+        # Launch taktuk
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=True)
+
+        bad_hosts = {}
+        # Send hosts to address 
+        w = open(fifoname, 'w')
+        for host in hosts:
+            bad_hosts[host] = True
+            w.write(host + '\n')
+        w.close()
+        os.remove(fifoname)
+
+        try: 
+            out, err = p.communicate(str_to_transfer.encode('utf8'),
+                                     timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+        except TimeoutExpired:
+            p.kill()
+            # TODO
+            print('TimeoutExpired')
+            #m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
+            return (0, [])
+        
+        output = out.decode()
+
+        for line in output.split('\n'):
+            m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
+            if m:
+                if m.group(2) == '0':
+                    # Host is OK
+                    if m.group(1) in bad_hosts:
+                        del bad_hosts[m.group(1)]
+
+        return (1, bad_hosts.keys())
+    return (0, []) 
     
 
 def get_date():
