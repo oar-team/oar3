@@ -30,7 +30,7 @@ class Finaud(object):
             check_occupied_nodes = config['CHECK_NODES_WITH_RUNNING_JOB']
 
         if check_occupied_nodes == 'NO':
-            occupied_nodes = get_current_assigned_nodes()
+            occupied_nodes = [node.network_address for node in get_current_assigned_nodes()]
 
         nodes_to_check = {}
         for node in node_list_tmp:

@@ -1559,7 +1559,7 @@ def suspend_job_action(job_id, moldable_id):
     
     resource_ids = get_current_resources_with_suspended_job()
     
-    db.query(Resource).filter(Resource.id.in_(tuple(resource_ids))).update({'suspend_jobs': 'YES'})
+    db.query(Resource).filter(Resource.id.in_(resource_ids)).update({'suspend_jobs': 'YES'})
     db.commit()
 
 def get_job_cpuset_name(job_id, job=None):
@@ -1734,7 +1734,7 @@ def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDir
         tools.notify_almighty('Term')
 
     tools.notify_almighty('BipBip')
-    
+
 def job_finishing_sequence(epilogue_script, job_id, events):
     if epilogue_script:
         # launch server epilogue
@@ -1876,6 +1876,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
             ev_type, msg, hosts = events
             add_new_event_with_host(ev_type, msg, hosts)
         else:
+            #BUG
             ev_type, msg = events
             add_new_event(ev_type, msg)
         

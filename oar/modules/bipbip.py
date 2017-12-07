@@ -136,9 +136,20 @@ class BipBip(object):
             nodes_cpuset_fields = None
             if cpuset_field:
                 nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
-                
+
+
+            #import pdb; pdb.set_trace()
             ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
             
+            # cpuset_data_hash = {
+            #     'log_level': 3,
+            #     'ssh_keys': {
+            #         'public': {
+            #             'file_name': config['OAR_SSH_AUTHORIZED_KEYS_FILE'],
+            #             'key': ssh_public_key
+            #         }
+            #     }
+            # }
             cpuset_data_hash = {
                 'job_id': job.id,
                 'name': cpuset_name,
@@ -152,13 +163,11 @@ class BipBip(object):
                     'private': {
                         'file_name': get_private_ssh_key_file_name(cpuset_name),
                         'key': ssh_private_key
-                    },
+                    }
                 },
                 'oar_tmp_directory': config['OAREXEC_DIRECTORY'],        
                 'user': job.user,
                 'job_user': job.user,
-                'types': job_types,
-                'resources': resources,
                 'node_file_db_fields': node_file_db_field,
                 'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
                 'array_id': job.array_id,
@@ -172,11 +181,13 @@ class BipBip(object):
                 'project': job.project,
                 'log_level': config['LOG_LEVEL']
             }
-
+            # 'resources': list(resources),
+            # 'types': job_types,
             if len(nodes_cpuset_fields) > 0:
                 taktuk_cmd = config['TAKTUK_CMD']
-                import pdb; pdb.set_trace()
+
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
+                import pdb; pdb.set_trace()                
                 tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                         cpuset_data_str, cpuset_file,
                                                         'init', openssh_cmd, taktuk_cmd)

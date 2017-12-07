@@ -391,22 +391,21 @@ def get_private_ssh_key_file_name(cpuset_name):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')
 
-
 def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
-    s = "{"
+    s = '{'
     for k,v in d.items():
-        s = s + '"' + k + '" => ' 
+        s = s + "'" + k + "' => " 
         if isinstance(v, dict):
             s = s + limited_dict2hash_perl(v)
         elif isinstance(v, str):
-            s = s + '"' + str(v) + '"'
+            s = s + "'" + v + "'"
         else:
             s = s + str(v)
-        s = s + ","
-    return s[:-1] + "}"
+        s = s + ','
+    return s[:-1] + '}'
 
-def limited_dict2hash_perl_old(d):
+def limited_dict2hash_perl_orig(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'
     for k,v in d.items():

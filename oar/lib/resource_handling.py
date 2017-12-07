@@ -87,10 +87,7 @@ def get_current_resources_with_suspended_job():
                                                 .filter(Job.state == 'Suspended')\
                                                 .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
                                                 .all()
-    # TODO REMOVE
-    #return tuple(r for r in res)
-    return res
-
+    return tuple(r[0] for r in res)
 
 
 def get_current_assigned_job_resources(moldable_id):
