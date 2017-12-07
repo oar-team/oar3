@@ -395,25 +395,15 @@ def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'
     for k,v in d.items():
-        s = s + "'" + k + "' => " 
+        s = s + "'" + k + "' => "
+        #print (s + ' - ' + str(v) + ' - ' + str(type(v))) 
         if isinstance(v, dict):
-            s = s + limited_dict2hash_perl(v)
+            if not v:
+                s = s + '{}'
+            else:
+                s = s + limited_dict2hash_perl(v)
         elif isinstance(v, str):
             s = s + "'" + v + "'"
-        else:
-            s = s + str(v)
-        s = s + ','
-    return s[:-1] + '}'
-
-def limited_dict2hash_perl_orig(d):
-    """Serialize python dictionnary to string hash perl representaion"""
-    s = '{'
-    for k,v in d.items():
-        s = s + "'" + k + "' => " 
-        if isinstance(v, dict):
-            s = s + limited_dict2hash_perl(v)
-        elif isinstance(v, str):
-            s = s + "'" + str(v) + "'"
         else:
             s = s + str(v)
         s = s + ','
