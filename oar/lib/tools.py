@@ -247,7 +247,7 @@ def get_default_suspend_resume_file():
 def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
-
+    import pdb; pdb.set_trace()  
     str_to_transfer = ''
     with open(manage_file, 'r') as mg_file:
          str_to_transfer = mg_file.read()
@@ -408,3 +408,19 @@ def limited_dict2hash_perl(d):
             s = s + str(v)
         s = s + ','
     return s[:-1] + '}'
+
+def resources2dump_perl(resources):
+    a = '['
+    for resource in resources:
+        a = a + limited_dict2hash_perl(resource.to_dict()) + ','
+    return a[:-1] + ']'
+    # TODO selection only needed resource fields
+    # def resource2hash_perl(resouces):
+    #     h = '{'
+    #     for k,v in d.to_dict().items():
+    #         h = h + "'" + k + "' => "
+    #         if isinstance(v, str):
+    #             h = h + "'" + v + "'"
+    #         else:
+    #             h = h + str(v)
+    #         s = s + ',

@@ -17,8 +17,8 @@ from oar.lib.resource_handling import get_current_assigned_job_resources
 import pexpect
 
 import oar.lib.tools as tools
-from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, TimeoutExpired, exceptions,
-                           format_ssh_pub_key, get_private_ssh_key_file_name)
+from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, resources2dump_perl,
+                           TimeoutExpired, exceptions, format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import add_new_event
                            
@@ -150,6 +150,7 @@ class BipBip(object):
             #         }
             #     }
             # }
+            
             cpuset_data_hash = {
                 'job_id': job.id,
                 'name': cpuset_name,
@@ -176,18 +177,20 @@ class BipBip(object):
                 'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),
                 'launching_directory': job.launching_directory,
                 'job_name': job.name,
+                'types': job_types,
                 'walltime_seconds': 'undef',
                 'walltime': 'undef',
                 'project': job.project,
                 'log_level': config['LOG_LEVEL']
             }
-            # 'resources': list(resources),
-            # 'types': job_types,
+
+            #'resources': resources2dump_perl(resources),
+
             if len(nodes_cpuset_fields) > 0:
                 taktuk_cmd = config['TAKTUK_CMD']
-
+                #TODO
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
-                import pdb; pdb.set_trace()                
+                cpuset_data_str = cpuset_data_str[:-1] + ", 'resources' => " + resources2dump_perl(resources) + '}'
                 tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                         cpuset_data_str, cpuset_file,
                                                         'init', openssh_cmd, taktuk_cmd)

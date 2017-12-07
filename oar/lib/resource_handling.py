@@ -134,7 +134,7 @@ def update_resource_nextFinaudDecision(resource_id, finaud_decision):
 
 
 def get_resource_job_to_frag():
-    pass
+    raise "Not yet implemented"
 
 
 def update_scheduler_last_job_date(date, moldable_id):
