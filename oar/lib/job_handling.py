@@ -1872,12 +1872,12 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                            str(bad_pingchecker)))
 
     for event in events:
-        host = None
         if len(event) == 2:
             ev_type, msg = event
+            add_new_event(ev_type, msg)
         else:
             ev_type, msg, host = event
-        add_new_event_with_host(ev_type, msg, host)
+            add_new_event_with_host(ev_type, msg, host)
         
     # Just to force commit (from OAR2, useful for OAR3 ?)
     db.commit()
