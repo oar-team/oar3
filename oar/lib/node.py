@@ -215,10 +215,11 @@ def get_finaud_nodes():
 
 def get_current_assigned_nodes():
     """Returns the current nodes"""
-    return db.query(distinct(Resource.network_address))\
-             .filter(AssignedResource.index == 'CURRENT')\
-             .filter(Resource.id == AssignedResource.resource_id)\
-             .filter(Resource.type == 'default').all()
+    results = db.query(distinct(Resource.network_address))\
+                .filter(AssignedResource.index == 'CURRENT')\
+                .filter(Resource.id == AssignedResource.resource_id)\
+                .filter(Resource.type == 'default').all()
+    return [r[0] for r in results]
 
 def update_node_nextFinaudDecision(network_address, finaud_decision):
     # Update nextFinaudDecision field
