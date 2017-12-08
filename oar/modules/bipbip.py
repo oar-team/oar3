@@ -110,6 +110,8 @@ class BipBip(object):
             return
         
         resources = get_current_assigned_job_resources(job.assigned_moldable_job)
+        resources_data_str =  ", 'resources' => " + resources2dump_perl(resources) + '}'
+        
         mold_job_description = get_current_moldable_job(job.assigned_moldable_job)
             
         # NOOP jobs
@@ -177,7 +179,6 @@ class BipBip(object):
                 taktuk_cmd = config['TAKTUK_CMD']
 
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
-                resources_data_str =  ", 'resources' => " + resources2dump_perl(resources) + '}'
                 cpuset_data_str = cpuset_data_str[:-1] + resources_data_str
                 tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                         cpuset_data_str, cpuset_file,
@@ -299,7 +300,6 @@ class BipBip(object):
                 'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),                
                 'launching_directory': job.launching_directory,
                 'job_env': job.env,
-                'resources': resources,
                 'node_file_db_fields': node_file_db_field,
                 'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
                 'user': job.user,
@@ -323,6 +323,10 @@ class BipBip(object):
                 'detach_oarexec': config['DETACH_JOB_FROM_SERVER'],
                 'cpuset_full_path': oarexec_cpuset_path
             }
+
+        data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
+        data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
+
         error = 50
         exit_script_value = 'N'
         init_done = 0
@@ -382,7 +386,7 @@ class BipBip(object):
         import pdb; pdb.set_trace()
         # Send data structure for oarexec
         #try:
-        child.sendline(limited_dict2hash_perl(data_to_transfer) + '\n')
+        child.sendline(data_to_transfer_str + '\n')
         #                   timeout=int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
         #except exceptions.TIMEOUT as e:
         #    pass
