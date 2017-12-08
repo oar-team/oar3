@@ -44,7 +44,8 @@ DEFAULT_CONFIG = {
     'NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
     'NOTIFY_TCP_SOCKET_ENABLED': 1,
     'SUSPECTED_HEALING_TIMEOUT': 10, 
-    'SUSPECTED_HEALING_EXEC_FILE': None
+    'SUSPECTED_HEALING_EXEC_FILE': None,
+    'DEBUG_REMOTE_COMMANDS': 'yes'
     }
 
 logger = get_logger("oar.lib.tools")
@@ -247,7 +248,7 @@ def get_default_suspend_resume_file():
 def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
-    import pdb; pdb.set_trace()  
+
     str_to_transfer = ''
     with open(manage_file, 'r') as mg_file:
          str_to_transfer = mg_file.read()
@@ -258,19 +259,24 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
     else:
         fifoname = '/tmp/tmp_' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         os.mkfifo(fifoname)
+
+        output_connector_tpl = ' -o output -o connector'
+        if config['DEBUG_REMOTE_COMMANDS'] != 'no':
+            output_connector_tpl = ''
+
         cmd = taktuk_cmd\
               + " -c '" + ssh_command + "'"\
               + ' -o status=\'"STATUS $host $line\\n"\''\
+              + output_connector_tpl\
               + ' -f '\
               + fifoname\
               + ' broadcast exec [ perl - '\
               + action\
               + ' ], broadcast input file [ - ], broadcast input close'
-        #+ ' -o output -o connector -f '\
-        print(cmd)
+        # print(cmd)
         
         # Launch taktuk
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=True)
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
         bad_hosts = {}
         # Send hosts to address 
@@ -292,7 +298,12 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
             return (0, [])
         
         output = out.decode()
+        error = err.decode()
 
+        if config['DEBUG_REMOTE_COMMANDS'] != 'no':
+            logger.debug('Taktuk output: ' + output)
+            logger.debug('Taktuk error: ' + error)
+            
         for line in output.split('\n'):
             m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
             if m:
