@@ -137,60 +137,48 @@ class BipBip(object):
             if cpuset_field:
                 nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
 
-
-            #import pdb; pdb.set_trace()
-            ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
-            
-            # cpuset_data_hash = {
-            #     'log_level': 3,
-            #     'ssh_keys': {
-            #         'public': {
-            #             'file_name': config['OAR_SSH_AUTHORIZED_KEYS_FILE'],
-            #             'key': ssh_public_key
-            #         }
-            #     }
-            # }
-            
-            cpuset_data_hash = {
-                'job_id': job.id,
-                'name': cpuset_name,
-                'nodes': nodes_cpuset_fields,
-                'cpuset_path': cpuset_path,
-                'ssh_keys': {
-                    'public': {
-                        'file_name': config['OAR_SSH_AUTHORIZED_KEYS_FILE'],
-                        'key': ssh_public_key
-                    },
-                    'private': {
-                        'file_name': get_private_ssh_key_file_name(cpuset_name),
-                        'key': ssh_private_key
-                    }
-                },
-                'oar_tmp_directory': config['OAREXEC_DIRECTORY'],        
-                'user': job.user,
-                'job_user': job.user,
-                'node_file_db_fields': node_file_db_field,
-                'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
-                'array_id': job.array_id,
-                'array_index': job.array_index,
-                'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
-                'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),
-                'launching_directory': job.launching_directory,
-                'job_name': job.name,
-                'types': job_types,
-                'walltime_seconds': 'undef',
-                'walltime': 'undef',
-                'project': job.project,
-                'log_level': config['LOG_LEVEL']
-            }
-
-            #'resources': resources2dump_perl(resources),
-
             if len(nodes_cpuset_fields) > 0:
+    
+                ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
+            if len(nodes_cpuset_fields) > 0:
+                cpuset_data_hash = {
+                    'job_id': job.id,
+                    'name': cpuset_name,
+                    'nodes': nodes_cpuset_fields,
+                    'cpuset_path': cpuset_path,
+                    'ssh_keys': {
+                        'public': {
+                            'file_name': config['OAR_SSH_AUTHORIZED_KEYS_FILE'],
+                            'key': ssh_public_key
+                        },
+                        'private': {
+                            'file_name': get_private_ssh_key_file_name(cpuset_name),
+                            'key': ssh_private_key
+                        }
+                    },
+                    'oar_tmp_directory': config['OAREXEC_DIRECTORY'],        
+                    'user': job.user,
+                    'job_user': job.user,
+                    'node_file_db_fields': node_file_db_field,
+                    'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
+                    'array_id': job.array_id,
+                    'array_index': job.array_index,
+                    'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
+                    'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),
+                    'launching_directory': job.launching_directory,
+                    'job_name': job.name,
+                    'types': job_types,
+                    'walltime_seconds': 'undef',
+                    'walltime': 'undef',
+                    'project': job.project,
+                    'log_level': config['LOG_LEVEL']
+                }
+
                 taktuk_cmd = config['TAKTUK_CMD']
-                #TODO
+
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
-                cpuset_data_str = cpuset_data_str[:-1] + ", 'resources' => " + resources2dump_perl(resources) + '}'
+                resources_data_str =  ", 'resources' => " + resources2dump_perl(resources) + '}'
+                cpuset_data_str = cpuset_data_str[:-1] + resources_data_str
                 tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                         cpuset_data_str, cpuset_file,
                                                         'init', openssh_cmd, taktuk_cmd)
@@ -218,10 +206,12 @@ class BipBip(object):
                             hosts = tmp_hosts
                             bad = []
                         else:
-                            # remove non initialized nodes
+                            #Remove non initialized nodes
                             for h in bad:
                                 nodes_cpuset_fields.pop(h)
+                            #Regenerate cpuset_data_str w/ new nodes   
                             cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
+                            cpuset_data_str = cpuset_data_str[:-1] + resources_data_str
                             tag, bad_hosts = tools.manage_remote_commands(nodes_cpuset_fields.keys(),
                                                                         cpuset_data_str, cpuset_file,
                                                                         'clean', openssh_cmd, taktuk_cmd)
