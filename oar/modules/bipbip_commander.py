@@ -66,6 +66,9 @@ leon_command = binpath + 'oar3-leon'
 #bipbip_command = binpath + 'oar3-bipbip'
 bipbip_command = 'true'
 
+leon_command = binpath + 'Leon'
+#bipbip_command = binpath + 'bipbip'
+
 def bipbip_leon_executor(*args, **command):
 
     job_id = command['job_id']

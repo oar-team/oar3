@@ -33,7 +33,7 @@ class BipBip(object):
 
         self.exit_code = 0
 
-        self.job_id = args[0]
+        self.job_id = int(args[0])
 
         self.oarexec_reattach_exit_value = None
         self.oarexec_reattach_script_exit_value = None
@@ -291,9 +291,9 @@ class BipBip(object):
             # So oarexec will retry several times to contact Almighty until it will be
             # killed by the cpuset manager
             oarexec_cpuset_path = cpuset_full_path
-
+            
             data_to_transfer = {
-                'job_id': job_id,
+                'job_id': job.id,
                 'array_id': job.array_id,
                 'array_index': job.array_index,
                 'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
@@ -342,12 +342,15 @@ class BipBip(object):
 
         cmd = cmd + '-x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + ' OAREXEC'
 
-        cmd = '/usr/bin/ssh -p 6667 -x -T node2 perl - 137 OAREXEC'
+        #cmd = '/usr/bin/ssh -p 6667 -x -T node2 perl - 137 OAREXEC'
         #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET  -x -T node3 perl - 138 OAREXEC'
         #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET -x -T node2 perl - 139 OAREXEC'
 
         logger.debug(cmd)
-
+        logger.debug(oarexec_files)
+        
+        tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files)
+        
         import pdb; pdb.set_trace()
         
         

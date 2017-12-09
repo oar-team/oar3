@@ -22,16 +22,16 @@ DEFAULT_CONFIG = {
     'TIMEOUT_SSH': 120,
     'OAR_SSH_CONNECTION_TIMEOUT': 120,
     'SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'SERVER_PROLOGUE_EXEC_FILE': '',
-    'SERVER_EPILOGUE_EXEC_FILE': '',
+    'SERVER_PROLOGUE_EXEC_FILE': None,
+    'SERVER_EPILOGUE_EXEC_FILE': None,
     'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
     'DEAD_SWITCH_TIME': 0,
     'OAREXEC_DIRECTORY': '/var/lib/oar',
     'OAREXEC_PID_FILE_NAME': 'pid_of_oarexec_for_jobId_',
     'OARSUB_FILE_NAME_PREFIX': 'oarsub_connections_',
     'PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'PROLOGUE_EXEC_FILE': '',
-    'EPILOGUE_EXEC_FILE': '',
+    'PROLOGUE_EXEC_FILE': None,
+    'EPILOGUE_EXEC_FILE': None,
     'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
     'OPENSSH_CMD': 'ssh',
@@ -245,6 +245,29 @@ def send_to_hulot(cmd, data):
 def get_default_suspend_resume_file():
     raise NotImplementedError("TODO")
 
+
+def launch_oarexec(cmd, data_str, oarexec_files):
+    # Prepare string to transfer to perl interpreter on head node
+      
+    str_to_transfer = ''
+    for oarexec_file in oarexec_files:
+        with open(oarexec_file, 'r') as mg_file:
+            str_to_transfer += mg_file.read()
+    str_to_transfer += '__END__\n' + data_str
+
+    # Launch perl interpreter on remote
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    
+    out, err = p.communicate(str_to_transfer.encode('utf8'))
+
+    output = out.decode()
+    error = err.decode()
+    print(output)
+    print(error)
+    
+    import pdb; pdb.set_trace()
+    
+    
 def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
@@ -314,7 +337,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
 
         return (1, bad_hosts.keys())
     return (0, []) 
-    
+
 
 def get_date():
     if db.engine.dialect.name == 'sqlite':
@@ -407,8 +430,10 @@ def limited_dict2hash_perl(d):
     s = '{'
     for k,v in d.items():
         s = s + "'" + k + "' => "
-        #print (s + ' - ' + str(v) + ' - ' + str(type(v))) 
-        if isinstance(v, dict):
+        #print (s + ' - ' + str(v) + ' - ' + str(type(v)))
+        if v is None:
+            s = s + 'undef'  
+        elif isinstance(v, dict):
             if not v:
                 s = s + '{}'
             else:

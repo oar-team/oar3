@@ -57,12 +57,17 @@ meta_sched_command = config['META_SCHED_CMD']
 m = re.match(r'^\/', meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
-    
+
 leon_command = binpath + 'oar3-leon'
 check_for_villains_command = binpath + 'oar3-sarko'
 check_for_node_changes = binpath + 'oar3-finaud'
-#nodeChangeState_command = binpath + 'NodeChangeState'
 nodeChangeState_command = binpath + 'oar3-node-change-state'
+
+#Legacy OAR2
+leon_command = binpath + 'Leon'
+check_for_villains_command = binpath + 'sarko'
+check_for_node_changes = binpath + 'finaud'
+nodeChangeState_command = binpath + 'NodeChangeState'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
