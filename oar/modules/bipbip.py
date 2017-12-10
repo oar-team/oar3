@@ -342,95 +342,29 @@ class BipBip(object):
 
         cmd = cmd + '-x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + ' OAREXEC'
 
-        #cmd = '/usr/bin/ssh -p 6667 -x -T node2 perl - 137 OAREXEC'
-        #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET  -x -T node3 perl - 138 OAREXEC'
-        #cmd = '/usr/bin/ssh -p 6667 -oSendEnv=OAR_CPUSET -x -T node2 perl - 139 OAREXEC'
-
         logger.debug(cmd)
         logger.debug(oarexec_files)
-        
-        tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files)
-        
-        import pdb; pdb.set_trace()
-        
-        
-        child = pexpect.spawn(cmd, encoding='utf8')
-        child.delaybeforesend = None
-        #child.logfile = sys.stdout
-        #child.logfile = open("/tmp/expect", "w")
-        
-        lines = []
-        for filename in oarexec_files:
-            with open(filename, 'r') as f:
-                for line in f:
-                    lines.append(line)
-                    
-        #import pdb; pdb.set_trace()
 
-        for line in lines:
-            child.sendline(line)
-            try:
-                child.expect('\n')
-            except Exception as e:
-                import pdb; pdb.set_trace()
-                break
-
-        logger.debug('Send __END__')
-        # End of oarexec script transfer
-        child.sendline('__END__')
-        import pdb; pdb.set_trace()
-
-        # Check End of oarexec script transfer
-        try:
-            child.expect('__END__', int(config['OAR_SSH_CONNECTION_TIMEOUT']))
-        except exceptions.TIMEOUT as e:
-            pass
-
-        import pdb; pdb.set_trace()
-        # Send data structure for oarexec
-        #try:
-        child.sendline(data_to_transfer_str + '\n')
-        #                   timeout=int(config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT']))
-        #except exceptions.TIMEOUT as e:
-        #    pass
-        
-        # Read oarexec output
-
-        while True:
-            if init_done == 0:
-                index = child.expect([config['SSH_RENDEZ_VOUS'] + '\r\n', exceptions.TIMEOUT])
-                if index == 0:
-                    init_done = 1
-            
-                    set_job_state(job_id,'Running')
-
-                    # Notify interactive oarsub
-                    if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
-                        logger.debug('[' + str(job.id) + '] Interactive request ;Answer to the client Qsub -I')
-                        if tools.notify_interactif_user('GOOD JOB'):
-                            logger.error('[' + str(job.id)\
-                                         + '] Frag job because oarsub cannot be notified by the frontend. Check your network and firewall configuration\n')
-                            tools.notify_almighty('Qdel')
-
-                else:
-                    # Timeout
-                    pass
-            else:
-                try:
-                    child.expect('OAREXEC_SCRIPT_EXIT_VALUE\s*(\d+|N)', timeout=pro_epi_timeout)
-                    exit_script_value = child.match.group(1)
-                except exceptions.TIMEOUT as e:
-                    pass
-                
-        child.close()
-        error = child.exitstatus
-    
-        if (detach_oarexec == 1) and (error == 0):
+        # ssh-oarexec exist error
+        if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
+            set_job_state(job_id,'Running')
+            # Notify interactive oarsub
+            if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
+                logger.debug('[' + str(job.id) + '] Interactive request ;Answer to the client Qsub -I')
+                if not tools.notify_interactif_user('GOOD JOB'):
+                    logger.error('[' + str(job.id)\
+                                 + '] Frag job because oarsub cannot be notified by the frontend. Check your network and firewall configuration\n')
+                    tools.notify_almighty('Qdel')
+                    return
             logger.debug('[' + str(job.id) + '] Exit from bipbip normally')
         else:
-            if init_done == 0:
-                if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
-                    tools.notify_interactif_user('ERROR: an error occured on the first job node')
+            # TODO: OAR3 only use detached OAREXEC
+            #        child.expect('OAREXEC_SCRIPT_EXIT_VALUE\s*(\d+|N)', timeout=pro_epi_timeout)
+            #        exit_script_value = child.match.group(1)
+            #    except exceptions.TIMEOUT as e:
+            #        pass
+            if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
+                tools.notify_interactif_user('ERROR: an error occured on the first job node')
                     
             check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, error,
                              hosts, job.user, job.launching_directory, self.server_epilogue)
