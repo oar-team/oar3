@@ -1600,7 +1600,8 @@ def get_frag_date(job_id):
 
 def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script):
     """check end of job"""
-    log_jid = '[' + str(job.id) + '] '
+    log_jid = '[' + str(job_id) + '] '
+    # TODO: do we really need to get refresh job data by reget it ? (see bipbip usage) 
     job = get_job(job_id)
 
     do_finishing_sequence = True
@@ -1608,7 +1609,7 @@ def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDir
     events = []    
     if job.state in ['Running', 'Launching', 'Suspended', 'Resuming']:
         logger.debug(log_jid + 'Job is ended')
-        set_finish_date(job_id)
+        set_finish_date(job)
         set_job_state(job_id, 'Finishing')
         
         try:

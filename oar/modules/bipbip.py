@@ -14,11 +14,9 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
 
-import pexpect
-
 import oar.lib.tools as tools
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, resources2dump_perl,
-                           TimeoutExpired, exceptions, format_ssh_pub_key, get_private_ssh_key_file_name)
+                           TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import add_new_event
                            
@@ -351,7 +349,7 @@ class BipBip(object):
             # Notify interactive oarsub
             if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
                 logger.debug('[' + str(job.id) + '] Interactive request ;Answer to the client Qsub -I')
-                if not tools.notify_interactif_user('GOOD JOB'):
+                if not tools.notify_interactif_user(job, 'GOOD JOB'):
                     logger.error('[' + str(job.id)\
                                  + '] Frag job because oarsub cannot be notified by the frontend. Check your network and firewall configuration\n')
                     tools.notify_almighty('Qdel')
@@ -364,7 +362,7 @@ class BipBip(object):
             #    except exceptions.TIMEOUT as e:
             #        pass
             if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
-                tools.notify_interactif_user('ERROR: an error occured on the first job node')
+                tools.notify_interactif_user(job, 'ERROR: an error occured on the first job node')
                     
             check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, error,
                              hosts, job.user, job.launching_directory, self.server_epilogue)

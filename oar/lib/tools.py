@@ -12,8 +12,6 @@ from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
 import signal, psutil
 from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
-from pexpect import (spawn, exceptions) 
-
 
 # Constants
 DEFAULT_CONFIG = {
@@ -45,7 +43,8 @@ DEFAULT_CONFIG = {
     'NOTIFY_TCP_SOCKET_ENABLED': 1,
     'SUSPECTED_HEALING_TIMEOUT': 10, 
     'SUSPECTED_HEALING_EXEC_FILE': None,
-    'DEBUG_REMOTE_COMMANDS': 'yes'
+    'DEBUG_REMOTE_COMMANDS': 'yes',
+    'OAREXEC_DEBUG_MODE' : '1'
     }
 
 logger = get_logger("oar.lib.tools")
@@ -107,7 +106,8 @@ def notify_user(job, state, msg):  # pragma: no cover
 
     if nb_sent == 0:
         logger.error("notify_user: socket error")
-
+        return False  # error 
+    return True
 
 def create_almighty_socket():  # pragma: no cover
     global almighty_socket
@@ -143,7 +143,9 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
         logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                      " raised exception socket.error: " + str(exc))
         return 0
-    nb_sent = tcp_socket.send(message.encode())
+    message += '\n'
+    nb_sent = tcp_socket.send(message.encode('utf8'))
+    
     tcp_socket.close()
     return nb_sent
 
@@ -257,17 +259,30 @@ def launch_oarexec(cmd, data_str, oarexec_files):
 
     # Launch perl interpreter on remote
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    
-    out, err = p.communicate(str_to_transfer.encode('utf8'))
+
+    try: 
+        out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+    except TimeoutExpired:
+        p.kill()
+        logger.debug("Oarexec's Launching TimeoutExpired")
+        return False
 
     output = out.decode()
     error = err.decode()
-    print(output)
-    print(error)
+
+    #print(output)
+    #print(error)
     
-    import pdb; pdb.set_trace()
+    if config['OAREXEC_DEBUG_MODE'] in ['1', 1, 'yes', 'YES']:
+        logger.debug('SSH output: ' + output)
+        logger.debug('SSH error: ' + error)
     
-    
+    regex_ssh_rdv = re.compile('^' + config['SSH_RENDEZ_VOUS'] + '$')
+    for line in output.split('\n'):
+        if re.match(regex_ssh_rdv, line):
+            return True
+    return False
+
 def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
@@ -323,7 +338,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
         output = out.decode()
         error = err.decode()
 
-        if config['DEBUG_REMOTE_COMMANDS'] != 'no':
+        if config['DEBUG_REMOTE_COMMANDS'] in ['1', 1, 'yes', 'YES']:
             logger.debug('Taktuk output: ' + output)
             logger.debug('Taktuk error: ' + error)
             
