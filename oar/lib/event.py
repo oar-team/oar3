@@ -28,7 +28,7 @@ def add_new_event_with_host(ev_type, job_id, description, hostnames):
     for hostname in set(hostnames):
         db.add(EventLogHostname(event_id=event_id, hostname=hostname))
 
-
+        
 def is_an_event_exists(job_id, event):
     res = db.query(func.count(EventLog.id)).filter(EventLog.job_id == job_id)\
                                            .filter(EventLog.type == event)\
