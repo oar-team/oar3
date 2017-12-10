@@ -1598,6 +1598,12 @@ def get_frag_date(job_id):
     res = db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
     return res[0]
 
+
+def set_job_exit_code(job_id, exit_code):
+    """Set exit code to just finished job"""
+    db.query(Job).filter(Job.id == job_id).update({Job.exit_code: exit_code})
+    db.commit()
+
 def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script):
     """check end of job"""
     log_jid = '[' + str(job_id) + '] '
