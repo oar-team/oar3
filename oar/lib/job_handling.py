@@ -1881,16 +1881,16 @@ def job_finishing_sequence(epilogue_script, job_id, events):
     for event in events:
         if len(event) == 2:
             ev_type, msg = event
-            add_new_event(ev_type, msg)
+            add_new_event(ev_type, job.id, msg)
         else:
             ev_type, msg, host = event
-            add_new_event_with_host(ev_type, msg, host)
+            add_new_event_with_host(ev_type, job.id, msg, host)
         
     # Just to force commit (from OAR2, useful for OAR3 ?)
     db.commit()
     
     if len(events) > 0:
-        notify_almighty('ChState')
+        tools.notify_almighty('ChState')
         
 def get_job_frag_state(job_id):
     """Get the frag_state value for a specific job"""
