@@ -11,7 +11,7 @@ from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 
 import signal, psutil
-from subprocess import (Popen, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
+from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
 # Constants
 DEFAULT_CONFIG = {
@@ -475,3 +475,77 @@ def resources2dump_perl(resources):
     #         else:
     #             h = h + str(v)
     #         s = s + ',
+
+
+# Create the shell script used to execute right command for the user
+# The resulting script can be launched with : bash -c 'script'
+# sub get_oarexecuser_script_for_oarsub($$$$$$$$$$$$$){
+#     my ($node_file,
+#         $job_id,
+#         $array_id,
+#         $array_index,
+#         $user,
+#         $shell,
+#         $launching_directory,
+#         $resource_file,
+#         $job_name,
+#         $job_project,
+#         $job_walltime,
+#         $job_walltime_sec,
+#         $job_env) = @_;
+
+#     my $exp_env = "";
+#     if ($job_env !~ /^\s*$/){
+#         #$job_env =~ s/\"/\\"/g;
+#         $exp_env .= "export $job_env ;";
+#     }
+
+#     $launching_directory =~ s/\$/\\\$/s;
+#     my $script = '
+#         if [ "a$TERM" == "a" ] || [ "x$TERM" == "xunknown" ];
+# then
+#     export TERM=xterm;
+# fi;
+
+# '.$exp_env.'
+
+# export OAR_FILE_NODES="'.$node_file.'";
+# export OAR_JOBID='.$job_id.';
+# export OAR_ARRAYID='.$array_id.';
+# export OAR_ARRAYINDEX='.$array_index.';
+# export OAR_USER="'.$user.'";
+# export OAR_WORKDIR="'.$launching_directory.'";
+# export OAR_RESOURCE_PROPERTIES_FILE="'.$resource_file.'";
+
+# export OAR_NODEFILE=$OAR_FILE_NODES;
+# export OAR_O_WORKDIR=$OAR_WORKDIR;
+# export OAR_NODE_FILE=$OAR_FILE_NODES;
+# export OAR_RESOURCE_FILE=$OAR_FILE_NODES;
+# export OAR_WORKING_DIRECTORY=$OAR_WORKDIR;
+# export OAR_JOB_ID=$OAR_JOBID;
+# export OAR_ARRAY_ID=$OAR_ARRAYID;
+# export OAR_ARRAY_INDEX=$OAR_ARRAYINDEX;
+# export OAR_JOB_NAME="'.$job_name.'";
+# export OAR_PROJECT_NAME="'.$job_project.'";
+# export OAR_JOB_WALLTIME="'.$job_walltime.'";
+# export OAR_JOB_WALLTIME_SECONDS='.$job_walltime_sec.';
+
+# export SHELL="'.$shell.'";
+
+# export SUDO_COMMAND=OAR;
+# SHLVL=1;
+
+# if ( cd "$OAR_WORKING_DIRECTORY" &> /dev/null );
+# then
+#     cd "$OAR_WORKING_DIRECTORY";
+# else
+#     exit 2;
+# fi;
+
+# (exec -a -${SHELL##*/} $SHELL);
+
+# exit 0
+# ';
+
+#     return($script);
+# }

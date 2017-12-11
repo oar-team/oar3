@@ -64,9 +64,7 @@ else:
 
 leon_command = binpath + 'oar3-leon'
 bipbip_command = binpath + 'oar3-bipbip'
-#bipbip_command = 'true'
-
-leon_command = binpath + 'Leon'
+#leon_command = binpath + 'Leon'
 #bipbip_command = binpath + 'bipbip'
 
 def bipbip_leon_executor(*args, **command):
@@ -76,6 +74,7 @@ def bipbip_leon_executor(*args, **command):
     if command['cmd'] == 'LEONEXTERMINATE':
         cmd_arg = [leon_command, str(job_id)]
     else:
+        
         cmd_arg = [bipbip_command, str(job_id)] + command['args']
 
     logger.debug('Launching: ' + str(cmd_arg))

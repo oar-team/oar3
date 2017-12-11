@@ -5,6 +5,8 @@ import os
 import socket
 import signal
 import click
+from pwd import getpwnam
+
 from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
@@ -16,12 +18,14 @@ from oar.lib import (db, Job)
 from oar.lib.submission import (JobParameters, Submission, lstrip_none,
                                 check_reservation, default_submission_config)
 
+from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostnames,
+                                  get_job_cpuset_name, get_current_moldable_job)
+
+from oar.lib.tools import (DEFAULT_CONFIG)
+
 import oar.lib.tools as tools
 
 
-DEFAULT_VALUE = {
-    'directory': os.getcwd()
-}
 
 def init_tcp_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,11 +44,129 @@ signal.signal(signal.SIGHUP, qdel)
 signal.signal(signal.SIGPIPE, qdel)
 
 
-def connect_job(job_id, stop_oarexec, openssh_cmd):
+def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     '''Connect to a job and give the shell of the user on the remote host.'''
-    # TODO connect_job
-    print('TODO connect_job')
+    # TODO: Remove stop_oarexec ???
+    xauth_path = os.environ['OARXAUTHLOCATION'] if os.environ['OARXAUTHLOCATION'] else None
+    lusr = os.environ['OARDO_USER'] if os.environ['OARDO_USER'] else None
 
+    job = get_job(job_id)
+
+    if (lusr == job.user) or (luser == 'oar') or (job.state == 'Running'):
+        types = get_job_types(job_id)
+        #noop
+        if 'noop' in types:
+            cmd_ret.warning('/!\\ It is not possible to connect to a NOOP job.')
+            cmd_ret.exit(17);
+
+        hosts = get_job_current_hostnames(job_id)
+        host_to_connect_via_ssh = hosts[0]
+        
+        #deploy, cosystem and no host part
+        if 'cosystem' in typs or not hosts:
+            host_to_connect_via_ssh = config['COSYSTEM_HOSTNAME']
+        elif 'deploy' in types:
+            host_to_connect_via_ssh = config['DEPLOY_HOSTNAME']
+
+        #cpuset part
+
+        #cpuset part
+        cpuset_field = config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD']
+        cpuset_path = config['CPUSET_PATH']
+        
+        if cpuset_field and cpuset_path and ('cosystem' not in types) and ('deploy' not in types) and hosts:
+            os.environ['OAR_CPUSET'] = cpuset_path +'/' + get_job_cpuset_name(job_id)
+        else:
+            os.environ['OAR_CPUSET'] = ''
+
+        moldable = get_current_moldable_job(job.assigned_moldable_job)
+        job_user = job.user
+        shell = getpwnam(lusr).pw_shell
+
+        # TODO
+        # unless ((defined($xauth_path)) and (-x $xauth_path) and ($ENV{DISPLAY} =~ /^[\w.-]*:\d+(?:\.\d+)?$/)) {
+        #             $ENV{DISPLAY}="";
+        #         }
+        #         if ($ENV{DISPLAY} ne ""){
+        #             print("# Info: Initialize X11 forwarding...\n");
+        #             # first, get rid of remaining unused .Xautority.{pid} files...
+        #             system({"bash"} "bash","-c",'for f in $HOME/.Xauthority.*; do [ -e "/proc/${f#$HOME/.Xauthority.}" ] || rm -f $f; done');
+        #             my $new_xauthority = $ENV{HOME}."/.Xauthority.$$";
+        #             system({"bash"} "bash","-c",'[ -x "'.$xauth_path.'" ] && OARDO_BECOME_USER='.$lusr.' oardodo bash --noprofile --norc -c "'.$xauth_path.' extract - ${DISPLAY/#localhost:/:}" | XAUTHORITY='.$new_xauthority.' '.$xauth_path.' -q merge - 2>/dev/null');
+        #             $ENV{XAUTHORITY} = $new_xauthority;
+        #         }
+        
+        node_file = config['OAREXEC_DIRECTORY'] + '/' + str(job_id)
+        res_file = node_file + '_resources'
+        oarsub_pids = config['OAREXEC_DIRECTORY'] + '/' + config['OARSUB_FILE_NAME_PREFIX'] + str(job_id)
+
+        params = {
+        #     'node_file': node_file,
+	#     'job_id': job_id,
+	# 				  "array_id" => $job->{array_id},
+	# 				  "array_index" => $job->{array_index},
+	# 				  "user" => $lusr,
+	# 				  "shell" => $shell,
+	# 				  "launching_directory" => $job->{launching_directory},
+	# 				  "resource_file" => $res_file,
+	# 				  "job_name" => $job->{job_name},
+	# 				  "job_project" => $job->{project},
+	# 				  "job_walltime" => OAR::Sub::duration_to_sql($moldable->{moldable_walltime}),
+	# 				  "job_walltime_sec" => $moldable->{moldable_walltime},
+	# 				  "job_env" => $job->{job_env}
+        # }
+        }
+        script_line = get_oarexecuser_script_for_oarsub(params)
+
+        cmd = openssh_cmd
+        if ('OAR_CPUSET' in os.environ) and ('OAR_CPUSET' != ''):
+            cmd += ' -oSendEnv=OAR_CPUSET '
+
+        if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
+            cmd += ' -x '
+        else:
+            cmd += ' -X '
+
+        cmd += ' -t ' + host_to_connect_via_ssh + ' '
+        
+        if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
+            # No X display forwarding
+            cmd += "bash -c 'echo \$PPID >> $oarsub_pids && TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'"
+        else:
+            # TODO: X display forwarding
+            #$cmd[$i] = "bash -c 'echo \$PPID >> $oarsub_pids && ($xauth_path -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=$lusr oardodo $xauth_path merge -) && [ \"$lusr\" != \"$job_user\" ] && OARDO_BECOME_USER=$lusr oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'";$i++;
+            pass
+        
+        print('oarsub launchs command : ' + cmd)
+
+        # Essential : you become oar instead of the user
+        # Set real to effective uid
+        os.setuid(os.geteuid()) #TODO: Do really need to do this ?
+
+        print("Connect to OAR job " + str(job_id) + ' via the node ' + host_to_connect_via_ssh)
+        return_code = Tools.run(cmd, shell=True).returncode
+        
+        exit_value = return_code >> 8
+        if exit_value == 2:
+            cmd_ret.warning('# Error: cannot enter working directory: ' + job.launching_directory)
+        elif exit_value != 0:
+            cmd_ret.warning('# Error: an unexpected error: ' + str(return_code))
+
+        if stop_oarexec > 0:
+            tools.signal_oarexec(host_to_connect_via_ssh, signal, 0, openssh_cmd)
+            cmd_ret.info('Disconnected from OAR job ' + str(job_id))
+
+            
+    else:
+        if job.state_!= 'Running':
+            cmd_ret.error('Job ' + str(job_id) + ' is not running, current state is ' + job.state + '.')
+        
+        if (lusr != job.user) and (lusr != 'oar'):
+            cmd_ret.error('User mismatch for job ' + str(job_id) + ' (job user is ' + job.user + '.')
+        cmd_ret.exit(20)
+
+    cmd_ret.exit(0)
+    
 
 def resubmit_job(job_id):
     # TODO
@@ -136,8 +258,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
     """Submit a job to OAR batch scheduler."""
     
     #set default config for submission
-    default_submission_config(DEFAULT_VALUE)
-
+    config.setdefault_config(DEFAULT_CONFIG)
+    
     # import pdb; pdb.set_trace()
     cmd_ret = CommandReturns()
     
@@ -406,10 +528,11 @@ def cli(command, interactive, queue, resource, reservation, connect,
                 cmd_ret.info(answer)
 
             if (answer == 'GOOD JOB') or (answer == 'BAD JOB') or\
-               (answer == 'JOB KILLE') or re.match(r'^ERROR', answer):
+               (answer == 'JOB KILL') or re.match(r'^ERROR', answer):
                 break
 
         if (answer == 'GOOD JOB'):
+            connect_job(job_id, 1, openssh_cmd, cmd_ret) 
             # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
             pass
         else:
