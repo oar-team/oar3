@@ -21,7 +21,7 @@ from oar.lib.submission import (JobParameters, Submission, lstrip_none,
 from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostnames,
                                   get_job_cpuset_name, get_current_moldable_job)
 
-from oar.lib.tools import (DEFAULT_CONFIG)
+from oar.lib.tools import (DEFAULT_CONFIG, get_oarexecuser_script_for_oarsub)
 
 import oar.lib.tools as tools
 
@@ -38,17 +38,18 @@ def qdel(signal, frame):
     '''To address ^C in interactive submission.'''
     # TODO launch a qdel
     print('TODO launch a qdel')
-
-signal.signal(signal.SIGINT, qdel)
-signal.signal(signal.SIGHUP, qdel)
-signal.signal(signal.SIGPIPE, qdel)
+    exit
+    
+#signal.signal(signal.SIGINT, qdel)
+#signal.signal(signal.SIGHUP, qdel)
+#signal.signal(signal.SIGPIPE, qdel)
 
 
 def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     '''Connect to a job and give the shell of the user on the remote host.'''
     # TODO: Remove stop_oarexec ???
-    xauth_path = os.environ['OARXAUTHLOCATION'] if os.environ['OARXAUTHLOCATION'] else None
-    lusr = os.environ['OARDO_USER'] if os.environ['OARDO_USER'] else None
+    xauth_path = os.environ['OARXAUTHLOCATION'] if 'OARXAUTHLOCATION' in os.environ else None
+    lusr = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
 
     job = get_job(job_id)
 
@@ -63,12 +64,10 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         host_to_connect_via_ssh = hosts[0]
         
         #deploy, cosystem and no host part
-        if 'cosystem' in typs or not hosts:
+        if 'cosystem' in types or not hosts:
             host_to_connect_via_ssh = config['COSYSTEM_HOSTNAME']
         elif 'deploy' in types:
             host_to_connect_via_ssh = config['DEPLOY_HOSTNAME']
-
-        #cpuset part
 
         #cpuset part
         cpuset_field = config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD']
@@ -97,26 +96,10 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         #         }
         
         node_file = config['OAREXEC_DIRECTORY'] + '/' + str(job_id)
-        res_file = node_file + '_resources'
+        resource_file = node_file + '_resources'
         oarsub_pids = config['OAREXEC_DIRECTORY'] + '/' + config['OARSUB_FILE_NAME_PREFIX'] + str(job_id)
 
-        params = {
-        #     'node_file': node_file,
-	#     'job_id': job_id,
-	# 				  "array_id" => $job->{array_id},
-	# 				  "array_index" => $job->{array_index},
-	# 				  "user" => $lusr,
-	# 				  "shell" => $shell,
-	# 				  "launching_directory" => $job->{launching_directory},
-	# 				  "resource_file" => $res_file,
-	# 				  "job_name" => $job->{job_name},
-	# 				  "job_project" => $job->{project},
-	# 				  "job_walltime" => OAR::Sub::duration_to_sql($moldable->{moldable_walltime}),
-	# 				  "job_walltime_sec" => $moldable->{moldable_walltime},
-	# 				  "job_env" => $job->{job_env}
-        # }
-        }
-        script_line = get_oarexecuser_script_for_oarsub(params)
+        script = get_oarexecuser_script_for_oarsub(job, moldable.walltime, node_file, shell, resource_file)
 
         cmd = openssh_cmd
         if ('OAR_CPUSET' in os.environ) and ('OAR_CPUSET' != ''):
@@ -130,21 +113,27 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         cmd += ' -t ' + host_to_connect_via_ssh + ' '
         
         if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
-            # No X display forwarding
-            cmd += "bash -c 'echo \$PPID >> $oarsub_pids && TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'"
-        else:
             # TODO: X display forwarding
             #$cmd[$i] = "bash -c 'echo \$PPID >> $oarsub_pids && ($xauth_path -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=$lusr oardodo $xauth_path merge -) && [ \"$lusr\" != \"$job_user\" ] && OARDO_BECOME_USER=$lusr oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'";$i++;
-            pass
-        
+            raise 'X display forwarding support NOT yet implemented'
+        else:
+            # No X display forwarding
+            cmd += "bash -c 'echo \$PPID >> $oarsub_pids && TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'" + script
+
         print('oarsub launchs command : ' + cmd)
 
+
+        import pdb; pdb.set_trace()
+        
         # Essential : you become oar instead of the user
         # Set real to effective uid
         os.setuid(os.geteuid()) #TODO: Do really need to do this ?
 
+        exit
+
+        
         print("Connect to OAR job " + str(job_id) + ' via the node ' + host_to_connect_via_ssh)
-        return_code = Tools.run(cmd, shell=True).returncode
+        return_code = tools.run(cmd, shell=True).returncode
         
         exit_value = return_code >> 8
         if exit_value == 2:
@@ -215,7 +204,7 @@ def signal_almighty(remote_host, remote_port, msg):
               default is 12 (SIGUSR2)')
 @click.option('-t', '--type', type=click.STRING, multiple=True,
               help='Specify a specific type (deploy, besteffort, cosystem, checkpoint, timesharing).')
-@click.option('-d', '--directory', type=click.STRING,
+@click.option('-d', '--directory', type=click.STRING, default=os.getcwd(),
               help='Specify the directory where to launch the command (default is current directory)')
 @click.option('--project', type=click.STRING,
               help='Specify a name of a project the job belongs to.')
@@ -258,9 +247,9 @@ def cli(command, interactive, queue, resource, reservation, connect,
     """Submit a job to OAR batch scheduler."""
     
     #set default config for submission
-    config.setdefault_config(DEFAULT_CONFIG)
+    default_submission_config(tools.DEFAULT_CONFIG)
     
-    # import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     cmd_ret = CommandReturns()
     
     log_warning = ''  # TODO
@@ -439,13 +428,14 @@ def cli(command, interactive, queue, resource, reservation, connect,
         # $array_params_ref = OAR::Sub::read_array_param_file($array_param_file);
         # $array_nb = scalar @{$array_params_ref};
 
-        #if array_nb == 0:
+        if job_parameters.array_nb == 0:
+            pass
         #    print_error('an array of job must have a number of sub-jobs greater than 0.')
         #    usage()
         #    exit(6)
 
-        submission.job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
-        submission.job_parameters.job_type = 'PASSIVE'
+        job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
+        job_parameters.job_type = 'PASSIVE'
 
 
         (error, job_id_lst) = submission.submit()
@@ -454,13 +444,16 @@ def cli(command, interactive, queue, resource, reservation, connect,
         # TODO interactive
         if command:
             cmd_ret.warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
+        else:
+            command = ''
+            job_parameters.command = command
 
         cmd_executor = 'Qsub -I'
 
         if array_param_file:
             cmd_ret.error('a array job with parameters given in a file cannot be interactive.', 0, 9)
             cmd_ret.exit()
-        if array != 1:
+        if job_parameters.array_nb != 1:
             cmd_ret.error('an array job cannot be interactive.', 0, 8)
             cmd_ret.exit()
 
@@ -472,8 +465,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
         socket_server = init_tcp_server()
         (server, server_port) = socket_server.getsockname()
         
-        submission.job_parameters.info_type = server + ':' + str(server_port)
-        submission.job_parameters.job_type = 'INTERACTIVE'
+        job_parameters.info_type = server + ':' + str(server_port)
+        job_parameters.job_type = 'INTERACTIVE'
 
         (error, job_id_lst) = submission.submit()
 
@@ -507,19 +500,22 @@ def cli(command, interactive, queue, resource, reservation, connect,
         (conn, address) = socket_server.accept()
         answer = conn.recv(1024)
         if answer[:-1] == 'GOOD RESERVATION':
-            cmd_ret.info('advance reservation is GRANTED.')
+            cmd_ret.info('Advance reservation is GRANTED.')
         else:
-            cmd_ret.info('advance reservation is REJECTED ' + answer[:-1], 0, 10)
+            cmd_ret.info('Advance reservation is REJECTED ' + answer[:-1], 0, 10)
     elif interactive:
         # Interactive mode
-        cmd_ret.info('interactive mode: waiting...')
+        cmd_ret.info('Interactive mode: waiting...')
 
         prev_str = ''
         while True:
             (conn, address) = socket_server.accept()
-            answer = conn.recv(1024)
-            answer = answer[:-1]
+            message = conn.recv(1024)
+            message = message[:-1]
+            answer = message.decode()
 
+            print(answer)
+            
             m = re.search(r'\](.*)$', answer)
             if m and m.group(1) != prev_str:
                 cmd_ret.info(answer)
@@ -532,7 +528,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
                 break
 
         if (answer == 'GOOD JOB'):
-            connect_job(job_id, 1, openssh_cmd, cmd_ret) 
+            connect_job(job_id_lst[0], 1, openssh_cmd, cmd_ret) 
             # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
             pass
         else:

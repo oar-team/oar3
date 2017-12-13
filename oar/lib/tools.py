@@ -481,7 +481,7 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
     The resulting script can be launched with : bash -c 'script'
     """           
     script = 'if [ "a$TERM" == "a" ] || [ "x$TERM" == "xunknown" ]; then export TERM=xterm; fi;'\
-              + job.env if job.en else ''\
+              + job.env if job.env else ''\
               + 'export OAR_FILE_NODES="' + node_file + '";'\
               + 'export OAR_JOBID=' + str(job.id) + ';'\
               + 'export OAR_ARRAYID=' + str(job.array_id) + ';'\
@@ -498,8 +498,8 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
               + 'export OAR_ARRAY_ID=$OAR_ARRAYID;'\
               + 'export OAR_ARRAY_INDEX=$OAR_ARRAYINDEX;'\
               + 'export OAR_JOB_NAME="' + job.name if job.name else '' + '";'\
-              + 'export OAR_PROJECT_NAME="' + job_project + '";'\
-              + 'export OAR_JOB_WALLTIME="' + suretion_to_sql(job_walltime) + '";'\
+              + 'export OAR_PROJECT_NAME="' + job.project + '";'\
+              + 'export OAR_JOB_WALLTIME="' + duration_to_sql(job_walltime) + '";'\
               + 'export OAR_JOB_WALLTIME_SECONDS=' + str(job_walltime) + ';'\
               + 'export SHELL="' + shell + '";'\
               + ' export SUDO_COMMAND=OAR;'\

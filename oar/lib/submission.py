@@ -679,7 +679,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     if job_parameters.array_params:
         array_commands = [job_parameters.command + ' ' + params for params in job_parameters.array_params]
     else:
-        array_commands = [job_parameters.command * job_parameters.array_nb]
+        array_commands = [job_parameters.command] * job_parameters.array_nb
 
     array_index = 1
     job_id_list = []

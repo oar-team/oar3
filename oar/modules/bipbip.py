@@ -70,6 +70,7 @@ class BipBip(object):
         cpuset_full_path = cpuset_path +'/' + cpuset_name
         
         job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
+
         hosts = get_job_current_hostnames(job_id)
         job = get_job(job_id)
         
@@ -114,7 +115,7 @@ class BipBip(object):
             
         # NOOP jobs
         job_types = get_job_types(job.id)
-        if 'noop' in job_types.keys():
+        if 'noop' in job_types:
             set_job_state(job_id, 'Running')
             logger.debug('[' + str(job.id) + '] User: ' + job.user + ' Set NOOP job to Running')
             self.call_server_prologue(job)
