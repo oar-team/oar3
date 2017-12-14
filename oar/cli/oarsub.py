@@ -6,7 +6,6 @@ import socket
 import signal
 import click
 from pwd import getpwnam
-from pathlib import Path
 
 from .utils import CommandReturns
 
@@ -200,7 +199,7 @@ def signal_almighty(remote_host, remote_port, msg):
               default is 12 (SIGUSR2)')
 @click.option('-t', '--type', type=click.STRING, multiple=True,
               help='Specify a specific type (deploy, besteffort, cosystem, checkpoint, timesharing).')
-@click.option('-d', '--directory', type=click.STRING, default=str(Path.home()),
+@click.option('-d', '--directory', type=click.STRING,
               help='Specify the directory where to launch the command (default is current directory)')
 @click.option('--project', type=click.STRING,
               help='Specify a name of a project the job belongs to.')
@@ -270,7 +269,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     cpuset_field = config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD']
     cpuset_path = config['CPUSET_PATH']
-
+    
     if 'OAR_RUNTIME_DIRECTORY' in config:
         pass
     # if (is_conf("OAR_RUNTIME_DIRECTORY")){
@@ -360,7 +359,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
     export_job_key_file = ''
 
     user = os.environ['OARDO_USER']
-    
     # TODO verify if all need parameters are identifed and present for submission 
     job_parameters = JobParameters(job_type=None,
                                    resource=resource,

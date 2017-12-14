@@ -773,7 +773,7 @@ class JobParameters():
         if self.directory:
             self.launching_directory = self.directory
         else:
-            self.launching_directory = config['directory']
+            self.launching_directory = os.path.expanduser('~' + self.user)
 
         self.array_id = 0
         self.start_time = 0
