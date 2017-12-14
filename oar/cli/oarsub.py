@@ -138,7 +138,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             cmd_ret.warning('# Error: an unexpected error: ' + str(return_code))
 
         if stop_oarexec > 0:
-            tools.signal_oarexec(host_to_connect_via_ssh, signal, 0, openssh_cmd)
+            tools.signal_oarexec(host_to_connect_via_ssh, job_id, 'USR1', 0, openssh_cmd)
             cmd_ret.info('Disconnected from OAR job ' + str(job_id))
 
             
