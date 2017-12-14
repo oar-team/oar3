@@ -21,29 +21,35 @@ from oar.lib.submission import (JobParameters, Submission, lstrip_none,
 from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostnames,
                                   get_job_cpuset_name, get_current_moldable_job)
 
+from oar.cli.oardel import oardel
+
 from oar.lib.tools import (DEFAULT_CONFIG, get_oarexecuser_script_for_oarsub)
 
 import oar.lib.tools as tools
 
 
+# Global variable needed for signal handler to trigger job deletion accordingly 
+job_id_lst = []
 
 def init_tcp_server():
+    """Intialize TCP server, to receive job's creation information"""  
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((socket.getfqdn(), 0))
     sock.listen(5)
     return sock
 
 
-def qdel(signal, frame):
-    '''To address ^C in interactive submission.'''
-    # TODO launch a qdel
-    print('TODO launch a qdel')
-    exit
-    
-#signal.signal(signal.SIGINT, qdel)
-#signal.signal(signal.SIGHUP, qdel)
-#signal.signal(signal.SIGPIPE, qdel)
-
+def qdel(signalnum, frame):
+    """To address ^C in interactive submission."""
+    if job_id_lst:
+        if signalnum == signal.SIGINT:
+            print('Caught Interrupt (^C), cancelling job(s)...')
+        oardel(job_id_lst, None, None, None, None, None, None, None)
+    exit(1)
+        
+signal.signal(signal.SIGINT, qdel)
+signal.signal(signal.SIGHUP, qdel)
+signal.signal(signal.SIGPIPE, qdel)
 
 def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     '''Connect to a job and give the shell of the user on the remote host.'''
@@ -234,6 +240,9 @@ def cli(command, interactive, queue, resource, reservation, connect,
         use_job_key, import_job_key_from_file, import_job_key_inline, export_job_key_to_file,
         stdout, stderr, hold, version):
     """Submit a job to OAR batch scheduler."""
+
+
+    global job_id_lst
     
     #set default config for submission
     default_submission_config(tools.DEFAULT_CONFIG)
@@ -425,7 +434,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
         job_parameters.job_type = 'PASSIVE'
 
-
         (error, job_id_lst) = submission.submit()
 
     else:
@@ -455,7 +463,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
         
         job_parameters.info_type = server + ':' + str(server_port)
         job_parameters.job_type = 'INTERACTIVE'
-
+        
         (error, job_id_lst) = submission.submit()
 
     # pdb.set_trace()
