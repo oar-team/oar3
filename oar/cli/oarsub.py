@@ -157,12 +157,6 @@ def resubmit_job(job_id):
     print('TODO resubmit_job')
     return ((-42, "Not yet implemented"), -1)
 
-# Move to oar.lib.tool
-def signal_almighty(remote_host, remote_port, msg):
-    print('TODO signal_almighty')
-    return 1
-
-
 @click.command()
 @click.argument('command', required=False)
 @click.option('-I', '--interactive', is_flag=True,
@@ -312,7 +306,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
         if error[0] == 0:
             print(' done.\n')
             print('OAR_JOB_ID=' + str(job_id))
-            if signal_almighty(remote_host, remote_port, 'Qsub') > 0:
+            if not tools.notify_almighty('Qsub'):
                 error_msg = 'cannot connect to executor ' + str(remote_host) + ':' +\
                             str(remote_port) + '. OAR server might be down.'
                 cmd_ret.error(error_msg, 0, 3)
@@ -484,7 +478,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
     result = (job_id_lst, oar_array_id)
 
     # Notify Almigthy
-    tools.create_almighty_socket()
     tools.notify_almighty(cmd_executor)
 
     if reservation:

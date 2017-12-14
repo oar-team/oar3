@@ -122,7 +122,7 @@ def create_almighty_socket():  # pragma: no cover
         sys.exit(1)
 
 
-# TODO: refactor to use zmq
+# TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(message):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
