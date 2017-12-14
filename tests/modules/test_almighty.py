@@ -11,10 +11,10 @@ import zmq
 called_command = ''
 
 KAO = '/usr/local/lib/oar/kao'
-FINAUD = '/usr/local/lib/oar/finaud'
-SARKO = '/usr/local/lib/oar/sarko'
-LEON = '/usr/local/lib/oar/Leon'
-NODE_CHANGE_STATE = '/usr/local/lib/oar/NodeChangeState'
+FINAUD = '/usr/local/lib/oar/oar3-finaud'
+SARKO = '/usr/local/lib/oar/oar3-sarko'
+LEON = '/usr/local/lib/oar/oar3-leon'
+NODE_CHANGE_STATE = '/usr/local/lib/oar/oar3-node-change-state'
 
 def fake_call(cmd):
     global called_command

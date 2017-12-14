@@ -67,7 +67,7 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 #leon_command = binpath + 'Leon'
 #check_for_villains_command = binpath + 'sarko'
 #check_for_node_changes = binpath + 'finaud'
-nodeChangeState_command = binpath + 'NodeChangeState'
+#nodeChangeState_command = binpath + 'NodeChangeState'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'

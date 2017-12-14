@@ -33,7 +33,6 @@ requirements = [
     'pybatsim',
     'simplejson',
     'psutil',
-    'pexpect'
 ]
 
 version = ''
