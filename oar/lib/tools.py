@@ -392,13 +392,12 @@ def hms_to_duration(hour, min, sec):
     in seconds."""
     return int(hour) * 3600 + int(min) * 60 + int(sec)
 
-def duration_to_hms(t):
+def duration_to_hms(t_sec):
     """Converts a date specified as a duration in seconds to hours, minutes,
     secondes values"""
-    sec = t % 60
-    t /= 60
-    min = t % 60
-    hour = int(t / 60)
+    hour = t_sec // 3600
+    min = (t_sec - hour * 3600) // 60 
+    sec = t_sec % 60
 
     return (hour, min, sec)
 
