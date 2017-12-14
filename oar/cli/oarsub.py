@@ -6,6 +6,7 @@ import socket
 import signal
 import click
 from pwd import getpwnam
+from pathlib import Path
 
 from .utils import CommandReturns
 
@@ -106,11 +107,11 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             cmd += ' -oSendEnv=OAR_CPUSET '
 
         if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
-            cmd += ' -x '
-        else:
             cmd += ' -X '
+        else:
+            cmd += ' -x '
 
-        cmd += ' -t ' + host_to_connect_via_ssh + ' '
+        cmd += '-t ' + host_to_connect_via_ssh + ' '
         
         if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
             # TODO: X display forwarding
@@ -118,19 +119,14 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             raise 'X display forwarding support NOT yet implemented'
         else:
             # No X display forwarding
-            cmd += "bash -c 'echo \$PPID >> $oarsub_pids && TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'" + script
-
-        print('oarsub launchs command : ' + cmd)
-
-
-        import pdb; pdb.set_trace()
+            cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && TTY=\$(tty) && test -e \$TTY && oardodo chown "\
+                   + job.user + ":oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=" + job.user\
+                   + " oardodo bash --noprofile --norc -c '" + script + "'\""
+        #print('oarsub launchs command : ' + cmd)
         
         # Essential : you become oar instead of the user
         # Set real to effective uid
         os.setuid(os.geteuid()) #TODO: Do really need to do this ?
-
-        exit
-
         
         print("Connect to OAR job " + str(job_id) + ' via the node ' + host_to_connect_via_ssh)
         return_code = tools.run(cmd, shell=True).returncode
@@ -204,7 +200,7 @@ def signal_almighty(remote_host, remote_port, msg):
               default is 12 (SIGUSR2)')
 @click.option('-t', '--type', type=click.STRING, multiple=True,
               help='Specify a specific type (deploy, besteffort, cosystem, checkpoint, timesharing).')
-@click.option('-d', '--directory', type=click.STRING, default=os.getcwd(),
+@click.option('-d', '--directory', type=click.STRING, default=str(Path.home()),
               help='Specify the directory where to launch the command (default is current directory)')
 @click.option('--project', type=click.STRING,
               help='Specify a name of a project the job belongs to.')

@@ -480,37 +480,37 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
     """ Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
     """           
-    script = 'if [ "a$TERM" == "a" ] || [ "x$TERM" == "xunknown" ]; then export TERM=xterm; fi;'\
-              + job.env if job.env else ''\
-              + 'export OAR_FILE_NODES="' + node_file + '";'\
-              + 'export OAR_JOBID=' + str(job.id) + ';'\
-              + 'export OAR_ARRAYID=' + str(job.array_id) + ';'\
-              + 'export OAR_ARRAYINDEX=' + str(job.array_index) + ';'\
-              + 'export OAR_USER="' + job.user + '";'\
-              + 'export OAR_WORKDIR="' + job.launching_directory.replace('/','//') + '";'\
-              + 'export OAR_RESOURCE_PROPERTIES_FILE="' + resource_file + '";'\
-              + 'export OAR_NODEFILE=$OAR_FILE_NODES;'\
-              + 'export OAR_O_WORKDIR=$OAR_WORKDIR;'\
-              + 'export OAR_NODE_FILE=$OAR_FILE_NODES;'\
-              + 'export OAR_RESOURCE_FILE=$OAR_FILE_NODES;'\
-              + 'export OAR_WORKING_DIRECTORY=$OAR_WORKDIR;'\
-              + 'export OAR_JOB_ID=$OAR_JOBID;'\
-              + 'export OAR_ARRAY_ID=$OAR_ARRAYID;'\
-              + 'export OAR_ARRAY_INDEX=$OAR_ARRAYINDEX;'\
-              + 'export OAR_JOB_NAME="' + job.name if job.name else '' + '";'\
-              + 'export OAR_PROJECT_NAME="' + job.project + '";'\
-              + 'export OAR_JOB_WALLTIME="' + duration_to_sql(job_walltime) + '";'\
-              + 'export OAR_JOB_WALLTIME_SECONDS=' + str(job_walltime) + ';'\
-              + 'export SHELL="' + shell + '";'\
-              + ' export SUDO_COMMAND=OAR;'\
-              + ' SHLVL=1;'\
-              + ' if ( cd "$OAR_WORKING_DIRECTORY" &> /dev/null );'\
-              + ' then'\
-              + '     cd "$OAR_WORKING_DIRECTORY";'\
-              + ' else'\
-              + '     exit 2;'\
-              + ' fi;'\
-              + ' (exec -a -${SHELL##*/} $SHELL);'\
-              + ' exit 0'
+    script = "if [ \"a\$TERM\" == \"a\" ] || [ \"x\$TERM\" == \"xunknown\" ]; then export TERM=xterm; fi;"\
+              + (job.env if job.env else '')\
+              + "export OAR_FILE_NODES=\"" + node_file + "\";"\
+              + "export OAR_JOBID=" + str(job.id) + ";"\
+              + "export OAR_ARRAYID=" + str(job.array_id) + ";"\
+              + "export OAR_ARRAYINDEX=" + str(job.array_index) + ";"\
+              + "export OAR_USER=\"" + job.user + "\";"\
+              + "export OAR_WORKDIR=\"" + job.launching_directory + "\";"\
+              + "export OAR_RESOURCE_PROPERTIES_FILE=\"" + resource_file + "\";"\
+              + "export OAR_NODEFILE=\$OAR_FILE_NODES;"\
+              + "export OAR_O_WORKDIR=\$OAR_WORKDIR;"\
+              + "export OAR_NODE_FILE=\$OAR_FILE_NODES;"\
+              + "export OAR_RESOURCE_FILE=\$OAR_FILE_NODES;"\
+              + "export OAR_WORKING_DIRECTORY=\$OAR_WORKDIR;"\
+              + "export OAR_JOB_ID=\$OAR_JOBID;"\
+              + "export OAR_ARRAY_ID=\$OAR_ARRAYID;"\
+              + "export OAR_ARRAY_INDEX=\$OAR_ARRAYINDEX;"\
+              + "export OAR_JOB_NAME=\"" + (job.name if job.name else '') + "\";"\
+              + "export OAR_PROJECT_NAME=\"" + job.project + "\";"\
+              + "export OAR_JOB_WALLTIME=\"" + duration_to_sql(job_walltime) + "\";"\
+              + "export OAR_JOB_WALLTIME_SECONDS=" + str(job_walltime) + ";"\
+              + "export SHELL=\"" + shell + "\";"\
+              + " export SUDO_COMMAND=OAR;"\
+              + " SHLVL=1;"\
+              + " if ( cd \"\$OAR_WORKING_DIRECTORY\" &> /dev/null );"\
+              + " then"\
+              + "     cd \"\$OAR_WORKING_DIRECTORY\";"\
+              + " else"\
+              + "     exit 2;"\
+              + " fi;"\
+              + " (exec -a -\${SHELL##*/} \$SHELL);"\
+              + " exit 0"
     
     return(script)
