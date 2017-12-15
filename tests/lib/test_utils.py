@@ -207,11 +207,17 @@ def test_to_json():
         expected_json = expected_json_3_5
     else:
         expected_json = expected_json_2x
-    
+
+    if sys.version_info == (3,6,3):
+        type_error_str = 'Object of type SimpleObject is not JSON serializable'
+    else:
+        type_error_str = '<SimpleObject> is not JSON serializable'
+        
     assert to_json(a) == expected_json
     assert to_json(FakeDict()) == expected_json
 
-    with assert_raises(TypeError, "<SimpleObject> is not JSON serializable"):
+
+    with assert_raises(TypeError, type_error_str):
         class SimpleObject(object):
             def __repr__(self):
                 return "<SimpleObject>"
