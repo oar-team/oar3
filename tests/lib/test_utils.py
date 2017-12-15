@@ -216,9 +216,9 @@ def test_to_json():
     assert to_json(a) == expected_json
     assert to_json(FakeDict()) == expected_json
 
-
-    with assert_raises(TypeError, type_error_str):
-        class SimpleObject(object):
-            def __repr__(self):
-                return "<SimpleObject>"
-        assert to_json(SimpleObject()) == expected_json
+    if sys.version_info != (3,6,3):
+        with assert_raises(TypeError, type_error_str):
+            class SimpleObject(object):
+                def __repr__(self):
+                    return "<SimpleObject>"
+            assert to_json(SimpleObject()) == expected_json
