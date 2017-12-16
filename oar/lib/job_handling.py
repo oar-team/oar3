@@ -1940,30 +1940,6 @@ def get_timer_armed_job():
                        .filter(Job.id == FragJob.job_id).all()
     return res
 
-def get_resources_jobs(r_id):
-    # returns the list of jobs associated to all resources
-    raise NotImplementedError("TODO")
-
-def get_resource_job_to_frag(r_id):
-    # same as get_resource_job but excepts the cosystem jobs
-
-    subq = db.query(JobType.job_id).filter(JobType.type == 'cosystem')\
-                                   .filter(JobType.types_index == 'CURRENT')\
-                                   .subquery()
-                                           
-    res = db.query(Job.id).filter(AssignedResource.index == 'CURRENT')\
-                          .filter(MoldableJobDescription.index == 'CURRENT')\
-                          .filter(AssignedResource.resource_id == r_id)\
-                          .filter(AssignedResource.moldable_job_id == MoldableJobDescription.id)\
-                          .filter(MoldableJobDescription.job_id == job.id)\
-                          .filter(Job.state != 'Terminated')\
-                          .filter(Job.state != 'Error')\
-                          .filter(job.id.in_(subq))\
-                          .all()
-
-    return res
-
-
 def archive_some_moldable_job_nodes(moldable_id, hosts):
     """Sets the index fields to LOG in the table assigned_resources"""
     db.query(AssignedResource).filter(AssignedResource.moldable_job_id == moldable_id)\
