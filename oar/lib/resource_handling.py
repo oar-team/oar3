@@ -133,10 +133,6 @@ def update_resource_nextFinaudDecision(resource_id, finaud_decision):
     db.commit()
 
 
-def get_resource_job_to_frag():
-    raise "Not yet implemented"
-
-
 def update_scheduler_last_job_date(date, moldable_id):
     db.query(Resource).filter(AssignedResource.Moldable_job_id == moldable_id)\
                       .filter(AssignedResource.Resource_id == Resource.resource_id)\

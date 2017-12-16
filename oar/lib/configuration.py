@@ -25,7 +25,7 @@ class Configuration(dict):
         'SQLALCHEMY_POOL_RECYCLE': None,
         'SQLALCHEMY_MAX_OVERFLOW': None,
         'LOG_LEVEL': 3,
-        'LOG_FILE': None,
+        'LOG_FILE': ':stderr:',
         'LOG_FORMAT': '[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s',
     }
 
