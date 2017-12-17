@@ -126,6 +126,7 @@ def create_almighty_socket():  # pragma: no cover
 def notify_almighty(message):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
+    message += '\n'
     return almighty_socket.send(message.encode())
 
 def notify_interactif_user(job, message):
