@@ -233,7 +233,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         g.data['id'] = job_id
         url = url_for('%s.%s' % (app.name, 'show'), job_id=job_id)
         g.data['links'] = [{'rel': 'rel', 'href': url}]
-    else: #TOFO
+    else: #TODO
         pass
 
     #TODO cmd_output: 

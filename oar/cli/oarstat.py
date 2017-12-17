@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-import oar.lib.tools as tools
+import os
+import pwd
 import datetime
-import requests
-from oar.lib import config
+
+from oar.lib import (db, config)
+
+import oar.lib.tools as tools
+
 import click
 click.disable_unicode_literals_warning = True
 
-DEFAULT_CONFIG = {
-    'OARAPI_URL': 'http://localhost:46668/oarapi/'
-    }
 
 STATE2CHAR = {
     'Waiting': 'W',
@@ -27,44 +27,52 @@ STATE2CHAR = {
     'NA': '-'
     }
 
+# TODO: document as example use of rest api
+# DEFAULT_CONFIG = {
+#    'OARAPI_URL': 'http://localhost:46668/oarapi/'
+#    }
+# class OarApi(object):
+#     def __init__(self):
+#         self.oarapi_url = config['OARAPI_URL']
 
-class OarApi(object):
-    def __init__(self):
-        self.oarapi_url = config['OARAPI_URL']
+#     def http_error(self, r):
+#         pass
 
-    def http_error(self, r):
-        pass
+#     def get(self, params):
+#         r = requests.get(self.oarapi_url + params)
+#         if r.status_code != 200:
+#             self.http_error(r)
+#         else:
+#             return(r)
 
-    def get(self, params):
-        r = requests.get(self.oarapi_url + params)
-        if r.status_code != 200:
-            self.http_error(r)
-        else:
-            return(r)
+#oarapi = OarApi()
 
+#    if not job:
+#        answer = oarapi.get('jobs/details.json')
+#        print_jobs(True, answer)
 
 def print_jobs(legacy, jobs):
+
+    now = tools.get_date()
+    
     if legacy:
         print('Job id    S User     Duration   System message\n' +
               '--------- - -------- ---------- ------------------------------------------------')
-        # api_timestamp = jobs.json()['api_timestamp']
-        job_items = jobs.json()['items']
-        for job in job_items:
-            if job['start_time']:      
-                duration = job['api_timestamp'] - job['start_time']
+        now = tools.get_date()
+        for job in jobs:
+            if job.start_time:      
+                duration = now - job.start_time
             else:
                 duration = 0
             
-            print('{:9}'.format(str(job['id'])) + ' ' + STATE2CHAR[job['state']] + ' ' +
-                  '{:8}'.format(str(job['owner'])) + ' ' +
+            print('{:9}'.format(str(job.id)) + ' ' + STATE2CHAR[job.state] + ' ' +
+                  '{:8}'.format(str(job.user)) + ' ' +
                   '{:>10}'.format(str(datetime.timedelta(seconds=duration))) + ' ' +
-                  '{:48}'.format(job['message'])
+                  '{:48}'.format(job.message)
             )
     else:
+        # TODO
         print(jobs.text)
-
-def http_error(r):
-    pass
 
 def print_oar_version():
     # TODO
@@ -73,9 +81,9 @@ def print_oar_version():
 
 @click.command()
 @click.option('-j', '--job', type=click.INT, multiple=True,
-              help='show informations only for the specified job')
+              help='show informations only for the specified job(s)')
 @click.option('-f', '--full', is_flag=True, help='show full informations')
-@click.option('-s', '--state', type=click.STRING, help='show only the state of a job (optimized query)')
+@click.option('-s', '--state', type=click.STRING, multiple=True, help='show only the state(s) of a job (optimized query)')
 @click.option('-u', '--user', is_flag=True, help='show informations for this user only')
 @click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
 @click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
@@ -90,13 +98,26 @@ def print_oar_version():
 @click.option('-Y', '--yaml', is_flag=True, help='print result in YAML format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
 def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml, version):
-    
-    config.setdefault_config(DEFAULT_CONFIG)
 
-    oarapi = OarApi()
+    job_ids = job
+    array_id = array
+    states = state
+    # TODO: extract gantt string
+    start_time = None
+    stop_time = None
 
-    if not job:
-        answer = oarapi.get('jobs/details.json')
-        print_jobs(True, answer)
+    username = pwd.getpwuid(os.getuid())[0] if user else None
 
+    db.query() # TODO:it is work around
+    #BUG when detailed=False
+    # sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for object of type
+    # <class 'oar.lib.database._BoundDeclarativeMeta'>
+    jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
+                                        states, job_ids, array_id, datailed=full).all()
+
+    if jobs:
+        if not json or not yaml:
+            print_jobs(True, jobs)
+
+        
 
