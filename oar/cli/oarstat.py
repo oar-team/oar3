@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import pwd
 import datetime
 
 from oar.lib import (db, config)
 
+from oar.lib.tools import get_username
 import oar.lib.tools as tools
 
 import click
@@ -106,14 +106,14 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     start_time = None
     stop_time = None
 
-    username = pwd.getpwuid(os.getuid())[0] if user else None
+    username = get_username() if user else None
 
     db.query() # TODO:it is work around
     #BUG when detailed=False
     # sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for object of type
     # <class 'oar.lib.database._BoundDeclarativeMeta'>
     jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
-                                        states, job_ids, array_id, datailed=full).all()
+                                        states, job_ids, array_id, detailed=full).all()
 
     if jobs:
         if not json or not yaml:

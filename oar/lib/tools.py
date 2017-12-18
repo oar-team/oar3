@@ -420,9 +420,31 @@ def send_checkpoint_signal(job):
     logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
 
-def get_username(): # NOTUSED
+def get_username():
     return pwd.getpwuid( os.getuid() ).pw_name
 
+def check_resource_property(prop):
+    """ Check if a property can be deleted or created by a user
+    return 0 if all is good otherwise return 1
+    """
+    if prop in ['prop resource_id', 'network_address', 'state', 'state_num', 'next_state',
+           'finaud_decision', 'next_finaud_decision', 'besteffort', 'desktop_computing',
+           'deploy', 'expiry_date', 'last_job_date', 'available_upto', 'last_available_upto',
+           'walltime', 'nodes', 'type', 'suspended_jobs', 'scheduler_priority', 'cpuset', 'drain']:
+        return True
+    else:
+        return False
+
+def check_resource_system_property(prop):
+    """Check if a property can be manipulated by a user
+    return 0 if all is good otherwise return 1
+    """
+    if prop in ['resource_id', 'state', 'state_num', 'next_state', 'finaud_decision',
+                'next_finaud_decision', 'last_job_date', 'suspended_jobs', 'expiry_date',
+                'last_available_upto', 'scheduler_priority']:
+        return True
+    else:
+        return False
 
 def format_ssh_pub_key(key, cpuset, user, job_user=None):
     """Add right environment variables to the given public key"""
@@ -439,6 +461,9 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
 def get_private_ssh_key_file_name(cpuset_name):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')
+
+
+
 
 def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
@@ -514,3 +539,5 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
               + " exit 0"
     
     return(script)
+
+
