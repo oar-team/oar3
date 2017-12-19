@@ -2,7 +2,9 @@
 branch = True
 source = src
 parallel = true
-
+omit=
+	oar/cli/db/*
+	oar/kao/coorm.py
 
 [report]
 exclude_lines =
