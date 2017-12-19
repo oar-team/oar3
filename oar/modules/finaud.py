@@ -69,12 +69,7 @@ class Finaud(object):
 
         logger.debug('Finaud ended :' + str(self.return_value))
 
-
-def main():
+if __name__ == '__main__':  # pragma: no cover
     finaud = Finaud()
     finaud.run()
-    return finaud.return_value
-
-if __name__ == '__main__':  # pragma: no cover
-    exit_code = main()
-    sys.exit(exit_code)
+    sys.exit(finaud.return_value)
