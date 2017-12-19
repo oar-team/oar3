@@ -153,7 +153,10 @@ class Sarko(object):
                 tools.notify_almighty('ChState')
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():  # pragma: no cover
     sarko = Sarko()
-    sarko.run()
-    sys.exit(sarko.guilty_found)
+    sarko.run()    
+    return sarko.guilty_found
+    
+if __name__ == '__main__':  # pragma: no cover   
+    sys.exit(main)

@@ -1,5 +1,4 @@
 # coding: utf-8
-
 from oar.modules.finaud import Finaud
 from oar.lib import config
 from .fakezmq import FakeZmq

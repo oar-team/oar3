@@ -127,11 +127,11 @@ class Leon(object):
             set_job_message(job.id, 'Job exterminated by Leon')
             tools.notify_almighty('LEONEXTERMINATE_' + str(job.id))
 
-def main():
+
+def main():  # pragma: no cover
     leon = Leon()
     leon.run()
     return leon.exit_code
 
 if __name__ == '__main__':  # pragma: no cover
-    exit_code = main()
-    sys.exit(exit_code)
+    sys.exit(main)
