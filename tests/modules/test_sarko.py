@@ -1,6 +1,5 @@
 # coding: utf-8
 from oar.modules.sarko import Sarko
-from oar.lib import config
 
 import pytest
 
