@@ -25,13 +25,18 @@ logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 class BipBip(object):
 
     def __init__(self, args):
+        
+        self.job_id = None
+        if not args:
+            self.exit_code = 1
+            return
+        self.job_id = args[1]
+        
         config.setdefault_config(DEFAULT_CONFIG)
         self.server_prologue = config['SERVER_PROLOGUE_EXEC_FILE']
         self.server_epilogue = config['SERVER_EPILOGUE_EXEC_FILE']
 
         self.exit_code = 0
-
-        self.job_id = int(args[0])
 
         self.oarexec_reattach_exit_value = None
         self.oarexec_reattach_script_exit_value = None
@@ -43,9 +48,11 @@ class BipBip(object):
         if len(args) >= 4:
             self.oarexec_challenge = args[3]
         
-    def run(self):
-        
+    def run(self):        
         job_id = self.job_id
+        if not job_id:
+            self.exit_code = 1
+            return
         
         openssh_cmd = config['OPENSSH_CMD']
         
@@ -409,10 +416,13 @@ class BipBip(object):
             return 0
             
             
-def main():
-    bipbip = BipBip(sys.argv[1:])
-    bipbip.run()
-    return bipbip.exit_code
+def main(): # pragma: no cover
+    if len(sys.argv) > 1:
+        bipbip = BipBip(argv[1:])
+        bipbip.run()
+        return bipbip.exit_code
+    else:
+        return 1
     
 if __name__ == '__main__':  # pragma: no cover
     exit_code = main()
