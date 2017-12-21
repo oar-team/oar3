@@ -5,6 +5,7 @@ parallel = true
 omit=
 	oar/cli/db/*
 	oar/kao/coorm.py
+	oar/rest_api/proxy.py
 
 [report]
 exclude_lines =
