@@ -68,11 +68,8 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
         pass
 
     if resource_ids == ():
-        resource_ids = None    
-    db.query() # TODO:it is work around
-    #BUG when detailed=False
-    # sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for object of type
-    # <class 'oar.lib.database._BoundDeclarativeMeta'>
+        resource_ids = None
+
     resources = db.queries.get_resources(resource_ids, detailed)
 
     print_resources_flat_way(resources, None, cmd_ret)
