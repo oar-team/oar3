@@ -108,8 +108,8 @@ class BaseQueryCollection(object):
         else:
             columns = ("id", "name", "queue_name", "user", "submission_time",
                        "state")
-            option = Load(Job).load_only(*columns)
-            query = db.query(Job).options(option)
+            query = db.query(Job).options(Load(Job).load_only(*columns))
+
         return query.order_by(Job.id)\
                     .filter_jobs_for_user(user, from_time,
                                           to_time, states,
@@ -120,8 +120,7 @@ class BaseQueryCollection(object):
             query = db.query(Resource)
         else:
             columns = ("id", "state", "available_upto", "network_address")
-            option = Load(Resource).load_only(*columns)
-            query = db.query(Resource).options(option)
+            query = db.query(Resource).options(Load(Resource).load_only(*columns))
         if network_address is not None:
             query = query.filter_by(network_address=network_address)
         return query.order_by(Resource.id.asc())

@@ -108,7 +108,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     username = get_username() if user else None
 
-    db.query() # TODO:it is work around
+    #db.query() # TODO:it is work around
     #BUG when detailed=False
     # sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for object of type
     # <class 'oar.lib.database._BoundDeclarativeMeta'>

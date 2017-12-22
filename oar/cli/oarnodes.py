@@ -69,7 +69,7 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
 
     if resource_ids == ():
         resource_ids = None
-
+    detailed = True
     resources = db.queries.get_resources(resource_ids, detailed)
 
     print_resources_flat_way(resources, None, cmd_ret)
