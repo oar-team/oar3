@@ -760,7 +760,8 @@ def insert_job(**kwargs):
                                res_description)
 
     if types:
-        ins = [{'job_id': job_id, 'type': typ} for typ in types]
+        for typ in types:
+            ins = [{'job_id': job_id, 'type': typ} for typ in types]
         db.session.execute(JobType.__table__.insert(), ins)
 
     return job_id
@@ -1288,19 +1289,19 @@ def get_job_current_hostnames(job_id):
 def get_job_types(job_id):
     """Returns a hash table with all types for the given job ID."""
 
-    results = db.query(JobType.type).filter(JobType.id == job_id).all()
-
+    results = db.query(JobType.type).filter(JobType.job_id == job_id).all()
     res = {}
     for t in results:
-        match = re.match(r'^\s*(token)\s*\:\s*(\w+)\s*=\s*(\d+)\s*$', t)
+        typ = t[0]
+        match = re.match(r'^\s*(token)\s*\:\s*(\w+)\s*=\s*(\d+)\s*$', typ)
         if match:
             res[match.group(1)] = {match.group(2): match.group(3)}
         else:
-            match = re.match(r'^\s*(\w+)\s*=\s*(.+)$', t)
+            match = re.match(r'^\s*(\w+)\s*=\s*(.+)$', typ)
             if match:
                 res[match.group(1)] = match.group(2)
             else:
-                res[t] = True
+                res[typ] = True
     return res
 
 # log_job

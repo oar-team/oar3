@@ -42,3 +42,14 @@ def test_node_change_state_error():
     print(node_change_state.exit_code)    
     assert node_change_state.exit_code == 0
     assert job.state == 'Error'
+
+def test_node_change_state_job_idempotent_exitcode_25344():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'])
+    ev = EventLog.create(to_check='YES', job_id=job_id, type='SWITCH_INTO_TERMINATE_STATE')
+    node_change_state = NodeChangeState()
+    node_change_state.run()
+    job = db.query(Job).filter(Job.id==job_id).first()
+    print(node_change_state.exit_code)    
+    assert node_change_state.exit_code == 0
+    assert job.state == 'Error'
+    
