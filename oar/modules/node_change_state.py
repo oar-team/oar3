@@ -77,7 +77,8 @@ class NodeChangeState(object):
 
             if event.type in type_to_check:
                 if ((job.reservation == 'None') or (event.type == 'RESERVATION_NO_NODE')
-                    or (job.assigned_moldable_job == 0)):
+                   or (job.assigned_moldable_job == 0)):
+                    #import pdb; pdb.set_trace()
                     set_job_state(job_id, 'Error')
                 elif (job.reservation and (event.type != 'PING_CHECKER_NODE_SUSPECTED')
                       and (event.type != 'CPUSET_ERROR')):
