@@ -1,8 +1,9 @@
 # coding: utf-8
 import pytest
+import os
 
 from oar.modules.node_change_state import (main, NodeChangeState)
-from oar.lib import (db, Job, EventLog)
+from oar.lib import (db, Job, EventLog, Challenge)
 from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
@@ -44,12 +45,27 @@ def test_node_change_state_error():
     assert job.state == 'Error'
 
 def test_node_change_state_job_idempotent_exitcode_25344():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'])
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'], start_time=10, stop_time=100)
     ev = EventLog.create(to_check='YES', job_id=job_id, type='SWITCH_INTO_TERMINATE_STATE')
+    os.environ['OARDO_USER'] = 'oar'
     node_change_state = NodeChangeState()
     node_change_state.run()
     job = db.query(Job).filter(Job.id==job_id).first()
     print(node_change_state.exit_code)    
     assert node_change_state.exit_code == 0
-    assert job.state == 'Error'
+    assert job.state == 'Terminated'
     
+
+def test_node_change_state_job_check_toresubmit():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
+    ev = EventLog.create(to_check='YES', job_id=job_id, type='SERVER_PROLOGUE_TIMEOUT')
+    os.environ['OARDO_USER'] = 'oar'
+    Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
+
+    node_change_state = NodeChangeState()
+    node_change_state.run()
+
+    event = db.query(EventLog).filter(EventLog.type=='RESUBMIT_JOB_AUTOMATICALLY').first()
+    print(node_change_state.exit_code)    
+    assert node_change_state.exit_code == 0
+    assert event.job_id == job_id

@@ -28,6 +28,8 @@ import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args
 
+from oar.lib.utils import render_query
+
 logger = get_logger('oar.lib.job_handling')
 
 
@@ -806,7 +808,7 @@ def resubmit_job(job_id):
     db.session.flush()
 
     new_job_id = job.id
-
+    
     # Insert challenge and ssh_keys
     random_number = random.randint(1, 1000000000000)
     ins = Challenge.__table__.insert().values(
@@ -817,7 +819,7 @@ def resubmit_job(job_id):
     # Duplicate job resource description requirements
     # Retrieve modable_job_description
     modable_job_descriptions = db.query(MoldableJobDescription)\
-                                .filter(MoldableJobDescription.job_id == jobd_id).all()
+                                .filter(MoldableJobDescription.job_id == job_id).all()
 
     for mdl_job_descr in modable_job_descriptions:
          res = db.session.execute(MoldableJobDescription.__table__.insert(),
@@ -846,13 +848,13 @@ def resubmit_job(job_id):
                  
     # Duplicate job types
     job_types = db.query(JobType).filter(JobType.job_id == job_id).all()
-    new_job_types = [{'job_id': new_job_id, 'type': jt.type} for jt in job_typess]
+    new_job_types = [{'job_id': new_job_id, 'type': jt.type} for jt in job_types]
 
     db.session.execute(JobType.__table__.insert(), new_job_types)
 
     # Update job dependencies
     db.query(JobDependencie).filter(JobDependencie.job_id_required  == job_id)\
-                            .update({'job_id_required ': new_job_id})
+                            .update({JobDependencie.job_id_required: new_job_id})
     
     # Update job state to waintg
     db.query(Job).filter(Job.id == new_job_id).update({'state': 'Waiting'})
@@ -1521,18 +1523,17 @@ def get_job_challenge(job_id):
 
 def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
     """return the number of current jobs with the same ssh keys"""
-    count_query = select([func.count(Challenge.job_id)]).select_from(Challenge, Job)\
-                                                         .where(Challenge.job_id == Job.job_id)\
-                                                         .where(Job.state.in_(('Waiting', 'Hold',
-                                                                               'toLaunch','toError',
-                                                                               'toAckReservation',
-                                                                               'Launching','Running',
-                                                                               'Suspended','Resuming')))\
-                                                         .where(Challenge.ssh_private_key == ssh_private_key)\
-                                                         .where(Challenge.ssh_public_key == ssh_public_key)\
-                                                         .where(Job.user != user)\
-                                                         .where(Challenge.ssh_private_key != '')
-                                                                
+    count_query = select([func.count(Challenge.job_id)]).select_from(Challenge)\
+                                                        .where(Challenge.job_id == Job.id)\
+                                                        .where(Job.state.in_(('Waiting', 'Hold',
+                                                                              'toLaunch','toError',
+                                                                              'toAckReservation',
+                                                                              'Launching','Running',
+                                                                              'Suspended','Resuming')))\
+                                                        .where(Challenge.ssh_private_key == ssh_private_key)\
+                                                        .where(Challenge.ssh_public_key == ssh_public_key)\
+                                                        .where(Job.user != user)\
+                                                        .where(Challenge.ssh_private_key != '')    
     return db.session.execute(count_query).scalar()
 
 

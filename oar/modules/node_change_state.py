@@ -78,7 +78,6 @@ class NodeChangeState(object):
             if event.type in type_to_check:
                 if ((job.reservation == 'None') or (event.type == 'RESERVATION_NO_NODE')
                    or (job.assigned_moldable_job == 0)):
-                    #import pdb; pdb.set_trace()
                     set_job_state(job_id, 'Error')
                 elif (job.reservation and (event.type != 'PING_CHECKER_NODE_SUSPECTED')
                       and (event.type != 'CPUSET_ERROR')):
@@ -166,7 +165,7 @@ class NodeChangeState(object):
                            ' (due to event ' + event.type +\
                            ' & job is neither a reservation nor an interactive job)'
                     logger.warning(msg)
-                    add_new_event('"RESUBMIT_JOB_AUTOMATICALLY', job_id, msg)
+                    add_new_event('RESUBMIT_JOB_AUTOMATICALLY', job_id, msg)
 
             # Check Suspend/Resume job feature
             if event.type in ['HOLD_WAITING_JOB', 'HOLD_RUNNING_JOB', 'RESUME_JOB']:
