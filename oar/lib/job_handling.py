@@ -1314,7 +1314,7 @@ def get_job_types(job_id):
 
 
 def log_job(job):  # pragma: no cover
-    if db.dialect == "sqlite":
+    if db.dialect == 'sqlite':
         return
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.index == 'CURRENT')\
@@ -1344,7 +1344,7 @@ def log_job(job):  # pragma: no cover
       .filter(JobDependencie.job_id == job.id)\
       .update({JobDependencie.index: 'LOG'}, synchronize_session=False)
 
-    if job.assigned_moldable_job != "0":
+    if job.assigned_moldable_job != 0:
         db.query(AssignedResource)\
           .filter(AssignedResource.index == 'CURRENT')\
           .filter(AssignedResource.moldable_id == int(job.assigned_moldable_job))\
