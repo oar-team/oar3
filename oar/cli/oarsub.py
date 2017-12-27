@@ -121,7 +121,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
             # TODO: X display forwarding
             #$cmd[$i] = "bash -c 'echo \$PPID >> $oarsub_pids && ($xauth_path -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=$lusr oardodo $xauth_path merge -) && [ \"$lusr\" != \"$job_user\" ] && OARDO_BECOME_USER=$lusr oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'";$i++;
-            raise 'X display forwarding support NOT yet implemented'
+            raise Exception('X display forwarding support NOT yet implemented')
         else:
             # No X display forwarding
             cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && TTY=\$(tty) && test -e \$TTY && oardodo chown "\

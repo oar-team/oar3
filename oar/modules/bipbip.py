@@ -70,7 +70,7 @@ class BipBip(object):
             if 'OARDIR' not in os.environ:
                 msg = '$OARDIR variable envionment must be defined'
                 logger.error(msg)
-                raise (msg)
+                raise Exception(msg)
             cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
 
         cpuset_path = config['CPUSET_PATH']

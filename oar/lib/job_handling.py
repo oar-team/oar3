@@ -1183,7 +1183,7 @@ def get_job(job_id):
     try:
         job = db.query(Job).filter(Job.id == job_id).one()
     except Exception as e:
-        logger.warning("get_job(" + str(job_id) + ") raises execption: " + str(e))
+        logger.warning("get_job(" + str(job_id) + ") raises exception: " + str(e))
         return None
     else:
         return job
@@ -1793,7 +1793,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                 if 'OARDIR' not in os.environ:
                     msg = '$OARDIR variable envionment must be defined'
                     logger.error(msg)
-                    raise (msg)
+                    raise Exception(msg)
                 cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
 
             cpuset_path = config['CPUSET_PATH']
