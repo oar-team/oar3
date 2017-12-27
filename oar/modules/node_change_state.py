@@ -272,15 +272,20 @@ class NodeChangeState(object):
             if nodes_cpuset_fields:
                 taktuk_cmd = config['TAKTUK_CMD']
                 openssh_cmd = config['OPENSSH_CMD']
-                if 'OAR_SSH_CONNECTION_TIMEOUT':
-                    tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
-
+                #TODO: TOREMOVE ?
+                #if 'OAR_SSH_CONNECTION_TIMEOUT':
+                #    tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
+                if 'SUSPEND_RESUME_FILE' not in config:
+                    msg = 'SUSPEND_RESUME_FILE variable conguration is missing'
+                    logger.error(msg)
+                    raise Exception(msg)
+                
                 suspend_file = config['SUSPEND_RESUME_FILE']
                 if not re.match(r'^\/', suspend_file):
                     if 'OARDIR' not in os.environ:
                         msg = '$OARDIR variable envionment must be defined'
                         logger.error(msg)
-                        raise (msg)
+                        raise Exception(msg)
                     suspend_file = os.environ['OARDIR'] + '/' + suspend_file
 
                 tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(), suspend_data , suspend_file,
@@ -292,7 +297,9 @@ class NodeChangeState(object):
                 else:
                     if len(bad) == 0:
                         suspend_job_action(job.id, job.assigned_moldable_job)
-                        suspend_script = config['JUST_AFTER_SUSPEND_EXEC_FILE']
+                        suspend_script = None
+                        if 'JUST_AFTER_SUSPEND_EXEC_FILE' in config:
+                            suspend_script = config['JUST_AFTER_SUSPEND_EXEC_FILE']
                         timeout = config['SUSPEND_RESUME_SCRIPT_TIMEOUT']
                         if suspend_script:
                             # Launch admin script

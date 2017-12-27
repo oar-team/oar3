@@ -1557,11 +1557,11 @@ def get_job_host_log(moldable_id):
 def suspend_job_action(job_id, moldable_id):
     """perform all action when a job is suspended"""
     set_job_state(job_id, 'Suspended')
-    db.query(Job).filter(Job.id == job_id).update({'suspend': 'YES'})
+    db.query(Job).filter(Job.id == job_id).update({'suspended': 'YES'})
     
     resource_ids = get_current_resources_with_suspended_job()
     
-    db.query(Resource).filter(Resource.id.in_(resource_ids)).update({'suspend_jobs': 'YES'})
+    db.query(Resource).filter(Resource.id.in_(resource_ids)).update({'suspended_jobs': 'YES'}, synchronize_session=False)
     db.commit()
 
 def get_job_cpuset_name(job_id, job=None):
