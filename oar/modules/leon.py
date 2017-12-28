@@ -19,12 +19,12 @@ logger.info('Start Leon')
 
 class Leon(object):
 
-    def __init__(self):
+    def __init__(self, args=None):
+        self.args = args if args else []
         config.setdefault_config(DEFAULT_CONFIG)
         self.exit_code = 0
         
     def run(self):
-        
         deploy_hostname = None
         if 'DEPLOY_HOSTNAME' in config:
             deploy_hostname = config['DEPLOY_HOSTNAME']
@@ -44,9 +44,9 @@ class Leon(object):
         
 
         # Test if we must launch a finishing sequence on a specific job
-        if len(sys.argv) >= 2:
+        if len(self.args) >= 1:
             try:
-                job_id = int(sys.argv[1])
+                job_id = int(self.args[0])
             except ValueError as ex:
                 logger.error('"%s" cannot be converted to an int' %  ex)
                 self.exit_code = 1
@@ -129,7 +129,7 @@ class Leon(object):
 
 
 def main():  # pragma: no cover
-    leon = Leon()
+    leon = Leon(argv[1:])
     leon.run()
     return leon.exit_code
 

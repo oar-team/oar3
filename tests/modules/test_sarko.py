@@ -3,7 +3,7 @@ from oar.modules.sarko import Sarko
 
 import pytest
 
-def test_finaud_void():
+def test_sarko_void():
     sarko = Sarko()
     sarko.run()
     print(sarko.guilty_found)

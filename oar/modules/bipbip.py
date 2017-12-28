@@ -30,7 +30,7 @@ class BipBip(object):
         if not args:
             self.exit_code = 1
             return
-        self.job_id = args[1]
+        self.job_id = int(args[0])
         
         config.setdefault_config(DEFAULT_CONFIG)
         self.server_prologue = config['SERVER_PROLOGUE_EXEC_FILE']
