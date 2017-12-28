@@ -9,7 +9,17 @@ from oar.kao.meta_sched import meta_schedule
 from oar.lib.tools import get_date
 
 # TODO test PAGINATION
-# nodes / resources
+# nodes / resource
+
+@pytest.yield_fixture(scope='function', autouse=True)
+def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        # add some resources
+        for i in range(5):
+            db['Resource'].create(network_address="localhost")
+
+        db['Queue'].create(name='default')
+        yield
 
 def test_app_jobs_index(client):
     assert client.get(url_for('jobs.index')).status_code == 200
