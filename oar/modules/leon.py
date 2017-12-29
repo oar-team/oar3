@@ -129,7 +129,7 @@ class Leon(object):
 
 
 def main():  # pragma: no cover
-    leon = Leon(argv[1:])
+    leon = Leon(sys.argv[1:])
     leon.run()
     return leon.exit_code
 
