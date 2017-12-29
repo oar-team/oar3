@@ -127,7 +127,7 @@ class BipBip(object):
             logger.debug('[' + str(job.id) + '] User: ' + job.user + ' Set NOOP job to Running')
             self.call_server_prologue(job)
             return
-            
+
         # HERE we must launch oarexec on the first node
         logger.debug('[' + str(job.id) + '] User: ' + job.user + '; Command: ' + job.command\
                       + ' ==> hosts : ' + str(hosts))
