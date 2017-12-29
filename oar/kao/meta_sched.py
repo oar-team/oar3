@@ -177,7 +177,10 @@ def notify_to_run_job(jid):
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            nb_sent = tools.notify_almighty('OARRUNJOB_' + str(jid) + '\n')
+            #nb_sent = tools.notify_almighty('OARRUNJOB_' + str(jid) + '\n')
+            tools.notify_bipbip_commander({'job_id': int(jid), 'cmd': 'OARRUN', 'args':[]})
+            nb_sent = True
+                            
             if nb_sent:
                 to_launch_jobs_already_treated[jid] = 1
                 logger.debug("Notify almighty to launch the job" + str(jid))

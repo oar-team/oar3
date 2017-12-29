@@ -4,6 +4,7 @@ import pwd
 import time
 import re
 import os
+import zmq
 import random
 import string
 import socket
@@ -15,6 +16,11 @@ from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError
 
 # Constants
 DEFAULT_CONFIG = {
+    'SERVER_HOSTNAME': 'localhost',
+    'SERVER_PORT': '6666',
+    'APPENDICE_SERVER_PORT': '6668',
+    'BIPBIP_COMMANDER_SERVER': 'localhost',
+    'BIPBIP_COMMANDER_PORT': '6669',
     'LEON_SOFT_WALLTIME': 20,
     'LEON_WALLTIME': 300,
     'TIMEOUT_SSH': 120,
@@ -49,8 +55,9 @@ DEFAULT_CONFIG = {
 
 logger = get_logger("oar.lib.tools")
 
+zmq_context = None
 almighty_socket = None
-
+bipbip_commander_socket = None
 notification_user_socket = None
 
 
@@ -110,25 +117,61 @@ def notify_user(job, state, msg):  # pragma: no cover
     return True
 
 def create_almighty_socket():  # pragma: no cover
+    global zmq_context
     global almighty_socket
-    almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server = config["SERVER_HOSTNAME"]
-    port = config["SERVER_PORT"]
-    try:
-        almighty_socket.connect((server, port))
-    except socket.error as exc:
-        logger.error("Connection to Almighty" + server + ":" + str(port) +
-                     " raised exception socket.error: " + str(exc))
-        sys.exit(1)
-
+    
+    config.setdefault_config(DEFAULT_CONFIG)
+    
+    if not zmq_context:
+        zmq_context = zmq.Context()
+        
+    almighty_socket = zmq_context.socket(zmq.PUSH)
+    almighty_socket.connect('tcp://' + config['SERVER_HOSTNAME'] + ':'
+                             + config['APPENDICE_SERVER_PORT'])
+    
+    #global almighty_socket
+    #almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #server = config["SERVER_HOSTNAME"]
+    #port = config["SERVER_PORT"]
+    #try:
+    #    almighty_socket.connect((server, port))
+    #except socket.error as exc:
+    #    logger.error("Connection to Almighty" + server + ":" + str(port) +
+    #                 " raised exception socket.error: " + str(exc))
+    #    sys.exit(1)   
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(message):  # pragma: no cover
+
     if not almighty_socket:
         create_almighty_socket()
-    message += '\n'
-    return almighty_socket.send(message.encode())
 
+    #logger.debug("send to appendice request: %s" % msg)
+    almighty_socket.send_json({'cmd': message})
+    
+    #if not almighty_socket:
+    #    create_almighty_socket()
+    #message += '\n'
+    #return almighty_socket.send(message.encode())
+
+def create_bipbip_commander_socket():  # pragma: no cover
+    global zmq_context
+    global bipbip_commander_socket
+    
+    config.setdefault_config(DEFAULT_CONFIG)
+    if not zmq_context:
+        zmq_context = zmq.Context()
+    bipbip_commander_socket = zmq_context.socket(zmq.PUSH)
+    bipbip_commander_socket.connect('tcp://' + config['BIPBIP_COMMANDER_SERVER']\
+                                    + ':' + config['BIPBIP_COMMANDER_PORT'])
+    
+def notify_bipbip_commander(message):  # pragma: no cover
+
+    if not bipbip_commander_socket:
+        create_bipbip_commander_socket()
+
+    bipbip_commander_socket.send_json(message)
+    
 def notify_interactif_user(job, message):
     addr, port = job.info_type.split(':')
     return notify_tcp_socket(addr, port, message)

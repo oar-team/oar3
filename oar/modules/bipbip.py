@@ -418,7 +418,7 @@ class BipBip(object):
             
 def main(): # pragma: no cover
     if len(sys.argv) > 1:
-        bipbip = BipBip(argv[1:])
+        bipbip = BipBip(sys.argv[1:])
         bipbip.run()
         return bipbip.exit_code
     else:
