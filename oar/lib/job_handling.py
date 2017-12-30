@@ -1427,8 +1427,8 @@ def set_job_state(jid, state):
                 # Here we must not be asynchronously with the scheduler
                 log_job(job)
                 # $dbh is valid so these 2 variables must be defined
-                nb_sent = tools.notify_almighty("ChState")
-                if nb_sent == 0:
+                completed = tools.notify_almighty("ChState")
+                if not completed:
                     logger.warning("Not able to notify almighty to launch the job " +
                                    str(job.id) + " (socket error)")
 

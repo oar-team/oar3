@@ -28,7 +28,7 @@ def fake_exec_with_timeout(args, timeout):
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
     monkeypatch.setattr(oar.lib.tools, 'manage_remote_commands', fake_manage_remote_commands)
     monkeypatch.setattr(oar.lib.tools, 'exec_with_timeout', fake_exec_with_timeout)
     

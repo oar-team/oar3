@@ -146,13 +146,12 @@ def notify_almighty(message):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
 
-    #logger.debug("send to appendice request: %s" % msg)
-    almighty_socket.send_json({'cmd': message})
-    
-    #if not almighty_socket:
-    #    create_almighty_socket()
-    #message += '\n'
-    #return almighty_socket.send(message.encode())
+    completed = True
+    try:
+        almighty_socket.send_json({'cmd': message})
+    except zmq.ZMQError:
+        completed = False
+    return completed
 
 def create_bipbip_commander_socket():  # pragma: no cover
     global zmq_context
@@ -166,12 +165,17 @@ def create_bipbip_commander_socket():  # pragma: no cover
                                     + ':' + config['BIPBIP_COMMANDER_PORT'])
     
 def notify_bipbip_commander(message):  # pragma: no cover
-
+    
     if not bipbip_commander_socket:
         create_bipbip_commander_socket()
+        
+    completed = True
+    try:
+        bipbip_commander_socket.send_json(message)
+    except zmq.ZMQError:
+        completed = False
+    return completed
 
-    bipbip_commander_socket.send_json(message)
-    
 def notify_interactif_user(job, message):
     addr, port = job.info_type.split(':')
     return notify_tcp_socket(addr, port, message)

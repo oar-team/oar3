@@ -134,15 +134,14 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 
         if notify_almighty:
             #Signal Almigthy
-            nb_sent = tools.notify_almighty('ChState')
-            if nb_sent > 0:
+            # TODO: Send only Qdel ???? oar ChState and Qdel in one message
+            completed = tools.notify_almighty('ChState')
+            if completed:
                 tools.notify_almighty('Qdel')
-
-            if nb_sent <= 0:
-                cmd_ret.error('Unablde to notify Almighty', nb_sent, 2)
-            else:
                 cmd_ret.info('The job(s) {}  will be deleted in the near future.'\
-                           .format(jobs_registred))
+                             .format(jobs_registred))
+            else:
+                cmd_ret.error('Unablde to notify Almighty', -1, 2)
 
     return cmd_ret
 

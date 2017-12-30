@@ -316,8 +316,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
             print(' done.\n')
             print('OAR_JOB_ID=' + str(job_id))
             if not tools.notify_almighty('Qsub'):
-                error_msg = 'cannot connect to executor ' + str(remote_host) + ':' +\
-                            str(remote_port) + '. OAR server might be down.'
+                error_msg = 'Cannot connect to OAR server (Almighty): ' + str(remote_host) + ':' +\
+                            str(remote_port)
                 cmd_ret.error(error_msg, 0, 3)
                 cmd_ret.exit()
             else:

@@ -30,7 +30,7 @@ def fake_manage_remote_commands(hosts, data_str, manage_file, action, ssh_comman
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'create_almighty_socket', lambda: None)
-    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: len(x))
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
     monkeypatch.setattr(oar.lib.tools, 'pingchecker', fake_pingchecker)
     monkeypatch.setattr(oar.lib.tools, 'notify_interactif_user', lambda x,y: None)
     monkeypatch.setattr(oar.lib.tools, 'launch_oarexec', fake_launch_oarexec)
