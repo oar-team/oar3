@@ -80,6 +80,7 @@ def init_judas_notify_user():  # pragma: no cover
         
 
 def notify_user(job, state, msg):  # pragma: no cover
+    #sources/core/common-libs/lib/OAR/Modules/Judas.pm&
     return () # TODO remove init_judas_notify_user()
 
     global notification_user_socket
