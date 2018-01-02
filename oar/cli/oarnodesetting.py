@@ -9,11 +9,11 @@
 from oar import (VERSION)
 from oar.lib import (db, config)
 
-from oar.lib.nodes import set_node_nextState
+from oar.lib.node import set_node_nextState
 
 import oar.lib.tools as tools
 
-from .utils import (CommandReturns, usage)
+from .utils import CommandReturns
 
 from socket import gethostname  
 
@@ -47,19 +47,19 @@ def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
 
     if not (properties or state or add or maintenance or drain\
             or last_property_value):
-        usage()
+        cmd_ret.usage(1)
 
     if state and state not in ['Alive', 'Absent', 'Dead']:
         cmd_ret.warn('Bad state value. Possible values are: Alive | Absent | Dead')
-        usage()
+        cmd_ret.usage(1)
 
     if maintenance and maintenance not in ['on', 'off']:
         cmd_ret.warn('Bad maintenance mode value. Possible values are: on | off')
-        usage()
+        cmd_ret.usage(1)
 
     if drain and drain  not in ['on', 'off']:
         cmd_ret.warn('Bad drain mode value. Possible values are: on | off')
-        usage()
+        cmd_ret.usage(1)
 
     
     if sql:
@@ -89,7 +89,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
 
     if add and (resources or sql):
         cmd_ret.warn('You cannot use -r|--resource or --sql and -a|--add options at a same time')
-        usage()
+        cmd_ret.usage(1)
     
     if not hostnames:
         hostnames = [gethostname()]
