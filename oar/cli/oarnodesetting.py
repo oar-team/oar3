@@ -34,7 +34,7 @@ def set_maintenance(resources, maintenance_state, no_wait):
     #TODO
     pass
 
-def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
+def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
 
     notify_server_tag_list = []
@@ -48,19 +48,22 @@ def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
     if not (properties or state or add or maintenance or drain\
             or last_property_value):
         cmd_ret.usage(1)
-
+        return cmd_ret
+    
     if state and state not in ['Alive', 'Absent', 'Dead']:
         cmd_ret.warn('Bad state value. Possible values are: Alive | Absent | Dead')
         cmd_ret.usage(1)
-
+        return cmd_ret
+    
     if maintenance and maintenance not in ['on', 'off']:
         cmd_ret.warn('Bad maintenance mode value. Possible values are: on | off')
         cmd_ret.usage(1)
-
+        return cmd_ret
+    
     if drain and drain  not in ['on', 'off']:
         cmd_ret.warn('Bad drain mode value. Possible values are: on | off')
         cmd_ret.usage(1)
-
+        return cmd_ret
     
     if sql:
         #TODO
@@ -79,17 +82,19 @@ def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
 
     hosts = []
     # Get hostnames from a file
-    try:
-        with open(filename, 'r') as hostfile:
-            hosts = [host for host in hostfile]
-    except OSError as e:
-        cmd_ret.warn(str(e), 13)
+    if filename:
+        try:
+            with open(filename, 'r') as hostfile:
+                hosts = [host for host in hostfile]
+        except OSError as e:
+            cmd_ret.warn(str(e), 13)
 
-    hostsnames += hosts
+        hostsnames += hosts
 
     if add and (resources or sql):
         cmd_ret.warn('You cannot use -r|--resource or --sql and -a|--add options at a same time')
         cmd_ret.usage(1)
+        return cmd_ret
     
     if not hostnames:
         hostnames = [gethostname()]
@@ -214,10 +219,11 @@ def oarnodesetting(resources, hostnames, filename, sql, add, maintenance, drain,
 
 def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
         no_wait, last_property_value, version):
-    resources=resources
+    resources=resource
     hostnames=hostname
     filename=file
     properties=property
+
     cmd_ret = oarnodesetting(resources, hostnames, filename, sql, add, state,
                              maintenance, drain, properties, no_wait,
                              last_property_value, version)

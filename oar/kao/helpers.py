@@ -6,13 +6,14 @@ NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
 RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
+# TODO remove useless code in profit to Evalys usage 
 
-def dump(obj):
+def dump(obj):  # pragma: no cover 
     for attr in dir(obj):
         print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
 
-def annotate(ax, rect, annot):
+def annotate(ax, rect, annot):  # pragma: no cover
     rx, ry = rect.get_xy()
     cx = rx + rect.get_width() / 2.0
     cy = ry + rect.get_height() / 2.0
@@ -21,7 +22,7 @@ def annotate(ax, rect, annot):
                 fontsize=12, ha='center', va='center')
 
 
-def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
+def plot_slots_and_job(slots_set, jobs, nb_res, t_max):  # pragma: no cover
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatch
     fig, ax = plt.subplots()
@@ -69,7 +70,7 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):
     # mpld3.show()
 
 
-def slots_2_val_ref(slots):
+def slots_2_val_ref(slots):  # pragma: no cover
     '''function used to generate reference value for unitest'''
     sid = 1
     while True:
@@ -80,7 +81,7 @@ def slots_2_val_ref(slots):
             break
 
 
-def slots_all_2_val_ref(slots):
+def slots_all_2_val_ref(slots):  # pragma: no cover
     '''function used to generate reference value for unitest'''
     sid = 1
     while True:
