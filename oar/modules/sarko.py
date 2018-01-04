@@ -99,7 +99,7 @@ class Sarko(object):
                 frag_job(job.id)
                 add_new_event('WALLTIME', job.id, 'Job: ' + str(job.id) + ' from ' + str(start_time) +
                               ' with ' + str(max_time) +'; current time=' + str(date) + ' (Elapsed)')
-            elif (job.checkpoint > 0) and (date >= (start_time + max_time + job.checkpoint)):
+            elif (job.checkpoint > 0) and (date >= (start_time + max_time - job.checkpoint)):
                 # OAR must notify the job to checkpoint itself
                 logger.debug('Send checkpoint signal to the job:' + str(job.id))
                 # Retrieve node names used by the job
