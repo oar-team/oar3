@@ -66,7 +66,7 @@ class Leon(object):
                 job_finishing_sequence(epilogue_script, job_id, events)
                 tools.notify_almighty('ChState')
             else:
-                logger.error('Leon was called to exterminate job "' + job_id +
+                logger.error('Leon was called to exterminate job "' + str(job_id) +
                              '" but its frag_state is not LEON_EXTERMINATE')
                 return
 
