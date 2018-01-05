@@ -1421,7 +1421,7 @@ def set_job_state(jid, state):
 
                     tools.notify_user(
                         job, "ERROR", "Job stopped abnormally or an OAR error occured.")
-                #import pdb; pdb.set_trace()
+
                 update_current_scheduler_priority(job, "-2", "STOP")
 
                 # Here we must not be asynchronously with the scheduler

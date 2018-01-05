@@ -73,18 +73,18 @@ class Leon(object):
         for job in get_jobs_to_kill():
             #TODO pass if the job is job_desktop_computing one
             logger.debug('Normal kill: treates job ' + str(job.id))
-            if (job.state == 'Wainting') or (job.state == 'Hold'):
+            if (job.state == 'Waiting') or (job.state == 'Hold'):
                 logger.debug('Job is not launched')
                 set_job_state(job.id, 'Error')
-                set_job_message(job_id, 'Job killed by Leon directly')
-                if j.type == 'INTERACTIVE':
+                set_job_message(job.id, 'Job killed by Leon directly')
+                if job.type == 'INTERACTIVE':
                     logger.debug('I notify oarsub in waiting mode')
                     addr, port = job.info_type.split(':')
                     if tools.notify_tcp_socket(addr, port, 'JOB_KILLED'):
                         logger.debug('Notification done')
                     else:
-                         logger.debug('Cannot open connection to oarsub client for job '+
-                                      str(job.job_id) +', it is normal if user typed Ctrl-C !')
+                        logger.debug('Cannot open connection to oarsub client for job '+
+                                     str(job.id) +', it is normal if user typed Ctrl-C !')
                 self.exit_code = 1
             elif  (job.state == 'Terminated') or (job.state == 'Error') or (job.state == 'Finishing'):
                 logger.debug('Job is terminated or is terminating nothing to do')
@@ -106,8 +106,6 @@ class Leon(object):
                         head_host = deploy_hostname
                     elif len(hosts) != 0:
                         head_host = hosts[0]
-
-                    #import pdb; pdb.set_trace()
                     
                     if head_host:
                         add_new_event('SEND_KILL_JOB', job.id, 'Send the kill signal to oarexec on ' +
