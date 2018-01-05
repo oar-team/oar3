@@ -43,6 +43,6 @@ def test_bipbip_commander_OAREXEC(monkeypatch):
     bipbip_commander.run(False)
     bipbip_commander.bipbip_leon_executors[10].join()
     exitcode = bipbip_commander.bipbip_leon_executors[10].exitcode
-    # TODEBUG assert ['/usr/local/lib/oar/bipbip', '10', '2', 'N', '34'] == called_command
+    # TODO DEBUG assert ['/usr/local/lib/oar/bipbip', '10', '2', 'N', '34'] == called_command
     assert exitcode == 0
 

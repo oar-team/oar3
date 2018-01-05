@@ -24,15 +24,6 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'get_date', fake_get_date)
     monkeypatch.setattr(oar.lib.tools, 'signal_oarexec', fake_signal_oarexec)
 
-@pytest.yield_fixture(scope='function', autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        # add some resources
-        for i in range(5):
-            db['Resource'].create(network_address="localhost")
-        db['Queue'].create(name='default')
-        yield
-
 def assign_resources(job_id):
     db.query(Job).filter(Job.id == job_id)\
                  .update({Job.assigned_moldable_job: job_id}, synchronize_session=False)

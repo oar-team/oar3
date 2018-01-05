@@ -9,16 +9,6 @@ from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
 
-@pytest.yield_fixture(scope='function', autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        # add some resources
-        for i in range(5):
-            db['Resource'].create(network_address="localhost")
-
-        db['Queue'].create(name='default')
-        yield
-
 def fake_manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     return (1, [])
 
