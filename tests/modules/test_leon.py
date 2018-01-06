@@ -21,7 +21,7 @@ def test_leon_void():
 
 def test_leon_simple():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
-    leon = Leon(str(job_id))
+    leon = Leon([str(job_id)])
     leon.run()
     print(leon.exit_code)
     assert leon.exit_code == 0
@@ -36,12 +36,17 @@ def test_leon_exterminate():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
 
     FragJob.create(job_id=job_id, state='LEON_EXTERMINATE')
+    print('job_id:' + str(job_id))
     
-    leon = Leon(str(job_id))
+    leon = Leon([str(job_id)])
     leon.run()
 
-    event = db.query(EventLog).filter(EventLog.type=='EXTERMINATE_JOB').first()
-    
+    event = db.query(EventLog).filter(EventLog.type=='EXTERMINATE_JOB')\
+                              .filter(EventLog.job_id==job_id).first()
+
+    for e in db.query(EventLog).all():
+        print(EventLog.type, str(EventLog.job_id))
+
     print(leon.exit_code)
     assert leon.exit_code == 0
     assert event.job_id == job_id
