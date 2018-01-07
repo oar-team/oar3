@@ -93,7 +93,7 @@ class Leon(object):
                 if 'noop' in job_types.keys():
                     logger.debug('Kill the NOOP job: ' + str(job.id))
                     set_finish_date(job)
-                    set_job_state(job, 'Terminated')
+                    set_job_state(job.id, 'Terminated')
                     job_finishing_sequence(epilogue_script, job.id, [])
                     self.exit_code = 1
                 else:
