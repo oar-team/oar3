@@ -52,7 +52,8 @@ def test_leon_exterminate():
     assert event.job_id == job_id
 
 def test_leon_get_jobs_to_kill_waiting():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Waiting')
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Waiting',
+                        job_type='INTERACTIVE', info_type='123.123.123.123:1234')
 
     FragJob.create(job_id=job_id, state='LEON')
     
