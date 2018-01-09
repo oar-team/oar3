@@ -2,7 +2,8 @@
 import pytest
 from oar.modules.sarko import Sarko
 
-from oar.lib import (db, config, Job, Resource, AssignedResource, EventLog, FragJob)
+from oar.lib import (db, config, Job, Resource, AssignedResource, EventLog,
+                     FragJob, ResourceLog)
 from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
@@ -23,6 +24,7 @@ def fake_signal_oarexec(host, job_id, signal_name, detach, openssh_cmd):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'get_date', fake_get_date)
     monkeypatch.setattr(oar.lib.tools, 'signal_oarexec', fake_signal_oarexec)
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
 
 def assign_resources(job_id):
     db.query(Job).filter(Job.id == job_id)\
@@ -122,3 +124,46 @@ def test_sarko_timer_armed_job_exterminate():
     fragjob =  db.query(FragJob).filter(FragJob.state=='LEON_EXTERMINATE').first()
     assert fragjob.job_id == job_id
     assert sarko.guilty_found == 1
+
+def test_sarko_dead_switch_time_none():
+    config['DEAD_SWITCH_TIME'] = '100'
+    sarko = Sarko()
+    sarko.run()
+    assert sarko.guilty_found == 0
+
+def test_sarko_dead_switch_time_one():
+    config['DEAD_SWITCH_TIME'] = '100'
+
+    resources = db.query(Resource).all()
+    r_id = resources[0].id
+
+    ResourceLog.create(resource_id=r_id, attribute='state', date_start = 50)
+    
+    set_fake_date(400)
+    sarko = Sarko()
+    sarko.run()
+    set_fake_date(0)
+
+    resource = db.query(Resource).filter(Resource.id==r_id).first()
+
+    assert resource.next_state == 'Dead'
+    assert sarko.guilty_found == 0
+
+    
+def test_sarko_expired_resources():
+    resources = db.query(Resource).all()
+    r_id = resources[0].id
+
+    db.query(Resource).filter(Resource.id == r_id)\
+                      .update({Resource.expiry_date: 50, Resource.desktop_computing: 'YES'},
+                              synchronize_session=False)
+
+    set_fake_date(100)
+    sarko = Sarko()
+    sarko.run()
+    set_fake_date(0)
+
+    resource = db.query(Resource).filter(Resource.id==r_id).first()
+
+    assert resource.next_state == 'Suspected'
+    assert sarko.guilty_found == 0

@@ -12,7 +12,7 @@ from oar.lib.resource_handling import (get_expired_resources, set_resource_nextS
                                        get_absent_suspected_resources_for_a_timeout,
                                        update_resource_nextFinaudDecision)
 
-from oar.lib.event import add_new_event
+from oar.lib.event import (add_new_event, add_new_event_with_host)
 
 import oar.lib.tools as tools
 
@@ -138,7 +138,7 @@ class Sarko(object):
         if len(resource_ids) > 0:
             tools.notify_almighty('ChState')
 
-        dead_switch_time = config['DEAD_SWITCH_TIME']
+        dead_switch_time = int(config['DEAD_SWITCH_TIME'])
         # Get Absent and Suspected nodes for more than 5 mn (default)
         if dead_switch_time > 0:
             notify = False

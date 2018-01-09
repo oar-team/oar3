@@ -115,7 +115,7 @@ def  get_expired_resources():
                                .filter(Resource.desktop_computing == 'YES')\
                                .filter(Resource.expiry_date < date)\
                                .all()
-    return res
+    return [r[0] for r in res]
 
 def get_absent_suspected_resources_for_a_timeout(timeout):
     date = tools.get_date()
@@ -123,11 +123,10 @@ def get_absent_suspected_resources_for_a_timeout(timeout):
                                            .filter(ResourceLog.date_stop == 0)\
                                            .filter((ResourceLog.date_start + timeout) <  date)\
                                            .all()
-    return res
+    return [r[0] for r in res]
 
 def update_resource_nextFinaudDecision(resource_id, finaud_decision):
     """Update nextFinaudDecision field"""
-
     db.query(Resource).filter(Resource.id == resource_id)\
                       .update({Resource.next_finaud_decision: finaud_decision})
     db.commit()
@@ -202,7 +201,6 @@ def get_resources_jobs(r_id):
 
 def get_resource_job_to_frag(r_id):
     # same as get_resource_job but excepts the cosystem jobs
-
     subq = db.query(JobType.job_id).filter(JobType.type == 'cosystem')\
                                    .filter(JobType.types_index == 'CURRENT')\
                                    .subquery()
