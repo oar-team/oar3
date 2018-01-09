@@ -2,7 +2,7 @@
 import pytest
 from oar.modules.sarko import Sarko
 
-from oar.lib import (db, config, Job, Resource, AssignedResource, EventLog)
+from oar.lib import (db, config, Job, Resource, AssignedResource, EventLog, FragJob)
 from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
@@ -71,3 +71,54 @@ def test_sarko_job_to_checkpoint():
     print(sarko.guilty_found)
     assert sarko.guilty_found == 0
     assert event.job_id == job_id
+
+def test_sarko_timer_armed_job_terminated():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Terminated')
+    assign_resources(job_id)
+    
+    FragJob.create(job_id=job_id, state='TIMER_ARMED')
+
+    sarko = Sarko()
+    sarko.run()
+
+    fragjob =  db.query(FragJob).filter(FragJob.state=='FRAGGED').first()
+    assert fragjob.job_id == job_id
+    assert sarko.guilty_found == 0
+    
+def test_sarko_timer_armed_job_running():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+    assign_resources(job_id)
+    
+    FragJob.create(job_id=job_id, state='TIMER_ARMED')
+
+    sarko = Sarko()
+    sarko.run()
+    assert sarko.guilty_found == 0
+
+def test_sarko_timer_armed_job_refrag():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+    assign_resources(job_id)
+    
+    FragJob.create(job_id=job_id, state='TIMER_ARMED')
+
+    set_fake_date(100)
+    sarko = Sarko()
+    sarko.run()
+    set_fake_date(0)
+    fragjob =  db.query(FragJob).filter(FragJob.state=='LEON').first()
+    assert fragjob.job_id == job_id
+    assert sarko.guilty_found == 1
+
+def test_sarko_timer_armed_job_exterminate():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+    assign_resources(job_id)
+    
+    FragJob.create(job_id=job_id, state='TIMER_ARMED')
+
+    set_fake_date(400)
+    sarko = Sarko()
+    sarko.run()
+    set_fake_date(0)
+    fragjob =  db.query(FragJob).filter(FragJob.state=='LEON_EXTERMINATE').first()
+    assert fragjob.job_id == job_id
+    assert sarko.guilty_found == 1
