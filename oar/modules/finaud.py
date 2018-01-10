@@ -34,7 +34,6 @@ class Finaud(object):
 
         nodes_to_check = {}
         for node in node_list_tmp:
-            import pdb; pdb.set_trace
             if check_occupied_nodes == 'NO':
                 if node.network_address not in occupied_nodes:
                     nodes_to_check[node.network_address] = node
@@ -44,9 +43,8 @@ class Finaud(object):
         logger.debug('Testing resource(s) on : ' + ','.join(nodes_to_check.keys()))
 
         # Call the right program to test each nodes
-        # bad_nodes = tools.pingchecker(nodes_to_check.keys())
-        bad_nodes = []
-        
+        bad_nodes = tools.pingchecker(nodes_to_check.keys())
+
         #Make the decisions
         for node in nodes_to_check.values():
             if (node.network_address in bad_nodes) and (node.state == 'Alive'):
