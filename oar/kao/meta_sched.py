@@ -292,7 +292,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
         job_security_time = int(config['SCHEDULER_JOB_SECURITY_TIME'])
         plt.get_data_jobs(ar_jobs, ar_jids, resource_set, job_security_time)
 
-        logger.debug("Try and schedule new reservations")
+        logger.debug("Try and schedule new Advance Reservations")
         for jid in ar_jids:
             job = ar_jobs[jid]
             logger.debug(

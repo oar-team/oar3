@@ -18,7 +18,7 @@ import oar.lib.tools as tools
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, resources2dump_perl,
                            TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
 
-from oar.lib.event import add_new_event
+from oar.lib.event import (add_new_event, add_new_event_with_host)
                            
 logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
@@ -194,7 +194,7 @@ class BipBip(object):
                           + '] Bad cpuset file: ' + cpuset_file
                     logger.error(msg)
                     events.append(('CPUSET_MANAGER_FILE', msg, None))
-                elif len(bad) > 0:
+                else:
                     bad = bad + bad_hosts
                     event_type = 'CPUSET_ERROR'
                     # Clean already configured cpuset
@@ -255,7 +255,7 @@ class BipBip(object):
                             exit_bipbip = 0
                             
                 add_new_event_with_host(event_type, job_id, '[bipbip] OAR suspects nodes for the job :'\
-                                        + str(job_id) + ': ' + str(bad))
+                                        + str(job_id) + ': ' + str(bad), bad)
                 tools.notify_almighty('ChState')
                 if exit_bipbip == 1:
                     self.exit_code = 2
