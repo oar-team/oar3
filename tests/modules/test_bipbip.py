@@ -9,6 +9,8 @@ from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
 
+from ..conftest import (FakePopen, fake_popen)
+
 fake_bad_nodes = {'pingchecker': [], 'init': [], 'clean': []}
 fake_tag = 1
 
@@ -33,8 +35,9 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_interactif_user', lambda x,y: None)
     monkeypatch.setattr(oar.lib.tools, 'launch_oarexec', fake_launch_oarexec)
     monkeypatch.setattr(oar.lib.tools, 'manage_remote_commands', fake_manage_remote_commands)
+    monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
+    monkeypatch.setattr(oar.lib.tools, 'kill_child_processes', lambda x: None)
 
-        
 def test_bipbip_void():
     bipbip = BipBip(None)
     bipbip.run()
@@ -106,3 +109,42 @@ def test_bipbip_toLaunch_cpuset_error_advance_reservation():
     print(bipbip.exit_code)
     assert event.type == 'CPUSET_ERROR'
     assert bipbip.exit_code == 0
+    
+def test_bipbip_toLaunch_server_prologue():
+    config['SERVER_PROLOGUE_EXEC_FILE'] = 'foo_script'
+    _, bipbip = _test_bipbip_toLaunch()
+    print(bipbip.exit_code)
+    assert bipbip.exit_code == 0
+    
+def test_bipbip_toLaunch_server_prologue_return_code():
+    fake_popen['wait_return_code'] = 1
+    config['SERVER_PROLOGUE_EXEC_FILE'] = 'foo_script'
+    _, bipbip = _test_bipbip_toLaunch()
+    fake_popen['wait_return_code'] = 0
+    print(bipbip.exit_code)
+    assert bipbip.exit_code == 2
+    
+def test_bipbip_toLaunch_server_prologue_return_code_interactive():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', command='yop',
+                        state='toLaunch', stdout_file='poy', stderr_file='yop',
+                        job_type='INTERACTIVE')
+    fake_popen['wait_return_code'] = 1
+    config['SERVER_PROLOGUE_EXEC_FILE'] = 'foo_script'
+    _, bipbip = _test_bipbip_toLaunch(job_id=job_id)
+    fake_popen['wait_return_code'] = 0
+    print(bipbip.exit_code)
+    assert bipbip.exit_code == 2
+
+def test_bipbip_toLaunch_server_prologue_OSError():
+    fake_popen['exception'] = 'OSError'
+    config['SERVER_PROLOGUE_EXEC_FILE'] = 'foo_script'
+    _, bipbip = _test_bipbip_toLaunch()
+    fake_popen['exception'] = None
+    assert bipbip.exit_code == 0
+
+def test_bipbip_toLaunch_server_prologue_TimeoutExpired():
+    fake_popen['exception'] = 'TimeoutExpired'
+    config['SERVER_PROLOGUE_EXEC_FILE'] = 'foo_script'
+    _, bipbip = _test_bipbip_toLaunch()
+    fake_popen['exception'] = None
+    assert bipbip.exit_code == 2

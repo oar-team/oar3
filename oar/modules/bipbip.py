@@ -385,7 +385,7 @@ class BipBip(object):
             cmd = [self.server_prologue, str(job.id)]
 
             try:
-                child = Popen(cmd)
+                child = tools.Popen(cmd)
                 return_code = child.wait(timeout)
 
                 if return_code:
@@ -399,7 +399,7 @@ class BipBip(object):
                     self.exit_code = 2
                     return 1
                 
-            except OSError as e:   
+            except OSError as e:
                 logger.error('Cannot run: ' + str(cmd))
                 
             except TimeoutExpired as e:
