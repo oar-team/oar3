@@ -9,7 +9,7 @@ from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
 
-from ..conftest import (FakePopen, fake_popen)
+from ..faketools import (FakePopen, fake_popen)
 
 fake_bad_nodes = {'pingchecker': [], 'init': [], 'clean': []}
 fake_tag = 1
