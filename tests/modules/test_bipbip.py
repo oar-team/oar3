@@ -54,12 +54,12 @@ def test_bipbip_simple():
     print(bipbip.exit_code)
     assert bipbip.exit_code == 1
 
-def _test_bipbip_toLaunch(noop=False, job_id=None):
+def _test_bipbip_toLaunch(noop=False, job_id=None, state='toLaunch', args=[]):
 
     types = ['noop'] if noop else []
     if not job_id:
         job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', command='yop',
-                            state='toLaunch', stdout_file='poy', stderr_file='yop', types=types)
+                            state=state, stdout_file='poy', stderr_file='yop', types=types)
     db.query(Job).update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
     Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
 
@@ -71,7 +71,7 @@ def _test_bipbip_toLaunch(noop=False, job_id=None):
     config['DETACH_JOB_FROM_SERVER'] = 'localhost'
     
     # Bipbip needs a job id
-    bipbip = BipBip([job_id])
+    bipbip = BipBip([job_id] + args)
     bipbip.run()
 
     return job_id, bipbip
@@ -148,3 +148,18 @@ def test_bipbip_toLaunch_server_prologue_TimeoutExpired():
     _, bipbip = _test_bipbip_toLaunch()
     fake_popen['exception'] = None
     assert bipbip.exit_code == 2
+
+def test_bipbip_running_oarexec_reattachexit_value():    
+    job_id, bipbip = _test_bipbip_toLaunch(state='Running',args=['1', '2', 'foo1'])
+    assert bipbip.exit_code == 0
+
+def test_bipbip_running_oarexec_reattachexit_value_bad_challenge():
+    job_id, bipbip = _test_bipbip_toLaunch(state='Running',args=['1', '2', 'bad_challenge'])
+    event = db.query(EventLog).filter(EventLog.job_id==job_id).first()
+    assert event.type == 'BIPBIP_CHALLENGE'
+    assert bipbip.exit_code == 2
+    
+def test_bipbip_running_oarexec_reattachexit_bad_value():
+    job_id, bipbip = _test_bipbip_toLaunch(state='Running',args=['bug', '2', 'foo1'])
+    assert bipbip.exit_code == 2
+    

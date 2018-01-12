@@ -25,7 +25,6 @@ logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 class BipBip(object):
 
     def __init__(self, args):
-        
         self.job_id = None
         if not args:
             self.exit_code = 1
