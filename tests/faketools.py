@@ -15,4 +15,22 @@ class FakePopen(object):
                 raise OSError
             elif fake_popen['exception'] == 'TimeoutExpired':
                 raise TimeoutExpired(cmd=self.cmd, timeout=timeout)
-        return(fake_popen['wait_return_code']) 
+        return(fake_popen['wait_return_code'])
+
+fake_process = {'is_alive': True}
+class FakeProcess(object):
+    def __init__(self, **kargs):
+        self.target = kargs['target']
+        self.kwargs = kargs['kwargs']
+        
+    def start(self):
+        self.target(**self.kwargs)
+        
+    def join(self):
+        pass
+    def is_alive(self):
+        return fake_process['is_alive']
+
+fake_called_command = {'cmd': None}
+def fake_call(cmd):
+    fake_called_command['cmd'] = cmd    

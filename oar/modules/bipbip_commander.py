@@ -22,9 +22,6 @@
 }
 
 """
-
-from multiprocessing import Process
-
 import os
 import socket
 import zmq
@@ -56,7 +53,7 @@ logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
 logger.info('Start Bipbip Commander')
 
 if 'OARDIR' in os.environ:
-    binpath = os.environ['OARDIR'] + '/'
+    binpath = os.environ['OARDIR'] if os.environ['OARDIR'][-1] == '/' else os.environ['OARDIR'] + '/'
 else:
     binpath = '/usr/local/lib/oar/'
     os.environ['OARDIR'] = binpath
@@ -74,8 +71,7 @@ def bipbip_leon_executor(*args, **command):
 
     if command['cmd'] == 'LEONEXTERMINATE':
         cmd_arg = [leon_command, str(job_id)]
-    else:
-        
+    else:        
         cmd_arg = [bipbip_command, str(job_id)] + command['args']
 
     logger.debug('Launching: ' + str(cmd_arg))
@@ -102,13 +98,13 @@ class BipbipCommander(object):
         self.bipbip_leon_commands_to_requeue = []
         self.bipbip_leon_executors = {}
 
-
     def run(self, loop=True):
         # TODO: add a shutdown procedure
         while True:
             #add_timeout if bipbip_leon_commands_to_run is not empty
             command = self.notification.recv_json()
 
+            #import pdb; pdb.set_trace()
             logger.debug("bipbip commander received notification:" + str(command))
             #import pdb; pdb.set_trace()
             self.bipbip_leon_commands_to_run.append(command)
@@ -132,14 +128,13 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
-                    executor = Process(target=bipbip_leon_executor, args=(), kwargs=command)
+                    executor = tools.Process(target=bipbip_leon_executor, args=(), kwargs=command)
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor
 
             # append commands to requeue
             self.bipbip_leon_commands_to_run += self.bipbip_leon_commands_to_requeue
             self.bipbip_leon_commands_to_requeue = []
-
 
             # Remove finished executors:
             for job_id in list(self.bipbip_leon_executors.keys()):
@@ -149,9 +144,9 @@ class BipbipCommander(object):
             if not loop:
                 break
 
-def main():
+def main(): # pragma: no cover
     bipbip_commander = BipbipCommander()
     bipbip_commander.run()
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     main()

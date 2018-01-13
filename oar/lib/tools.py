@@ -14,6 +14,8 @@ from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 import signal, psutil
 from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
+from multiprocessing import Process
+
 # Constants
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
