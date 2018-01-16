@@ -74,4 +74,4 @@ def main():  # pragma: no cover
     return finaud.return_value
 
 if __name__ == '__main__':  # pragma: no cover
-    sys.exit(main)
+    sys.exit(main())

@@ -132,4 +132,4 @@ def main():  # pragma: no cover
     return leon.exit_code
 
 if __name__ == '__main__':  # pragma: no cover
-    sys.exit(main)
+    sys.exit(main())

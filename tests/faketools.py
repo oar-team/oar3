@@ -39,3 +39,15 @@ def fake_call(cmd):
     else:
         exit_value = fake_called_command['exit_value']
     return exit_value
+
+def fake_kill(pid, signal):
+    pass
+
+
+fake_date = 0
+def set_fake_date(date):
+    global fake_date
+    fake_date = date
+
+def fake_get_date():
+    return fake_date

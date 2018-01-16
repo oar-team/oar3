@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.tools import (Popen, PIPE)
+from oar.lib.tools import (Popen, PIPE, kill, get_time)
 import oar.lib.tools as tools
 
 import socket
@@ -123,7 +123,7 @@ def launch_command(command):
     '''launch the command line passed in parameter'''
 
     #TODO move to oar.lib.tools
-    global finishTag
+    #global finishTag
 
     logger.debug('Launching command : [' + command + ']')
 
@@ -163,7 +163,7 @@ def start_hulot():  # TODO
 
 def check_hulot():
     '''check the hulot process'''
-    return os.kill(energy_pid, 0)
+    return tools.kill(energy_pid, 0)
 
 # functions associated with each state of the automaton
 def meta_scheduler():
@@ -227,7 +227,7 @@ class Almighty(object):
         self.bipbip_commander = tools.Popen(bipbip_commander)
         
     def time_update(self):
-        current = time.time()  # ---> TODO my $current = time; -> ???
+        current = tools.get_time()  # ---> TODO my $current = time; -> ???
 
         logger.debug('Timeouts check : ' + str(current))
         # check timeout for scheduler
@@ -268,7 +268,7 @@ class Almighty(object):
             return {'cmd': 'Time'}
         except zmq.ZMQError as e:
             logger.error("Something is wrong with appendice" + str(e))
-            exit(15)
+            return 15
         return answer
 
     def add_command(self, command):
@@ -312,15 +312,15 @@ class Almighty(object):
             if finishTag:
                 if energy_pid:
                     logger.debug("kill child process " + str(energy_pid))
-                    os.kill(energy_pid, signal.SIGKILL)
+                    tools.kill(energy_pid, signal.SIGKILL)
                 # TODO:  $Redirect_STD_process = OAR::Modules::Judas::redirect_everything();
                 Redirect_STD_process = False
                 if Redirect_STD_process:
-                    os.kill(Redirect_STD_process, signal.SIGKILL)
+                    tools.kill(Redirect_STD_process, signal.SIGKILL)
                 #TODO ipc_clean()
                 logger.warning("Stop Almighty\n")
                 # TODO: send_log_by_email("Stop OAR server", "[Almighty] Stop Almighty")
-                exit(10)
+                return 10
 
             # We check Hulot
             if energy_pid and not check_hulot():
@@ -359,7 +359,7 @@ class Almighty(object):
 
             # SCHEDULER
             elif self.state == 'Scheduler':
-                current_time = time.time()
+                current_time = tools.get_time()
                 if current_time >= (self.lastscheduler + scheduler_min_time_between_2_calls):
                     self.scheduler_wanted = 0
                     # First, check pending events
@@ -379,7 +379,7 @@ class Almighty(object):
                             start_hulot()
 
                         scheduler_result = meta_scheduler()
-                        lastscheduler = time.time()
+                        self.lastscheduler = tools.get_time()
                         if scheduler_result == 0:
                             self.state = 'Time update'
                         elif scheduler_result == 1:
@@ -396,8 +396,9 @@ class Almighty(object):
                 else:
                     self.scheduler_wanted = 1
                     self.state = 'Time update'
-                    logger.debug('Scheduler call too early, waiting... (' + current_time +
-                                 '>= (' + lastscheduler + ' + ' + scheduler_min_time_between_2_calls + ')')
+                    logger.debug('Scheduler call too early, waiting... (' + str(current_time) +
+                                 '>= (' + str(self.lastscheduler) + ' + '
+                                 + str(scheduler_min_time_between_2_calls) + ')')
 
             # TIME UPDATE
             elif self.state == 'Time update':
@@ -407,7 +408,7 @@ class Almighty(object):
             # CHECK FOR VILLAINS
             elif self.state == 'Check for villains':
                 check_result = check_for_villains()
-                self.lastvillains = time.time()
+                self.lastvillains = tools.get_time()
                 if check_result == 1:
                     self.state = 'Leon'
                 elif check_result == 0:
@@ -419,7 +420,7 @@ class Almighty(object):
             # CHECK NODE STATES
             elif self.state == 'Check node states':
                 check_result = check_nodes()
-                self.lastchecknodes = time.time()
+                self.lastchecknodes = tools.get_time()
                 if check_result == 1:
                     self.state = 'Change node state'
                 elif check_result == 0:
@@ -458,7 +459,7 @@ class Almighty(object):
 
 def main():  # pragma: no cover
     almighty = Almighty()
-    almighty.run()
+    return almighty.run()
     
 if __name__ == '__main__':  # pragma: no cover
-    main()
+     sys.exit(main())

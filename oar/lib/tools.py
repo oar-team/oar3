@@ -15,6 +15,8 @@ import signal, psutil
 from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
 from multiprocessing import Process
+from os import kill
+
 
 # Constants
 DEFAULT_CONFIG = {
@@ -413,6 +415,9 @@ def get_date():
 
     result = db.session.execute(req).scalar()
     return int(result)
+
+def get_time():
+    return(time.time())
 
 def sql_to_local(date):
     """Converts a date specified in the format used by the sql database to an

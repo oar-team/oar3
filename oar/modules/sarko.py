@@ -159,4 +159,4 @@ def main():  # pragma: no cover
     return sarko.guilty_found
     
 if __name__ == '__main__':  # pragma: no cover   
-    sys.exit(main)
+    sys.exit(main())
