@@ -3,23 +3,17 @@
 from oar.modules.almighty import Almighty
 from oar.lib import config
 from .fakezmq import FakeZmq
+from ..faketools import (fake_call, fake_called_command)
 import oar.lib.tools
 
 import pytest
 import zmq
-
-called_command = ''
 
 KAO = '/usr/local/lib/oar/kao'
 FINAUD = '/usr/local/lib/oar/oar3-finaud'
 SARKO = '/usr/local/lib/oar/oar3-sarko'
 LEON = '/usr/local/lib/oar/oar3-leon'
 NODE_CHANGE_STATE = '/usr/local/lib/oar/oar3-node-change-state'
-
-def fake_call(cmd):
-    global called_command
-    called_command = cmd
-    return 0
 
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
@@ -74,6 +68,30 @@ def test_almighty_state_called_command(state_in, state_out, called_cmd, monkeypa
     almighty = Almighty()
     almighty.state = state_in
     almighty.run(False)
-    assert called_command == called_cmd
+    assert fake_called_command['cmd'] == called_cmd
     assert almighty.state == state_out
 
+
+@pytest.mark.parametrize("state_in, exit_value, state_out, called_cmd", [
+    ('Scheduler', 2, 'Leon', NODE_CHANGE_STATE),
+    ('Scheduler', 1, 'Scheduler', NODE_CHANGE_STATE),
+    ('Scheduler', 0, 'Time update', KAO),
+    ('Scheduler', [1, 0], 'Scheduler', KAO),
+    ('Scheduler', [2, 0], 'Leon', KAO)
+])
+def test_almighty_state_called_command_with_exit_value(state_in, exit_value, state_out,
+                                                       called_cmd, monkeypatch):
+    #global fake_called_command
+    fake_called_command['exit_value'] = exit_value
+    almighty = Almighty()
+    almighty.state = 'Scheduler'
+    almighty.run(False)
+    assert fake_called_command['cmd'] == called_cmd
+    assert almighty.state == state_out
+    fake_called_command['exit_value'] = None
+
+def test_almighty_no_dup_command():
+    almighty = Almighty()
+    almighty.command_queue = ['foo_cmd']
+    almighty.add_command('foo_cmd')
+    assert almighty.command_queue == ['foo_cmd']

@@ -31,6 +31,11 @@ class FakeProcess(object):
     def is_alive(self):
         return fake_process['is_alive']
 
-fake_called_command = {'cmd': None}
+fake_called_command = {'cmd': None, 'exit_value': 0}
 def fake_call(cmd):
-    fake_called_command['cmd'] = cmd    
+    fake_called_command['cmd'] = cmd
+    if isinstance(fake_called_command['exit_value'], list):
+        exit_value = fake_called_command['exit_value'].pop()
+    else:
+        exit_value = fake_called_command['exit_value']
+    return exit_value
