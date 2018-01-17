@@ -159,11 +159,20 @@ def set_node_state(hostname, state, finaud_tag):
                                           synchronize_session=False)
         db.commit()
     date = tools.get_date()
-    db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
-                         .filter(ResourceLog.attribute == 'state')\
-                         .filter(Resource.network_address == hostname)\
-                         .filter(ResourceLog.resource_id == Resource.id)\
-                         .update({ResourceLog.date_stop: date}, synchronize_session=False)
+    if config['DB_TYPE'] == 'Pg':
+        db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
+                             .filter(ResourceLog.attribute == 'state')\
+                             .filter(Resource.network_address == hostname)\
+                             .filter(ResourceLog.resource_id == Resource.id)\
+                             .update({ResourceLog.date_stop: date}, synchronize_session=False)
+    else:
+        logger.debug('Warnning: Sqlite must not be used in production') 
+        cur = db.session
+        cur.execute("""UPDATE resource_logs SET date_stop = %s
+        WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '%s' 
+        AND resource_logs.resource_id = resources.resource_id)
+        AND resource_logs.date_stop = 0
+        AND resource_logs.attribute = '%s'""" % (str(date), hostname, state))
     db.commit()
 
     #sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\

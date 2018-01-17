@@ -111,10 +111,10 @@ class NodeChangeState(object):
                 # for some event types
                 if (event.type == 'PING_CHECKER_NODE_SUSPECTED'
                     or event.type == 'PING_CHECKER_NODE_SUSPECTED_END_JOB'):
-                    hosts = get_hostname_event(event.event_id)
+                    hosts = get_hostname_event(event.id)
                     finaud_tag = 'YES'
                 elif event.type in type_to_check_cpuset_SR_error: 
-                    hosts = get_hostname_event(event.event_id)
+                    hosts = get_hostname_event(event.id)
                 else:
                     hosts = get_job_host_log(job.assigned_moldable_job)
                     if event.type not in type_to_check_cpuset_LT_error:
@@ -136,7 +136,7 @@ class NodeChangeState(object):
                             for resource_id in get_all_resources_on_node(host):
                                 self.resources_to_heal.append(str(resource_id) + ' ' + host)
                             self.exit_code = 1
-                    msg = 'Set nodes to suspected after error' + event.type + ' ' + ','.join(hosts)
+                    msg = 'Set nodes to suspected after error ' + event.type + ' ' + ','.join(hosts)
                     logger.warning(msg)
                     tools.send_log_by_email('Suspecting nodes', msg)
                 

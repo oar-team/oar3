@@ -21,7 +21,15 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
     monkeypatch.setattr(oar.lib.tools, 'manage_remote_commands', fake_manage_remote_commands)
     monkeypatch.setattr(oar.lib.tools, 'exec_with_timeout', fake_exec_with_timeout)
-    
+    monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda x,y,z: None)
+
+def assign_resources(job_id):
+    db.query(Job).filter(Job.id == job_id)\
+                 .update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
+    resources = db.query(Resource).all()
+    for r in resources[:4]:
+        AssignedResource.create(moldable_id=job_id, resource_id=r.id)   
+
 def test_node_change_state_main():
     exit_code = main()
     print(exit_code)
@@ -33,7 +41,7 @@ def test_node_change_state_void():
     print(node_change_state.exit_code)
     assert node_change_state.exit_code == 0
 
-def base_test_node_change(event_type, job_state, job_id=None):
+def base_test_node_change(event_type, job_state, job_id=None, exit_code=0):
     if not job_id:
         job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     ev = EventLog.create(to_check='YES', job_id=job_id, type=event_type)
@@ -42,61 +50,67 @@ def base_test_node_change(event_type, job_state, job_id=None):
     node_change_state.run()
     job = db.query(Job).filter(Job.id==job_id).first()
     print(node_change_state.exit_code)    
-    assert node_change_state.exit_code == 0
+    assert node_change_state.exit_code == exit_code
     assert job.state == job_state
 
 def test_node_change_state_error():
     base_test_node_change('EXTERMINATE_JOB', 'Error')
     
-    
 def test_node_change_state_job_idempotent_exitcode_25344():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'], start_time=10, stop_time=100)
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344,
+                        types=['idempotent','timesharing=*,*'], start_time=10, stop_time=100)
     base_test_node_change('SWITCH_INTO_TERMINATE_STATE', 'Terminated', job_id)
         
 def test_node_change_state_job_switch_to_error():
     base_test_node_change('SWITCH_INTO_ERROR_STATE', 'Error')
+    
+def test_node_change_state_job_epilogue_error():
+    base_test_node_change('EPILOGUE_ERROR', 'Terminated')
 
+def test_node_change_state_PING_CHECKER_NODE_SUSPECTED():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
+    Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
+    base_test_node_change('PING_CHECKER_NODE_SUSPECTED', 'Error', job_id)
+    
 def test_node_change_state_job_scheduled_prologue_error():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", start_time=10, stop_time=100,
                         reservation='Scheduled')
-    base_test_node_change('PROLOGUE_ERROR', 'Error', job_id)
+    #import pdb; pdb.set_trace()
+    assign_resources(job_id)
+    base_test_node_change('PROLOGUE_ERROR', 'Error', job_id, 1)
     
 def test_node_change_state_job_check_toresubmit():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
-    ev = EventLog.create(to_check='YES', job_id=job_id, type='SERVER_PROLOGUE_TIMEOUT')
-    os.environ['OARDO_USER'] = 'oar'
     Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
-    
-    node_change_state = NodeChangeState()
-    node_change_state.run()
-
+    base_test_node_change('SERVER_PROLOGUE_TIMEOUT', 'Error', job_id) 
     event = db.query(EventLog).filter(EventLog.type=='RESUBMIT_JOB_AUTOMATICALLY').first()
-    print(node_change_state.exit_code)    
-    assert node_change_state.exit_code == 0
     assert event.job_id == job_id
-
+    
 def test_node_change_state_job_suspend_resume():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
-    db.query(Job).update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
-    ev = EventLog.create(to_check='YES', job_id=job_id, type='HOLD_WAITING_JOB')
-    #os.environ['OARDO_USER'] = 'oar'
-    #Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
 
     config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD'] = 'core'
     config['SUSPEND_RESUME_FILE'] = '/tmp/fake_suspend_resume'
     config['JUST_AFTER_SUSPEND_EXEC_FILE'] = '/tmp/fake_admin_script'
     config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = 60
 
-    resources = db.query(Resource).all()
-    for r in resources[:4]:
-        AssignedResource.create(moldable_id=job_id, resource_id=r.id)
+    assign_resources(job_id)
+    base_test_node_change('HOLD_WAITING_JOB', 'Suspended', job_id)
 
-    node_change_state = NodeChangeState()
-    node_change_state.run()
 
-    #event = db.query(EventLog).filter(EventLog.type=='RESUBMIT_JOB_AUTOMATICALLY').first()
-    print(node_change_state.exit_code)    
-    assert node_change_state.exit_code == 0
-    #assert event.job_id == job_id
-
+def test_node_change_state_job_suspend_resume_waiting_interactive():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Waiting',
+                        job_type='INTERACTIVE', info_type='123.123.123.123:1234')
+    base_test_node_change('HOLD_WAITING_JOB', 'Hold', job_id)
     
+def test_node_change_state_job_suspend_resume_resuming():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Resuming')
+    base_test_node_change('HOLD_WAITING_JOB', 'Suspended', job_id)
+
+def test_node_change_state_job_suspend_resume_suspend():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Suspend')
+    base_test_node_change('RESUME_JOB', 'Resuming', job_id)
+
+def test_node_change_state_job_suspend_resume_hold():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Hold')
+    base_test_node_change('RESUME_JOB', 'Waiting', job_id)
