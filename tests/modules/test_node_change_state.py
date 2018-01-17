@@ -33,28 +33,34 @@ def test_node_change_state_void():
     print(node_change_state.exit_code)
     assert node_change_state.exit_code == 0
 
-def test_node_change_state_error():
-    job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
-    ev = EventLog.create(to_check='YES', job_id=job_id, type='EXTERMINATE_JOB')
-    node_change_state = NodeChangeState()
-    node_change_state.run()
-    job = db.query(Job).filter(Job.id==job_id).first()
-    print(node_change_state.exit_code)    
-    assert node_change_state.exit_code == 0
-    assert job.state == 'Error'
-
-def test_node_change_state_job_idempotent_exitcode_25344():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'], start_time=10, stop_time=100)
-    ev = EventLog.create(to_check='YES', job_id=job_id, type='SWITCH_INTO_TERMINATE_STATE')
+def base_test_node_change(event_type, job_state, job_id=None):
+    if not job_id:
+        job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    ev = EventLog.create(to_check='YES', job_id=job_id, type=event_type)
     os.environ['OARDO_USER'] = 'oar'
     node_change_state = NodeChangeState()
     node_change_state.run()
     job = db.query(Job).filter(Job.id==job_id).first()
     print(node_change_state.exit_code)    
     assert node_change_state.exit_code == 0
-    assert job.state == 'Terminated'
-    
+    assert job.state == job_state
 
+def test_node_change_state_error():
+    base_test_node_change('EXTERMINATE_JOB', 'Error')
+    
+    
+def test_node_change_state_job_idempotent_exitcode_25344():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", exit_code=25344, types=['idempotent','timesharing=*,*'], start_time=10, stop_time=100)
+    base_test_node_change('SWITCH_INTO_TERMINATE_STATE', 'Terminated', job_id)
+        
+def test_node_change_state_job_switch_to_error():
+    base_test_node_change('SWITCH_INTO_ERROR_STATE', 'Error')
+
+def test_node_change_state_job_scheduled_prologue_error():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties="", start_time=10, stop_time=100,
+                        reservation='Scheduled')
+    base_test_node_change('PROLOGUE_ERROR', 'Error', job_id)
+    
 def test_node_change_state_job_check_toresubmit():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
     ev = EventLog.create(to_check='YES', job_id=job_id, type='SERVER_PROLOGUE_TIMEOUT')
