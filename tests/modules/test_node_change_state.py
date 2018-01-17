@@ -43,7 +43,7 @@ def test_node_change_state_void():
 
 def base_test_node_change(event_type, job_state, job_id=None, exit_code=0):
     if not job_id:
-        job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+        job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
     ev = EventLog.create(to_check='YES', job_id=job_id, type=event_type)
     os.environ['OARDO_USER'] = 'oar'
     node_change_state = NodeChangeState()
@@ -67,6 +67,9 @@ def test_node_change_state_job_switch_to_error():
 def test_node_change_state_job_epilogue_error():
     base_test_node_change('EPILOGUE_ERROR', 'Terminated')
 
+def test_node_change_state_job_FRAG_JOB_REQUEST():
+    base_test_node_change('FRAG_JOB_REQUEST', 'Waiting')
+    
 def test_node_change_state_PING_CHECKER_NODE_SUSPECTED():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
     Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
@@ -114,3 +117,22 @@ def test_node_change_state_job_suspend_resume_suspend():
 def test_node_change_state_job_suspend_resume_hold():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Hold')
     base_test_node_change('RESUME_JOB', 'Waiting', job_id)
+
+def test_node_change_state_resource_suspected():
+    db.query(Resource).filter(Resource.network_address == 'localhost0')\
+                      .update({Resource.next_state: 'Suspected'}, synchronize_session=False)
+    base_test_node_change('SWITCH_INTO_TERMINATE_STATE', 'Terminated', None, 1)
+
+def test_node_change_state_resource_dead():
+    db.query(Resource).filter(Resource.network_address == 'localhost0')\
+                      .update({Resource.next_state: 'Dead'}, synchronize_session=False)
+    base_test_node_change('SWITCH_INTO_TERMINATE_STATE', 'Terminated', None, 1)
+    
+def test_node_change_state_resource_dead_assigned():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+    assign_resources(job_id)
+    db.query(Resource).filter(Resource.network_address == 'localhost0')\
+                      .update({Resource.next_state: 'Dead'}, synchronize_session=False)
+    node_change_state = NodeChangeState()
+    node_change_state.run()
+    assert node_change_state.exit_code == 2

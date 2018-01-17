@@ -207,7 +207,6 @@ class NodeChangeState(object):
             
         # Treate nextState field
         resources_to_change = get_resources_change_state()
-
         # A Term command must be added in the Almighty
         debug_info = {}
         if resources_to_change:
@@ -226,7 +225,7 @@ class NodeChangeState(object):
                         self.resources_to_heal.append(str(r_id) + ' '  + resource.network_address)
 
                     if (next_state == 'Dead') or  (next_state == 'Absent'):
-                        job_ids = get_resource_job_to_frag()
+                        job_ids = get_resource_job_to_frag(r_id)
                         for job_id in job_ids:
                             logger.debug(resource.network_address + ': must kill job ' + str(job_id))
                             frag_job(job_id)

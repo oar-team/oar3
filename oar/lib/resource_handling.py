@@ -4,7 +4,7 @@ import os
 
 from sqlalchemy import distinct
 from oar.lib import (db, config, Resource, ResourceLog, Job, AssignedResource,
-                     EventLog, FragJob, get_logger)
+                     EventLog, FragJob, JobType, MoldableJobDescription, get_logger)
 from oar.lib.event import (add_new_event, is_an_event_exists)
 
 import oar.lib.tools as tools
@@ -133,8 +133,8 @@ def update_resource_nextFinaudDecision(resource_id, finaud_decision):
 
 
 def update_scheduler_last_job_date(date, moldable_id):
-    db.query(Resource).filter(AssignedResource.Moldable_job_id == moldable_id)\
-                      .filter(AssignedResource.Resource_id == Resource.resource_id)\
+    db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
+                      .filter(AssignedResource.resource_id == Resource.resource_id)\
                       .update({Resource.last_job_date: date})
 
 def update_current_scheduler_priority(job, value, state):
@@ -208,11 +208,11 @@ def get_resource_job_to_frag(r_id):
     res = db.query(Job.id).filter(AssignedResource.index == 'CURRENT')\
                           .filter(MoldableJobDescription.index == 'CURRENT')\
                           .filter(AssignedResource.resource_id == r_id)\
-                          .filter(AssignedResource.moldable_job_id == MoldableJobDescription.id)\
-                          .filter(MoldableJobDescription.job_id == job.id)\
+                          .filter(AssignedResource.moldable_id == MoldableJobDescription.id)\
+                          .filter(MoldableJobDescription.job_id == Job.id)\
                           .filter(Job.state != 'Terminated')\
                           .filter(Job.state != 'Error')\
-                          .filter(job.id.in_(subq))\
+                          .filter(~Job.id.in_(subq))\
                           .all()
 
     return res
