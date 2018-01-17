@@ -289,6 +289,7 @@ class NodeChangeState(object):
 
                 tag, bad = tools.manage_remote_commands(nodes_cpuset_fields.keys(), suspend_data , suspend_file,
                                                         'suspend', openssh_cmd, taktuk_cmd)
+                #import pdb; pdb.set_trace()
                 if tag == 0:
                     msg = '[SUSPEND_RESUME] [' + str(job.id) + '] Bad suspend/resume file: ' + suspend_file
                     logger.error(msg)

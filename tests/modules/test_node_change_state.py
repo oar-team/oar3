@@ -9,11 +9,13 @@ from oar.lib.job_handling import insert_job
 
 import oar.lib.tools  # for monkeypatching
 
+fake_manage_remote_commands_return = (1, [])
 def fake_manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
-    return (1, [])
+    return fake_manage_remote_commands_return
 
+fake_exec_with_timeout_return = ''
 def fake_exec_with_timeout(args, timeout):
-    return ''
+    return fake_exec_with_timeout_return
 
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
@@ -114,6 +116,24 @@ def test_node_change_state_job_suspend_resume_suspend():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Suspend')
     base_test_node_change('RESUME_JOB', 'Resuming', job_id)
 
+def test_node_change_state_job_suspend_resume_suspend_tag0():
+    global fake_manage_remote_commands_return
+    fake_manage_remote_commands_return = (0, [])
+
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+
+    config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD'] = 'core'
+    config['SUSPEND_RESUME_FILE'] = '/tmp/fake_suspend_resume'
+    config['JUST_AFTER_SUSPEND_EXEC_FILE'] = '/tmp/fake_admin_script'
+    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = 60
+
+    assign_resources(job_id)
+    base_test_node_change('HOLD_WAITING_JOB', 'Running', job_id)
+
+    event = db.query(EventLog).filter(EventLog.type=='SUSPEND_RESUME_MANAGER_FILE').one()
+    assert event.job_id == job_id
+    
+    
 def test_node_change_state_job_suspend_resume_hold():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Hold')
     base_test_node_change('RESUME_JOB', 'Waiting', job_id)
