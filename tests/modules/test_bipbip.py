@@ -63,8 +63,13 @@ def _test_bipbip_toLaunch(noop=False, job_id=None, state='toLaunch', args=[]):
     db.query(Job).update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
     Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
 
+    #db.commit()
+    #import pdb; pdb.set_trace()
     resources = db.query(Resource).all()
-
+    
+    print('yop')
+    print(resources)
+    
     for r in resources[:4]:
         AssignedResource.create(moldable_id=job_id, resource_id=r.id)
         print(r.id, r.network_address)
@@ -97,6 +102,7 @@ def test_bipbip_toLaunch_noop():
 
 
 def test_bipbip_toLaunch_cpuset_error():
+    #import pdb; pdb.set_trace()
     fake_bad_nodes['init'] = ['localhost0']
     job_id, bipbip = _test_bipbip_toLaunch()
     fake_bad_nodes['init'] = []
@@ -106,7 +112,7 @@ def test_bipbip_toLaunch_cpuset_error():
     assert event.type == 'CPUSET_ERROR'
     assert bipbip.exit_code == 2
 
-def test_bipbip_toLaunch_cpuset_error_advance_reservation():
+def test_bipbip_toLaunch_cpuset_error_advance_reservation(monkeypatch):
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', command='yop',
                         state='toLaunch', stdout_file='poy', stderr_file='yop',
                         reservation='Scheduled')
