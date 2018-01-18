@@ -102,20 +102,24 @@ def test_node_change_state_job_suspend_resume():
     assign_resources(job_id)
     base_test_node_change('HOLD_WAITING_JOB', 'Suspended', job_id)
 
+def test_node_change_state_job_suspend_resume_error():
 
-def test_node_change_state_job_suspend_resume_waiting_interactive():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Waiting',
-                        job_type='INTERACTIVE', info_type='123.123.123.123:1234')
-    base_test_node_change('HOLD_WAITING_JOB', 'Hold', job_id)
+    global fake_exec_with_timeout_return
+    fake_exec_with_timeout_return = 'foo_msg_error'
+
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
+
+    config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD'] = 'core'
+    config['SUSPEND_RESUME_FILE'] = '/tmp/fake_suspend_resume'
+    config['JUST_AFTER_SUSPEND_EXEC_FILE'] = '/tmp/fake_admin_script'
+    config['SUSPEND_RESUME_SCRIPT_TIMEOUT'] = 60
+
+    assign_resources(job_id)
+    base_test_node_change('HOLD_WAITING_JOB', 'Resuming', job_id)
+
+    event = db.query(EventLog).filter(EventLog.type=='SUSPEND_SCRIPT_ERROR').one()
+    assert event.job_id == job_id
     
-def test_node_change_state_job_suspend_resume_resuming():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Resuming')
-    base_test_node_change('HOLD_WAITING_JOB', 'Suspended', job_id)
-
-def test_node_change_state_job_suspend_resume_suspend():
-    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Suspend')
-    base_test_node_change('RESUME_JOB', 'Resuming', job_id)
-
 def test_node_change_state_job_suspend_resume_suspend_tag0():
     global fake_manage_remote_commands_return
     fake_manage_remote_commands_return = (0, [])
@@ -133,6 +137,21 @@ def test_node_change_state_job_suspend_resume_suspend_tag0():
     event = db.query(EventLog).filter(EventLog.type=='SUSPEND_RESUME_MANAGER_FILE').one()
     assert event.job_id == job_id
     
+
+def test_node_change_state_job_suspend_resume_waiting_interactive():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Waiting',
+                        job_type='INTERACTIVE', info_type='123.123.123.123:1234')
+    base_test_node_change('HOLD_WAITING_JOB', 'Hold', job_id)
+    
+def test_node_change_state_job_suspend_resume_resuming():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Resuming')
+    base_test_node_change('HOLD_WAITING_JOB', 'Suspended', job_id)
+
+def test_node_change_state_job_suspend_resume_suspend():
+    job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Suspend')
+    base_test_node_change('RESUME_JOB', 'Resuming', job_id)
+
+
     
 def test_node_change_state_job_suspend_resume_hold():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Hold')

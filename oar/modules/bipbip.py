@@ -9,7 +9,7 @@ from oar.lib import (config, get_logger)
 
 from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_hostnames, check_end_of_job,
                                   get_current_moldable_job, set_job_state, archive_some_moldable_job_nodes,
-                                  get_job_cpuset_name, get_job_types, get_cpuset_values)
+                                  get_job_cpuset_name, get_job_types, get_cpuset_values, set_job_message)
 
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
@@ -203,7 +203,7 @@ class BipBip(object):
                         if (job.reservation != 'None'):
                             # Look at if there is at least one alive node for the reservation
                             tmp_hosts = [h for h in hosts if h not in bad]
-                            set_job_state(job_id, 'One or several nodes are not responding correctly(CPUSET_ERROR)')
+                            set_job_message(job_id, 'One or several nodes are not responding correctly(CPUSET_ERROR)')
 
                             add_new_event_with_host(event_type, job_id, '[bipbip] OAR cpuset suspects nodes for the job '\
                                                     + str(job_id) + ': ' + str(bad), bad)
