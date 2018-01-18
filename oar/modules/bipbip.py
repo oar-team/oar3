@@ -235,7 +235,7 @@ class BipBip(object):
                 bad = tools.pingchecker(hosts)             
 
             if len(bad) > 0:
-                set_job_state(job_id, 'One or several nodes are not responding correctly')
+                set_job_message(job_id, 'One or several nodes are not responding correctly')
                 logger.error('[' + str(job.id) + ']  /!\ Some nodes are inaccessible (' + event_type\
                              + '):\n' + str(bad))
                 exit_bipbip = 1
