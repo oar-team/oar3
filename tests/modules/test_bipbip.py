@@ -66,7 +66,8 @@ def _test_bipbip_toLaunch(noop=False, job_id=None, state='toLaunch', args=[]):
     resources = db.query(Resource).all()
     for r in resources[:4]:
         AssignedResource.create(moldable_id=job_id, resource_id=r.id)
-
+    db.commit()
+        
     config['SERVER_HOSTNAME'] = 'localhost'
     config['DETACH_JOB_FROM_SERVER'] = 'localhost'
     
