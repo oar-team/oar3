@@ -297,37 +297,37 @@ class BipBip(object):
             # killed by the cpuset manager
             oarexec_cpuset_path = cpuset_full_path
             
-            data_to_transfer = {
-                'job_id': job.id,
-                'array_id': job.array_id,
-                'array_index': job.array_index,
-                'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
-                'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),                
-                'launching_directory': job.launching_directory,
-                'job_env': job.env,
-                'node_file_db_fields': node_file_db_field,
-                'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
-                'user': job.user,
-                'job_user': job.user,
-                'types': job_types,
-                'name': job.name,
-                'project': job.project,
-                'reservation': job.reservation,
-                'walltime_seconds': mold_job_description.walltime,
-                'command': job.command,
-                'challenge': job_challenge,
-                'almighty_hostname': config['SERVER_HOSTNAME'],
-                'almighty_port': config['SERVER_PORT'],
-                'checkpoint_signal': job.checkpoint_signal,
-                'debug_mode': config['OAREXEC_DEBUG_MODE'],
-                'mode': job.type,
-                'pro_epi_timeout': pro_epi_timeout,
-                'prologue': prologue_exec_file,
-                'epilogue': epilogue_exec_file,
-                'tmp_directory': config['OAREXEC_DIRECTORY'],  
-                'detach_oarexec': config['DETACH_JOB_FROM_SERVER'],
-                'cpuset_full_path': oarexec_cpuset_path
-            }
+        data_to_transfer = {
+            'job_id': job.id,
+            'array_id': job.array_id,
+            'array_index': job.array_index,
+            'stdout_file': job.stdout_file.replace('%jobid%', str(job.id)),
+            'stderr_file': job.stderr_file.replace('%jobid%', str(job.id)),                
+            'launching_directory': job.launching_directory,
+            'job_env': job.env,
+            'node_file_db_fields': node_file_db_field,
+            'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
+            'user': job.user,
+            'job_user': job.user,
+            'types': job_types,
+            'name': job.name,
+            'project': job.project,
+            'reservation': job.reservation,
+            'walltime_seconds': mold_job_description.walltime,
+            'command': job.command,
+            'challenge': job_challenge,
+            'almighty_hostname': config['SERVER_HOSTNAME'],
+            'almighty_port': config['SERVER_PORT'],
+            'checkpoint_signal': job.checkpoint_signal,
+            'debug_mode': config['OAREXEC_DEBUG_MODE'],
+            'mode': job.type,
+            'pro_epi_timeout': pro_epi_timeout,
+            'prologue': prologue_exec_file,
+            'epilogue': epilogue_exec_file,
+            'tmp_directory': config['OAREXEC_DIRECTORY'],  
+            'detach_oarexec': config['DETACH_JOB_FROM_SERVER'],
+            'cpuset_full_path': oarexec_cpuset_path
+        }
 
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
         data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
