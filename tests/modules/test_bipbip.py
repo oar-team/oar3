@@ -64,10 +64,18 @@ def _test_bipbip_toLaunch(noop=False, job_id=None, state='toLaunch', args=[]):
     Challenge.create(job_id=job_id, challenge='foo1', ssh_private_key='foo2', ssh_public_key='foo2')
 
     resources = db.query(Resource).all()
+
     for r in resources[:4]:
         AssignedResource.create(moldable_id=job_id, resource_id=r.id)
+        print(r.id, r.network_address)
     db.commit()
+
+    for ass_res in db.query(AssignedResource).all():
+        print('AssignedResource:', ass_res.moldable_id, ass_res.resource_id) 
+
+
         
+    
     config['SERVER_HOSTNAME'] = 'localhost'
     config['DETACH_JOB_FROM_SERVER'] = 'localhost'
     
