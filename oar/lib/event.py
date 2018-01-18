@@ -13,7 +13,7 @@ def add_new_event(ev_type, job_id, description):
     event_data = EventLog(type=ev_type, job_id=job_id, date=tools.get_date(),
                           description=description[:255])
     db.add(event_data)
-
+    db.commit()
 
 def add_new_event_with_host(ev_type, job_id, description, hostnames):
     
@@ -27,8 +27,8 @@ def add_new_event_with_host(ev_type, job_id, description, hostnames):
     #fills the EventLogHostname
     for hostname in set(hostnames):
         db.add(EventLogHostname(event_id=event_id, hostname=hostname))
-
-        
+    db.commit()
+    
 def is_an_event_exists(job_id, event):
     res = db.query(func.count(EventLog.id)).filter(EventLog.job_id == job_id)\
                                            .filter(EventLog.type == event)\
