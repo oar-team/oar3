@@ -20,6 +20,14 @@ def fake_get_date():
 def fake_signal_oarexec(host, job_id, signal_name, detach, openssh_cmd):
     return ''
 
+@pytest.yield_fixture(scope='function', autouse=True)
+def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        # add some resources
+        for i in range(5):
+            Resource.create(network_address='localhost'+str(i))            
+        yield
+        
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'get_date', fake_get_date)
@@ -30,10 +38,14 @@ def assign_resources(job_id):
     db.query(Job).filter(Job.id == job_id)\
                  .update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
     resources = db.query(Resource).all()
+    print(resources)
     for r in resources[:4]:
         AssignedResource.create(moldable_id=job_id, resource_id=r.id)
         
 def test_sarko_void():
+    #print("yop")
+    #for j in db.query(Job).all():
+    #    print(j)
     sarko = Sarko()
     sarko.run()
     print(sarko.guilty_found)
