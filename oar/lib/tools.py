@@ -403,7 +403,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
                     if m.group(1) in bad_hosts:
                         del bad_hosts[m.group(1)]
 
-        return (1, bad_hosts.keys())
+        return (1, list(bad_hosts.keys()))
     return (0, []) 
 
 
