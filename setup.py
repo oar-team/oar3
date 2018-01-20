@@ -51,6 +51,8 @@ setup(
     version=version,
     url='https://github.com/oar-team/oar3',
     packages=find_packages(),
+    package_dir={'oar': 'oar'},
+    package_data={'oar': ['scripts/*.pl', 'scripts/*.pm', 'scripts/*.sh', 'scripts/oarexec']},
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],
