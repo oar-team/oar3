@@ -7,6 +7,13 @@ from oar.lib.job_handling import insert_job
 from oar.lib import (db, config, FragJob, EventLog, Job, Resource, AssignedResource)
 import oar.lib.tools  # for monkeypatching
 
+
+@pytest.yield_fixture(scope='module', autouse=True)
+def minimal_db_initialization(request):
+    with db.session(ephemeral=True):
+        yield
+
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
@@ -28,7 +35,7 @@ def test_leon_void():
     print(leon.exit_code)
     assert leon.exit_code == 0
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')
+
 def test_leon_simple():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
     leon = Leon([str(job_id)])
@@ -36,15 +43,14 @@ def test_leon_simple():
     print(leon.exit_code)
     assert leon.exit_code == 0
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')
+
 def test_leon_simple_not_job_id_int():
     leon = Leon('zorglub')
     leon.run()
     print(leon.exit_code)
     assert leon.exit_code == 1
 
-    
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')
+
 def test_leon_exterminate_jobid():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
 
@@ -64,7 +70,7 @@ def test_leon_exterminate_jobid():
     assert leon.exit_code == 0
     assert event.job_id == job_id
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')    
+
 def test_leon_exterminate():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='')
 
@@ -95,7 +101,6 @@ def test_leon_get_jobs_to_kill_waiting():
     assert leon.exit_code == 1
     assert job.state == 'Error'   
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')    
 def test_leon_get_jobs_to_kill_terminated():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Terminated')
 
@@ -110,7 +115,7 @@ def test_leon_get_jobs_to_kill_terminated():
     assert leon.exit_code == 0
     assert job.state == 'Terminated'
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')    
+
 def test_leon_get_jobs_to_kill_noop():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running',
                         types=['noop'])
@@ -126,7 +131,7 @@ def test_leon_get_jobs_to_kill_noop():
     assert leon.exit_code == 1
     assert job.state == 'Terminated'
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure')    
+
 def test_leon_get_jobs_to_kill_running():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running')
 
@@ -140,7 +145,7 @@ def test_leon_get_jobs_to_kill_running():
     print(leon.exit_code)
     assert leon.exit_code == 0
 
-@pytest.mark.skipif("os.environ.get('DB_TYPE', '') == 'postgresql'", reason='Bug in test procedure') 
+
 def test_leon_get_jobs_to_kill_running_deploy():
     job_id = insert_job(res=[(60, [('resource_id=4', '')])], properties='', state='Running',
                         types=['deploy'])
