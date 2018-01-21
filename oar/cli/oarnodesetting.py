@@ -51,17 +51,17 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         return cmd_ret
     
     if state and state not in ['Alive', 'Absent', 'Dead']:
-        cmd_ret.warn('Bad state value. Possible values are: Alive | Absent | Dead')
+        cmd_ret.warning('Bad state value. Possible values are: Alive | Absent | Dead')
         cmd_ret.usage(1)
         return cmd_ret
     
     if maintenance and maintenance not in ['on', 'off']:
-        cmd_ret.warn('Bad maintenance mode value. Possible values are: on | off')
+        cmd_ret.warning('Bad maintenance mode value. Possible values are: on | off')
         cmd_ret.usage(1)
         return cmd_ret
     
     if drain and drain  not in ['on', 'off']:
-        cmd_ret.warn('Bad drain mode value. Possible values are: on | off')
+        cmd_ret.warning('Bad drain mode value. Possible values are: on | off')
         cmd_ret.usage(1)
         return cmd_ret
     
@@ -87,12 +87,12 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             with open(filename, 'r') as hostfile:
                 hosts = [host for host in hostfile]
         except OSError as e:
-            cmd_ret.warn(str(e), 13)
+            cmd_ret.warning(str(e), 13)
 
         hostsnames += hosts
 
     if add and (resources or sql):
-        cmd_ret.warn('You cannot use -r|--resource or --sql and -a|--add options at a same time')
+        cmd_ret.warning('You cannot use -r|--resource or --sql and -a|--add options at a same time')
         cmd_ret.usage(1)
         return cmd_ret
     
@@ -105,7 +105,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         if value:
             cmd_ret._print(str(value))
         else:
-            cmd_ret.warn('Cannot retrieve the last value for ' + last_property_value\
+            cmd_ret.warning('Cannot retrieve the last value for ' + last_property_value\
                          + '. Either no resource or no such property exists (yet).')
             return cmd_ret
 
@@ -126,7 +126,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             if state:
                 tmp_nb_updates = set_resources_nextState(resources, state)
                 if tmp_nb_updates < len(resources):
-                    cmd_ret.warn(str(len(resources) - tmp_nb_updates) +\
+                    cmd_ret.warning(str(len(resources) - tmp_nb_updates) +\
                                  ' resource(s) cannot be updated.', 3)
                 else:
                     cmd_ret('(' + ','.join(resources) + ') --> ' + state)
@@ -160,7 +160,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                         cmd_ret._print(host + ' --> ' + state)
                         hosts_to_check.append(host)
                     else:
-                        cmd_ret.warn('Node ' + host\
+                        cmd_ret.warning('Node ' + host\
                                      + ' does not exist in OAR database.', 4)
                 tools.notify_almighty('ChState')
 
@@ -183,7 +183,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         elif hostnames:
             set_resources_properties(None, hostnames, properties)
         else:
-            cmd_ret.warn('Cannot find resources to set in OAR database.', 2)
+            cmd_ret.warning('Cannot find resources to set in OAR database.', 2)
 
         tools.notify_almighty('Term')
 
