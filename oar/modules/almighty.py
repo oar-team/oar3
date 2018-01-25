@@ -339,6 +339,9 @@ class Almighty(object):
 
                 logger.debug('Command queue : ' + str(self.command_queue))
                 command = self.command_queue.pop(0)
+                # Remove useless 'Time' command to enhance reactivity
+                if command == 'Time' and self.command_queue !=[]:
+                    command = self.command_queue.pop(0)
                 
                 
                 logger.debug('Qtype = [' + command + ']')
