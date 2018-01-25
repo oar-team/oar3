@@ -166,7 +166,6 @@ def set_node_state(hostname, state, finaud_tag):
                              .filter(ResourceLog.resource_id == Resource.id)\
                              .update({ResourceLog.date_stop: date}, synchronize_session=False)
     else:
-        import pdb; pdb.set_trace()
         logger.debug('Warnning: Sqlite must not be used in production') 
         cur = db.session
         cur.execute("""UPDATE resource_logs SET date_stop = %s

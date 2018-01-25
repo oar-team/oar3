@@ -67,7 +67,7 @@ class BipBip(object):
         cpuset_file = config['JOB_RESOURCE_MANAGER_FILE']
         if not re.match(r'^\/', cpuset_file):
             if 'OARDIR' not in os.environ:
-                msg = '$OARDIR variable envionment must be defined'
+                msg = '$OARDIR variable environment must be defined'
                 logger.error(msg)
                 raise Exception(msg)
             cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
@@ -86,7 +86,7 @@ class BipBip(object):
                          + ' ' + self.oarexec_reattach_script_exit_value)
             
             try: 
-                int(self.oarexec_reattach_exit_value)
+                self.oarexec_reattach_exit_vint = int(self.oarexec_reattach_exit_value)
                 
             except ValueError:
                 logger.error('[' + str(job.id) + '] Bad argument for bipbip : ' + self.oarexec_reattach_exit_value)
@@ -94,7 +94,7 @@ class BipBip(object):
                 return
 
             if self.oarexec_challenge == job_challenge:
-                check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, self.oarexec_reattach_exit_value,
+                check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, self.oarexec_reattach_exit_vint,
                                  hosts, job.user, job.launching_directory, self.server_epilogue)
                 return
             else:
@@ -371,7 +371,7 @@ class BipBip(object):
             if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
                 tools.notify_interactif_user(job, 'ERROR: an error occured on the first job node')
                     
-            check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, error,
+            check_end_of_job(job_id, self.oarexec_reattach_script_exit_vint, error,
                              hosts, job.user, job.launching_directory, self.server_epilogue)
         return
         

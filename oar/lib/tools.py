@@ -394,7 +394,8 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
         #import pdb; pdb.set_trace()
         if config['DEBUG_REMOTE_COMMANDS'] in ['1', 1, 'yes', 'YES']:
             logger.debug('Taktuk output: ' + output)
-            logger.debug('Taktuk error: ' + error)
+            if error:
+                logger.debug('Taktuk error: ' + error)
             
         for line in output.split('\n'):
             m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 

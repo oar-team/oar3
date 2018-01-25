@@ -103,7 +103,7 @@ class NodeChangeState(object):
             type_to_check_cpuset_LT_error = ['EXTERMINATE_JOB', 'PROLOGUE_ERROR', 'EPILOGUE_ERROR',
                                              'CPUSET_ERROR', 'CPUSET_CLEAN_ERROR',
                                              'FORCE_TERMINATE_FINISHING_JOB']
-             
+            #import pdb; pdb.set_trace()
             if event.type in type_to_check:
                 hosts = []
                 finaud_tag = 'NO'
