@@ -123,7 +123,7 @@ class Leon(object):
                 set_running_date(job.id)
             set_finish_date(job)
             set_job_message(job.id, 'Job exterminated by Leon')
-            tools.notify_almighty('LEONEXTERMINATE_' + str(job.id))
+            tools.notify_almighty('LEONEXTERMINATE', job.id)
 
 
 def main():  # pragma: no cover

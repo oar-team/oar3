@@ -146,11 +146,16 @@ def create_almighty_socket():  # pragma: no cover
     #    sys.exit(1)   
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
-def notify_almighty(message):  # pragma: no cover
-
+def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
 
+    message = {'cmd': message}
+    if job_id:
+        message['job_id'] = job_id
+    if args:
+        message['args'] = args
+        
     completed = True
     try:
         almighty_socket.send_json({'cmd': message})
