@@ -150,7 +150,7 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
     if not almighty_socket:
         create_almighty_socket()
 
-    message = {'cmd': message}
+    message = {'cmd': cmd}
     if job_id:
         message['job_id'] = job_id
     if args:
@@ -158,7 +158,7 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
         
     completed = True
     try:
-        almighty_socket.send_json({'cmd': message})
+        almighty_socket.send_json(message)
     except zmq.ZMQError:
         completed = False
     return completed
