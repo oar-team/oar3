@@ -4,7 +4,7 @@ import os
 
 from click.testing import CliRunner
 
-from oar.lib import db
+from oar.lib import (db, config)
 from oar.cli.oarsub import cli
 
 import oar.lib.tools  # for monkeypatching
@@ -51,7 +51,7 @@ def test_oarsub_sleep_1(monkeypatch):
     job_res_desc = db['JobResourceDescription'].query.one()
     print(mld_job_desc.walltime, job_res_desc.resource_type, job_res_desc.value)
     assert result.exit_code == 0
-    assert mld_job_desc.walltime == 0
+    assert mld_job_desc.walltime == config['DEFAULT_JOB_WALLTIME']
     assert job_res_desc.resource_type == 'resource_id'
     assert job_res_desc.value == 1
 
@@ -65,7 +65,7 @@ def test_oarsub_sleep_2(monkeypatch):
     job_res_desc = db['JobResourceDescription'].query.one()
     print(mld_job_desc.walltime, job_res_desc.resource_type, job_res_desc.value)
     assert result.exit_code == 0
-    assert mld_job_desc.walltime == 0
+    assert mld_job_desc.walltime == config['DEFAULT_JOB_WALLTIME']
     assert job_res_desc.resource_type == 'resource_id'
     assert job_res_desc.value == 3
 
