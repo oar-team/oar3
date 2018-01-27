@@ -152,9 +152,9 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
 
 
 def estimate_job_nb_resources(resource_request, j_properties):
-    '''returns an array with an estimation of the number of resources that can be  used by a job:
+    """returns an array with an estimation of the number of resources that can be used by a job:
     (resources_available, [(nbresources => int, walltime => int)])
-    '''
+    """
     # estimate_job_nb_resources
     estimated_nb_resources = []
     resource_available = False
@@ -224,7 +224,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
             resource_available = True
 
         estimated_nb_resources.append((estimated_nb_res, walltime))
-        print_info('Moldable instance: ', mld_idx,
+        print_info('Moldable instance: ', mld_idx + 1,
                    ' Estimated nb resources: ', estimated_nb_res,
                    ' Walltime: ', walltime)
 
@@ -323,8 +323,7 @@ def add_micheline_subjob(job_parameters,
     for moldable_instance in resource_request:
         resource_desc, walltime = moldable_instance
         if not walltime:
-            # TODO add nullable=True in MoldableJobDescription@oar.lib.model.py ?
-            walltime = 0
+            walltime = config['DEFAULT_JOB_WALLTIME']
         mld_jid_walltimes.append(
             {'moldable_job_id': job_id, 'moldable_walltime': walltime})
         resource_desc_lst.append(resource_desc)
