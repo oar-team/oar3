@@ -98,16 +98,27 @@ class BipbipCommander(object):
         self.bipbip_leon_commands_to_requeue = []
         self.bipbip_leon_executors = {}
 
+    def set_notification_timeout(self, timeout):
+        """Set timeout for zmq notification socket"""
+        self.notification.RCVTIMEO = timeout
+        
     def run(self, loop=True):
         # TODO: add a shutdown procedure
         while True:
             #add_timeout if bipbip_leon_commands_to_run is not empty
-            command = self.notification.recv_json()
+            try:
+                command = self.notification.recv_json()
+                logger.debug("bipbip commander received notification:" + str(command))
+                self.bipbip_leon_commands_to_run.append(command)
 
-            #import pdb; pdb.set_trace()
-            logger.debug("bipbip commander received notification:" + str(command))
-            #import pdb; pdb.set_trace()
-            self.bipbip_leon_commands_to_run.append(command)
+            except zmq.error.Again as e:
+                logger.debug("Timeout on notification:" + str(e))
+                if self.bipbip_leon_commands_to_run == []:
+                    logger.error("Not queued commands with timeout actived is abnormal")
+
+            except zmq.ZMQError as e:
+                logger.error("Something is wrong with notification reception" + str(e))
+                exit(1)
 
             while len(self.bipbip_leon_commands_to_run) > 0 and \
                   len(self.bipbip_leon_executors.keys()) <= Max_bipbip_processes:
@@ -141,6 +152,11 @@ class BipbipCommander(object):
                 if not self.bipbip_leon_executors[job_id].is_alive():
                     del self.bipbip_leon_executors[job_id]
 
+            if self.bipbip_leon_commands_to_run == []:
+                self.set_notification_timeout(-1)
+            else:
+                self.set_notification_timeout(500)
+                    
             if not loop:
                 break
 
