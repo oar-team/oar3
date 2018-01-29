@@ -123,8 +123,8 @@ class Leon(object):
                 set_running_date(job.id)
             set_finish_date(job)
             set_job_message(job.id, 'Job exterminated by Leon')
-            tools.notify_almighty('LEONEXTERMINATE', job.id)
-
+            tools.notify_bipbip_commander({'job_id': job.id, 'cmd': 'LEONEXTERMINATE',
+                                           'args':[]})
 
 def main():  # pragma: no cover
     leon = Leon(sys.argv[1:])
