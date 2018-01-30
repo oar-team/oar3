@@ -23,7 +23,7 @@ from oar.lib.event import (add_new_event, add_new_event_with_host, is_an_event_e
 
 from oar.lib.psycopg2 import pg_bulk_insert
 
-from oar.lib.tools import (Popen, TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name, limited_dict2hash_perl)
+from oar.lib.tools import (TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name, limited_dict2hash_perl)
 import oar.lib.tools as tools
 
 from oar.kao.helpers import extract_find_assign_args
@@ -1706,7 +1706,7 @@ def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDir
             notify_almighty_term = True
         elif error == 50:
             # launching oarexec timeout
-            events.append(('LAUNCHING_OAREXEC_TIMEOUY', log_jid + 'launching oarexec timeout, exit value = '
+            events.append(('LAUNCHING_OAREXEC_TIMEOUT', log_jid + 'launching oarexec timeout, exit value = '
                            + str(error) + '; the job $job_id is in Error and the node ' + hosts[0] + 'is Suspected'))
         elif error == 40:
             # oarexec received a SIGUSR2 signal
