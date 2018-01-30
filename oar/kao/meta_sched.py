@@ -5,7 +5,7 @@ import re
 
 from oar.lib import (config, db, get_logger, GanttJobsPredictionsVisu,
                      GanttJobsResourcesVisu)
-from oar.lib.tools import (Popen, call, TimeoutExpired, PIPE)
+from oar.lib.tools import (TimeoutExpired, PIPE)
 
 from oar.lib.job_handling import (frag_job)
 
@@ -501,7 +501,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
     sched_signal_num = 0
     sched_dumped_core = 0
     try:
-        child = Popen([cmd_scheduler, queue.name, str(
+        child = tools.Popen([cmd_scheduler, queue.name, str(
             initial_time_sec), initial_time_sql], stdout=PIPE)
 
         for line in iter(child.stdout.readline, ''):
@@ -801,7 +801,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                                  script + " " + str(job.id) + "'")
                     return_code = -1
                     try:
-                        return_code = call([script, str(job.id)] , shell=True, timeout=timeout)
+                        return_code = tools.call([script, str(job.id)] , shell=True, timeout=timeout)
                     except TimeoutExpired as e:
                         logger.error(str(e) + "[" + str(job.id) + "] Suspend script timeouted")
                         add_new_event('RESUME_SCRIPT_ERROR', job.id, "Suspend script timeouted")

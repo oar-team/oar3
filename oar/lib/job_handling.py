@@ -1752,7 +1752,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         timeout = config['SERVER_PROLOGUE_EPILOGUE_TIMEOUT']
         
         try:
-            child = Popen(cmd)
+            child = tools.Popen(cmd)
             return_code = child.wait(timeout)
 
             if return_code:
