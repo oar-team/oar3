@@ -610,7 +610,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     # job_vars['user'] = os.environ['OARDO_USER']
 
     # Check the user validity
-    if not re.match(r'[a-zA-Z0-9_-]+', job_parameters.user):
+    if not re.match(r'^[a-zA-Z0-9_-]+$', job_parameters.user):
         error = (-11, 'invalid username:', job_parameters.user)
         return (error, [])
     # Verify notify syntax
