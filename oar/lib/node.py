@@ -125,28 +125,28 @@ def get_nodes_with_given_sql(properties):
 
 
 def set_node_state(hostname, state, finaud_tag):
-    """Sets the state field of some node identified by its hostname in the base.
+    """Sets the state field of some node identified by its hostname in the DB.
     - parameters : base, hostname, state, finaudDecision
     - side effects : changes the state value in some field of the nodes table"""
     if state == 'Suspect':
-        query = db.query(Resource).filter(Resource.network_address == hostname)\
-                                  .update({Resource.state: state,
-                                           Resource.finaud_decision: finaud_tag,
-                                           Resource.state_num: STATE2NUM[state]},
-                                          synchronize_session=False)
-
-        #.filter(or_(Resource.state == 'Alive',
-        #                              and_(Resource.state == 'Suspected',
-        #                                   '$finaud\' = \'NO\' AND finaud_decision = \'YES\')
-        #
-        # TODO:  https://github.com/oar-team/oar/issues/140
-        #        issue from Strange SQL where clause in IO::set_node_state
-        #        AND (state = \'Alive\'
-        #        OR (state = \'Suspected\' AND \'$finaud\' = \'NO\' AND finaud_decision = \'YES\')
+        query = db.query(Resource).filter(Resource.network_address == hostname)
+        if finaud_tag == 'YES':
+            query = query.filter(Resource.state == 'Alive')
+        else:
+            query = query.filter(or_(Resource.state == 'Alive',
+                                     and_(Resource.state == 'Suspected',
+                                          Resource.finaud_decision == 'YES'))
+                                 )
+        query = query.update({Resource.state: state,
+                              Resource.finaud_decision: finaud_tag,
+                              Resource.state_num: STATE2NUM[state]},
+                             synchronize_session=False)
 
         nb_rows = db.execute(query).rowcount
 
         if nb_rows == 0:
+            # OAR wants to turn the node into Suspected state but it is not in
+            # the Alive state --> so we do nothing
             logger.debug('Try to turn the node: + ' + hostname +
                          ' into Suspected but it is not into the Alive state SO we do nothing')
             return
