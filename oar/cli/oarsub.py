@@ -178,7 +178,7 @@ def resubmit_job(job_id):
               walltime : Request maximun time. Format is [hour:mn:sec|hour:mn|mn]\
               weight : the weight that you want to reserve on each node")
 @click.option('-p', '--property', type=click.STRING,
-              help='Specify with SQL syntax reservation properties.')
+              help='Add constraints to properties for the job (format is a WHERE clause from the SQL syntax).')
 @click.option('-r', '--reservation', type=click.STRING,
               help='Ask for an advance reservation job on the date in argument.')
 @click.option('-C', '--connect', type=int,
