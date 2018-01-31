@@ -43,11 +43,7 @@ def lstrip_none(s):
     else:
         return None
 
-#TODO to remove
-def print_error(*objs):
-    print('# ERROR: ', *objs, file=sys.stderr)
-
-#TODO to remove
+#TODO to remove/modifiy
 def print_info(*objs):
     print('# INFO: ', *objs, file=sys.stderr)
 
@@ -433,11 +429,7 @@ def add_micheline_simple_array_job(job_parameters,
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
     properties = job_parameters.properties
-    # TODO
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
-
-    #TODO
-    
     
     # Add admin properties to the job
     if hasattr(job_parameters, 'properties_applied_after_validation:'):
@@ -446,6 +438,7 @@ def add_micheline_simple_array_job(job_parameters,
         else:
             properties = job_parameters.properties_applied_after_validation
     job_parameters.properties = properties
+    
     # TODO format job message
 
     # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
@@ -798,8 +791,8 @@ class JobParameters():
 
         if self.interactive and self.reservation:
             return (7, 'An advance reservation cannot be interactive.')
-
-        if self.interactive and any(re.match(r'^desktop_computing$', t) for t in self.types):
+        
+        if self.interactive and 'desktop_computing' in self.types:
             return (17, 'A desktop computing job cannot be interactive')
 
         if any(re.match(r'^noop$', t) for t in self.types):

@@ -115,3 +115,27 @@ def test_oarsub_sleep_queue_error(monkeypatch):
     result = runner.invoke(cli, ['-q queue_doesnot_exist', '"sleep 1"'])
     print(result.output)
     assert result.exception.code == (-8, 'queue queue_doesnot_exist does not exist')
+
+def test_oarsub_interactive_reservation_error():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', '-r fake_date'])
+    print(result.output)
+    assert result.exception.code == (7, 'An advance reservation cannot be interactive.')
+
+def test_oarsub_interactive_desktop_computing_error():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', '-t desktop_computing'])
+    print(result.output)
+    assert result.exception.code == (17, 'A desktop computing job cannot be interactive')
+
+def test_oarsub_interactive_noop_error():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', '-t noop'])
+    print(result.output)
+    assert result.exception.code == (17, 'a NOOP job cannot be interactive.')
+
+def test_oarsub_connect_noop_error():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-C 1234', '-t noop'])
+    print(result.output)
+    assert result.exception.code == (17, 'A NOOP job does not have a shell to connect to.')  

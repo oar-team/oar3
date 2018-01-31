@@ -138,9 +138,9 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         
         exit_value = return_code >> 8
         if exit_value == 2:
-            cmd_ret.warning('# Error: cannot enter working directory: ' + job.launching_directory)
+            cmd_ret.error('cannot enter working directory: ' + job.launching_directory)
         elif exit_value != 0:
-            cmd_ret.warning('# Error: an unexpected error: ' + str(return_code))
+            cmd_ret.error('an unexpected error: ' + str(return_code))
 
         if stop_oarexec > 0:
             tools.signal_oarexec(host_to_connect_via_ssh, job_id, 'USR1', 0, openssh_cmd)
@@ -340,7 +340,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             #else:
             #    print_error('unknown error.')
             #exit(4)
-
+            
 
     # TODO   Connect to a reservation
     # Connect to a reservation
@@ -349,9 +349,11 @@ def cli(command, interactive, queue, resource, reservation, connect,
     #  $SIG{HUP} = 'DEFAULT';
     #  OAR::Sub::close_db_connection(); exit(connect_job($connect_job,0,$Openssh_cmd));
     # }
-    
+
+    # Strip job's types
+    types = [t.lstrip() for t in type]
+
     properties = lstrip_none(property)
-    types = type
     initial_request = ' '.join(sys.argv[1:])
     queue_name = lstrip_none(queue)    
 
@@ -437,7 +439,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         (error, job_id_lst) = submission.submit()
 
     else:
-        # TODO interactive
         if command:
             cmd_ret.warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
         else:
@@ -452,11 +453,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         if job_parameters.array_nb != 1:
             cmd_ret.error('an array job cannot be interactive.', 0, 8)
             cmd_ret.exit()
-
-        if reservation:
-            # Test if this job is a reservation and the syntax is right
-            # TODO Pass
-            pass
 
         socket_server = init_tcp_server()
         (server, server_port) = socket_server.getsockname()
