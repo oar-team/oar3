@@ -11,9 +11,9 @@ from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
-from oar.lib import config
+from oar import VERSION
 
-from oar.lib import (db, Job)
+from oar.lib import (config, db, Job)
 
 from oar.lib.submission import (JobParameters, Submission, lstrip_none,
                                 check_reservation, default_submission_config)
@@ -223,10 +223,10 @@ def resubmit_job(job_id):
               file will be overwritten if it already exists.\
               (the %jobid% pattern is automatically replaced)')
 @click.option('-O', '--stdout', type=click.STRING,
-              help='Specify the file that will store the standart output \
+              help='Specify the file that will store the standard output \
               stream of the job. (the %jobid% pattern is automatically replaced)')
 @click.option('-E', '--stderr', type=click.STRING,
-              help='Specify the file that will store the standart error stream of the job.')
+              help='Specify the file that will store the standard error stream of the job.')
 @click.option('--hold', is_flag=True,
               help='Set the job state into Hold instead of Waiting,\
               so that it is not scheduled (you must run "oarresume" to turn it into the Waiting state)')
@@ -298,7 +298,11 @@ def cli(command, interactive, queue, resource, reservation, connect,
     #    OAR::Sub::set_ssh_timeout(get_conf("OAR_SSH_CONNECTION_TIMEOUT"));
     # }
 
-    # OAR version
+    # print OAR version
+    if version:
+        print(VERSION)
+        cmd_ret.exit()
+        
     # TODO: OAR is now a set of composition...
 
     # TODO ssh_private_key, ssh_public_key,

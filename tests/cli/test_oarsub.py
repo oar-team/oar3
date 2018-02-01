@@ -81,6 +81,33 @@ def test_oarsub_admission_name_1(monkeypatch):
     assert result.exit_code == 0
     assert job.name == 'yop'
 
+def test_oarsub_project(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-q default', '--project', 'batcave', '"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    print("project: ", job.project)
+    assert result.exit_code == 0
+    assert job.project == 'batcave'
+
+
+def test_oarsub_directory(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-q default', '-d', '/home/robin/batcave', '"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    print("directory: ", job.launching_directory)
+    assert result.exit_code == 0
+    assert job.launching_directory == '/home/robin/batcave'
+    
+def test_oarsub_stdout_stderr(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-q default', '-O', 'foo_%jobid%o', '-E', 'foo_%jobid%e', '"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    assert result.exit_code == 0
+    assert job.stdout_file == 'foo_%jobid%o'
+    assert job.stderr_file == 'foo_%jobid%e'
 
 def test_oarsub_admission_queue_1(monkeypatch):
 
