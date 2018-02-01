@@ -356,8 +356,8 @@ def add_micheline_subjob(job_parameters,
 
         # print(mld_id_property)
         # Insert property for moldable
-        db.session.execute(JobResourceGroup.__table__.insert(),
-                           mld_id_property)
+        result = db.session.execute(JobResourceGroup.__table__.insert(),
+                                    mld_id_property)
 
         if len(mld_id_property) == 1:
             grp_ids = [result.inserted_primary_key[0]]
