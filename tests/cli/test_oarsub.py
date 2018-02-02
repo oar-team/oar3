@@ -83,12 +83,13 @@ def test_oarsub_admission_name_1(monkeypatch):
 
 def test_oarsub_project(monkeypatch):
     runner = CliRunner()
-    result = runner.invoke(cli, ['-q default', '--project', 'batcave', '"sleep 1"'])
+    result = runner.invoke(cli, ['-q default', '--project', 'batcave', '--name', 'yop', '"sleep 1"'])
     print(result.output)
     job = db['Job'].query.one()
     print("project: ", job.project)
     assert result.exit_code == 0
     assert job.project == 'batcave'
+    assert job.name == 'yop'
 
 
 def test_oarsub_directory(monkeypatch):
