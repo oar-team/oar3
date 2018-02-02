@@ -3,6 +3,7 @@
 import os
 import sys
 import pwd
+import copy
 import re
 import decimal
 import datetime
@@ -30,7 +31,7 @@ def dict_ps_copy(dict_ps):
     d = {}
     for key, value in dict_ps.items():
         if type(value) == dict:
-            d[key] = {k: ProcSet(*v) for k,v in value.items()}
+            d[key] = {k: copy.copy(v) for k,v in value.items()}
         else:
             d[key] = value
     return d

@@ -1,4 +1,6 @@
 # coding: utf-8
+import copy
+
 from oar.lib import config
 
 from procset import ProcSet
@@ -17,7 +19,10 @@ class Slot(object):
         self.id = id
         self.prev = prev
         self.next = next
-        self.itvs = itvs
+        if type(itvs) == ProcSet:
+            self.itvs = itvs
+        else:
+            self.itvs = ProcSet(*itvs)
         self.b = b
         self.e = e
         # timesharing ts_itvs: [user] * [job_name] * itvs
@@ -143,7 +148,7 @@ class SlotSet:
         s_id = slot.id
         self.last_id += 1
         n_id = self.last_id
-        a_slot = Slot(s_id, slot.prev, n_id, ProcSet(*slot.itvs),
+        a_slot = Slot(s_id, slot.prev, n_id, copy.copy(slot.itvs),
                       slot.b, job.start_time - 1,
                       dict_ps_copy(slot.ts_itvs), dict_ps_copy(slot.ph_itvs))
         slot.prev = s_id
@@ -166,7 +171,7 @@ class SlotSet:
                 slot.ts_itvs[job.ts_user] = {}
 
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
-                slot.ts_itvs[job.ts_user][job.ts_name] = ProcSet(*job.res_set)
+                slot.ts_itvs[job.ts_user][job.ts_name] = copy.copy(job.res_set)
 
         if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
@@ -174,7 +179,7 @@ class SlotSet:
                     slot.ph_itvs[job.ph_name] - job.res_set
 
         if job.ph == PLACEHOLDER:
-            slot.ph_itvs[job.ph_name] = ProcSet(*job.res_set)
+            slot.ph_itvs[job.ph_name] = copy.copy(job.res_set)
 
         if hasattr(slot, 'quotas') and not ("container" in job.types):
             slot.quotas.update(job)
@@ -190,7 +195,7 @@ class SlotSet:
             if job.ts_user not in slot.ts_itvs:
                 slot.ts_itvs[job.ts_user] = {}
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
-                slot.ts_itvs[job.ts_user][job.ts_name] = ProcSet(*job.res_set)
+                slot.ts_itvs[job.ts_user][job.ts_name] = copy.copy(job.res_set)
             else:
                 itvs = slot.ts_itvs[job.ts_user][job.ts_name]
                 slot.ts_itvs[job.ts_user][job.ts_name] = itvs | job.res_set
@@ -199,7 +204,7 @@ class SlotSet:
             if job.ph_name in slot.ph_itvs:
                 slot.ph_itvs[job.ph_name] = slot.ph_itvs[job.ph_name] | job.res_set
             else:
-                slot.ph_itvs[job.ph_name] = ProcSet(*job.res_set)
+                slot.ph_itvs[job.ph_name] = copy.copy(job.res_set)
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
@@ -207,7 +212,7 @@ class SlotSet:
     def slot_after_job(self, slot, job):
         self.last_id += 1
         s_id = self.last_id
-        c_slot = Slot(s_id, slot.id, slot.next, ProcSet(*slot.itvs),
+        c_slot = Slot(s_id, slot.id, slot.next, copy.copy(slot.itvs),
                       job.start_time + job.walltime, slot.e,
                       dict_ps_copy(slot.ts_itvs), dict_ps_copy(slot.ph_itvs))
         slot.next = s_id

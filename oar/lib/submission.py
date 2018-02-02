@@ -2,6 +2,7 @@
 import re
 import os
 import sys
+import copy
 import random
 
 from sqlalchemy import text, exc
@@ -176,7 +177,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
             if (not j_properties) and \
                (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
                 # copy itvs
-                constraints = ProcSet(*resource_set.roid_itvs)
+                constraints = copy.copy(resource_set.roid_itvs)
             else:
                 and_sql = ''
                 if j_properties and jrg_grp_property:

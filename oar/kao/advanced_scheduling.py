@@ -5,6 +5,7 @@ import oar.kao.scheduling
 from oar.lib import config
 from oar.lib.hierarchy import extract_n_scattered_block_itv
 
+import copy
 import pickle
 try:
     import zerorpc
@@ -208,7 +209,7 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
     prev_start_time = slots[1].b
 
     res_rqt = job.mld_res_rqts[0]
-    res_rqts = [(rq[0], ProcSet(*rq[1])) for rq in res_rqt[2]]
+    res_rqts = [(rq[0], copy.copy(rq[1])) for rq in res_rqt[2]]
     res_rqt_copy = (res_rqt[0], res_rqt[1], res_rqts)  # to keep set of intervals
 
     while True:

@@ -1,4 +1,5 @@
 # coding: utf-8
+import copy
 from procset import ProcSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
@@ -326,7 +327,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     slots_sets[ss_name].split_slots_jobs([j], False)
 
                 else:
-                    slot = Slot(1, 0, 0, ProcSet(*job.res_set), job.start_time,
+                    slot = Slot(1, 0, 0, copy.copy(job.res_set), job.start_time,
                                 job.start_time + job.walltime - job_security_time)
                     # slot.show()
                     slots_sets[ss_name] = SlotSet(slot)
