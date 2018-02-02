@@ -296,6 +296,9 @@ class BipBip(object):
             # So oarexec will retry several times to contact Almighty until it will be
             # killed by the cpuset manager
             oarexec_cpuset_path = cpuset_full_path
+
+        if node_file_db_field_distinct_values == 'resource_id':
+            node_file_db_field_distinct_values = 'id'
             
         data_to_transfer = {
             'job_id': job.id,
@@ -328,7 +331,8 @@ class BipBip(object):
             'detach_oarexec': config['DETACH_JOB_FROM_SERVER'],
             'cpuset_full_path': oarexec_cpuset_path
         }
-
+        #print(data_to_transfer)
+        #print(resources_data_str)
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
         data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
 

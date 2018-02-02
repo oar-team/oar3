@@ -525,8 +525,6 @@ def get_private_ssh_key_file_name(cpuset_name):
     return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')
 
 
-
-
 def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'
