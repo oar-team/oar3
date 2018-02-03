@@ -15,7 +15,9 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
 
 from oar.lib.resource import ResourceSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
+from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, PIPE)
+
+import oar.lib.tools as tools
 
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
@@ -54,6 +56,145 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
     # TODO job_key_management
     return(0, '', '')
 
+
+def scan_script(submited_filename, initial_request_str, user=None):
+    result = {}
+    error = (0, '')
+
+    if not user:
+        user = os.environ['OARDO_USER']
+    os.environ['OARDO_BECOME_USER'] = user
+
+    try:
+        process = Popen(['oardodo', 'cat', submited_filename], stdout=PIPE)
+        stdout = process.communicate()[0]
+    except:
+        error = (-70, 'Unable to read: ' + submited_filename)  
+    output = stdout.decode()
+    
+    for line in output.split('\n'):
+        if re.match(r'^#OAR\s+', line):
+            m = re.match(r'^#OAR\s+(-l|--resource)\s*(.+)\s*$', line)
+            if m:
+                if 'resource' in result:
+                    result['resource'].append(m.group(2))
+                else:
+                    result['resource'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-q|--queue)\s*(.+)\s*$', line)
+            if m:
+                result['queue'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-p|--property)\s*(.+)\s*$', line)
+            if m:
+                result['property'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--checkpoint)\s*(\d+)\s*$', line)
+            if m:
+                result['checkpoint'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--notify)\s*(.+)\s*$', line)
+            if m:
+                result['notify'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-t|--type)\s*(.+)\s*$', line)
+            if m:
+                if 'types' in result:
+                    result['types'].append(m.group(2))
+                else:
+                    result['types'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-d|--directory)\s*(.+)\s*$', line)
+            if m:
+                result['directory'] = m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-n|--name)\s*(.+)\s*$', line)
+            if m:
+                result['name'] = m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--project)\s*(.+)\s*$', line)
+            if m:
+                result['project'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--hold)\s*$', line)
+            if m:
+                result['hold'] = True
+                initial_request_str += ' ' + m.group(1)
+                continue
+            m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+(?:,[\[\]][+-]?\d+){0,2})\s*$', line)
+            if m:
+                if 'dependencies' in result:
+                    result['dependencies'].append(m.group(2))
+                else:
+                    result['dependencies'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--signal)\s*(\d+)\s*$', line)
+            if m:
+                result['signal'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-O|--stdout)\s*(.+)\s*$', line)
+            if m:
+                result['stdout'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-E|--stderr)\s*(.+)\s*$', line)
+            if m:
+                result['stderr'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-k|--use-job-key)\s*$', line)
+            if m:
+                result['use_job_key'] = True
+                initial_request_str += ' ' + m.group(1)
+                continue           
+            m = re.match(r'^#OAR\s+(--import-job-key-inline-priv)\s*(.+)\s*$', line)
+            if m:
+                result['import_job_key_inline'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-i|--import-job-key-from-file)\s*(.+)\s*$', line)
+            if m:
+                result['import_job_key_file'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-e|--export-job-key-to-file)\s*(.+)\s*$', line)
+            if m:
+                result['export_job_key_file'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(-s|--stagein)\s*(.+)\s*$', line)
+            if m:
+                result['stagein'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue           
+            m = re.match(r'^#OAR\s+(--stagein-md5sum)\s*(.+)\s*$', line)
+            if m:
+                result['stagein_md5sum'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--array)\s*(\d+)\s*$', line)
+            if m:
+                result['array'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            m = re.match(r'^#OAR\s+(--array-param-file)\s*(.+)\s*$', line)
+            if m:
+                result['array_param_file'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
+                continue
+            error = (-72, 'Not able to parse line: ' + line) 
+        result['initial_request'] = initial_request_str 
+    return (error, result)
+            
 def parse_resource_descriptions(str_resource_request_list, default_resources, nodes_resources):
     """Parse and transform a cli oar resource request in python structure which is manipulated 
     in admission process
