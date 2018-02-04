@@ -60,16 +60,18 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
 def scan_script(submited_filename, initial_request_str, user=None):
     result = {}
     error = (0, '')
+    process = None
 
     if not user:
         user = os.environ['OARDO_USER']
     os.environ['OARDO_BECOME_USER'] = user
-
+    
     try:
-        process = Popen(['oardodo', 'cat', submited_filename], stdout=PIPE)
-        stdout = process.communicate()[0]
+        process = tools.Popen(['oardodo', 'cat', submited_filename], stdout=PIPE)
     except:
-        error = (-70, 'Unable to read: ' + submited_filename)  
+        error = (-70, 'Unable to read: ' + submited_filename)
+
+    stdout = process.communicate()[0]   
     output = stdout.decode()
     
     for line in output.split('\n'):
@@ -79,7 +81,7 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 if 'resource' in result:
                     result['resource'].append(m.group(2))
                 else:
-                    result['resource'] = m.group(2)
+                    result['resource'] = [m.group(2)]
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(-q|--queue)\s*(.+)\s*$', line)
@@ -94,7 +96,7 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 continue
             m = re.match(r'^#OAR\s+(--checkpoint)\s*(\d+)\s*$', line)
             if m:
-                result['checkpoint'] = m.group(2)
+                result['checkpoint'] = int(m.group(2))
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(--notify)\s*(.+)\s*$', line)
@@ -107,7 +109,7 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 if 'types' in result:
                     result['types'].append(m.group(2))
                 else:
-                    result['types'] = m.group(2)
+                    result['types'] = [m.group(2)]
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(-d|--directory)\s*(.+)\s*$', line)
@@ -128,17 +130,19 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 result['hold'] = True
                 initial_request_str += ' ' + m.group(1)
                 continue
-            m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+(?:,[\[\]][+-]?\d+){0,2})\s*$', line)
+            #TODO modify documentation
+            #m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+(?:,[\[\]][+-]?\d+){0,2})\s*$', line)
+            m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+)\s*$', line)
             if m:
                 if 'dependencies' in result:
-                    result['dependencies'].append(m.group(2))
+                    result['dependencies'].append(int(m.group(2)))
                 else:
-                    result['dependencies'] = m.group(2)
+                    result['dependencies'] = [int(m.group(2))]
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(--signal)\s*(\d+)\s*$', line)
             if m:
-                result['signal'] = m.group(2)
+                result['signal'] = int(m.group(2))
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(-O|--stdout)\s*(.+)\s*$', line)
@@ -183,7 +187,7 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 continue
             m = re.match(r'^#OAR\s+(--array)\s*(\d+)\s*$', line)
             if m:
-                result['array'] = m.group(2)
+                result['array'] = int(m.group(2))
                 initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(--array-param-file)\s*(.+)\s*$', line)

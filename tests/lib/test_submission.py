@@ -5,8 +5,35 @@ import os
 
 from oar.lib import (db, AdmissionRule)
 from oar.lib.submission import (JobParameters, parse_resource_descriptions, add_micheline_jobs,
-                                default_submission_config)
+                                default_submission_config, scan_script)
 
+import oar.lib.tools  # for monkeypatching
+
+fake_popen_process_stdout = ''
+class FakeProcessStdout(object):
+    def __init__(self):
+        pass
+    def decode(self):
+        return fake_popen_process_stdout
+
+# class FakeProcess(object):
+#     def __init__(self):
+#         pass
+#     def communicate(self):
+#         process_sdtout = FakeProcessStdout() 
+#         return [process_sdtout]
+    
+class FakePopen(object):
+    def __init__(self, cmd, stdout):
+        #import pdb; pdb.set_trace()
+        pass
+    def communicate(self):
+        process_sdtout = FakeProcessStdout() 
+        return [process_sdtout]
+    
+@pytest.fixture(scope='function', autouse=True)
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
 
 @pytest.fixture(scope='function', autouse=True)
 def builtin_config(request):
@@ -119,3 +146,47 @@ def test_add_micheline_simple_array_job():
     print("error:", error)
     assert error == (0, '')
     assert len(job_id_lst) == 5
+
+#def test_scan_script(monkeypatch_tools):
+def test_scan_script():
+    global fake_popen_process_stdout
+    fake_popen_process_stdout = ("#Funky job\n"
+                                 "#OAR -l nodes=10,walltimes\n"
+                                 "#OAR -l gpu=10\n"
+                                 "#OAR -q yop\n"
+                                 "#OAR -p pa=b\n"
+                                 "#OAR --checkpoint 12\n"
+                                 "#OAR --notify noti-exec\n"
+                                 "#OAR -d /tmp/\n"
+                                 "#OAR -n funky\n"
+                                 "#OAR --project batcave\n"
+                                 "#OAR --hold\n"
+                                 "#OAR -a 12\n"
+                                 "#OAR -a 32\n"
+                                 "#OAR --signal 12\n"
+                                 "#OAR -O sto\n"
+                                 "#OAR -E ste\n"
+                                 "#OAR -k\n"
+                                 "#OAR --import-job-key-inline-priv key\n"
+                                 "#OAR -i key_file\n"
+                                 "#OAR -e key_file\n"
+                                 "#OAR -s stage_filein\n"
+                                 "#OAR --stagein-md5sum file_md5sum\n"
+                                 "#OAR --array 10\n"
+                                 "#OAR --array-param-file p_file\n"
+                                 "beast_application")
+
+    result = {'initial_request': 'command -l nodes=10,walltimes -l gpu=10 -q yop -p pa=b --checkpoint 12 --notify noti-exec --project batcave --hold -a 12 -a 32 --signal 12 -O sto -E ste -k --import-job-key-inline-priv key -i key_file -e key_file -s stage_filein --stagein -md5sum file_md5sum --array 10 --array-param-file p_file',
+              'resource': ['nodes=10,walltimes', 'gpu=10'], 'queue': 'yop',
+              'property': 'pa=b', 'checkpoint': 12, 'notify': 'noti-exec',
+              'directory': '/tmp/', 'name': 'funky', 'project': 'batcave',
+              'hold': True, 'dependencies': [12, 32], 'signal': 12, 'stdout': 'sto',
+              'stderr': 'ste', 'use_job_key': True, 'import_job_key_inline': 'key',
+              'import_job_key_file': 'key_file', 'export_job_key_file': 'key_file',
+              'stagein': '-md5sum file_md5sum', 'array': 10, 'array_param_file': 'p_file'}
+
+    
+    (error, res) = scan_script('yop', 'command', 'zorglub')
+    print(error, fake_popen_process_stdout, result)
+    assert error == (0, '')
+    assert res == result
