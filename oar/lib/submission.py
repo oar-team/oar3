@@ -57,7 +57,7 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
     return(0, '', '')
 
 
-def scan_script(submited_filename, initial_request_str, user=None):
+def scan_script(submitted_filename, initial_request_str, user=None):
     result = {}
     error = (0, '')
     process = None
@@ -65,9 +65,9 @@ def scan_script(submited_filename, initial_request_str, user=None):
     if not user:
         user = os.environ['OARDO_USER']
     os.environ['OARDO_BECOME_USER'] = user
-    
+
     try:
-        process = tools.Popen(['oardodo', 'cat', submited_filename], stdout=PIPE)
+        process = tools.Popen(['oardodo', 'cat', submitted_filename], stdout=PIPE)
     except:
         error = (-70, 'Unable to read: ' + submited_filename)
 
@@ -131,7 +131,6 @@ def scan_script(submited_filename, initial_request_str, user=None):
                 initial_request_str += ' ' + m.group(1)
                 continue
             #TODO modify documentation
-            #m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+(?:,[\[\]][+-]?\d+){0,2})\s*$', line)
             m = re.match(r'^#OAR\s+(-a|--after)\s*(\d+)\s*$', line)
             if m:
                 if 'dependencies' in result:
@@ -389,8 +388,6 @@ def add_micheline_subjob(job_parameters,
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
 
-    # import pdb; pdb.set_trace()
-    # TODO
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(resource_request, properties)
     if error[0] != 0:
         return(error, -1)
@@ -877,6 +874,21 @@ def check_reservation(reservation):
 
 class JobParameters():
     def __init__(self, **kwargs):
+
+        self.array_params = None #TODO REMOVE
+        
+        scanscript_values = {}
+        scanscript = False
+        if 'scanscript' in kwargs and kwargs['scanscript']:
+            scanscript = True
+            initial_request = ''
+            user = None
+            if 'initial_request' in kwargs:
+                initial_request = kwargs['initial_request']
+                if 'user' in kwargs:
+                    user = kwargs['user']
+                scanscript_values = scan_script(kwargs['command'], initial_request, user)
+
         for key in ['job_type', 'resource', 'command', 'info_type',
                     'queue', 'properties', 'checkpoint', 'signal',
                     'notify', 'name', 'types', 'directory',
@@ -886,14 +898,18 @@ class JobParameters():
                     'array', 'array_params', 'array_param_file',
                     'use_job_key', 'import_job_key_inline',
                     'import_job_key_file', 'export_job_key_file']:
+
             if key in kwargs:
                 setattr(self, key, kwargs[key])
             else:
                 setattr(self, key, None)
+    
+            if scanscript and (key in kwargs and not kwargs[key]) and key in scanscript_values:
+                setattr(self, key, scanscript_values[key])
 
         if not self.initial_request:
             self.initial_request = self.command
-
+            
         if self.array:
             self.array_nb = self.array
         else:
