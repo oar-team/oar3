@@ -15,23 +15,15 @@ class FakeProcessStdout(object):
         pass
     def decode(self):
         return fake_popen_process_stdout
-
-# class FakeProcess(object):
-#     def __init__(self):
-#         pass
-#     def communicate(self):
-#         process_sdtout = FakeProcessStdout() 
-#         return [process_sdtout]
-    
+ 
 class FakePopen(object):
     def __init__(self, cmd, stdout):
-        #import pdb; pdb.set_trace()
         pass
     def communicate(self):
         process_sdtout = FakeProcessStdout() 
         return [process_sdtout]
     
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='function')
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
 
@@ -147,11 +139,10 @@ def test_add_micheline_simple_array_job():
     assert error == (0, '')
     assert len(job_id_lst) == 5
 
-#def test_scan_script(monkeypatch_tools):
-def test_scan_script():
+def test_scan_script(monkeypatch_tools):
     global fake_popen_process_stdout
     fake_popen_process_stdout = ("#Funky job\n"
-                                 "#OAR -l nodes=10,walltimes\n"
+                                 "#OAR -l nodes=10,walltime=3600\n"
                                  "#OAR -l gpu=10\n"
                                  "#OAR -q yop\n"
                                  "#OAR -p pa=b\n"
@@ -176,8 +167,8 @@ def test_scan_script():
                                  "#OAR --array-param-file p_file\n"
                                  "beast_application")
 
-    result = {'initial_request': 'command -l nodes=10,walltimes -l gpu=10 -q yop -p pa=b --checkpoint 12 --notify noti-exec --project batcave --hold -a 12 -a 32 --signal 12 -O sto -E ste -k --import-job-key-inline-priv key -i key_file -e key_file -s stage_filein --stagein -md5sum file_md5sum --array 10 --array-param-file p_file',
-              'resource': ['nodes=10,walltimes', 'gpu=10'], 'queue': 'yop',
+    result = {'initial_request': 'command -l nodes=10,walltime=3600 -l gpu=10 -q yop -p pa=b --checkpoint 12 --notify noti-exec -d /tmp/ -n funky --project batcave --hold -a 12 -a 32 --signal 12 -O sto -E ste -k --import-job-key-inline-priv key -i key_file -e key_file -s stage_filein --stagein -md5sum file_md5sum --array 10 --array-param-file p_file',
+              'resource': ['nodes=10,walltime=3600', 'gpu=10'], 'queue': 'yop',
               'property': 'pa=b', 'checkpoint': 12, 'notify': 'noti-exec',
               'directory': '/tmp/', 'name': 'funky', 'project': 'batcave',
               'hold': True, 'dependencies': [12, 32], 'signal': 12, 'stdout': 'sto',

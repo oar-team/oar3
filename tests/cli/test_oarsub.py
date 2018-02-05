@@ -12,6 +12,19 @@ import oar.lib.tools  # for monkeypatching
 default_res = '/resource_id=1'
 nodes_res = 'resource_id'
 
+fake_popen_process_stdout = ''
+class FakeProcessStdout(object):
+    def __init__(self):
+        pass
+    def decode(self):
+        return fake_popen_process_stdout
+ 
+class FakePopen(object):
+    def __init__(self, cmd, stdout):
+        pass
+    def communicate(self):
+        process_sdtout = FakeProcessStdout() 
+        return [process_sdtout]
 
 @pytest.fixture(scope="module", autouse=True)
 def set_env(request):
@@ -29,18 +42,16 @@ def minimal_db_initialization(request):
         db['Queue'].create(name='default')
         yield
 
-
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
-
 
 def test_oarsub_void():
     runner = CliRunner()
     result = runner.invoke(cli)
     assert result.exception.code == \
         (5, 'Command or interactive flag or advance reservation time or connection directive must be provided')
-
 
 def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()
@@ -167,3 +178,18 @@ def test_oarsub_connect_noop_error():
     result = runner.invoke(cli, ['-C 1234', '-t noop'])
     print(result.output)
     assert result.exception.code == (17, 'A NOOP job does not have a shell to connect to.')  
+
+def test_oarsub_scanscript_1():
+    global fake_popen_process_stdout
+    fake_popen_process_stdout = ("#Funky job\n"
+                                 "#OAR -l resource_id=4,walltime=1\n"
+                                 "#OAR -n funky\n"
+                                 "#OAR --project batcave\n")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-S', 'yop'])
+    print(result.output)
+    job = db['Job'].query.one()
+    print(job.initial_request)
+    assert job.name == 'funky'
+    assert job.project == 'batcave'

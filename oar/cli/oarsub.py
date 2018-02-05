@@ -167,7 +167,7 @@ def resubmit_job(job_id):
 @click.argument('command', required=False)
 @click.option('-I', '--interactive', is_flag=True,
               help='Interactive mode. Give you a shell on the first reserved node.')
-@click.option('-q', '--queue', default='default',
+@click.option('-q', '--queue',
               help='Specifies the destination queue. If not defined the job is enqueued in default queue')
 @click.option('-l', '--resource', type=click.STRING, multiple=True,
               help="Defines resource list requested for a job: resource=value[,[resource=value]...]\
@@ -241,13 +241,11 @@ def cli(command, interactive, queue, resource, reservation, connect,
         stdout, stderr, hold, version):
     """Submit a job to OAR batch scheduler."""
 
-
     global job_id_lst
     
     #set default config for submission
     default_submission_config(tools.DEFAULT_CONFIG)
     
-    #import pdb; pdb.set_trace()
     cmd_ret = CommandReturns()
     
     log_warning = ''  # TODO
@@ -398,31 +396,17 @@ def cli(command, interactive, queue, resource, reservation, connect,
                                    import_job_key_inline=import_job_key_inline,
                                    import_job_key_file=import_job_key_file,
                                    export_job_key_file=export_job_key_file)
-    
-
-    #import pdb; pdb.set_trace()
 
     error = job_parameters.check_parameters()
     if error[0] != 0:
         cmd_ret.error('', 0, error)
         cmd_ret.exit()
 
-    #import pdb; pdb.set_trace()
     submission = Submission(job_parameters)
-
-    # TO REMOVE
-    # command, initial_request, interactive, queue, resource,
-    # type, checkpoint, property, resubmit, scanscript, project,
-    # directory, name, after, notify, array, array_param_
-    # export_job_key_to_file, stdout, stderr, hold)
 
     if not interactive and command:
 
         cmd_executor = 'Qsub'
-
-        if scanscript:
-            # TODO scanscript
-            pass
 
         array_params = []
         if array_param_file:
@@ -484,7 +468,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             print('OAR_JOB_ID=', job_id)
 
     result = (job_id_lst, oar_array_id)
-
+    
     # Notify Almigthy
     tools.notify_almighty(cmd_executor)
 

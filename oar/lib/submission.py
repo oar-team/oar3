@@ -7,7 +7,6 @@ import random
 
 from sqlalchemy import text, exc
 from procset import ProcSet
-
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobDependencie, JobStateLog, MoldableJobDescription,
                      JobResourceGroup, JobResourceDescription, Resource,
@@ -69,7 +68,7 @@ def scan_script(submitted_filename, initial_request_str, user=None):
     try:
         process = tools.Popen(['oardodo', 'cat', submitted_filename], stdout=PIPE)
     except:
-        error = (-70, 'Unable to read: ' + submited_filename)
+        error = (-70, 'Unable to read: ' + submitted_filename)
 
     stdout = process.communicate()[0]   
     output = stdout.decode()
@@ -115,10 +114,12 @@ def scan_script(submitted_filename, initial_request_str, user=None):
             m = re.match(r'^#OAR\s+(-d|--directory)\s*(.+)\s*$', line)
             if m:
                 result['directory'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(-n|--name)\s*(.+)\s*$', line)
             if m:
                 result['name'] = m.group(2)
+                initial_request_str += ' ' + m.group(1) + ' ' + m.group(2)
                 continue
             m = re.match(r'^#OAR\s+(--project)\s*(.+)\s*$', line)
             if m:
@@ -875,6 +876,7 @@ def check_reservation(reservation):
 class JobParameters():
     def __init__(self, **kwargs):
 
+        self.error = (0, '')
         self.array_params = None #TODO REMOVE
         
         scanscript_values = {}
@@ -887,8 +889,11 @@ class JobParameters():
                 initial_request = kwargs['initial_request']
                 if 'user' in kwargs:
                     user = kwargs['user']
-                scanscript_values = scan_script(kwargs['command'], initial_request, user)
-
+            error, scanscript_values = scan_script(kwargs['command'], initial_request, user)
+            if error[0] != 0:
+                self.error = error
+                return
+        
         for key in ['job_type', 'resource', 'command', 'info_type',
                     'queue', 'properties', 'checkpoint', 'signal',
                     'notify', 'name', 'types', 'directory',
@@ -898,7 +903,7 @@ class JobParameters():
                     'array', 'array_params', 'array_param_file',
                     'use_job_key', 'import_job_key_inline',
                     'import_job_key_file', 'export_job_key_file']:
-
+                        
             if key in kwargs:
                 setattr(self, key, kwargs[key])
             else:
@@ -906,10 +911,13 @@ class JobParameters():
     
             if scanscript and (key in kwargs and not kwargs[key]) and key in scanscript_values:
                 setattr(self, key, scanscript_values[key])
-
+        
         if not self.initial_request:
             self.initial_request = self.command
-            
+
+        if scanscript:
+            self.initial_request = scanscript_values['initial_request']
+
         if self.array:
             self.array_nb = self.array
         else:
@@ -946,8 +954,11 @@ class JobParameters():
                 self.use_job_key = True
             else:
                 self.use_job_key = False
-                
+
     def check_parameters(self):
+        if self.error[0] != 0:
+            return self.error
+
         if not self.command and not self.interactive and not self.reservation and not self.connect:
             return (5, 'Command or interactive flag or advance reservation time or connection directive must be provided')
 
