@@ -640,7 +640,7 @@ def add_micheline_simple_array_job(job_parameters,
     result = db.query(Job.id).filter(Job.array_id == array_id).all()
     job_id_list = [r[0] for r in result]
 
-    # TODO Populate challenges and moldable_job_descriptions tables
+    # TODO Populate challenges and moldable_job_descriptions tables (DONE?)
     challenges = []
     moldable_job_descriptions = []
 
@@ -714,7 +714,7 @@ def add_micheline_simple_array_job(job_parameters,
     # Hold/Waiting management, job_state_log setting
     # Job is inserted with hold state first
     state_log = 'Hold'
-    if job_parameters.hold:
+    if not job_parameters.hold:
         state_log = 'Waiting'
         db.query(Job).filter(Job.array_id == array_id).update({Job.state: state_log})
         db.commit
