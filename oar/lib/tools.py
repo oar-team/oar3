@@ -540,6 +540,9 @@ def limited_dict2hash_perl(d):
                 s = s + limited_dict2hash_perl(v)
         elif isinstance(v, str):
             s = s + "'" + v + "'"
+        elif isinstance(v, bool):
+            val = '1' if v else '0'
+            s = s + val
         else:
             s = s + str(v)
         s = s + ','

@@ -312,7 +312,7 @@ class BipBip(object):
             'node_file_db_fields_distinct_values': node_file_db_field_distinct_values,
             'user': job.user,
             'job_user': job.user,
-            'types': job_types,
+            'types': job_types,            
             'name': job.name,
             'project': job.project,
             'reservation': job.reservation,
@@ -331,6 +331,7 @@ class BipBip(object):
             'detach_oarexec': config['DETACH_JOB_FROM_SERVER'],
             'cpuset_full_path': oarexec_cpuset_path
         }
+
         #print(data_to_transfer)
         #print(resources_data_str)
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
@@ -375,7 +376,7 @@ class BipBip(object):
             if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
                 tools.notify_interactif_user(job, 'ERROR: an error occured on the first job node')
                     
-            check_end_of_job(job_id, self.oarexec_reattach_script_exit_vint, error,
+            check_end_of_job(job_id, self.oarexec_reattach_script_exit_value, error,
                              hosts, job.user, job.launching_directory, self.server_epilogue)
         return
         

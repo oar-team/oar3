@@ -5,6 +5,7 @@ import os
 from click.testing import CliRunner
 
 from oar.lib import (db, config)
+from oar.lib.job_handling import get_job_types
 from oar.cli.oarsub import cli
 
 import oar.lib.tools  # for monkeypatching
@@ -193,3 +194,15 @@ def test_oarsub_scanscript_1():
     print(job.initial_request)
     assert job.name == 'funky'
     assert job.project == 'batcave'
+
+def test_oarsub_multiple_types(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-q', 'default', '-t', 't1', '-t', 't2', '"sleep 1"'])
+    print(result.output)
+    job = db['Job'].query.one()
+    job_types = get_job_types(job.id)
+    print(job_types)
+    assert job_types == {'t1': True, 't2': True}
+    assert result.exit_code == 0
+
+    

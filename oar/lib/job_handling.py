@@ -1620,13 +1620,15 @@ def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDir
         logger.debug(log_jid + 'Job is ended')
         set_finish_date(job)
         set_job_state(job_id, 'Finishing')
-        
-        try:
-            set_job_exit_code(job_id, int(exit_script_value))
-        except ValueError:
-            # exit_script_value is not an int ( equal to 'N'),
-            # nothing to do.
-            pass
+
+        if exit_script_value:
+            try:
+                set_job_exit_code(job_id, int(exit_script_value))
+            except ValueError:
+                # TODO log a warning
+                # exit_script_value is not an int ( equal to 'N'),
+                # nothing to do.
+                pass
 
         if error == 0:
             logger.debug(log_jid + 'User Launch completed OK')
