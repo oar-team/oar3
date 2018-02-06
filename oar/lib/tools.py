@@ -431,7 +431,7 @@ def sql_to_local(date):
     integer local time format
     Date 'year mon mday hour min sec' """
     date = ' '.join(re.findall(r"[\d']+", date))
-    t = time.strptime(date, "%Y %m %d %H %m %s")
+    t = time.strptime(date, "%Y %m %d %H %M %S")
     return int(time.mktime(t))
 
 def local_to_sql(local):
