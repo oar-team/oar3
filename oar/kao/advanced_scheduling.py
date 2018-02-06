@@ -103,10 +103,10 @@ def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
 
             for itv in avail_bks[idx].intervals():
                 if (k + len(itv)) < n:
-                    res_itvs.add(itv)
+                    res_itvs.insert(itv)
                     k += len(itv)
                 else:
-                    res_itvs.add(ProcInt(itv.inf, itv.inf + (n-k-1)))
+                    res_itvs.insert(ProcInt(itv.inf, itv.inf + (n-k-1)))
                     return res_itvs
     return ProcSet()
 
