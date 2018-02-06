@@ -158,7 +158,7 @@ def test_oarsub_sleep_queue_error(monkeypatch):
 
 def test_oarsub_interactive_reservation_error():
     runner = CliRunner()
-    result = runner.invoke(cli, ['-I', '-r fake_date'])
+    result = runner.invoke(cli, ['-I', '-r', '2018-02-06 14:48:0'])
     print(result.output)
     assert result.exception.code == (7, 'An advance reservation cannot be interactive.')
 

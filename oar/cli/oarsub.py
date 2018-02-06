@@ -359,7 +359,12 @@ def cli(command, interactive, queue, resource, reservation, connect,
     initial_request = ' '.join(sys.argv[1:])
     queue_name = lstrip_none(queue)    
 
-    reservation_date = check_reservation(lstrip_none(reservation))
+    reservation_date = 0
+    if reservation:
+        (error, reservation_date) = check_reservation(lstrip_none(reservation))
+        if error[0] != 0:
+            cmd_ret.error('', 0, error)
+            cmd_ret.exit()
 
     # TODO import_job_key_file, export_job_key_file
     import_job_key_file = ''
@@ -404,37 +409,41 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     submission = Submission(job_parameters)
 
+    if interactive or reservation :
+        socket_server = init_tcp_server()
+        (server, server_port) = socket_server.getsockname()
+        job_parameters.info_type = server + ':' + str(server_port)
+
     if not interactive and command:
-
         cmd_executor = 'Qsub'
-
+        job_parameters.job_type = 'PASSIVE'
+        # TODO MOVE test to  job_parameters.check_parameters()
+        
         array_params = []
         if array_param_file:
             pass
         # TODO
         # $array_params_ref = OAR::Sub::read_array_param_file($array_param_file);
         # $array_nb = scalar @{$array_params_ref};
-
         if job_parameters.array_nb == 0:
             pass
         #    print_error('an array of job must have a number of sub-jobs greater than 0.')
         #    usage()
         #    exit(6)
 
-        job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
-        job_parameters.job_type = 'PASSIVE'
+        #job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
 
-        (error, job_id_lst) = submission.submit()
 
     else:
+        cmd_executor = 'Qsub -I'
+        job_parameters.job_type = 'INTERACTIVE'
+        
+        # TODO MOVE test to  job_parameters.check_parameters()
         if command:
             cmd_ret.warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
         else:
             command = ''
             job_parameters.command = command
-
-        cmd_executor = 'Qsub -I'
-
         if array_param_file:
             cmd_ret.error('a array job with parameters given in a file cannot be interactive.', 0, 9)
             cmd_ret.exit()
@@ -442,13 +451,9 @@ def cli(command, interactive, queue, resource, reservation, connect,
             cmd_ret.error('an array job cannot be interactive.', 0, 8)
             cmd_ret.exit()
 
-        socket_server = init_tcp_server()
-        (server, server_port) = socket_server.getsockname()
-        
-        job_parameters.info_type = server + ':' + str(server_port)
-        job_parameters.job_type = 'INTERACTIVE'
-        
-        (error, job_id_lst) = submission.submit()
+
+    # Launch the checked submission   
+    (error, job_id_lst) = submission.submit()
 
     # pdb.set_trace()
 
@@ -474,14 +479,22 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     if reservation:
         # Reservation mode
-        cmd_ret.info("advance reservation request: waiting for approval from the scheduler...")
+        cmd_ret.info("Advance reservation request: waiting for approval from the scheduler...")
 
         (conn, address) = socket_server.accept()
-        answer = conn.recv(1024)
-        if answer[:-1] == 'GOOD RESERVATION':
+        message = conn.recv(1024)
+        message = message[:-1]
+        answer = message.decode().rstrip()
+
+        print(answer)
+        cmd_ret.info(answer)
+        
+        if answer == 'GOOD RESERVATION':
             cmd_ret.info('Advance reservation is GRANTED.')
         else:
-            cmd_ret.info('Advance reservation is REJECTED ' + answer[:-1], 0, 10)
+            
+            cmd_ret.info('Advance reservation is REJECTED.')
+
     elif interactive:
         # Interactive mode
         cmd_ret.info('Interactive mode: waiting...')

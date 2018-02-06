@@ -867,11 +867,11 @@ def check_reservation(reservation):
                       reservation)
         if m:
             reservation_date = sql_to_local(m.group(1) + ' ' + m.group(2))
-            return (0, reservation_date) 
-        else:
-            error = (7, 'syntax error for the advance reservation start date \
-            specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
-            return (error, None)
+            return ((0, ''), reservation_date) 
+
+    error = (7, 'syntax error for the advance reservation start date \
+    specification. Expected format is:"YYYY-MM-DD hh:mm:ss"')
+    return (error, None)
 
 class JobParameters():
     def __init__(self, **kwargs):

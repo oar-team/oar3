@@ -187,7 +187,12 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
     default_submission_config(DEFAULT_VALUE)
 
     initial_request = '' #TODO Json version ?
-    reservation_date = check_reservation(reservation)
+    
+    reservation_date = 0
+    if reservation:
+        (error, reservation_date) = check_reservation(reservation)
+        if error[0] != 0:
+            pass #TODO
     
     job_parameters = JobParameters(
         job_type='PASSIVE',
@@ -196,7 +201,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         workdir=workdir, #TODO
         array_param_file=param_file,
         array=array,
-        #scanscript=scanscript,
+        #scanscript=scanscript, TODO
         queue=queue,
         properties=properties,
         reservation=reservation_date,
