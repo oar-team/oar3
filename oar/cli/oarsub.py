@@ -253,7 +253,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
     log_info = ''
     log_std = ''
 
-    # TODO
     remote_host = config['SERVER_HOSTNAME']
     remote_port = int(config['SERVER_PORT'])
 
@@ -342,10 +341,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             #else:
             #    print_error('unknown error.')
             #exit(4)
-            
-    # Connect to a reservation
-    if connect:
-        exit(connect_job(connect, 0, openssh_cmd, cmd_ret))
+
 
     # Strip job's types
     types = [t.lstrip() for t in type]
@@ -401,6 +397,10 @@ def cli(command, interactive, queue, resource, reservation, connect,
     if error[0] != 0:
         cmd_ret.error('', 0, error)
         cmd_ret.exit()
+
+    # Connect to a reservation
+    if connect:
+        exit(connect_job(connect, 0, openssh_cmd, cmd_ret))
 
     submission = Submission(job_parameters)
 
