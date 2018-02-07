@@ -60,16 +60,16 @@ def print_jobs(legacy, jobs):
               '--------- - -------- ---------- ------------------------------------------------')
         now = tools.get_date()
         for job in jobs:
+            duration = 0
             if job.start_time:
-                if job.state in ['Running', 'Launching', 'Finishing']:
-                    duration = now - job.start_time
-                elif job.stop_time != 0:
-                    duration = job.stop_time - job.start_time
-                else:
-                    duration = -1
-            else:
-                duration = 0
-            
+                if now > job.start_time:
+                    if job.state in ['Running', 'Launching', 'Finishing']:
+                        duration = now - job.start_time
+                    elif job.stop_time != 0:
+                        duration = job.stop_time - job.start_time
+                    else:
+                        duration = -1
+
             print('{:9}'.format(str(job.id)) + ' ' + STATE2CHAR[job.state] + ' ' +
                   '{:8}'.format(str(job.user)) + ' ' +
                   '{:>10}'.format(str(datetime.timedelta(seconds=duration))) + ' ' +

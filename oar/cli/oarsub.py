@@ -323,7 +323,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
                 cmd_ret.error(error_msg, 0, 3)
                 cmd_ret.exit()
             else:
-                # It's all good                cmd_ret.exit()
+                # It's all good
+                cmd_ret.exit()
                 
         else:
             cmd_ret.error('TODO', 0, error)
