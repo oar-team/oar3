@@ -58,8 +58,8 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     lusr = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
 
     job = get_job(job_id)
-
-    if (lusr == job.user) or (luser == 'oar') or (job.state == 'Running'):
+    
+    if ((lusr == job.user) or (luser == 'oar')) and (job.state == 'Running'):
         types = get_job_types(job_id)
         #noop
         if 'noop' in types:
@@ -148,7 +148,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 
             
     else:
-        if job.state_!= 'Running':
+        if job.state != 'Running':
             cmd_ret.error('Job ' + str(job_id) + ' is not running, current state is ' + job.state + '.')
         
         if (lusr != job.user) and (lusr != 'oar'):
