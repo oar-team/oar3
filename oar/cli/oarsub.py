@@ -52,8 +52,8 @@ signal.signal(signal.SIGHUP, qdel)
 signal.signal(signal.SIGPIPE, qdel)
 
 def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
-    '''Connect to a job and give the shell of the user on the remote host.'''
-    # TODO: Remove stop_oarexec ???
+    """Connect to a job and give the shell of the user on the remote host.
+    """
     xauth_path = os.environ['OARXAUTHLOCATION'] if 'OARXAUTHLOCATION' in os.environ else None
     lusr = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
 
@@ -323,8 +323,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
                 cmd_ret.error(error_msg, 0, 3)
                 cmd_ret.exit()
             else:
-                # It's all good
-                cmd_ret.exit()
+                # It's all good                cmd_ret.exit()
                 
         else:
             cmd_ret.error('TODO', 0, error)
@@ -343,14 +342,9 @@ def cli(command, interactive, queue, resource, reservation, connect,
             #    print_error('unknown error.')
             #exit(4)
             
-
-    # TODO   Connect to a reservation
     # Connect to a reservation
-    # if (defined($connect_job)){
-    # Do not kill the job if the user close the window
-    #  $SIG{HUP} = 'DEFAULT';
-    #  OAR::Sub::close_db_connection(); exit(connect_job($connect_job,0,$Openssh_cmd));
-    # }
+    if connect:
+        exit(connect_job(connect, 0, openssh_cmd, cmd_ret))
 
     # Strip job's types
     types = [t.lstrip() for t in type]
@@ -521,8 +515,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
         if (answer == 'GOOD JOB'):
             connect_job(job_id_lst[0], 1, openssh_cmd, cmd_ret) 
-            # TODO exit(connect_job($Job_id_list_ref->[0],1,$Openssh_cmd));
-            pass
         else:
             cmd_ret.exit(11)
 
