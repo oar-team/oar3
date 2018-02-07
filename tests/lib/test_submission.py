@@ -59,7 +59,7 @@ def default_job_parameters(resource_request):
         checkpoint=0,
         signal=12,
         notify='',
-        types=None,
+        types=[],
         directory='/tmp',
         dependencies=None,
         stdout=None,
@@ -181,3 +181,17 @@ def test_scan_script(monkeypatch_tools):
     print(error, fake_popen_process_stdout, result)
     assert error == (0, '')
     assert res == result
+
+
+def test_job_parameter_notify():
+    job_parameters = default_job_parameters(None)
+    job_parameters.notify = "mail:name\@domain.com"
+    error = job_parameters.check_parameters()
+    assert error[0] == 0
+    
+def test_job_parameter_notify_badexec():
+    job_parameters = default_job_parameters(None)
+    job_parameters.notify =  'exec:/path/to/script args rogue$*'
+    error = job_parameters.check_parameters()
+    assert error == (16, 'insecure characters found in the notification method (the allowed regexp is: '
+    '[a-zA-Z0-9_.\\/ -]+).')
