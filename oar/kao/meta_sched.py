@@ -263,7 +263,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                                 "remove some resources assigned to this advance reservation, \
                                 because there are not Alive")
 
-                    add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_ADVANCE_RESERVATION',
+                    add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_RESERVATION',
                                   job.id,
                                   "[MetaSched] Reduce the number of resources for the job "
                                   + str(job.id))
