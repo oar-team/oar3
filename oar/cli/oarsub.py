@@ -191,7 +191,7 @@ def resubmit_job(job_id):
 @click.option('-S', '--scanscript', is_flag=True,
               help='Batch mode only: asks oarsub to scan the given script for OAR directives \
               (#OAR -l ...)')
-@click.option('-k', '--checkpoint', type=int, default=0,
+@click.option('--checkpoint', type=int, default=0,
               help='Specify the number of seconds before the walltime when OAR will send \
               automatically a SIGUSR2 on the process.')
 @click.option('--signal', type=int,
