@@ -69,6 +69,7 @@ def scan_script(submitted_filename, initial_request_str, user=None):
         process = tools.Popen(['oardodo', 'cat', submitted_filename], stdout=PIPE)
     except:
         error = (-70, 'Unable to read: ' + submitted_filename)
+        return (error, result)
 
     stdout = process.communicate()[0]   
     output = stdout.decode()
@@ -877,7 +878,7 @@ class JobParameters():
     def __init__(self, **kwargs):
 
         self.error = (0, '')
-        self.array_params = None #TODO REMOVE
+        self.array_params = []
         
         scanscript_values = {}
         scanscript = False
@@ -982,6 +983,30 @@ class JobParameters():
 
         return (0, '')
 
+    def read_array_param_file(self):
+        process = None
+        
+        self.array_nb = 0
+        self.array_params = []
+        
+        try:
+            process = tools.Popen(['oardodo', 'cat', self.array_param_file], stdout=PIPE)
+        except:
+            return (12, 'Cannot open the parameter file ' + self.array_param_file)
+            
+        stdout = process.communicate()[0]   
+        output = stdout.decode()
+    
+        for line in output.split('\n'):
+            # Ignore comments and blank line
+            if not re.match(r'#.*|^\s*$', line):
+                self.array_params.append(line)
+                self.array_nb += 1
+
+        if self.array_nb == 0:
+            return (6, 'An array of job must have a number of sub-jobs greater than 0.')
+
+        return (0, '')
 
     def kwargs(self, command, date):
         kwargs = {}

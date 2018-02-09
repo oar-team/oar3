@@ -412,22 +412,15 @@ def cli(command, interactive, queue, resource, reservation, connect,
     if not interactive and command:
         cmd_executor = 'Qsub'
         job_parameters.job_type = 'PASSIVE'
-        # TODO MOVE test to  job_parameters.check_parameters()
-        
-        array_params = []
+
+        #import pdb; pdb.set_trace()
         if array_param_file:
-            pass
-        # TODO
-        # $array_params_ref = OAR::Sub::read_array_param_file($array_param_file);
-        # $array_nb = scalar @{$array_params_ref};
-        if job_parameters.array_nb == 0:
-            pass
-        #    print_error('an array of job must have a number of sub-jobs greater than 0.')
-        #    usage()
-        #    exit(6)
-
+            error = job_parameters.read_array_param_file()
+            if error[0] != 0:
+                cmd_ret.error('', 0, error)
+                cmd_ret.exit()
+    
         #job_parameters.info_type = "frontend:" #"$Host:$server_port"  # TODO  "$Host:$server_port"
-
 
     else:
         cmd_executor = 'Qsub -I'
