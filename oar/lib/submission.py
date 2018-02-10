@@ -530,15 +530,11 @@ def add_micheline_subjob(job_parameters,
         ins = [{'job_id': job_id, 'type': typ} for typ in types]
         db.session.execute(JobType.__table__.insert(), ins)
 
-    # TODO dependencies with min_start_shift and max_start_shift
+    # Set insert job dependencies
     dependencies = job_parameters.dependencies
     if dependencies:
         ins = [{'job_id': job_id, 'job_id_required': dep} for dep in dependencies]
         db.session.execute(JobDependencie.__table__.insert(), ins)
-    #    foreach my $a (@{$anterior_ref}){
-    #    if (my ($j,$min,$max) = $a =~ /^(\d+)(?:,([\[\]][-+]?\d+)?(?:,([\[\]][-+]?\d+)?)?)?$/) {
-    #        $dbh->do("  INSERT INTO job_dependencies (job_id,job_id_required,min_start_shift,max_start_shift)
-    #                    VALUES ($job_id,$j,'".(defined($min)?$min:"")."','".(defined($max)?$max:"")."')
 
     if not job_parameters.hold:
         req = db.insert(JobStateLog).values(
@@ -703,15 +699,24 @@ def add_micheline_simple_array_job(job_parameters,
     # Populate job_types table
     types = job_parameters.types
     if types:
-        job_types = []
+        jobs_types = []
         for job_id in job_id_list:
             for typ in types:
-                job_types.append({'job_id': job_id, 'type': typ})
-        db.session.execute(JobType.__table__.insert(), job_types)
+                jobs_types.append({'job_id': job_id, 'type': typ})
+        db.session.execute(JobType.__table__.insert(), jobs_types)
         db.commit()
 
-    # TODO Anterior job setting
+    # Set insert job dependencies
+    dependencies = job_parameters.dependencies
 
+    if dependencies:
+        jobs_dependencies = []
+        for job_id in job_id_list:
+            for dep in dependencies:
+                jobs_dependencies.append({'job_id': job_id, '': dep})
+        db.session.execute(JobDependencie.__table__.insert(), jobs_dependencies)
+        db.commit()       
+    
     # Hold/Waiting management, job_state_log setting
     # Job is inserted with hold state first
     state_log = 'Hold'
@@ -823,7 +828,6 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     ssh_private_key = ''
     ssh_public_key = ''
     if job_parameters.array_nb > 1 and not job_parameters.use_job_key:
-        # TODO Simple array job submissiom
         # Simple array job submission is used
         (error, job_id_list) = add_micheline_simple_array_job(job_parameters,
                                                               ssh_private_key, ssh_public_key,
@@ -831,7 +835,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
                                                               array_commands)
 
     else:
-        # single job to submit or when job key is used with array job
+        # Single job to submit or when job key is used with array job
         for cmd in array_commands:
             (error_code, ssh_private_key, ssh_public_key) = job_key_management(job_parameters.use_job_key,
                                                                                import_job_key_inline,
