@@ -538,8 +538,7 @@ def save_assigns(jobs, resource_set):
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in jobs.values() if isinstance(jobs, dict) else jobs:
-            # Filter job in error (-1), in holding state and, job waiting due to jobs dependencies 
-            if j.start_time > 0: # Filter 
+            if j.start_time > -1:
                 logger.debug("job_id to save: " + str(j.id))
                 mld_id_start_time_s.append(
                     {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
@@ -554,10 +553,6 @@ def save_assigns(jobs, resource_set):
             GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
         db.commit()
-
-    # INSERT INTO  gantt_jobs_predictions  (moldable_job_id,start_time) VALUES
-    # INSERT INTO  gantt_jobs_resources (moldable_job_id,resource_id) VALUES
-
 
 def save_assigns_bulk(jobs, resource_set):
 

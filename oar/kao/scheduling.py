@@ -291,6 +291,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                 break
 
         if to_skip:
+            # Set job as currently not schedulable 
+            job.start_time = -1
             logger.info(
                 "job(" + str(jid) + ") can't be scheduled due to dependencies")
         else:
