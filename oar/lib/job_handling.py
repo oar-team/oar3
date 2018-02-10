@@ -771,25 +771,25 @@ def insert_job(**kwargs):
 
 def resubmit_job(job_id):
     """Resubmit a job and give the new job_id"""
-
+    
     user = os.environ['OARDO_USER']
     job = get_job(job_id)
 
     if job is None:
-        return 0
+        return ((-5, 'Unable to retrieve initial job:' + str(job_id)), 0)
     if job.type != 'PASSIVE':
-        return -1
+        return ((-1, 'Interactive jobs and advance reservations cannot be resubmitted.'), 0)
     if (job.state != 'Error') and (job.state != 'Terminated') and (job.state != 'Finishing'):
-        return -2
+        return ((-2, 'Only jobs in the Error or Terminated state can be resubmitted.'), 0) 
     if (user != job.user) and (user != 'oar') and (user != 'root'):
-        return -3
+        return ((-3, 'Resubmitted job user mismatch.'), 0)
     
     # Verify the content of the ssh keys
     job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
     if (ssh_public_key != '') or (ssh_private_key != ''):
         # Check if the keys are used by other jobs
         if get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key) > 0:
-            return -4
+            return ((-4, 'Another active job is using the same job key.'), 0)
 
     date = tools.get_date()
     # Detach and prepare old job to be reinserted
@@ -841,7 +841,7 @@ def resubmit_job(job_id):
                                            .filter(JobResourceDescription.group_id == job_res_grp.id).all()
 
              for job_res_descr in job_resource_descriptions:
-                 db.session.execute(JobResourceGroup.__table__.insert(),
+                 db.session.execute(JobResourceDescription.__table__.insert(),
                                     {'res_job_group_id': res_group_id,
                                      'res_job_resource_type': job_res_descr.resource_type,
                                      'res_job_value': job_res_descr.value,
@@ -866,7 +866,7 @@ def resubmit_job(job_id):
          
     db.commit()                                                
         
-    return new_job_id
+    return ((0,''), new_job_id)
     
 
 def is_job_already_resubmitted(job_id):

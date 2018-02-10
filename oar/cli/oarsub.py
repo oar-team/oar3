@@ -19,7 +19,8 @@ from oar.lib.submission import (JobParameters, Submission, lstrip_none,
                                 check_reservation, default_submission_config)
 
 from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostnames,
-                                  get_job_cpuset_name, get_current_moldable_job)
+                                  get_job_cpuset_name, get_current_moldable_job,
+                                  resubmit_job)
 
 from oar.cli.oardel import oardel
 
@@ -40,7 +41,7 @@ def init_tcp_server():
 
 
 def qdel(signalnum, frame):
-    """To address ^C in interactive submission."""
+    """Handle ^C in interactive submission."""
     if job_id_lst:
         if signalnum == signal.SIGINT:
             print('Caught Interrupt (^C), cancelling job(s)...')
@@ -61,15 +62,15 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     
     if ((lusr == job.user) or (luser == 'oar')) and (job.state == 'Running'):
         types = get_job_types(job_id)
-        #noop
+        # No operation job type
         if 'noop' in types:
-            cmd_ret.warning('/!\\ It is not possible to connect to a NOOP job.')
+            cmd_ret.warning(' It is not possible to connect to a NOOP job.')
             cmd_ret.exit(17);
 
         hosts = get_job_current_hostnames(job_id)
         host_to_connect_via_ssh = hosts[0]
         
-        #deploy, cosystem and no host part
+        # Deploy, cosystem and no host part
         if 'cosystem' in types or not hosts:
             host_to_connect_via_ssh = config['COSYSTEM_HOSTNAME']
         elif 'deploy' in types:
@@ -156,12 +157,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         cmd_ret.exit(20)
 
     cmd_ret.exit(0)
-    
 
-def resubmit_job(job_id):
-    # TODO
-    print('TODO resubmit_job')
-    return ((-42, "Not yet implemented"), -1)
 
 @click.command()
 @click.argument('command', required=False)
@@ -243,7 +239,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     global job_id_lst
     
-    #set default config for submission
+    # Set default config for submission
     default_submission_config(tools.DEFAULT_CONFIG)
     
     cmd_ret = CommandReturns()
@@ -300,8 +296,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         print(VERSION)
         cmd_ret.exit()
         
-    # TODO: OAR is now a set of composition...
-
     # TODO ssh_private_key, ssh_public_key,
     # ssh_private_key = ''
     # ssh_public_key = ''
@@ -319,29 +313,10 @@ def cli(command, interactive, queue, resource, reservation, connect,
             if not tools.notify_almighty('Qsub'):
                 error_msg = 'Cannot connect to OAR server (Almighty): ' + str(remote_host) + ':' +\
                             str(remote_port)
-                cmd_ret.error(error_msg, 0, 3)
-                cmd_ret.exit()
-            else:
-                # It's all good
-                cmd_ret.exit()
-                
+                cmd_ret.error('', 0, (3,error_msg))
         else:
-            cmd_ret.error('TODO', 0, error)
-            cmd_ret.exit()
-            # TODO
-            #print(' error.')
-            #if ret == -1:
-            #    print_error('interactive jobs and advance reservations cannot be resubmitted.')
-            #elif ret == -2:
-            #    print_error('only jobs in the Error or Terminated state can be resubmitted.')
-            #elif ret == -3:
-            #    print_error('resubmitted job user mismatch.')
-            #elif ret == -4:
-            #    print_error('another active job is using the same job key.')
-            #else:
-            #    print_error('unknown error.')
-            #exit(4)
-
+            cmd_ret.error('', 0, error)
+        cmd_ret.exit()
 
     # Strip job's types
     types = [t.lstrip() for t in type]
@@ -362,7 +337,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     export_job_key_file = ''
 
     user = os.environ['OARDO_USER']
-    # TODO verify if all need parameters are identifed and present for submission 
+
     job_parameters = JobParameters(job_type=None,
                                    resource=resource,
                                    command=command,
@@ -413,7 +388,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         cmd_executor = 'Qsub'
         job_parameters.job_type = 'PASSIVE'
 
-        #import pdb; pdb.set_trace()
         if array_param_file:
             error = job_parameters.read_array_param_file()
             if error[0] != 0:
@@ -428,22 +402,20 @@ def cli(command, interactive, queue, resource, reservation, connect,
         
         # TODO MOVE test to  job_parameters.check_parameters()
         if command:
-            cmd_ret.warning('asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
+            cmd_ret.warning('Asking for an interactive job (-I), so ignoring arguments: ' + command + ' .')
         else:
             command = ''
             job_parameters.command = command
         if array_param_file:
-            cmd_ret.error('a array job with parameters given in a file cannot be interactive.', 0, 9)
+            cmd_ret.error('An array job with parameters given in a file cannot be interactive.', 0, 9)
             cmd_ret.exit()
         if job_parameters.array_nb != 1:
-            cmd_ret.error('an array job cannot be interactive.', 0, 8)
+            cmd_ret.error('An array job cannot be interactive.', 0, 8)
             cmd_ret.exit()
 
 
     # Launch the checked submission   
     (error, job_id_lst) = submission.submit()
-
-    # pdb.set_trace()
 
     if error[0] != 0:
         cmd_ret.error('unamed error', 0, error) #TODO
