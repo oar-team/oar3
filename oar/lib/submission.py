@@ -708,12 +708,11 @@ def add_micheline_simple_array_job(job_parameters,
 
     # Set insert job dependencies
     dependencies = job_parameters.dependencies
-
     if dependencies:
         jobs_dependencies = []
         for job_id in job_id_list:
             for dep in dependencies:
-                jobs_dependencies.append({'job_id': job_id, '': dep})
+                jobs_dependencies.append({'job_id': job_id, 'job_id_required': dep})
         db.session.execute(JobDependencie.__table__.insert(), jobs_dependencies)
         db.commit()       
     

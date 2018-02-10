@@ -538,7 +538,8 @@ def save_assigns(jobs, resource_set):
         mld_id_start_time_s = []
         mld_id_rid_s = []
         for j in jobs.values() if isinstance(jobs, dict) else jobs:
-            if j.start_time > -1:
+            # Filter job in error (-1), in holding state and, job waiting due to jobs dependencies 
+            if j.start_time > 0: # Filter 
                 logger.debug("job_id to save: " + str(j.id))
                 mld_id_start_time_s.append(
                     {'moldable_job_id': j.moldable_id, 'start_time': j.start_time})
