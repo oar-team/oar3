@@ -51,9 +51,147 @@ def print_info(*objs):
 
     
 def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
-                       export_job_key_file):
-    # TODO job_key_management
-    return(0, '', '')
+                       export_job_key_file, user=None):
+    """ Manage the job key if option is activated. 
+    Read job key file if import from file and generate a job key if no import.
+    This function returns with job_key_priv and job_key_pub set if use_job_key is set.
+    """
+    #import pdb; pdb.set_trace()
+    error = (0, '')
+    
+    job_key_priv = ''
+    job_key_pub = ''
+
+    if use_job_key and (not import_job_key_inline) and\
+       (not import_job_key_file) and 'OAR_JOB_KEY_FILE' in os.environ:
+        import_job_key_file = os.environ['OAR_JOB_KEY_FILE']
+
+    if not use_job_key and (import_job_key_inline or import_job_key_file or export_job_key_file):
+        error = (-15,
+                 'You must set the --use-job-key (or -k) option in order to use other job key related options.')
+        return(error, '', '')
+    if use_job_key:
+        if import_job_key_inline and import_job_key_file:
+            error = (-15,
+                     'You cannot import a job key both inline and from a file at the same time.')
+            return(error, '', '')
+        
+        tmp_job_key_file = config['OAREXEC_DIRECTORY'] + '/oarsub_' + str(os.getpid()) + '.jobkey'
+        if import_job_key_inline or import_job_key_file:
+            # job key is imported
+            if import_job_key_inline:
+                # inline import
+                print('# Info: importing job key inline.') #TODO use a wrapped function
+                import_job_key = import_job_key_inline
+            else:
+                # file import
+                print('# Info: import job key from file: ' + import_job_key_file)
+                if not user:
+                    user = os.environ['OARDO_USER']
+                # read key files: oardodo su - user needed in order to be able to read the file for sure
+                # safer way to do a `cmd`, see perl cookbook (come for OAR2)
+
+                os.environ['OARDO_BECOME_USER'] = user
+
+                try:
+                    process = tools.Popen(['oardodo', 'cat', import_job_key_file], stdout=PIPE)
+                except:
+                    error = (-14, 'Unable to read: ' + import_job_key_file)
+                    return (error, result)
+
+                stdout = process.communicate()[0]   
+                import_job_key = stdout.decode()
+
+            # Write imported_job_key in tmp_job_key_file
+            try:
+                with os.fdopen(os.open(tmp_job_key_file,
+                                       os.O_WRONLY | os.O_CREAT, 0o600), 'w') as f:
+                    f.write(import_job_key_inline)
+            except Exception as e:
+                error = (-14,
+                         'Cannot open tmp file and write in: ' + tmp_job_key_file +\
+                         '. Raised exception: ' + str(e))
+                return(error, '', '')
+
+            # Extract the public key from the private one
+            cmd = 'bash -c "SSH_ASKPASS=/bin/true ssh-keygen -y -f ' + tmp_job_key_file +\
+                  ' < /dev/null 2> /dev/null > ' + tmp_job_key_file + '.pub"'
+            base_error_msg = ''
+            try:
+                retcode = call(cmd, shell=True)
+                if retcode < 0:
+                    base_error_msg = 'Child was terminated by signal: ' + str(-retcode)
+                else:
+                     base_error_msg = 'Child returned' + str(retcode)
+            except OSError as e:
+                base_error_msg = 'Execution failed: ' + str(e)
+
+            if base_error_msg:
+                # Remove tmp_job_key_file, tmp_job_key_file.pub if they exist
+                try:
+                    os.remove(tmp_job_key_file)
+                except OSError:
+                    pass
+                try:
+                    os.remove(tmp_job_key_file + '.pub')
+                except OSError:
+                    pass
+                return((-14, 'Fail to extract the public key. ' + base_error_msg), '', '')
+            
+        else:
+            # The key must be generated
+            print('# Info: generating a job key...')
+
+            # ssh-keygen: no passphrase, smallest key (1024 bits), ssh2 rsa faster than dsa.
+            cmd = 'bash -c "ssh-keygen -b 1024 -N \'\' -t rsa -f ' + tmp_job_key_file + ' > /dev/null"'
+            
+            base_error_msg = ''
+            try:
+                retcode = call(cmd, shell=True)
+                if retcode < 0:
+                    base_error_msg = 'Child was terminated by signal: ' + str(-retcode)
+                else:
+                     base_error_msg = 'Child returned' + str(retcode)
+            except OSError as e:
+                base_error_msg = 'Execution failed: ' + str(e)
+                
+            if base_error_msg:
+                return((-14, 'Job key generation failed. ' + base_error_msg), '', '')
+            
+        # Priv and pub key file must now exist
+        try:
+            with open(tmp_job_key_file) as f:
+                job_key_priv = f.read()
+        except OSError as e:
+            return((-14, ' Fail to read private key. ' + str(e)), '', '')
+        
+        try:
+            with open(tmp_job_key_file + '.pub') as f:
+                job_key_pub = f.read()
+        except OSError as e:
+            return((-14, ' Fail to read public key. ' + str(e)), '', '')
+        
+        os.remove(tmp_job_key_file)
+        os.remove(tmp_job_key_file + '.pub')
+
+    # Last checks
+    if use_job_key:
+        if job_key_pub == '':
+            error = (-15, 'Missing job public key (private key found);')
+            return(error, '', '')
+        if job_key_priv == '':
+            error = (-15, 'Missing job private key.')
+            return(error, '', '')
+
+        if not re.match(r'^(ssh-rsa|ssh-dss)\s.+\n*$', job_key_pub):
+            error = (-14,
+                     "Bad job key format. The public key must begin with either 'ssh-rsa' "
+                     "or 'ssh-dss' and is only 1 line.")
+            return(error, '', '')
+
+        job_key_pub = job_key_pubreplace('\n','')
+
+    return(error, job_key_priv, job_key_pub)
 
 
 def scan_script(submitted_filename, initial_request_str, user=None):
@@ -836,12 +974,11 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     else:
         # Single job to submit or when job key is used with array job
         for cmd in array_commands:
-            (error_code, ssh_private_key, ssh_public_key) = job_key_management(job_parameters.use_job_key,
+            (error, ssh_private_key, ssh_public_key) = job_key_management(job_parameters.use_job_key,
                                                                                import_job_key_inline,
                                                                                import_job_key_file,
                                                                                export_job_key_file)
-            if error_code != 0:
-                error = (error_code, 'job key generation and management failed')
+            if error[0] != 0:
                 return(error, job_id_list)
 
             (error, job_id) = add_micheline_subjob(job_parameters,
