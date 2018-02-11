@@ -996,8 +996,32 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
             array_index += 1
 
             if job_parameters.use_job_key and export_job_key_file:
-                # TODO copy the keys in the directory specified with the right name
-                pass
+                # Copy the keys in the directory specified with the right name
+                export_job_key_file_tmp = export_job_key_file
+                export_job_key_file_tmp = export_job_key_file_tmp.replace('%jobid%', str(job_id))
+                
+                # Write the private job key with the user ownership
+                user = job_parameters.user
+                os.environ['OARDO_BECOME_USER']
+                prev_umask = os.umask(0o117)
+
+                try:
+                    p = Popen(['oardodo', 'dd', 'of=' + export_job_key_file_tmp], stdin=PIPE)
+                    p.stdin.write(ssh_priv_key.encode())
+                    p.stdin.flush()
+                    p.stdin.close()
+                    while p.returncode is None:
+                        p.poll()
+                    if p.returncode:
+                        error = (60,
+                                 'Return code for the private job key writing is not null:' + str(p.returncode))
+                        return (error, job_id_list)
+                except Exception as e:
+                    error = (60, 'Cannot write the private job key: ' + str(e))
+
+                os.umask(prev_umask)
+                
+                print('# Info: export job key to file: ' + export_job_key_file_tmp)
 
     return((0,''), job_id_list)
 

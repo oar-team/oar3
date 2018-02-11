@@ -296,14 +296,16 @@ def cli(command, interactive, queue, resource, reservation, connect,
         print(VERSION)
         cmd_ret.exit()
         
-    # TODO ssh_private_key, ssh_public_key,
-    # ssh_private_key = ''
-    # ssh_public_key = ''
+    # Check the default name of the key if we have to generate it
+    if 'OARSUB_FORCE_JOB_KEY' in config and config['OARSUB_FORCE_JOB_KEY'] in ['yes', 'YES', 'Yes', '1', 1]:
+       use_job_key = True
 
-    # TODO import_job_key_file, export_job_key_file
-    import_job_key_file = ''
-    export_job_key_file = ''
-
+    # If OAR_JOB_KEY_FILE is set in the shell environment, then imply use_job_key 
+    # because oarsh will use OAR_JOB_KEY_FILE as well and fail if the job is
+    # setup without a job_key 
+    if 'OARSUB_FORCE_JOB_KEY' in os.environ:
+        use_job_key = True
+    
     if resubmit:
         cmd_ret.print_('# Resubmitting job ' + str(resubmit) + '...')
         error, job_id = resubmit_job(resubmit)
@@ -331,10 +333,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
         if error[0] != 0:
             cmd_ret.error('', 0, error)
             cmd_ret.exit()
-
-    # TODO import_job_key_file, export_job_key_file
-    import_job_key_file = ''
-    export_job_key_file = ''
 
     user = os.environ['OARDO_USER']
 
@@ -365,8 +363,8 @@ def cli(command, interactive, queue, resource, reservation, connect,
                                    array_param_file=array_param_file,
                                    use_job_key=use_job_key,
                                    import_job_key_inline=import_job_key_inline,
-                                   import_job_key_file=import_job_key_file,
-                                   export_job_key_file=export_job_key_file)
+                                   import_job_key_file=import_job_key_from_file,
+                                   export_job_key_file=export_job_key_to_file)
 
     error = job_parameters.check_parameters()
     if error[0] != 0:
