@@ -118,11 +118,9 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
                   ' < /dev/null 2> /dev/null > ' + tmp_job_key_file + '.pub"'
             base_error_msg = ''
             try:
-                retcode = call(cmd, shell=True)
-                if retcode < 0:
+                retcode = tools.call(cmd, shell=True)
+                if retcode != 0:
                     base_error_msg = 'Child was terminated by signal: ' + str(-retcode)
-                else:
-                     base_error_msg = 'Child returned' + str(retcode)
             except OSError as e:
                 base_error_msg = 'Execution failed: ' + str(e)
 
@@ -147,11 +145,9 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
             
             base_error_msg = ''
             try:
-                retcode = call(cmd, shell=True)
-                if retcode < 0:
+                retcode = tools.call(cmd, shell=True)
+                if retcode != 0:
                     base_error_msg = 'Child was terminated by signal: ' + str(-retcode)
-                else:
-                     base_error_msg = 'Child returned' + str(retcode)
             except OSError as e:
                 base_error_msg = 'Execution failed: ' + str(e)
                 
@@ -189,7 +185,7 @@ def job_key_management(use_job_key, import_job_key_inline, import_job_key_file,
                      "or 'ssh-dss' and is only 1 line.")
             return(error, '', '')
 
-        job_key_pub = job_key_pubreplace('\n','')
+        job_key_pub = job_key_pub.replace('\n','')
 
     return(error, job_key_priv, job_key_pub)
 
