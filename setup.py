@@ -89,6 +89,7 @@ setup(
     oarnodes3=oar.cli.oarnodes:cli
     oarremoveresource3=oar.cli.oarremoveresource:cli
     oarnodesetting3=oar.cli.oarnodesetting:cli
+    oaraccounting3=oar.cli.oaraccounting:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
     kamelot-fifo=oar.kao.kamelot_fifo:main

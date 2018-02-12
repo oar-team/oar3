@@ -986,8 +986,8 @@ def gantt_flush_tables(reservations_to_keep_mld_ids):
           .filter(~GanttJobsResource.moldable_id.in_(tuple(reservations_to_keep_mld_ids)))\
           .delete(synchronize_session=False)
     else:
-        db.query(GanttJobsPrediction).delete()
-        db.query(GanttJobsResource).delete()
+        db.query(GanttJobsPrediction).delete(synchronize_session=False)
+        db.query(GanttJobsResource).delete(synchronize_session=False)
 
     db.commit()
 
