@@ -6,10 +6,82 @@ from oar.lib import (db, Accounting, Job, MoldableJobDescription, AssignedResour
 # # ACCOUNTING
 
 # sub get_accounting_summary($$$$$);
-# sub get_accounting_summary_byproject($$$$$$);
 # sub get_last_project_karma($$$$);
-# sub get_sum_accounting_for_param($$$$$);
+# sub get_sum_accounting_for_param($$$$$); -> see Karma.py
 # sub get_sum_accounting_window($$$$); -> see Karma.py
+
+def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
+    """Get an array of consumptions by users
+    params: start date, ending date, optional user"""
+
+    user_query = ''
+    if user:
+        user_query = "AND accounting_user = '%s'" % (user)
+    if sql_property:
+        sql_property = 'AND ( ' + sql_property + ' )'
+
+    cur = db.session
+    result = cur.execute("""SELECT accounting_user as user, consumption_type,
+    sum(consumption) as seconds, floor(sum(consumption)/3600) as hours,
+    min(window_start) as first_window_start, max(window_stop) as last_window_stop
+    FROM accounting
+    WHERE window_stop > %s AND window_start < %s %s %s
+    GROUP BY accounting_user,consumption_type ORDER BY seconds""" %
+                         (start_time, stop_time, user_query, sql_property))
+
+    
+
+    
+
+
+    for r in result:
+        raise('TODO TOFINISH')
+
+    return
+    # my $results;
+    # while (my @r = $sth->fetchrow_array()) {
+    #     $results->{$r[0]}->{$r[1]} = $r[2];
+    #     $results->{$r[0]}->{begin} = $r[4];
+    #     $results->{$r[0]}->{end} = $r[5];
+    # }
+    # $sth->finish();
+
+    # return($results);
+
+def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', offset=''):
+    """"Get an array of consumptions by project for a given user
+    params: start date, ending date, user"""
+
+    user_query = ''
+    if user:
+        user_query = "AND accounting_user = '%s'" % (user)
+    limit_offset_query = ''
+    if limit:
+        limit_offset_query = 'LIMIT ' + limit
+    if offset:
+        limit_offset_query = limit_offset_query + ' OFFSET ' + offset
+
+    cur = db.session
+    result = cur.execute("""SELECT accounting_user as user, consumption_type,
+    sum(consumption) as seconds, accounting_project as project
+    FROM accounting
+    WHERE
+    window_stop > %s AND window_start < %s %s
+    GROUP BY accounting_user,project,consumption_type
+    ORDER BY project,consumption_type,seconds %s """ %
+                         (start_time, stop_time, user_query, limit_offset_query))
+
+    for r in result:
+        raise('TODO TOFINISH')
+
+    return
+    # my $results;
+    # while (my @r = $sth->fetchrow_array()) {
+    #     $results->{$r[3]}->{$r[1]}->{$r[0]} = $r[2];
+    # }
+    # $sth->finish();
+
+    # return($results);
 
 
 def update_accounting(start_time, stop_time, window_size, user, project, queue_name,
@@ -118,3 +190,29 @@ def delete_accounting_windows_before(duration):
     """Remove windows from accounting."""
     db.query(Accounting).filter(Accounting.window_stop <= duration).delete(synchronize_session=False)
     db.commit()
+
+
+
+
+# Get the last project Karma of user at a given date
+# params: base,user,project,date
+sub get_last_project_karma($$$$) {
+    my $dbh = shift;
+    my $user = $dbh->quote(shift);
+    my $project = $dbh->quote(shift);
+    my $date = shift;
+
+    my $sth = $dbh->prepare("   SELECT message,project,start_time
+                                FROM jobs
+                                WHERE
+                                      job_user = $user AND
+                                      message like \'%Karma%\' AND
+                                      project = $project AND
+                                      start_time < $date
+                                ORDER BY start_time desc
+                                LIMIT 1
+                          ");
+
+    $sth->execute();
+
+    return($sth->fetchrow_array());
