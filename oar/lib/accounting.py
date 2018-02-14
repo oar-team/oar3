@@ -3,16 +3,17 @@ from sqlalchemy import (func, or_)
 from oar.lib import (db, Accounting, Job, MoldableJobDescription, AssignedResource,
                      Resource)
 
-# # ACCOUNTING
+# ACCOUNTING functions
+# get_sum_accounting_for_param() -> see Karma.py
+# get_sum_accounting_window() -> see Karma.py
 
-# sub get_accounting_summary($$$$$);
-# sub get_last_project_karma($$$$);
-# sub get_sum_accounting_for_param($$$$$); -> see Karma.py
-# sub get_sum_accounting_window($$$$); -> see Karma.py
 
 def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
     """Get an array of consumptions by users
     params: start date, ending date, optional user"""
+    if db.dialect == 'sqlite':
+        msg = 'Get_accounting_summary is not supported with sqlite'
+        raise NotImplementedError(msg)
 
     user_query = ''
     if user:
@@ -29,11 +30,6 @@ def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
     GROUP BY accounting_user,consumption_type ORDER BY seconds""" %
                          (start_time, stop_time, user_query, sql_property))
 
-    
-
-    
-
-
     for r in result:
         raise('TODO TOFINISH')
 
@@ -47,6 +43,7 @@ def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
     # $sth->finish();
 
     # return($results);
+
 
 def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', offset=''):
     """"Get an array of consumptions by project for a given user
@@ -146,6 +143,7 @@ def add_accounting_row(window_start, window_stop, user, project, queue_name, c_t
                           window_start=window_start, window_stop=window_stop,
                           consumption=consumption, project=project)
 
+
 def check_accounting_update(window_size):
     """Check jobs that are not treated in accounting table
     params : base, window size"""
@@ -186,33 +184,20 @@ def delete_all_from_accounting():
     db.query(Job).update({Job.accounted: 'NO'}, synchronize_session=False)
     db.commit()
 
+
 def delete_accounting_windows_before(duration):
     """Remove windows from accounting."""
     db.query(Accounting).filter(Accounting.window_stop <= duration).delete(synchronize_session=False)
     db.commit()
 
 
+def get_last_project_karma(user, project, date):
+    """Get the last project Karma of user at a given date
+    params: user, project, date"""
 
-
-# Get the last project Karma of user at a given date
-# params: base,user,project,date
-sub get_last_project_karma($$$$) {
-    my $dbh = shift;
-    my $user = $dbh->quote(shift);
-    my $project = $dbh->quote(shift);
-    my $date = shift;
-
-    my $sth = $dbh->prepare("   SELECT message,project,start_time
-                                FROM jobs
-                                WHERE
-                                      job_user = $user AND
-                                      message like \'%Karma%\' AND
-                                      project = $project AND
-                                      start_time < $date
-                                ORDER BY start_time desc
-                                LIMIT 1
-                          ");
-
-    $sth->execute();
-
-    return($sth->fetchrow_array());
+    cur = db.session
+    result = cur.execute("""SELECT message, project, start_time FROM jobs
+    WHERE job_user = %s AND message like \'%s\' AND project = %s AND start_time < %s
+    ORDER BY start_time desc LIMIT 1"""
+                         % (user, '%Karma%', project, date))
+    return result

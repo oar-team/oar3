@@ -2,6 +2,7 @@
 import os
 import datetime
 
+from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.tools import get_username
@@ -25,36 +26,13 @@ STATE2CHAR = {
     'Resuming': 'S',
     'toAckReservation': 'W',
     'NA': '-'
-    }
+}
 
-# TODO: document as example use of rest api
-# DEFAULT_CONFIG = {
-#    'OARAPI_URL': 'http://localhost:46668/oarapi/'
-#    }
-# class OarApi(object):
-#     def __init__(self):
-#         self.oarapi_url = config['OARAPI_URL']
-
-#     def http_error(self, r):
-#         pass
-
-#     def get(self, params):
-#         r = requests.get(self.oarapi_url + params)
-#         if r.status_code != 200:
-#             self.http_error(r)
-#         else:
-#             return(r)
-
-#oarapi = OarApi()
-
-#    if not job:
-#        answer = oarapi.get('jobs/details.json')
-#        print_jobs(True, answer)
 
 def print_jobs(legacy, jobs):
 
     now = tools.get_date()
-    
+
     if legacy:
         print('Job id    S User     Duration   System message\n' +
               '--------- - -------- ---------- ------------------------------------------------')
@@ -73,15 +51,10 @@ def print_jobs(legacy, jobs):
             print('{:9}'.format(str(job.id)) + ' ' + STATE2CHAR[job.state] + ' ' +
                   '{:8}'.format(str(job.user)) + ' ' +
                   '{:>10}'.format(str(datetime.timedelta(seconds=duration))) + ' ' +
-                  '{:48}'.format(job.message)
-            )
+                  '{:48}'.format(job.message))
     else:
         # TODO
         print(jobs.text)
-
-def print_oar_version():
-    # TODO
-    pass
 
 
 @click.command()
@@ -103,7 +76,7 @@ def print_oar_version():
 @click.option('-Y', '--yaml', is_flag=True, help='print result in YAML format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
 def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml, version):
-
+    
     job_ids = job
     array_id = array
     states = state
@@ -111,12 +84,14 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     start_time = None
     stop_time = None
 
+    # Print OAR version and exit
+    if version:
+        print(VERSION)
+        return
+
+    
     username = get_username() if user else None
 
-    #db.query() # TODO:it is work around
-    #BUG when detailed=False
-    # sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for object of type
-    # <class 'oar.lib.database._BoundDeclarativeMeta'>
     jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
                                         states, job_ids, array_id, detailed=full).all()
 
