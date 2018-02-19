@@ -1,10 +1,29 @@
 # -*- coding: utf-8 -*-
+
+# TODO: Job header
+
+# TODO: Job Status field
+# Support correctly Job Status field
+# 0	Job Failed
+# 1	Job completed successfully
+# 2	This partial execution will be continued
+# 3	This is the last partial execution, job completed
+# 4	This is the last partial execution, job failed
+# 5	Job was cancelled (either before starting or during run)
+
+
 from collections import OrderedDict
 from sqlalchemy.sql import func, or_
 from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
 import pickle
 import click
 click.disable_unicode_literals_warning = True
+
+SWF_COLUMNS = ['jobID', 'submission_time', 'waiting_time',
+               'execution_time', 'proc_alloc', 'cpu_used', 'mem_used',
+               'proc_req', 'user_est', 'mem_req', 'status', 'uid',
+               'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
+               'think_time']
 
 
 class JobMetrics:
@@ -23,6 +42,7 @@ class WorkloadMetadata():
         self.name = {}
         self.project = {}
         self.command = {}
+        self.queue = {}
         self.resources = db.query(Resource).order_by(Resource.id.asc()).all()
         self.rid2resource = {r.id: r for r in self.resources}
         self.first_jobid = first_jobid
@@ -45,13 +65,19 @@ class WorkloadMetadata():
             return value
 
     def user2int(self, user):
-        return self.dict2int('user')
+        return self.dict2int('user', user)
 
-    def project2int(self, user):
-        return self.dict2int('project')
+    def name2int(self, name):
+        return self.dict2int('name', name)
+
+    def project2int(self, project):
+        return self.dict2int('project', project)
 
     def command2int(self, command):
-        return self.dict2int('command')
+        return self.dict2int('command', command)
+
+    def queue2int(self, queue):
+        return self.dict2int('queue', queue)
 
 
 def get_jobs(first_jobid, last_jobid, wkld_metadata):
@@ -66,6 +92,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     assigned_moldable_ids = []
     for job in jobs:
         if job.state == 'Terminated' or job.state == 'Error':
+            state = 1 if job.state == 'Terminated' else 0
             assigned_moldable_ids.append(job.assigned_moldable_job)
             job_id2job[job.id] = job
             # job_id2moldable_id[job.id] = job.assigned_moldable_job
@@ -78,6 +105,10 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 walltime=0,
                 nb_default_ressources=0,
                 nb_extra_ressources=0,
+                state=state,
+                user=wkld_metadata.user2int(job.user),
+                command=wkld_metadata.command2int(job.command),
+                queue=wkld_metadata.queue2int(job.queue_name)
             )
             jobs_metrics[job.id] = job_metrics
 
@@ -95,7 +126,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
         if mld_desc.job_id in job_id2job.keys():
             job = job_id2job[mld_desc.job_id]
             if mld_desc.id == job.assigned_moldable_job:
-                jobs_metrics[job.id].walltime == mld_desc.walltime
+                jobs_metrics[job.id].walltime = mld_desc.walltime
 
     # Determine nb_default_ressources and nb_extra_ressources for jobs in Terminated or Error state
     result = db.query(AssignedResource)\
@@ -104,7 +135,6 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     moldable_id = 0
     nb_default_ressources = 0
     nb_extra_ressources = 0
-
 
     for assigned_resource in result:
         # Test if it's the first or a new job(moldable id) (note: moldale_id == 0 doesn't exist)
@@ -124,6 +154,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
         resource = wkld_metadata.rid2resource[assigned_resource.resource_id]
         if resource.type == 'default':
             nb_default_ressources += 1
+        else:
             nb_extra_ressources += 1
 
     # Set value for last job
@@ -135,13 +166,80 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     return jobs_metrics
 
 
-def jobs2swf(jobs_metrics, filename):
+def jobs2swf(jobs_metrics, filehandle, mode, display):
+
     for _, job_metrics in jobs_metrics.items():
 
-        #if not filename:
-        print('id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} '
-              'walltime: {walltime}  res: {nb_default_ressources} extra: {nb_extra_ressources}'
-              .format(**job_metrics.__dict__))
+        if display:
+            print('id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} '
+                  'walltime: {walltime}  res: {nb_default_ressources} extra: {nb_extra_ressources}'
+                  .format(**job_metrics.__dict__))
+
+        if filehandle:
+            if mode == 'swf':
+                '''
+                This class is a derived from the SWF format. SWF is the default format
+                for parallel workload defined here:
+                http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+
+                the data format is one line per job, with 18 fields:
+
+                1) Job Number, a counter field, starting from
+                2) Submit Time, seconds. submittal time
+                3) Wait Time, seconds. diff between submit and begin to run
+                4) Run Time, seconds. end-time minus start-time
+                5) Number of Processors, number of allocated processors
+                6) Average CPU Time Used, seconds. user+system. avg over procs
+                7) Used Memory, KB. avg over procs.
+                8) Requested Number of Processors, requested number of
+                processors
+                9) Requested Time, seconds. user runtime estimation
+                10) Requested Memory, KB. avg over procs.
+                11) status (1=completed, 0=killed), 0=fail; 1=completed; 5=canceled
+                12) User ID, user id
+                13) Group ID, group id
+                14) Executable (Application) Number, [1,2..n] n = app#
+                appearing in log
+                15) Queue Number, [1,2..n] n = queue# in the system
+                16) Partition Number, [1,2..n] n = partition# in the systems
+                17) Preceding Job Number,  cur job will start only after ...
+                18) Think Time from Preceding Job -- this is the number of seconds that
+                should elapse between the termination of the preceding job and the
+                submittal of this one.
+                '''
+
+                jobID = job_metrics.job_id
+                submission_time = job_metrics.submission_time
+                waiting_time = job_metrics.start_time - job_metrics.submission_time
+                execution_time = job_metrics.stop_time - job_metrics.start_time
+                proc_alloc = job_metrics.nb_default_ressources
+                cpu_used = -1
+                mem_used = -1
+                proc_req = job_metrics.nb_default_ressources
+                user_est = job_metrics.walltime
+                mem_req = -1
+                status = job_metrics.state
+                uid = job_metrics.user
+                gid = -1
+                exe_num = job_metrics.command
+                queue = job_metrics.queue
+                partition = -1
+                prev_jobs = -1
+                think_time = -1
+
+                jm = [jobID, submission_time, waiting_time, execution_time, proc_alloc,
+                      cpu_used, mem_used, proc_req, user_est, mem_req, status, uid,
+                      gid, exe_num, queue, partition, prev_jobs, think_time]
+
+                filehandle.write('''{} {} {} {} {} {} {} {} {}'''
+                                 ''' {} {} {} {} {} {} {} {} {}\n'''.format(*jm))
+
+
+def file_header(swf_file, wkld_metadata, mode):
+    if swf_file:
+        filehandle = open(swf_file, 'w')
+        return filehandle
+    return None
 
 
 @click.command()
@@ -150,23 +248,26 @@ def jobs2swf(jobs_metrics, filename):
 @click.option('-f', '--swf-file', type=click.STRING, help='SWF output file name.')
 @click.option('-b', '--first-jobid', type=int, default=0, help='First job id to begin')
 @click.option('-e', '--last-jobid', type=int, default=0, help='Last job id to end')
+@click.option('-p', is_flag=True, help='Print metrics on stdout.')
+@click.option('-m', '--mode', type=click.STRING, default='swf',
+              help='Select trace mode: swf, extended')
 @click.option('--chunk-size', type=int, default=10000,
               help='Number of size retrieve at one time to limit stress on database')
 @click.option('--metadata-file', type=click.STRING,
               help="Metadata file stores various non-anonymized jobs' information (user, job name, project, command")
 @click.option('-a', '--additional-fields', is_flag=True,
-              help='Add field specific to OAR not to SWF format')
-def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, additional_fields):
-
+              help='Add fields specific to OAR are not part of SWF format')
+def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, additional_fields,
+        p, mode):
+    display = p
     jobids_range = None
-    
+
     if additional_fields:
         print('NOT Yet Implemented')
 
     if db_url:
         db._cache["uri"] = db_url
         try:
-            
             jobids_range = db.query(func.max(Job.id).label('max'),
                                     func.min(Job.id).label('min')).one()
         except Exception as e:
@@ -177,7 +278,7 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
 
     db_name = db_url.split('/')[-1]
     db_server = (db_url.split('/')[-2]).split('@')[-1]
-        
+
     if not first_jobid:
         first_jobid = jobids_range.min
 
@@ -194,6 +295,7 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
 
     begin_jobid = first_jobid
     end_jobid = 0
+    fh = file_header(swf_file, wkld_metadata, mode)
     for chunk in range(nb_chunck):
         if (begin_jobid + chunk_size - 1) > last_jobid:
             end_jobid = last_jobid
@@ -202,7 +304,9 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
         print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, last_jobid, (chunk + 1)))
 
         jobs_metrics = get_jobs(first_jobid, last_jobid, wkld_metadata)
-        jobs2swf(jobs_metrics, swf_file)
+        jobs2swf(jobs_metrics, fh, mode, display)
 
         begin_jobid = end_jobid + 1
+    if fh:
+        fh.close()
     wkld_metadata.dump()
