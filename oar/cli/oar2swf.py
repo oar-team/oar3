@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import OrderedDict
 from sqlalchemy.sql import func, or_
 from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
 import pickle
@@ -12,12 +13,12 @@ class JobMetrics:
 
 
 class WorkloadMetadata():
-    def __init__(self, db_url=None, first_jobid=None, last_jobid=None, filename=None):
+    def __init__(self, db_server, db_name, first_jobid=None, last_jobid=None, filename=None):
         if filename:
             return pickle.load(open(filename, 'rb'))
 
-        self.db_name = db_url.split('/')[-1]
-        self.db_server = db_url.split('/')[-2]
+        self.db_name = db_name
+        self.db_server = db_server
         self.user = {}
         self.name = {}
         self.project = {}
@@ -54,6 +55,7 @@ class WorkloadMetadata():
 
 
 def get_jobs(first_jobid, last_jobid, wkld_metadata):
+    jobs_metrics = OrderedDict()
     jobs = db.query(Job)\
              .filter(or_(Job.id >= first_jobid, Job.id <= last_jobid))\
              .order_by(Job.id).all()
@@ -68,8 +70,18 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
             job_id2job[job.id] = job
             # job_id2moldable_id[job.id] = job.assigned_moldable_job
             moldable_id2job[job.assigned_moldable_job] = job
+            job_metrics = JobMetrics(
+                job_id=job.id,
+                submission_time=job.submission_time,
+                start_time=job.start_time,
+                stop_time=job.stop_time,
+                walltime=0,
+                nb_default_ressources=0,
+                nb_extra_ressources=0,
+            )
+            jobs_metrics[job.id] = job_metrics
 
-    import pdb; pdb.set_trace()
+    # Determine walltime thanks to assigned moldable id
     assigned_moldable_ids.sort()
     min_mld_id = assigned_moldable_ids[0]
     max_mld_id = assigned_moldable_ids[-1]
@@ -83,15 +95,16 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
         if mld_desc.job_id in job_id2job.keys():
             job = job_id2job[mld_desc.job_id]
             if mld_desc.id == job.assigned_moldable_job:
-                job.walltime == mld_desc.walltime
+                jobs_metrics[job.id].walltime == mld_desc.walltime
 
+    # Determine nb_default_ressources and nb_extra_ressources for jobs in Terminated or Error state
     result = db.query(AssignedResource)\
                .order_by(AssignedResource.moldable_id, AssignedResource.resource_id)
 
-    # Determine nb_default_ressources and nb_extra_ressources for jobs in Terminated or Error state
     moldable_id = 0
     nb_default_ressources = 0
     nb_extra_ressources = 0
+
 
     for assigned_resource in result:
         # Test if it's the first or a new job(moldable id) (note: moldale_id == 0 doesn't exist)
@@ -101,44 +114,34 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 # Test if job is in the list of Terminated or Error ones
                 if moldable_id in moldable_id2job:
                     job = moldable_id2job[moldable_id]
-                    job.nb_default_ressources = nb_default_ressources
-                    job.nb_extra_ressources = nb_extra_ressources
+                    jobs_metrics[job.id].nb_default_ressources = nb_default_ressources
+                    jobs_metrics[job.id].nb_extra_ressources = nb_extra_ressources
             # New job(moldable id)
             moldable_id = assigned_resource.moldable_id
             nb_default_ressources = 0
             nb_extra_ressources = 0
 
-        resource = wkld_metadata.rid2resource(assigned_resource.resource_id)
-        if resource.types == 'default':
+        resource = wkld_metadata.rid2resource[assigned_resource.resource_id]
+        if resource.type == 'default':
             nb_default_ressources += 1
             nb_extra_ressources += 1
 
     # Set value for last job
     if moldable_id in moldable_id2job:
         job = moldable_id2job[moldable_id]
-        job.nb_default_ressources = nb_default_ressources
-        job.nb_extra_ressources = nb_extra_ressources
+        jobs_metrics[job.id].nb_default_ressources = nb_default_ressources
+        jobs_metrics[job.id].nb_extra_ressources = nb_extra_ressources
 
-    return jobs
+    return jobs_metrics
 
 
-def jobs2swf(jobs, filename):
+def jobs2swf(jobs_metrics, filename):
+    for _, job_metrics in jobs_metrics.items():
 
-    for job in jobs:
-        metrics = {
-            'jid': job.id,
-            'submission_time': job.submission_time,
-            'start_time': job.start_time,
-            'stop_time': job.stop_time,
-            'walltime': job.walltime,
-            'nb_default_ressources': job.nb_default_ressources,
-            'nb_extra_ressources': job.nb_extra_ressources
-        }
-
-        if not filename:
-            print('id: {jid} submission: {submission_time} start: {start_time} stop: {stop_time} '
-                  'walltime: {time}  res: {nb_default_ressources} extra: {nb_extra_ressources}'
-                  .format(**metrics))
+        #if not filename:
+        print('id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} '
+              'walltime: {walltime}  res: {nb_default_ressources} extra: {nb_extra_ressources}'
+              .format(**job_metrics.__dict__))
 
 
 @click.command()
@@ -172,6 +175,9 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
     else:
         exit()
 
+    db_name = db_url.split('/')[-1]
+    db_server = (db_url.split('/')[-2]).split('@')[-1]
+        
     if not first_jobid:
         first_jobid = jobids_range.min
 
@@ -179,10 +185,10 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
         last_jobid = jobids_range.max
 
     if not swf_file:
-        swf_file = 'oar_trace_{}_{}_{}_{}.swf'.format(db_url.split('/')[-2], db_url.split('/')[-1],
+        swf_file = 'oar_trace_{}_{}_{}_{}.swf'.format(db_server, db_name,
                                                       first_jobid, last_jobid)
 
-    wkld_metadata = WorkloadMetadata(db_url, first_jobid, last_jobid, metadata_file)
+    wkld_metadata = WorkloadMetadata(db_server, db_name, first_jobid, last_jobid, metadata_file)
 
     nb_chunck = int((last_jobid - first_jobid) / chunk_size) + 1
 
@@ -195,8 +201,8 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
             end_jobid = begin_jobid + chunk_size - 1
         print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, last_jobid, (chunk + 1)))
 
-        jobs = get_jobs(first_jobid, last_jobid, wkld_metadata)
-        jobs2swf(jobs, swf_file)
+        jobs_metrics = get_jobs(first_jobid, last_jobid, wkld_metadata)
+        jobs2swf(jobs_metrics, swf_file)
 
         begin_jobid = end_jobid + 1
     wkld_metadata.dump()
