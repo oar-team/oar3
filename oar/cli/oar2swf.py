@@ -13,7 +13,7 @@
 
 
 from collections import OrderedDict
-from sqlalchemy.sql import func, or_
+from sqlalchemy.sql import func
 from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
 import pickle
 import click
@@ -82,9 +82,9 @@ class WorkloadMetadata():
 
 def get_jobs(first_jobid, last_jobid, wkld_metadata):
     jobs_metrics = OrderedDict()
-    jobs = db.query(Job)\
-             .filter(or_(Job.id >= first_jobid, Job.id <= last_jobid))\
-             .order_by(Job.id).all()
+    jobs = db.query(Job).filter(Job.id >= first_jobid)\
+                        .filter(Job.id <= last_jobid)\
+                        .order_by(Job.id).all()
 
     job_id2job = {}
     # job_id2moldable_id = {}
@@ -109,6 +109,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 user=wkld_metadata.user2int(job.user),
                 command=wkld_metadata.command2int(job.command),
                 queue=wkld_metadata.queue2int(job.queue_name)
+                
             )
             jobs_metrics[job.id] = job_metrics
 
@@ -117,10 +118,9 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     min_mld_id = assigned_moldable_ids[0]
     max_mld_id = assigned_moldable_ids[-1]
 
-    result = db.query(MoldableJobDescription)\
-               .filter(or_(MoldableJobDescription.id >= min_mld_id,
-                           MoldableJobDescription.id <= max_mld_id))\
-               .all()
+    result = db.query(MoldableJobDescription).filter(MoldableJobDescription.id >= min_mld_id)\
+                                             .filter(MoldableJobDescription.id <= max_mld_id)\
+                                             .all()
 
     for mld_desc in result:
         if mld_desc.job_id in job_id2job.keys():
@@ -259,6 +259,7 @@ def file_header(swf_file, wkld_metadata, mode):
               help='Add fields specific to OAR are not part of SWF format')
 def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, additional_fields,
         p, mode):
+    """This programme allows to extract workload traces from OAR RJMS."""
     display = p
     jobids_range = None
 
@@ -301,9 +302,9 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
             end_jobid = last_jobid
         else:
             end_jobid = begin_jobid + chunk_size - 1
-        print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, last_jobid, (chunk + 1)))
+        print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, end_jobid, (chunk + 1)))
 
-        jobs_metrics = get_jobs(first_jobid, last_jobid, wkld_metadata)
+        jobs_metrics = get_jobs(first_jobid, end_jobid, wkld_metadata)
         jobs2swf(jobs_metrics, fh, mode, display)
 
         begin_jobid = end_jobid + 1
