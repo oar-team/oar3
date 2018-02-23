@@ -24,6 +24,9 @@ SWF_COLUMNS = ['jobID', 'submission_time', 'waiting_time',
                'proc_req', 'user_est', 'mem_req', 'status', 'uid',
                'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
                'think_time']
+OAR_TRACE_COLUMNS = ['job_id', 'submission_time', 'start_time', 'stop_time', 'walltime',
+                     'nb_default_ressources', 'nb_extra_ressources', 'state', 'user',
+                     'command', 'queue', 'name', 'array', 'type', 'reservation', 'cigri']
 
 
 class JobMetrics:
@@ -47,12 +50,13 @@ class WorkloadMetadata():
         self.rid2resource = {r.id: r for r in self.resources}
         self.first_jobid = first_jobid
         self.last_jobid = last_jobid
+        self.filename = 'wkld_metadata_' + self.db_server + '_' + self.db_name\
+                        + '_' + str(self.first_jobid) + '_' + str(self.last_jobid)\
+                        + '.pickle'
 
     def dump(self, filename=None):
         if not filename:
-            filename = 'wkld_metadata_' + self.db_server + '_' + self.db_name\
-                       + '_' + str(self.first_jobid) + '_' + str(self.last_jobid)\
-                       + '.pickle'
+            filename = self.filename
         pickle.dump(self, open(filename, 'wb'))
 
     def dict2int(self, dictname, key):
@@ -108,8 +112,12 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 state=state,
                 user=wkld_metadata.user2int(job.user),
                 command=wkld_metadata.command2int(job.command),
-                queue=wkld_metadata.queue2int(job.queue_name)
-                
+                queue=wkld_metadata.queue2int(job.queue_name),
+                name=wkld_metadata.name2int(job.name),
+                array=job.array_id,
+                type=0 if job.type == 'PASSIVE' else 1,
+                reservation=1 if job.reservation else 0,
+                cigri=job.name.split('.')[1] if (job.name and job.name.split('.')[0] == 'cigri') else '0'
             )
             jobs_metrics[job.id] = job_metrics
 
@@ -172,7 +180,7 @@ def jobs2swf(jobs_metrics, filehandle, mode, display):
 
         if display:
             print('id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} '
-                  'walltime: {walltime}  res: {nb_default_ressources} extra: {nb_extra_ressources}'
+                  'walltime: {walltime}  res: {nb_default_ressources} extra: {nb_extra_ressources} cigri: {cigri}'
                   .format(**job_metrics.__dict__))
 
         if filehandle:
@@ -233,38 +241,67 @@ def jobs2swf(jobs_metrics, filehandle, mode, display):
 
                 filehandle.write('''{} {} {} {} {} {} {} {} {}'''
                                  ''' {} {} {} {} {} {} {} {} {}\n'''.format(*jm))
+            elif mode == 'extended':
+                job_id = job_metrics.job_id
+                submission_time = job_metrics.submission_time
+                start_time = job_metrics.start_time
+                stop_time = job_metrics.stop_time
+                walltime = job_metrics.walltime
+                nb_default_ressources = job_metrics.nb_default_ressources
+                nb_extra_ressources = job_metrics.nb_extra_ressources
+                state = job_metrics.state
+                user = job_metrics.user
+                command = job_metrics.command
+                queue = job_metrics.queue
+                name = job_metrics.name
+                array = job_metrics.array
+                type = job_metrics.type
+                reservation = job_metrics.reservation
+                cigri = job_metrics.cigri
+                jm = [job_id, submission_time, start_time, stop_time, walltime,
+                      nb_default_ressources, nb_extra_ressources, state, user,
+                      command, queue, name, array, type, reservation, cigri]
+                filehandle.write('''{} {} {} {} {} {} {} {}'''
+                                 ''' {} {} {} {} {} {} {} {}\n'''.format(*jm))
 
 
-def file_header(swf_file, wkld_metadata, mode):
-    if swf_file:
-        filehandle = open(swf_file, 'w')
-        return filehandle
-    return None
+def file_header(trace_file, wkld_metadata, mode):
+    filehandle = open(trace_file, 'w')
+    if mode == 'swf':
+        filehandle.write('; WARNING HEADER MISSIING TO BE COMPLETE see : \n;\n')
+        filehandle.write(';         http://www.cs.huji.ac.il/labs/parallel/workload/swf.html or\n')
+        filehandle.write(';         https://github.com/oar-team/evalys/blob/master/evalys/workload.py\n')
+    else:
+        filehandle.write('; OAR trace file\n;\n')
+        filehandle.write('; Fields an theirs positions:\n')
+        for i, columns in enumerate(OAR_TRACE_COLUMNS):
+            filehandle.write('; {:>2}: {}\n'.format(i, columns))
+
+    filehandle.write(';\n')
+    return filehandle
 
 
 @click.command()
 @click.option('--db-url', type=click.STRING,
               help='The url for OAR database (postgresql://oar:PASSWORD@pgsql_server/db_name).')
-@click.option('-f', '--swf-file', type=click.STRING, help='SWF output file name.')
-@click.option('-b', '--first-jobid', type=int, default=0, help='First job id to begin')
-@click.option('-e', '--last-jobid', type=int, default=0, help='Last job id to end')
+@click.option('-f', '--trace-file', type=click.STRING, help='Trace output file name (SWF by default).')
+@click.option('-b', '--first-jobid', type=int, default=0, help='First job id to begin.')
+@click.option('-e', '--last-jobid', type=int, default=0, help='Last job id to end.')
 @click.option('-p', is_flag=True, help='Print metrics on stdout.')
 @click.option('-m', '--mode', type=click.STRING, default='swf',
-              help='Select trace mode: swf, extended')
+              help='Select trace mode: swf, extended (SWF by default).')
 @click.option('--chunk-size', type=int, default=10000,
-              help='Number of size retrieve at one time to limit stress on database')
+              help='Number of size retrieve at one time to limit stress on database.')
 @click.option('--metadata-file', type=click.STRING,
-              help="Metadata file stores various non-anonymized jobs' information (user, job name, project, command")
-@click.option('-a', '--additional-fields', is_flag=True,
-              help='Add fields specific to OAR are not part of SWF format')
-def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, additional_fields,
-        p, mode):
+              help="Metadata file stores various non-anonymized jobs' information (user, job name, project, command.")
+def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, p, mode):
     """This programme allows to extract workload traces from OAR RJMS."""
     display = p
     jobids_range = None
 
-    if additional_fields:
-        print('NOT Yet Implemented')
+    if (not mode == 'swf') and (not mode == 'extended'):
+        print('Mode must set to swf or extended')
+        exit()
 
     if db_url:
         db._cache["uri"] = db_url
@@ -286,9 +323,10 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
     if not last_jobid:
         last_jobid = jobids_range.max
 
-    if not swf_file:
-        swf_file = 'oar_trace_{}_{}_{}_{}.swf'.format(db_server, db_name,
-                                                      first_jobid, last_jobid)
+    if not trace_file:
+        suffix = 'swf' if mode == 'swf' else 'ext'
+        trace_file = 'oar_trace_{}_{}_{}_{}.{}'.format(db_server, db_name, first_jobid,
+                                                        last_jobid, suffix)
 
     wkld_metadata = WorkloadMetadata(db_server, db_name, first_jobid, last_jobid, metadata_file)
 
@@ -296,7 +334,7 @@ def cli(db_url, swf_file, first_jobid, last_jobid, chunk_size, metadata_file, ad
 
     begin_jobid = first_jobid
     end_jobid = 0
-    fh = file_header(swf_file, wkld_metadata, mode)
+    fh = file_header(trace_file, wkld_metadata, mode)
     for chunk in range(nb_chunck):
         if (begin_jobid + chunk_size - 1) > last_jobid:
             end_jobid = last_jobid
