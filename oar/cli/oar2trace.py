@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# TODO: Job header
-
+# TODO: Evalys integration
+# TODO: Complete Job header
+# Max Queue
 # TODO: Job Status field
 # Support correctly Job Status field
 # 0	Job Failed
@@ -11,9 +12,9 @@
 # 4	This is the last partial execution, job failed
 # 5	Job was cancelled (either before starting or during run)
 
-
+import time
 from collections import OrderedDict
-from sqlalchemy.sql import func
+from sqlalchemy.sql import (func, or_, distinct)
 from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
 import pickle
 import click
@@ -174,7 +175,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     return jobs_metrics
 
 
-def jobs2swf(jobs_metrics, filehandle, mode, display):
+def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
 
     for _, job_metrics in jobs_metrics.items():
 
@@ -217,7 +218,7 @@ def jobs2swf(jobs_metrics, filehandle, mode, display):
                 '''
 
                 jobID = job_metrics.job_id
-                submission_time = job_metrics.submission_time
+                submission_time = job_metrics.submission_time - unix_start_time
                 waiting_time = job_metrics.start_time - job_metrics.submission_time
                 execution_time = job_metrics.stop_time - job_metrics.start_time
                 proc_alloc = job_metrics.nb_default_ressources
@@ -243,9 +244,9 @@ def jobs2swf(jobs_metrics, filehandle, mode, display):
                                  ''' {} {} {} {} {} {} {} {} {}\n'''.format(*jm))
             elif mode == 'extended':
                 job_id = job_metrics.job_id
-                submission_time = job_metrics.submission_time
-                start_time = job_metrics.start_time
-                stop_time = job_metrics.stop_time
+                submission_time = job_metrics.submission_time - unix_start_time
+                start_time = job_metrics.start_time - unix_start_time
+                stop_time = job_metrics.stop_time - unix_start_time
                 walltime = job_metrics.walltime
                 nb_default_ressources = job_metrics.nb_default_ressources
                 nb_extra_ressources = job_metrics.nb_extra_ressources
@@ -265,20 +266,80 @@ def jobs2swf(jobs_metrics, filehandle, mode, display):
                                  ''' {} {} {} {} {} {} {} {}\n'''.format(*jm))
 
 
-def file_header(trace_file, wkld_metadata, mode):
+def header_values(first_jobid, last_jobid):
+    nb_traced_jobs = db.query(Job).filter(Job.id >= first_jobid)\
+                                  .filter(Job.id <= last_jobid)\
+                                  .filter(or_(Job.state == 'Terminated', Job.state == 'Error'))\
+                                  .count()
+
+    # Resources
+    nb_nodes = db.query(func.count(distinct(Resource.network_address))).scalar()
+
+    nb_resources = db.query(Resource).count()
+    nb_default_resources = db.query(Resource).filter(Resource.type == 'default').count()
+
+    # Time
+    unix_start_time = db.query(Job.submission_time).filter(Job.id == first_jobid).one()[0]
+
+    # Max stop time
+    max_stop_time = db.query(func.max(Job.stop_time))\
+                      .filter(Job.id >= first_jobid)\
+                      .filter(Job.id <= last_jobid)\
+                      .filter(or_(Job.state == 'Terminated', Job.state == 'Error'))\
+                      .one()[0]
+
+    # TimeZoneString:
+    tz_string = str(time.tzname)
+    start_time = time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime(unix_start_time))
+    end_time = time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime(max_stop_time))
+
+    return(nb_traced_jobs, nb_nodes, nb_resources, nb_default_resources, unix_start_time,
+           tz_string, start_time, end_time)
+
+
+def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
+
     filehandle = open(trace_file, 'w')
+
     if mode == 'swf':
         filehandle.write('; WARNING HEADER MISSIING TO BE COMPLETE see : \n;\n')
         filehandle.write(';         http://www.cs.huji.ac.il/labs/parallel/workload/swf.html or\n')
         filehandle.write(';         https://github.com/oar-team/evalys/blob/master/evalys/workload.py\n')
     else:
         filehandle.write('; OAR trace file\n;\n')
-        filehandle.write('; Fields an theirs positions:\n')
+
+    filehandle.write(';\n')
+
+    (nb_traced_jobs, nb_nodes, nb_resources, nb_default_resources, unix_start_time,
+     tz_string, start_time, end_time) = header_values(first_jobid, last_jobid)
+
+    filehandle.write('; {:>22}: {}\n'.format('MaxJobs', nb_traced_jobs))
+    filehandle.write('; {:>22}: {}\n'.format('MaxRecords', nb_traced_jobs))
+    filehandle.write('; {:>22}: {}\n'.format('Preemption', 'No'))
+
+    filehandle.write(';\n')
+
+    filehandle.write('; {:>22}: {}\n'.format('UnixStartTime', unix_start_time))
+    filehandle.write('; {:>22}: {}\n'.format('TimeZoneString', tz_string))
+    filehandle.write('; {:>22}: {}\n'.format('StartTime', start_time))
+    filehandle.write('; {:>22}: {}\n'.format('EndTime', end_time))
+
+    filehandle.write(';\n')
+
+    filehandle.write('; {:>22}: {}\n'.format('MaxNodes', nb_nodes))
+    filehandle.write('; {:>22}: {}\n'.format('Nb Resources', nb_resources))
+    filehandle.write('; {:>22}: {}\n'.format('Nb Defaults Resource', nb_default_resources))
+
+    filehandle.write(';\n')
+
+    if mode == 'extended':
+        filehandle.write('; Fields and their position:\n')
         for i, columns in enumerate(OAR_TRACE_COLUMNS):
             filehandle.write('; {:>2}: {}\n'.format(i, columns))
 
     filehandle.write(';\n')
-    return filehandle
+
+    return (filehandle, unix_start_time)
 
 
 @click.command()
@@ -293,9 +354,14 @@ def file_header(trace_file, wkld_metadata, mode):
 @click.option('--chunk-size', type=int, default=10000,
               help='Number of size retrieve at one time to limit stress on database.')
 @click.option('--metadata-file', type=click.STRING,
-              help="Metadata file stores various non-anonymized jobs' information (user, job name, project, command.")
+              help="Metadata file stores various non-anonymized jobs' information (user, job name, project, command).")
 def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, p, mode):
-    """This programme allows to extract workload traces from OAR RJMS."""
+    """This program allows to extract workload traces from OAR RJMS.
+
+    oar2trace --db-url 'postgresql://oar:oar@server/oar' -m extended
+
+    """
+
     display = p
     jobids_range = None
 
@@ -323,6 +389,10 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
     if not last_jobid:
         last_jobid = jobids_range.max
 
+    if first_jobid > last_jobid:
+        print('First job id must be lower then last one.')
+        exit()
+
     if not trace_file:
         suffix = 'swf' if mode == 'swf' else 'ext'
         trace_file = 'oar_trace_{}_{}_{}_{}.{}'.format(db_server, db_name, first_jobid,
@@ -334,7 +404,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
 
     begin_jobid = first_jobid
     end_jobid = 0
-    fh = file_header(trace_file, wkld_metadata, mode)
+    fh, unix_start_time = file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid)
     for chunk in range(nb_chunck):
         if (begin_jobid + chunk_size - 1) > last_jobid:
             end_jobid = last_jobid
@@ -343,7 +413,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
         print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, end_jobid, (chunk + 1)))
 
         jobs_metrics = get_jobs(first_jobid, end_jobid, wkld_metadata)
-        jobs2swf(jobs_metrics, fh, mode, display)
+        jobs2trace(jobs_metrics, fh, unix_start_time, mode, display)
 
         begin_jobid = end_jobid + 1
     if fh:
