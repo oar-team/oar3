@@ -326,7 +326,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
     if not trace_file:
         suffix = 'swf' if mode == 'swf' else 'ext'
         trace_file = 'oar_trace_{}_{}_{}_{}.{}'.format(db_server, db_name, first_jobid,
-                                                        last_jobid, suffix)
+                                                       last_jobid, suffix)
 
     wkld_metadata = WorkloadMetadata(db_server, db_name, first_jobid, last_jobid, metadata_file)
 
