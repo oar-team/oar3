@@ -14,6 +14,7 @@
 # 5	Job was cancelled (either before starting or during run)
 
 import time
+import uuid
 from collections import OrderedDict
 from sqlalchemy.sql import (func, or_, distinct)
 from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
@@ -38,7 +39,7 @@ class JobMetrics:
 
 
 class WorkloadMetadata():
-    def __init__(self, db_server, db_name, first_jobid=None, last_jobid=None, filename=None):
+    def __init__(self, db_server, db_name, first_jobid=None, last_jobid=None, filename=None, uuid=None):
         if filename:
             return pickle.load(open(filename, 'rb'))
 
@@ -57,6 +58,8 @@ class WorkloadMetadata():
                         + '_' + str(self.first_jobid) + '_' + str(self.last_jobid)\
                         + '.pickle'
         self.OWF_VERSION = OWF_VERSION
+        if uuid:
+            self.uuid = uuid
 
     def dump(self, filename=None):
         if not filename:
@@ -314,6 +317,9 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
 
     filehandle.write(';\n')
 
+    if wkld_metadata.uuid:
+        filehandle.write('; {:>22}: {}\n'.format('Extraction UUDI', wkld_metadata.uuid))
+
     (nb_traced_jobs, nb_nodes, nb_resources, nb_default_resources, unix_start_time,
      tz_string, start_time, end_time) = header_values(first_jobid, last_jobid)
 
@@ -374,7 +380,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
         exit()
 
     if db_url:
-        db._cache["uri"] = db_url
+        db._cache['uri'] = db_url
         try:
             jobids_range = db.query(func.max(Job.id).label('max'),
                                     func.min(Job.id).label('min')).one()
@@ -402,7 +408,11 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
         trace_file = 'oar_trace_{}_{}_{}_{}.{}'.format(db_server, db_name, first_jobid,
                                                        last_jobid, suffix)
 
-    wkld_metadata = WorkloadMetadata(db_server, db_name, first_jobid, last_jobid, metadata_file)
+    # UUID is used to link workload trace file with workload metadata file.
+    # One UUID is given per workload generation.
+    uuid_str = str(uuid.uuid4())
+
+    wkld_metadata = WorkloadMetadata(db_server, db_name, first_jobid, last_jobid, metadata_file, uuid_str)
 
     nb_chunck = int((last_jobid - first_jobid) / chunk_size) + 1
 
