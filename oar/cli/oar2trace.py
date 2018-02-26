@@ -2,6 +2,7 @@
 
 # TODO: Evalys integration
 # TODO: Complete Job header
+# TODO: owf2swf
 # Max Queue
 # TODO: Job Status field
 # Support correctly Job Status field
@@ -28,6 +29,7 @@ SWF_COLUMNS = ['jobID', 'submission_time', 'waiting_time',
 OAR_TRACE_COLUMNS = ['job_id', 'submission_time', 'start_time', 'stop_time', 'walltime',
                      'nb_default_ressources', 'nb_extra_ressources', 'state', 'user',
                      'command', 'queue', 'name', 'array', 'type', 'reservation', 'cigri']
+OWF_VERSION = '1.0'
 
 
 class JobMetrics:
@@ -54,6 +56,7 @@ class WorkloadMetadata():
         self.filename = 'wkld_metadata_' + self.db_server + '_' + self.db_name\
                         + '_' + str(self.first_jobid) + '_' + str(self.last_jobid)\
                         + '.pickle'
+        self.OWF_VERSION = OWF_VERSION
 
     def dump(self, filename=None):
         if not filename:
@@ -307,6 +310,7 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
         filehandle.write(';         https://github.com/oar-team/evalys/blob/master/evalys/workload.py\n')
     else:
         filehandle.write('; OAR trace workload file\n;\n')
+        filehandle.write('; {:>22}: {}\n'.format('OWF Format', OWF_VERSION))
 
     filehandle.write(';\n')
 
