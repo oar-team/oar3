@@ -242,7 +242,7 @@ def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
 
                 filehandle.write('''{} {} {} {} {} {} {} {} {}'''
                                  ''' {} {} {} {} {} {} {} {} {}\n'''.format(*jm))
-            elif mode == 'extended':
+            elif mode == 'owf':
                 job_id = job_metrics.job_id
                 submission_time = job_metrics.submission_time - unix_start_time
                 start_time = job_metrics.start_time - unix_start_time
@@ -306,7 +306,7 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
         filehandle.write(';         http://www.cs.huji.ac.il/labs/parallel/workload/swf.html or\n')
         filehandle.write(';         https://github.com/oar-team/evalys/blob/master/evalys/workload.py\n')
     else:
-        filehandle.write('; OAR trace file\n;\n')
+        filehandle.write('; OAR trace workload file\n;\n')
 
     filehandle.write(';\n')
 
@@ -332,7 +332,7 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
 
     filehandle.write(';\n')
 
-    if mode == 'extended':
+    if mode == 'owf':
         filehandle.write('; Fields and their position:\n')
         for i, columns in enumerate(OAR_TRACE_COLUMNS):
             filehandle.write('; {:>2}: {}\n'.format(i, columns))
@@ -350,7 +350,7 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
 @click.option('-e', '--last-jobid', type=int, default=0, help='Last job id to end.')
 @click.option('-p', is_flag=True, help='Print metrics on stdout.')
 @click.option('-m', '--mode', type=click.STRING, default='swf',
-              help='Select trace mode: swf, extended (SWF by default).')
+              help='Select trace mode: swf or owf (SWF by default).')
 @click.option('--chunk-size', type=int, default=10000,
               help='Number of size retrieve at one time to limit stress on database.')
 @click.option('--metadata-file', type=click.STRING,
@@ -358,15 +358,15 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
 def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, p, mode):
     """This program allows to extract workload traces from OAR RJMS.
 
-    oar2trace --db-url 'postgresql://oar:oar@server/oar' -m extended
+    oar2trace --db-url 'postgresql://oar:oar@server/oar' -m owf
 
     """
 
     display = p
     jobids_range = None
 
-    if (not mode == 'swf') and (not mode == 'extended'):
-        print('Mode must set to swf or extended')
+    if (not mode == 'swf') and (not mode == 'owf'):
+        print('Mode must set to swf or owf')
         exit()
 
     if db_url:
@@ -394,7 +394,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
         exit()
 
     if not trace_file:
-        suffix = 'swf' if mode == 'swf' else 'ext'
+        suffix = 'swf' if mode == 'swf' else 'owf'
         trace_file = 'oar_trace_{}_{}_{}_{}.{}'.format(db_server, db_name, first_jobid,
                                                        last_jobid, suffix)
 
