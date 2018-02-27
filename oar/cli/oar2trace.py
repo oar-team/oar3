@@ -27,11 +27,11 @@ SWF_COLUMNS = ['jobID', 'submission_time', 'waiting_time',
                'proc_req', 'user_est', 'mem_req', 'status', 'uid',
                'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
                'think_time']
+
 OAR_TRACE_COLUMNS = ['job_id', 'submission_time', 'start_time', 'stop_time', 'walltime',
-                     'nb_default_ressources', 'nb_extra_ressources', 'state', 'user',
+                     'nb_default_ressources', 'nb_extra_ressources', 'status', 'user',
                      'command', 'queue', 'name', 'array', 'type', 'reservation', 'cigri']
 OWF_VERSION = '1.0'
-
 
 class JobMetrics:
     def __init__(self, **entries):
@@ -103,7 +103,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
     assigned_moldable_ids = []
     for job in jobs:
         if job.state == 'Terminated' or job.state == 'Error':
-            state = 1 if job.state == 'Terminated' else 0
+            status = 1 if job.state == 'Terminated' else 0
             assigned_moldable_ids.append(job.assigned_moldable_job)
             job_id2job[job.id] = job
             # job_id2moldable_id[job.id] = job.assigned_moldable_job
@@ -116,7 +116,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 walltime=0,
                 nb_default_ressources=0,
                 nb_extra_ressources=0,
-                state=state,
+                status=status,
                 user=wkld_metadata.user2int(job.user),
                 command=wkld_metadata.command2int(job.command),
                 queue=wkld_metadata.queue2int(job.queue_name),
@@ -233,7 +233,7 @@ def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
                 proc_req = job_metrics.nb_default_ressources
                 user_est = job_metrics.walltime
                 mem_req = -1
-                status = job_metrics.state
+                status = job_metrics.status
                 uid = job_metrics.user
                 gid = -1
                 exe_num = job_metrics.command
@@ -256,7 +256,7 @@ def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
                 walltime = job_metrics.walltime
                 nb_default_ressources = job_metrics.nb_default_ressources
                 nb_extra_ressources = job_metrics.nb_extra_ressources
-                state = job_metrics.state
+                status = job_metrics.status
                 user = job_metrics.user
                 command = job_metrics.command
                 queue = job_metrics.queue
@@ -266,7 +266,7 @@ def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
                 reservation = job_metrics.reservation
                 cigri = job_metrics.cigri
                 jm = [job_id, submission_time, start_time, stop_time, walltime,
-                      nb_default_ressources, nb_extra_ressources, state, user,
+                      nb_default_ressources, nb_extra_ressources, status, user,
                       command, queue, name, array, type, reservation, cigri]
                 filehandle.write('''{} {} {} {} {} {} {} {}'''
                                  ''' {} {} {} {} {} {} {} {}\n'''.format(*jm))
