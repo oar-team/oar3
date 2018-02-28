@@ -337,6 +337,7 @@ def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
     filehandle.write(';\n')
 
     filehandle.write('; {:>22}: {}\n'.format('MaxNodes', nb_nodes))
+    filehandle.write('; {:>22}: {}\n'.format('MaxProcs', nb_default_resources))
     filehandle.write('; {:>22}: {}\n'.format('Nb Resources', nb_resources))
     filehandle.write('; {:>22}: {}\n'.format('Nb Defaults Resource', nb_default_resources))
 
