@@ -19,5 +19,6 @@ OAR next generation
 
 OAR next generation
 
-* Free software: BSD license
+* Free software: BSD license.
+* General Information: http://oar.imag.fr/oar_3.  
 * Documentation: https://oar-3.readthedocs.org.
