@@ -1,0 +1,145 @@
+#! /bin/sh
+#
+# oar-node     OAR compute node initialization script
+#
+# chkconfig: 2345 99 01
+# description: OAR compute node initialization script
+#
+### BEGIN INIT INFO
+# Provides:         oar-node
+# Required-Start:   $network $local_fs $remote_fs
+# Required-Stop:    $network $local_fs $remote_fs
+# Default-Start:    2 3 4 5
+# Default-Stop:     0 1 6
+# Short-Description:    OAR compute node
+# Description:    OAR compute node initialization script (launch its own sshd)
+### END INIT INFO
+
+LANG=C
+export LANG
+
+PATH=%%SBINDIR%%:%%BINDIR%%:/sbin:/bin:/usr/sbin:/usr/bin:$PATH
+NAME=oar-node
+DESC="OAR node"
+OAR_SSHD_CONF="%%OARCONFDIR%%/sshd_config"
+PIDFILE="%%RUNDIR%%/${NAME}_sshd.pid"
+SSHD_PRIVILEGE_SEPARATION_DIR="%%RUNDIR%%/sshd"
+SSHD_OPTS="-f $OAR_SSHD_CONF -o PidFile=$PIDFILE"
+SELINUXENABLED_CMD=$(which selinuxenabled 2>/dev/null)
+NOLSB=
+
+[ -f /lib/lsb/init-functions ] || NOLSB=yes
+
+if [ -f /etc/debian_version ]; then
+    system=debian
+elif [ -f /etc/redhat-release ]; then
+    system=redhat
+elif [ -f /etc/SuSE-release ]; then
+    system=suse
+elif [ -f /etc/gentoo-release ]; then
+    system=gentoo
+fi
+
+start_oar_node() {
+    echo
+    echo " * Edit the start_oar_node function in %%DEFAULTDIR%%/oar-node if you"
+    echo "   want to perform specific actions (e.g. switch the node to Alive)"
+}
+
+stop_oar_node() {
+    echo
+    echo " * Edit the stop_oar_node function in %%DEFAULTDIR%%/oar-node if you"
+    echo "   want to perform specific actions (e.g. switch the node to Absent)"
+}
+
+[ -r %%DEFAULTDIR%%/oar-node ] && . %%DEFAULTDIR%%/oar-node
+
+if [ -z "$NOLSB" ]; then
+    . /lib/lsb/init-functions
+    fail_msg() {
+        echo ""
+        log_failure_msg "$@"
+    }
+    warn_msg() {
+        log_warning_msg "$@"
+    }
+    succ_msg() {
+        log_success_msg "$@"
+    }
+    begin_msg() {
+        echo -n "$@: "
+    }
+else
+    echo "This system doesn't provide the LSB functions. Failing"
+    exit 2
+fi
+
+do_start() {
+    begin_msg "Starting $DESC"
+    if [ -n "$SELINUXENABLED_CMD" ] && [ -x "$SELINUXENABLED_CMD" ] && $SELINUXENABLED_CMD; then
+        fail_msg "SELinux is enabled, $DESC cannot be started."	
+        exit 2
+    fi
+    if [ -f "$OAR_SSHD_CONF" ] ; then
+        if [ -n "$SSHD_PRIVILEGE_SEPARATION_DIR" ]; then
+            ( umask 0022 && mkdir -p $SSHD_PRIVILEGE_SEPARATION_DIR )
+        fi
+        if start_daemon -p $PIDFILE -n "-20" /usr/sbin/sshd $SSHD_OPTS; then
+            # redhat world
+            [ -d /var/lock/subsys/ ] && touch /var/lock/subsys/$NAME
+            succ_msg "OAR dedicated SSH server started."
+        else
+            fail_msg "Failed to start OAR dedicated SSH server."
+            exit 2
+        fi
+    fi
+    begin_msg "Executing $DESC startup actions"
+    if start_oar_node; then
+        succ_msg "$DESC startup actions were executed sucessfully."
+    else
+        fail_msg "$DESC startup actions failed."
+        exit 2
+    fi
+}
+
+do_stop() {
+    begin_msg "Executing $DESC shutdown actions"
+    echo
+    if stop_oar_node; then
+        succ_msg "$DESC shutdown actions were executed sucessfully."
+    else
+        fail_msg "$DESC shutdown actions failed."
+    fi
+    begin_msg "Stopping $DESC"
+    if [ -f "$OAR_SSHD_CONF" ] ; then
+        if killproc -p  $PIDFILE; then
+            # redhat world
+            [ -d /var/lock/subsys/ ] && rm -f /var/lock/subsys/$NAME
+            succ_msg "OAR dedicated SSH server stopped."
+        else
+            fail_msg "Failed to stop OAR dedicated SSH server."
+            exit 2
+        fi
+    fi
+}
+
+case "$1" in
+    start)
+        do_start
+        ;;
+    stop)
+        do_stop
+        ;;
+    reload|force-reload|restart)
+        if do_stop; then
+            do_start
+        fi
+        ;;
+    *)
+        N=%%INITDIR%%/$NAME
+        echo "Usage: $N {start|stop|reload|force-reload|restart}"
+        exit 1
+    ;;
+esac
+
+exit 0
