@@ -7,7 +7,7 @@ MODULES = server user node monika drawgantt drawgantt-svg doc tools api www-conf
 
 
 MODULES_LIST= $(patsubst %,% |, $(MODULES))|
-OPTIONS_LIST= OARCONFDIR | OARUSER | OAROWNER | PREFIX | MANDIR | OARDIR | BINDIR | SBINDIR | DOCDIR 
+OPTIONS_LIST= OARCONFDIR | OARUSER | OAROWNER | PREFIX | OARDIR | BINDIR | SBINDIR | DOCDIR 
 
 # Define the makefile targets
 TARGETS_SUFFIX = build clean install uninstall
@@ -134,44 +134,44 @@ packages-install:  P_ACTION = install
 packages-clean:    P_ACTION = clean 
 
 $(P_TARGETS):
-	# oar-doc
+    # oar-doc
 	$(MAKE) -f Makefiles/doc.mk $(P_ACTION) \
 	    DESTDIR=$(PACKAGES_DIR)/oar-doc
-	
-	# oar-common
+
+    # oar-common
 	mkdir -p $(PACKAGES_DIR)/oar-common/var/lib/oar	
 	$(MAKE) -f Makefiles/common.mk $(P_ACTION) \
 	    DESTDIR=$(PACKAGES_DIR)/oar-common
-	
-	
-	# liboar-perl
+
+
+    # liboar-perl
 	mkdir -p $(PACKAGES_DIR)/liboar-perl/var/lib/oar	
 	$(MAKE) -f Makefiles/common-libs.mk $(P_ACTION) \
 	    DESTDIR=$(PACKAGES_DIR)/liboar-perl
-	
-	# oar-server
+
+    # oar-server
 	mkdir -p $(PACKAGES_DIR)/oar-server/var/lib/oar
 	$(MAKE) -f Makefiles/server.mk $(P_ACTION)\
     SHAREDIR=/usr/share/oar/oar-server \
                 DESTDIR=$(PACKAGES_DIR)/oar-server
-	
+
 	$(MAKE) -f Makefiles/database.mk $(P_ACTION)\
                 DESTDIR=$(PACKAGES_DIR)/oar-server \
     SHAREDIR=/usr/share/oar/oar-server \
 		DOCDIR=/usr/share/doc/oar-server
-	
-	# oar-node
+
+    # oar-node
 	mkdir -p $(PACKAGES_DIR)/oar-node/var/lib/oar
 	mkdir -p $(PACKAGES_DIR)/oar-node/etc/init.d
 	$(MAKE) -f Makefiles/node.mk $(P_ACTION)\
                 DESTDIR=$(PACKAGES_DIR)/oar-node
-	
-	# oar-user
+
+    # oar-user
 	mkdir -p $(PACKAGES_DIR)/oar-user/var/lib/oar
 	$(MAKE) -f Makefiles/user.mk $(P_ACTION)\
                 DESTDIR=$(PACKAGES_DIR)/oar-user 
-	
-	# oar-web-status
+
+    # oar-web-status
 	$(MAKE) -f Makefiles/monika.mk $(P_ACTION) \
                 DESTDIR=$(PACKAGES_DIR)/oar-web-status \
 		DOCDIR=/usr/share/doc/oar-web-status \
@@ -187,13 +187,13 @@ $(P_TARGETS):
 		DOCDIR=/usr/share/doc/oar-web-status \
 		SHAREDIR=/usr/share/oar/oar-web-status \
 		WWWDIR=/usr/share/oar-web-status
-	
-	# oar-restful-api
+
+    # oar-restful-api
 	$(MAKE) -f Makefiles/api.mk $(P_ACTION) \
 	    DOCDIR=/usr/share/doc/oar-restful-api \
 	    DESTDIR=$(PACKAGES_DIR)/oar-restful-api 
-	
-	# keyring
+
+    # keyring
 	$(MAKE) -f Makefiles/keyring.mk $(P_ACTION) \
 	    DESTDIR=$(PACKAGES_DIR)/oar-keyring 
-	
+
