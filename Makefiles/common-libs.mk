@@ -1,7 +1,5 @@
 MODULE=common-libs
-SRCDIR=sources/core
-
-OAR_PERLLIB= $(SRCDIR)/common-libs/lib
+SRCDIR=.
 
 include Makefiles/shared/shared.mk
 
@@ -10,10 +8,10 @@ clean: clean_shared
 
 build:  build_shared
 # Nothing to do
-	
+
 install: install_shared
 # Nothing to do
-	
+
 uninstall: uninstall_shared
 # Nothing to do
 

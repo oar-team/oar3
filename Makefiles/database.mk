@@ -1,7 +1,5 @@
 MODULE=database
-SRCDIR=sources/core
-
-MANDIR_FILES = $(SRCDIR)/man/man1/oar-database.pod.in
+SRCDIR=setup
 
 SBINDIR_FILES = $(SRCDIR)/database/oar-database.in
 
@@ -16,9 +14,8 @@ install: install_shared
 	cp -f $(SRCDIR)/database/*.sql $(DESTDIR)$(OARDIR)/database/
 
 uninstall: uninstall_shared
-	rm -f $(DESTDIR)$(OARDIR)/oar_mysql_db_init
 	rm -f $(DESTDIR)$(OARDIR)/oar_psql_db_init
 	rm -rf $(DESTDIR)$(OARDIR)/database
-	
+
 .PHONY: install setup uninstall build clean
 
