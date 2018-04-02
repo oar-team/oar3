@@ -4,13 +4,13 @@ MODULE=keyring
 include Makefiles/shared/shared.mk
 
 clean: clean_shared
-	# Nothing to do
+    # Nothing to do
 
 build: build_shared
-	# Nothing to do
+    # Nothing to do
 
 uninstall: uninstall_shared
-	# Nothing to do
+    # Nothing to do
 
 install: install_shared 
 	install -d $(DESTDIR)/usr/share/oar-keyring
