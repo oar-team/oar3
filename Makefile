@@ -143,12 +143,6 @@ $(P_TARGETS):
 	$(MAKE) -f Makefiles/common.mk $(P_ACTION) \
 	    DESTDIR=$(PACKAGES_DIR)/oar-common
 
-
-    # liboar-perl
-	mkdir -p $(PACKAGES_DIR)/liboar-perl/var/lib/oar	
-	$(MAKE) -f Makefiles/common-libs.mk $(P_ACTION) \
-	    DESTDIR=$(PACKAGES_DIR)/liboar-perl
-
     # oar-server
 	mkdir -p $(PACKAGES_DIR)/oar-server/var/lib/oar
 	$(MAKE) -f Makefiles/server.mk $(P_ACTION)\
