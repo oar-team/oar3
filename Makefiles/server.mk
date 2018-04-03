@@ -17,7 +17,7 @@ OARDIR_BINFILES = $(SRCDIR)/tools/oar_resources_init \
 
 OARCONFDIR_BINFILES = $(SRCDIR)/tools/oar_phoenix.pl
 
-SBINDIR_FILES = $(SRCDIR)/server/sbin/oar-server.in
+SBINDIR_FILES = setup/server/sbin/oar-server.in
 
 SHAREDIR_FILES = $(SRCDIR)/tools/job_resource_manager.pl \
                    $(SRCDIR)/tools/job_resource_manager_cgroups.pl \
@@ -38,7 +38,6 @@ CRONDIR_FILES = setup/cron.d/oar-server.in
 include Makefiles/shared/shared.mk
 
 clean: clean_shared
-	$(MAKE) -f Makefiles/man.mk clean
 	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/Almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/Almighty
 	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
 	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue

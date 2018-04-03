@@ -46,8 +46,8 @@ setup: setup_shared
 SHARED_ACTIONS=oardata oarbin doc bin sbin examples setup_scripts init logrotate default cron cgi www
 
 
-clean_shared: clean_templates clean_man1 clean_setup_scripts
-build_shared: build_templates build_man1 build_setup_scripts
+clean_shared: clean_templates clean_setup_scripts
+build_shared: build_templates build_setup_scripts
 	rm -f setup/templates/header.sh
 
 install_shared: $(patsubst %, install_%,$(SHARED_ACTIONS)) install_setup_scripts

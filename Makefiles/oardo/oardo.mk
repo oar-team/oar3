@@ -43,16 +43,16 @@ build: $(CMD_BUILDTARGET)
 $(CMD_BUILDTARGET).c:
 	mkdir -p $$(dirname $(CMD_BUILDTARGET))
 	sed -e 's#\(define CMD_WRAPPER \).*#\1 "$(CMD_WRAPPER)"#' \
-			sources/core/tools/oardo.c > "$(CMD_BUILDTARGET).c"
+			oar/tools/oardo.c > "$(CMD_BUILDTARGET).c"
 
 $(CMD_BUILDTARGET): $(CMD_BUILDTARGET).c
 ifeq "$(CMD_TARGET)" ""
 	echo "no CMD_TARGET given. Fail !"
 	exit 1
 endif
-	
+
 	$(CC) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) -o $(CMD_BUILDTARGET) "$(CMD_BUILDTARGET).c"
-	
+
 
 install: $(CMD_TARGET)
 
