@@ -52,7 +52,7 @@ setup(
     url='https://github.com/oar-team/oar3',
     packages=find_packages(),
     package_dir={'oar': 'oar'},
-    package_data={'oar': ['scripts/*.pl', 'scripts/*.pm', 'scripts/*.sh', 'scripts/oarexec']},
+    package_data={'oar': ['tools/*.pl', 'tools/*.pm', 'tools/*.sh', 'tools/oarexec']},
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],

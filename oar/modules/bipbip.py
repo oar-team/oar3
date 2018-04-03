@@ -272,8 +272,8 @@ class BipBip(object):
         epilogue_exec_file = config['EPILOGUE_EXEC_FILE']
 
         
-        oarexec_files = (pkg_resources.resource_filename('oar', 'scripts/Tools.pm'),
-                         pkg_resources.resource_filename('oar', 'scripts/oarexec'))
+        oarexec_files = (pkg_resources.resource_filename('oar', 'tools/Tools.pm'),
+                         pkg_resources.resource_filename('oar', 'tools/oarexec'))
 
         head_node = None
         if hosts:
