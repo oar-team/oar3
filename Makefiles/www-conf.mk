@@ -1,5 +1,5 @@
 MODULE=www-conf
-SRCDIR=sources
+SRCDIR=./
 
 SHAREDIR_FILES= $(SRCDIR)/visualization_interfaces/apache.conf.in
 

@@ -1,5 +1,5 @@
 MODULE=monika
-SRCDIR=sources/visualization_interfaces/Monika
+SRCDIR=visualization_interfaces/Monika
 
 OAR_PERLLIB=$(SRCDIR)/lib
 

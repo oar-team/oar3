@@ -77,6 +77,7 @@ setup(
     [console_scripts]
     oar3-database-migrate=oar.cli.db.commands.migrate:cli
     oar3-database-archive=oar.cli.db.commands.archive:cli
+    oar3-database-manage=oar.cli.db.commands.manage:cli
     oar3-almighty=oar.modules.almighty:main
     oar3-bipbip-commander=oar.modules.bipbip_commander:main
     oar3-appendice-proxy=oar.modules.appendice_proxy:main

@@ -1,0 +1,504 @@
+<?php
+/**
+ * OAR Drawgantt-SVG
+ * @author Pierre Neyron <pierre.neyron@imag.fr>
+ *
+ */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Configuration: DO NOT EDIT HERE. Customization must go in /etc/oar/drawgantt-config.inc.php
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+$CONF=array();
+
+// Default settings for the default view 
+$CONF['default_start'] = ""; // default start and stop times (ctime values) ; unless you want to always show a
+$CONF['default_stop'] = "";  // same time frame, keep those values to "" 
+$CONF['default_relative_start'] = ""; // default relative start and stop times ([+-]<seconds>), mind setting it
+$CONF['default_relative_stop'] = "";  // accordingly to the nav_forecast values below, eg -24*3600*0.1 and 24*3600*0.9
+$CONF['default_timespan'] = 6*3600; // default timespan, should be one of the nav_timespans below
+$CONF['default_resource_base'] = 'cpuset'; // default base resource, should be one of the nav_resource_bases below
+$CONF['default_scale'] = 10; // default vertical scale of the grid, should be one of the nav_scales bellow
+
+// Navigation bar configuration
+$CONF['nav_timespans'] = array( // proposed timespan in the "set" bar
+  '1 hour' => 3600,
+  '3 hours' => 3*3600,
+  '6 hours' => 6*3600,
+  '12 hours' => 12*3600,
+  '1 day' => 24*3600,
+  '3 day' => 3*24*3600,
+  '1 week' => 7*24*3600,
+);
+
+$CONF['nav_forecast'] = array( // forecast display
+  '1 day' => 24*3600,
+  '3 days' => 3*24*3600,
+  '1 week' => 7*24*3600,
+  '2 weeks' => 2*7*24*3600,
+  '3 weeks' => 3*7*24*3600,
+);
+$CONF['nav_forecast_past_part'] = 0.1; // past part to show (percentage if < 1, otherwise: number of seconds)
+
+$CONF['nav_scales'] = array( // proposed scales for resources
+  'small' => 10,
+  'big' => 20,
+  'huge' => 40,
+);
+
+$CONF['nav_timeshifts'] = array( // proposed time-shifting buttons
+  '1h' => 3600,
+  '6h' => 6*3600,
+  '1d' => 24*3600,
+  '1w' => 7*24*3600,
+);
+
+$CONF['nav_filters'] = array( // proposed filters in the "misc" bar
+  'all clusters' => 'resources.type = \'default\'',
+  'cluster1 only' => 'resources.cluster=\'cluster1\'',
+  'cluster2 only' => 'resources.cluster=\'cluster2\'',
+  'cluster3 only' => 'resources.cluster=\'cluster3\'',
+);
+
+$CONF['nav_resource_bases'] = array( // proposed base resources
+  'network_address',
+  'cpuset',
+);
+
+$CONF['nav_timezones'] = array( // proposed timezones in the "misc" bar (the first one will be selected by default)
+  'UTC',
+  'Europe/Paris',
+);
+
+$CONF['nav_custom_buttons'] = array( // custom buttons, click opens the url in a new window
+  'my label' => 'http://my.url'      // remove all lines to disable (empty array)
+);
+
+// Overwrite configuration with values from drawgantt-config.inc.php
+define('CONFIG_DIR', '%%OARCONFDIR%%');
+define('CONFIG_FILE', CONFIG_DIR . '/drawgantt-config.inc.php');
+if (is_readable(CONFIG_FILE)) {
+    require CONFIG_FILE;
+}
+
+$resource_base = array_key_exists('resource_base',$_GET)?$_GET['resource_base']:$CONF['default_resource_base'];
+$filter = array_key_exists('filter',$_GET)?$_GET['filter']:reset($CONF['nav_filters']);
+$timezone = array_key_exists('timezone',$_GET)?$_GET['timezone']:reset($CONF['nav_timezones']);
+$relative_start = array_key_exists('relative_start',$_GET)?$_GET['relative_start']:$CONF['default_relative_start'];
+$relative_stop = array_key_exists('relative_stop',$_GET)?$_GET['relative_stop']:$CONF['default_relative_stop'];
+$start = array_key_exists('start',$_GET)?$_GET['start']:$CONF['default_start'];
+$stop = array_key_exists('stop',$_GET)?$_GET['stop']:$CONF['default_stop'];
+$timespan = array_key_exists('timespan',$_GET)?$_GET['timespan']:$CONF['default_timespan'];
+$scale = array_key_exists('scale',$_GET)?$_GET['scale']:$CONF['default_scale'];
+
+$output = <<<EOT
+<!DOCTYPE html>
+<html>
+  <head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>OAR Drawgantt SVG</title>
+<style>
+  body {
+    background-color: white;
+  }
+  #svgObj {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 0;
+    margin: 0px;
+  }
+  #panel {
+    position: fixed;
+    background-color: lightgrey;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: 1;
+    opacity: 1;
+    visibility: hidden;
+  }
+  #waiter {
+    background-color: lightgreen;
+    visibility: hidden;
+    z-index: 2;
+    top: 0px;
+    text-align: center;
+    border-radius: 20px;
+  }
+  #timepicker {
+    position: fixed;
+    background-color: lightgrey;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: 2;
+    opacity: 1;
+    visibility: hidden;
+  }
+  #forecast {
+    position: fixed;
+    background-color: lightgrey;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: 2;
+    opacity: 1;
+    visibility: hidden;
+  }
+  #misc {
+    position: fixed;
+    background-color: lightgrey;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: 2;
+    opacity: 1;
+    visibility: hidden;
+  }
+  #permalink {
+    position: fixed;
+    right: 0px;
+    bottom: 0px;
+    z-index: 1;
+    text-align: right;
+    visibility: hidden;
+  }
+  #permalinkA:link {
+    background-color: lightyellow;
+    text-decoration: none;
+    font-size: 55%;
+    border-style: solid;
+    border-width: 1px;
+    color: black;
+  }
+  #permalinkA:visited {
+    color: black;
+  }
+  #permalinkSpan{
+    position: relative;
+    background-color: white;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 8px;
+    padding: 5px;
+    display: none;
+    font-size: 75%;
+  }
+  #permalink:hover #permalinkSpan{
+    display: block;
+  }
+</style>
+<script type="text/javascript">
+  window.addEventListener("resize", reload_content, false);
+  var start = 0;
+  var stop = 0;
+  var zoom_start = 0;
+  var zoom_stop = 0;
+  var filter = "$filter";
+  var filterSQL = "";
+  var timezone = "$timezone";
+  var baseResource = "$resource_base";
+  var scale = "$scale";
+  var scrolledX=0;
+  var scrolledY=0;
+  function sleep(millis, callback) {
+    setTimeout(function() { callback(); } , millis);
+  }
+  function reset() {
+    var date = new Date();
+    var qstart = parseInt("$start");
+    var qrelative_start = parseInt("$relative_start");
+    var qstop = parseInt("$stop");
+    var qrelative_stop = parseInt("$relative_stop");
+    var qtimespan = parseInt("$timespan");
+    if (isNaN(qtimespan)) {
+        qtimespan = {$CONF['default_timespan']};
+    }
+    if (isNaN(qstart) && ! isNaN(qrelative_start)) { 
+      qstart = Math.floor(date.getTime() / 1000 + qrelative_start);
+    }
+    if (isNaN(qstop) && ! isNaN(qrelative_stop)) {
+      qstop = Math.floor(date.getTime() / 1000 + qrelative_stop);
+    }
+    if (isNaN(qstart)) { 
+      start = Math.floor(date.getTime() / 1000 - qtimespan / 2);
+    } else {
+      start = qstart;
+      if (! isNaN(qstop)) {
+        qtimespan = qstop - qstart;
+      }
+    }
+    stop = start + qtimespan;
+    reload_content();
+  }
+  function shift(time) {
+    start += time;
+    stop += time;
+    reload_content();
+  }
+  function shift_to_now() {
+    var timespan = Math.floor(stop - start);
+    var date = new Date();
+    start = Math.floor(date.getTime() / 1000 - timespan / 2);
+    stop = start + timespan;
+    reload_content();
+  }
+  function display_forecast(timespan) {
+    var date = new Date();
+    var past = Math.abs({$CONF['nav_forecast_past_part']});
+    if (past > 1) {
+      start = Math.floor(date.getTime() / 1000 - past);
+      stop = Math.floor(date.getTime() / 1000 + timespan - past);
+    } else {
+      start = Math.floor(date.getTime() / 1000 - timespan * past);
+      stop = Math.floor(date.getTime() / 1000 + timespan * (1 - past));
+    }
+    hide_forecast();
+    reload_content();
+  }
+  function next() {
+    var t = stop + (stop - start);
+    start = stop;
+    stop = t;
+    reload_content();
+  }
+  function prev() {
+    var t = start - (stop - start);
+    stop = start;
+    start = t;
+    reload_content();
+  }
+  function zoomin() {
+    var t = Math.floor(start + (stop - start) / 4);
+    stop = Math.floor(stop - (stop - start) / 4);
+    start = t;
+    reload_content();
+  }
+  function zoomout() {
+    var t = Math.floor((stop - start)/2);
+    stop += t;
+    start -= t;
+    reload_content();
+  }
+  function setZoomWindow(znow, zstart, zstop) {
+    zoom_start = zstart;
+    zoom_stop = zstop;
+  }
+  function zoom() {
+    if (zoom_start != zoom_stop) {
+      start = zoom_start;
+      stop = zoom_stop;
+      reload_content();
+    }
+  }
+  function set_time() {
+    var time = Math.floor(Date.parse(document.getElementById("datetime").value) / 1000);
+    var span = document.getElementById("timespan").value;
+    start = Math.floor(time - +span / 2);
+    stop = Math.floor(time + +span / 2);
+    hide_timepicker();
+    reload_content();
+  }
+  function set_now() {
+    var date = new Date();
+    date.setTime(Math.floor(date.getTime() / 1000) * 1000);
+    document.getElementById("datetime").value = date.toISOString();
+  }
+  function reload_content() {
+    scrolledX = window.scrollX;
+    scrolledY = window.scrollY;
+    var svgObj=document.getElementById("svgObj");
+    var newURL= "drawgantt-svg.php?width=" + (window.innerWidth - 50)  + "&start=" + start + "&stop=" + stop + ((filterSQL)?"&filter=" + filterSQL:"") + ((timezone)?"&timezone=" + timezone:"") + ((baseResource)?"&resource_base=" + baseResource:"") + ((scale)?"&scale=" + scale:"");
+    document.getElementById("panel").style.visibility="hidden";
+    document.getElementById("permalink").style.visibility="hidden";
+    document.getElementById("waiter").style.visibility="visible";
+    var href = window.location.href
+    document.getElementById("permalinkA").href = href.substring(0,href.lastIndexOf(window.location.search)) + "?start=" + start + "&stop=" + stop + ((filter)?"&filter=" + filter:"") + ((timezone)?"&timezone=" + timezone:"") + ((baseResource)?"&resource_base=" + baseResource:"") + ((scale)?"&scale=" + scale:"");
+    svgObj.data = newURL;
+    svgObj.innerHTML = newURL;
+  }
+  function set_misc(reload) {
+    var scaleSelect = document.getElementById("scaleSelect");
+    if (scaleSelect) {
+      scale = scaleSelect.value;
+    }
+    var baseResourceSelect = document.getElementById("baseResourceSelect");
+    if (baseResourceSelect) {
+      baseResource = baseResourceSelect.value;
+    }
+    var timezoneSelect = document.getElementById("timezoneSelect");
+    if (timezoneSelect) {
+      timezone = timezoneSelect.value;
+    }
+    var filterSelect = document.getElementById("filterSelect");
+    if (filterSelect) {
+      filter = filterSelect.children[filterSelect.selectedIndex].innerHTML;
+      filterSQL = filterSelect.value;
+    }
+    window.scrollTo(0,0);
+    hide_misc();
+    reload && reload_content();
+  }
+  function openURL(url) {
+    window.open(url);
+  }
+  function restore_scrolling() {
+    window.scrollTo(scrolledX,scrolledY);
+    document.getElementById("waiter").style.visibility="hidden";
+    document.getElementById("panel").style.visibility="visible";
+    document.getElementById("permalink").style.visibility="visible";
+  }
+  function init() {
+    set_misc(false);
+    sleep(100, reset);
+  }
+  function show_timepicker() {
+    var date = new Date();
+    date.setTime((start + (stop - start)/2)*1000);
+    document.getElementById("datetime").value = date.toISOString();
+    document.getElementById("timepicker").style.visibility="visible";
+    document.getElementById("panel").style.visibility="hidden";
+  }
+  function hide_timepicker() {
+    document.getElementById("panel").style.visibility="visible";
+    document.getElementById("timepicker").style.visibility="hidden";
+  }
+  function show_forecast() {
+    document.getElementById("forecast").style.visibility="visible";
+    document.getElementById("panel").style.visibility="hidden";
+  }
+  function hide_forecast() {
+    document.getElementById("panel").style.visibility="visible";
+    document.getElementById("forecast").style.visibility="hidden";
+  }
+  function show_misc() {
+    document.getElementById("misc").style.visibility="visible";
+    document.getElementById("panel").style.visibility="hidden";
+  }
+  function hide_misc() {
+    document.getElementById("panel").style.visibility="visible";
+    document.getElementById("misc").style.visibility="hidden";
+  }
+</script>
+</head>
+<body onload="init()">
+<div id="panel" align="center">
+EOT;
+$output_before = "";
+$output_after = "";
+foreach ($CONF['nav_timeshifts'] as $key => $value) {
+  $output_before = "<button type=\"button\" onclick=\"shift(-($value))\">&lt;$key</button>" . $output_before;
+  $output_after .= "<button type=\"button\" onclick=\"shift(+($value))\">&gt;$key</button>";
+}
+$output .= $output_before;
+$output .= "<button type=\"button\" onclick=\"prev()\">&lt;&lt;</button>";
+$output .= "<button type=\"button\" onclick=\"zoomout()\">-</button>";
+$output .= "<button type=\"button\" onclick=\"zoom()\">zoom</button>";
+$output .= "<button type=\"button\" onclick=\"zoomin()\">+</button>";
+$output .= "<button type=\"button\" onclick=\"next()\">&gt;&gt;</button>";
+$output .= $output_after;
+$output .= "<button type=\"button\" onclick=\"shift_to_now()\">now</button>";
+$output .= "<button type=\"button\" onclick=\"show_timepicker()\">set time</button>";
+if (count($CONF['nav_forecast']) > 0) {
+  $output .= "<button type=\"button\" onclick=\"show_forecast()\">forecast</button>";
+}
+$output .= "\n";
+$output .= "<button type=\"button\" onclick=\"reload_content()\">reload</button>";
+$output .= "<button type=\"button\" onclick=\"reset()\">reset</button>";
+$output .= "\n";
+$output .= "<button type=\"button\" onclick=\"show_misc()\">options</button>";
+$output .= "\n";
+foreach ($CONF['nav_custom_buttons'] as $key => $value) {
+  $output .= "<button type=\"button\" onclick=\"openURL('$value')\">$key</button>";
+}
+$output .= <<<EOT
+
+</div>
+<object id="svgObj" type="image/svg+xml" data="" onload="restore_scrolling()"></object>
+<div id="permalink"><span id="permalinkSpan">Use the contextual menu (e.g. right click) to copy permalink</span><a id="permalinkA" href=".">PERMALINK</a></div>
+<div id="waiter">PROCESSING DATA, PLEASE WAIT...</div>
+<div id="timepicker" align="center">
+ref date:<input id="datetime" type="datetime"/><button type="button" onclick="set_now()">now</button>
+timespan:<select id="timespan"/>
+EOT;
+foreach ($CONF['nav_timespans'] as $key => $value) {
+  $output .= "<option " . (($value == $CONF['default_timespan'])?"selected ":"") . "value=\"$value\">$key</option>\n";
+}
+$output .= <<<EOT
+</select>
+
+<button type="button" onclick="set_time()">ok</button><button type="button" onclick="hide_timepicker()">cancel</button>
+</div>
+<div id="forecast" align="center">
+show forecast for: 
+EOT;
+foreach ($CONF['nav_forecast'] as $key => $value) {
+  $output .= "<button type=\"button\" onclick=\"display_forecast($value)\">$key</button>";
+}
+$output .= "\n";
+$output .= <<<EOT
+<button type="button" onclick="hide_forecast()">cancel</button>
+</div>
+<div id="misc" align="center">
+EOT;
+if (count($CONF['nav_resource_bases']) > 1 or count($CONF['nav_filters']) > 1 or count($CONF['nav_timezones']) > 1 or count($CONF['nav_scales'])) {
+  if (count($CONF['nav_resource_bases']) > 1) {
+    $output .= <<<EOT
+base resource:<select id="baseResourceSelect">
+EOT;
+    foreach ($CONF['nav_resource_bases'] as $value) {
+      $output .= "<option " . (($value == $resource_base)?"selected ":"") . "value=\"$value\">$value</option>\n";
+    }
+    $output .= <<<EOT
+</select>
+
+EOT;
+  }
+  if (count($CONF['nav_filters']) > 1) {
+    $output .= <<<EOT
+resource filter:<select id="filterSelect">
+EOT;
+    foreach ($CONF['nav_filters'] as $key => $value) {
+      $output .= "<option " . (($key == $filter)?"selected ":"") . "value=\"$value\">$key</option>\n";
+    }
+    $output .= <<<EOT
+</select>
+
+EOT;
+  }
+  if (count($CONF['nav_scales']) > 1) {
+    $output .= <<<EOT
+scale:<select id="scaleSelect">
+EOT;
+    foreach ($CONF['nav_scales'] as $key => $value) {
+      $output .= "<option " . (($value == $scale)?"selected ":"") . "value=\"$value\">$key</option>\n";
+    }
+    $output .= <<<EOT
+</select>
+
+EOT;
+  }
+  if (count($CONF['nav_timezones']) > 1) {
+    $output .= <<<EOT
+timezone:<select id="timezoneSelect">
+EOT;
+    foreach ($CONF['nav_timezones'] as $tz) {
+      $output .= "<option " . (($tz == $timezone)?"selected ":"") . "value=\"$tz\">$tz</option>\n";
+    }
+    $output .= <<<EOT
+</select>
+
+EOT;
+  }
+  $output .= "\n<button type=\"button\" onclick=\"set_misc(true)\">ok</button>";
+}
+$output .= <<<EOT
+<button type="button" onclick="hide_misc()">cancel</button>
+</div>
+</body>
+</html>
+EOT;
+print $output;
+?>

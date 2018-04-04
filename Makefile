@@ -3,7 +3,7 @@
 export SHELL=/bin/bash
 
 # Modules that can be builded
-MODULES = server user node monika drawgantt drawgantt-svg doc tools api www-conf common common-libs database  
+MODULES = server user node monika drawgantt drawgantt-svg doc api www-conf common common-libs database  
 
 
 MODULES_LIST= $(patsubst %,% |, $(MODULES))|

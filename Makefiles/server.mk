@@ -17,14 +17,14 @@ OARDIR_BINFILES = $(SRCDIR)/tools/oar_resources_init \
 
 OARCONFDIR_BINFILES = $(SRCDIR)/tools/oar_phoenix.pl
 
-SBINDIR_FILES = setup/server/sbin/oar-server.in
+SBINDIR_FILES = setup/server/oar-server.in
 
 SHAREDIR_FILES = $(SRCDIR)/tools/job_resource_manager.pl \
                    $(SRCDIR)/tools/job_resource_manager_cgroups.pl \
 		   $(SRCDIR)/tools/suspend_resume_manager.pl \
 		   $(SRCDIR)/tools/oarmonitor_sensor.pl \
-		   $(SRCDIR)/scripts/server_epilogue \
-		   $(SRCDIR)/scripts/server_prologue \
+		   $(SRCDIR)/../scripts/server_epilogue \
+		   $(SRCDIR)/../scripts/server_prologue \
 		   $(SRCDIR)/tools/wake_up_nodes.sh \
 		   $(SRCDIR)/tools/shut_down_nodes.sh \
 		   #$(SRCDIR)/modules/scheduler/scheduler_quotas.conf

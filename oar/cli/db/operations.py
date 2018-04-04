@@ -104,6 +104,45 @@ jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
 moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
 resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
 
+def create_db(ctx):
+    # TODO
+    # print "Creating the database user...\n";
+    # pgsql_admin_exec_sql("CREATE ROLE $db_user LOGIN PASSWORD '$db_pass';");
+    # if ($db_ro_user and $db_ro_pass) {
+    #     print "Creating the database read-only user...\n";
+    #     pgsql_admin_exec_sql("CREATE ROLE $db_ro_user LOGIN PASSWORD '$db_ro_pass';");
+    # }
+    # print "Creating the database...\n";
+    # pgsql_admin_exec_sql("CREATE DATABASE $db_name OWNER $db_user");
+    # pgsql_admin_exec_sql("REVOKE CREATE ON SCHEMA public FROM PUBLIC", $db_name);
+    # pgsql_admin_exec_sql("GRANT CREATE ON SCHEMA public TO $db_user", $db_name);
+    # pgsql_admin_exec_sql("GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user");
+
+    engine = create_engine(ctx.current_db.engine.url)
+    # Create database
+    if not create_database_if_not_exists(ctx, engine):
+         ctx.log("\nNothing to do.")
+
+def drop_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    # Drop database
+    if not drop_database_if_exists(ctx, engine):
+         ctx.log("\nNothing to do.")
+
+def upgrade_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
+
+def reset_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
+
+def check_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
 
 def get_table_columns(tables, table_name):
     return [d[table_name] for d in tables if table_name in d.keys()]
@@ -157,6 +196,14 @@ def get_first_primary_key(table):
 def create_database_if_not_exists(ctx, engine):
     if not database_exists(engine.url):
         ctx.log(green(' create') + ' ~> new database `%r`' % engine.url)
+        create_database(engine.url)
+        return True
+    return False
+
+
+def drop_database_if_exists(ctx, engine):
+    if database_exists(engine.url):
+        ctx.log(green(' drop') + ' ~> new database `%r`' % engine.url)
         create_database(engine.url)
         return True
     return False

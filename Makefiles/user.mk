@@ -1,5 +1,5 @@
 MODULE=user
-SRCDIR=sources/core
+SRCDIR=oar
 
 # OARDIR_BINFILES = $(SRCDIR)/qfunctions/oarnodes \
 # 		  $(SRCDIR)/qfunctions/oardel \
