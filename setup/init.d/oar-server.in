@@ -4,7 +4,7 @@
 #
 # chkconfig: 2345 90 10
 # description: This script starts or stops the OAR resource manager
-# processname: Almighty
+# processname: almighty
 # config: /etc/oar/oar.conf
 # pidfile: /var/run/oar-server.pid
 
@@ -27,7 +27,7 @@ PATH=%%SBINDIR%%:%%BINDIR%%:/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 NAME=oar-server
 DESC="OAR server" 
 DAEMON=%%SBINDIR%%/oar-server
-DAEMON_NAME=Almighty
+DAEMON_NAME=almighty
 DAEMON_ARGS=""
 PIDFILE=%%RUNDIR%%/$NAME.pid
 SCRIPTNAME=%%INITDIR%%/$NAME
@@ -78,12 +78,12 @@ do_start() {
         fail_msg "SELinux is enabled, $DESC cannot be started."	
         exit 1
     fi
-
-    CHECK_STRING=$(oar-database --check > /dev/null 2>&1) 
-    if [ "$?" -ne "0" ]; then
-        fail_msg "OAR database seems not ready. See \`oar-database --check'"
-        exit 1
-    fi
+    # TODO		
+    #CHECK_STRING=$(oar-database --check > /dev/null 2>&1) 
+    #if [ "$?" -ne "0" ]; then
+    #    fail_msg "OAR database seems not ready. See \`oar-database --check'"
+    #    exit 1
+    #fi
     if pidofproc -p $PIDFILE $DAEMON > /dev/null; then
         warn_msg "$DESC is already running."
         exit 0

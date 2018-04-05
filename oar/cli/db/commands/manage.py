@@ -13,6 +13,7 @@ from ..helpers import (make_pass_decorator, Context, DATABASE_URL_PROMPT,
 
 from ..operations import create_db, drop_db, upgrade_db, reset_db, check_db
 
+
 class ManageContext(Context):
     @cached_property
     def current_db(self):
@@ -50,6 +51,7 @@ def create(ctx, **kwargs):
     """Create OAR database."""
     ctx.update_options(**kwargs)
     ctx.configure_log()
+    import pdb; pdb.set_trace()
     create_db(ctx)
 
 @cli.command()
