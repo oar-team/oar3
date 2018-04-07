@@ -56,18 +56,17 @@ build: build_shared
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	
 
 install: build install_shared
-	echo "Working directory $PWD"
-	pip install .
+	# pip install .
 	install -d $(DESTDIR)$(OARCONFDIR)
 	install -m 0750 $(OARCONFDIR_BINFILES) $(DESTDIR)$(OARCONFDIR)
+	for file in oar3-almighty oar3-appendice-proxy oar3-bipbip-commander \
+		oar3-sarko oar3-finaud oar3-leon oar3-bipbip oar3-node-change-state \
+		oar3-hulot kao kamelot kamelot-fifo;\
+	do \
+		mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
+	done
 
-	# install -m 0755 $(SRCDIR)/modules/almighty.pl $(DESTDIR)$(OARDIR)/Almighty
-	# install -m 0755 $(SRCDIR)/modules/leon.pl $(DESTDIR)$(OARDIR)/Leon
-	# install -m 0755 $(SRCDIR)/modules/sarko.pl $(DESTDIR)$(OARDIR)/sarko
-	# install -m 0755 $(SRCDIR)/modules/finaud.pl $(DESTDIR)$(OARDIR)/finaud
-	# install -m 0755 $(SRCDIR)/modules/node_change_state.pl $(DESTDIR)$(OARDIR)/NodeChangeState
-
-	 $(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(BINDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
+	$(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
 
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/Almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/Almighty
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
