@@ -6,7 +6,7 @@
 # - If not specified, the hostname will be retrieved with the 'hostname' command.
 # - "-a, --add" and "-r, --resource" or "--sql"  cannot be used at a same time.
 
-from oar import (VERSION)
+from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
@@ -22,9 +22,23 @@ import click
 click.disable_unicode_literals_warning = True
 
 
-def set_resources_properties(resources, hostnames, properties):
-    #TODO
-    pass
+def set_resources_properties(cmd_ret, resources, hostnames, properties):
+    for prop in properties:
+        name_value = prop.split('=')
+        if len(name_value) == 2:
+            name, value = name_value
+            if check_resource_system_property(name):
+                cmd_ret.warning('Cannot update property {} because it is a system field.'.format(name))
+                cmd_ret.exit_values.add(8)
+            else:
+                cmd_ret.print_("Set property {} to '{}'...".format(name, value))
+                ret = set_resources_property(resources, hostnames, name, value)
+                cmd_ret.print_('{} resource(s) updated.'.format(ret))
+                if ret <= 0:
+                    cmd_ret.exit_values.add(9)
+        else:
+            cmd_ret.warning('Bad property syntax: {}\n'.format(name_value))
+            cmd_ret.exit_values.add(10)
 
 def wait_end_of_running_jobs(jobs):
     #TODO
