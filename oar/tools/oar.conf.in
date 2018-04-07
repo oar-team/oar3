@@ -291,7 +291,7 @@ SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE="default"
 # Be carefull hierarchy labels must be declare below to be use in resource 
 # request. Labels' order does not matter here. Default value is
 # "resource_id,network_address,cpu,core" 
-#HIERARCHY_LABELS="resource_id,network_address,cpu,core" 
+HIERARCHY_LABELS="resource_id,network_address,cpu,core" 
 
 # Number of jobs which will be scheduled by scheduling round for each queue where Kamelot is used 
 # ***NOT LIMITED by default***
