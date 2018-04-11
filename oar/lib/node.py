@@ -137,12 +137,10 @@ def set_node_state(hostname, state, finaud_tag):
                                      and_(Resource.state == 'Suspected',
                                           Resource.finaud_decision == 'YES'))
                                  )
-        query = query.update({Resource.state: state,
-                              Resource.finaud_decision: finaud_tag,
-                              Resource.state_num: STATE2NUM[state]},
-                             synchronize_session=False)
-
-        nb_rows = db.execute(query).rowcount
+        nb_rows = query.update({Resource.state: state,
+                                Resource.finaud_decision: finaud_tag,
+                                Resource.state_num: STATE2NUM[state]},
+                               synchronize_session=False)
 
         if nb_rows == 0:
             # OAR wants to turn the node into Suspected state but it is not in

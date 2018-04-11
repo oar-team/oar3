@@ -69,6 +69,7 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
     parameters: resources or hostname to change, property name, value
     return : number of changed rows"""
 
+    #import pdb; pdb.set_trace()
     query = db.query(Resource.id)
     if hostnames:
         query = query.filter(Resource.network_address.in_(tuple(hostnames)))
@@ -82,18 +83,17 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
     nb_affected_rows = len(res)
 
     rids = tuple(r[0] for r in res)
-    
     if nb_resources > 0:
-        query = db.query(Resource)\
-                  .filter(Resource.id.in_(rids))\
-                  .update({getattr(Resource, prop_name): prop_value}, synchronize_session=False)
-        nb_affected_rows = db.execute(query).rowcount
+        nb_affected_row = db.query(Resource)\
+                            .filter(Resource.id.in_(rids))\
+                            .update({getattr(Resource, prop_name): prop_value},
+                                    synchronize_session=False)
         if  nb_affected_rows > 0:
             # Update LOG table
             date = tools.get_date()
             db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
                                  .filter(ResourceLog.attribute == prop_name)\
-                                 .filter(Resource.id.in_(rids))\
+                                 .filter(ResourceLog.resource_id.in_(rids))\
                                  .update({ResourceLog.date_stop: date}, synchronize_session=False)
             db.commit()
             # Insert Logs

@@ -10,7 +10,6 @@ import oar.lib.tools  # for monkeypatching
 fake_notifications = []
 
 NB_NODES=0
-NB_LINES_PER_NODE=3 # network_address: localhost\n resource_id: 1\n state: Alive\n
 
 def fake_notify_almighty(notification):
     global fake_notifications
@@ -39,7 +38,21 @@ def test_oarnodesetting_simple():
 
     #nb_lines = len(result.output_bytes.decode().split('\n'))
     #assert nb_lines == NB_LINES_PER_NODE * NB_NODES + 1 # + 1 for last \n
-    assert resource
+    assert resource.state == 'Alive'
     assert fake_notifications[-2:] == ['ChState', 'Term']
     assert result.exit_code == 0
+
+def test_oarnodesetting_core_cpu():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-a', '-p core=1', '-p cpu=2'])
+    print(result)
+    print(fake_notifications)
+    resource = db['Resource'].query.one()
+    print(resource)
+    #import pdb; pdb.set_trace()
+    assert resource.core == 1
+    assert resource.cpu == 2
+    assert fake_notifications[-2:] == ['ChState', 'Term']
+    assert result.exit_code == 0
+
 

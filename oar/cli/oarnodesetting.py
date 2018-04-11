@@ -26,7 +26,7 @@ click.disable_unicode_literals_warning = True
 
 def set_resources_properties(cmd_ret, resources, hostnames, properties):
     for prop in properties:
-        name_value = prop.split('=')
+        name_value = prop.lstrip().split('=')
         if len(name_value) == 2:
             name, value = name_value
             if check_resource_system_property(name):
@@ -182,7 +182,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
                 if (state in ['Dead', 'Absent']) and not no_wait:
                     for hosts in hosts_to_check:
-                        cmd_ret._print('Check jobs to delete on host: ' + host)
+                        cmd_ret.print_('Check jobs to delete on host: ' + host)
                         jobs = get_node_job_to_frag(host)
                         wait_end_of_running_jobs(jobs)
 
@@ -191,13 +191,13 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             properties.append('drain=YES')
         elif drain == 'off':
             properties.append('drain=NO')
-                              
+
     # Update properties
     if properties:
         if resources:
-            set_resources_properties(resources, None, properties)
+            set_resources_properties(cmd_ret, resources, None, properties)
         elif hostnames:
-            set_resources_properties(None, hostnames, properties)
+            set_resources_properties(cmd_ret, None, hostnames, properties)
         else:
             cmd_ret.warning('Cannot find resources to set in OAR database.', 2)
 
