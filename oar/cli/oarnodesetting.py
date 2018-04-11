@@ -10,6 +10,8 @@ from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
+from oar.lib.resource_handling import (set_resources_property, add_resource)
+from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
 
@@ -117,7 +119,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         #TODO
         value = get_resource_last_value_of_property(last_property_value)
         if value:
-            cmd_ret._print(str(value))
+            cmd_ret.print_(str(value))
         else:
             cmd_ret.warning('Cannot retrieve the last value for ' + last_property_value\
                          + '. Either no resource or no such property exists (yet).')
@@ -130,7 +132,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
         for host in hostnames:
             add_resource(host, state)
-            cmd_ret._print('New resource added: ' + host)
+            cmd_ret.print_('New resource added: ' + host)
 
         notify_server_tag_list.append('ChState')
         notify_server_tag_list.append('Term')
@@ -149,11 +151,11 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
                 if (state in ['Dead', 'Absent']) and not no_wait:
                     for resource in resources:
-                        cmd_ret._print('Check jobs to delete on resource: ' + resource)     
+                        cmd_ret.print_('Check jobs to delete on resource: ' + resource)     
                         jobs = get_resource_job_to_frag(resource)
                         wait_end_of_running_jobs(jobs)
                 elif state == 'Alive':
-                    cmd_ret._print('Done')
+                    cmd_ret.print_('Done')
 
             if maintenance:
                    set_maintenance(resources, maintenance, no_wait);
@@ -171,7 +173,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                 hosts_to_check = []
                 for host in hostnames:
                     if set_node_nextState(host, state):
-                        cmd_ret._print(host + ' --> ' + state)
+                        cmd_ret.print_(host + ' --> ' + state)
                         hosts_to_check.append(host)
                     else:
                         cmd_ret.warning('Node ' + host\

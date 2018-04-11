@@ -45,11 +45,11 @@ logger = get_logger("oar.modules.almighty", forward_stderr=True)
 logger.info('Start Almighty')
 # TODO
 # send_log_by_email("Start OAR server","[Almighty] Start Almighty");
-import pdb; pdb.set_trace()
+
 if 'OARDIR' in os.environ:
     binpath = os.environ['OARDIR'] + '/'
 else:
-    binpath = '/usr/local/lib/oar'
+    binpath = '/usr/local/lib/oar/'
     logger.warning("OARDIR env variable must be defined, set it to default value:" + binpath)
     os.environ['OARDIR'] = binpath
 
