@@ -56,7 +56,7 @@ build: build_shared
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	
 
 install: build install_shared
-	# pip install .
+
 	install -d $(DESTDIR)$(OARCONFDIR)
 	install -m 0750 $(OARCONFDIR_BINFILES) $(DESTDIR)$(OARCONFDIR)
 	for file in oar3-almighty oar3-appendice-proxy oar3-bipbip-commander \

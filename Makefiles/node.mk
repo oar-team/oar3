@@ -23,12 +23,14 @@ DEFAULTDIR_FILES = setup/default/oar-node.in \
 include Makefiles/shared/shared.mk
 
 build: build_shared
+
 	# $(MAKE) -f Makefiles/man.mk build
 
 clean: clean_shared
 	# $(MAKE) -f Makefiles/man.mk clean
 
 install: install_shared
+
 	install -d $(DESTDIR)$(OARCONFDIR)/check.d
 
 	install -d $(DESTDIR)$(DOCDIR)/oarnodecheck 
