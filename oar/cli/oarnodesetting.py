@@ -235,10 +235,10 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
 def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
         no_wait, last_property_value, version):
-    resources=resource
-    hostnames=hostname
-    filename=file
-    properties=property
+    resources = resource
+    hostnames = hostname
+    filename = file
+    properties = property
 
     cmd_ret = oarnodesetting(resources, hostnames, filename, sql, add, state,
                              maintenance, drain, properties, no_wait,

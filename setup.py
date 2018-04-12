@@ -91,6 +91,7 @@ setup(
     oarremoveresource3=oar.cli.oarremoveresource:cli
     oarnodesetting3=oar.cli.oarnodesetting:cli
     oaraccounting3=oar.cli.oaraccounting:cli
+    oarproperty3=oar.cli.oarproperty:cli
     oar2trace=oar.cli.oar2trace:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
