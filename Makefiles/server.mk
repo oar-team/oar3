@@ -62,14 +62,17 @@ install: build install_shared
 	install -m 0750 $(OARCONFDIR_BINFILES) $(DESTDIR)$(OARCONFDIR)
 	for file in oar3-almighty oar3-appendice-proxy oar3-bipbip-commander \
 		oar3-sarko oar3-finaud oar3-leon oar3-bipbip oar3-node-change-state \
-		oarproperty3 \
-		oar3-hulot kao kamelot kamelot-fifo;\
+		oarproperty3 oar3-hulot kao kamelot kamelot-fifo \
+		oarremoveresource3 oaraccounting3 \
+		oarnodes3 oardel3 oarstat3 oarsub3 oarhold3 oarresume3;\
 	do \
 		mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
 	done
 
 	$(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarproperty3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarremoveresource3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oaraccounting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
 
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue

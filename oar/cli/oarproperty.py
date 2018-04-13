@@ -68,7 +68,7 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
             # TODO
             pass
                
-    #db.close()
+    db.close()
     return cmd_ret
 
 @click.command()
