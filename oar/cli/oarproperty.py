@@ -59,11 +59,12 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
             if varchar:
                 db.op.add_column('resources', db.Column(prop_toadd, db.String(255), **kw))
             else:
-                db.op.add_column('resources', db.Column(prop_toadd, db.Integer, **kw))
+                #db.op.add_column('resources', db.Column(prop_toadd, db.Integer, **kw))
+                db.op.add_column('resources', db.Column(prop_toadd, db.String(255), **kw))
             if not quiet:
                cmd_ret.print_("Added property: {}".format(prop_toadd))
 
-    if prop_torename:
+    if rename:
         for prop_torename in rename:
             # TODO
             pass
