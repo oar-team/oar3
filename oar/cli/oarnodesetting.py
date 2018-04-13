@@ -55,7 +55,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
     notify_server_tag_list = []
     
-    cmd_ret = CommandReturns(cli)
+    cmd_ret = CommandReturns()
 
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)

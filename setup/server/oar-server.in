@@ -3,7 +3,7 @@
 use POSIX;
 
 my $pidfile="%%RUNDIR%%/oar-server.pid";
-my $AlmightyBin="%%SBINDIR%%/Almighty";
+my $AlmightyBin="%%SBINDIR%%/almighty";
 
 POSIX::setsid or die "setsid: $!";
 my $pid = fork ();
