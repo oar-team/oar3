@@ -2,7 +2,7 @@
 """ Functions to handle resource"""
 import os
 
-from sqlalchemy import (distinct, or_)
+from sqlalchemy import (distinct, text, or_)
 from oar.lib import (db, config, Resource, ResourceLog, Job, AssignedResource,
                      EventLog, FragJob, JobType, MoldableJobDescription, get_logger)
 from oar.lib.event import (add_new_event, is_an_event_exists)
@@ -75,8 +75,8 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
         query = query.filter(Resource.network_address.in_(tuple(hostnames)))
     else:
         query = query.filter(Resource.id.in_(tuple(resources)))
-
     query = query.filter(or_(getattr(Resource, prop_name) == prop_value, getattr(Resource, prop_name) == None))
+    #query = query.filter(text("( {} != '{}' OR {} IS NULL )".format(prop_name, prop_value, prop_name)))
     res = query.all()
     
     nb_resources = len(res)
