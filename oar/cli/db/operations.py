@@ -18,6 +18,8 @@ from oar.lib import models
 from oar.lib.utils import to_unicode, reraise
 from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
 
+import oar.lib.tools as tools
+
 from .helpers import green, magenta, yellow, blue, red
 from .alembic import alembic_sync_schema
 
@@ -104,6 +106,65 @@ jobs_table = [list(d.keys())[0] for d in JOBS_TABLES]
 moldable_jobs_tables = [list(d.keys())[0] for d in MOLDABLES_JOBS_TABLES]
 resources_tables = [list(d.keys())[0] for d in RESOURCES_TABLES]
 
+def create_db(ctx):
+    ctx.log('Creating the database user...\n')
+    db_user = ctx.conf['DB_BASE_LOGIN']
+    db_pass = ctx.conf['DB_BASE_PASSWD']
+    db_user_ro = ctx.conf['DB_BASE_LOGIN_RO']
+    db_pass_ro = ctx.conf['DB_BASE_PASSWD_RO']
+    db_name = ctx.conf['DB_BASE_NAME']
+
+    #
+    # TODO from setup/database/oar-database.in
+    # return system("echo \"$query\" | su - postgres -c \"psql $db\"");
+    #
+    
+    pgsql = 'psql -U postgres -c'
+    pgsql_db = 'psql {} -U postgres -c'.format(db_name)
+    
+    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
+               format(pgsql, db_user, db_pass), shell=True);
+    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
+               format(pgsql, db_user_ro, db_pass_ro), shell=True);
+    
+    ctx.log('Creating the database...\n')
+    tools.call("{} \"CREATE DATABASE {} OWNER {};\"".\
+               format(pgsql, db_name, db_user), shell=True);
+
+    tools.call("{} \"REVOKE CREATE ON SCHEMA public FROM PUBLIC;\"".\
+               format(pgsql_db), shell=True);
+
+    tools.call("{} \"GRANT CREATE ON SCHEMA public TO {};\"".\
+               format(pgsql_db, db_user), shell=True);
+
+    tools.call("{} \"GRANT ALL PRIVILEGES ON DATABASE {} TO {}\"".\
+               format(pgsql, db_name, db_user), shell=True);
+
+    engine = create_engine(ctx.current_db.engine.url)
+    # Create database
+    if not create_database_if_not_exists(ctx, engine):
+         ctx.log("\nNothing to do.")
+
+def drop_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    # Drop database
+    if not drop_database_if_exists(ctx, engine):
+         ctx.log("\nNothing to do.")
+
+def upgrade_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
+
+def reset_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
+
+def check_db(ctx):
+    engine = create_engine(ctx.current_db.engine.url)
+    ctx.log(red('NOT YET IMPLEMENTED'))
+    sys.exit(1)
 
 def get_table_columns(tables, table_name):
     return [d[table_name] for d in tables if table_name in d.keys()]
@@ -157,6 +218,14 @@ def get_first_primary_key(table):
 def create_database_if_not_exists(ctx, engine):
     if not database_exists(engine.url):
         ctx.log(green(' create') + ' ~> new database `%r`' % engine.url)
+        create_database(engine.url)
+        return True
+    return False
+
+
+def drop_database_if_exists(ctx, engine):
+    if database_exists(engine.url):
+        ctx.log(green(' drop') + ' ~> new database `%r`' % engine.url)
         create_database(engine.url)
         return True
     return False

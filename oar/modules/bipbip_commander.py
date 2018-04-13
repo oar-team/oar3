@@ -55,7 +55,7 @@ logger.info('Start Bipbip Commander')
 if 'OARDIR' in os.environ:
     binpath = os.environ['OARDIR'] if os.environ['OARDIR'][-1] == '/' else os.environ['OARDIR'] + '/'
 else:
-    binpath = '/usr/local/lib/oar/'
+    binpath = '/usr/local/lib/oar'
     os.environ['OARDIR'] = binpath
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 

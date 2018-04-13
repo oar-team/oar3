@@ -647,7 +647,7 @@ def meta_schedule(mode='internal', plt=Platform()):
     if 'OARDIR' in os.environ:
         binpath = os.environ['OARDIR'] + '/'
     else:
-        binpath = '/usr/local/lib/oar/'
+        binpath = '/usr/local/lib/oar'
         logger.warning(
             "OARDIR env variable must be defined, " + binpath + " is used by default")
 

@@ -52,7 +52,7 @@ setup(
     url='https://github.com/oar-team/oar3',
     packages=find_packages(),
     package_dir={'oar': 'oar'},
-    package_data={'oar': ['scripts/*.pl', 'scripts/*.pm', 'scripts/*.sh', 'scripts/oarexec']},
+    package_data={'oar': ['tools/*.pl', 'tools/*.pm', 'tools/*.sh', 'tools/oarexec']},
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],
@@ -77,6 +77,7 @@ setup(
     [console_scripts]
     oar3-database-migrate=oar.cli.db.commands.migrate:cli
     oar3-database-archive=oar.cli.db.commands.archive:cli
+    oar3-database-manage=oar.cli.db.commands.manage:cli
     oar3-almighty=oar.modules.almighty:main
     oar3-bipbip-commander=oar.modules.bipbip_commander:main
     oar3-appendice-proxy=oar.modules.appendice_proxy:main
@@ -90,6 +91,7 @@ setup(
     oarremoveresource3=oar.cli.oarremoveresource:cli
     oarnodesetting3=oar.cli.oarnodesetting:cli
     oaraccounting3=oar.cli.oaraccounting:cli
+    oarproperty3=oar.cli.oarproperty:cli
     oar2trace=oar.cli.oar2trace:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main

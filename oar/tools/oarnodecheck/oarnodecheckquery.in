@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CHECKLOGDIR=%%OARHOMEDIR%%/checklogs
+CHECKSCRIPTDIR=%%OARCONFDIR%%/check.d
+OARNODECHECKRUN=%%OARDIR%%/oarnodecheckrun
+OARDODO=%%OARDIR%%/oardodo/oardodo
+STAMPFILE=%%OARHOMEDIR%%/oarnodecheckrun.lastrun
+DELAY=3600 # seconds
+
+shopt -s nullglob
+
+# Run oarnodecheck if not run before or if last run is older then DELAY
+if ! [ -f $STAMPFILE ] || [ $(($(date +"%s") - $(stat --printf="%Y" $STAMPFILE))) -ge $DELAY  ]; then
+  SUDO=""
+  # Run as root
+  [ "$UID" -eq 0 ] || SUDO="$OARDODO"
+  $SUDO $OARNODECHECKRUN || exit 1
+fi
+
+# If any log file exists, check failed
+for f in $CHECKLOGDIR/*; do
+	exit 2
+done
+exit 0

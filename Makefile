@@ -1,95 +1,193 @@
-SHELL := /bin/bash
+#/usr/bin/make
+# $Id$
+export SHELL=/bin/bash
 
-# these files should pass flakes8
-FLAKE8_WHITELIST=$(shell find . -name "*.py" \
-                    ! -path "./docs/*" ! -path "./.tox/*" \
-                    ! -path "./env/*" ! -path "./venv/*" \
-                    ! -path "**/compat.py")
-
-open := $(shell { which xdg-open || which open; } 2>/dev/null)
-
-.PHONY: clean-pyc clean-build docs clean
+# Modules that can be builded
+MODULES = server user node monika drawgantt drawgantt-svg doc api www-conf common common-libs database  
 
 
-help:  ## This help dialog.
-	@IFS=$$'\n' ; \
-	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
-	printf "%-15s %s\n" "target" "help" ; \
-	printf "%-15s %s\n" "------" "----" ; \
-	for help_line in $${help_lines[@]}; do \
-		IFS=$$':' ; \
-		help_split=($$help_line) ; \
-		help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		printf '\033[36m'; \
-		printf "%-15s %s" $$help_command ; \
-		printf '\033[0m'; \
-		printf "%s\n" $$help_info; \
-	done
+MODULES_LIST= $(patsubst %,% |, $(MODULES))|
+OPTIONS_LIST= OARCONFDIR | OARUSER | OAROWNER | PREFIX | OARDIR | BINDIR | SBINDIR | DOCDIR 
+
+# Define the makefile targets
+TARGETS_SUFFIX = build clean install uninstall
+
+TARGETS_BUILD     = $(MODULES:=-build)
+TARGETS_CLEAN     = $(MODULES:=-clean)
+TARGETS_INSTALL   = $(MODULES:=-install)
+TARGETS_SETUP     = $(MODULES:=-setup)
+TARGETS_UNINSTALL = $(MODULES:=-uninstall)
+TARGETS = $(TARGETS_BUILD) $(TARGETS_CLEAN) $(TARGETS_INSTALL) $(TARGETS_UNINSTALL) $(TARGETS_SETUP)
+
+all:       usage
+build:     $(TARGETS_BUILD)
+install:   $(TARGETS_INSTALL)
+clean:     $(TARGETS_CLEAN)
+uninstall: $(TARGETS_UNINSTALL)
+setup:     $(TARGETS_SETUP)
+
+tarball: .git
+	./misc/make_tarball
+
+.git:
+	@echo "Must be used from a git repository!"
+	exit 1
+
+usage:
+	@echo "Usage: make [ OPTIONS=<...> ] [MODULES-]{install|build|clean|uninstall|setup}"
+	@echo ""
+	@echo "Where MODULES := { $(MODULES_LIST:||=) }"
+	@echo ""
+	@echo "      OPTIONS := { $(OPTIONS_LIST) }"
+
+sanity-check:
+	@[ "`id root`" = "`id`" ] || echo "Warning: root-privileges are required to install some files !"
+
+sanity-setup-check: sanity-check
+	@id $(OAROWNER) > /dev/null || ( echo "Error: User $(OAROWNER) does not exist!" ; exit -1 )
 
 
-init:  ## Install the project in development mode (using virtualenv is highly recommended)
-	pip install -e .
-	pip install -U setuptools pip
-	pip install sphinx sphinx-readable-theme tox ipdb jedi pytest pytest-cov flake8 wheel bumpversion httpie
+# Meta targets
+$(TARGETS_BUILD):     MODULE = $(patsubst %-build,%,$@)
+$(TARGETS_BUILD):     ACTION = build
+$(TARGETS_INSTALL):   MODULE = $(patsubst %-install,%,$@) 
+$(TARGETS_INSTALL):   ACTION = install
+$(TARGETS_SETUP):     MODULE = $(patsubst %-setup,%,$@) 
+$(TARGETS_SETUP):     ACTION = setup
+$(TARGETS_UNINSTALL): MODULE = $(patsubst %-uninstall,%,$@) 
+$(TARGETS_UNINSTALL): ACTION = uninstall 
+$(TARGETS_CLEAN):     MODULE = $(patsubst %-clean,%,$@) 
+$(TARGETS_CLEAN):     ACTION = clean 
 
-clean: clean-build clean-pyc clean-test  ## Remove all build, test, coverage and Python artifacts
+$(TARGETS_INSTALL):  sanity-check
+	$(MAKE) $(strip $(MODULE))-build
+	$(MAKE) -f Makefiles/$(strip $(MODULE)).mk install
 
-clean-build:  ## Remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+$(TARGETS_UNINSTALL):
+	$(MAKE) -f Makefiles/$(strip $(MODULE)).mk uninstall
 
-clean-pyc:  ## Remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
+$(TARGETS_CLEAN):
+	$(MAKE) -f Makefiles/$(strip $(MODULE)).mk clean
 
-clean-test:  ## Eemove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
+$(TARGETS_BUILD):
+	$(MAKE) -f Makefiles/$(strip $(MODULE)).mk build
 
-test:  ## Run tests quickly with the default Python
-	py.test --verbose
+$(TARGETS_SETUP):
+	-$(MAKE) -s -f Makefiles/$(strip $(MODULE)).mk setup
 
-testall:  ## Run tests on every Python version with tox
-	tox
 
-coverage: ## Check code coverage quickly with the default Python
-	coverage erase
-	tox $(TOX)
-	coverage combine
-	coverage report --include=* -m
-	coverage html
-	$(open) htmlcov/index.html
+# Dependencies
+server-setup: common-setup common-libs-setup database-setup
+server-install: sanity-check common-install common-libs-install database-install	
+server-clean: common-clean common-libs-clean database-clean 
+server-build: common-build common-libs-build database-build 
+server-uninstall: common-uninstall common-libs-uninstall database-uninstall 
 
-lint:  ## Check style with flake8
-	flake8 $(FLAKE8_WHITELIST)
+user-setup: common-setup common-libs-setup
+user-install: sanity-check common-install common-libs-install
+user-clean: common-clean common-libs-clean
+user-build: common-build common-libs-build
+user-uninstall: common-uninstall common-libs-uninstall
 
-docs:  ## Generate Sphinx HTML documentation, including API docs
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
-	$(open) docs/_build/html/index.html
+node-setup: common-setup
+node-install: sanity-check common-install
+node-clean: common-clean 
+node-build: common-build 
+node-uninstall: common-uninstall
 
-dist: clean  ## Package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
+drawgantt-setup: www-conf-setup
+drawgantt-install: www-conf-install
+drawgantt-clean: www-conf-clean
+drawgantt-build: www-conf-build
+drawgantt-uninstall: www-conf-uninstall
 
-release: clean  ## Package and upload a release
-	python setup.py register
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+drawgantt-svg-setup: www-conf-setup
+drawgantt-svg-install: www-conf-install
+drawgantt-svg-clean: www-conf-clean
+drawgantt-svg-build: www-conf-build
+drawgantt-svg-uninstall: www-conf-uninstall
 
-bumpversion:  ## Bump the release version
-	@python scripts/bumpversion.py release
+monika-setup: www-conf-setup
+monika-install: www-conf-install
+monika-clean: www-conf-clean
+monika-build: www-conf-build
+monika-uninstall: www-conf-uninstall
 
-newversion:  ## Set the new development version
-	@python scripts/bumpversion.py newversion $(filter-out $@,$(MAKECMDGOALS))
+tools-setup: common-setup common-libs-setup
+tools-install: sanity-check common-install common-libs-install
+tools-clean: common-clean common-libs-clean
+tools-build: common-build common-libs-build
+tools-uninstall: common-uninstall common-libs-uninstall
 
-%:
-	@:
+api-setup: common-setup common-libs-setup
+api-install: sanity-check common-install common-libs-install
+api-build: common-build common-libs-build
+api-clean: common-clean common-libs-clean
+api-uninstall: common-uninstall common-libs-uninstall
+
+
+P_ACTIONS = build install clean
+P_TARGETS = $(addprefix packages-%,$(P_ACTIONS))
+
+packages-build:    P_ACTION = build
+packages-install:  P_ACTION = install
+packages-clean:    P_ACTION = clean 
+
+$(P_TARGETS):
+    # oar-doc
+	$(MAKE) -f Makefiles/doc.mk $(P_ACTION) \
+	    DESTDIR=$(PACKAGES_DIR)/oar-doc
+
+    # oar-common
+	mkdir -p $(PACKAGES_DIR)/oar-common/var/lib/oar	
+	$(MAKE) -f Makefiles/common.mk $(P_ACTION) \
+	    DESTDIR=$(PACKAGES_DIR)/oar-common
+
+    # oar-server
+	mkdir -p $(PACKAGES_DIR)/oar-server/var/lib/oar
+	$(MAKE) -f Makefiles/server.mk $(P_ACTION)\
+    SHAREDIR=/usr/share/oar/oar-server \
+                DESTDIR=$(PACKAGES_DIR)/oar-server
+
+	$(MAKE) -f Makefiles/database.mk $(P_ACTION)\
+                DESTDIR=$(PACKAGES_DIR)/oar-server \
+    SHAREDIR=/usr/share/oar/oar-server \
+		DOCDIR=/usr/share/doc/oar-server
+
+    # oar-node
+	mkdir -p $(PACKAGES_DIR)/oar-node/var/lib/oar
+	mkdir -p $(PACKAGES_DIR)/oar-node/etc/init.d
+	$(MAKE) -f Makefiles/node.mk $(P_ACTION)\
+                DESTDIR=$(PACKAGES_DIR)/oar-node
+
+    # oar-user
+	mkdir -p $(PACKAGES_DIR)/oar-user/var/lib/oar
+	$(MAKE) -f Makefiles/user.mk $(P_ACTION)\
+                DESTDIR=$(PACKAGES_DIR)/oar-user 
+
+    # oar-web-status
+	$(MAKE) -f Makefiles/monika.mk $(P_ACTION) \
+                DESTDIR=$(PACKAGES_DIR)/oar-web-status \
+		DOCDIR=/usr/share/doc/oar-web-status \
+		SHAREDIR=/usr/share/oar/oar-web-status \
+		WWWDIR=/usr/share/oar-web-status
+	$(MAKE) -f Makefiles/drawgantt-svg.mk $(P_ACTION) \
+                DESTDIR=$(PACKAGES_DIR)/oar-web-status \
+		DOCDIR=/usr/share/doc/oar-web-status \
+		SHAREDIR=/usr/share/oar/oar-web-status \
+		WWWDIR=/usr/share/oar-web-status
+	$(MAKE) -f Makefiles/www-conf.mk $(P_ACTION) \
+                DESTDIR=$(PACKAGES_DIR)/oar-web-status \
+		DOCDIR=/usr/share/doc/oar-web-status \
+		SHAREDIR=/usr/share/oar/oar-web-status \
+		WWWDIR=/usr/share/oar-web-status
+
+    # oar-restful-api
+	$(MAKE) -f Makefiles/api.mk $(P_ACTION) \
+	    DOCDIR=/usr/share/doc/oar-restful-api \
+	    DESTDIR=$(PACKAGES_DIR)/oar-restful-api 
+
+    # keyring
+	$(MAKE) -f Makefiles/keyring.mk $(P_ACTION) \
+	    DESTDIR=$(PACKAGES_DIR)/oar-keyring 
+

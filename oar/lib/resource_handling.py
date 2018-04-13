@@ -2,7 +2,7 @@
 """ Functions to handle resource"""
 import os
 
-from sqlalchemy import distinct
+from sqlalchemy import (distinct, text, or_)
 from oar.lib import (db, config, Resource, ResourceLog, Job, AssignedResource,
                      EventLog, FragJob, JobType, MoldableJobDescription, get_logger)
 from oar.lib.event import (add_new_event, is_an_event_exists)
@@ -13,6 +13,26 @@ import oar.lib.tools as tools
 State_to_num = {'Alive': 1, 'Absent': 2, 'Suspected': 3, 'Dead': 4}
 
 logger = get_logger('oar.lib.resource_handling')
+
+def add_resource(name, state):
+    """ Adds a new resource in the table resources and resource_properties
+    # parameters : base, name, state
+    # return value : new resource id"""
+    ins = Resource.__table__.insert().values({
+        Resource.network_address.name: name,
+        Resource.state.name: state,
+        Resource.state_num: State_to_num[state]})
+    result = db.session.execute(ins)
+    r_id = result.inserted_primary_key[0]
+
+    date = tools.get_date()
+
+    ins = ResourceLog.__table__.insert().values(
+        {ResourceLog.resource_id.name: r_id, ResourceLog.attribute.name: 'state',
+         ResourceLog.value.name: state, ResourceLog.date_start.name: date})
+    db.session.execute(ins)
+
+    return r_id
 
 def get_resource(resource_id):
     return db.query(Resource).filter(Resource.id == resource_id).one()
@@ -43,6 +63,53 @@ def set_resource_nextState(resource_id, next_state):
                       .update({Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
     db.commit()
 
+
+def set_resources_property(resources, hostnames, prop_name, prop_value):
+    """Change a property value in the resource table
+    parameters: resources or hostname to change, property name, value
+    return : number of changed rows"""
+
+    #import pdb; pdb.set_trace()
+    query = db.query(Resource.id)
+    if hostnames:
+        query = query.filter(Resource.network_address.in_(tuple(hostnames)))
+    else:
+        query = query.filter(Resource.id.in_(tuple(resources)))
+    query = query.filter(or_(getattr(Resource, prop_name) == prop_value, getattr(Resource, prop_name) == None))
+    #query = query.filter(text("( {} != '{}' OR {} IS NULL )".format(prop_name, prop_value, prop_name)))
+    res = query.all()
+    
+    nb_resources = len(res)
+    nb_affected_rows = len(res)
+
+    rids = tuple(r[0] for r in res)
+    if nb_resources > 0:
+        nb_affected_row = db.query(Resource)\
+                            .filter(Resource.id.in_(rids))\
+                            .update({getattr(Resource, prop_name): prop_value},
+                                    synchronize_session=False)
+        if  nb_affected_rows > 0:
+            # Update LOG table
+            date = tools.get_date()
+            db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
+                                 .filter(ResourceLog.attribute == prop_name)\
+                                 .filter(ResourceLog.resource_id.in_(rids))\
+                                 .update({ResourceLog.date_stop: date}, synchronize_session=False)
+            db.commit()
+            # Insert Logs
+            resource_logs = []
+            for rid in rids:
+                resource_logs.append({ResourceLog.resource_id.name: rid,
+                                      ResourceLog.attribute.name: prop_name,
+                                      ResourceLog.value.name: prop_value,
+                                      ResourceLog.date_start.name: date})
+            db.session.execute(ResourceLog.__table__.insert(), resource_logs)
+            db.commit()
+        else:
+            logger.warning('Failed to update resources')
+
+    return nb_affected_rows
+    
 def remove_resource(resource_id, user=None):
     """Remove resource"""
 
@@ -98,13 +165,13 @@ def get_current_assigned_job_resources(moldable_id):
                       .all()
     return res
     
-def  get_resources_change_state():
+def get_resources_change_state():
     """Get resource ids that will change their state"""
     res = db.query(Resource.id, Resource.next_state).filter(Resource.next_state != 'UnChanged').all()
     return {r.id: r.next_state for r in res}
 
                 
-def  get_expired_resources():
+def get_expired_resources():
     """Get the list of resources whose expiry_date is in the past and which are not dead yet.
     0000-00-00 00:00:00 is always considered as in the future. Used for desktop computing schema."""
     # TODO: UNUSED (Desktop computing)
