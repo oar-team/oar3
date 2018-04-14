@@ -19,8 +19,8 @@ def add_resource(name, state):
     # parameters : base, name, state
     # return value : new resource id"""
     ins = Resource.__table__.insert().values({
-        Resource.network_address.name: name,
-        Resource.state.name: state,
+        Resource.network_address: name,
+        Resource.state: state,
         Resource.state_num: State_to_num[state]})
     result = db.session.execute(ins)
     r_id = result.inserted_primary_key[0]
@@ -28,8 +28,8 @@ def add_resource(name, state):
     date = tools.get_date()
 
     ins = ResourceLog.__table__.insert().values(
-        {ResourceLog.resource_id.name: r_id, ResourceLog.attribute.name: 'state',
-         ResourceLog.value.name: state, ResourceLog.date_start.name: date})
+        {ResourceLog.resource_id: r_id, ResourceLog.attribute: 'state',
+         ResourceLog.value: state, ResourceLog.date_start: date})
     db.session.execute(ins)
 
     return r_id
@@ -53,8 +53,9 @@ def set_resource_state(resource_id, state, finaud_decision):
                          .update({ResourceLog.date_stop: date})
 
     ins = ResourceLog.__table__.insert().values(
-        {'resource_id': resource_id, 'attribute': 'state', 'value': state,
-         'date_start': date, 'finaud_decision': finaud_decision})
+        {ResourceLog.resource_id: resource_id, ResourceLog.attribute: 'state',
+         ResourceLog.value: state, ResourceLog.date_start: date,
+         ResourceLog.finaud_decision: finaud_decision})
     db.session.execute(ins)
 
 def set_resource_nextState(resource_id, next_state):
@@ -99,10 +100,10 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
             # Insert Logs
             resource_logs = []
             for rid in rids:
-                resource_logs.append({ResourceLog.resource_id.name: rid,
-                                      ResourceLog.attribute.name: prop_name,
-                                      ResourceLog.value.name: prop_value,
-                                      ResourceLog.date_start.name: date})
+                resource_logs.append({ResourceLog.resource_id: rid,
+                                      ResourceLog.attribute: prop_name,
+                                      ResourceLog.value: prop_value,
+                                      ResourceLog.date_start: date})
             db.session.execute(ResourceLog.__table__.insert(), resource_logs)
             db.commit()
         else:
