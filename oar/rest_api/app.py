@@ -15,8 +15,6 @@ from .views import register_blueprints
 from .errors import register_error_handlers
 from .extensions import register_extensions
 from .hooks import register_hooks
-#from .proxy import register_proxy
-
 
 default_config = {
     "API_TRUST_IDENT": 1,
@@ -26,7 +24,7 @@ default_config = {
 }
 
 
-def create_app(**kwargs):
+def create_app():
     """Return the OAR API application instance."""
     app = Flask(__name__)
     app.wsgi_app = WSGIProxyFix(app.wsgi_app)
@@ -39,7 +37,6 @@ def create_app(**kwargs):
     register_hooks(app)
     register_extensions(app)
     register_blueprints(app)
-    #register_proxy(app, **kwargs)
     
     return app
     
