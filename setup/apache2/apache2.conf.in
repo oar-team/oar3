@@ -14,8 +14,14 @@ Listen 6668
 <VirtualHost *:6668>
 
 # Aliases to the API.
-ScriptAlias /oarapi %%CGIDIR%%/oarapi/oarapi.cgi
-ScriptAlias /oarapi-public %%CGIDIR%%/oarapi/oarapi.cgi
+WSGIDaemonProcess oarapi user=oar group=oar threads=5
+WSGIScriptAlias /oarapi %%CGIDIR%%/oarapi/oarapi.wsgi  
+WSGIScriptAlias /oarapi-public %%CGIDIR%%/oarapi/oarapi.wsgi
+WSGIScriptAlias /oarapi-priv %%CGIDIR%%/oarapi/oarapi.wsgi
+       
+# Aliases to the API.
+#ScriptAlias /oarapi %%CGIDIR%%/oarapi/oarapi.cgi
+#ScriptAlias /oarapi-public %%CGIDIR%%/oarapi/oarapi.cgi
 #ScriptAlias /oarapi-debug %%CGIDIR%%/oarapi/oarapi-debug.cgi
 #ScriptAlias /oarapi-priv %%CGIDIR%%/oarapi/oarapi.cgi
 #ScriptAlias /oarapi-cigri %%CGIDIR%%/oarapi/oarapi.cgi
@@ -26,26 +32,34 @@ ScriptAlias /oarapi-public %%CGIDIR%%/oarapi/oarapi.cgi
 </IfModule>
 
 # Default options for the oar api
-<Directory %%CGIDIR%%/oarapi>
-  Options +ExecCGI -MultiViews +FollowSymLinks
-
+<Directory %%CGIDIR%%/oarapi>    
   SetEnv OARCONFFILE %%ETCDIR%%/oar/oar.conf
-
-  # FastCGI handler
-  <IfModule mod_fcgid.c>
-     AddHandler fcgid-script .cgi
-  </IfModule>
-
-  <IfVersion >= 2.3>
-    Require local
-  </IfVersion> 
-  <IfVersion < 2.3>
-    Order Deny,Allow
-    Deny from all
-    Allow from             localhost
-    Allow from             localhost.localdomain
-    </IfVersion>   
+  WSGIProcessGroup oarapi
+  WSGIApplicationGroup %{GLOBAL}
+  Require all granted
 </Directory>
+
+
+# <Directory %%CGIDIR%%/oarapi>
+#   Options +ExecCGI -MultiViews +FollowSymLinks
+
+#   SetEnv OARCONFFILE %%ETCDIR%%/oar/oar.conf
+
+#   # FastCGI handler
+#   <IfModule mod_fcgid.c>
+#      AddHandler fcgid-script .cgi
+#   </IfModule>
+
+#   <IfVersion >= 2.3>
+#     Require local
+#   </IfVersion> 
+#   <IfVersion < 2.3>
+#     Order Deny,Allow
+#     Deny from all
+#     Allow from             localhost
+#     Allow from             localhost.localdomain
+#     </IfVersion>   
+# </Directory>
 
 # Set the X_API_PATH_PREFIX variable to value of the header of the same name
 <IfModule rewrite_module>

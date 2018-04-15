@@ -400,13 +400,10 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
             str_res_value_lst = str_res_req.split('/')
 
             resources = []  # resources = [{resource: r, value: v}]
-
             for str_res_value in str_res_value_lst:
-
                 if str_res_value.lstrip():  # to filter first and last / if any "/nodes=1" or "/nodes=1/
                     # remove  first and trailing spaces"
-                    str_res_value_wo_spc = str_res_value.lstrip()
-                    res_value = str_res_value_wo_spc.split('=')
+                    res_value = str_res_value.lstrip().split('=')
                     res = res_value[0]
                     value = res_value[1]
                     if res == 'nodes':
