@@ -6,8 +6,8 @@ SRCDIR=.
 
 # OARDIR_BINFILES = $(SRCDIR)/oarapi.pl
 
-SHAREDIR_FILES = $(SRCDIR)/setup/apache2/apache2.conf.in
-# 		   $(SRCDIR)/api_html_header.pl \
+SHAREDIR_FILES = $(SRCDIR)/setup/apache2/apache2.conf.in \
+		   $(SRCDIR)/setup/apache2/oarapi.wsgi
 # 		   $(SRCDIR)/api_html_postform.pl \
 # 		   $(SRCDIR)/api_html_postform_resources.pl \
 # 		   $(SRCDIR)/api_html_postform_rule.pl \

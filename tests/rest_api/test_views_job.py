@@ -339,3 +339,15 @@ def test_app_jobs_resume(client, monkeypatch):
 #           'state': Arg([str, ','], dest='states'),
 #           'array': Arg(int, dest='array_id'),
 #           'ids'
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_job_post_bug1(client):
+    # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
+    data = {'resource':['nodes=1,walltime=00:10:0'], 'command':'sleep "1"'}
+    res = client.post(url_for('jobs.submit'), data=data, headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    job_ids = db.query(Job.id).all()
+    href = '/jobs/{}'.format(job_ids[0][0])
+    assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
+    assert res.status_code == 200

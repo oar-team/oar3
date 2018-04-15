@@ -12,7 +12,7 @@ api_setup() {
 
     install_conffile \
         ${SHAREDIR}/oarapi.wsgi \
-        ${CGIDIR}/oarapi//oarapi.wsgi \
+        ${CGIDIR}/oarapi/oarapi.wsgi \
         0644 ${OAROWNER}
 
     # install_conffile \
@@ -61,6 +61,4 @@ api_setup() {
     fi
     
     set_rights ${CGIDIR}/oarapi                  0755 ${OAROWNER} ${OAROWNERGROUP}
-    set_rights ${CGIDIR}/oarapi/oarapi.cgi       0755 ${OAROWNER} ${OAROWNERGROUP}
-    #set_rights ${CGIDIR}/oarapi/oarapi-debug.cgi 0755 ${OAROWNER} ${OAROWNERGROUP}
 }
