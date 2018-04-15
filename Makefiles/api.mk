@@ -1,12 +1,12 @@
 MODULE=api
 
-# SRCDIR= sources/api
+SRCDIR=.
 
 # OAR_PERLLIB = $(SRCDIR)/lib
 
 # OARDIR_BINFILES = $(SRCDIR)/oarapi.pl
 
-# SHAREDIR_FILES = $(SRCDIR)/apache2.conf.in \
+SHAREDIR_FILES = $(SRCDIR)/setup/apache2/apache2.conf.in
 # 		   $(SRCDIR)/api_html_header.pl \
 # 		   $(SRCDIR)/api_html_postform.pl \
 # 		   $(SRCDIR)/api_html_postform_resources.pl \
@@ -30,18 +30,18 @@ build: build_shared
 	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarapi.pl CMD_TARGET=$(DESTDIR)$(CGIDIR)/oarapi/oarapi-debug.cgi
 
 install: install_shared
-	#install -d $(DESTDIR)$(CGIDIR)
-	#install -d $(DESTDIR)$(CGIDIR)/oarapi
+	install -d $(DESTDIR)$(CGIDIR)
+	install -d $(DESTDIR)$(CGIDIR)/oarapi
 	#$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarapi.pl CMD_TARGET=$(DESTDIR)$(CGIDIR)/oarapi/oarapi.cgi
 	#$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarapi.pl CMD_TARGET=$(DESTDIR)$(CGIDIR)/oarapi/oarapi-debug.cgi
 
 uninstall: uninstall_shared
 	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarapi.pl CMD_TARGET=$(DESTDIR)$(CGIDIR)/oarapi/oarapi.cgi
 	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarapi.pl CMD_TARGET=$(DESTDIR)$(CGIDIR)/oarapi/oarapi-debug.cgi
-	#-rmdir \
-	#    $(DESTDIR)$(CGIDIR)/oarapi
-	#-rmdir \
-	#    $(DESTDIR)$(CGIDIR)
+	-rmdir \
+	    $(DESTDIR)$(CGIDIR)/oarapi
+	-rmdir \
+	    $(DESTDIR)$(CGIDIR)
 
 
 .PHONY: install setup uninstall build clean

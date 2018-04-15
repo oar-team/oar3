@@ -10,30 +10,30 @@ api_setup() {
         ${OARCONFDIR}/apache2/oar-restful-api.conf \
         0600 ${WWWUSER}
 
-    install_conffile \
-        ${SHAREDIR}/api_html_header.pl \
-        ${OARCONFDIR}/api_html_header.pl \
-        0600 ${OAROWNER}
+    # install_conffile \
+    #     ${SHAREDIR}/api_html_header.pl \
+    #     ${OARCONFDIR}/api_html_header.pl \
+    #     0600 ${OAROWNER}
 
-    install_conffile \
-        ${SHAREDIR}/api_html_postform.pl \
-        ${OARCONFDIR}/api_html_postform.pl \
-        0644 ${OAROWNER}
+    # install_conffile \
+    #     ${SHAREDIR}/api_html_postform.pl \
+    #     ${OARCONFDIR}/api_html_postform.pl \
+    #     0644 ${OAROWNER}
 
-    install_conffile \
-        ${SHAREDIR}/api_html_postform_resources.pl \
-        ${OARCONFDIR}/api_html_postform_resources.pl \
-        0644 ${OAROWNER}
+    # install_conffile \
+    #     ${SHAREDIR}/api_html_postform_resources.pl \
+    #     ${OARCONFDIR}/api_html_postform_resources.pl \
+    #     0644 ${OAROWNER}
 
-    install_conffile \
-        ${SHAREDIR}/api_html_postform_rule.pl \
-        ${OARCONFDIR}/api_html_postform_rule.pl \
-        0644 ${OAROWNER}
+    # install_conffile \
+    #     ${SHAREDIR}/api_html_postform_rule.pl \
+    #     ${OARCONFDIR}/api_html_postform_rule.pl \
+    #     0644 ${OAROWNER}
 
-    install_conffile \
-        ${SHAREDIR}/stress_factor.sh \
-        ${OARCONFDIR}/stress_factor.sh \
-        0700 ${OAROWNER}
+    # install_conffile \
+    #     ${SHAREDIR}/stress_factor.sh \
+    #     ${OARCONFDIR}/stress_factor.sh \
+    #     0700 ${OAROWNER}
 
     # Install the apache2 configuration file
     #
@@ -61,6 +61,6 @@ api_setup() {
     fi
     
     set_rights ${CGIDIR}/oarapi                  0755 ${OAROWNER} ${OAROWNERGROUP}
-    set_rights ${CGIDIR}/oarapi/oarapi.cgi       0755 ${OAROWNER} ${OAROWNERGROUP}
-    set_rights ${CGIDIR}/oarapi/oarapi-debug.cgi 0755 ${OAROWNER} ${OAROWNERGROUP}
+    #set_rights ${CGIDIR}/oarapi/oarapi.cgi       0755 ${OAROWNER} ${OAROWNERGROUP}
+    #set_rights ${CGIDIR}/oarapi/oarapi-debug.cgi 0755 ${OAROWNER} ${OAROWNERGROUP}
 }

@@ -1,0 +1,264 @@
+# Apache2 configuration for the OAR API
+
+# WARNING: the OAR API requires Apache fastcgi and a way for the httpd user to
+# become oar. This can be achieved using Apache suexec. But since the suexec
+# mechanism is global to a virtual host, enabling it for the OAR API might
+# break other CGI programs (e.g. monika). As a result, a solution is to setup
+# several virtual hosts. The configuration proposed below sets a port based 
+# virtual host listening on 6668.
+# Furthermore the suexec user cannot have a system UID, which is the case of 
+# the oar user by default. One may need to change that uid (e.g. on Centos).
+
+#Virtual host to isolate the oar-restful-api (suexec) setup
+Listen 6668
+<VirtualHost *:6668>
+
+# Aliases to the API.
+ScriptAlias /oarapi %%CGIDIR%%/oarapi/oarapi.cgi
+ScriptAlias /oarapi-public %%CGIDIR%%/oarapi/oarapi.cgi
+#ScriptAlias /oarapi-debug %%CGIDIR%%/oarapi/oarapi-debug.cgi
+#ScriptAlias /oarapi-priv %%CGIDIR%%/oarapi/oarapi.cgi
+#ScriptAlias /oarapi-cigri %%CGIDIR%%/oarapi/oarapi.cgi
+
+# Suexec configuration
+<IfModule mod_suexec.c>
+         SuexecUserGroup oar oar
+</IfModule>
+
+# Default options for the oar api
+<Directory %%CGIDIR%%/oarapi>
+  Options +ExecCGI -MultiViews +FollowSymLinks
+
+  SetEnv OARCONFFILE %%ETCDIR%%/oar/oar.conf
+
+  # FastCGI handler
+  <IfModule mod_fcgid.c>
+     AddHandler fcgid-script .cgi
+  </IfModule>
+
+  <IfVersion >= 2.3>
+    Require local
+  </IfVersion> 
+  <IfVersion < 2.3>
+    Order Deny,Allow
+    Deny from all
+    Allow from             localhost
+    Allow from             localhost.localdomain
+    </IfVersion>   
+</Directory>
+
+# Set the X_API_PATH_PREFIX variable to value of the header of the same name
+<IfModule rewrite_module>
+   RewriteEngine On
+   RewriteCond %{HTTP:X_API_PATH_PREFIX}  (.*)
+   RewriteRule .* - [E=X_API_PATH_PREFIX:%1]
+</IfModule>
+
+# By URI options
+# This is where you should pay attention to security!
+# The OAR API trusts the X_REMOTE_IDENT header variable to be the login name
+# of the user that makes the query if there is no other authentication mechanism
+# (ie basic auth).
+# Such a header variable is set by the http client. So, you should at least
+# unset this variable (to disable auth) or erase it with something generated or
+# filtered by the current apache configuration. 
+# Note that you can disable the X_REMOTE_IDENT trusting by setting API_TRUST_IDENT
+# to 0 into the oar.conf file.
+
+# In this first example, we set up a public API that will never satisfy requests
+# that need authentication (for example /jobs/100 will do a 401)
+<Location /oarapi-public>
+  # IMPORTANT: if you have not the headers_module, you are vulnerable to 
+  # identity stealing as the X_REMOTE_IDENT may be set by the client!
+  # If you are in this case, please, set API_TRUST_IDENT=0 into oar.conf
+  <IfModule headers_module>
+    RequestHeader unset X_REMOTE_IDENT
+  </IfModule>
+</Location>
+
+# In this second example, we set up a "pident" authentication if possible and an
+# an ldap basic auth for the hosts that are not in the "Allow from" directives above.
+# If the ident module is not setup, we unset the X_REMOTE_IDENT variable to
+# protect from malicious users that could inject a login name.
+<Location /oarapi>
+
+  # THIS IS IMPORTANT!!
+  # You need at least the headers_module or a properly ident setup.
+  # In other words, if you have not the ident_module, nor headers_module,
+  # you are vulnerable to identity stealing!
+  # If you are in this case, please, set API_TRUST_IDENT=0 into oar.conf.
+  <IfModule !ident_module>
+    <IfModule headers_module>
+      RequestHeader unset X_REMOTE_IDENT
+    </IfModule>
+  </IfModule>
+
+  # Pidentd (or authd) is a daemon that should run on the client host to tell
+  # to the server who is making the query. So, be aware that with this kind of 
+  # authentication, you have to trust the client host!
+  # In other words, if you accept connections from a user's laptop for example, 
+  # you are vulnerable as long as the user can create a login name of its choice
+  # on his laptop! So, be sure of your "Allow from" directives above!
+  <IfModule ident_module>
+     IdentityCheck On
+     <IfModule headers_module>
+        # Set the X_REMOTE_IDENT http header and variable to REMOTE_IDENT env value
+        <IfModule rewrite_module>
+           RewriteEngine On
+           RewriteCond %{REMOTE_IDENT} (.*)
+           RewriteRule .* - [E=X_REMOTE_IDENT:%1]
+           RequestHeader add X_REMOTE_IDENT %{X_REMOTE_IDENT}e
+        </IfModule>
+     </IfModule>
+  </IfModule>
+ 
+  # Ldap auth for external users (not in the "Allow from" list)
+  # In this example, we suppose that the users have an ldap account
+  # common to the authentication used by the oar server.
+  <IfModule authnz_ldap_module>
+    AuthType               basic
+    AuthBasicProvider      ldap
+    AuthName               "Authorized Users Only"
+    AuthzLDAPAuthoritative  off
+    AuthLDAPURL            "ldaps://myldaphost.mydomain/dc=mydomain,dc=fr?uid?sub?(objectClass=posixAccount)"
+    Require valid-user
+    Satisfy any
+  </IfModule> 
+</Location>
+
+# This example sets up a simple basic authentication with user/password 
+# into the /etc/oar/api-users file (use htpasswd command to create the  
+# password entries.                                                     
+#<Location /oarapi-priv>                                                 
+#    Options +ExecCGI -MultiViews +FollowSymLinks                        
+#    AuthType      basic                                                 
+#    AuthUserfile  /etc/oar/api-users                                    
+#    AuthName      "OAR API authentication"                              
+#    Require valid-user                                                  
+#    RewriteEngine On                                                    
+#    RewriteCond %{REMOTE_USER} (.*)                                     
+#    RewriteRule .* - [E=X_REMOTE_IDENT:%1]                              
+#    RequestHeader add X_REMOTE_IDENT %{X_REMOTE_IDENT}e                 
+#</Location>                                                             
+
+
+# In this example, we set up a trusted connection with a client that 
+# has a specific SSL certificate. This client may do queries for whatever login
+# name that it sends through the X_REMOTE_IDENT header variable.
+# This is commonly the case for a grid middleware that has already authenticated 
+# users and that may be trusted by OAR.
+#<Location /oarapi-cigri>
+#  <IfModule ssl>
+#    # Require SSL on this location
+#    SSLRequireSSL
+#    # Check the validity of the client SSL certificate
+#    SSLVerifyClient require
+#    SSLVerifyDepth  1
+#    # In this example, we check that the client is the cigri middleware of the 
+#    # Ciment project: the organisational unit presented by the certificatethe 
+#    # should be "CIMENT" and the DN should be "CIGRI"
+#    SSLRequire ( %{SSL_CLIENT_S_DN_OU} eq "CIMENT" \
+#                 and %{SSL_CLIENT_S_DN_CN} eq "CIGRI" )
+#    # We can also do some filtering on the X_REMOTE_IDENT header
+#    ## This example only allows users kameleon and oar to be authenticated to the API
+#    # RewriteEngine On
+#    # RewriteCond %{HTTP:X_REMOTE_IDENT}  (.*)
+#    # RewriteRule .* - [E=X_REMOTE_IDENT:%1]
+#    # RewriteCond %{HTTP:X_REMOTE_IDENT}  !=kameleon
+#    # RewriteCond %{HTTP:X_REMOTE_IDENT}  !=oar
+#    # RewriteRule .* - [E=X_REMOTE_IDENT:]
+#    # RequestHeader set X_REMOTE_IDENT %{X_REMOTE_IDENT}e
+#  </IfModule>
+#</Location>
+
+</virtualhost>
+
+## CIGRI CONFIG
+# The following is a complete example configuration for an SSL enabled OAR API
+# to serve requests to a CiGri server (see http://cigri.imag.fr)
+# For this we set up a complete virtualhost, listening on the 6669 port.
+# The API will be reachable on the following uri:
+#    "https://<your_server_name>:6669/oarapi-cigri/"
+# This configuration needs :
+#   - Apache version >= 2.4
+#   - Modules enabled: mod_ssl, mod_suexec, mod_fastcgi and mod_rewrite
+# You need to change at least the "Require host" and "SSLRequire" lines:
+#   - "Require host <cigri server hostname>" : to restrict the access to the
+#      CiGri server.
+#   - "SSLRequire <condition>" : to set up a condition on the CiGri server's
+#     certificate.
+# By this way, the CiGri server is well authenticated and can safely send
+# usernames to the API into the header variable X_REMOTE_IDENT.
+
+#Listen 6669
+#<VirtualHost *:6669>
+#
+#  SSLEngine On
+#  SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+#  SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+#  SSLCACertificateFile /etc/ssl/certs/ca-certificates.crt
+#
+#  ErrorLog ${APACHE_LOG_DIR}/error_oarapi_cigri.log
+#  CustomLog ${APACHE_LOG_DIR}/access_oarapi_cigri.log combined
+#
+#  # Set up the /oarapi-cigri URI
+#  ScriptAlias /oarapi-cigri /usr/lib/cgi-bin/oarapi/oarapi.cgi
+#  FastCgiServer /usr/lib/cgi-bin/oarapi/oarapi.cgi -processes 2 -user oar -group oar
+#  SuexecUserGroup oar oar
+#
+#  <Directory "/usr/lib/cgi-bin">
+#        AllowOverride None
+#        Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+#        Order allow,deny
+#        Allow from all
+#  </Directory>
+#  <Directory /usr/lib/cgi-bin/oarapi>
+#     Options +ExecCGI -MultiViews +FollowSymLinks
+#     SetEnv OARCONFFILE /etc/oar/oar.conf
+#     AddHandler fcgid-script .cgi
+#     # Set here the name of the CiGri server that
+#     # be allowed to connect to this API
+#     Require host killeen.ujf-grenoble.fr
+#  </Directory>
+#
+#   # Transmit important header variables to the environment
+#   RewriteEngine On
+#   RewriteCond %{HTTP:X_API_PATH_PREFIX}  (.*)
+#   RewriteRule .* - [E=X_API_PATH_PREFIX:%1]
+#
+#  <Location /oarapi-cigri>
+#     Options +ExecCGI -MultiViews +FollowSymLinks
+#
+#     # Checks on the client certificate, to authenticate the client.
+#     SSLVerifyClient require
+#     SSLVerifyDepth  1
+#     SSLRequire ( %{SSL_CLIENT_S_DN_OU} eq "CIMENT" and %{SSL_CLIENT_S_DN_CN} eq "CIGRI" )
+#
+#     RewriteEngine On
+#
+#     # Copy the X_REMOTE_IDENT header into the same environment variable
+#     RewriteCond %{HTTP:X_REMOTE_IDENT}  (.*)
+#     RewriteRule .* - [E=X_REMOTE_IDENT:%1]
+#
+#     ## Add some checks on the X_REMOTE_IDENT header
+#     ## This example allows only users kameleon and oar to be authenticated to the API
+#     #
+#     ## Empty the header, checks will be made on the variable
+#     ## Warning: the header must be removed, or the API may use it and the following filters
+#     ## will have no effect! Furthermore, the API may replace underscores by hyphens, so, be
+#     ## sure to remove all possible forms
+#     #RequestHeader unset X_REMOTE_IDENT
+#     #RequestHeader unset X-REMOTE-IDENT
+#     #RequestHeader unset X-REMOTE_IDENT
+#     #RequestHeader unset X_REMOTE-IDENT
+#     ## Now, the actual checks. The 2 following conditions have an implicit "AND".
+#     ## If they are both true, then, the X_REMOTE_IDENT variable is emptied to disable
+#     ## authentification (only public uris will be accessible)
+#     #RewriteCond %{ENV:X_REMOTE_IDENT} !=kameleon
+#     #RewriteCond %{ENV:X_REMOTE_IDENT} !=oar
+#     #RewriteRule .* - [E=X_REMOTE_IDENT:]
+#  </Location>
+#</virtualhost>
+#
+## END OF CIGRI CONFIG
+

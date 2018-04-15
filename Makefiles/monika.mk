@@ -20,9 +20,10 @@ build: build_shared
 # Nothing to do
 
 install: install_shared
-# Nothing to do
+	install -m 0755 -d $(DESTDIR)$(PERLLIBDIR)
+	cp -r $(OAR_PERLLIB)/* $(DESTDIR)$(PERLLIBDIR)/
 
 uninstall: uninstall_shared
-# Nothing to do
+	(cd $(OAR_PERLLIB) && find . -type f -exec rm -f $(DESTDIR)$(PERLLIBDIR)/{} \;)
 
 .PHONY: install setup uninstall build clean

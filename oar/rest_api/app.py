@@ -15,7 +15,7 @@ from .views import register_blueprints
 from .errors import register_error_handlers
 from .extensions import register_extensions
 from .hooks import register_hooks
-#from .proxy import register_proxy
+from .proxy import register_proxy
 
 
 default_config = {
@@ -39,6 +39,13 @@ def create_app(**kwargs):
     register_hooks(app)
     register_extensions(app)
     register_blueprints(app)
-    #register_proxy(app, **kwargs)
-
+    register_proxy(app, **kwargs)
+    
     return app
+    
+def wsgi_app(environ, start_response):
+    # For use within WSGI context (for instance mod_wsgi for apache2)
+    # cat /usr/local/lib/cgi-bin/oarapi/oarapi.wsgi
+    # from oar.rest_api.app import wswgi_app as application
+    app = create_app()
+    return app(environ, start_response)
