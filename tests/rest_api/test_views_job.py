@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
+import json
 from .conftest import ordered
 
 from flask import url_for
@@ -374,14 +375,15 @@ def test_app_job_post_bug3(client):
     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
     assert res.status_code == 200
     
-# @pytest.mark.usefixtures("minimal_db_initialization")
-# def test_app_job_post_json(client):
-#     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
-#     data = {'resource':['nodes=1,walltime=00:10:0', 'nodes=2,walltime=00:5:0'], 'command':'sleep "1"'}
-#     res = client.post(url_for('jobs.submit'), data=data, content_type='application/json',
-#                       headers={'X_REMOTE_IDENT': 'bob'})
-#     print(res.json)
-#     job_ids = db.query(Job.id).all()
-#     href = '/jobs/{}'.format(job_ids[0][0])
-#     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
-#     assert res.status_code == 200
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_app_job_post_json(client):
+    # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
+    data = {'resource':['nodes=1,walltime=00:10:0', 'nodes=2,walltime=00:5:0'], 'command':'sleep "1"'}
+    res = client.post(url_for('jobs.submit'), data=json.dumps(data),
+                      content_type='application/json',
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    print(res.json)
+    job_ids = db.query(Job.id).all()
+    href = '/jobs/{}'.format(job_ids[0][0])
+    assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
+    assert res.status_code == 200
