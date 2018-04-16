@@ -363,8 +363,8 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
               {property: "lic_type = 'mathlab'", resources: [{resource: 'licence', value: 2}]}
              ], 60)
          ]
-    """  
-    import pdb; pdb.set_trace()
+    """
+
     if not str_resource_request_list:
         str_resource_request_list = [default_resources]
 

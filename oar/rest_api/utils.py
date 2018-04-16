@@ -73,11 +73,13 @@ class Arg(object):
 
 
 class ListArg(object):
-    def __init__(self, type_=str, sep=":"):
+    def __init__(self, type_=str, sep=None):
         self.type = type_
         self.sep = sep
 
     def __call__(self, value, callback):
+        if not self.sep: # TOFINISH
+            return value
         def convert():
             string = to_unicode(value)
             if string:
@@ -86,7 +88,8 @@ class ListArg(object):
         return list(convert())
 
     def raw_value(self, values):
-        return to_unicode(self.sep.join(("%s" % v for v in values)))
+        sep = self.sep if self.sep else ', ' 
+        return to_unicode(sep.join(("%s" % v for v in values)))
 
 
 class ArgParser(object):
@@ -97,22 +100,26 @@ class ArgParser(object):
     def __init__(self, argmap):
         self.argmap = argmap
 
-    def get_value(self, data, name):
-        return data.get(name, self.MISSING)
+    def get_value(self, data, name, argobj):
+        if isinstance(argobj.type, ListArg) and not argobj.type.sep:
+            return data.getlist(name)
+        else:
+            return data.get(name, self.MISSING)    
 
     def parse_arg(self, argname, argobj):
         """Pull a form value from the request."""
         for location in argobj.locations:
-            if location == "querystring":
-                value = self.get_value(request.args, argname)
+            value = self.MISSING
+            if location == "querystring" and request.args:
+                value = self.get_value(request.args, argname, argobj)
             elif location == "json":
                 json_data = request.get_json(silent=True, force=True)
                 if json_data:
-                    value = self.get_value(json_data, argname)
+                    value = self.get_value(json_data, argname, argobj)
                 else:
                     value = self.MISSING
             elif location == "form":
-                value = self.get_value(request.form, argname)
+                value = self.get_value(request.form, argname, argobj)
             if value is not self.MISSING:
                 return value
         return self.MISSING

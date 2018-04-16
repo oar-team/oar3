@@ -132,6 +132,7 @@ class Blueprint(FlaskBlueprint):
         # (January 1, 1970, 00:00:00 (UTC)) as a int.
         g.data['api_timestamp'] = int(time.time())
 
+
     def _json_dumps(self, obj, **kwargs):
         """Dump object to json string."""
         kwargs.setdefault('ensure_ascii', False)

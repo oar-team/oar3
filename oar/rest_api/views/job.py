@@ -73,7 +73,7 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
            'directory': Arg(str),
            'project': Arg(str),
            'name': Arg(str),
-           'after': Arg([int], dest='dependencies'),
+           'after': Arg([int, ','], dest='dependencies'),
            'notify': Arg(str),
            'resubmit': Arg(int),
            'use-job-key': Arg(bool, dest='use_job_key', default=0),
@@ -193,7 +193,10 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         (error, reservation_date) = check_reservation(reservation)
         if error[0] != 0:
             pass #TODO
-    
+
+    #if not isinstance(resource, list):
+    #    resource = [resource]
+
     job_parameters = JobParameters(
         job_type='PASSIVE',
         command=command,
