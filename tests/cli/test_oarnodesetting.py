@@ -44,9 +44,12 @@ def test_oarnodesetting_core_cpu():
     result = runner.invoke(cli, ['-a', '-p core=1', '-p cpu=2'])
     print(result)
     resource = db['Resource'].query.one()
+    print(resource)
+    print(fake_notifications)
+    #import pdb; pdb.set_trace()
     assert resource.core == 1
     assert resource.cpu == 2
-    assert fake_notifications[-2:] == ['ChState', 'Term']
+    assert fake_notifications[-3:] == ['Term','ChState', 'Term']
     assert result.exit_code == 0
 
 

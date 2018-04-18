@@ -25,6 +25,7 @@ click.disable_unicode_literals_warning = True
 
 
 def set_resources_properties(cmd_ret, resources, hostnames, properties):
+    #import pdb; pdb.set_trace()
     for prop in properties:
         name_value = prop.lstrip().split('=')
         if len(name_value) == 2:
@@ -240,7 +241,6 @@ def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
     filename = file
     properties = property
     if isinstance(properties, str): properties = [properties]
-
     cmd_ret = oarnodesetting(resources, hostnames, filename, sql, add, state,
                              maintenance, drain, properties, no_wait,
                              last_property_value, version)

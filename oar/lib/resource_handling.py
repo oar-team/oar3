@@ -100,10 +100,10 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
             # Insert Logs
             resource_logs = []
             for rid in rids:
-                resource_logs.append({ResourceLog.resource_id: rid,
-                                      ResourceLog.attribute: prop_name,
-                                      ResourceLog.value: prop_value,
-                                      ResourceLog.date_start: date})
+                resource_logs.append({ResourceLog.resource_id.name: rid,
+                                      ResourceLog.attribute.name: prop_name,
+                                      ResourceLog.value.name: prop_value,
+                                      ResourceLog.date_start.name: date})
             db.session.execute(ResourceLog.__table__.insert(), resource_logs)
             db.commit()
         else:
