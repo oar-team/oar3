@@ -6,6 +6,7 @@ omit=
 	oar/cli/db/*
 	oar/kao/coorm.py
 	oar/tools/__init__.py
+	oar/cli/oar2trace.py
 
 [report]
 exclude_lines =

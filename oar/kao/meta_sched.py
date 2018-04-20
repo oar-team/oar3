@@ -695,10 +695,10 @@ def meta_schedule(mode='internal', plt=Platform()):
             check_reservation_jobs(
                 plt, resource_set, queue.name, all_slot_sets, current_time_sec)
 
-
-    extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
-                         job_security_time, queue, initial_time_sec,
-                         extra_metasched_config)
+    #TODO remove ?
+    #extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
+    #                     job_security_time, queue, initial_time_sec,
+    #                     extra_metasched_config)
 
 
     jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,

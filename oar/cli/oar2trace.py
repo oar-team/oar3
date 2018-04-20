@@ -17,7 +17,7 @@ import time
 import uuid
 from collections import OrderedDict
 from sqlalchemy.sql import (func, or_, distinct)
-from oar.lib import db, Job, Resource, MoldableJobDescription, AssignedResource
+from oar.lib import (db, config, Job, Resource, MoldableJobDescription, AssignedResource)
 import pickle
 import click
 click.disable_unicode_literals_warning = True
@@ -372,7 +372,8 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
     oar2trace --db-url 'postgresql://oar:oar@server/oar' -m owf
 
     """
-
+    #import pdb; pdb.set_trace()
+    
     display = p
     jobids_range = None
 
@@ -382,18 +383,23 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
 
     if db_url:
         db._cache['uri'] = db_url
-        try:
-            jobids_range = db.query(func.max(Job.id).label('max'),
-                                    func.min(Job.id).label('min')).one()
-        except Exception as e:
-            print(e)
-            exit()
+        db_name = db_url.split('/')[-1]
+        db_server = (db_url.split('/')[-2]).split('@')[-1]
     else:
+        db_name = 'oar'
+        db_server = 'localhost'
+
+    try:
+        jobids_range = db.query(func.max(Job.id).label('max'),
+                                func.min(Job.id).label('min')).one()
+    except Exception as e:
+        print(e)
         exit()
-
-    db_name = db_url.split('/')[-1]
-    db_server = (db_url.split('/')[-2]).split('@')[-1]
-
+    if jobids_range == (None, None):
+        exit()
+    #else:
+    #    exit()
+        
     if not first_jobid:
         first_jobid = jobids_range.min
 
