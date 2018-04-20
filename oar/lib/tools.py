@@ -210,7 +210,37 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
 
 def pingchecker(hosts):
     #raise NotImplementedError("TODO")
+    if 'PINGCHECKER_TAKTUK_ARG_COMMAND' in config and 'TAKTUK_CMD' in config :
+        return taktuk_hosts(hosts)
+    elif 'PINGCHECKER_SENTINELLE_SCRIPT_COMMAND' in config:
+        return sentinelle_script_hosts(hosts)
+    elif 'PINGCHECKER_FPING_COMMAND' in config:
+        return fping_hosts(hosts)
+    elif 'PINGCHECKER_NMAP_COMMAND' in config:
+        return nmap_hosts(hosts)
+    elif 'PINGCHECKER_GENERIC_COMMAND' in config:
+        return generic_hosts(hosts)
+    else:
+        return ping_hosts(hosts)
+
+def taktuk_hosts(hosts):
     return []
+
+def sentinelle_script_hosts(hosts):
+    return []
+
+def fping_hosts(hosts):
+    return []    
+
+def nmap_hosts(hosts):
+    return []
+
+def generic_hosts(hosts):
+    return []
+
+def ping_hosts(hosts):
+    return []
+
 
 def send_log_by_email(title, message):
     #raise NotImplementedError("TODO")
