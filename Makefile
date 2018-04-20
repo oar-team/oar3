@@ -113,12 +113,6 @@ monika-clean: www-conf-clean
 monika-build: www-conf-build
 monika-uninstall: www-conf-uninstall
 
-tools-setup: common-setup common-libs-setup
-tools-install: sanity-check common-install common-libs-install
-tools-clean: common-clean common-libs-clean
-tools-build: common-build common-libs-build
-tools-uninstall: common-uninstall common-libs-uninstall
-
 api-setup: common-setup common-libs-setup
 api-install: sanity-check common-install common-libs-install
 api-build: common-build common-libs-build
