@@ -47,7 +47,9 @@ install: install_shared
 		oarremoveresource3 oaraccounting3 \
 		oarnodes3 oardel3 oarstat3 oarsub3 oarhold3 oarresume3;\
 	do \
-		mv $(DESTDIR)$(BINDIR)/$$file $(OARDIR)/$$file; \
+		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then \
+			mv $(DESTDIR)$(BINDIR)/$$file $(OARDIR)/$$file; \
+		fi \
 	done
 	# Install wrappers
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarnodes3 CMD_TARGET=$(DESTDIR)$(BINDIR)/oarnodes

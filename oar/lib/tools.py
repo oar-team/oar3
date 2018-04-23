@@ -224,22 +224,75 @@ def pingchecker(hosts):
         return ping_hosts(hosts)
 
 def taktuk_hosts(hosts):
-    return []
+    taktuk_cmd = config['TAKTUK_CMD']
+    log.debug('[PingChecker] command to run : {}'.format(taktuk_cmd))
+    openssh_cmd = config['OPENSSH_CMD']
+
+    fifoname = '/tmp/tmp_' +\
+               ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+    os.mkfifo(fifoname)
+
+    cmd = taktuk_cmd\
+          + " -c '" + ssh_command + "'"\
+          + ' -o status=\'"STATUS $host $line\\n"\''\
+          + ' -f '\
+          + fifoname\
+          + ' ' + config['PINGCHECKER_TAKTUK_ARG_COMMAND']
+    
+    log.debug('[PingChecker] command to run : {}'.format(cmd))
+
+    env = os.environ.copy()
+    env['ENV'] = ''
+    env['IFS'] = ''
+    # Launch taktuk
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, env=env)
+    
+    bad_hosts = {}
+    # Send hosts to address 
+    w = open(fifoname, 'w')
+    for host in hosts:
+        bad_hosts[host] = True
+        w.write(host + '\n')
+    w.close()
+    os.remove(fifoname)
+
+    try: 
+        out, err = p.communicate(timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+    except TimeoutExpired:
+        p.kill()
+        # TODO
+        print('TimeoutExpired')
+        #m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
+        return (0, [])
+    
+    output = out.decode()
+    error = err.decode()
+
+    for line in output.split('\n'):
+        m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
+        if m:
+            if m.group(2) == '0':
+                # Host is OK
+                if m.group(1) in bad_hosts:
+                    del bad_hosts[m.group(1)]
+                    
+    return (1, list(bad_hosts.keys()))
+
 
 def sentinelle_script_hosts(hosts):
-    return []
+    return (0, []) 
 
 def fping_hosts(hosts):
-    return []    
+    return (0, []) 
 
 def nmap_hosts(hosts):
-    return []
+    return (0, []) 
 
 def generic_hosts(hosts):
-    return []
+    return (0, []) 
 
 def ping_hosts(hosts):
-    return []
+    return (0, []) 
 
 
 def send_log_by_email(title, message):

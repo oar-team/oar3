@@ -66,7 +66,9 @@ install: build install_shared
 		oarremoveresource3 oaraccounting3 \
 		oarnodes3 oardel3 oarstat3 oarsub3 oarhold3 oarresume3;\
 	do \
-		mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
+		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then\
+			mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
+		fi \
 	done
 
 	$(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
