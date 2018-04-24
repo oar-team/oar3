@@ -10,7 +10,7 @@ import string
 import socket
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
-
+from oar.lib import logger as log
 import signal, psutil
 from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
@@ -207,92 +207,85 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket.close()
     return nb_sent
 
-
 def pingchecker(hosts):
-    #raise NotImplementedError("TODO")
+    import pdb; pdb.set_trace()
+    """Check compute nodes remotely accordindly to method specified in oar.conf"""
+    cmd = ''
+    ip2hostname = {}
+    pipe_hosts = None
+    bad_hosts = {h: True for h in hosts}
+
     if 'PINGCHECKER_TAKTUK_ARG_COMMAND' in config and 'TAKTUK_CMD' in config :
-        return taktuk_hosts(hosts)
+        cmd = config['TAKTUK_CMD']\
+              + " -c '" + config['OPENSSH_CMD'] + "'"\
+              + ' -o status=\'"STATUS $host $line\\n"\''\
+              + ' -f - ' + config['PINGCHECKER_TAKTUK_ARG_COMMAND']
+        pipe_hosts = ('\n'.join(hosts) + '\n').encode('utf-8')
+        def filter_output(line, _):
+            m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line)
+            if m and m.group(2) == '0':
+                return m.group(1)
+
     elif 'PINGCHECKER_SENTINELLE_SCRIPT_COMMAND' in config:
-        return sentinelle_script_hosts(hosts)
-    elif 'PINGCHECKER_FPING_COMMAND' in config:
-        return fping_hosts(hosts)
+        cmd = config['PINGCHECKER_SENTINELLE_SCRIPT_COMMAND']\
+              + " -c '" + config['OPENSSH_CMD'] + "' -f -  "
+        pipe_hosts = '\n'.join(hosts) + '\n'
+        def filter_output(line, _):
+             m = re.match(r'^([\w\.\-]+)\s:\sBAD\s.*$', line)
+             if m and m.group(1):
+                 return m.group(1)
+
     elif 'PINGCHECKER_NMAP_COMMAND' in config:
-        return nmap_hosts(hosts)
+        cmd = config['PINGCHECKER_NMAP_COMMAND'] + ' -oG - ' + ' '.join(hosts)
+        ip2hostname = {socket.gethostbyname(h): h for h in hosts}
+        def filter_output(line, ip2hostname):
+            m = re.match(r'^Host:\s(\d+\.\d+\.\d+\.\d+).*/open/.*$', line)
+            if m and m.group(1):
+                return ip2hostname[m.group(1)]
     elif 'PINGCHECKER_GENERIC_COMMAND' in config:
-        return generic_hosts(hosts)
+        cmd = config['PINGCHECKER_GENERIC_COMMAND'] + " ".join(hosts)
+        def filter_output(line, _):
+            m = re.match(r'^\s*([\w\.\-]+)\s*$', line)
+            if m and m.group(1):
+                return m.group(1)
+
+    elif 'PINGCHECKER_FPING_COMMAND' in config:
+        cmd = config['PINGCHECKER_FPING_COMMAND'] + ' '.join(hosts)
+        def filter_output(line, _): 
+            m = re.match(r'^\s*([\w\.\d-]+)\s*(.*)$', line) 
+            if m and m.group(1) and 'alive' in m.group(2):
+                return m.group(1)
     else:
-        return ping_hosts(hosts)
+        logger.debug('[PingChecker] no PINGCHECKER configuration found')
 
-def taktuk_hosts(hosts):
-    taktuk_cmd = config['TAKTUK_CMD']
-    log.debug('[PingChecker] command to run : {}'.format(taktuk_cmd))
-    openssh_cmd = config['OPENSSH_CMD']
+    return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts) 
 
-    fifoname = '/tmp/tmp_' +\
-               ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-    os.mkfifo(fifoname)
-
-    cmd = taktuk_cmd\
-          + " -c '" + ssh_command + "'"\
-          + ' -o status=\'"STATUS $host $line\\n"\''\
-          + ' -f '\
-          + fifoname\
-          + ' ' + config['PINGCHECKER_TAKTUK_ARG_COMMAND']
-    
+def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, log=log):
     log.debug('[PingChecker] command to run : {}'.format(cmd))
-
+    bad_hosts = {h: True for h in hosts}
+    
     env = os.environ.copy()
     env['ENV'] = ''
     env['IFS'] = ''
     # Launch taktuk
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, env=env)
-    
-    bad_hosts = {}
-    # Send hosts to address 
-    w = open(fifoname, 'w')
-    for host in hosts:
-        bad_hosts[host] = True
-        w.write(host + '\n')
-    w.close()
-    os.remove(fifoname)
 
     try: 
-        out, err = p.communicate(timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+        out, err = p.communicate(pipe_hosts, 2*DEFAULT_CONFIG['TIMEOUT_SSH'])
     except TimeoutExpired:
         p.kill()
-        # TODO
-        print('TimeoutExpired')
-        #m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
+        log.debug('[PingChecker] TimeoutExpired')
         return (0, [])
-    
+
     output = out.decode()
     error = err.decode()
-
+    
     for line in output.split('\n'):
-        m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
-        if m:
-            if m.group(2) == '0':
-                # Host is OK
-                if m.group(1) in bad_hosts:
-                    del bad_hosts[m.group(1)]
-                    
+        host = filter_output(*(line,ip2hostname))
+        if host and host in bad_hosts:
+            del bad_hosts[host]
+            
     return (1, list(bad_hosts.keys()))
-
-
-def sentinelle_script_hosts(hosts):
-    return (0, []) 
-
-def fping_hosts(hosts):
-    return (0, []) 
-
-def nmap_hosts(hosts):
-    return (0, []) 
-
-def generic_hosts(hosts):
-    return (0, []) 
-
-def ping_hosts(hosts):
-    return (0, []) 
 
 
 def send_log_by_email(title, message):
