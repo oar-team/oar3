@@ -222,17 +222,26 @@ class BipBip(object):
                                                                         cpuset_data_str, cpuset_file,
                                                                         'clean', openssh_cmd, taktuk_cmd)
                             bad = bad + bad_hosts
-                
+                        
             #####################
             # CPUSET PART, END  #
             #####################
 
             # Check nodes
+            if len(bad) > 0:
+                reason = 'OAR suspects nodes'
+                
             if bad == []:
                 # check nodes
                 logger.debug('[' + str(job.id) + '] Check nodes: ' + str(hosts))
                 event_type = 'PING_CHECKER_NODE_SUSPECTED'
-                bad = tools.pingchecker(hosts)             
+                
+                (pingcheck, bad)  = tools.pingchecker(hosts)
+                if not pingcheck:
+                    bad = hosts
+                    reason = 'timeout triggered'
+                elif len(bad) > 0: 
+                    reason = 'OAR suspects nodes'
 
             if len(bad) > 0:
                 set_job_message(job_id, 'One or several nodes are not responding correctly')
@@ -253,8 +262,8 @@ class BipBip(object):
                             host = tmp_hosts
                             exit_bipbip = 0
                             
-                add_new_event_with_host(event_type, job_id, '[bipbip] OAR suspects nodes for the job :'\
-                                        + str(job_id) + ': ' + str(bad), bad)
+                add_new_event_with_host(event_type, job_id, '[bipbip] ' + reason + ', job: '\
+                                        + str(job_id) + ', nodes:' + str(bad), bad)
                 tools.notify_almighty('ChState')
                 if exit_bipbip == 1:
                     self.exit_code = 2

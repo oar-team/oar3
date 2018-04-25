@@ -6,11 +6,11 @@ import oar.lib.tools  # for monkeypatching
 
 import pytest
 
-fake_bad_nodes = []
+fake_bad_nodes = (1,[])
 
 def set_fake_bad_nodes(bad_nodes):
     global fake_bad_nodes
-    fake_bad_nodes = bad_nodes
+    fake_bad_nodes = (1, bad_nodes)
     
 def fake_pingchecker(hosts):
     return fake_bad_nodes

@@ -1869,15 +1869,22 @@ def job_finishing_sequence(epilogue_script, job_id, events):
         logger.debug('[job_finishing_sequence] ['+ str(job.id)\
                      + 'Run pingchecker to test nodes at the end of the job on nodes: '\
                      + str(hosts))
-        bad_pingchecker = tools.pingchecker(hosts)
-        if len(bad_pingchecker) > 0:
-            logger.error('[job_finishing_sequence] [' + str(job.id)\
-                         + 'PING_CHECKER_NODE_SUSPECTED_END_JOB OAR suspects nodes for the job '\
-                          + str(job.id) + ' : ' + str(bad_pingchecker))
+        
+        (pingcheck, bad_hosts) = tools.pingchecker(hosts)
+
+        if (pingcheck and len(bad_hosts) > 0) or not pingcheck:
+            if pingcheck:  
+                reason = 'OAR suspects nodes'
+                suspected_hosts = bad_hosts
+            else:
+                reason = 'timeout triggered'
+                suspected_hosts = hosts
+
+            msg = '{}, job {}, nodes: {}'.format(reason, job.id, suspected_hosts) 
+            logger.error('[job_finishing_sequence] PING_CHECKER_NODE_SUSPECTED_END_JOB: ' + msg)
             events.append(('PING_CHECKER_NODE_SUSPECTED_END_JOB',
-                           '[job_finishing_sequence] OAR suspects nodes for the job '\
-                           + str(job.id) + ' : ' + str(bad_pingchecker),
-                           str(bad_pingchecker)))
+                           '[job_finishing_sequence] ' + msg, 
+                           suspected_hosts))
 
     for event in events:
         if len(event) == 2:

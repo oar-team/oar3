@@ -11,7 +11,7 @@ import oar.lib.tools  # for monkeypatching
 
 from ..faketools import (FakePopen, fake_popen)
 
-fake_bad_nodes = {'pingchecker': [], 'init': [], 'clean': []}
+fake_bad_nodes = {'pingchecker': (1,[]), 'init': [], 'clean': []}
 fake_tag = 1
 
 def set_fake_tag(tag_value):
