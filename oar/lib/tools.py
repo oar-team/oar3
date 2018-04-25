@@ -208,12 +208,11 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
     return nb_sent
 
 def pingchecker(hosts):
-    import pdb; pdb.set_trace()
     """Check compute nodes remotely accordindly to method specified in oar.conf"""
     cmd = ''
     ip2hostname = {}
     pipe_hosts = None
-    bad_hosts = {h: True for h in hosts}
+    add_bad_hosts = False
 
     if 'PINGCHECKER_TAKTUK_ARG_COMMAND' in config and 'TAKTUK_CMD' in config :
         cmd = config['TAKTUK_CMD']\
@@ -227,9 +226,10 @@ def pingchecker(hosts):
                 return m.group(1)
 
     elif 'PINGCHECKER_SENTINELLE_SCRIPT_COMMAND' in config:
+        add_bad_hosts = True
         cmd = config['PINGCHECKER_SENTINELLE_SCRIPT_COMMAND']\
               + " -c '" + config['OPENSSH_CMD'] + "' -f -  "
-        pipe_hosts = '\n'.join(hosts) + '\n'
+        pipe_hosts = ('\n'.join(hosts) + '\n').encode('utf-8')
         def filter_output(line, _):
              m = re.match(r'^([\w\.\-]+)\s:\sBAD\s.*$', line)
              if m and m.group(1):
@@ -243,6 +243,7 @@ def pingchecker(hosts):
             if m and m.group(1):
                 return ip2hostname[m.group(1)]
     elif 'PINGCHECKER_GENERIC_COMMAND' in config:
+        add_bad_hosts = True 
         cmd = config['PINGCHECKER_GENERIC_COMMAND'] + " ".join(hosts)
         def filter_output(line, _):
             m = re.match(r'^\s*([\w\.\-]+)\s*$', line)
@@ -250,7 +251,8 @@ def pingchecker(hosts):
                 return m.group(1)
 
     elif 'PINGCHECKER_FPING_COMMAND' in config:
-        cmd = config['PINGCHECKER_FPING_COMMAND'] + ' '.join(hosts)
+        add_bad_hosts = True
+        cmd = config['PINGCHECKER_FPING_COMMAND'] + ' -u ' + ' '.join(hosts)
         def filter_output(line, _): 
             m = re.match(r'^\s*([\w\.\d-]+)\s*(.*)$', line) 
             if m and m.group(1) and 'alive' in m.group(2):
@@ -258,12 +260,16 @@ def pingchecker(hosts):
     else:
         logger.debug('[PingChecker] no PINGCHECKER configuration found')
 
-    return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts) 
+    return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts) 
 
-def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, log=log):
+def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log):
     log.debug('[PingChecker] command to run : {}'.format(cmd))
-    bad_hosts = {h: True for h in hosts}
     
+    if add_bad_hosts:
+        bad_hosts_list = []
+    else: 
+        bad_hosts = {h: True for h in hosts}
+  
     env = os.environ.copy()
     env['ENV'] = ''
     env['IFS'] = ''
@@ -283,9 +289,15 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
     for line in output.split('\n'):
         host = filter_output(*(line,ip2hostname))
         if host and host in bad_hosts:
-            del bad_hosts[host]
-            
-    return (1, list(bad_hosts.keys()))
+            if add_bad_hosts:
+                bad_hosts_list.append(host)
+            else:
+                del bad_hosts[host]
+
+    if add_bad_hosts:
+        return (1, bad_hosts_list)
+    else:
+        return (1, list(bad_hosts.keys()))
 
 
 def send_log_by_email(title, message):
