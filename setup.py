@@ -56,7 +56,8 @@ setup(
     install_requires=requirements,
     extras_require={
         'coorm': ['zerorpc', 'requests'],
-        'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov', 'sphinx']
+        'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov',
+                'pytest-console-scripts', 'sphinx']
    },
     include_package_data=True,
     zip_safe=False,
