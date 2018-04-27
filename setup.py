@@ -57,7 +57,7 @@ setup(
     extras_require={
         'coorm': ['zerorpc', 'requests'],
         'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov',
-                'pytest-console-scripts', 'sphinx']
+                'pytest-console-scripts', 'pexpect', 'sphinx']
    },
     include_package_data=True,
     zip_safe=False,
