@@ -58,7 +58,7 @@ setup(
         'coorm': ['zerorpc', 'requests'],
         'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov',
                 'pytest-console-scripts', 'pexpect', 'sphinx']
-   },
+    },
     include_package_data=True,
     zip_safe=False,
     description="OAR next generation",
