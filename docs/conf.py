@@ -59,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OAR next generation'
-copyright = u'2015, Salem Harrache'
+copyright = u'2018, OAR Team'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -122,7 +122,9 @@ html_theme = 'alabaster'
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+        'fixed_sidebar': True
+        }
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
