@@ -22,7 +22,7 @@ class CommandReturns(object):
             print(objs)
         else:
             #    msg = '{} {} {}'.format(CommandReturns.TAG2STR[tag], objs, error)
-            print('{} {}'.format(CommandReturns.TAG2STR[tag], objs), file=sys.stderr)
+            print('{}{}'.format(CommandReturns.TAG2STR[tag], objs), file=sys.stderr)
 
     def to_str(self):
         str_out = ''
