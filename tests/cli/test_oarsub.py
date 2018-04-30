@@ -1,7 +1,7 @@
 # coding: utf-8
 import pytest
 import os
-
+import re
 from click.testing import CliRunner
 
 from oar.lib import (db, config)
@@ -54,6 +54,12 @@ def test_oarsub_void():
     assert result.exception.code == \
         (5, 'Command or interactive flag or advance reservation time or connection directive must be provided')
 
+def test_oarsub_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-V'])
+    print(result.output)
+    assert re.match(r'^\d\.', result.output)
+    
 def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '"sleep 1"'])
