@@ -9,7 +9,6 @@ class CommandReturns(object):
     WARNING = 2
     ERROR = 3
     TAG2STR = {PRINT: '', INFO: '', WARNING: '#WARNING: ', ERROR: '#ERROR: '}
-
     def __init__(self, cli=True):
         self.cli = cli
         self.buffering = not cli
@@ -22,7 +21,8 @@ class CommandReturns(object):
         if tag == CommandReturns.PRINT:
             print(objs)
         else:
-            print('{} {} {}'.format(CommandReturns.TAG2STR[tag], objs, error), file=sys.stderr)
+            #    msg = '{} {} {}'.format(CommandReturns.TAG2STR[tag], objs, error)
+            print('{} {}'.format(CommandReturns.TAG2STR[tag], objs), file=sys.stderr)
 
     def to_str(self):
         str_out = ''
