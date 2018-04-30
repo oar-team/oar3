@@ -463,9 +463,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             message = conn.recv(1024)
             message = message[:-1]
             answer = message.decode()
-
-            print(answer)
-            
+             
             m = re.search(r'\](.*)$', answer)
             if m and m.group(1) != prev_str:
                 cmd_ret.info(answer)
