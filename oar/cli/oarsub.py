@@ -443,14 +443,11 @@ def cli(command, interactive, queue, resource, reservation, connect,
         message = conn.recv(1024)
         message = message[:-1]
         answer = message.decode().rstrip()
-
-        print(answer)
-        cmd_ret.info(answer)
         
         if answer == 'GOOD RESERVATION':
             cmd_ret.info('Advance reservation is GRANTED.')
         else:
-            
+            cmd_ret.info(answer)
             cmd_ret.info('Advance reservation is REJECTED.')
 
     elif interactive:
