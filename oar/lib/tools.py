@@ -8,6 +8,7 @@ import zmq
 import random
 import string
 import socket
+from socket import gethostname
 from sqlalchemy import distinct
 from oar.lib import (db, config, get_logger, Resource, AssignedResource)
 from oar.lib import logger as log
@@ -64,43 +65,62 @@ almighty_socket = None
 bipbip_commander_socket = None
 
 def notify_user(job, state, msg):  # pragma: no cover
-    #sources/core/common-libs/lib/OAR/Modules/Judas.pm&
-    return () # TODO remove init_judas_notify_user()
-
-    global notification_user_socket
-    # Currently it uses a unix domain sockey to communication to a perl script
-    # TODO need to define and develop the next notification system
-    # see OAR::Modules::Judas::notify_user
-
-    logger.debug("notify_user uses the perl script: judas_notify_user.pl !!! ("
-                 + state + ", " + msg + ")")
-
-    # OAR::Modules::Judas::notify_user($base,notify,$addr,$user,$jid,$name,$state,$msg);
-    # OAR::Modules::Judas::notify_user($dbh,$job->{notify},$addr,$job->{job_user},$job->{job_id},$job->{job_name},"SUSPENDED","Job
-    # is suspended."
-    addr, port = job.info_type.split(':')
-
-    notify = ''
     if job.notify:
-        notify = job.notify
-    
-    name = ''
-    if job.name:
-        name = job.name
-    
-    msg_uds = notify + "°" + addr + "°" + job.user + "°" + str(job.id) + "°" +\
-              name + "°" + state + "°" + msg + "\n"
+        tags = ['RUNNING', 'END', 'ERROR', 'INFO', 'SUSPENDED', 'RESUMING']
+        m = re.match(r'^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$', job.notify)
+        if m:
+            tags = m.group(1).split(',')
+        
+        if state in tags:
+            m = re.match(r'^.*mail\s*:(.+)$', job.notify)
+            if m:
+                mail_address = m.group(1)
+                add_new_event('USER_MAIL_NOTIFICATION', job.id,
+                              'Send a mail to {}: state: {}'.format(mail_address, state))
+                jname = '({})'.format(job.name) if job.name else ''
+                send_mail(job, mail_address,
+                          '*OAR* [{}] {} on {}'.format(state, jname, gethostname()),
+                          msg)
+            else:
+                m = re.match(r'^.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', job.notify)
+                if m:
+                    cmd = '{} -x -T {} OARDO_BECOME_USER={} oardodo {} {} {} "{}"  > /dev/null 2>&1'.\
+                                                         format(config['OPENSSH_CMD'], frontend,
+                                                                job.user, m.group(1), job.id, job.name,
+                                                                state, msg)
+                    try:
+                        p = check_output(cmd, stderr=STDOUT,
+                                         timeout=config['OAR_SSH_CONNECTION_TIMEOUT'])
+                    except TimeoutExpired as e:
+                        p.kill()
+                        msg = 'User notification failed : ssh timeout, on node $host (cmd : ' +\
+                              cmd + ')'
+                        logger.error(msg)
+                        add_new_event('USER_EXEC_NOTIFICATION_ERROR', job.id, msg)
+                        return False
 
-    if not notification_user_socket:
-        init_judas_notify_user()
+                    msg = 'Launched user notification command : ' + cmd
+                    add_new_event('USER_EXEC_NOTIFICATION', job.id, msg)
 
-    nb_sent = notification_user_socket.send(msg_uds.encode())
-
-    if nb_sent == 0:
-        logger.error("notify_user: socket error")
-        return False  # error 
     return True
 
+
+def send_mail(job, mail_address, subject, msg_content):
+    import smtplib
+    from email.message import EmailMessage
+    
+    msg = EmailMessage()
+    msg.set_content(msg_content)
+
+    msg['Subject'] = subject
+    msg['From'] = config['MAIL_SENDER']
+    msg['To'] = mail_address
+
+    s = smtplib.SMTP(config['MAIL_SMTP_SERVER'])
+    s.send_message(msg)
+    s.quit()
+
+    
 def create_almighty_socket():  # pragma: no cover
     global zmq_context
     global almighty_socket
