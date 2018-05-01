@@ -62,26 +62,6 @@ logger = get_logger("oar.lib.tools")
 zmq_context = None
 almighty_socket = None
 bipbip_commander_socket = None
-notification_user_socket = None
-
-
-def init_judas_notify_user():  # pragma: no cover
-
-    logger.debug("init judas_notify_user (launch judas_notify_user.pl)")
-
-    global notification_user_socket
-    uds_name = "/tmp/judas_notify_user.sock"
-    if not os.path.exists(uds_name):
-        binary = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                              "judas_notify_user.pl")
-        os.system("%s &" % binary)
-
-        while(not os.path.exists(uds_name)):
-            time.sleep(0.1)
-
-        notification_user_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        notification_user_socket.connect(uds_name)
-        
 
 def notify_user(job, state, msg):  # pragma: no cover
     #sources/core/common-libs/lib/OAR/Modules/Judas.pm&
