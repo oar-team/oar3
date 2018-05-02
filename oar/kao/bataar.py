@@ -66,14 +66,12 @@ logger = get_logger("oar.batsim")
 
 def monkeypatch_oar_lib_tools():
     global orig_func
-
-    orig_func['init_judas_notify_user'] = oar.lib.tools.init_judas_notify_user
+    
     orig_func['notify_almighty'] = oar.lib.tools.notify_almighty
     orig_func['notify_bipbip_commander'] = oar.lib.tools.notify_bipbip_commander
     orig_func['notify_tcp_socket'] = oar.lib.tools.notify_tcp_socket
     orig_func['notify_user'] = oar.lib.tools.notify_user
 
-    oar.lib.tools.init_judas_notify_user = lambda: None
     oar.lib.tools.notify_almighty = lambda x: True
     oar.lib.tools.notify_bipbip_commander = lambda x: True
     oar.lib.tools.notify_tcp_socket = lambda addr, port, msg: len(msg)
@@ -81,7 +79,6 @@ def monkeypatch_oar_lib_tools():
 
 
 def restore_oar_lib_tools():
-    oar.lib.tools.init_judas_notify_user = orig_func['init_judas_notify_user']
     oar.lib.tools.notify_almighty = orig_func['notify_almighty']
     oar.lib.tools.notify_bipbip_commander = orig_func['notify_bipbip_commander']
     oar.lib.tools.notify_tcp_socket = orig_func['notify_tcp_socket']
