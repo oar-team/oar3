@@ -27,6 +27,7 @@ class Configuration(dict):
         'LOG_LEVEL': 3,
         'LOG_FILE': ':stderr:',
         'LOG_FORMAT': '[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s',
+        'OAR_SSH_CONNECTION_TIMEOUT': 120,
     }
 
     def __init__(self, defaults=None):
