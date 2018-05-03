@@ -65,16 +65,13 @@ almighty_socket = None
 bipbip_commander_socket = None
 
 def notify_user(job, state, msg):  # pragma: no cover
-
-    #TODO host & frontend
-
     
     if job.notify:
         tags = ['RUNNING', 'END', 'ERROR', 'INFO', 'SUSPENDED', 'RESUMING']
         m = re.match(r'^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$', job.notify)
         if m:
             tags = m.group(1).split(',')
-        
+            
         if state in tags:
             m = re.match(r'^.*mail\s*:(.+)$', job.notify)
             if m:
@@ -88,12 +85,15 @@ def notify_user(job, state, msg):  # pragma: no cover
             else:
                 m = re.match(r'^.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', job.notify)
                 if m:
+                    host = job.info_type.split(':')[0]
+                    
                     cmd = '{} -x -T {} OARDO_BECOME_USER={} oardodo {} {} {} {} "{}"  > /dev/null 2>&1'.\
-                                                          format(config['OPENSSH_CMD'], frontend,
+                                                          format(config['OPENSSH_CMD'], host,
                                                                  job.user, m.group(1), job.id, job.name,
                                                                  state, msg)
+                    logger.error(cmd)
                     try:
-                        p = check_output(cmd, stderr=STDOUT,
+                        p = check_output(cmd, stderr=STDOUT, shell=True,
                                          timeout=config['OAR_SSH_CONNECTION_TIMEOUT'])
                     except CalledProcessError as e:
                         logger.error('User notification failed: ' + e.output)

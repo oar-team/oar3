@@ -5,6 +5,8 @@ import sys
 import copy
 import random
 
+from socket import gethostname
+
 from sqlalchemy import text, exc
 from procset import ProcSet
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
@@ -1095,6 +1097,9 @@ class JobParameters():
         else:
             self.launching_directory = os.path.expanduser('~' + self.user)
 
+        if not self.info_type:
+            self.info_type = gethostname() + ':'
+            
         self.array_id = 0
         self.start_time = 0
         self.reservation_field = 'None'
