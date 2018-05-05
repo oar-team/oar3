@@ -620,6 +620,37 @@ def get_private_ssh_key_file_name(cpuset_name):
     return(config['OAREXEC_DIRECTORY'] + '/' + cpuset_name + '.jobkey')
 
 
+def format_job_message_text(job_name, estimated_nb_resources, estimated_walltime, job_type,
+                            reservation, queue, project, types_list, additional_msg):
+    job_mode = 'B'
+    if reservation:
+        job_mode = 'R'
+    elif job_type == 'INTERACTIVE':
+        job_mode = 'I'
+        
+    types_to_text = ''
+    if types_list:
+        types_to_text = 'T=' + '|'.join(types_list) + ','
+
+    job_message = 'R=' + str(estimated_nb_resources) + ',W='
+    job_message += duration_to_sql(int(estimated_walltime)) + ',J=' + job_mode + ','
+    if job_name:
+        job_message += 'N=' + job_name + ','
+    if queue != 'default' and queue != 'besteffort':
+        job_message += 'Q=' + queue + ','
+    if project != 'default':
+        job_message += 'P=' + project + ','
+    job_message += types_to_text
+
+    job_message = job_message[:-1]
+
+    if additional_msg:
+        job_message += ' (' + additional_msg + ')'
+    
+    return(job_message)
+
+
+
 def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'

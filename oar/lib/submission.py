@@ -16,7 +16,7 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
 
 from oar.lib.resource import ResourceSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, PIPE)
+from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, PIPE, format_job_message_text)
 
 import oar.lib.tools as tools
 
@@ -534,16 +534,7 @@ def add_micheline_subjob(job_parameters,
         else:
             properties = properties_applied_after_validation
     job_parameters.properties = properties
-    # TODO Verify the content of the ssh keys
-
-    # TODO format job message
-    # message = ''
-
-    # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
-    # $jobType, $reservationField, $queue_name, $project, $type_list, '');
-
-    # TODO  job_group
-    #
+  
     name = job_parameters.name
     stdout = job_parameters.stdout
     if not stdout:
@@ -566,9 +557,11 @@ def add_micheline_subjob(job_parameters,
     # Insert job
 
     kwargs = job_parameters.kwargs(array_commands[0], date)
-    kwargs['message'] = ''  # TODO message
+    estimated_nbr, estimated_walltime = estimated_nb_resources[0]
+    kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
+                                                job_parameters.reservation, job_parameters.queue,
+                                                job_parameters.project, job_parameters.types, '')
     kwargs['array_index'] = array_index
-
     kwargs['stdout_file'] = stdout
     kwargs['stderr_file'] = stderr
     
@@ -712,11 +705,6 @@ def add_micheline_simple_array_job(job_parameters,
         else:
             properties = job_parameters.properties_applied_after_validation
     job_parameters.properties = properties
-    
-    # TODO format job message
-
-    # my $job_message = format_job_message_text($job_name,$estimated_nb_resources, $estimated_walltime,
-    # $jobType, $reservationField, $queue_name, $project, $type_list, '');
 
     name = job_parameters.name
     stdout = job_parameters.stdout
@@ -739,7 +727,10 @@ def add_micheline_simple_array_job(job_parameters,
     
     # Insert job
     kwargs = job_parameters.kwargs(array_commands[0], date)
-    kwargs['message'] = ''  # TODO message
+    estimated_nbr, estimated_walltime = estimated_nb_resources[0]
+    kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
+                                                job_parameters.reservation, job_parameters.queue,
+                                                job_parameters.project, job_parameters.types, '')
     kwargs['array_index'] = array_index
     
     kwargs['stdout_file'] = stdout
@@ -1189,10 +1180,6 @@ class JobParameters():
         kwargs['checkpoint_signal'] = self.signal
         kwargs['reservation'] = self.reservation_field
 
-        #TODO: to reconsider
-        #kwargs['stdout_file'] = ''
-        #kwargs['stderr_file'] = ''  
-        # print(kwargs)
         return kwargs
 
 class Submission():
