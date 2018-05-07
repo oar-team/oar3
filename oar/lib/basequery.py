@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy.orm import Query, Load
+from sqlalchemy import (text)
 
 from .exceptions import DoesNotExist
 from . import db
@@ -40,7 +41,7 @@ class BaseQuery(Query):
         return rv
 
     def filter_jobs_for_user(self, user, from_time, to_time, states,
-                             job_ids, array_id):
+                             job_ids, array_id, sql_property):
         if not states and not job_ids:
             states = ['Finishing', 'Running', 'Resuming', 'Suspended',
                       'Launching', 'toLaunch', 'Waiting', 'Hold',
@@ -73,6 +74,7 @@ class BaseQuery(Query):
             q = q.filter(Job.state.in_(states)) if states else q
             q = q.filter(Job.array_id == array_id) if array_id else q
             q = q.filter(Job.id.in_(job_ids)) if job_ids else q
+            q = q.filter(text(sql_property)) if sql_property else q
             for criteria in criterion:
                 q = q.filter(criteria) if criteria is not None else q
             return q
@@ -101,7 +103,7 @@ class BaseQueryCollection(object):
     """ Queries collection. """
     def get_jobs_for_user(self, user, from_time=None, to_time=None,
                           states=None, job_ids=None, array_id=None,
-                          detailed=True):
+                          sql_property=None, detailed=True):
         """ Get all distinct jobs for a user query. """
         if detailed:
             query = db.query(Job)
@@ -113,7 +115,8 @@ class BaseQueryCollection(object):
         return query.order_by(Job.id)\
                     .filter_jobs_for_user(user, from_time,
                                           to_time, states,
-                                          job_ids, array_id)
+                                          job_ids, array_id,
+                                          sql_property)
 
     def get_resources(self, network_address, detailed=True):
         if detailed:

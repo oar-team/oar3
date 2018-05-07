@@ -88,12 +88,11 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     if version:
         print(VERSION)
         return
-
     
     username = get_username() if user else None
-
     jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
-                                        states, job_ids, array_id, detailed=full).all()
+                                        states, job_ids, array_id, sql,
+                                        detailed=full).all()
 
     if jobs:
         if not json or not yaml:
