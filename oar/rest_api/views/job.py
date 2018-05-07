@@ -42,7 +42,7 @@ def index(offset, limit, user, start_time, stop_time, states, array_id,
           job_ids, detailed=None):
     #import pdb; pdb.set_trace()
     query = db.queries.get_jobs_for_user(user, start_time, stop_time,
-                                         states, job_ids, array_id, detailed)
+                                         states, job_ids, array_id, None, detailed)
     page = query.paginate(offset, limit)
     g.data['total'] = page.total
     g.data['links'] = page.links
