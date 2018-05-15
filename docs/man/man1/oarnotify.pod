@@ -1,0 +1,43 @@
+=head1 NAME
+
+oarnotify - send a message tag to OAR's Almighty
+
+=head1 SYNOPSIS
+
+B<oarnotify> [options] [message tag]
+
+=head1 DESCRIPTION
+
+This command is used to trigger some actions of the OAR server (Almighty).
+
+=head1 MESSAGE TAGS
+
+=over
+
+=item B<Term>
+
+Ask OAR server to launch the scheduler (default tag). 
+
+=item B<Finaud>
+
+Ask OAR server to check empty and suspected nodes.
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item B<-v, --verbose>
+
+Increase verbosity.
+
+=item B<-V, --version>
+
+Print OAR version.
+
+=back
+
+=head1 COPYRIGHTS
+
+ Copyright 2003-2016 Laboratoire d'Informatique de Grenoble (http://www.liglab.fr). This software is licensed under the GNU General Public License Version 2 or above. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

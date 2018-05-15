@@ -1,0 +1,75 @@
+=head1 NAME
+
+oarnodesetting - Change the state and properties of a node in OAR.
+
+=head1 SYNOPSIS
+
+B<oarnodesetting> [[-a] [-h hostname] [-p "property=value"]] || [[-r resource_id] || [--sql "sql syntax"] || [-h hostname]] [[-s state] || [-p "property=value"] || [-m on|off]] || [-d on|off]
+
+=head1 DESCRIPTION
+
+This command is used to Change the state and properties of a node in OAR.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-r, --resource> [resource id]
+
+Resource id of the resource to modify
+
+=item B<-h, --hostname> [hostname]
+
+Hostname for the resources to modify
+
+=item B<--sql> [SQL]
+
+Select resources to modify from database using a SQL where clause on the resource table (e.g.: "type = 'default'")
+
+=item B<-f, --file> [file]
+
+Get a hostname list from a file (1 hostname by line) for resources to modify
+
+=item B<-a, --add>
+
+Add a new resource.
+
+=item B<-s, --state> STATE
+
+Set the new state of the node. Possible states are: Alive, Absent and Dead.
+
+=item B<-m, --maintenance> [on|off]
+
+Set/unset maintenance mode for resources, this is equivalent to setting its state to Absent and its available_upto to 0
+
+=item B<-d, --drain> [on|off]
+
+Prevent new job to be scheduled on resources, this is equivalent to setting the drain property to YES
+
+=item B<-p, --property> ["property=value"]
+
+Set the property of the node to the given value.
+
+=item B<-n, --nowait>
+
+Do not wait for job ends when the node switches to Absent or Dead.
+
+=item B<--last-property-value> [property]
+
+Get the last value used for a property (as sorted by SQL's ORDER BY DESC)
+
+=back
+
+=head1 EXAMPLES
+
+=over
+
+=item oarnodesetting -s Alive -h node012
+
+=item oarnodesetting -s Absent -h node012
+
+=back
+
+=head1 COPYRIGHTS
+
+ Copyright 2003-2016 Laboratoire d'Informatique de Grenoble (http://www.liglab.fr). This software is licensed under the GNU General Public License Version 2 or above. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
