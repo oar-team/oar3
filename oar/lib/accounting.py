@@ -22,28 +22,24 @@ def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
         sql_property = 'AND ( ' + sql_property + ' )'
 
     cur = db.session
-    result = cur.execute("""SELECT accounting_user as user, consumption_type,
-    sum(consumption) as seconds, floor(sum(consumption)/3600) as hours,
+    res = cur.execute("""SELECT accounting_user as user, consumption_type,
+    sum(consumption) as seconds,
     min(window_start) as first_window_start, max(window_stop) as last_window_stop
     FROM accounting
     WHERE window_stop > %s AND window_start < %s %s %s
     GROUP BY accounting_user,consumption_type ORDER BY seconds""" %
                          (start_time, stop_time, user_query, sql_property))
 
-    for r in result:
-        raise('TODO TOFINISH')
+    results = {}
+    for r in res:
+        user, consumption_type, consumption, first_window_start, last_window_stop = r
+        if user not in results:
+            results[user] = {}
+        results[user][consumption_type] = consumption
+        results[user]['begin'] = first_window_start
+        results[user]['end'] = last_window_stop
 
-    return
-    # my $results;
-    # while (my @r = $sth->fetchrow_array()) {
-    #     $results->{$r[0]}->{$r[1]} = $r[2];
-    #     $results->{$r[0]}->{begin} = $r[4];
-    #     $results->{$r[0]}->{end} = $r[5];
-    # }
-    # $sth->finish();
-
-    # return($results);
-
+    return results
 
 def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', offset=''):
     """"Get an array of consumptions by project for a given user
@@ -59,7 +55,7 @@ def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', o
         limit_offset_query = limit_offset_query + ' OFFSET ' + offset
 
     cur = db.session
-    result = cur.execute("""SELECT accounting_user as user, consumption_type,
+    res = cur.execute("""SELECT accounting_user as user, consumption_type,
     sum(consumption) as seconds, accounting_project as project
     FROM accounting
     WHERE
@@ -68,18 +64,16 @@ def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', o
     ORDER BY project,consumption_type,seconds %s """ %
                          (start_time, stop_time, user_query, limit_offset_query))
 
-    for r in result:
-        raise('TODO TOFINISH')
+    results = {}
+    for r in res:
+        user, consumption_type, consumption, project = r
+        if project not in results:
+            results[project] = {}
+        if consumption_type not in results[project]:
+            results[project][consumption_type] = {}
+        results[project][consumption_type][user] = consumption
 
-    return
-    # my $results;
-    # while (my @r = $sth->fetchrow_array()) {
-    #     $results->{$r[3]}->{$r[1]}->{$r[0]} = $r[2];
-    # }
-    # $sth->finish();
-
-    # return($results);
-
+    return results
 
 def update_accounting(start_time, stop_time, window_size, user, project, queue_name,
                       c_type, nb_resources):

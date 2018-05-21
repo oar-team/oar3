@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import datetime
 
 from oar import VERSION
 from oar.lib import (db, config)
-
-from oar.lib.tools import get_username
+from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
+                                get_last_project_karma)
+from oar.lib.tools import (get_username, sql_to_local, get_duration)
 import oar.lib.tools as tools
 
 import click
 click.disable_unicode_literals_warning = True
-
 
 STATE2CHAR = {
     'Waiting': 'W',
@@ -27,7 +28,6 @@ STATE2CHAR = {
     'toAckReservation': 'W',
     'NA': '-'
 }
-
 
 def print_jobs(legacy, jobs):
 
@@ -56,6 +56,80 @@ def print_jobs(legacy, jobs):
         # TODO
         print(jobs.text)
 
+def print_accounting(accounting_query, user, sql_property):
+    m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*', accounting_query)
+    if m:
+        date1 = m.group(1) + ' 00:00:00'
+        date2 = m.group(2) + ' 00:00:00'
+        d1_local = sql_to_local(date1)
+        d2_local = sql_to_local(date2)
+        consumptions = get_accounting_summary(d1_local, d2_local, user, sql_property)
+        # One user output
+        if user:
+            asked = 0
+            if user in consumptions and 'ASKED' in consumptions[user]:
+                asked = consumptions[user]['ASKED']
+            used = 0
+            if user in consumptions and 'USED' in consumptions[user]:
+                used = consumptions[user]['USED']
+
+            print('Usage summary for user {} from {} to {}:'.format(user, date1, date2))
+            print('-------------------------------------------------------------')
+
+            start_first_window = 'No window found'
+            if consumptions[user]['begin']:
+                start_first_window = local_to_sql(consumptions[user]['begin'])
+            print('{:>28}: {}'.format('Start of the first window', start_first_window)) 
+
+            end_last_window = 'No window found'
+            if consumptions[user]['end']:
+                end_last_window = local_to_sql(consumptions[user]['end'])
+            print('{:>28}: {}'.format('End of the last window', end_last_window))
+
+            print('{:>28}: {} ( {})'.format('Asked consumption', asked, get_duration(asked)))
+            print('{:>28}: {} ( {})'.format('Used consumption', used, get_duration(used)))
+
+            print('By project consumption:')
+
+            consumptions_by_project = get_accounting_summary_byproject(d1_local, d2_local, user)
+            for project, consumptions_proj in consumptions_by_project.items:
+                print('  ' + project + ':')
+                asked = 0
+                if 'ASKED' in consumptions_proj and user in consumptions_proj['ASKED']:
+                    asked = consumptions_proj['ASKED'][user]
+                used = 0
+                if 'USED' in consumptions_proj and user in consumptions_proj['USED']:
+                    used = consumptions_proj['USED'][user]
+
+                print('{:>28}: {} ( {})'.format('Asked consumption', asked, get_duration(asked)))
+                print('{:>28}: {} ( {})'.format('Used consumption', used, get_duration(used)))
+
+                last_karma = get_last_project_karma(user, project, d2_local)
+                if last_karma:
+                    m = re.match(r'.*Karma\s*\=\s*(\d+\.\d+)', last_karma[0])
+                    if m:
+                      print('{:>28}: {}'.format('Last Karma', m.group(1)))
+        # All users array output
+        else:
+            print('User       First window starts  Last window ends     Asked (seconds)  Used (seconds)')
+            print('---------- -------------------- -------------------- ---------------- ----------------')
+            for user, consumption_user in consumptions.items():
+                asked = 0
+                if 'ASKED' in consumption_user:
+                    asked = consumption_user['ASKED']
+                used = 0
+                if 'USED' in consumption_user:
+                    used = consumption_user['USED']    
+
+                begin = local_to_sql(consumption_user['begin'])
+                end = local_to_sql(consumption_user['end'])
+
+                print('{:>10} {:>19} {:>19} {:>16} {:>16}'.format(user, begin, end, asked, used))
+    else:
+        print('Bad syntax for --accounting')
+    
+    
+        
 
 @click.command()
 @click.option('-j', '--job', type=click.INT, multiple=True,
