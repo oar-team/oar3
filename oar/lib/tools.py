@@ -571,6 +571,20 @@ def sql_to_duration(t):
     (hour, min, sec) = sql_to_hms(t)
     return hms_to_duration(hour, min, sec)
 
+def get_duration(seconds):
+    """Convert seconds to compound duration taken from rosettacode site
+    https://rosettacode.org/wiki/Convert_seconds_to_compound_duration#Python
+    """
+    t= []
+    for dm in (60, 60, 24, 7):
+        seconds, m = divmod(seconds, dm)
+        t.append(m)
+    t.append(seconds)
+    return ', '.join('%d %s' % (num, unit)
+                     for num, unit in zip(t[::-1], 'wk d hr min sec'.split())
+                     if num)
+
+
 def send_checkpoint_signal(job):
     raise NotImplementedError("TODO")
     logger.debug("Send checkpoint signal to the job " + str(job.id))
