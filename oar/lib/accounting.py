@@ -149,7 +149,7 @@ def check_accounting_update(window_size):
                .filter(or_(Job.state == 'Terminated', Job.state == 'Error'))\
                .filter(Job.stop_time >= Job.start_time)\
                .filter(Job.start_time > 1)\
-               .filter(Job.assigned_moldable_id == MoldableJobDescription.id)\
+               .filter(Job.assigned_moldable_job == MoldableJobDescription.id)\
                .filter(AssignedResource.moldable_id == MoldableJobDescription.id)\
                .filter(AssignedResource.resource_id == Resource.id)\
                .filter(Resource.type == 'default')\
@@ -161,7 +161,7 @@ def check_accounting_update(window_size):
         (start_time, stop_time, walltime, job_id, user,
          queue_name, nb_resources, project) = job_accounting_info
         max_stop_time = stop_time + walltime
-        print('[ACCOUNTING] Treate job ' + job_id)
+        print('[ACCOUNTING] Treate job ' + str(job_id))
         update_accounting(start_time, stop_time, window_size, user,
                           project, queue_name, 'USED', nb_resources)
         update_accounting(start_time, max_stop_time, window_size, user,

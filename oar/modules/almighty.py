@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.tools import (Popen, PIPE, kill, get_time)
+from oar.lib.tools import (PIPE, kill, get_time)
 import oar.lib.tools as tools
 
 import socket
