@@ -71,7 +71,7 @@ def get_accounting_summary_byproject(start_time, stop_time, user='', limit='', o
             results[project] = {}
         if consumption_type not in results[project]:
             results[project][consumption_type] = {}
-        results[project][consumption_type][user] = consumption
+        results[project][consumption_type][user] = int(consumption)
 
     return results
 

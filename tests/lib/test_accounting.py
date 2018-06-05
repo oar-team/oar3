@@ -70,10 +70,19 @@ def test_get_accounting_summary():
     result2 = get_accounting_summary(0, 100*86400, 'toto')
     print(result1)
     print(result2)
-    assert result1 == {'zozo': {'USED': 8640000, 'ASKED': 10368000, 'end': 1209599, 'begin': 0}}
+    assert result1['zozo']['USED'] == 8640000
+    assert result1['zozo']['ASKED'] == 10368000 
     assert result2 == {}
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
 def test_get_accounting_summary_byproject():
+    insert_terminated_jobs()
+    result1 = get_accounting_summary_byproject(0, 100*86400)
+    result2 = get_accounting_summary_byproject(0, 100*86400, 'toto')
+    print(result1)
+    print(result2)
+    assert result1['yopa']['ASKED']['zozo'] == 10368000
+    assert result1['yopa']['USED']['zozo'] == 8640000
+    assert result2 == {}
     assert True
