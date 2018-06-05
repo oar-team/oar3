@@ -35,7 +35,7 @@ def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
         user, consumption_type, consumption, first_window_start, last_window_stop = r
         if user not in results:
             results[user] = {}
-        results[user][consumption_type] = consumption
+        results[user][consumption_type] = int(consumption)
         results[user]['begin'] = first_window_start
         results[user]['end'] = last_window_stop
 
@@ -160,7 +160,7 @@ def check_accounting_update(window_size):
     for job_accounting_info in result:
         (start_time, stop_time, walltime, job_id, user,
          queue_name, nb_resources, project) = job_accounting_info
-        max_stop_time = stop_time + walltime
+        max_stop_time = start_time + walltime
         print('[ACCOUNTING] Treate job ' + str(job_id))
         update_accounting(start_time, stop_time, window_size, user,
                           project, queue_name, 'USED', nb_resources)

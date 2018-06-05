@@ -6,7 +6,8 @@ from ..helpers import insert_terminated_jobs
 from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource)
 from oar.lib.job_handling import (insert_job)
 from oar.lib.accounting import(check_accounting_update, delete_all_from_accounting,
-                               delete_accounting_windows_before, get_last_project_karma)
+                               delete_accounting_windows_before, get_last_project_karma,
+                               get_accounting_summary, get_accounting_summary_byproject)
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -60,3 +61,19 @@ def test_get_last_project_karma():
     msg2 = get_last_project_karma('titi', '', 50000)
     assert  karma == msg1
     assert  '' == msg2
+    
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")    
+def test_get_accounting_summary():
+    insert_terminated_jobs()
+    result1 = get_accounting_summary(0, 100*86400)
+    result2 = get_accounting_summary(0, 100*86400, 'toto')
+    print(result1)
+    print(result2)
+    assert result1 == {'zozo': {'USED': 8640000, 'ASKED': 10368000, 'end': 1209599, 'begin': 0}}
+    assert result2 == {}
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_get_accounting_summary_byproject():
+    assert True
