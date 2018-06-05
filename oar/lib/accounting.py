@@ -11,7 +11,7 @@ from oar.lib import (db, Accounting, Job, MoldableJobDescription, AssignedResour
 def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
     """Get an array of consumptions by users
     params: start date, ending date, optional user"""
-    if db.dialect == 'sqlite':
+    if db.dialect == 'sqlite': # noqa
         msg = 'Get_accounting_summary is not supported with sqlite'
         raise NotImplementedError(msg)
 
