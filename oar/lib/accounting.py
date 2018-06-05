@@ -190,8 +190,11 @@ def get_last_project_karma(user, project, date):
     params: user, project, date"""
 
     cur = db.session
-    result = cur.execute("""SELECT message, project, start_time FROM jobs
-    WHERE job_user = %s AND message like \'%s\' AND project = %s AND start_time < %s
-    ORDER BY start_time desc LIMIT 1"""
-                         % (user, '%Karma%', project, date))
-    return result
+    result = cur.execute("""SELECT message FROM jobs
+    WHERE job_user='%s' AND message like \'%s\' AND project ='%s' AND start_time < %s
+    ORDER BY start_time desc LIMIT 1""" % (user, '%Karma%', project, date))
+    if result:
+        r = result.first()
+        if r:
+            return r[0]
+    return ''

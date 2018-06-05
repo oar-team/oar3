@@ -6,7 +6,7 @@ from ..helpers import insert_terminated_jobs
 from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource)
 from oar.lib.job_handling import (insert_job)
 from oar.lib.accounting import(check_accounting_update, delete_all_from_accounting,
-                               delete_accounting_windows_before)
+                               delete_accounting_windows_before, get_last_project_karma)
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -46,3 +46,17 @@ def test_delete_accounting_windows_before():
     delete_accounting_windows_before(5*86400)
     accounting2 = db.query(Accounting).all()
     assert len(accounting1) > len(accounting2)
+
+
+def test_get_last_project_karma():
+    user = 'toto'
+    project = 'yopa'
+    start_time = 10000
+    karma = ' Karma=0.345'
+    job_id = insert_job(res=[(60, [('resource_id=2', '')])],
+                        properties='', command='yop',user = user, project = project,
+                        start_time = start_time, message=karma)
+    msg1 = get_last_project_karma('toto', 'yopa', 50000)
+    msg2 = get_last_project_karma('titi', '', 50000)
+    assert  karma == msg1
+    assert  '' == msg2
