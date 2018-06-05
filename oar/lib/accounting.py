@@ -179,9 +179,9 @@ def delete_all_from_accounting():
     db.commit()
 
 
-def delete_accounting_windows_before(duration):
+def delete_accounting_windows_before(window_stop):
     """Remove windows from accounting."""
-    db.query(Accounting).filter(Accounting.window_stop <= duration).delete(synchronize_session=False)
+    db.query(Accounting).filter(Accounting.window_stop <= window_stop).delete(synchronize_session=False)
     db.commit()
 
 
