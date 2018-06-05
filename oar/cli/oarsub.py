@@ -293,7 +293,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     # print OAR version
     if version:
-        print(VERSION)
+        cmd_ret.print_('OAR version : ' + VERSION)
         cmd_ret.exit()
         
     # Check the default name of the key if we have to generate it

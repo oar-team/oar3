@@ -58,7 +58,7 @@ def test_oarsub_version():
     runner = CliRunner()
     result = runner.invoke(cli, ['-V'])
     print(result.output)
-    assert re.match(r'^\d\.', result.output)
+    assert re.match(r'.*\d\.\d\.\d.*', result.output)
     
 def test_oarsub_sleep_1(monkeypatch):
     runner = CliRunner()

@@ -1,5 +1,6 @@
 # coding: utf-8
 import pytest
+import re
 
 from ..helpers import insert_terminated_jobs
 
@@ -24,10 +25,20 @@ def minimal_db_initialization(request):
         db['Queue'].create(name='default')
         yield
 
+def test_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-V'])
+    print(result.output)
+    assert re.match(r'.*\d\.\d\.\d.*', result.output)
+
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
-def test_oaraccounting():
+def test_simple_oaraccounting():
     insert_terminated_jobs()
+
+    runner = CliRunner()
+    result = runner.invoke(cli)
+
     
     accounting = db.query(Accounting).all()
     for a in accounting:
