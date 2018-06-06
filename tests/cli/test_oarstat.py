@@ -8,6 +8,7 @@ from click.testing import CliRunner
 from oar.lib import db
 from oar.cli.oarstat import cli
 from oar.lib.job_handling import insert_job
+import oar.lib.tools  # for monkeypatching
 
 NB_JOBS=5
 
@@ -21,6 +22,10 @@ def minimal_db_initialization(request):
 
         db['Queue'].create(name='default')
         yield
+
+@pytest.fixture(scope='function')
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'get_username', lambda: 'zozo')
 
 
 def test_oarstat_simple():
@@ -48,14 +53,26 @@ def test_oarstat_sql_property():
                     reason="need postgresql database")
 def test_oarstat_accounting(minimal_db_initialization):
     insert_terminated_jobs()
-    karma = ' Karma=0.345'
-    insert_job(res=[(60, [('resource_id=2', '')])],
-               properties='', command='yop', message=karma)
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20'])
     str_result = result.output_bytes.decode()
     print(str_result)
     print(str_result.split('\n'))
     assert re.match(r'.*8640000.*', str_result.split('\n')[2])
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
+    insert_terminated_jobs()
+    karma = ' Karma=0.345'
+    insert_job(res=[(60, [('resource_id=2', '')])],
+               properties='', command='yop', user='zozo', project='yopa',
+               start_time=0, message=karma)
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20', '--user'])
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    print(str_result.split('\n')[-2])
+    assert re.match(r'.*Karma.*0.345.*', str_result.split('\n')[-2])
     
     

@@ -28,8 +28,7 @@ def minimal_db_initialization(request):
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'get_date', lambda: 864000)
-    #@request.addfinalizer
-    #def teardown():
+
         
 def test_version():
     runner = CliRunner()

@@ -81,22 +81,22 @@ def print_accounting(accounting, user, sql_property):
             print('-------------------------------------------------------------')
 
             start_first_window = 'No window found'
-            if consumptions[user]['begin']:
+            if 'begin' in consumptions[user]:
                 start_first_window = local_to_sql(consumptions[user]['begin'])
             print('{:>28}: {}'.format('Start of the first window', start_first_window)) 
 
             end_last_window = 'No window found'
-            if consumptions[user]['end']:
+            if 'end' in consumptions[user]:
                 end_last_window = local_to_sql(consumptions[user]['end'])
             print('{:>28}: {}'.format('End of the last window', end_last_window))
 
-            print('{:>28}: {} ( {})'.format('Asked consumption', asked, get_duration(asked)))
-            print('{:>28}: {} ( {})'.format('Used consumption', used, get_duration(used)))
+            print('{:>28}: {:>10} ({:>10})'.format('Asked consumption', asked, get_duration(asked)))
+            print('{:>28}: {:>10} ({:>10})'.format('Used consumption', used, get_duration(used)))
 
             print('By project consumption:')
-
+            
             consumptions_by_project = get_accounting_summary_byproject(d1_local, d2_local, user)
-            for project, consumptions_proj in consumptions_by_project.items:
+            for project, consumptions_proj in consumptions_by_project.items():
                 print('  ' + project + ':')
                 asked = 0
                 if 'ASKED' in consumptions_proj and user in consumptions_proj['ASKED']:
@@ -105,12 +105,12 @@ def print_accounting(accounting, user, sql_property):
                 if 'USED' in consumptions_proj and user in consumptions_proj['USED']:
                     used = consumptions_proj['USED'][user]
 
-                print('{:>28}: {} ( {})'.format('Asked consumption', asked, get_duration(asked)))
-                print('{:>28}: {} ( {})'.format('Used consumption', used, get_duration(used)))
+                print('{:>28}: {:>10} ({:>10})'.format('Asked consumption', asked, get_duration(asked)))
+                print('{:>28}: {:>10} ({:>10})'.format('Used consumption', used, get_duration(used)))
 
                 last_karma = get_last_project_karma(user, project, d2_local)
                 if last_karma:
-                    m = re.match(r'.*Karma\s*\=\s*(\d+\.\d+)', last_karma[0])
+                    m = re.match(r'.*Karma\s*\=\s*(\d+\.\d+)', last_karma)
                     if m:
                       print('{:>28}: {}'.format('Last Karma', m.group(1)))
         # All users array output
@@ -168,7 +168,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
         cmd_ret.print_('OAR version : ' + VERSION)
         cmd_ret.exit()
     
-    username = get_username() if user else None
+    username = tools.get_username() if user else None
 
     if job_ids and array_id:
        cmd_ret.error('Conflicting Job IDs and Array IDs (--array and -j cannot be used together)',
