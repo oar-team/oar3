@@ -119,8 +119,7 @@ def test_db_all_in_one_simple_1(monkeypatch):
 
     # pdb.set_trace()
     meta_schedule('internal')
-
-    for i in db['GanttJobsPrediction'].query.all():
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     job = db['Job'].query.one()
@@ -158,7 +157,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db['GanttJobsPrediction'].query.order_by(GanttJobsPrediction.moldable_id).all():
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time - now)
 
@@ -190,7 +189,7 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db['GanttJobsPrediction'].query.all():
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
         res.append(i.start_time - t1)
 
@@ -484,7 +483,7 @@ def test_db_all_in_one_simple_2(monkeypatch):
 
     meta_schedule('internal')
 
-    for i in db['GanttJobsPrediction'].query.all():
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     job = db['Job'].query.one()
@@ -499,7 +498,7 @@ def test_db_all_in_one_simple_interactive_waiting_1(monkeypatch):
 
     meta_schedule('internal')
 
-    for i in db['GanttJobsPrediction'].query.all():
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     jobs = db['Job'].query.order_by(db['Job'].id).all()
