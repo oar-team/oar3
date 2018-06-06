@@ -14,12 +14,9 @@ def get_accounting_summary(start_time, stop_time, user='', sql_property=''):
     if db.dialect == 'sqlite': # pragma: no cover
         msg = 'Get_accounting_summary is not supported with sqlite'
         raise NotImplementedError(msg)
-
-    user_query = ''
-    if user:
-        user_query = "AND accounting_user = '%s'" % (user)
-    if sql_property:
-        sql_property = 'AND ( ' + sql_property + ' )'
+    
+    user_query = "AND accounting_user = '%s'" % (user) if user else ''
+    sql_property = 'AND ( ' + sql_property + ' )' if sql_property else ''
 
     cur = db.session
     res = cur.execute("""SELECT accounting_user as user, consumption_type,

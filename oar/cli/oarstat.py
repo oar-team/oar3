@@ -9,7 +9,7 @@ from .utils import CommandReturns
 from oar.lib import (db, config)
 from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
                                 get_last_project_karma)
-from oar.lib.tools import (get_username, sql_to_local, get_duration)
+from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration)
 import oar.lib.tools as tools
 
 import click
@@ -59,13 +59,15 @@ def print_jobs(legacy, jobs):
         print(jobs.text)
 
 def print_accounting(accounting, user, sql_property):
-    m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*', accounting_query)
+    m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*', accounting)
     if m:
         date1 = m.group(1) + ' 00:00:00'
         date2 = m.group(2) + ' 00:00:00'
         d1_local = sql_to_local(date1)
         d2_local = sql_to_local(date2)
+
         consumptions = get_accounting_summary(d1_local, d2_local, user, sql_property)
+        #import pdb; pdb.set_trace()
         # One user output
         if user:
             asked = 0
@@ -126,7 +128,7 @@ def print_accounting(accounting, user, sql_property):
                 begin = local_to_sql(consumption_user['begin'])
                 end = local_to_sql(consumption_user['end'])
 
-                print('{:>10} {:>19} {:>19} {:>16} {:>16}'.format(user, begin, end, asked, used))
+                print('{:>10} {:>20} {:>20} {:>16} {:>16}'.format(user, begin, end, asked, used))
     else:
         print('Bad syntax for --accounting')
     
