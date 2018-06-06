@@ -21,19 +21,18 @@ import oar.lib.tools as tools
 def cli(reinitialize, delete_before, version):
     """Feed accounting table to make usage statistics."""
     # Default window size
-    delete_windows_before = delete_before
     window_size = 86400
+    
+    delete_windows_before = delete_before
 
     cmd_ret = CommandReturns(cli)
     
     if 'ACCOUNTING_WINDOW' in config:
         window_size = config['ACCOUNTING_WINDOW']
 
-
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)
-        return cmd_ret
-
+        return cmd_ret.exit()
         
     if reinitialize:
         print('Deleting all records from the acounting table...')
@@ -41,6 +40,7 @@ def cli(reinitialize, delete_before, version):
     elif delete_before:
         print('Deleting records older than $Delete_windows_before seconds ago...')
         delete_windows_before = tools.get_date() - delete_windows_before
+
         delete_accounting_windows_before(delete_windows_before)
     else:
         check_accounting_update(window_size)

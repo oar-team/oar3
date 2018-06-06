@@ -13,7 +13,7 @@ from click.testing import CliRunner
 from oar.cli.oaraccounting import cli
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.tools import get_date
+
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -24,7 +24,13 @@ def minimal_db_initialization(request):
 
         db['Queue'].create(name='default')
         yield
-
+        
+@pytest.fixture(scope='function', autouse=True)
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'get_date', lambda: 864000)
+    #@request.addfinalizer
+    #def teardown():
+        
 def test_version():
     runner = CliRunner()
     result = runner.invoke(cli, ['-V'])
@@ -35,14 +41,33 @@ def test_version():
                     reason="need postgresql database")
 def test_simple_oaraccounting():
     insert_terminated_jobs()
-
     runner = CliRunner()
-    result = runner.invoke(cli)
-
-    
+    result = runner.invoke(cli)    
     accounting = db.query(Accounting).all()
     for a in accounting:
         print(a.user, a.project, a.consumption_type, a.queue_name,
               a.window_start, a.window_stop, a.consumption)
-
     assert accounting[7].consumption == 864000
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_oaraccounting_reinitialize():
+    insert_terminated_jobs()
+    runner = CliRunner()
+    result = runner.invoke(cli,['--reinitialize'])
+    accounting = db.query(Accounting).all()
+    print(accounting)
+    assert accounting == []
+
+       
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_oaraccounting_delete_before(monkeypatch):
+    
+    insert_terminated_jobs()
+    accounting1 = db.query(Accounting).all()
+    runner = CliRunner()
+    result = runner.invoke(cli,['--delete-before', '432000'])
+    accounting2 = db.query(Accounting).all()
+
+    assert len(accounting1) > len(accounting2)
