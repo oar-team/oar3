@@ -32,7 +32,7 @@ def cli(reinitialize, delete_before, version):
 
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)
-        return cmd_ret.exit()
+        cmd_ret.exit()
         
     if reinitialize:
         print('Deleting all records from the acounting table...')
