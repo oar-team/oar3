@@ -12,6 +12,8 @@ from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_b
 from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration)
 import oar.lib.tools as tools
 
+from oar.lib.utils import render_query
+
 import click
 click.disable_unicode_literals_warning = True
 
@@ -59,6 +61,7 @@ def print_jobs(legacy, jobs):
         print(jobs.text)
 
 def print_accounting(accounting, user, sql_property):
+    # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*', accounting)
     if m:
         date1 = m.group(1) + ' 00:00:00'
@@ -158,9 +161,15 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     job_ids = job
     array_id = array
     states = state
-    # TODO: extract gantt string
+
     start_time = None
     stop_time = None
+    if gantt: # --gantt "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"
+        m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*', gantt)
+        date1 = m.group(1) + ' ' + m.group(2)
+        date2 = m.group(3) + ' ' + m.group(4)
+        start_time = sql_to_local(date1)
+        stop_time = sql_to_local(date2)
 
     cmd_ret = CommandReturns(cli)
     # Print OAR version and exit
@@ -177,12 +186,17 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     jobs = None
     if not accounting:
-        jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
+        query_jobs = db.queries.get_jobs_for_user(username, None, None,
                                             states, job_ids, array_id, sql,
-                                            detailed=full).all()
-    if gantt:
-        print_gantt()
-    elif accounting:
+                                            detailed=full)
+        print(render_query(query_jobs))
+        import pdb; pdb.set_trace()
+        jobs = query_jobs.all()
+        #jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
+        #                                    states, job_ids, array_id, sql,
+        #                                    detailed=full).all()
+
+    if accounting: 
         print_accounting(accounting, username, sql)
     elif events:
         print_events()

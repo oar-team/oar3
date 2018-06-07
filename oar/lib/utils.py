@@ -70,8 +70,6 @@ def reraise(tp, value, tb=None):
 def is_bytes(x):
     return isinstance(x, (bytes, memoryview, bytearray))
 
-
-
 def callable(obj):
     return isinstance(obj, Callable)
 
@@ -223,4 +221,32 @@ def get_table_name(name):
             return ('_%s_%s' % (word[:-1], word[-1])).lower()
         return '_' + word.lower()
     return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
+
+
+def print_query_results(results, name=None):
+    if name:
+        print(name)
+        print('-' * len(name))
+
+    if results:
+        colnames = results[0].to_dict().keys()
+
+        # Print header (colname in diagonal)
+        nb_lines= len(max(colnames, key=len))
+        step = 8
+        header = []
+        for i in range(nb_lines):
+            h = [ l[i] if len(l)>i else " " for l in colnames]
+            header.append(' '*i + (' '*(step-1)).join(h))
+
+        for i in reversed(range(nb_lines)):
+            print(header[i])
+
+        # Print vlaues
+        fmt = ('{:' + str(step) + '.' + str(step-1) + '}') * len(colnames)
+        #fmt = * len(colnames)
+        #print(fmt.format(*colnames))
+
+        for res in results:
+            print(fmt.format(*[str(s) for s in res.to_dict().values()]))
 

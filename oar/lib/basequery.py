@@ -104,6 +104,7 @@ class BaseQueryCollection(object):
     def get_jobs_for_user(self, user, from_time=None, to_time=None,
                           states=None, job_ids=None, array_id=None,
                           sql_property=None, detailed=True):
+        #import pdb; pdb.set_trace()
         """ Get all distinct jobs for a user query. """
         if detailed:
             query = db.query(Job)

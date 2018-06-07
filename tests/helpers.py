@@ -2,7 +2,7 @@ from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource)
 from oar.lib.job_handling import (insert_job)
 from oar.lib.accounting import(check_accounting_update)
 
-def insert_terminated_jobs(window_size=86400):
+def insert_terminated_jobs(update_accounting=True, window_size=86400):
     j_duration = window_size * 10
     j_walltime = j_duration + 2 * window_size
 
@@ -18,10 +18,12 @@ def insert_terminated_jobs(window_size=86400):
                             start_time = start_time,
                             stop_time = stop_time,
                             state='Terminated')
-        db.query(Job).update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
+        db.query(Job).filter(Job.id==job_id)\
+                     .update({Job.assigned_moldable_job: job_id}, synchronize_session=False)
 
         for r in resources[i:i+2]:
             AssignedResource.create(moldable_id=job_id, resource_id=r.id)
             print(r.id, r.network_address)
         db.commit()
-    check_accounting_update(window_size)
+    if update_accounting:
+        check_accounting_update(window_size)

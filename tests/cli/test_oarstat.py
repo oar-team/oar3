@@ -5,10 +5,12 @@ from ..helpers import insert_terminated_jobs
 
 from click.testing import CliRunner
 
-from oar.lib import db
+from oar.lib import db,Job
 from oar.cli.oarstat import cli
 from oar.lib.job_handling import insert_job
 import oar.lib.tools  # for monkeypatching
+
+from oar.lib.utils import print_query_results
 
 NB_JOBS=5
 
@@ -75,4 +77,18 @@ def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
     print(str_result.split('\n')[-2])
     assert re.match(r'.*Karma.*0.345.*', str_result.split('\n')[-2])
     
-    
+def test_oarstat_gantt(minimal_db_initialization):
+    insert_terminated_jobs(update_accounting=False)
+
+    #import pdb; pdb.set_trace()
+
+    jobs = db.query(Job).all()
+    print_query_results(jobs)
+            
+    for j in jobs:
+        print(j.id, j.assigned_moldable_job)
+    import pdb; pdb.set_trace()
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--gantt', '1970-01-01 01:20:00, 1970-01-20 00:00:00'])
+    str_result = result.output_bytes.decode()
+    print(str_result)
