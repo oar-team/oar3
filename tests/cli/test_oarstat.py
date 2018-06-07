@@ -87,7 +87,7 @@ def test_oarstat_gantt(minimal_db_initialization):
             
     for j in jobs:
         print(j.id, j.assigned_moldable_job)
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     runner = CliRunner()
     result = runner.invoke(cli, ['--gantt', '1970-01-01 01:20:00, 1970-01-20 00:00:00'])
     str_result = result.output_bytes.decode()

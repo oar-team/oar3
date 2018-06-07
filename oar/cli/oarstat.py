@@ -38,8 +38,8 @@ def print_jobs(legacy, jobs):
     now = tools.get_date()
 
     if legacy:
-        print('Job id    S User     Duration   System message\n' +
-              '--------- - -------- ---------- ------------------------------------------------')
+        print('Job id    S User     Duration          System message\n' +
+              '--------- - -------- ----------------- ------------------------------------------------')
         now = tools.get_date()
         for job in jobs:
             duration = 0
@@ -186,15 +186,9 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     jobs = None
     if not accounting:
-        query_jobs = db.queries.get_jobs_for_user(username, None, None,
+        jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
                                             states, job_ids, array_id, sql,
-                                            detailed=full)
-        print(render_query(query_jobs))
-        import pdb; pdb.set_trace()
-        jobs = query_jobs.all()
-        #jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
-        #                                    states, job_ids, array_id, sql,
-        #                                    detailed=full).all()
+                                            detailed=full).all()
 
     if accounting: 
         print_accounting(accounting, username, sql)

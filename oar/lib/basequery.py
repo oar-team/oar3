@@ -46,6 +46,9 @@ class BaseQuery(Query):
             states = ['Finishing', 'Running', 'Resuming', 'Suspended',
                       'Launching', 'toLaunch', 'Waiting', 'Hold',
                       'toAckReservation']
+            if from_time or to_time:
+                states.append('Terminated')
+
         c1_from, c2_from, c3_from = None, None, None
         if from_time is not None:
             # first sub query start time filter
