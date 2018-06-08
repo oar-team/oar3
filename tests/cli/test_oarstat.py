@@ -53,7 +53,7 @@ def test_oarstat_sql_property():
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
-def test_oarstat_accounting(minimal_db_initialization):
+def xtest_oarstat_accounting(minimal_db_initialization):
     insert_terminated_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20'])
@@ -76,11 +76,9 @@ def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
     print(str_result)
     print(str_result.split('\n')[-2])
     assert re.match(r'.*Karma.*0.345.*', str_result.split('\n')[-2])
-    
+
 def test_oarstat_gantt(minimal_db_initialization):
     insert_terminated_jobs(update_accounting=False)
-
-    #import pdb; pdb.set_trace()
 
     jobs = db.query(Job).all()
     print_query_results(jobs)

@@ -18,6 +18,17 @@ def minimal_db_initialization(request):
 
         db['Queue'].create(name='default')
         yield
+        
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_check_accounting_update_one():
+    insert_terminated_jobs(nb_jobs=1)
+    accounting = db.query(Accounting).all()
+    
+    for a in accounting:
+        print(a.user, a.project, a.consumption_type, a.queue_name,
+              a.window_start, a.window_stop, a.consumption)        
+    assert accounting[7].consumption == 172800
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
