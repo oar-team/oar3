@@ -93,7 +93,7 @@ def test_oarstat_gantt(minimal_db_initialization):
     print(str_result)
     assert re.match('.*10 days.*', str_result.split('\n')[3])
 
-def test_oarstat_events(minimal_db_initialization):
+def test_oarstat_events():
 
     job_id = insert_job(res=[(60, [('resource_id=4', "")])])
     add_new_event('EXECUTE_JOB', job_id, 'Have a good day !')
@@ -105,7 +105,7 @@ def test_oarstat_events(minimal_db_initialization):
     print(str_result)
     assert re.match('.*EXECUTE_JOB.*', str_result)
     
-def test_oarstat_events_array(minimal_db_initialization):
+def test_oarstat_events_array():
 
     job_ids = []
     for _ in range(5):
@@ -119,3 +119,10 @@ def test_oarstat_events_array(minimal_db_initialization):
     str_result = result.output_bytes.decode()
     print(str_result)
     assert re.match('.*EXECUTE_JOB.*', str_result)
+
+def test_oarstat_events_no_job_ids():
+     runner = CliRunner()
+     result = runner.invoke(cli, ['--events', '--array', str(20)])
+     str_result = result.output_bytes.decode()
+     print(str_result)
+     assert re.match('.*No job ids specified.*', str_result)
