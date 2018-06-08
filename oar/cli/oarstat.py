@@ -9,6 +9,7 @@ from .utils import CommandReturns
 from oar.lib import (db, config)
 from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
                                 get_last_project_karma)
+from oar.lib.event import get_jobs_events
 from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration)
 import oar.lib.tools as tools
 
@@ -135,8 +136,15 @@ def print_accounting(accounting, user, sql_property):
     else:
         print('Bad syntax for --accounting')
     
-    
-        
+def print_events(cmd_ret, job_ids, array_id):
+    if array_id:
+        job_ids = get_array_job_ids(array)
+    if job_ids:
+        events = get_jobs_events(job_ids)  
+        for ev in events:
+            print('{}> [{}] {}: {}'.format(local_to_sql(ev.date), ev.job_id, ev.type, ev.description))
+    else:
+        cmd_ret.warning('No job ids specified')
 
 @click.command()
 @click.option('-j', '--job', type=click.INT, multiple=True,
@@ -147,8 +155,8 @@ def print_accounting(accounting, user, sql_property):
 @click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
 @click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
 @click.option('-g', '--gantt', type=click.STRING, help='show job informations between two date-times')
-@click.option('-e', '--events', type=click.STRING, help='show job events')
-@click.option('-p', '--properties', type=click.STRING, help='show job properties')
+@click.option('-e', '--events', is_flag=True, type=click.STRING, help='show job events')
+@click.option('-p', '--properties', is_flag=True, help='show job properties')
 @click.option('-A', '--accounting', type=click.STRING, help='show accounting informations between two dates')
 @click.option('-S', '--sql', type=click.STRING,
               help='restricts display by applying the SQL where clause on the table jobs (ex: "project = \'p1\'")')
@@ -185,15 +193,16 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
        cmd_ret.exit()
 
     jobs = None
-    if not accounting:
+    if not accounting and not events:
         jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
                                             states, job_ids, array_id, sql,
                                             detailed=full).all()
 
+    #import pdb; pdb.set_trace()
     if accounting: 
         print_accounting(accounting, username, sql)
     elif events:
-        print_events()
+        print_events(cmd_ret, job_ids, array_id)
     elif properties:
         print_properties()
     elif states:
@@ -204,4 +213,4 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
                 print_jobs(True, jobs)
 
         
-
+    cmd_ret.exit()

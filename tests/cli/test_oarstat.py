@@ -8,6 +8,7 @@ from click.testing import CliRunner
 from oar.lib import db,Job
 from oar.cli.oarstat import cli
 from oar.lib.job_handling import insert_job
+from oar.lib.event import add_new_event
 import oar.lib.tools  # for monkeypatching
 
 from oar.lib.utils import print_query_results
@@ -90,3 +91,20 @@ def test_oarstat_gantt(minimal_db_initialization):
     result = runner.invoke(cli, ['--gantt', '1970-01-01 01:20:00, 1970-01-20 00:00:00'])
     str_result = result.output_bytes.decode()
     print(str_result)
+    assert re.match('.*10 days.*', str_result.split('\n')[3])
+
+def test_oarstat_events(minimal_db_initialization):
+
+    #j_ids = []
+    #for _ in range(5):
+    #    j_ids.append(insert_job(res=[(60, [('resource_id=4', "")])]))
+
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
+    add_new_event('EXECUTE_JOB', job_id, 'Have a good day !')
+    
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--events', '--job', str(job_id)])
+    
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    assert re.match('.*EXECUTE_JOB.*', str_result)

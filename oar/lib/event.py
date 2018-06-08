@@ -38,7 +38,14 @@ def is_an_event_exists(job_id, event):
 
 def get_job_events(job_id):
     """Get events for the specified job"""
-    result = db.query(EventLog).filter(EventLog.job_id == job_id).all()
+    result = db.query(EventLog).filter(EventLog.job_id == job_id)\
+                               .order_by(EventLog.date).all()
+    return result
+
+def get_jobs_events(job_ids):
+    """Get events for the specified jobs"""
+    result = db.query(EventLog).filter(EventLog.job_id.in_(tuple(job_ids)))\
+                               .order_by(EventLog.job_id, EventLog.date).all()
     return result
 
 def get_to_check_events():
