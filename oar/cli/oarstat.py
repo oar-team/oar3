@@ -10,6 +10,7 @@ from oar.lib import (db, config)
 from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
                                 get_last_project_karma)
 from oar.lib.event import get_jobs_events
+from oar.lib.job_handling import get_array_job_ids
 from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration)
 import oar.lib.tools as tools
 
@@ -137,8 +138,9 @@ def print_accounting(accounting, user, sql_property):
         print('Bad syntax for --accounting')
     
 def print_events(cmd_ret, job_ids, array_id):
+    #import pdb; pdb.set_trace()
     if array_id:
-        job_ids = get_array_job_ids(array)
+        job_ids = get_array_job_ids(array_id)
     if job_ids:
         events = get_jobs_events(job_ids)  
         for ev in events:

@@ -95,15 +95,26 @@ def test_oarstat_gantt(minimal_db_initialization):
 
 def test_oarstat_events(minimal_db_initialization):
 
-    #j_ids = []
-    #for _ in range(5):
-    #    j_ids.append(insert_job(res=[(60, [('resource_id=4', "")])]))
-
     job_id = insert_job(res=[(60, [('resource_id=4', "")])])
     add_new_event('EXECUTE_JOB', job_id, 'Have a good day !')
     
     runner = CliRunner()
     result = runner.invoke(cli, ['--events', '--job', str(job_id)])
+    
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    assert re.match('.*EXECUTE_JOB.*', str_result)
+    
+def test_oarstat_events_array(minimal_db_initialization):
+
+    job_ids = []
+    for _ in range(5):
+        job_id = insert_job(res=[(60, [('resource_id=4', "")])], array_id=10)
+        add_new_event('EXECUTE_JOB', job_id, 'Have a good day !')
+        job_ids.append(job_id)
+    
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--events', '--array', str(10)])
     
     str_result = result.output_bytes.decode()
     print(str_result)
