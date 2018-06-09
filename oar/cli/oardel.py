@@ -32,12 +32,12 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 
     cmd_ret = CommandReturns(cli)
 
-    if not job_ids and not sql and not array:
-        cmd_ret.usage(1)
-        return cmd_ret
-
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)
+        return cmd_ret
+
+    if not job_ids and not sql and not array:
+        cmd_ret.usage(1)
         return cmd_ret
 
     if array:
@@ -161,7 +161,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
               (Warning: only use as a last resort). This using this option indicates \
               that something nasty happened, nodes where the jobs were executing will \
               subsequently be turned into Suspected.')
-@click.option('-V', '--version',  help='Print OAR version.')
+@click.option('-V', '--version', is_flag=True,  help='Print OAR version.')
 def cli(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version):
 
     cmd_ret = oardel(job_id, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, None)

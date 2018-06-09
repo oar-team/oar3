@@ -1,4 +1,5 @@
 # coding: utf-8
+import re
 import os
 import pytest
 
@@ -25,6 +26,11 @@ def minimal_db_initialization(request):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
 
+def test_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-V'])
+    print(result.output)
+    assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
 def test_oardel_void():
     runner = CliRunner()

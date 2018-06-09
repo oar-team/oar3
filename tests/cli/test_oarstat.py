@@ -30,6 +30,11 @@ def minimal_db_initialization(request):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'get_username', lambda: 'zozo')
 
+def test_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-V'])
+    print(result.output)
+    assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
 def test_oarstat_simple():
     for _ in range(NB_JOBS):

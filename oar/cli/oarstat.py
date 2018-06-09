@@ -189,7 +189,6 @@ class UserOption(click.Command):
               help='restricts display by applying the SQL where clause on the table jobs (ex: "project = \'p1\'")')
 @click.option('-F', '--format', type=int, help='select the text output format. Available values 1 an 2')
 @click.option('-J', '--json', is_flag=True, help='print result in JSON format')
-@click.option('-Y', '--yaml', is_flag=True, help='print result in YAML format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
 def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml, version):
     
