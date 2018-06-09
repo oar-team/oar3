@@ -54,7 +54,7 @@ def test_oarstat_sql_property():
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
-def xtest_oarstat_accounting(minimal_db_initialization):
+def test_oarstat_accounting(minimal_db_initialization):
     insert_terminated_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20'])
