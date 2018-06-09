@@ -63,7 +63,7 @@ def print_jobs(legacy, jobs):
         # TODO
         print(jobs.text)
 
-def print_accounting(accounting, user, sql_property):
+def print_accounting(cmd_ret, accounting, user, sql_property):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(r'\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*', accounting)
     if m:
@@ -136,7 +136,8 @@ def print_accounting(accounting, user, sql_property):
 
                 print('{:>10} {:>20} {:>20} {:>16} {:>16}'.format(user, begin, end, asked, used))
     else:
-        print('Bad syntax for --accounting')
+        cmd_ret.error('Bad syntax for --accounting', 1, 1)
+        cmd_ret.exit()
     
 def print_events(cmd_ret, job_ids, array_id):
     #import pdb; pdb.set_trace()
@@ -190,7 +191,7 @@ class UserOption(click.Command):
 @click.option('-F', '--format', type=int, help='select the text output format. Available values 1 an 2')
 @click.option('-J', '--json', is_flag=True, help='print result in JSON format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
-def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, yaml, version):
+def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, version):
     
     job_ids = job
     array_id = array
@@ -227,7 +228,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     #import pdb; pdb.set_trace()
     if accounting: 
-        print_accounting(accounting, user, sql)
+        print_accounting(cmd_ret, accounting, user, sql)
     elif events:
         print_events(cmd_ret, job_ids, array_id)
     elif properties:
@@ -236,7 +237,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
         print_states()
     else:
         if jobs:
-            if not json or not yaml:
+            if not json:
                 print_jobs(True, jobs)
 
         
