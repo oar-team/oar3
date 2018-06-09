@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import re
 import datetime
 
@@ -148,12 +149,36 @@ def print_events(cmd_ret, job_ids, array_id):
     else:
         cmd_ret.warning('No job ids specified')
 
-@click.command()
+def user_option_flag_or_string():
+    """ Click seems unable to manage option which is of type flag or string, _this_user_ is added to 
+    sys.argv when --user is used as flag , by example: 
+      -u --accounting "1970-01-01, 1970-01-20" -> -u _this_user_ --accounting "1970-01-01, 1970-01-20"  
+    """
+    argv = []
+    for i in range(len(sys.argv)-1):
+        a = sys.argv[i]
+        argv.append(a)
+        if (a == '-u' or a == '--user') and ((sys.argv[i+1])[0] == '-'):
+            argv.append('_this_user_')
+
+    argv.append(sys.argv[-1])
+    if (sys.argv[-1] == '-u') or (sys.argv[-1] == '--user'):
+        argv.append('_this_user_')
+
+    sys.argv = argv
+    #print(sys.argv)       
+
+class UserOption(click.Command):
+    def __init__(self,name,callback,params,help):
+        user_option_flag_or_string()
+        click.Command.__init__(self, name=name, callback=callback, params=params)
+
+@click.command(cls=UserOption)
 @click.option('-j', '--job', type=click.INT, multiple=True,
               help='show informations only for the specified job(s)')
 @click.option('-f', '--full', is_flag=True, help='show full informations')
 @click.option('-s', '--state', type=click.STRING, multiple=True, help='show only the state(s) of a job (optimized query)')
-@click.option('-u', '--user', is_flag=True, help='show informations for this user only')
+@click.option('-u', '--user', type=click.STRING, help='show informations for this user only')
 @click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
 @click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
 @click.option('-g', '--gantt', type=click.STRING, help='show job informations between two date-times')
@@ -187,7 +212,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
         cmd_ret.print_('OAR version : ' + VERSION)
         cmd_ret.exit()
     
-    username = tools.get_username() if user else None
+    username = tools.get_username() if (user == '')  else ''
 
     if job_ids and array_id:
        cmd_ret.error('Conflicting Job IDs and Array IDs (--array and -j cannot be used together)',

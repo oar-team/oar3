@@ -591,8 +591,10 @@ def send_checkpoint_signal(job):
     logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
 
+
 def get_username():
-    return pwd.getpwuid( os.getuid() ).pw_name
+    #return pwd.getpwuid( os.getuid() ).pw_name
+    return os.environ['OARDO_USER']
 
 def check_resource_property(prop):
     """ Check if a property can be deleted or created by a user

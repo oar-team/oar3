@@ -72,7 +72,7 @@ def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
                properties='', command='yop', user='zozo', project='yopa',
                start_time=0, message=karma)
     runner = CliRunner()
-    result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20', '--user'])
+    result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20', '--user', '_this_user_'])
     str_result = result.output_bytes.decode()
     print(str_result)
     print(str_result.split('\n')[-2])
