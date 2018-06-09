@@ -211,8 +211,9 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)
         cmd_ret.exit()
-    
-    username = tools.get_username() if (user == '')  else ''
+
+    if user == '_this_user_':
+        user = tools.get_username()
 
     if job_ids and array_id:
        cmd_ret.error('Conflicting Job IDs and Array IDs (--array and -j cannot be used together)',
@@ -221,13 +222,13 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     jobs = None
     if not accounting and not events:
-        jobs = db.queries.get_jobs_for_user(username, start_time, stop_time,
+        jobs = db.queries.get_jobs_for_user(user, start_time, stop_time,
                                             states, job_ids, array_id, sql,
                                             detailed=full).all()
 
     #import pdb; pdb.set_trace()
     if accounting: 
-        print_accounting(accounting, username, sql)
+        print_accounting(accounting, user, sql)
     elif events:
         print_events(cmd_ret, job_ids, array_id)
     elif properties:
