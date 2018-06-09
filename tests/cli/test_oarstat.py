@@ -16,7 +16,7 @@ from oar.lib.utils import print_query_results
 NB_JOBS=5
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources
@@ -54,7 +54,7 @@ def test_oarstat_sql_property():
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
-def test_oarstat_accounting(minimal_db_initialization):
+def test_oarstat_accounting():
     insert_terminated_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20'])
@@ -65,7 +65,7 @@ def test_oarstat_accounting(minimal_db_initialization):
 
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")
-def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
+def test_oarstat_accounting_user(monkeypatch_tools):
     insert_terminated_jobs()
     karma = ' Karma=0.345'
     insert_job(res=[(60, [('resource_id=2', '')])],
@@ -78,7 +78,7 @@ def test_oarstat_accounting_user(minimal_db_initialization, monkeypatch_tools):
     print(str_result.split('\n')[-2])
     assert re.match(r'.*Karma.*0.345.*', str_result.split('\n')[-2])
 
-def test_oarstat_gantt(minimal_db_initialization):
+def test_oarstat_gantt():
     insert_terminated_jobs(update_accounting=False)
 
     jobs = db.query(Job).all()
