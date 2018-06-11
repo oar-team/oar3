@@ -1959,3 +1959,13 @@ def archive_some_moldable_job_nodes(moldable_id, hosts):
                                           synchronize_session=False)
         
         db.commit()
+
+
+def get_job_resources_properties(job_id):
+    """ Returns the list of resources properties associated to the job passed in parameter
+    """
+    results = db.query(Resource).filter(Job.id == jobid)\
+                                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
+                                .filter(AssignedResource.resource_id == resource_id)\
+                                .order_by(Resource.id).all()
+    return results

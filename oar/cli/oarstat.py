@@ -169,6 +169,61 @@ def user_option_flag_or_string():
     sys.argv = argv
     #print(sys.argv)       
 
+def print_properties():
+        if(defined($array_id) &&  $array_id !=0){
+        push(@job_ids, OAR::Stat::get_array_job_ids($array_id));
+    }
+
+    if($#job_ids >= 0){
+        my @resources;
+        foreach my $j (@job_ids){
+            push  (@resources, OAR::Stat::get_job_resources_properties($j));
+        }
+        foreach my $r (@resources){
+            my $line = "";
+            foreach my $p (keys(%{$r})){
+                if(OAR::Tools::check_resource_system_property($p) != 1){
+                    $r->{$p} = "" if (!defined($r->{$p}));
+                    $line .= " $p = '$r->{$p}' ,"
+                }
+            }
+            chop($line);
+            if (!print("$line\n")){
+                OAR::Stat::close_db_connection();
+                exit(5);
+            }
+        }
+    } else {
+        warn("No job specified\n");
+        OAR::Stat::close_db_connection();
+        exit(1);
+    }
+}
+    pass
+
+def print_states(cmd_ret, job_ids):
+    if job_ids:
+        
+    else:
+        cmd_ret.error('--state can only be used with an id', 1, 1)
+        cmd_ret.exit()
+        
+        my %job_state;
+    if ($#job_ids < 0){
+        warn("--state can only be used with an id\n");
+        OAR::Stat::close_db_connection(); exit(1);
+    }elsif($#job_ids >= 0){
+        foreach my $j (@job_ids){
+            my $state_string = OAR::Stat::get_job_state($j);
+            if (defined($state_string)){
+                $job_state{$j}=$state_string;
+            }
+        }
+    }
+    print_job_state_data(\%job_state);
+}
+    pass
+
 class UserOption(click.Command):
     def __init__(self,name,callback,params,help):
         user_option_flag_or_string()
