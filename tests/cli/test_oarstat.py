@@ -141,3 +141,12 @@ def test_oarstat_events_no_job_ids():
      str_result = result.output_bytes.decode()
      print(str_result)
      assert re.match('.*No job ids specified.*', str_result)
+
+def test_oarstat_properties():
+    insert_terminated_jobs(update_accounting=False)
+    job_id = db.query(Job.id).first()[0]
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--properties', '--job', str(job_id)])
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    assert re.match('.*network_address.*', str_result)

@@ -11,8 +11,9 @@ from oar.lib import (db, config)
 from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
                                 get_last_project_karma)
 from oar.lib.event import get_jobs_events
-from oar.lib.job_handling import get_array_job_ids
-from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration)
+from oar.lib.job_handling import (get_array_job_ids, get_job_resources_properties)
+from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration,
+                           check_resource_system_property)
 import oar.lib.tools as tools
 
 from oar.lib.utils import render_query
@@ -150,6 +151,81 @@ def print_events(cmd_ret, job_ids, array_id):
     else:
         cmd_ret.warning('No job ids specified')
 
+def print_properties(cmd_ret, job_ids, array_id):
+    if array_id:
+        job_ids = get_array_job_ids(array_id)
+    if job_ids:
+        
+        resources_properties = [p for job_id in job_ids for p in get_job_resources_properties(job_id)]
+        for resource_properties in resources_properties:
+            print_comma = False
+            for prop, value in resource_properties.to_dict().items():
+                if print_comma:
+                    print(' , ', end='')                  
+                else:
+                    print_comma = True
+                if not check_resource_system_property(prop):
+                    print("{} = '{}'".format(prop, value), end='')
+                else:
+                    print_comma = False 
+            print()
+    else:
+        cmd_ret.warning('No job ids specified')  
+        
+#         if(defined($array_id) &&  $array_id !=0){
+#         push(@job_ids, OAR::Stat::get_array_job_ids($array_id));
+#     }
+
+#     if($#job_ids >= 0){
+#         my @resources;
+#         foreach my $j (@job_ids){
+#             push  (@resources, OAR::Stat::get_job_resources_properties($j));
+#         }
+#         foreach my $r (@resources){
+#             my $line = "";
+#             foreach my $p (keys(%{$r})){
+#                 if(OAR::Tools::check_resource_system_property($p) != 1){
+#                     $r->{$p} = "" if (!defined($r->{$p}));
+#                     $line .= " $p = '$r->{$p}' ,"
+#                 }
+#             }
+#             chop($line);
+#             if (!print("$line\n")){
+#                 OAR::Stat::close_db_connection();
+#                 exit(5);
+#             }
+#         }
+#     } else {
+#         warn("No job specified\n");
+#         OAR::Stat::close_db_connection();
+#         exit(1);
+#     }
+# }
+#     pass
+
+# def print_states(cmd_ret, job_ids):
+#     if job_ids:
+        
+#     else:
+#         cmd_ret.error('--state can only be used with an id', 1, 1)
+#         cmd_ret.exit()
+        
+#         my %job_state;
+#     if ($#job_ids < 0){
+#         warn("--state can only be used with an id\n");
+#         OAR::Stat::close_db_connection(); exit(1);
+#     }elsif($#job_ids >= 0){
+#         foreach my $j (@job_ids){
+#             my $state_string = OAR::Stat::get_job_state($j);
+#             if (defined($state_string)){
+#                 $job_state{$j}=$state_string;
+#             }
+#         }
+#     }
+#     print_job_state_data(\%job_state);
+# }
+#     pass
+
 def user_option_flag_or_string():
     """ Click seems unable to manage option which is of type flag or string, _this_user_ is added to 
     sys.argv when --user is used as flag , by example: 
@@ -168,61 +244,6 @@ def user_option_flag_or_string():
 
     sys.argv = argv
     #print(sys.argv)       
-
-def print_properties():
-        if(defined($array_id) &&  $array_id !=0){
-        push(@job_ids, OAR::Stat::get_array_job_ids($array_id));
-    }
-
-    if($#job_ids >= 0){
-        my @resources;
-        foreach my $j (@job_ids){
-            push  (@resources, OAR::Stat::get_job_resources_properties($j));
-        }
-        foreach my $r (@resources){
-            my $line = "";
-            foreach my $p (keys(%{$r})){
-                if(OAR::Tools::check_resource_system_property($p) != 1){
-                    $r->{$p} = "" if (!defined($r->{$p}));
-                    $line .= " $p = '$r->{$p}' ,"
-                }
-            }
-            chop($line);
-            if (!print("$line\n")){
-                OAR::Stat::close_db_connection();
-                exit(5);
-            }
-        }
-    } else {
-        warn("No job specified\n");
-        OAR::Stat::close_db_connection();
-        exit(1);
-    }
-}
-    pass
-
-def print_states(cmd_ret, job_ids):
-    if job_ids:
-        
-    else:
-        cmd_ret.error('--state can only be used with an id', 1, 1)
-        cmd_ret.exit()
-        
-        my %job_state;
-    if ($#job_ids < 0){
-        warn("--state can only be used with an id\n");
-        OAR::Stat::close_db_connection(); exit(1);
-    }elsif($#job_ids >= 0){
-        foreach my $j (@job_ids){
-            my $state_string = OAR::Stat::get_job_state($j);
-            if (defined($state_string)){
-                $job_state{$j}=$state_string;
-            }
-        }
-    }
-    print_job_state_data(\%job_state);
-}
-    pass
 
 class UserOption(click.Command):
     def __init__(self,name,callback,params,help):
@@ -287,13 +308,12 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     elif events:
         print_events(cmd_ret, job_ids, array_id)
     elif properties:
-        print_properties()
+        print_properties(cmd_ret, job_ids, array_id)
     elif states:
-        print_states()
+        print_states(cmd_ret, job_ids, array_id)
     else:
         if jobs:
             if not json:
                 print_jobs(True, jobs)
-
         
     cmd_ret.exit()
