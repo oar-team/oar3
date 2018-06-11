@@ -121,7 +121,6 @@ def test_oarstat_events():
     assert re.match('.*EXECUTE_JOB.*', str_result)
     
 def test_oarstat_events_array():
-
     job_ids = []
     for _ in range(5):
         job_id = insert_job(res=[(60, [('resource_id=4', "")])], array_id=10)
@@ -150,3 +149,11 @@ def test_oarstat_properties():
     str_result = result.output_bytes.decode()
     print(str_result)
     assert re.match('.*network_address.*', str_result)
+
+def test_oarstat_state():
+    job_id = insert_job(res=[(60, [('resource_id=2', '')])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--state', '--job', str(job_id)])
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    assert re.match('.*Waiting.*', str_result)

@@ -11,7 +11,8 @@ from oar.lib import (db, config)
 from oar.lib.accounting import (get_accounting_summary, get_accounting_summary_byproject,
                                 get_last_project_karma)
 from oar.lib.event import get_jobs_events
-from oar.lib.job_handling import (get_array_job_ids, get_job_resources_properties)
+from oar.lib.job_handling import (get_array_job_ids, get_job_resources_properties,
+                                  get_jobs_state)
 from oar.lib.tools import (get_username, sql_to_local, local_to_sql, get_duration,
                            check_resource_system_property)
 import oar.lib.tools as tools
@@ -141,7 +142,6 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
         cmd_ret.exit()
     
 def print_events(cmd_ret, job_ids, array_id):
-    #import pdb; pdb.set_trace()
     if array_id:
         job_ids = get_array_job_ids(array_id)
     if job_ids:
@@ -171,60 +171,18 @@ def print_properties(cmd_ret, job_ids, array_id):
             print()
     else:
         cmd_ret.warning('No job ids specified')  
-        
-#         if(defined($array_id) &&  $array_id !=0){
-#         push(@job_ids, OAR::Stat::get_array_job_ids($array_id));
-#     }
 
-#     if($#job_ids >= 0){
-#         my @resources;
-#         foreach my $j (@job_ids){
-#             push  (@resources, OAR::Stat::get_job_resources_properties($j));
-#         }
-#         foreach my $r (@resources){
-#             my $line = "";
-#             foreach my $p (keys(%{$r})){
-#                 if(OAR::Tools::check_resource_system_property($p) != 1){
-#                     $r->{$p} = "" if (!defined($r->{$p}));
-#                     $line .= " $p = '$r->{$p}' ,"
-#                 }
-#             }
-#             chop($line);
-#             if (!print("$line\n")){
-#                 OAR::Stat::close_db_connection();
-#                 exit(5);
-#             }
-#         }
-#     } else {
-#         warn("No job specified\n");
-#         OAR::Stat::close_db_connection();
-#         exit(1);
-#     }
-# }
-#     pass
 
-# def print_states(cmd_ret, job_ids):
-#     if job_ids:
-        
-#     else:
-#         cmd_ret.error('--state can only be used with an id', 1, 1)
-#         cmd_ret.exit()
-        
-#         my %job_state;
-#     if ($#job_ids < 0){
-#         warn("--state can only be used with an id\n");
-#         OAR::Stat::close_db_connection(); exit(1);
-#     }elsif($#job_ids >= 0){
-#         foreach my $j (@job_ids){
-#             my $state_string = OAR::Stat::get_job_state($j);
-#             if (defined($state_string)){
-#                 $job_state{$j}=$state_string;
-#             }
-#         }
-#     }
-#     print_job_state_data(\%job_state);
-# }
-#     pass
+def print_state(cmd_ret, job_ids, array_id):
+    # TODO json mode
+    if array_id:
+        job_ids = get_array_job_ids(array_id)
+    if job_ids:
+        for job_id_state in get_jobs_state(job_ids):
+            job_id, state = job_id_state
+            print('{}: {}'.format(job_id, state))
+    else:
+        cmd_ret.warning('No job ids specified')  
 
 def user_option_flag_or_string():
     """ Click seems unable to manage option which is of type flag or string, _this_user_ is added to 
@@ -254,7 +212,7 @@ class UserOption(click.Command):
 @click.option('-j', '--job', type=click.INT, multiple=True,
               help='show informations only for the specified job(s)')
 @click.option('-f', '--full', is_flag=True, help='show full informations')
-@click.option('-s', '--state', type=click.STRING, multiple=True, help='show only the state(s) of a job (optimized query)')
+@click.option('-s', '--state', is_flag=True, help='show only the state of a jobs.')
 @click.option('-u', '--user', type=click.STRING, help='show informations for this user only')
 @click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
 @click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
@@ -268,10 +226,8 @@ class UserOption(click.Command):
 @click.option('-J', '--json', is_flag=True, help='print result in JSON format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
 def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, version):
-    
     job_ids = job
     array_id = array
-    states = state
 
     start_time = None
     stop_time = None
@@ -297,20 +253,19 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
        cmd_ret.exit()
 
     jobs = None
-    if not accounting and not events:
+    if not accounting and not events and not state:
         jobs = db.queries.get_jobs_for_user(user, start_time, stop_time,
-                                            states, job_ids, array_id, sql,
+                                            None, job_ids, array_id, sql,
                                             detailed=full).all()
 
-    #import pdb; pdb.set_trace()
     if accounting: 
         print_accounting(cmd_ret, accounting, user, sql)
     elif events:
         print_events(cmd_ret, job_ids, array_id)
     elif properties:
         print_properties(cmd_ret, job_ids, array_id)
-    elif states:
-        print_states(cmd_ret, job_ids, array_id)
+    elif state:
+        print_state(cmd_ret, job_ids, array_id)
     else:
         if jobs:
             if not json:

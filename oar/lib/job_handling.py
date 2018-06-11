@@ -1957,7 +1957,6 @@ def archive_some_moldable_job_nodes(moldable_id, hosts):
                                   .filter(Resource.network_address.in_(tuple(hosts)))\
                                   .update({AssignedResource.index: 'LOG'},
                                           synchronize_session=False)
-        
         db.commit()
 
 
@@ -1968,4 +1967,9 @@ def get_job_resources_properties(job_id):
                                 .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
                                 .filter(AssignedResource.resource_id == Resource.id)\
                                 .order_by(Resource.id).all()
+    return results
+
+def get_jobs_state(job_ids):
+    """Returns state for each given jobs designated by their id"""
+    results = db.query(Job.id, Job.state).filter(Job.id.in_(tuple(job_ids))).order_by(Job.id).all()
     return results
