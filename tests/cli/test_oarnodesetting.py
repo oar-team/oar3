@@ -82,3 +82,10 @@ def test_oarnodesetting_error_4():
     result = runner.invoke(cli, ['-r', '1', '--drain', 'midoff'])
     print(result.output)
     assert result.exit_code == 1
+    
+def test_oarnodesetting_error_5():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-r', '1', '--add'])
+    print(result.output)
+    assert result.exit_code == 1
+    
