@@ -176,14 +176,25 @@ def print_properties(cmd_ret, job_ids, array_id):
         cmd_ret.warning('No job ids specified')  
 
 
-def print_state(cmd_ret, job_ids, array_id):
+def print_state(cmd_ret, job_ids, array_id, json):
     # TODO json mode
     if array_id:
         job_ids = get_array_job_ids(array_id)
     if job_ids:
-        for job_id_state in get_jobs_state(job_ids):
-            job_id, state = job_id_state
-            print('{}: {}'.format(job_id, state))
+        job_ids_state = get_jobs_state(job_ids)
+        if json:
+            nb_lines = len(job_ids_state)
+            print('{')
+            for i, job_id_state in enumerate(job_ids_state):
+                job_id, state = job_id_state
+                comma = ','if i < (nb_lines + 1 ) else ''
+                print('"{}" : "{}"{}'.format(job_id, state, comma))
+            print('}')
+            #import pdb; pdb.set_trace()
+        else:
+            for job_id_state in get_jobs_state(job_ids):
+                job_id, state = job_id_state
+                print('{}: {}'.format(job_id, state))
     else:
         cmd_ret.warning('No job ids specified')  
 
@@ -268,7 +279,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
     elif properties:
         print_properties(cmd_ret, job_ids, array_id)
     elif state:
-        print_state(cmd_ret, job_ids, array_id)
+        print_state(cmd_ret, job_ids, array_id, json)
     else:
         if jobs:
             print_jobs(True, jobs, json)

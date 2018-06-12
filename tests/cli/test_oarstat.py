@@ -46,7 +46,6 @@ def test_oarstat_simple():
     assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
-
 def test_oarstat_sql_property():
     for i in range(NB_JOBS):
         insert_job(res=[(60, [('resource_id=4', "")])], properties='', user=str(i))
@@ -157,7 +156,16 @@ def test_oarstat_state():
     str_result = result.output_bytes.decode()
     print(str_result)
     assert re.match('.*Waiting.*', str_result)
-
+    
+def test_oarstat_state_json():
+    job_id = insert_job(res=[(60, [('resource_id=2', '')])])
+    job_id1 = insert_job(res=[(60, [('resource_id=2', '')])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--state', '--job', str(job_id),
+                                 '--job', str(job_id1), '--json'])
+    str_result = result.output_bytes.decode()
+    print(str_result)
+    assert  len(str_result.split('\n')) == 5
 
 def test_oarstat_simple_json():
     for _ in range(NB_JOBS):
