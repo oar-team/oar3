@@ -165,7 +165,7 @@ def test_oarstat_state_json():
                                  '--job', str(job_id1), '--json'])
     str_result = result.output_bytes.decode()
     print(str_result)
-    assert  len(str_result.split('\n')) == 5
+    assert len(str_result.split('\n')) == 5
 
 def test_oarstat_simple_json():
     for _ in range(NB_JOBS):
@@ -177,3 +177,9 @@ def test_oarstat_simple_json():
     print(str_result)
     assert nb_lines == 2
     assert result.exit_code == 0
+
+def test_oarstat_job_id_array_error():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-j', '1', '--array', '1'])
+    print(result.output_bytes.decode())
+    assert result.exit_code == 1

@@ -263,7 +263,7 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
 
     if job_ids and array_id:
        cmd_ret.error('Conflicting Job IDs and Array IDs (--array and -j cannot be used together)',
-                     error, 1) 
+                     1, 1) 
        cmd_ret.exit()
 
     jobs = None
