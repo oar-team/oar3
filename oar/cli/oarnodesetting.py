@@ -64,6 +64,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
     if not (properties or state or add or maintenance or drain\
             or last_property_value):
+        cmd_ret.warning('Option for setting (add, state, maintenance, drain, properties oar last-property-value) is expected')
         cmd_ret.usage(1)
         return cmd_ret
     

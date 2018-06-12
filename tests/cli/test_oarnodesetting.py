@@ -59,4 +59,26 @@ def test_oarnodesetting_core_cpu():
     assert fake_notifications[-3:] == ['Term','ChState', 'Term']
     assert result.exit_code == 0
 
-
+def test_oarnodesetting_error_1():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-r', '1'])
+    print(result.output)
+    assert result.exit_code == 1
+ 
+def test_oarnodesetting_error_2():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-r', '1', '--state', 'Suspected'])
+    print(result.output)
+    assert result.exit_code == 1
+    
+def test_oarnodesetting_error_3():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-r', '1', '--maintenance', 'midoff'])
+    print(result.output)
+    assert result.exit_code == 1
+    
+def test_oarnodesetting_error_4():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-r', '1', '--drain', 'midoff'])
+    print(result.output)
+    assert result.exit_code == 1
