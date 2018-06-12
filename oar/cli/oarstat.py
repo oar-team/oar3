@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import datetime
+from json import dumps
 
 from oar import VERSION
 from .utils import CommandReturns
@@ -38,11 +39,11 @@ STATE2CHAR = {
     'NA': '-'
 }
 
-def print_jobs(legacy, jobs):
+def print_jobs(legacy, jobs, json=False):
 
     now = tools.get_date()
 
-    if legacy:
+    if legacy and not json:
         print('Job id    S User     Duration          System message\n' +
               '--------- - -------- ----------------- ------------------------------------------------')
         now = tools.get_date()
@@ -61,9 +62,11 @@ def print_jobs(legacy, jobs):
                   '{:8}'.format(str(job.user)) + ' ' +
                   '{:>10}'.format(str(datetime.timedelta(seconds=duration))) + ' ' +
                   '{:48}'.format(job.message))
+    elif json:
+        # TODO to enhance
+        print(dumps([j.to_dict() for j in jobs]))
     else:
-        # TODO
-        print(jobs.text)
+        print(jobs)
 
 def print_accounting(cmd_ret, accounting, user, sql_property):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
@@ -268,7 +271,6 @@ def cli(job, full, state, user, array, compact, gantt, events, properties, accou
         print_state(cmd_ret, job_ids, array_id)
     else:
         if jobs:
-            if not json:
-                print_jobs(True, jobs)
+            print_jobs(True, jobs, json)
         
     cmd_ret.exit()

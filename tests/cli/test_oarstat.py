@@ -157,3 +157,15 @@ def test_oarstat_state():
     str_result = result.output_bytes.decode()
     print(str_result)
     assert re.match('.*Waiting.*', str_result)
+
+
+def test_oarstat_simple_json():
+    for _ in range(NB_JOBS):
+        insert_job(res=[(60, [('resource_id=4', "")])], properties="")
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--json'])
+    str_result = result.output_bytes.decode()
+    nb_lines = len(str_result.split('\n'))
+    print(str_result)
+    assert nb_lines == 2
+    assert result.exit_code == 0
