@@ -232,7 +232,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 @click.option('--last-property-value', type=click.STRING,
               help='Get the last value used for a property (as sorted by SQL\'s ORDER BY DESC)')
 #@click.option('--verbose', is_flag=True, help='Verbose output')
-@click.option('-V', '--version', help='Print OAR version number')
+@click.option('-V', '--version', is_flag=True, help='Print OAR version number')
 
 def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
         no_wait, last_property_value, version):

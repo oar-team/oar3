@@ -1,5 +1,6 @@
 # coding: utf-8
 import pytest
+import re
 
 from click.testing import CliRunner
 
@@ -27,6 +28,12 @@ def minimal_db_initialization(request):
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', fake_notify_almighty)
+
+def test_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-V'])
+    print(result.output)
+    assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
 def test_oarnodesetting_simple():
     runner = CliRunner()
