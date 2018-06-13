@@ -11,7 +11,8 @@ from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
-                                       get_resources_with_given_sql, set_resources_nextState)
+                                       get_resources_with_given_sql, set_resources_nextState,
+                                       log_resource_maintenance_event, get_resource_job_to_frag)
 from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
@@ -54,9 +55,29 @@ def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
             cmd_ret.error('The resource {} does not exist in OAR database.'.format(resource_id))
         elif maintenance == 'on':
             cmd_ret.print_("Maintenance mode set to 'ON' on resource {}".format(resource_id))
-            add_event_maintenance_on($base, $res, OAR::IO::get_date($base));
-        
-
+            log_resource_maintenance_event(resource_id, maintenance, tools.get_date)
+            prop_to_set = ['available_upto=0']
+            last_available_upto = resource.available_upto
+            if last_available_upto != 0:
+                prop_to_set.append('last_available_upto=' + str(last_available_upto))
+            set_resources_properties(cmd_ret, [resource_id], None, prop_to_set)
+            set_resource_nextState(resource_id, 'Absent')
+            tools.notify_almighty('ChState')
+            if not no_wait:
+                cmd_ret.print_("Check jobs to delete on resource {}".format(resource_id))
+                jobs = get_resource_job_to_frag(resource_id)
+                wait_end_of_running_jobs(jobs)
+        else: # maintenance == off
+            cmd_ret.print_("Maintenance mode set to 'OFF' on resource {}".format(resource_id))          
+            log_resource_maintenance_event(resource_id, maintenance, tools.get_date)
+            prop_to_set = []
+            available_upto = resource.last_available_upto
+            if available_upto != 0:
+                prop_to_set = ['available_upto={}'.format(available_upto)]
+                set_resources_properties(cmd_ret, [resource_id], None, prop_to_set)
+            set_resource_nextState(resource_id, 'Absent')
+            tools.notify_almighty('ChState')
+                                        
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
     notify_server_tag_list = []
