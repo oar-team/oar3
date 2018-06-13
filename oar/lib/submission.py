@@ -573,7 +573,8 @@ def add_micheline_subjob(job_parameters,
     job_id = result.inserted_primary_key[0]
 
     if array_id <= 0:
-        db.query(Job).filter(Job.id == job_id).update({Job.array_id: job_id})
+        db.query(Job).filter(Job.id == job_id).update({Job.array_id: job_id},
+                                                      synchronize_session=False)
         db.commit()
 
     random_number = random.randint(1, 1000000000000)
@@ -668,7 +669,8 @@ def add_micheline_subjob(job_parameters,
         db.session.execute(req)
         db.commit()
 
-        db.query(Job).filter(Job.id == job_id).update({Job.state: 'Waiting'})
+        db.query(Job).filter(Job.id == job_id).update({Job.state: 'Waiting'},
+                                                      synchronize_session=False)
         db.commit()
     else:
         req = db.insert(JobStateLog).values(
@@ -743,7 +745,8 @@ def add_micheline_simple_array_job(job_parameters,
 
     # Update array_id
     array_id = first_job_id
-    db.query(Job).filter(Job.id == first_job_id).update({Job.array_id: array_id})
+    db.query(Job).filter(Job.id == first_job_id).update({Job.array_id: array_id},
+                                                        synchronize_session=False)
     db.commit()
 
     # Insert remaining array jobs with array_id
@@ -845,8 +848,9 @@ def add_micheline_simple_array_job(job_parameters,
     state_log = 'Hold'
     if not job_parameters.hold:
         state_log = 'Waiting'
-        db.query(Job).filter(Job.array_id == array_id).update({Job.state: state_log})
-        db.commit
+        db.query(Job).filter(Job.array_id == array_id).update({Job.state: state_log},
+                                                              synchronize_session=False)
+        db.commit()
 
     # Update array_id field and set job to state if waiting and insert job_state_log
     job_state_logs = [{'job_id': job_id, 'job_state': state_log, 'date_start': date}
