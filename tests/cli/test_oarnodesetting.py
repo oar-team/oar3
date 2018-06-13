@@ -8,9 +8,8 @@ from oar.lib import db
 from oar.cli.oarnodesetting import cli
 
 import oar.lib.tools  # for monkeypatching
-fake_notifications = []
 
-NB_NODES=0
+fake_notifications = []
 
 def fake_notify_almighty(notification):
     global fake_notifications
@@ -18,10 +17,9 @@ def fake_notify_almighty(notification):
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
+    global fake_notifications
+    fake_notifications = []
     with db.session(ephemeral=True):
-        # add some resources
-        for i in range(NB_NODES):
-            db['Resource'].create(network_address="localhost")
         yield
 
         
