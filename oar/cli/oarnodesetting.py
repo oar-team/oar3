@@ -10,8 +10,8 @@ from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
-from oar.lib.resource_handling import (set_resources_property, add_resource,
-                                       get_resources_with_given_sql)
+from oar.lib.resource_handling import (set_resources_property, add_resource, 
+                                       get_resources_with_given_sql, set_resources_nextState)
 from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
@@ -53,7 +53,6 @@ def set_maintenance(resources, maintenance_state, no_wait):
 
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
-
     notify_server_tag_list = []
     
     cmd_ret = CommandReturns()
@@ -133,12 +132,12 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
     else:
         if resources:
             if state:
-                tmp_nb_updates = set_resources_nextState(resources, state)
-                if tmp_nb_updates < len(resources):
-                    cmd_ret.warning(str(len(resources) - tmp_nb_updates) +\
-                                 ' resource(s) cannot be updated.', 3)
+                nb_match_for_update = set_resources_nextState(resources, state)
+                if nb_match_for_update < len(resources):
+                    cmd_ret.warning(str(len(resources) - nb_match_for_update) +\
+                                    ' resource(s) will be not updated (not exist ?).', 3)
                 else:
-                    cmd_ret('(' + ','.join(resources) + ') --> ' + state)
+                    cmd_ret.print_(str(resources) + ' --> ' + state)
 
                 tools.notify_almighty('ChState')
 

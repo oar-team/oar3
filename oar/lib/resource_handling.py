@@ -43,14 +43,16 @@ def set_resource_state(resource_id, state, finaud_decision):
     db.query(Resource).filter(Resource.id == resource_id)\
                       .update({Resource.state: state,
                                Resource.finaud_decision: finaud_decision,
-                               Resource.state_num: State_to_num[state]})
+                               Resource.state_num: State_to_num[state]},
+                      synchronize_session=False)
 
     date = tools.get_date()
 
     db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
                          .filter(ResourceLog.attribute == 'state')\
                          .filter(ResourceLog.resource_id == resource_id)\
-                         .update({ResourceLog.date_stop: date})
+                         .update({ResourceLog.date_stop: date},
+                         synchronize_session=False)
 
     ins = ResourceLog.__table__.insert().values(
         {ResourceLog.resource_id: resource_id, ResourceLog.attribute: 'state',
@@ -61,10 +63,20 @@ def set_resource_state(resource_id, state, finaud_decision):
 def set_resource_nextState(resource_id, next_state):
     """Set the nextState field of a resource identified by its resource_id"""
     db.query(Resource).filter(Resource.id == resource_id)\
-                      .update({Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'})
+                      .update({Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'},
+                      synchronize_session=False)
     db.commit()
 
-
+def set_resources_nextState(resource_ids, next_state):
+    """Set the nextState field of a resources identified by their resource_id and return the number
+    of matched rows (becarefull is not necessarily egal to the number of updated rows"""
+    nb_matched_row = db.query(Resource).filter(Resource.id.in_(tuple(resource_ids)))\
+                              .update({Resource.next_state: next_state,
+                                       Resource.next_finaud_decision: 'NO'},
+                                      synchronize_session=False)
+    db.commit()
+    return nb_matched_row
+    
 def set_resources_property(resources, hostnames, prop_name, prop_value):
     """Change a property value in the resource table
     parameters: resources or hostname to change, property name, value
@@ -84,6 +96,7 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
 
     rids = tuple(r[0] for r in res)
     if nb_resources > 0:
+        # TODO TOVERIFY nb_affected_row -> NO, nb of MATCHED ROW 
         nb_affected_row = db.query(Resource)\
                             .filter(Resource.id.in_(rids))\
                             .update({getattr(Resource, prop_name): prop_value},
@@ -195,14 +208,15 @@ def get_absent_suspected_resources_for_a_timeout(timeout):
 def update_resource_nextFinaudDecision(resource_id, finaud_decision):
     """Update nextFinaudDecision field"""
     db.query(Resource).filter(Resource.id == resource_id)\
-                      .update({Resource.next_finaud_decision: finaud_decision})
+                      .update({Resource.next_finaud_decision: finaud_decision},
+                      synchronize_session=False)
     db.commit()
 
 
 def update_scheduler_last_job_date(date, moldable_id):
     db.query(Resource).filter(AssignedResource.moldable_id == moldable_id)\
                       .filter(AssignedResource.resource_id == Resource.resource_id)\
-                      .update({Resource.last_job_date: date})
+                      .update({Resource.last_job_date: date}, synchronize_session=False)
 
 def update_current_scheduler_priority(job, value, state):
     """Update the scheduler_priority field of the table resources

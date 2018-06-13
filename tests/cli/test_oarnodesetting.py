@@ -131,3 +131,11 @@ def test_oarnodesetting_malformed_property_error():
     resource = db['Resource'].query.one()
     print(result.output)
     assert result.exit_code == 10
+
+def test_oarnodesetting_sql_state():
+    for _ in range(2):
+        db['Resource'].create(network_address='localhost', state='Absent')
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--sql', "network_address=\'localhost\'", '--state', 'Alive'])
+    assert fake_notifications[-2:] == ['ChState']
+    assert result.exit_code == 0
