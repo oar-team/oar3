@@ -89,3 +89,10 @@ def test_oarnodesetting_error_5():
     print(result.output)
     assert result.exit_code == 1
     
+def test_oarnodesetting_sql_drain():
+    db['Resource'].create(network_address="localhost")
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--sql', "state=\'Alive\'", '--drain', 'on'])
+    resource = db['Resource'].query.one()
+    print(result.output)
+    assert resource.drain == 'YES'

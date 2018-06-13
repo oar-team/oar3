@@ -43,8 +43,7 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
     if sql:
         job_ids = get_job_ids_with_given_properties(sql)
         if not job_ids:
-            cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(array), 4)
-
+            cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(sql), 4)
 
     for job_id in job_ids:
         if running:

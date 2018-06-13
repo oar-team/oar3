@@ -10,7 +10,8 @@ from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
-from oar.lib.resource_handling import (set_resources_property, add_resource)
+from oar.lib.resource_handling import (set_resources_property, add_resource,
+                                       get_resources_with_given_sql)
 from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
@@ -25,7 +26,6 @@ click.disable_unicode_literals_warning = True
 
 
 def set_resources_properties(cmd_ret, resources, hostnames, properties):
-    #import pdb; pdb.set_trace()
     for prop in properties:
         name_value = prop.lstrip().split('=')
         if len(name_value) == 2:
@@ -84,19 +84,10 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         return cmd_ret
     
     if sql:
-        #TODO
-        # if (defined($Sql_property)){
-        #                 my $db = OAR::IO::connect_ro();
-        #                 foreach my $r (OAR::IO::get_resources_with_given_sql($db,$Sql_property)){
-        #                     push(@resources, $r);
-        #                 }
-        #         OAR::IO::disconnect($db);
-        #         if ($#resources < 0){
-        #             warn("/!\\ Your SQL clause returns nothing and there is no resource specified.\n");
-        #         $exit_code = 12;
-        #         exit($exit_code);
-        # }       
-        pass
+        resources = get_resources_with_given_sql(sql)
+        if not resources:
+            cmd_ret.warning("There are no resource(s) for this SQL WHERE clause ({})".format(sql), 12)
+            return cmd_ret
 
     hosts = []
     # Get hostnames from a file
@@ -188,11 +179,12 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                         jobs = get_node_job_to_frag(host)
                         wait_end_of_running_jobs(jobs)
 
+
     if drain:
         if drain == 'on':
-            properties.append('drain=YES')
+            properties = properties + ('drain=YES',)
         elif drain == 'off':
-            properties.append('drain=NO')
+            properties = properties + ('drain=NO',)
 
     # Update properties
     if properties:
@@ -241,7 +233,6 @@ def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
     hostnames = hostname
     filename = file
     properties = property
-    if isinstance(properties, str): properties = [properties]
     cmd_ret = oarnodesetting(resources, hostnames, filename, sql, add, state,
                              maintenance, drain, properties, no_wait,
                              last_property_value, version)

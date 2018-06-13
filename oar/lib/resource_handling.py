@@ -70,13 +70,12 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
     parameters: resources or hostname to change, property name, value
     return : number of changed rows"""
 
-    #import pdb; pdb.set_trace()
     query = db.query(Resource.id)
     if hostnames:
         query = query.filter(Resource.network_address.in_(tuple(hostnames)))
     else:
         query = query.filter(Resource.id.in_(tuple(resources)))
-    query = query.filter(or_(getattr(Resource, prop_name) == prop_value, getattr(Resource, prop_name) == None))
+    query = query.filter(or_(getattr(Resource, prop_name) != prop_value, getattr(Resource, prop_name) == None))
     #query = query.filter(text("( {} != '{}' OR {} IS NULL )".format(prop_name, prop_value, prop_name)))
     res = query.all()
     
@@ -284,3 +283,8 @@ def get_resource_job_to_frag(r_id):
                           .all()
 
     return res
+
+def get_resources_with_given_sql(sql):
+    """Returns the resource ids with specified properties parameters : where SQL constraints."""
+    results = db.query(Resource.id).filter(text(sql)).order_by(Resource.id).all()
+    return [r[0] for r in results]
