@@ -105,3 +105,11 @@ def test_oarnodesetting_sql_void():
     print(result.output)
     assert re.match('.*are no resource.*', result.output)
     assert result.exit_code == 0
+
+def test_oarnodesetting_system_property_error():
+    db['Resource'].create(network_address="localhost")
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost', '-p', 'state=Alive', '--drain', 'on'])
+    resource = db['Resource'].query.one()
+    print(result.output)
+    assert result.exit_code == 8
