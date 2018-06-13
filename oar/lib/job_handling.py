@@ -612,7 +612,7 @@ def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
     # start_time,Job.assigned_moldable_job: moldable_id}).filter(Job.id ==
     # jid)
     db.query(Job).filter(Job.id == jid).update(
-        {Job.start_time: start_time, Job.assigned_moldable_job: moldable_id})
+        {Job.start_time: start_time, Job.assigned_moldable_job: moldable_id},  synchronize_session=False)
     db.commit()
 
 
@@ -851,10 +851,12 @@ def resubmit_job(job_id):
 
     # Update job dependencies
     db.query(JobDependencie).filter(JobDependencie.job_id_required  == job_id)\
-                            .update({JobDependencie.job_id_required: new_job_id})
+                            .update({JobDependencie.job_id_required: new_job_id},
+                            synchronize_session=False)
     
     # Update job state to waintg
-    db.query(Job).filter(Job.id == new_job_id).update({'state': 'Waiting'})
+    db.query(Job).filter(Job.id == new_job_id).update({'state': 'Waiting'},
+                                                      synchronize_session=False)
 
     # Emit job state log
     db.session.execute(JobStateLog.__table__.insert(),
@@ -879,12 +881,14 @@ def set_job_resa_state(job_id, state):
     return value : None
     side effects : changes the field state of the job in the table Jobs
     '''
-    db.query(Job).filter(Job.id == job_id).update({Job.reservation: state})
+    db.query(Job).filter(Job.id == job_id).update({Job.reservation: state},
+                                                  synchronize_session=False)
     db.commit()
 
 
 def set_job_message(job_id, message):
-    db.query(Job).filter(Job.id == job_id).update({Job.message: message})
+    db.query(Job).filter(Job.id == job_id).update({Job.message: message},
+                                                  synchronize_session=False)
     db.commit()
 
 
@@ -1049,7 +1053,7 @@ def set_moldable_job_max_time(moldable_id, walltime):
     """Set walltime for a moldable job"""
     db.query(MoldableJobDescription)\
       .filter(MoldableJobDescription.id == moldable_id)\
-      .update({MoldableJobDescription.walltime: walltime})
+      .update({MoldableJobDescription.walltime: walltime}, synchronize_session=False)
 
     db.commit()
 
@@ -1058,7 +1062,7 @@ def set_gantt_job_start_time(moldable_id, current_time_sec):
     """Update start_time in gantt for a specified job"""
     db.query(GanttJobsPrediction)\
       .filter(GanttJobsPrediction.moldable_id == moldable_id)\
-      .update({GanttJobsPrediction.start_time: current_time_sec})
+      .update({GanttJobsPrediction.start_time: current_time_sec}, synchronize_session=False)
 
     db.commit()
 
@@ -1359,7 +1363,7 @@ def set_job_state(jid, state):
                           .filter(Job.state != 'Error')\
                           .filter(Job.state != 'Terminated')\
                           .filter(Job.state != state)\
-                          .update({Job.state: state})
+                          .update({Job.state: state}, synchronize_session=False)
     db.commit()
 
     if result == 1:  # OK for sqlite
@@ -1371,7 +1375,8 @@ def set_job_state(jid, state):
         # TODO: optimize job log
         db.query(JobStateLog).filter(JobStateLog.date_stop == 0)\
                              .filter(JobStateLog.job_id == jid)\
-                             .update({JobStateLog.date_stop: date})
+                             .update({JobStateLog.date_stop: date},
+                             synchronize_session=False)
         db.commit()
         req = db.insert(JobStateLog).values(
             {'job_id': jid, 'job_state': state, 'date_start': date})
@@ -1391,7 +1396,8 @@ def set_job_state(jid, state):
             else:  # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
                     db.query(Job).filter(Job.id == jid)\
-                                 .update({Job.stop_time: job.start_time})
+                                 .update({Job.stop_time: job.start_time},
+                                 synchronize_session=False)
                     db.commit()
 
                 if job.assigned_moldable_job != "0":
@@ -1409,11 +1415,11 @@ def set_job_state(jid, state):
 
                         if r != ():
                             db.query(Resource).filter(~Resource.id.in_(r))\
-                                              .update({Resource.suspended_jobs: 'NO'})
-
+                                              .update({Resource.suspended_jobs: 'NO'},
+                                              synchronize_session=False)
                         else:
-                            db.query(Resource).update(
-                                {Resource.suspended_jobs: 'NO'})
+                            db.query(Resource).update({Resource.suspended_jobs: 'NO'},
+                                                      synchronize_session=False)
                         db.commit()
 
                     tools.notify_user(
@@ -1554,11 +1560,12 @@ def get_job_host_log(moldable_id):
 def suspend_job_action(job_id, moldable_id):
     """perform all action when a job is suspended"""
     set_job_state(job_id, 'Suspended')
-    db.query(Job).filter(Job.id == job_id).update({'suspended': 'YES'})
-    
+    db.query(Job).filter(Job.id == job_id).update({'suspended': 'YES'},
+                                                  synchronize_session=False)
     resource_ids = get_current_resources_with_suspended_job()
     
-    db.query(Resource).filter(Resource.id.in_(resource_ids)).update({'suspended_jobs': 'YES'}, synchronize_session=False)
+    db.query(Resource).filter(Resource.id.in_(resource_ids)).update({'suspended_jobs': 'YES'},
+                                                                    synchronize_session=False)
     db.commit()
 
 def get_job_cpuset_name(job_id, job=None):
@@ -1574,22 +1581,26 @@ def get_job_cpuset_name(job_id, job=None):
 
 def job_fragged(job_id):
     """Set the flag 'ToFrag' of a job to 'No'"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'FRAGGED'})
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'FRAGGED'},
+                                                              synchronize_session=False)
     db.commit()
 
 def job_arm_leon_timer(job_id):
     """Set the state to TIMER_ARMED of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'TIMER_ARMED'})
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'TIMER_ARMED'},
+                                                              synchronize_session=False)
     db.commit()
 
 def job_refrag(job_id):
     """Set the state to LEON of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON'})
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON'},
+                                                              synchronize_session=False)
     db.commit()
 
 def job_leon_exterminate(job_id):
     """Set the state LEON_EXTERMINATE of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON_EXTERMINATE'})
+    db.query(FragJob).filter(FragJob.job_id == job_id).update({FragJob.state: 'LEON_EXTERMINATE'},
+                                                              synchronize_session=False)
     db.commit()
 
 def get_frag_date(job_id):
@@ -1600,7 +1611,8 @@ def get_frag_date(job_id):
 
 def set_job_exit_code(job_id, exit_code):
     """Set exit code to just finished job"""
-    db.query(Job).filter(Job.id == job_id).update({Job.exit_code: exit_code})
+    db.query(Job).filter(Job.id == job_id).update({Job.exit_code: exit_code},
+                                                  synchronize_session=False)
     db.commit()
 
 def check_end_of_job(job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script):
@@ -1921,7 +1933,7 @@ def set_finish_date(job):
     date = tools.get_date()
     if date < job.start_time:
         date = job.start_time
-    db.query(Job).filter(Job.id == job.id).update({Job.stop_time: date})
+    db.query(Job).filter(Job.id == job.id).update({Job.stop_time: date}, synchronize_session=False)
     db.commit()
 
 def set_running_date(job_id):
@@ -1931,7 +1943,7 @@ def set_running_date(job_id):
     # gantt_date = get_gantt_date()
     # if gantt_date < date:
     #     date = gantt_date
-    db.query(Job).filter(Job.id == job_id).update({Job.start_time: date})
+    db.query(Job).filter(Job.id == job_id).update({Job.start_time: date}, synchronize_session=False)
     db.commit()
 
     
