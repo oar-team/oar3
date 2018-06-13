@@ -113,3 +113,11 @@ def test_oarnodesetting_system_property_error():
     resource = db['Resource'].query.one()
     print(result.output)
     assert result.exit_code == 8
+    
+def test_oarnodesetting_malformed_property_error():
+    db['Resource'].create(network_address="localhost")
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost', '-p', 'state=Ali=ve', '--drain', 'on'])
+    resource = db['Resource'].query.one()
+    print(result.output)
+    assert result.exit_code == 10
