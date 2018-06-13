@@ -302,3 +302,25 @@ def get_resources_with_given_sql(sql):
     """Returns the resource ids with specified properties parameters : where SQL constraints."""
     results = db.query(Resource.id).filter(text(sql)).order_by(Resource.id).all()
     return [r[0] for r in results]
+
+def log_resource_maintenance_event(resource_id, maintenance, date):
+    """ log maintenance event, two cases according to maintenance value (on|off)
+    maintenance on:
+    add an event in the table resource_logs indicating that this 
+    resource is in maintenance (state = Absent, available_upto = 0)
+    maintenance off:
+    update the event in the table resource_logs indicating that this 
+    resource is in maintenance (state = Absent, available_upto = 0) 
+    set the date_stop"""
+    if maintenance == 'on':
+        ins = ResourceLog.__table__.insert().values(
+            {ResourceLog.resource_id: resource_id, ResourceLog.attribute: 'maintenance',
+             ResourceLog.value: maintenance, ResourceLog.date_start: date})
+        db.session.execute(ins)
+    else:
+        db.query(ResourceLog).filter(ResourceLog.date_stop == 0)\
+                             .filter(ResourceLog.attribute == 'maintenance')\
+                             .filter(ResourceLog.resource_id == resource_id)\
+                             .update({ResourceLog.date_stop: date},
+                                     synchronize_session=False)
+        db.commit()

@@ -10,7 +10,7 @@ from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.node import set_node_nextState
-from oar.lib.resource_handling import (set_resources_property, add_resource, 
+from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState)
 from oar.lib.tools import check_resource_system_property
 
@@ -47,9 +47,15 @@ def wait_end_of_running_jobs(jobs):
     #TODO
     pass
     
-def set_maintenance(resources, maintenance_state, no_wait):
-    #TODO
-    pass
+def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
+    for resource_id in resources:
+        resource = get_resource(resource_id)
+        if not resource:
+            cmd_ret.error('The resource {} does not exist in OAR database.'.format(resource_id))
+        elif maintenance == 'on':
+            cmd_ret.print_("Maintenance mode set to 'ON' on resource {}".format(resource_id))
+            add_event_maintenance_on($base, $res, OAR::IO::get_date($base));
+        
 
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
@@ -150,7 +156,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                     cmd_ret.print_('Done')
 
             if maintenance:
-                   set_maintenance(resources, maintenance, no_wait);
+                   set_maintenance(cmd_ret, resources, maintenance, no_wait);
             
         else:
             # update all resources with netwokAdress = $hostname
@@ -159,7 +165,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                 for host in hostnames:
                     resources_to_maintain += get_all_resources_on_node(host)
 
-                set_maintenance(resources_to_maintain, maintenance, no_wait)
+                set_maintenance(cmd_ret, resources_to_maintain, maintenance, no_wait)
 
             if state:
                 hosts_to_check = []
