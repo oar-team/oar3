@@ -133,7 +133,21 @@ def test_oarnodesetting_malformed_property_error():
 def test_oarnodesetting_sql_state():
     for _ in range(2):
         db['Resource'].create(network_address='localhost', state='Absent')
+    db.commit()
     runner = CliRunner()
     result = runner.invoke(cli,  ['--sql', "network_address=\'localhost\'", '--state', 'Alive'])
-    assert fake_notifications[-2:] == ['ChState']
+    assert fake_notifications == ['ChState']
+    assert result.exit_code == 0
+    
+def test_oarnodesetting_hosts_state():
+
+    db['Resource'].create(network_address='localhost0', state='Absent')
+    db['Resource'].create(network_address='localhost1', state='Absent')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost0', '-h', 'localhost1', '--state', 'Alive'])
+    print(result.output)
+    resources = db['Resource'].query.all()
+    assert resources[0].next_state == 'Alive'
+    assert fake_notifications == ['ChState']
     assert result.exit_code == 0

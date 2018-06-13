@@ -222,7 +222,6 @@ def get_table_name(name):
         return '_' + word.lower()
     return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
 
-
 def print_query_results(results, name=None):
     if name:
         print(name)

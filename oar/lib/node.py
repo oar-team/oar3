@@ -198,10 +198,11 @@ def set_node_state(hostname, state, finaud_tag):
 
 def set_node_nextState(hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""
-    db.query(Resource).filter(Resource.network_address == hostname).update(
+    nb_matched = db.query(Resource).filter(Resource.network_address == hostname).update(
         {Resource.next_state: next_state, Resource.next_finaud_decision: 'NO'},
         synchronize_session=False)
     db.commit()
+    return nb_matched
 
 def change_node_state(node, state, config):
     """Changes node state and notify central automaton"""
