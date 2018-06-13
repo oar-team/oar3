@@ -92,10 +92,20 @@ def test_oarnodesetting_error_5():
 def test_oarnodesetting_sql_drain():
     db['Resource'].create(network_address="localhost")
     runner = CliRunner()
-    result = runner.invoke(cli,  ['--sql', "state=\'Alive\'", '--drain', 'on'])
+    result = runner.invoke(cli, ['--sql', "state=\'Alive\'", '--drain', 'on'])
     resource = db['Resource'].query.one()
     print(result.output)
     assert resource.drain == 'YES'
+
+def test_oarnodesetting_drain_off():
+    db['Resource'].create(network_address="localhost", drain='YES')
+    resource = db['Resource'].query.one()
+    print(resource.drain)
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-h', 'localhost', '--drain', 'off'])
+    resource = db['Resource'].query.one()
+    print(result.output)
+    assert resource.drain == 'NO'
     
 def test_oarnodesetting_sql_void():
     db['Resource'].create(network_address="localhost")
