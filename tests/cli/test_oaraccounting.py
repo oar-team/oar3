@@ -63,7 +63,7 @@ def test_oaraccounting_reinitialize():
                     reason="need postgresql database")
 def test_oaraccounting_delete_before(monkeypatch):
     
-    insert_running_jobs()
+    insert_terminated_jobs()
     accounting1 = db.query(Accounting).all()
     runner = CliRunner()
     result = runner.invoke(cli,['--delete-before', '432000'])
