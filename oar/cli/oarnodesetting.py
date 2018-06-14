@@ -136,16 +136,17 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             cmd_ret.warning("There are no resource(s) for this SQL WHERE clause ({})".format(sql), 12)
             return cmd_ret
 
-    hosts = []
+
     # Get hostnames from a file
     if filename:
+        hosts = []
         try:
             with open(filename, 'r') as hostfile:
-                hosts = [host for host in hostfile]
+                hosts = tuple([host for host in hostfile])
         except OSError as e:
             cmd_ret.warning(str(e), 13)
 
-        hostsnames += hosts
+        hostnames += hosts
 
     if add and (resources or sql):
         cmd_ret.warning('You cannot use -r|--resource or --sql and -a|--add options at a same time')

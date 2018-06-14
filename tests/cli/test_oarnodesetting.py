@@ -1,6 +1,7 @@
 # coding: utf-8
 import pytest
 import re
+import os
 
 from ..helpers import insert_running_jobs
 
@@ -151,7 +152,19 @@ def test_oarnodesetting_sql_state1():
     result = runner.invoke(cli,  ['--sql', "network_address=\'localhost\'", '--state', 'Dead'])
     assert fake_notifications == ['ChState']
     assert result.exit_code == 0
+    
+def test_oarnodesetting_host_by_file_state():
+    here = os.path.abspath(os.path.dirname(__file__))
+    filename = os.path.join(here, "data", "hostfile.txt")
+    for _ in range(2):
+        db['Resource'].create(network_address='localhost')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--file', filename, '--state', 'Absent'])
+    assert fake_notifications == ['ChState']
+    assert result.exit_code == 0
 
+    
 def test_oarnodesetting_hosts_state():
     db['Resource'].create(network_address='localhost0', state='Absent')
     db['Resource'].create(network_address='localhost1', state='Absent')
@@ -175,6 +188,7 @@ def test_oarnodesetting_hosts_state1():
     assert resources[0].next_state == 'Dead'
     assert fake_notifications == ['ChState']
     assert result.exit_code == 0
+
 def test_oarnodesetting_last_property_value():
     db['Resource'].create(network_address='localhost', core='1')
     db['Resource'].create(network_address='localhost', core='2')
