@@ -294,9 +294,10 @@ def get_resource_job_to_frag(r_id):
                           .filter(Job.state != 'Terminated')\
                           .filter(Job.state != 'Error')\
                           .filter(~Job.id.in_(subq))\
+                          .order_by(Job.id)\
                           .all()
 
-    return res
+    return [r[0] for r in res]
 
 def get_resources_with_given_sql(sql):
     """Returns the resource ids with specified properties parameters : where SQL constraints."""

@@ -44,10 +44,25 @@ def set_resources_properties(cmd_ret, resources, hostnames, properties):
             cmd_ret.warning('Bad property syntax: {}\n'.format(name_value))
             cmd_ret.exit_values.append(10)
 
-def wait_end_of_running_jobs(jobs):
-    #TODO
-    pass
-    
+def wait_end_of_running_jobs(cmd_ret, jobs):
+    # active waiting: it is not very nice but it works!!
+    # TODO: remove active waiting (notification system)
+    max_timeout = 30
+    for job_id in jobs:
+        cmd_ret.print_("Wait end of job: " + str(job_id))
+        count = 0
+        while True:
+            job = get_job(job_id)
+            if (job.state == 'Terminated' or job.state == 'Error' or count == max_timeout):
+                break
+            time.sleep(1)
+            count += 1
+            print('.', end='')
+    if count == max_timeout:
+        cmd_ret.error('Timeout', 1, 11)
+    else:
+        cmd_ret.print_('Delete')
+
 def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
     for resource_id in resources:
         resource = get_resource(resource_id)
@@ -66,7 +81,7 @@ def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
             if not no_wait:
                 cmd_ret.print_("Check jobs to delete on resource {}".format(resource_id))
                 jobs = get_resource_job_to_frag(resource_id)
-                wait_end_of_running_jobs(jobs)
+                wait_end_of_running_jobs(cmd_ret, jobs)
         else: # maintenance == off
             cmd_ret.print_("Maintenance mode set to 'OFF' on resource {}".format(resource_id))          
             log_resource_maintenance_event(resource_id, maintenance, tools.get_date)
@@ -172,7 +187,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                     for resource in resources:
                         cmd_ret.print_('Check jobs to delete on resource: ' + resource)     
                         jobs = get_resource_job_to_frag(resource)
-                        wait_end_of_running_jobs(jobs)
+                        wait_end_of_running_jobs(cmd_ret, jobs)
                 elif state == 'Alive':
                     cmd_ret.print_('Done')
 
@@ -203,8 +218,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                     for hosts in hosts_to_check:
                         cmd_ret.print_('Check jobs to delete on host: ' + host)
                         jobs = get_node_job_to_frag(host)
-                        wait_end_of_running_jobs(jobs)
-
+                        wait_end_of_running_jobs(cmd_ret, jobs)
 
     if drain:
         if drain == 'on':
