@@ -2,7 +2,7 @@
 """ Functions to handle resource"""
 import os
 
-from sqlalchemy import (distinct, text, or_)
+from sqlalchemy import (distinct, text, or_, func)
 from oar.lib import (db, config, Resource, ResourceLog, Job, AssignedResource,
                      EventLog, FragJob, JobType, MoldableJobDescription, get_logger)
 from oar.lib.event import (add_new_event, is_an_event_exists)
@@ -325,3 +325,13 @@ def log_resource_maintenance_event(resource_id, maintenance, date):
                              .update({ResourceLog.date_stop: date},
                                      synchronize_session=False)
         db.commit()
+
+def get_resource_max_value_of_property(property_name):
+    # returns the max numerical value for a property amongst resources
+    propery_field = None
+    try:
+        propery_field = getattr(Resource, property_name)
+    except AttributeError:
+        # Property doesn't exist
+        return None
+    return db.query(func.max(propery_field)).scalar()

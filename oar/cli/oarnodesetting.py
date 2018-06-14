@@ -12,7 +12,8 @@ from oar.lib import (db, config)
 from oar.lib.node import set_node_nextState
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState,
-                                       log_resource_maintenance_event, get_resource_job_to_frag)
+                                       log_resource_maintenance_event, get_resource_job_to_frag,
+                                       get_resource_max_value_of_property)
 from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
@@ -150,8 +151,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         hostnames = [gethostname()]
 
     if last_property_value:
-        #TODO
-        value = get_resource_last_value_of_property(last_property_value)
+        value =  get_resource_max_value_of_property(last_property_value)
         if value:
             cmd_ret.print_(str(value))
         else:
