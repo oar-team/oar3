@@ -140,7 +140,6 @@ def test_oarnodesetting_sql_state():
     assert result.exit_code == 0
     
 def test_oarnodesetting_hosts_state():
-
     db['Resource'].create(network_address='localhost0', state='Absent')
     db['Resource'].create(network_address='localhost1', state='Absent')
     db.commit()
@@ -151,3 +150,31 @@ def test_oarnodesetting_hosts_state():
     assert resources[0].next_state == 'Alive'
     assert fake_notifications == ['ChState']
     assert result.exit_code == 0
+
+def test_oarnodesetting_last_property_value():
+    db['Resource'].create(network_address='localhost', core='1')
+    db['Resource'].create(network_address='localhost', core='2')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--last-property-value', 'core'])
+    print(result.output)
+    assert re.match(r'2', result.output)
+
+
+def test_oarnodesetting_last_property_value_error0():
+    db['Resource'].create(network_address='localhost')
+    db['Resource'].create(network_address='localhost')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--last-property-value', 'NotExist'])
+    print(result.output)
+    assert re.match(r'.*retrieve the last value.*', result.output)
+    
+def todo_test_oarnodesetting_last_property_value_error1():
+    db['Resource'].create(network_address='localhost')
+    db['Resource'].create(network_address='localhost')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--last-property-value', 'drain'])
+    print(result.output)
+    assert re.match(r'.*retrieve the last value.*', result.output)
