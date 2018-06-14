@@ -2,7 +2,7 @@
 
 from sqlalchemy import (func, select, text, distinct, or_, and_)
 from oar.lib import (db, Resource, ResourceLog, GanttJobsResource, GanttJobsPrediction, Job,
-                     EventLog, EventLogHostname, MoldableJobDescription,
+                     EventLog, EventLogHostname, MoldableJobDescription, JobType,
                      AssignedResource, get_logger, config)
 
 import oar.lib.tools as tools
@@ -238,3 +238,22 @@ def update_node_nextFinaudDecision(network_address, finaud_decision):
     db.commit()
 
     
+def get_node_job_to_frag(hostname):
+    # same as get_node_job but excepts cosystem jobs
+    subq = db.query(JobType.job_id).filter(JobType.type == 'cosystem')\
+                                   .filter(JobType.types_index == 'CURRENT')\
+                                   .subquery()
+                                           
+    res = db.query(Job.id).filter(AssignedResource.index == 'CURRENT')\
+                          .filter(MoldableJobDescription.index == 'CURRENT')\
+                          .filter(Resource.network_address == hostname)\
+                          .filter(AssignedResource.resource_id == Resource.id)\
+                          .filter(AssignedResource.moldable_id == MoldableJobDescription.id)\
+                          .filter(MoldableJobDescription.job_id == Job.id)\
+                          .filter(Job.state != 'Terminated')\
+                          .filter(Job.state != 'Error')\
+                          .filter(~Job.id.in_(subq))\
+                          .order_by(Job.id)\
+                          .all()
+
+    return [r[0] for r in res]

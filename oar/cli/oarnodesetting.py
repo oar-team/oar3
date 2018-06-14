@@ -11,7 +11,8 @@ from oar import VERSION
 from oar.lib import (db, config)
 
 from oar.lib.job_handling import get_job
-from oar.lib.node import (set_node_nextState,get_all_resources_on_node)
+from oar.lib.node import (set_node_nextState,get_all_resources_on_node, get_node_job_to_frag,
+                          get_node_job_to_frag)
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState,
                                        log_resource_maintenance_event, get_resource_job_to_frag,
@@ -101,7 +102,7 @@ def set_maintenance(cmd_ret, resources, maintenance, no_wait):
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
     notify_server_tag_list = []
-
+    #import pdb; pdb.set_trace()
     cmd_ret = CommandReturns()
 
     if version:
@@ -189,7 +190,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
                 if (state in ['Dead', 'Absent']) and not no_wait:
                     for resource in resources:
-                        cmd_ret.print_('Check jobs to delete on resource: ' + resource)     
+                        cmd_ret.print_('Check jobs to delete on resource: ' + str(resource))     
                         jobs = get_resource_job_to_frag(resource)
                         wait_end_of_running_jobs(cmd_ret, jobs)
                 elif state == 'Alive':
