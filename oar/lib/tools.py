@@ -112,7 +112,7 @@ def notify_user(job, state, msg):  # pragma: no cover
     return True
 
 
-def send_mail(job, mail_address, subject, msg_content):
+def send_mail(job, mail_address, subject, msg_content): # pragma: no cover
     import smtplib
     from email.message import EmailMessage
     
@@ -193,7 +193,7 @@ def notify_bipbip_commander(message):  # pragma: no cover
         completed = False
     return completed
 
-def notify_interactif_user(job, message):
+def notify_interactif_user(job, message): # pragma: no cover
     addr, port = job.info_type.split(':')
     return notify_tcp_socket(addr, port, message)
 
@@ -214,7 +214,7 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket.close()
     return nb_sent
 
-def pingchecker(hosts):
+def pingchecker(hosts): # pragma: no cover
     """Check compute nodes remotely accordindly to method specified in oar.conf"""
     cmd = ''
     ip2hostname = {}
@@ -269,7 +269,7 @@ def pingchecker(hosts):
 
     return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts) 
 
-def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log):
+def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log): # pragma: no cover
     log.debug('[PingChecker] command to run : {}'.format(cmd))
     
     if add_bad_hosts:
@@ -307,11 +307,11 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
         return (1, list(bad_hosts.keys()))
 
 
-def send_log_by_email(title, message):
+def send_log_by_email(title, message): # pragma: no cover
     #raise NotImplementedError("TODO")
     return
 
-def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):
+def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']): # pragma: no cover
     # Launch admin script
     error_msg = ''
     try:
@@ -323,7 +323,7 @@ def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):
 
     return error_msg
 
-def kill_child_processes(parent_pid, sig=signal.SIGTERM):
+def kill_child_processes(parent_pid, sig=signal.SIGTERM): # pragma: no cover
     """from: https://stackoverflow.com/questions/3332043/obtaining-pid-of-child-process"""
     try:
       parent = psutil.Process(parent_pid)
@@ -334,18 +334,18 @@ def kill_child_processes(parent_pid, sig=signal.SIGTERM):
       process.send_signal(sig)
 
 
-def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
+def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal): # pragma: no cover
     raise NotImplementedError("TODO")
 
 def get_oar_pid_file_name(job_id):
     """Get the name of the file which contains the pid of oarexec"""
     return config['OAREXEC_DIRECTORY'] + '/' + config['OAREXEC_PID_FILE_NAME'] + str(job_id)
 
-def get_oar_user_signal_file_name(job_id):
+def get_oar_user_signal_file_name(job_id): # pragma: no cover
     """Get the name of the file which contains the signal given by the user"""
     return config['OAREXEC_DIRECTORY'] + '/USER_SIGNAL_' + str(job_id)
 
-def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):
+def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None): # pragma: no cover
     """Send the given signal to the right oarexec process
     args : host name, job id, signal, wait or not (0 or 1), 
     DB ref (to close it in the child process), ssh cmd, user defined signal 
@@ -391,7 +391,7 @@ def send_to_hulot(cmd, data):
         with open(fifoname, 'w') as fifo:
             fifo.write('HALT:%s\n' % data)
             fifo.flush()
-    except IOError as e:
+    except IOError as e: # pragma: no cover
         e.strerror = 'Unable to communication with Hulot: %s (%s)' % fifoname % e.strerror
         logger.error(e.strerror)
         return 1
@@ -401,7 +401,7 @@ def get_default_suspend_resume_file():
     raise NotImplementedError("TODO")
 
 
-def launch_oarexec(cmd, data_str, oarexec_files):
+def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
     # Prepare string to transfer to perl interpreter on head node
       
     str_to_transfer = ''
@@ -436,7 +436,7 @@ def launch_oarexec(cmd, data_str, oarexec_files):
             return True
     return False
 
-def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
+def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None): # pragma: no cover
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
 
@@ -509,16 +509,16 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
     return (0, []) 
 
 
-def get_date():
+def get_date(): # pragma: no cover
     if db.engine.dialect.name == 'sqlite':
         req = "SELECT strftime('%s','now')"
-    else:   # pragma: no cover
+    else:
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
     result = db.session.execute(req).scalar()
     return int(result)
 
-def get_time():
+def get_time(): # pragma: no cover
     return(time.time())
 
 def sql_to_local(date):
@@ -585,14 +585,14 @@ def get_duration(seconds):
                      if num)
 
 
-def send_checkpoint_signal(job):
+def send_checkpoint_signal(job): # pragma: no cover
     raise NotImplementedError("TODO")
     logger.debug("Send checkpoint signal to the job " + str(job.id))
     logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
 
 
-def get_username():
+def get_username(): # pragma: no cover
     #return pwd.getpwuid( os.getuid() ).pw_name
     return os.environ['OARDO_USER']
 
@@ -706,7 +706,7 @@ def resources2dump_perl(resources):
     #             h = h + str(v)
     #         s = s + ',
 
-def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resource_file):
+def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resource_file): # pragma: no cover
     """ Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
     """           
