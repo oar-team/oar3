@@ -9,11 +9,12 @@
 from oar import VERSION
 from oar.lib import (db, config)
 
-from oar.lib.node import set_node_nextState
+from oar.lib.node import (set_node_nextState,get_all_resources_on_node)
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState,
                                        log_resource_maintenance_event, get_resource_job_to_frag,
-                                       get_resource_max_value_of_property)
+                                       get_resource_max_value_of_property, set_resource_nextState)
+
 from oar.lib.tools import check_resource_system_property
 
 import oar.lib.tools as tools
@@ -59,19 +60,20 @@ def wait_end_of_running_jobs(cmd_ret, jobs):
             time.sleep(1)
             count += 1
             print('.', end='')
-    if count == max_timeout:
-        cmd_ret.error('Timeout', 1, 11)
-    else:
-        cmd_ret.print_('Delete')
+        if count == max_timeout:
+            cmd_ret.error('Timeout', 1, 11)
+        else:
+            cmd_ret.print_('Delete')
 
-def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
+def set_maintenance(cmd_ret, resources, maintenance, no_wait):
+    #import pdb; pdb.set_trace()
     for resource_id in resources:
         resource = get_resource(resource_id)
         if not resource:
             cmd_ret.error('The resource {} does not exist in OAR database.'.format(resource_id))
         elif maintenance == 'on':
             cmd_ret.print_("Maintenance mode set to 'ON' on resource {}".format(resource_id))
-            log_resource_maintenance_event(resource_id, maintenance, tools.get_date)
+            log_resource_maintenance_event(resource_id, maintenance, tools.get_date())
             prop_to_set = ['available_upto=0']
             last_available_upto = resource.available_upto
             if last_available_upto != 0:
@@ -85,7 +87,7 @@ def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
                 wait_end_of_running_jobs(cmd_ret, jobs)
         else: # maintenance == off
             cmd_ret.print_("Maintenance mode set to 'OFF' on resource {}".format(resource_id))          
-            log_resource_maintenance_event(resource_id, maintenance, tools.get_date)
+            log_resource_maintenance_event(resource_id, maintenance, tools.get_date())
             prop_to_set = []
             available_upto = resource.last_available_upto
             if available_upto != 0:
@@ -97,7 +99,7 @@ def set_maintenance(cmd_ret, resources, maintenance_state, no_wait):
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
     notify_server_tag_list = []
-    
+
     cmd_ret = CommandReturns()
 
     if version:
@@ -255,7 +257,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 @click.option('-a','--add', is_flag=True, help='Add a new resource')
 @click.option('-s','--state', type=click.STRING, help='Set the new state of the node')
 @click.option('-m','--maintenance', type=click.STRING,
-              help='Set/unset maintenance mode for resources, this is equivalent to setting its state to Absent and its available_upto to 0')
+              help='Set/unset maintenance mode (on|off) for resources, this is equivalent to setting its state to Absent and its available_upto to 0')
 @click.option('-d', '--drain', type=click.STRING,
               help='Prevent new job to be scheduled on resources, this is equivalent to setting the drain property to YES')
 @click.option('-p', '--property', type=click.STRING, multiple=True,

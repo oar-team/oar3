@@ -156,7 +156,7 @@ def test_oarnodesetting_last_property_value():
     db['Resource'].create(network_address='localhost', core='2')
     db.commit()
     runner = CliRunner()
-    result = runner.invoke(cli,  ['--last-property-value', 'core'])
+    result = runner.invoke(cli, ['--last-property-value', 'core'])
     print(result.output)
     assert re.match(r'2', result.output)
 
@@ -166,7 +166,7 @@ def test_oarnodesetting_last_property_value_error0():
     db['Resource'].create(network_address='localhost')
     db.commit()
     runner = CliRunner()
-    result = runner.invoke(cli,  ['--last-property-value', 'NotExist'])
+    result = runner.invoke(cli, ['--last-property-value', 'NotExist'])
     print(result.output)
     assert re.match(r'.*retrieve the last value.*', result.output)
     
@@ -175,6 +175,28 @@ def todo_test_oarnodesetting_last_property_value_error1():
     db['Resource'].create(network_address='localhost')
     db.commit()
     runner = CliRunner()
-    result = runner.invoke(cli,  ['--last-property-value', 'drain'])
+    result = runner.invoke(cli, ['--last-property-value', 'drain'])
     print(result.output)
     assert re.match(r'.*retrieve the last value.*', result.output)
+
+def test_oarnodesetting_maintenance_on_nowait():
+    db['Resource'].create(network_address='localhost')
+    last_available_upto = db['Resource'].query.one().last_available_upto
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'on', '--no-wait'])
+    print(result.output)
+    print(fake_notifications)
+    assert fake_notifications == ['ChState']
+    assert last_available_upto != db['Resource'].query.one().last_available_upto
+    
+def test_oarnodesetting_maintenance_off_nowait():
+    db['Resource'].create(network_address='localhost', last_available_upto=12334567)
+    last_available_upto = db['Resource'].query.one().available_upto
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'off', '--no-wait'])
+    print(result.output)
+    print(fake_notifications)
+    assert fake_notifications == ['ChState']
+    assert last_available_upto != db['Resource'].query.one().available_upto

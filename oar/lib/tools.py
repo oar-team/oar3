@@ -614,7 +614,7 @@ def check_resource_system_property(prop):
     """
     if prop in ['resource_id', 'state', 'state_num', 'next_state', 'finaud_decision',
                 'next_finaud_decision', 'last_job_date', 'suspended_jobs', 'expiry_date',
-                'last_available_upto', 'scheduler_priority']:
+                'scheduler_priority']:
         return True
     else:
         return False

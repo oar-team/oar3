@@ -13,7 +13,8 @@ logger = get_logger('oar.lib.node')
 
 def get_all_resources_on_node(hostname):
     """Return the current resources on node whose hostname is passed in parameter"""
-    return db.query(Resource.id).filter(Resource.network_address == hostname).all()
+    result =  db.query(Resource.id).filter(Resource.network_address == hostname).all()
+    return [r[0] for r in result]
 
 def get_nodes_with_state(nodes):
     result = db.query(Resource.network_address, (Resource.state))\
