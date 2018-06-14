@@ -1,6 +1,7 @@
 from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource, MoldableJobDescription)
 from oar.lib.job_handling import (insert_job)
 from oar.lib.accounting import(check_accounting_update)
+import oar.lib.tools as tools
 
 def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400):
     j_duration = window_size * 10
@@ -49,6 +50,6 @@ def insert_running_jobs(nb_jobs=5):
 
         for r in resources[i:i+2]:
             AssignedResource.create(moldable_id=mld_id, resource_id=r.id)
-            print(r.id, r.network_address)
+            print(job_id, mld_id, r.id, r.network_address)
         db.commit()
 

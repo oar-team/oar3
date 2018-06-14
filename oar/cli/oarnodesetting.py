@@ -5,10 +5,12 @@
 # - The states allowed are: Alive, Absent or Dead.
 # - If not specified, the hostname will be retrieved with the 'hostname' command.
 # - "-a, --add" and "-r, --resource" or "--sql"  cannot be used at a same time.
+import time
 
 from oar import VERSION
 from oar.lib import (db, config)
 
+from oar.lib.job_handling import get_job
 from oar.lib.node import (set_node_nextState,get_all_resources_on_node)
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState,

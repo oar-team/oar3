@@ -2,7 +2,7 @@
 import pytest
 import re
 
-from ..helpers import insert_terminated_jobs
+from ..helpers import insert_running_jobs
 
 from click.testing import CliRunner
 
@@ -10,6 +10,7 @@ from oar.lib import (db, Resource)
 from oar.cli.oarnodesetting import cli
 
 import oar.lib.tools  # for monkeypatching
+import time
 
 fake_notifications = []
 
@@ -28,7 +29,7 @@ def minimal_db_initialization(request):
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', fake_notify_almighty)
-
+    monkeypatch.setattr(time, 'sleep', lambda x: True)
     
 def test_version():
     runner = CliRunner()
@@ -204,16 +205,18 @@ def test_oarnodesetting_maintenance_off_nowait():
     assert fake_notifications == ['ChState']
     assert last_available_upto != db['Resource'].query.one().available_upto
 
-def test_oarnodesetting_maintenance_on_wait():
+def test_oarnodesetting_maintenance_on_wait_timeout():
     for _ in range(10):
         db['Resource'].create(network_address='localhost')
     db.commit()
     resources = db['Resource'].query.order_by(Resource.id).all()
     last_available_upto = resources[0].last_available_upto
+    insert_running_jobs()
     runner = CliRunner()
     result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'on'])
     print(result.output)
-    print(fake_notifications)
-    assert len(fake_notifications) == 10
-    resources = db['Resource'].query.order_by(Resource.id).all()
-    assert last_available_upto != resources[0].last_available_upto
+    assert result.exit_code == 11
+    #print(fake_notifications)
+    #assert len(fake_notifications) == 10
+    #resources = db['Resource'].query.order_by(Resource.id).all()
+    #assert last_available_upto != resources[0].last_available_upto

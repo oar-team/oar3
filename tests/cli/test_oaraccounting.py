@@ -2,7 +2,7 @@
 import pytest
 import re
 
-from ..helpers import insert_running_jobs
+from ..helpers import insert_terminated_jobs
 
 from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource)
 from oar.lib.job_handling import (insert_job)
