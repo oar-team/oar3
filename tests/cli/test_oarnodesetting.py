@@ -2,9 +2,11 @@
 import pytest
 import re
 
+from ..helpers import insert_terminated_jobs
+
 from click.testing import CliRunner
 
-from oar.lib import db
+from oar.lib import (db, Resource)
 from oar.cli.oarnodesetting import cli
 
 import oar.lib.tools  # for monkeypatching
@@ -27,6 +29,7 @@ def minimal_db_initialization(request):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', fake_notify_almighty)
 
+    
 def test_version():
     runner = CliRunner()
     result = runner.invoke(cli, ['-V'])
@@ -181,8 +184,8 @@ def todo_test_oarnodesetting_last_property_value_error1():
 
 def test_oarnodesetting_maintenance_on_nowait():
     db['Resource'].create(network_address='localhost')
-    last_available_upto = db['Resource'].query.one().last_available_upto
     db.commit()
+    last_available_upto = db['Resource'].query.one().last_available_upto
     runner = CliRunner()
     result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'on', '--no-wait'])
     print(result.output)
@@ -192,11 +195,25 @@ def test_oarnodesetting_maintenance_on_nowait():
     
 def test_oarnodesetting_maintenance_off_nowait():
     db['Resource'].create(network_address='localhost', last_available_upto=12334567)
-    last_available_upto = db['Resource'].query.one().available_upto
     db.commit()
+    last_available_upto = db['Resource'].query.one().available_upto
     runner = CliRunner()
     result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'off', '--no-wait'])
     print(result.output)
     print(fake_notifications)
     assert fake_notifications == ['ChState']
     assert last_available_upto != db['Resource'].query.one().available_upto
+
+def test_oarnodesetting_maintenance_on_wait():
+    for _ in range(10):
+        db['Resource'].create(network_address='localhost')
+    db.commit()
+    resources = db['Resource'].query.order_by(Resource.id).all()
+    last_available_upto = resources[0].last_available_upto
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['-h', 'localhost', '--maintenance', 'on'])
+    print(result.output)
+    print(fake_notifications)
+    assert len(fake_notifications) == 10
+    resources = db['Resource'].query.order_by(Resource.id).all()
+    assert last_available_upto != resources[0].last_available_upto

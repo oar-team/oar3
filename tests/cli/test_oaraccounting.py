@@ -2,7 +2,7 @@
 import pytest
 import re
 
-from ..helpers import insert_terminated_jobs
+from ..helpers import insert_running_jobs
 
 from oar.lib import (db, config, Job, Accounting, Resource, AssignedResource)
 from oar.lib.job_handling import (insert_job)
@@ -63,7 +63,7 @@ def test_oaraccounting_reinitialize():
                     reason="need postgresql database")
 def test_oaraccounting_delete_before(monkeypatch):
     
-    insert_terminated_jobs()
+    insert_running_jobs()
     accounting1 = db.query(Accounting).all()
     runner = CliRunner()
     result = runner.invoke(cli,['--delete-before', '432000'])
