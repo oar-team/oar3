@@ -35,7 +35,13 @@ def test_oarremoveresource_not_dead():
     runner = CliRunner()
     result = runner.invoke(cli,[str(first_id)])
     assert result.exit_code == 3
-    
+
+def test_oarremoveresource_no_resource():
+    os.environ['OARDO_USER'] = 'oar'
+    runner = CliRunner()
+    result = runner.invoke(cli)
+    assert result.exit_code == 2
+
 def test_oarremoveresource_simple():
     os.environ['OARDO_USER'] = 'oar'
     runner = CliRunner()
