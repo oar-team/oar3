@@ -103,7 +103,7 @@ def test_oarstat_gantt():
     #import pdb; pdb.set_trace()
     runner = CliRunner()
     result = runner.invoke(cli, ['--gantt', '1970-01-01 01:20:00, 1970-01-20 00:00:00'])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert re.match('.*10 days.*', str_result.split('\n')[3])
 

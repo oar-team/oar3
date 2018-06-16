@@ -143,7 +143,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         try:
             with open(filename, 'r') as hostfile:
                 hosts = tuple([host for host in hostfile])
-        except OSError as e:
+        except OSError as e: # pragma: no cover
             cmd_ret.warning(str(e), 13)
 
         hostnames += hosts

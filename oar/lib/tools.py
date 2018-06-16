@@ -600,7 +600,7 @@ def check_resource_property(prop):
     """ Check if a property can be deleted or created by a user
     return 0 if all is good otherwise return 1
     """
-    if prop in ['prop resource_id', 'network_address', 'state', 'state_num', 'next_state',
+    if prop in ['resource_id', 'network_address', 'state', 'state_num', 'next_state',
            'finaud_decision', 'next_finaud_decision', 'besteffort', 'desktop_computing',
            'deploy', 'expiry_date', 'last_job_date', 'available_upto', 'last_available_upto',
            'walltime', 'nodes', 'type', 'suspended_jobs', 'scheduler_priority', 'cpuset', 'drain']:
