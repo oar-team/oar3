@@ -41,8 +41,8 @@ def test_oarstat_simple():
         insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     runner = CliRunner()
     result = runner.invoke(cli)
-    nb_lines = len(result.output_bytes.decode().split('\n'))
-    print(result.output_bytes.decode())
+    nb_lines = len(result.output.split('\n'))
+    print(result.output)
     assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
@@ -51,8 +51,8 @@ def test_oarstat_sql_property():
         insert_job(res=[(60, [('resource_id=4', "")])], properties='', user=str(i))
     runner = CliRunner()
     result = runner.invoke(cli,  ['--sql', "(job_user=\'2\' OR job_user=\'3\')"])
-    print(result.output_bytes.decode())
-    nb_lines = len(result.output_bytes.decode().split('\n'))
+    print(result.output)
+    nb_lines = len(result.output.split('\n'))
     assert nb_lines == 5
     assert result.exit_code == 0
 
@@ -62,7 +62,7 @@ def test_oarstat_accounting():
     insert_terminated_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20'])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     print(str_result.split('\n'))
     assert re.match(r'.*8640000.*', str_result.split('\n')[2])
@@ -77,7 +77,7 @@ def test_oarstat_accounting_user(monkeypatch_tools):
                start_time=0, message=karma)
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-01-01, 1970-01-20', '--user', '_this_user_'])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     print(str_result.split('\n')[-2])
     assert re.match(r'.*Karma.*0.345.*', str_result.split('\n')[-2])
@@ -88,7 +88,7 @@ def test_oarstat_accounting_error(monkeypatch_tools):
     insert_terminated_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ['--accounting', '1970-error, 1970-01-20'])
-    print(result.output_bytes.decode())
+    print(result.output)
 
     assert result.exit_code == 1
 
@@ -115,7 +115,7 @@ def test_oarstat_events():
     runner = CliRunner()
     result = runner.invoke(cli, ['--events', '--job', str(job_id)])
     
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert re.match('.*EXECUTE_JOB.*', str_result)
     
@@ -129,14 +129,14 @@ def test_oarstat_events_array():
     runner = CliRunner()
     result = runner.invoke(cli, ['--events', '--array', str(10)])
     
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert re.match('.*EXECUTE_JOB.*', str_result)
 
 def test_oarstat_events_no_job_ids():
      runner = CliRunner()
      result = runner.invoke(cli, ['--events', '--array', str(20)])
-     str_result = result.output_bytes.decode()
+     str_result = result.output
      print(str_result)
      assert re.match('.*No job ids specified.*', str_result)
 
@@ -145,7 +145,7 @@ def test_oarstat_properties():
     job_id = db.query(Job.id).first()[0]
     runner = CliRunner()
     result = runner.invoke(cli, ['--properties', '--job', str(job_id)])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert re.match('.*network_address.*', str_result)
 
@@ -153,7 +153,7 @@ def test_oarstat_state():
     job_id = insert_job(res=[(60, [('resource_id=2', '')])])
     runner = CliRunner()
     result = runner.invoke(cli, ['--state', '--job', str(job_id)])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert re.match('.*Waiting.*', str_result)
     
@@ -163,7 +163,7 @@ def test_oarstat_state_json():
     runner = CliRunner()
     result = runner.invoke(cli, ['--state', '--job', str(job_id),
                                  '--job', str(job_id1), '--json'])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     print(str_result)
     assert len(str_result.split('\n')) == 5
 
@@ -172,7 +172,7 @@ def test_oarstat_simple_json():
         insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     runner = CliRunner()
     result = runner.invoke(cli, ['--json'])
-    str_result = result.output_bytes.decode()
+    str_result = result.output
     nb_lines = len(str_result.split('\n'))
     print(str_result)
     assert nb_lines == 2
@@ -181,5 +181,5 @@ def test_oarstat_simple_json():
 def test_oarstat_job_id_array_error():
     runner = CliRunner()
     result = runner.invoke(cli, ['-j', '1', '--array', '1'])
-    print(result.output_bytes.decode())
+    print(result.output)
     assert result.exit_code == 1
