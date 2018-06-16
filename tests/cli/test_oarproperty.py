@@ -50,7 +50,9 @@ def test_oarproperty_delete():
     #assert 'core' in db['resources'].columns
     assert result.exit_code == 0
     assert column_name1 == column_name2 + 1
-
+    kw = {"nullable": True}
+    db.op.add_column('resources', db.Column('core', db.Integer, **kw))
+    
 @pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
                     reason="need postgresql database")    
 def test_oarproperty_rename():
@@ -59,3 +61,4 @@ def test_oarproperty_rename():
     print(result.output)
     assert 'eroc' in db['resources'].columns
     assert result.exit_code == 0
+    db.op.alter_column('resources', 'eroc', new_column_name='core')
