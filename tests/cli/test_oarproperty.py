@@ -19,22 +19,43 @@ def test_version():
     assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
     
-def test_oarpropery_simple_error():
+def test_oarproperty_simple_error():
     runner = CliRunner()
     
     result = runner.invoke(cli, ['-a core', '-c'])
     print(result.output)
     assert result.exit_code == 2
     
-def test_oarpropery_add():
+def test_oarproperty_add():
     runner = CliRunner()
     result = runner.invoke(cli, ['-a fancy', '-c'])
     print(result.output)  
     assert result.exit_code == 0
 
-def test_oarpropery_list():
+def test_oarproperty_list():
     runner = CliRunner()
     result = runner.invoke(cli, ['--list'])
     print(result.output)
     assert result.output.split('\n')[0] == 'core'
+    assert result.exit_code == 0
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")
+def test_oarproperty_delete():
+    column_name1 = [p.name for p in db['resources'].columns]
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-d','core'])
+    print(result.output)
+    column_name2 = [p.name for p in db['resources'].columns]
+    #assert 'core' in db['resources'].columns
+    assert result.exit_code == 0
+    assert column_name1 == column_name2 + 1
+
+@pytest.mark.skipif("os.environ.get('DB_TYPE', '') != 'postgresql'",
+                    reason="need postgresql database")    
+def test_oarproperty_rename():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--rename','core,eroc'])
+    print(result.output)
+    assert 'eroc' in db['resources'].columns
     assert result.exit_code == 0

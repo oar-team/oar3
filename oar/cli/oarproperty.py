@@ -8,7 +8,7 @@
 # To use the quiet mode, just do something like:
 #   echo -e "mysqlroot\nmysqlpassword\n" | oar_property.pl -q -l
 from oar import VERSION
-from oar.lib import (db, config, Resource)
+from oar.lib import (db, config, Resource, ResourceLog, JobResourceDescription)
 from oar.lib.tools import check_resource_property
 from sqlalchemy import VARCHAR
 from .utils import CommandReturns
@@ -40,7 +40,7 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
     resources = Resource.__tablename__
     # get properties from tables
     properties = db[resources].columns
-    #import pdb; pdb.set_trace()
+
     if prop_list:
         for column in properties:
             if not check_resource_property(column.name):
@@ -48,10 +48,13 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 
     if delete:
         for prop_todelete in delete:
-            # TODO
-            pass
-        #drop_column(table_name, column_name, schema=None, **kw)¶
-        
+            if check_property_name(cmd_ret, prop_todelete):
+                return cmd_ret
+            
+            db.op.drop_column(resources, prop_todelete)
+            if not quiet:
+               cmd_ret.print_("Deleled property: {}".format(prop_todelete))
+
     if add:
         for prop_toadd in add:
             prop_toadd = prop_toadd.lstrip()
@@ -76,9 +79,24 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 
     if rename:
         for prop_torename in rename:
-            # TODO 
-            pass
-        #alter_column(table_name, column_name, nullable=None, server_default=False, new_column_name=N
+            old_prop, new_prop = prop_torename.split(',')
+            if check_property_name(cmd_ret, old_prop):
+                return cmd_ret
+            if check_property_name(cmd_ret, new_prop):
+                return cmd_ret
+
+            db.op.alter_column(resources, old_prop, new_column_name=new_prop)
+
+            db.query(ResourceLog).filter(ResourceLog.attribute == old_prop)\
+                                 .update({ResourceLog.attribute: new_prop}, synchronize_session=False)
+            
+            db.query(JobResourceDescription).filter(JobResourceDescription.resource_type == old_prop)\
+                                            .update({JobResourceDescription.resource_type: new_prop},
+                                                    synchronize_session=False)
+            db.commit()
+            if not quiet:
+                cmd_ret.print_('Rename property {} into {}'.format(old_prop, new_prop)) 
+            
     db.close()
     return cmd_ret
 
