@@ -45,11 +45,13 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 
         if not job_ids:
             cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
+            return cmd_ret
 
     if sql:
         job_ids = get_job_ids_with_given_properties(sql)
         if not job_ids:
             cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(array), 4)
+            return cmd_ret
 
     if checkpoint or signal:
         for job_id in job_ids:

@@ -64,3 +64,25 @@ def test_oardel_array():
     assert result.exit_code == 0
     assert len(db.query(FragJob.job_id).all()) == 5
     
+def test_oardel_array_nojob():
+    os.environ['OARDO_USER'] = 'oar'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--array', '11'])
+    print(result.output)
+    assert re.match(r'.*job for this array job.*', result.output)
+    assert result.exit_code == 0
+    
+def test_oarresume_sql():
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], array_id=11)
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--sql', "array_id=\'11\'"])
+    assert result.exit_code == 0
+    assert len(db.query(FragJob.job_id).all()) == 1
+    
+def test_oarresume_sql_nojob():
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--sql', "array_id=\'11\'"])
+    assert re.match(r'.*job for this SQL WHERE.*', result.output)
+    assert result.exit_code == 0
