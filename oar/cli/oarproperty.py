@@ -77,8 +77,8 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
                     db.op.add_column(resources, db.Column(prop_toadd, db.String(255), **kw))
                 else:
                     db.op.add_column(resources, db.Column(prop_toadd, db.Integer, **kw))
-                    if not quiet:
-                        cmd_ret.print_("Added property: {}".format(prop_toadd))
+                if not quiet:
+                    cmd_ret.print_("Added property: {}".format(prop_toadd))
 
     if rename:
         for prop_torename in rename:
