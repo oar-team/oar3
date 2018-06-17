@@ -24,13 +24,13 @@ def oarresume(job_ids, array, sql, version, user=None, cli=True):
     config.setdefault_config(DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
+    
+    if version:
+        cmd_ret.print_('OAR version : ' + VERSION)
+        return cmd_ret
 
     if not job_ids and not sql and not array:
         cmd_ret.usage(1)
-        return cmd_ret
-
-    if version:
-        cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
     if array:
@@ -77,7 +77,7 @@ def oarresume(job_ids, array, sql, version, user=None, cli=True):
 @click.argument('job_id', nargs=-1)
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
-@click.option('-V', '--version',  help='Print OAR version.')
+@click.option('-V', '--version', is_flag=True, help='Print OAR version.')
 def cli(job_id, array, sql, version):
 
     cmd_ret = oarresume(job_id, array, sql, version, None)
