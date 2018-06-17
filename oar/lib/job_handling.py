@@ -1178,7 +1178,8 @@ def get_job_ids_with_given_properties(sql_property):
     """Returns the job_ids with specified properties parameters : base, where SQL constraints."""
     results = db.query(Job.id).filter(text(sql_property))\
                 .order_by(Job.id).all()
-    return results
+    job_ids = [r[0] for r in results]
+    return job_ids
 
 def get_job(job_id):
     try:

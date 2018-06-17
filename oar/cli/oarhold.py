@@ -26,24 +26,26 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 
     cmd_ret = CommandReturns(cli)
 
+    if version:
+        cmd_ret.print_('OAR version : ' + VERSION)
+        return cmd_ret
+    
     if not job_ids and not sql and not array:
         cmd_ret.usage(1)
         return cmd_ret
 
-    if version:
-        cmd_ret.print_('OAR version : ' + VERSION)
-        return cmd_ret
-
+    #import pdb; pdb.set_trace()
     if array:
         job_ids = get_array_job_ids(array)
-
         if not job_ids:
             cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
+            return cmd_ret
 
     if sql:
         job_ids = get_job_ids_with_given_properties(sql)
         if not job_ids:
             cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(sql), 4)
+            return cmd_ret
 
     for job_id in job_ids:
         if running:
@@ -79,8 +81,9 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
             return cmd_ret
         else:
             cmd_ret.print_('[{}] Hold request was sent to the OAR server.'.format(job_id))
-            
-    tools.notify_almighty('ChState')
+
+    if job_ids:
+        tools.notify_almighty('ChState')
 
     return cmd_ret
 
@@ -91,8 +94,8 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
               help='enable suspending running jobs (administrator only)')
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
-@click.option('-V', '--version',  help='Print OAR version.')
+@click.option('-V', '--version', is_flag=True, help='Print OAR version.')
 def cli(job_id, running, array, sql, version):
-    
+
     cmd_ret = oarhold(job_id, running, array, sql, version, None)
     cmd_ret.exit()
