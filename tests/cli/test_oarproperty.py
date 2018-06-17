@@ -18,6 +18,11 @@ def test_version():
     print(result.output)
     assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
+def test_oarproperty_add():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-a', 'fancy', '-c'])
+    print(result.output)  
+    assert result.exit_code == 0
     
 def test_oarproperty_simple_error():
     runner = CliRunner()
@@ -26,10 +31,25 @@ def test_oarproperty_simple_error():
     print(result.output)
     assert result.exit_code == 2
     
-def test_oarproperty_add():
+def test_oarproperty_add_error1():
     runner = CliRunner()
-    result = runner.invoke(cli, ['-a fancy', '-c'])
-    print(result.output)  
+    result = runner.invoke(cli, ['-a', 'f#a:ncy'])
+    print(result.output)
+    assert re.match(r'.*is not a valid property name.*', result.output)
+    assert result.exit_code == 0
+
+def test_oarproperty_add_error2():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-a', 'state'])
+    print(result.output)
+    assert re.match(r'.*OAR system property.*', result.output)
+    assert result.exit_code == 0
+
+def test_oarproperty_add_error3():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-a', 'core'])
+    print(result.output)
+    assert re.match(r'.*already exists.*', result.output)
     assert result.exit_code == 0
 
 def test_oarproperty_list():

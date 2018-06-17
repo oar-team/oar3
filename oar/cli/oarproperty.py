@@ -24,7 +24,7 @@ def check_property_name(cmd_ret, prop_name, quiet=False):
     else:
         if check_resource_property(prop_name):
             if not quiet:
-                cmd_ret.warning("'{}' is a OAR system property and may not be altered".format(prop_name))
+                cmd_ret.warning("'{}' is a OAR system property and may not be altered".format(prop_name),1)
             return True
     return False
 
@@ -32,19 +32,20 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
     cmd_ret = CommandReturns()
 
     # it's mainly use Operations from Alembic through db.op
-
+    #import pdb; pdb.set_trace()
     if version:
         cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
     resources = Resource.__tablename__
     # get properties from tables
-    properties = db[resources].columns
+    columns = db[resources].columns
+    properties = [column.name for column in columns]
 
     if prop_list:
         for column in properties:
-            if not check_resource_property(column.name):
-                print(column.name)
+            if not check_resource_property(column):
+                print(column)
 
     if delete:
         for prop_todelete in delete:
@@ -57,25 +58,27 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 
     if add:
         for prop_toadd in add:
+            skip = False
             prop_toadd = prop_toadd.lstrip()
             if check_property_name(cmd_ret, prop_toadd):
                 return cmd_ret
             if prop_toadd in properties:
-                if varchar and (type(properties[prop_toadd]) != VARCHAR):
+                if varchar and (type(columns[prop_toadd]) != VARCHAR):
                     cmd_ret.error("Property '{}' already exists but with type mismatch."\
                                   .format(prop_toadd),2,2) 
-                    return cmd_ret
+                    skip = True
                 else:
                     if not quiet:
                         cmd_ret.print_("Property '{}' already exists.".format(prop_toadd))
-                    next
-            kw = {"nullable": True}
-            if varchar:
-                db.op.add_column(resources, db.Column(prop_toadd, db.String(255), **kw))
-            else:
-                db.op.add_column(resources, db.Column(prop_toadd, db.Integer, **kw))
-            if not quiet:
-               cmd_ret.print_("Added property: {}".format(prop_toadd))
+                    skip = True
+            if not skip:
+                kw = {"nullable": True}
+                if varchar:
+                    db.op.add_column(resources, db.Column(prop_toadd, db.String(255), **kw))
+                else:
+                    db.op.add_column(resources, db.Column(prop_toadd, db.Integer, **kw))
+                    if not quiet:
+                        cmd_ret.print_("Added property: {}".format(prop_toadd))
 
     if rename:
         for prop_torename in rename:
