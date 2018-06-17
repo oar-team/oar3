@@ -1440,6 +1440,18 @@ def set_job_state(jid, state):
         logger.warning("Job is already termindated or in error or wanted state, job_id: " +
                        str(jid) + ", wanted state: " + state)
 
+def get_job_duration_in_state(jid, state):
+    """Get the amount of time in the defined state for a job"""
+    date = tools.get_date()
+    result = db.query(JobStateLog.date_start, JobStateLog.date_stop)\
+               .filter(JobStateLog.job_id == jid).filter(JobStateLog.state == state).all()
+    duration = 0
+    for dates in results:
+        date_start, date_stop = dates
+        t_end = date if date_stop == 0 else date_stop
+        duration = duration + (t_end - date_start) 
+    return duration
+
 def hold_job(job_id, running, user=None):
     """sets the state field of a job to 'Hold'
     equivalent to set_job_state(base,jobid,"Hold") except for permissions on user

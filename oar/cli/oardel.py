@@ -84,7 +84,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
                     host_to_connect = config['DEPLOY_HOSTNAME']
 
                 timeout_ssh = config['OAR_SSH_CONNECTION_TIMEOUT']
-                # TODO 
+
                 error = tools.signal_oarexec(host_to_connect, job_id, 'SIGUSR2',
                                              timeout_ssh, config['OPENSSH_CMD'], '')
                 if error != 0:
@@ -160,7 +160,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
 @click.option('--force-terminate-finishing-job',
               help='Force jobs stuck in the Finishing state to switch to Terminated \
-              (Warning: only use as a last resort). This using this option indicates \
+              (Warning: only use as a last resort). Using this option indicates \
               that something nasty happened, nodes where the jobs were executing will \
               subsequently be turned into Suspected.')
 @click.option('-V', '--version', is_flag=True,  help='Print OAR version.')
