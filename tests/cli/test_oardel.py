@@ -111,7 +111,7 @@ def test_oardel_force_terminate_finishing_job_bad_user():
     job_id = insert_job(res=[(60, [('resource_id=4', "")])])
     runner = CliRunner()
     result = runner.invoke(cli, ['--force-terminate-finishing-job', str(job_id)])
-    assert result.exit_code == 1
+    assert result.exit_code == 8
 
 def test_oardel_besteffort_bad_user():
     os.environ['OARDO_USER'] = 'Zorglub'
