@@ -1447,9 +1447,9 @@ def get_job_duration_in_state(jid, state):
     """Get the amount of time in the defined state for a job"""
     date = tools.get_date()
     result = db.query(JobStateLog.date_start, JobStateLog.date_stop)\
-               .filter(JobStateLog.job_id == jid).filter(JobStateLog.state == state).all()
+               .filter(JobStateLog.job_id == jid).filter(JobStateLog.job_state == state).all()
     duration = 0
-    for dates in results:
+    for dates in result:
         date_start, date_stop = dates
         t_end = date if date_stop == 0 else date_stop
         duration = duration + (t_end - date_start) 
@@ -2004,4 +2004,4 @@ def get_jobs_state(job_ids):
 
 def get_job_state(job_id):
     """Returns state for each given job designated by its id"""
-    return db.query(Job.state).filter(Job.id == job_id).one()
+    return db.query(Job.state).filter(Job.id == job_id).one()[0]

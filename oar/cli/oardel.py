@@ -19,15 +19,6 @@ from oar.lib.resource_handling import update_current_scheduler_priority
 
 import oar.lib.tools as tools
 
-DEFAULT_CONFIG = {
-    'COSYSTEM_HOSTNAME': '127.0.0.1',
-    'DEPLOY_HOSTNAME': '127.0.0.1',
-    'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
-    'OAR_SSH_CONNECTION_TIMEOUT': 200,
-    'OAR_RUNTIME_DIRECTORY': '/var/lib/oar',
-}
-
-
 click.disable_unicode_literals_warning = True
 
 
@@ -39,7 +30,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
         else:
             user = os.environ['USER']
 
-    config.setdefault_config(DEFAULT_CONFIG)
+    config.setdefault_config(tools.DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
 
@@ -128,7 +119,8 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
                 if get_job_state(job_id) == 'Finishing':
                     duration = get_job_duration_in_state(job_id, 'Finishing')
                     if duration > max_duration:
-                        comment = 'Force to Terminate the job $j which is in Finishing state'
+                        comment = 'Force to Terminate the job {} which is in Finishing state'\
+                                  .format(job_id)
                         add_new_event('FORCE_TERMINATE_FINISHING_JOB', job_id, comment)
                         cmd_ret.print_('REGISTERED.')
                     else:
@@ -221,7 +213,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 @click.option('-b', '--besteffort', is_flag=True, help='Change jobs to besteffort (or remove them if they are already besteffort)')
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
-@click.option('--force-terminate-finishing-job',
+@click.option('--force-terminate-finishing-job', is_flag=True,
               help='Force jobs stuck in the Finishing state to switch to Terminated \
               (Warning: only use as a last resort). Using this option indicates \
               that something nasty happened, nodes where the jobs were executing will \
