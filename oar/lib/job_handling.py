@@ -1308,14 +1308,21 @@ def get_job_types(job_id):
                 res[typ] = True
     return res
 
-# log_job
-# sets the index fields to LOG on several tables
-# this will speed up future queries
-# parameters : base, jobid
-# return value : /
+def add_current_job_types(job_id, j_type):
+    req = db.insert(JobType).values({'job_id': job_id, 'type': j_type})
+    db.session.execute(req)
 
+def remove_current_job_types(job_id, j_type): 
+    db.query(JobType).filter(JobType.job_id == job_id)\
+                     .filter(JobType.type == j_type)\
+                     .filter(JobType.types_index == 'CURRENT')\
+                     .delete(synchronize_session=False)
+    db.commit()
 
 def log_job(job):  # pragma: no cover
+    """  sets the index fields to LOG on several tables
+    this will speed up future queries
+    """
     if db.dialect == 'sqlite':
         return
     db.query(MoldableJobDescription)\
@@ -1355,10 +1362,6 @@ def log_job(job):  # pragma: no cover
     db.commit()
 
 def set_job_state(jid, state):
-
-    # TODO
-    # TODO Later: notify_user
-    # TODO Later: update_current_scheduler_priority
 
     result = db.query(Job).filter(Job.id == jid)\
                           .filter(Job.state != 'Error')\
@@ -1998,3 +2001,7 @@ def get_jobs_state(job_ids):
     """Returns state for each given jobs designated by their id"""
     results = db.query(Job.id, Job.state).filter(Job.id.in_(tuple(job_ids))).order_by(Job.id).all()
     return results
+
+def get_job_state(job_id):
+    """Returns state for each given job designated by its id"""
+    return db.query(Job.state).filter(Job.id == job_id).one()

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """oardel - delete or checkpoint job(s)."""
+import os
 
 import click
 from oar import (VERSION)
@@ -10,7 +11,11 @@ from oar.lib import config
 from oar.lib.job_handling import (get_array_job_ids, ask_checkpoint_signal_job,
                                   get_job_ids_with_given_properties,
                                   get_job_types, get_job_current_hostnames, frag_job,
-                                  add_new_event)
+                                  add_new_event, get_job_duration_in_state,
+                                  get_job_state, get_job, get_job_types,
+                                  remove_current_job_types, add_current_job_types)
+
+from oar.lib.resource_handling import update_current_scheduler_priority
 
 import oar.lib.tools as tools
 
@@ -27,7 +32,13 @@ click.disable_unicode_literals_warning = True
 
 
 def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_finishing_job, version, user=None, cli=True):
-    
+
+    if not user: 
+        if 'OARDO_USER' in os.environ:
+            user = os.environ['OARDO_USER']
+        else:
+            user = os.environ['USER']
+
     config.setdefault_config(DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
@@ -104,11 +115,63 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
                     add_new_event('{}_SUCCESS'.format(tag), job_id, comment)
             
     elif force_terminate_finishing_job:
-        # TODO
-        pass
+        if not (user=='oar' or user=='root'):
+            comment = "You must be oar or root to use the --force-terminate-finishing-job option"
+            cmd_ret.error(comment, 1, 8)
+        else:
+            # $max_duration = 2 * OAR::Tools::get_taktuk_timeout()\
+            # + OAR::Conf::get_conf_with_default_param("SERVER_PROLOGUE_EPILOGUE_TIMEOUT",0);
+            max_duration = 2 * config['OAR_SSH_CONNECTION_TIMEOUT']\
+                           + int(config['SERVER_PROLOGUE_EPILOGUE_TIMEOUT'])
+            for job_id in job_ids:
+                cmd_ret.print_('Force the termination of the job = {} ...'.format(job_id))
+                if get_job_state(job_id) == 'Finishing':
+                    duration = get_job_duration_in_state(job_id, 'Finishing')
+                    if duration > max_duration:
+                        comment = 'Force to Terminate the job $j which is in Finishing state'
+                        add_new_event('FORCE_TERMINATE_FINISHING_JOB', job_id, comment)
+                        cmd_ret.print_('REGISTERED.')
+                    else:
+                        error_msg = 'The job {} is not in the Finishing state for more than {}s ({}s).'\
+                                    .format(job_id, max_duration, duration)
+                        cmd_ret.warning(error_msg, 1, 11)
+                else:
+                    error_msg = 'The job {} is not in the Finishing state.'.format(job_id)
+                    cmd_ret.warning(error_msg, 1, 10)
+
+            completed = tools.notify_almighty('ChState')
+            if not completed:
+                cmd_ret.error('Unable to notify Almighty', -1, 2)
+
     elif besteffort:
-        # TODO
-        pass
+        if not (user=='oar' or user=='root'):
+            comment = "You must be oar or root to use the --besteffort option"
+            cmd_ret.error(comment, 1, 8)
+        else:
+            for job_id in job_ids:
+                job = get_job(job_id)
+                if job.state == 'Running':
+                    if 'besteffort' in get_job_types(job_id):
+                        update_current_scheduler_priority(job_id, job.assigned_moldable_job,
+                                                          '-2', 'STOP')
+                        remove_current_job_types(job_id, 'besteffort')
+                        add_new_event('DELETE_BESTEFFORT_JOB_TYPE', job_id,
+                                      'User {} removed the besteffort type.'.format(user))
+                        cmd_ret.print_('Remove besteffort type for the job {}.'.format(job_id))
+                    else:
+                        add_current_job_types(job_id, 'besteffort')
+                        update_current_scheduler_priority(job_id, job.assigned_moldable_job,
+                                                          '+2', 'START')
+                        add_new_event('ADD_BESTEFFORT_JOB_TYPE', job_id,
+                                      'User {} added the besteffort type.'.format(user))
+                        cmd_ret.print_('Add besteffort type for the job {}.'.format(job_id))
+                else:
+                    cmd_ret.warning('The job {} is not in the Running state.'.format(job_id, 9))
+
+            completed = tools.notify_almighty('ChState')
+            if not completed:
+                cmd_ret.error('Unable to notify Almighty', -1, 2)            
+
     else:
         # oardel is used to delete some jobs
         notify_almighty = False
@@ -136,14 +199,14 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
 
         if notify_almighty:
             #Signal Almigthy
-            # TODO: Send only Qdel ???? oar ChState and Qdel in one message
+            # TODO: Send only Qdel ???? or ChState and Qdel in one message
             completed = tools.notify_almighty('ChState')
             if completed:
                 tools.notify_almighty('Qdel')
                 cmd_ret.info('The job(s) {}  will be deleted in the near future.'\
                              .format(jobs_registred))
             else:
-                cmd_ret.error('Unablde to notify Almighty', -1, 2)
+                cmd_ret.error('Unable to notify Almighty', -1, 2)
 
     return cmd_ret
 
