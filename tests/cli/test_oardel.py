@@ -50,20 +50,18 @@ def test_oardel_simple():
     
 def test_oardel_simple_cosystem():
     os.environ['OARDO_USER'] = 'oar'
-    job_id = insert_job(res=[(60, [('resource_id=4', "")])], types=['cosystem'])
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], types=['cosystem'],
+                        state='Running')
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)])
-    fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
-    assert fragjob_id[0] == job_id
+    result = runner.invoke(cli, ['-s', 'USR1', str(job_id)])
     assert result.exit_code == 0
 
 def test_oardel_simple_deploy():
     os.environ['OARDO_USER'] = 'oar'
-    job_id = insert_job(res=[(60, [('resource_id=4', "")])], types=['deploy'])
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], types=['deploy'],
+                        state='Running')
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)])
-    fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
-    assert fragjob_id[0] == job_id
+    result = runner.invoke(cli, ['-s', 'USR1', str(job_id)])
     assert result.exit_code == 0
     
 def test_oardel_simple_bad_user():

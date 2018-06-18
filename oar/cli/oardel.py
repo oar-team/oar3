@@ -79,12 +79,13 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
                 # Retrieve hostnames used by the job
                 hosts = get_job_current_hostnames(job_id)
                 types = get_job_types(job_id)
-                host_to_connect = hosts[0]
+                host_to_connect = None
                 if 'cosystem' in types:
                     host_to_connect = config['COSYSTEM_HOSTNAME']
                 elif 'deploy' in types:
                     host_to_connect = config['DEPLOY_HOSTNAME']
-
+                else:
+                    host_to_connect = hosts[0]
                 timeout_ssh = config['OAR_SSH_CONNECTION_TIMEOUT']
 
                 error = tools.signal_oarexec(host_to_connect, job_id, 'SIGUSR2',
