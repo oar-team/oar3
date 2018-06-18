@@ -144,21 +144,19 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
                 job = get_job(job_id)
                 if job.state == 'Running':
                     if 'besteffort' in get_job_types(job_id):
-                        update_current_scheduler_priority(job_id, job.assigned_moldable_job,
-                                                          '-2', 'STOP')
+                        update_current_scheduler_priority(job, '-2', 'STOP')
                         remove_current_job_types(job_id, 'besteffort')
                         add_new_event('DELETE_BESTEFFORT_JOB_TYPE', job_id,
                                       'User {} removed the besteffort type.'.format(user))
                         cmd_ret.print_('Remove besteffort type for the job {}.'.format(job_id))
                     else:
                         add_current_job_types(job_id, 'besteffort')
-                        update_current_scheduler_priority(job_id, job.assigned_moldable_job,
-                                                          '+2', 'START')
+                        update_current_scheduler_priority(job, '+2', 'START')
                         add_new_event('ADD_BESTEFFORT_JOB_TYPE', job_id,
                                       'User {} added the besteffort type.'.format(user))
                         cmd_ret.print_('Add besteffort type for the job {}.'.format(job_id))
                 else:
-                    cmd_ret.warning('The job {} is not in the Running state.'.format(job_id, 9))
+                    cmd_ret.warning('The job {} is not in the Running state.'.format(job_id), 9)
 
             completed = tools.notify_almighty('ChState')
             if not completed:

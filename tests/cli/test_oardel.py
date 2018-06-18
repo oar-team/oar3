@@ -113,13 +113,6 @@ def test_oardel_force_terminate_finishing_job_bad_user():
     result = runner.invoke(cli, ['--force-terminate-finishing-job', str(job_id)])
     assert result.exit_code == 8
 
-def test_oardel_besteffort_bad_user():
-    os.environ['OARDO_USER'] = 'Zorglub'
-    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
-    runner = CliRunner()
-    result = runner.invoke(cli, ['--besteffort', str(job_id)])
-    assert result.exit_code == 8
-    
 def test_oardel_force_terminate_finishing_job_not_finishing():
     os.environ['OARDO_USER'] = 'oar'
     job_id = insert_job(res=[(60, [('resource_id=4', "")])])
@@ -147,3 +140,39 @@ def test_oardel_force_terminate_finishing_job():
     print(result.output)
     assert re.match(r'.*Force the termination.*', result.output)
     assert result.exit_code == 0
+
+def test_oardel_besteffort_bad_user():
+    os.environ['OARDO_USER'] = 'Zorglub'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--besteffort', str(job_id)])
+    assert result.exit_code == 8
+    
+def test_oardel_besteffort_not_running():
+    os.environ['OARDO_USER'] = 'oar'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--besteffort', str(job_id)])
+    print(result.output)
+    assert re.match(r'.*Running state.*', result.output)
+    assert result.exit_code == 0
+
+def test_oardel_remove_besteffort():
+    os.environ['OARDO_USER'] = 'oar'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], state='Running',
+                        types=['besteffort'])
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--besteffort', str(job_id)])
+    print(result.output)
+    assert re.match(r'.*Remove besteffort type.*', result.output)
+    assert result.exit_code == 0
+
+def test_oardel_add_besteffort():
+    os.environ['OARDO_USER'] = 'oar'
+    job_id = insert_job(res=[(60, [('resource_id=4', "")])], state='Running')
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--besteffort', str(job_id)])
+    print(result.output)
+    assert re.match(r'.*Add besteffort type .*', result.output)
+    assert result.exit_code == 0
+
