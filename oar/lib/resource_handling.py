@@ -37,6 +37,8 @@ def add_resource(name, state):
 def get_resource(resource_id):
     return db.query(Resource).filter(Resource.id == resource_id).one()
 
+def get_resources_from_ids(resource_ids):
+    return db.query(Resource).filter(Resource.id.in_(resource_ids)).order_by(Resource.id).all()
 
 def set_resource_state(resource_id, state, finaud_decision):
     """set the state field of a resource"""
@@ -278,6 +280,7 @@ def update_current_scheduler_priority(job, value, state):
 
 def get_resources_jobs(r_id):
     # returns the list of jobs associated to all resources
+    # Provide by basequerie
     raise NotImplementedError("TODO")
 
 def get_resource_job_to_frag(r_id):

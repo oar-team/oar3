@@ -11,9 +11,12 @@
    => returns the information for hostX - status is 0 for every host known - 1 otherwise
 """
 from oar import (VERSION)
-from oar.lib import (db, config)
+from oar.lib import (db, config, Resource)
+
+from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids)
 
 from oar.lib.tools import check_resource_system_property
+
 import oar.lib.tools as tools
 
 from .utils import CommandReturns
@@ -55,7 +58,7 @@ def print_resources_flat_way(resources, resources_jobs, cmd_ret):
 
 def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detailed):
 
-    #config.setdefault_config(DEFAULT_CONFIG)
+    config.setdefault_config(tools.DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)      
 
@@ -64,13 +67,16 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
         return cmd_ret
 
     if sql:
-        #TODO
-        pass
+        sql_resource_ids = get_resources_with_given_sql(sql)
+        if not sql_resource_ids:
+            cmd_ret.warning("There are no resource(s) for this SQL WHERE clause ({})".format(sql), 12)
+        resource_ids = resource_ids + tuple(sql_resource_ids)
 
-    if resource_ids == ():
-        resource_ids = None
-
-    resources = db.queries.get_resources(resource_ids, detailed)
+    resources = None
+    if resource_ids:
+        resources = get_resources_from_ids(resource_ids)
+    else:
+        resources = db.query(Resource).order_by(Resource.id).all()
 
     print_resources_flat_way(resources, None, cmd_ret)
 
@@ -88,7 +94,7 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
               help='show the events recorded for a node either since the date given as parameter or the last 20 minutes')
 @click.option('-f', '--full', is_flag=True, default=True, help='show full informations')
 @click.option('-J', '--json', help='print result in JSON format')
-@click.option('-V', '--version',  help='Print OAR version.')
+@click.option('-V', '--version', is_flag=True, help='Print OAR version.')
 def cli(resource, state, list, events, sql, json, version, full, cli=True):
     cmd_ret = oarnodes(resource, state, list, events, sql, json, version, full)
     cmd_ret.exit()
