@@ -1,7 +1,8 @@
 # coding: utf-8
 
-from sqlalchemy import func
+from sqlalchemy import (func, desc)
 from oar.lib import (db, EventLog, EventLogHostname, get_logger)
+from oar.tools import sql_to_local
 
 import oar.lib.tools as tools
 
@@ -35,7 +36,6 @@ def is_an_event_exists(job_id, event):
                                            .scalar()
     return res
 
-
 def get_job_events(job_id):
     """Get events for the specified job"""
     result = db.query(EventLog).filter(EventLog.job_id == job_id)\
@@ -64,3 +64,16 @@ def get_hostname_event(event_id):
     """Get hostnames corresponding to an event Id"""
     res = db.query(EventLogHostname.hostname).filter(EventLogHostname.event_id == event_id).all()
     return [h[0] for h in res]
+
+def get_events_for_hostname_from(host, date=None):
+    """Get events for the hostname given as parameter
+    If date is given, returns events since that date, else return the 30 last events.
+    """
+    query = db.query(EventLog).filter(EventLogHostname.event_id == EventLog.id)\
+                              .filter(EventLogHostname.hostnames == host)
+    if date:
+        query = query.filter(EventLog.date >= sql_to_local(date)).order_by(desc(EventLog.date))
+    else:
+        query = query.order_by(desc(EventLog.date)).limit(30)
+    
+    return query.order_by(desc(EventLog.date)).all()

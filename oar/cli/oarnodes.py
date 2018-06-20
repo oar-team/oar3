@@ -14,6 +14,7 @@ from oar import (VERSION)
 from oar.lib import (db, config, Resource)
 
 from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids)
+from oar.lib.node import get_all_network_address
 
 from oar.lib.tools import check_resource_system_property
 
@@ -25,6 +26,10 @@ import click
 
 click.disable_unicode_literals_warning = True
 
+
+def print_events(date_from, hostnames):
+    for hostname in hostnames:
+        get_events_for_hostname_from()
 
 # INFO: function to change if you want to change the user std output
 def print_resources_flat_way(resources, resources_jobs, cmd_ret):
@@ -56,7 +61,7 @@ def print_resources_flat_way(resources, resources_jobs, cmd_ret):
         # }
         
 
-def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detailed):
+def oarnodes(nodes, resource_ids, states, list_nodes, events, sql, json, version, detailed):
 
     config.setdefault_config(tools.DEFAULT_CONFIG)
 
@@ -66,24 +71,37 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
         cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
+    if not nodes and not (resource_ids or sql):
+        nodes = get_all_network_address()
+
     if sql:
         sql_resource_ids = get_resources_with_given_sql(sql)
         if not sql_resource_ids:
             cmd_ret.warning("There are no resource(s) for this SQL WHERE clause ({})".format(sql), 12)
         resource_ids = resource_ids + tuple(sql_resource_ids)
 
-    resources = None
-    if resource_ids:
+    if events:
+        print_events(events, nodes)
+    elif state:
+        if resource_ids:
+            print_resources_states(resources_ids)
+        else:
+            print_resources_states_for_hosts(nodes)
+    elif list_nodes:
+        print_all_hostnames()
+    elif resource_ids or sql:
         resources = get_resources_from_ids(resource_ids)
+        print_resources_flat_way(cmd_ret, resources, None)
+    elif nodes:
+        print_hosts_infos(nodes)
+        
     else:
-        resources = db.query(Resource).order_by(Resource.id).all()
-
-    print_resources_flat_way(resources, None, cmd_ret)
-
+        cmd_ret.print_('No nodes to display...')
+        #resources = db.query(Resource).order_by(Resource.id).all()
     return cmd_ret
 
 @click.command()
-
+@click.argument('nodes', nargs=-1)
 @click.option('-r', '--resource', type=click.INT, multiple=True,
               help='show the properties of the resource whose id is given as parameter')
 @click.option('--sql', type=click.STRING,
@@ -95,6 +113,6 @@ def oarnodes(resource_ids, states, list_nodes, events, sql, json, version, detai
 @click.option('-f', '--full', is_flag=True, default=True, help='show full informations')
 @click.option('-J', '--json', help='print result in JSON format')
 @click.option('-V', '--version', is_flag=True, help='Print OAR version.')
-def cli(resource, state, list, events, sql, json, version, full, cli=True):
-    cmd_ret = oarnodes(resource, state, list, events, sql, json, version, full)
+def cli(nodes, resource, state, list, events, sql, json, version, full, cli=True):
+    cmd_ret = oarnodes(nodes, resource, state, list, events, sql, json, version, full)
     cmd_ret.exit()

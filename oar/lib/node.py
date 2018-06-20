@@ -22,7 +22,6 @@ def get_nodes_with_state(nodes):
            .all()
     return result
 
-
 def search_idle_nodes(date):
     result = db.query(distinct(Resource.network_address))\
                .filter(Resource.id == GanttJobsResource.resource_id)\
@@ -256,4 +255,8 @@ def get_node_job_to_frag(hostname):
                           .order_by(Job.id)\
                           .all()
 
+    return [r[0] for r in res]
+
+def get_all_network_address():
+    res = db.query(distinct(Resource.network_address)).order_by(Resource.id).all()
     return [r[0] for r in res]
