@@ -2,7 +2,7 @@
 
 from sqlalchemy import (func, desc)
 from oar.lib import (db, EventLog, EventLogHostname, get_logger)
-from oar.tools import sql_to_local
+from oar.lib.tools import sql_to_local
 
 import oar.lib.tools as tools
 
@@ -26,6 +26,8 @@ def add_new_event_with_host(ev_type, job_id, description, hostnames):
     
     #Forces unique values in hostnames by using set and
     #fills the EventLogHostname
+    if not isinstance(hostnames, list):
+            raise TypeError('hostnames must be a list')
     for hostname in set(hostnames):
         db.add(EventLogHostname(event_id=event_id, hostname=hostname))
     db.commit()
@@ -70,10 +72,10 @@ def get_events_for_hostname_from(host, date=None):
     If date is given, returns events since that date, else return the 30 last events.
     """
     query = db.query(EventLog).filter(EventLogHostname.event_id == EventLog.id)\
-                              .filter(EventLogHostname.hostnames == host)
+                              .filter(EventLogHostname.hostname == host)
     if date:
         query = query.filter(EventLog.date >= sql_to_local(date)).order_by(desc(EventLog.date))
     else:
         query = query.order_by(desc(EventLog.date)).limit(30)
     
-    return query.order_by(desc(EventLog.date)).all()
+    return query.all()

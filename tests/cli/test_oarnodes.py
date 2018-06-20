@@ -4,8 +4,10 @@ import pytest
 
 from click.testing import CliRunner
 
-from oar.lib import db
+from oar.lib import db, EventLog, EventLogHostname
+from oar.lib.event import add_new_event_with_host
 from oar.cli.oarnodes import cli
+
 
 NB_NODES=5
 NB_LINES_PER_NODE=3 # network_address: localhost\n resource_id: 1\n state: Alive\n
@@ -23,14 +25,30 @@ def test_version():
     print(result.output)
     assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
-def test_oarnodes_simple():
+def test_oarnodes_event_no_date():
+    add_new_event_with_host('TEST', 1, 'fake_event', ['localhost'])
+    
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--events', '_events_without_date_'])
+    print(result.output)
+    assert re.match(r'.*fake_event.*', result.output)
+
+def test_oarnodes_event():
+    add_new_event_with_host('TEST', 1, 'fake_event', ['localhost'])
+    
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--events', '1970-01-01 01:20:00'])
+    print(result.output)
+    assert re.match(r'.*fake_event.*', result.output)
+    
+def xtest_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)
     nb_lines = len(result.output.split('\n'))
     assert nb_lines == NB_LINES_PER_NODE * NB_NODES + 1 # + 1 for last \n
     assert result.exit_code == 0
 
-def test_oarnodes_sql():
+def xtest_oarnodes_sql():
     for _ in range(2):
         db['Resource'].create(network_address='akira')
     db.commit()
