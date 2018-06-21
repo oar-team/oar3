@@ -52,11 +52,21 @@ def print_resources_states(resource_ids, json):
     else:
        print(dumps(resource_states)) 
 
-def print_resources_states_for_hosts(nodes, json):
-    pass
-
+def print_resources_states_for_hosts(hostnames, json):
+    if not json:
+        for hostname in hostnames:
+            print(hostname + ':')
+            for resource_state in get_resources_state_for_host(hostname):
+                resource_id, state = resource_state.popitem()
+                print('\t{}: {}'.format(resource_id, state))
+    else:
+        hosts_states = [{hostname: get_resources_state_for_host(hostname)} for hostname in hostnames]
+        print(dumps(hosts_states))
+ 
 def print_all_hostnames():
     pass
+    #if not json:
+    #    for 
 
 
 # INFO: function to change if you want to change the user std output
@@ -159,7 +169,7 @@ class EventsOption(click.Command):
               help='show the properties of the resource whose id is given as parameter')
 @click.option('--sql', type=click.STRING,
               help='Display resources which matches the SQL where clause (ex: "state = \'Suspected\'")')
-@click.option('-s', '--state',  type=click.STRING, multiple=True, help='show the states of the nodes')
+@click.option('-s', '--state', is_flag=True, multiple=True, help='show the states of the nodes')
 @click.option('-l', '--list', is_flag=True, help='show the nodes list')
 @click.option('-e', '--events', type=click.STRING,
               help='show the events recorded for a node either since the date given as parameter or the last 30 ones if date is not provided.')
