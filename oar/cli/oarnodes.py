@@ -63,11 +63,12 @@ def print_resources_states_for_hosts(hostnames, json):
         hosts_states = [{hostname: get_resources_state_for_host(hostname)} for hostname in hostnames]
         print(dumps(hosts_states))
  
-def print_all_hostnames():
-    pass
-    #if not json:
-    #    for 
-
+def print_all_hostnames(nodes, json):
+    if not json:
+        for hostname in nodes:
+            print(hostname)
+    else:
+        print(dumps(nodes))
 
 # INFO: function to change if you want to change the user std output
 def print_resources_flat_way(resources, resources_jobs, cmd_ret):
@@ -108,7 +109,7 @@ def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version,
         cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
-    if not nodes and not (resource_ids or sql):
+    if (not nodes and not (resource_ids or sql)) or list_nodes:
         nodes = get_all_network_address()
 
     if sql:
@@ -127,7 +128,7 @@ def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version,
         else:
             print_resources_states_for_hosts(nodes,json)
     elif list_nodes:
-        print_all_hostnames()
+        print_all_hostnames(nodes, json)
     elif resource_ids or sql:
         resources = get_resources_from_ids(resource_ids)
         print_resources_flat_way(cmd_ret, resources, None)

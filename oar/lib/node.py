@@ -259,7 +259,7 @@ def get_node_job_to_frag(hostname):
     return [r[0] for r in res]
 
 def get_all_network_address():
-    res = db.query(distinct(Resource.network_address)).order_by(Resource.id).all()
+    res = db.query(distinct(Resource.network_address)).all()
     return [r[0] for r in res]
 
 def get_resources_state_for_host(host):

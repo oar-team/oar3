@@ -79,6 +79,25 @@ def test_oarnodes_hosts_state_json():
     print(result.output)
     assert re.match(r'.*Standby.*', result.output)
     assert re.match(r'.*Absent.*', result.output)
+
+
+def test_oarnodes_list_state():
+    db['Resource'].create(network_address='akira')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-l'])
+    print(result.output)
+    assert len(result.output.split('\n')) == 3
+
+def test_oarnodes_list_state_json():
+    db['Resource'].create(network_address='akira')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-l', '--json'])
+    print(result.output)
+    assert re.match(r'.*localhost.*', result.output)
+    assert re.match(r'.*akira.*', result.output)
+
 def xtest_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)
