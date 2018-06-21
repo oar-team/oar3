@@ -4,7 +4,7 @@ import pytest
 
 from click.testing import CliRunner
 
-from oar.lib import db, EventLog, EventLogHostname
+from oar.lib import (db, EventLog, EventLogHostname, Resource)
 from oar.lib.event import add_new_event_with_host
 from oar.cli.oarnodes import cli
 
@@ -47,7 +47,21 @@ def test_oarnodes_event_json():
     result = runner.invoke(cli, ['--events', '1970-01-01 01:20:00', '--json'])
     print(result.output)
     assert re.match(r'.*fake_event.*', result.output)
-     
+    
+def test_oarnodes_resource_ids_state():
+    rid = [r[0] for r in db.query(Resource.id).all()]
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--state', '-r' , str(rid[0]), '-r' , str(rid[1])])
+    print(result.output)
+    assert re.match(r'.*Alive.*', result.output)
+
+def test_oarnodes_resource_ids_state_json():
+    rid = [r[0] for r in db.query(Resource.id).all()]
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--state', '-r' , str(rid[0]), '-r' , str(rid[1]), '--json'])
+    print(result.output)
+    assert re.match(r'.*Alive.*', result.output)
+    
 def xtest_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)

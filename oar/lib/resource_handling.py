@@ -338,3 +338,11 @@ def get_resource_max_value_of_property(property_name):
         # Property doesn't exist
         return None
     return db.query(func.max(propery_field)).scalar()
+
+def get_resources_state(resource_ids):
+    date = tools.get_date()
+    result = db.query(Resource.id, Resource.state, Resource.available_upto)\
+               .filter(Resource.id.in_(tuple(resource_ids))).order_by(Resource.id).all()
+    res = [{r.id: 'Standby' if (r.state == 'Absent') and (r.available_upto >= date) else r.state}\
+           for r in result]
+    return res

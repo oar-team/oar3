@@ -4,6 +4,7 @@ from sqlalchemy import (func, select, text, distinct, or_, and_)
 from oar.lib import (db, Resource, ResourceLog, GanttJobsResource, GanttJobsPrediction, Job,
                      EventLog, EventLogHostname, MoldableJobDescription, JobType,
                      AssignedResource, get_logger, config)
+from oar.lib.resource_handling import get_resources_state
 
 import oar.lib.tools as tools
 
@@ -260,3 +261,8 @@ def get_node_job_to_frag(hostname):
 def get_all_network_address():
     res = db.query(distinct(Resource.network_address)).order_by(Resource.id).all()
     return [r[0] for r in res]
+
+def get_resources_state_for_host(host):
+    resource_ids = [r[0] for r in db.query(Resource.id)\
+                    .filter(Resource.network_address == host).order_by(Resource.id).all()]
+    return get_resources_state(resource_ids)

@@ -16,8 +16,9 @@ from json import dumps
 from oar import (VERSION)
 from oar.lib import (db, config, Resource)
 
-from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids)
-from oar.lib.node import get_all_network_address
+from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids,
+                                       get_resources_state)
+from oar.lib.node import (get_all_network_address, get_resources_state_for_host)
 from oar.lib.event import get_events_for_hostname_from
 
 from oar.lib.tools import (check_resource_system_property, local_to_sql)
@@ -41,6 +42,21 @@ def print_events(date, hostnames, json):
         hosts_events = {hostname: [ev.to_dict() for ev in get_events_for_hostname_from(hostname, date)]\
                         for hostname in hostnames}
         print(dumps(hosts_events))
+        
+def print_resources_states(resource_ids, json):
+    resource_states = get_resources_state(resource_ids)
+    if not json:
+        for resource_state in resource_states:
+            resource_id, state = resource_state.popitem()
+            print('{}: {}'.format(resource_id, state))
+    else:
+       print(dumps(resource_states)) 
+
+def print_resources_states_for_hosts(nodes, json):
+    pass
+
+def print_all_hostnames():
+    pass
 
 
 # INFO: function to change if you want to change the user std output
@@ -73,8 +89,7 @@ def print_resources_flat_way(resources, resources_jobs, cmd_ret):
         # }
         
 
-def oarnodes(nodes, resource_ids, states, list_nodes, events, sql, json, version, detailed):
-
+def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed):
     config.setdefault_config(tools.DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)      
@@ -98,9 +113,9 @@ def oarnodes(nodes, resource_ids, states, list_nodes, events, sql, json, version
         print_events(events, nodes, json)
     elif state:
         if resource_ids:
-            print_resources_states(resources_ids)
+            print_resources_states(resource_ids, json)
         else:
-            print_resources_states_for_hosts(nodes)
+            print_resources_states_for_hosts(nodes,json)
     elif list_nodes:
         print_all_hostnames()
     elif resource_ids or sql:
