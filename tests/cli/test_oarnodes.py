@@ -41,6 +41,13 @@ def test_oarnodes_event():
     print(result.output)
     assert re.match(r'.*fake_event.*', result.output)
     
+def test_oarnodes_event_json():
+    add_new_event_with_host('TEST', 1, 'fake_event', ['localhost'])   
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--events', '1970-01-01 01:20:00', '--json'])
+    print(result.output)
+    assert re.match(r'.*fake_event.*', result.output)
+     
 def xtest_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)

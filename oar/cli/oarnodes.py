@@ -11,6 +11,7 @@
    => returns the information for hostX - status is 0 for every host known - 1 otherwise
 """
 import sys
+from json import dumps
 
 from oar import (VERSION)
 from oar.lib import (db, config, Resource)
@@ -31,11 +32,17 @@ click.disable_unicode_literals_warning = True
 
 
 def print_events(date, hostnames, json):
-    for hostname in hostnames:
-        events = get_events_for_hostname_from(hostname, date)
-        for ev in events:
-            print('{}| {}| {}: {}'.format(local_to_sql(ev.date), ev.job_id, ev.type, ev.description))
-            
+    if not json:
+        for hostname in hostnames:
+            events = get_events_for_hostname_from(hostname, date)
+            for ev in events:
+                print('{}| {}| {}: {}'.format(local_to_sql(ev.date), ev.job_id, ev.type, ev.description))
+    else:
+        hosts_events = {hostname: [ev.to_dict() for ev in get_events_for_hostname_from(hostname, date)]\
+                        for hostname in hostnames}
+        print(dumps(hosts_events))
+
+
 # INFO: function to change if you want to change the user std output
 def print_resources_flat_way(resources, resources_jobs, cmd_ret):
     now = tools.get_date()
