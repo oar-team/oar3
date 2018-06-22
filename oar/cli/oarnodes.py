@@ -70,17 +70,33 @@ def print_all_hostnames(nodes, json):
     else:
         print(dumps(nodes))
 
+
+
 # INFO: function to change if you want to change the user std output
-def print_resources_flat_way(resources, resources_jobs, cmd_ret):
+def print_resources_flat_way(cmd_ret, resources):
     now = tools.get_date()
+
+    properties = [column.name for column in db[Resource.__tablename__].columns]
+
     for resource in resources:
         cmd_ret.print_('network_address: ' + resource.network_address)
         cmd_ret.print_('resource_id: ' + str(resource.id))
-
         state = resource.state
         if state == 'Absent' and resource.available_upto >= now:
             state += ' (standby)'
         cmd_ret.print_('state: ' + state)
+        properties_str = 'properties: '
+        flag_comma = False
+        for prop_name in properties:
+            if not check_resource_system_property(prop_name):
+                if flag_comma:
+                    properties_str += ', '
+                v = getattr(resource, prop_name)
+                properties_str += prop_name + '='
+                if v:
+                    properties_str += str(v)
+                flag_comma = True
+        cmd_ret.print_(properties_str) 
 
         #TODO: if (exists($info->{jobs})){print "jobs: $info->{jobs}\n"
 	#    my $properties_to_display='';
@@ -98,11 +114,23 @@ def print_resources_flat_way(resources, resources_jobs, cmd_ret):
         # 	    print "properties : $properties_to_display\n\n";
         # 	}
         # }
-        
 
-def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed):
+def print_resources_infos(cmd_ret, resources, json):
+    if not json:
+        print_resources_flat_way(cmd_ret, resources)
+    else:
+        print(dumps([r.to_dict() for r in resources]))
+                          
+                       
+def print_hosts_infos(cmd_ret, nodes, json):
+    if not json:
+        pass
+    else:
+        print(dumps([]))
+
+def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed=False):
     config.setdefault_config(tools.DEFAULT_CONFIG)
-
+    
     cmd_ret = CommandReturns(cli)      
 
     if version:
@@ -131,10 +159,9 @@ def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version,
         print_all_hostnames(nodes, json)
     elif resource_ids or sql:
         resources = get_resources_from_ids(resource_ids)
-        print_resources_flat_way(cmd_ret, resources, None)
+        print_resources_infos(cmd_ret, resources, json)
     elif nodes:
-        print_hosts_infos(nodes)
-        
+        print_hosts_infos(cmd_ret, nodes, json)       
     else:
         cmd_ret.print_('No nodes to display...')
         #resources = db.query(Resource).order_by(Resource.id).all()
@@ -164,6 +191,7 @@ class EventsOption(click.Command):
         events_option_flag_or_string()
         click.Command.__init__(self, name=name, callback=callback, params=params)
 
+#@click.option('-f', '--full', is_flag=True, default=True, help='show full informations')        
 @click.command(cls=EventsOption)
 @click.argument('nodes', nargs=-1)
 @click.option('-r', '--resource', type=click.INT, multiple=True,
@@ -174,9 +202,8 @@ class EventsOption(click.Command):
 @click.option('-l', '--list', is_flag=True, help='show the nodes list')
 @click.option('-e', '--events', type=click.STRING,
               help='show the events recorded for a node either since the date given as parameter or the last 30 ones if date is not provided.')
-@click.option('-f', '--full', is_flag=True, default=True, help='show full informations')
 @click.option('-J', '--json', is_flag=True, default=False, help='print result in JSON format')
 @click.option('-V', '--version', is_flag=True, help='Print OAR version.')
-def cli(nodes, resource, state, list, events, sql, json, version, full, cli=True):
-    cmd_ret = oarnodes(nodes, resource, state, list, events, sql, json, version, full)
+def cli(nodes, resource, state, list, events, sql, json, version, cli=True):
+    cmd_ret = oarnodes(nodes, resource, state, list, events, sql, json, version)
     cmd_ret.exit()

@@ -10,7 +10,7 @@ from oar.cli.oarnodes import cli
 
 
 NB_NODES=5
-NB_LINES_PER_NODE=3 # network_address: localhost\n resource_id: 1\n state: Alive\n
+NB_LINES_PER_NODE=4 # network_address: localhost\n resource_id: 1\n state: Alive\n
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
@@ -105,12 +105,23 @@ def xtest_oarnodes_simple():
     assert nb_lines == NB_LINES_PER_NODE * NB_NODES + 1 # + 1 for last \n
     assert result.exit_code == 0
 
-def xtest_oarnodes_sql():
+def test_oarnodes_sql():
     for _ in range(2):
         db['Resource'].create(network_address='akira')
     db.commit()
     runner = CliRunner()
     result = runner.invoke(cli,  ['--sql', "network_address=\'akira\'"])
+    print(result.output)
     nb_lines = len(result.output.split('\n'))
-    assert nb_lines == NB_LINES_PER_NODE * 2 + 1 # + 1 for last \n
+    assert nb_lines == 2 * 4 + 1
+    assert result.exit_code == 0
+
+def test_oarnodes_sql_json():
+    for _ in range(2):
+        db['Resource'].create(network_address='akira')
+    db.commit()
+    runner = CliRunner()
+    result = runner.invoke(cli,  ['--sql', "network_address=\'akira\'", '--json'])
+    print(result.output)
+    assert re.match(r'.*akira.*', result.output)
     assert result.exit_code == 0
