@@ -18,7 +18,8 @@ from oar.lib import (db, config, Resource)
 
 from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids,
                                        get_resources_state)
-from oar.lib.node import (get_all_network_address, get_resources_state_for_host)
+from oar.lib.node import (get_all_network_address, get_resources_state_for_host,
+                          get_resources_of_nodes)
 from oar.lib.event import get_events_for_hostname_from
 
 from oar.lib.tools import (check_resource_system_property, local_to_sql)
@@ -68,7 +69,7 @@ def print_all_hostnames(nodes, json):
         for hostname in nodes:
             print(hostname)
     else:
-        print(dumps(nodes))
+        print(dumps(nodes))    
 
 
 
@@ -98,35 +99,15 @@ def print_resources_flat_way(cmd_ret, resources):
                 flag_comma = True
         cmd_ret.print_(properties_str) 
 
-        #TODO: if (exists($info->{jobs})){print "jobs: $info->{jobs}\n"
-	#    my $properties_to_display='';
-        # 	    while ( my ($k,$v) = each %$info ){
-        # 		    if (OAR::Tools::check_resource_system_property($k) == 0){
-        # 			    if(defined($v)){
-        # 				    $properties_to_display .= "$k=$v, ";
-        # 			    }else{
-        # 				    $properties_to_display .= "$k=, ";
-        # 			    }
-        # 		    }
-        # 	    }
-        # 	    chop($properties_to_display); # remove last space
-        # 	    chop($properties_to_display); # remove last ,
-        # 	    print "properties : $properties_to_display\n\n";
-        # 	}
-        # }
 
-def print_resources_infos(cmd_ret, resources, json):
+def print_resources_nodes_infos(cmd_ret, resources, nodes, json):
+    #import pdb; pdb.set_trace()
+    if nodes:
+        resources = get_resources_of_nodes(nodes)
     if not json:
         print_resources_flat_way(cmd_ret, resources)
     else:
         print(dumps([r.to_dict() for r in resources]))
-                          
-                       
-def print_hosts_infos(cmd_ret, nodes, json):
-    if not json:
-        pass
-    else:
-        print(dumps([]))
 
 def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed=False):
     config.setdefault_config(tools.DEFAULT_CONFIG)
@@ -159,14 +140,13 @@ def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version,
         print_all_hostnames(nodes, json)
     elif resource_ids or sql:
         resources = get_resources_from_ids(resource_ids)
-        print_resources_infos(cmd_ret, resources, json)
+        print_resources_nodes_infos(cmd_ret, resources, None, json)
     elif nodes:
-        print_hosts_infos(cmd_ret, nodes, json)       
+        print_resources_nodes_infos(cmd_ret, None, nodes, json)       
     else:
         cmd_ret.print_('No nodes to display...')
         #resources = db.query(Resource).order_by(Resource.id).all()
     return cmd_ret
-
 
 
 def events_option_flag_or_string():

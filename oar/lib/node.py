@@ -12,10 +12,17 @@ STATE2NUM = {'Alive': 1, 'Absent': 2, 'Suspected': 3, 'Dead': 4}
 
 logger = get_logger('oar.lib.node')
 
+# TODO change name
 def get_all_resources_on_node(hostname):
     """Return the current resources on node whose hostname is passed in parameter"""
     result =  db.query(Resource.id).filter(Resource.network_address == hostname).all()
     return [r[0] for r in result]
+
+def get_resources_of_nodes(hostnames):
+    """Return the current resources on node whose hostname is passed in parameter"""
+    result =  db.query(Resource).filter(Resource.network_address.in_(tuple(hostnames)))\
+                                           .order_by(Resource.id).all()
+    return result
 
 def get_nodes_with_state(nodes):
     result = db.query(Resource.network_address, (Resource.state))\

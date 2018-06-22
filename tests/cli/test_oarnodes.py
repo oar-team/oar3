@@ -98,11 +98,20 @@ def test_oarnodes_list_state_json():
     assert re.match(r'.*localhost.*', result.output)
     assert re.match(r'.*akira.*', result.output)
 
-def xtest_oarnodes_simple():
+def test_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)
     nb_lines = len(result.output.split('\n'))
+    print(result.output)
     assert nb_lines == NB_LINES_PER_NODE * NB_NODES + 1 # + 1 for last \n
+    assert result.exit_code == 0
+    
+def test_oarnodes_simple_json():
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--json'])
+    nb_lines = len(result.output.split('\n'))
+    print(result.output)
+    assert re.match(r'.*localhost.*', result.output)
     assert result.exit_code == 0
 
 def test_oarnodes_sql():
