@@ -304,3 +304,16 @@ def test_oarsub_connect_job_function_deploy(monkeypatch):
     exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
+    
+@pytest.mark.parametrize("return_code, exit_values", [ (2, [0,2]), (10, [0,10])])
+def test_oarsub_connect_job_function_returncode(return_code, exit_values, monkeypatch):
+    global fake_run_return_code
+    fake_run_return_code = return_code << 8
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'oar'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1)[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    assert cmd_ret.exit_values == exit_values

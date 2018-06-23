@@ -139,14 +139,15 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         exit_value = return_code >> 8
         if exit_value == 2:
             cmd_ret.error('cannot enter working directory: ' + job.launching_directory)
+            cmd_ret.exit(exit_value)
         elif exit_value != 0:
             cmd_ret.error('an unexpected error: ' + str(return_code))
-
+            cmd_ret.exit(exit_value)
+            
         if stop_oarexec > 0:
             tools.signal_oarexec(host_to_connect_via_ssh, job_id, 'USR1', 0, openssh_cmd)
             cmd_ret.info('Disconnected from OAR job ' + str(job_id))
-
-            
+    
     else:
         if job.state != 'Running':
             cmd_ret.error('Job ' + str(job_id) + ' is not running, current state is ' + job.state + '.')
