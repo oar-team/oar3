@@ -31,10 +31,8 @@ def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400)
     if update_accounting:
         check_accounting_update(window_size)
 
-def insert_running_jobs(nb_jobs=5):
+def insert_running_jobs(nb_jobs=5, user='zozo', project='yopa', types=[]):
     j_walltime = 60
-    user = 'zozo'
-    project = 'yopa'
     job_ids = []
     resources = db.query(Resource).all()
     for i in range(nb_jobs):
@@ -43,6 +41,7 @@ def insert_running_jobs(nb_jobs=5):
                             properties='', command='yop',
                             user = user, project = project,
                             start_time = start_time,
+                            types=types,
                             state='Running')
         job_ids.append(job_id)
 

@@ -48,12 +48,21 @@ class FakeCommandReturns():
     def print_(self, objs):
         self.buffer.append((0,objs,0))
         self.exit_values.append(0)
+        
+    def warning(self, objs, error=0, exit_value=0):
+        self.buffer.append((2,objs,error))
+        self.exit_values.append(exit_value)
+
     def error(self, objs, error=0, exit_value=0):
         self.buffer.append((1,objs,error))
-        self.exit_values.append(0, exit_value)
+        self.exit_values.append(exit_value)
+        
     def exit(self, error):
         if error:
+            self.exit_values.append(error)
             return error
+        elif self.exit_values:
+            return self.exit_values[-1]
         else:
             return 0
 
@@ -252,4 +261,46 @@ def test_oarsub_connect_job_function(monkeypatch):
     cmd_ret = FakeCommandReturns(None)
     exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
     print(cmd_ret.buffer)
-    print(exit_value)
+    assert cmd_ret.exit_values == []
+
+def test_oarsub_connect_job_function_bad_user(monkeypatch):
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'yop'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1)[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    print(cmd_ret.exit_values[-1])
+    assert cmd_ret.exit_values[-1] == 20
+    
+def test_oarsub_connect_job_function_noop(monkeypatch):
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'oar'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1, types=['noop'])[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    print(cmd_ret.exit_values[-1])
+    assert cmd_ret.exit_values[-1] == 17
+
+def test_oarsub_connect_job_function_cosystem(monkeypatch):
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'oar'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1, types=['cosystem'])[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    assert cmd_ret.exit_values == []
+    
+def test_oarsub_connect_job_function_deploy(monkeypatch):
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'oar'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1, types=['deploy'])[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    assert cmd_ret.exit_values == []

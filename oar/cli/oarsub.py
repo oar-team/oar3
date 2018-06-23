@@ -31,7 +31,7 @@ import oar.lib.tools as tools
 # Global variable needed for signal handler to trigger job deletion accordingly 
 job_id_lst = []
 
-def init_tcp_server():
+def init_tcp_server(): # pragma: no cover
     """Intialize TCP server, to receive job's creation information"""  
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((socket.getfqdn(), 0))
@@ -39,7 +39,7 @@ def init_tcp_server():
     return sock
 
 
-def qdel(signalnum, frame):
+def qdel(signalnum, frame): # pragma: no cover
     """Handle ^C in interactive submission."""
     if job_id_lst:
         if signalnum == signal.SIGINT:
