@@ -5,7 +5,6 @@ import os
 import socket
 import signal
 import click
-from pwd import getpwnam
 
 from .utils import CommandReturns
 
@@ -60,7 +59,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 
     job = get_job(job_id)
     
-    if ((lusr == job.user) or (luser == 'oar')) and (job.state == 'Running'):
+    if ((lusr == job.user) or (lusr == 'oar')) and (job.state == 'Running'):
         types = get_job_types(job_id)
         # No operation job type
         if 'noop' in types:
@@ -87,7 +86,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 
         moldable = get_current_moldable_job(job.assigned_moldable_job)
         job_user = job.user
-        shell = getpwnam(lusr).pw_shell
+        shell = tools.getpwnam(lusr).pw_shell
 
         # TODO
         # unless ((defined($xauth_path)) and (-x $xauth_path) and ($ENV{DISPLAY} =~ /^[\w.-]*:\d+(?:\.\d+)?$/)) {
@@ -109,17 +108,17 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         script = get_oarexecuser_script_for_oarsub(job, moldable.walltime, node_file, shell, resource_file)
 
         cmd = openssh_cmd
-        if ('OAR_CPUSET' in os.environ) and ('OAR_CPUSET' != ''):
+        if ('OAR_CPUSET' in os.environ) and (os.environ['OAR_CPUSET'] != ''):
             cmd += ' -oSendEnv=OAR_CPUSET '
 
-        if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
+        if ('DISPLAY' in os.environ) and (os.environ['DISPLAY'] != ''):
             cmd += ' -X '
         else:
             cmd += ' -x '
 
         cmd += '-t ' + host_to_connect_via_ssh + ' '
         
-        if ('DISPLAY' in os.environ) and ('DISPLAY' != ''):
+        if ('DISPLAY' in os.environ) and (os.environ['DISPLAY'] != ''):
             # TODO: X display forwarding
             #$cmd[$i] = "bash -c 'echo \$PPID >> $oarsub_pids && ($xauth_path -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=$lusr oardodo $xauth_path merge -) && [ \"$lusr\" != \"$job_user\" ] && OARDO_BECOME_USER=$lusr oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'";$i++;
             raise Exception('X display forwarding support NOT yet implemented')

@@ -4,9 +4,12 @@ import os
 import re
 from click.testing import CliRunner
 
+from ..helpers import insert_running_jobs
+
 from oar.lib import (db, config)
 from oar.lib.job_handling import get_job_types
-from oar.cli.oarsub import cli
+from oar.cli.utils import CommandReturns
+from oar.cli.oarsub import cli, connect_job
 
 import oar.lib.tools  # for monkeypatching
 
@@ -27,11 +30,37 @@ class FakePopen(object):
         process_sdtout = FakeProcessStdout() 
         return [process_sdtout]
 
+class Fake_getpwnam(object):
+    def __init__(self, user):
+        self.pw_shell = 'shell'
+
+fake_run_return_code = 0       
+class Fake_run(object):
+    def __init__(self, cmd, shell):
+        self.returncode = fake_run_return_code
+
+class FakeCommandReturns():
+    def __init__(self, cli):
+        self.buffer = []
+        self.exit_values = []
+        self.final_exit = 0
+        
+    def print_(self, objs):
+        self.buffer.append((0,objs,0))
+        self.exit_values.append(0)
+    def error(self, objs, error=0, exit_value=0):
+        self.buffer.append((1,objs,error))
+        self.exit_values.append(0, exit_value)
+    def exit(self, error):
+        if error:
+            return error
+        else:
+            return 0
+
 @pytest.fixture(scope="module", autouse=True)
 def set_env(request):
     os.environ['OARDIR'] = '/tmp'
     os.environ['OARDO_USER'] = 'yop'
-
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -47,7 +76,9 @@ def minimal_db_initialization(request):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
-
+    monkeypatch.setattr(oar.lib.tools, 'getpwnam', Fake_getpwnam)
+    monkeypatch.setattr(oar.lib.tools, 'run', Fake_run)
+    monkeypatch.setattr(oar.lib.tools, 'signal_oarexec', lambda r,x,y,w,z: None)
 def test_oarsub_void():
     runner = CliRunner()
     result = runner.invoke(cli)
@@ -212,5 +243,13 @@ def test_oarsub_multiple_types(monkeypatch):
     print(job_types)
     assert job_types == {'t1': True, 't2': True}
     assert result.exit_code == 0
-
     
+def test_oarsub_connect_job_function(monkeypatch):
+    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
+    os.environ['OARDO_USER'] = 'oar'
+    os.environ['DISPLAY'] = ''
+    job_id = insert_running_jobs(1)[0]
+    cmd_ret = FakeCommandReturns(None)
+    exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
+    print(cmd_ret.buffer)
+    print(exit_value)

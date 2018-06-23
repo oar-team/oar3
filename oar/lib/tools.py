@@ -15,6 +15,8 @@ from oar.lib import logger as log
 import signal, psutil
 from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
+from pwd import getpwnam
+
 from multiprocessing import Process
 from os import kill
 

@@ -35,6 +35,7 @@ def insert_running_jobs(nb_jobs=5):
     j_walltime = 60
     user = 'zozo'
     project = 'yopa'
+    job_ids = []
     resources = db.query(Resource).all()
     for i in range(nb_jobs):
         start_time = tools.get_date()
@@ -43,6 +44,8 @@ def insert_running_jobs(nb_jobs=5):
                             user = user, project = project,
                             start_time = start_time,
                             state='Running')
+        job_ids.append(job_id)
+
         mld_id = db.query(MoldableJobDescription.id).filter(MoldableJobDescription.job_id==job_id)\
                                                     .one()[0]
         db.query(Job).filter(Job.id==job_id)\
@@ -52,4 +55,4 @@ def insert_running_jobs(nb_jobs=5):
             AssignedResource.create(moldable_id=mld_id, resource_id=r.id)
             print(job_id, mld_id, r.id, r.network_address)
         db.commit()
-
+    return job_ids
