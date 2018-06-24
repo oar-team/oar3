@@ -320,6 +320,7 @@ def test_oarsub_connect_job_function_returncode(return_code, exit_values, monkey
     assert cmd_ret.exit_values == exit_values
 
 def test_oarsub_resubmit_bad_user(monkeypatch):
+    os.environ['OARDO_USER'] = 'iznogoud'
     job_id = insert_terminated_jobs(False, 1)[0]
     print(job_id)
     runner = CliRunner()
