@@ -13,6 +13,7 @@ from oar.cli.utils import CommandReturns
 from oar.cli.oarsub import cli, connect_job
 
 import oar.lib.tools  # for monkeypatching
+import socket
 
 default_res = '/resource_id=1'
 nodes_res = 'resource_id'
@@ -67,6 +68,25 @@ class FakeCommandReturns():
         else:
             return 0
 
+fake_connection_msg = b''        
+class FakeConnection(object):
+    def __init__(self):
+        pass
+    def recv(self, a):
+        return fake_connection_msg
+
+class FakeSocket(object):
+    def __init__(self, a, b):
+        pass
+    def bind(self, a):
+        pass
+    def listen(self, a):
+        pass
+    def getsockname(self):
+        return ('localhost', 101010)    
+    def accept(self):
+        return(FakeConnection(), 'yop')
+
 @pytest.fixture(scope="module", autouse=True)
 def set_env(request):
     os.environ['OARDIR'] = '/tmp'
@@ -89,6 +109,9 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'getpwnam', Fake_getpwnam)
     monkeypatch.setattr(oar.lib.tools, 'run', Fake_run)
     monkeypatch.setattr(oar.lib.tools, 'signal_oarexec', lambda r,x,y,w,z: None)
+    monkeypatch.setattr(socket, 'socket', FakeSocket)
+#    monkeypatch.setattr(socket, 'getfqdn', lambda: True)
+    
 def test_oarsub_void():
     runner = CliRunner()
     result = runner.invoke(cli)
@@ -349,3 +372,42 @@ def test_oarsub_parameters_file_error(monkeypatch):
     result = runner.invoke(cli, ['--array-param-file', 'no_file', 'command'])
     print(result.output)
     assert result.exception.code == (6, 'An array of job must have a number of sub-jobs greater than 0.')
+
+def test_oarsub_interactive_bad_job(monkeypatch):
+    global fake_connection_msg
+    fake_connection_msg = b'BAD JOB_'
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', 'will_be ignored'])
+    print(result.output)
+    assert result.exit_code == 11
+
+def test_oarsub_interactive_array_param_file(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', '--array-param-file', 'no_file'])
+    print(result.output)
+    assert result.exit_code == 9
+    
+def test_oarsub_interactive_array(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['-I', '--array', '2'])
+    print(result.output)
+    assert result.exit_code == 8
+
+
+def test_oarsub_reservation_rejected(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--reservation', '1970-01-01 01:20:00'])
+    print(result.output)
+    print(result.output.split('\n')[4])
+    assert re.match(r'.*REJECTED.*', result.output.split('\n')[4])
+    assert result.exit_code == 0
+    
+def test_oarsub_reservation_granted(monkeypatch):
+    global fake_connection_msg
+    fake_connection_msg = b'GOOD RESERVATION_'
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--reservation', '1970-01-01 01:20:00'])
+    print(result.output)
+    print(result.output.split('\n')[3])
+    assert re.match(r'.*GRANTED.*', result.output.split('\n')[3])
+    assert result.exit_code == 0

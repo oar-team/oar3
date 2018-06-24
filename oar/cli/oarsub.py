@@ -31,7 +31,7 @@ import oar.lib.tools as tools
 # Global variable needed for signal handler to trigger job deletion accordingly 
 job_id_lst = []
 
-def init_tcp_server(): # pragma: no cover
+def init_tcp_server():
     """Intialize TCP server, to receive job's creation information"""  
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind((socket.getfqdn(), 0))
@@ -434,7 +434,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     
     # Notify Almigthy
     tools.notify_almighty(cmd_executor)
-
+    #import pdb; pdb.set_trace()
     if reservation:
         # Reservation mode
         cmd_ret.info("Advance reservation request: waiting for approval from the scheduler...")
