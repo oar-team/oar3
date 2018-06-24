@@ -6,7 +6,8 @@ import oar.lib.tools as tools
 def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400):
     j_duration = window_size * 10
     j_walltime = j_duration + 2 * window_size
-
+    job_ids = []
+    
     user = 'zozo'
     project = 'yopa'
     resources = db.query(Resource).all()
@@ -19,6 +20,7 @@ def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400)
                             start_time = start_time,
                             stop_time = stop_time,
                             state='Terminated')
+        job_ids.append(job_id)
         mld_id = db.query(MoldableJobDescription.id).filter(MoldableJobDescription.job_id==job_id)\
                                                     .one()[0]
         db.query(Job).filter(Job.id==job_id)\
@@ -30,6 +32,7 @@ def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400)
         db.commit()
     if update_accounting:
         check_accounting_update(window_size)
+    return job_ids
 
 def insert_running_jobs(nb_jobs=5, user='zozo', project='yopa', types=[]):
     j_walltime = 60

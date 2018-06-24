@@ -2,11 +2,12 @@
 import pytest
 import os
 import re
+import random
 from click.testing import CliRunner
 
-from ..helpers import insert_running_jobs
+from ..helpers import (insert_running_jobs, insert_terminated_jobs)
 
-from oar.lib import (db, config)
+from oar.lib import (db, config, Challenge)
 from oar.lib.job_handling import get_job_types
 from oar.cli.utils import CommandReturns
 from oar.cli.oarsub import cli, connect_job
@@ -317,3 +318,33 @@ def test_oarsub_connect_job_function_returncode(return_code, exit_values, monkey
     exit_value = connect_job(job_id, 0, 'openssh_cmd', cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == exit_values
+
+def test_oarsub_resubmit_bad_user(monkeypatch):
+    job_id = insert_terminated_jobs(False, 1)[0]
+    print(job_id)
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--resubmit', str(job_id)])
+    print(result.output)
+    assert result.exception.code == (-3, 'Resubmitted job user mismatch.')
+    # job = db['Job'].query.one()
+
+def test_oarsub_resubmit(monkeypatch):
+    os.environ['OARDO_USER'] = 'zozo'
+    job_id = insert_terminated_jobs(False, 1)[0]
+    # Insert challenge and ssh_keys
+
+    ins = Challenge.__table__.insert().values(
+        {'job_id': job_id, 'challenge': random.randint(1, 100000)})
+    db.session.execute(ins)
+    print(job_id)
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--resubmit', str(job_id)])
+    print(result.output.split('\n')[2])
+    assert re.match(r'.*OAR_JOB_ID=.*', result.output.split('\n')[2])
+    
+def test_oarsub_parameters_file_error(monkeypatch):
+    # TODO not the good error
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--array-param-file', 'no_file', 'command'])
+    print(result.output)
+    assert result.exception.code == (6, 'An array of job must have a number of sub-jobs greater than 0.')

@@ -310,7 +310,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
         cmd_ret.print_('# Resubmitting job ' + str(resubmit) + '...')
         error, job_id = resubmit_job(resubmit)
         if error[0] == 0:
-            print(' done.\n')
+            print(' done.')
             print('OAR_JOB_ID=' + str(job_id))
             if not tools.notify_almighty('Qsub'):
                 error_msg = 'Cannot connect to OAR server (Almighty): ' + str(remote_host) + ':' +\
