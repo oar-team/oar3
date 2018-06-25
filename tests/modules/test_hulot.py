@@ -102,16 +102,25 @@ def test_hulot_check_wakeup_for_min_nodes(monkeypatch):
     assert exit_code == 0
        
 def test_hulot_halt_1(monkeypatch):
-    FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['node1']}]
-    #hulot = Hulot()
-    #hulot.run(False)
-    # TODO TOFINISH
+    config['ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD'] = 'sleep_cmd'
+    FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['localhost0']}]
+    hulot = Hulot()
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)    
+    assert 'localhost0' in hulot.nodes_list_running
+    assert hulot.nodes_list_running['localhost0']['command'] == 'HALT'
+    assert exit_code == 0
+
 
 def test_hulot_wakeup_1(monkeypatch):
-    FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['node1']}]
-    #hulot = Hulot()
-    #hulot.run(False)
-    # TODO TOFINISH
+    config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD'] = 'wake_cmd'
+    FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['localhost2']}]
+    hulot = Hulot()
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    assert 'localhost2' in hulot.nodes_list_running
+    assert hulot.nodes_list_running['localhost2']['command'] == 'WAKEUP'
+    assert exit_code == 0
 
 def test_hulot_client(monkeypatch):
     hulot_ctl = HulotClient()
