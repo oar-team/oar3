@@ -40,7 +40,7 @@ def search_idle_nodes(date):
 
     busy_nodes = {} #TODO can be remove ? to replace by busy_nodes = result
     for network_address in result:
-        busy_nodes[network_address] = True
+        busy_nodes[network_address[0]] = True
 
     result = db.query(Resource.network_address,
                       func.max(Resource.last_job_date))\
@@ -98,7 +98,7 @@ def get_last_wake_up_date_of_node(hostname):
                .filter(EventLog.type == 'WAKEUP_NODE')\
                .order_by(EventLog.date.desc()).limit(1).scalar()
 
-    return result
+    return [r[0] for r in result]
 
 
 def get_alive_nodes_with_jobs():
@@ -111,7 +111,7 @@ def get_alive_nodes_with_jobs():
                                       'Launching', 'Running ', 'Suspended ', 'Resuming ')))\
                .filter(or_(Resource.state == 'Alive', Resource.next_state == 'Alive'))\
                .all()
-    return result
+    return [r[0] for r in result]
 
 
 def get_nodes_that_can_be_waked_up(date):
@@ -120,7 +120,7 @@ def get_nodes_that_can_be_waked_up(date):
                .filter(Resource.state == 'Absent')\
                .filter(Resource.available_upto > date)\
                .all()
-    return result
+    return [r[0] for r in result]
 
 
 def get_nodes_with_given_sql(properties):
@@ -129,7 +129,7 @@ def get_nodes_with_given_sql(properties):
                .distinct()\
                .filter(text(properties))\
                .all()
-    return result
+    return [r[0] for r in result]
 
 
 def set_node_state(hostname, state, finaud_tag):

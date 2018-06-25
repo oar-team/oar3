@@ -199,7 +199,7 @@ class Hulot(object):
 
         if not re.match(r'.+:\d+,*', str_keepalive):
             logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
-            exit(3)
+            return 3
         else:
             for keepalive_item in re.split(r'\s*\&\s*', str_keepalive):
                 prop_nb = keepalive_item.split(':')
@@ -207,7 +207,7 @@ class Hulot(object):
                 nb_nodes = prop_nb[1]
                 if not re.match(r'^(\d+)$', nb_nodes):
                     logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE ! (not an integer)')
-                    exit(2)
+                    return 2
                 self.keepalive[properties] = {'nodes': [], 'min': int(nb_nodes)}
                 logger.debug('Keepalive(' + properties + ') => ' + nb_nodes)
 
@@ -239,7 +239,6 @@ class Hulot(object):
             else:
                 logger.debug('Got request: ' + command + ' for nodes: ' + str(nodes))
 
-
             # Identify idle and occupied nodes
             all_occupied_nodes = get_alive_nodes_with_jobs()
             nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(tools.get_date())
@@ -264,8 +263,10 @@ class Hulot(object):
 
                 # Wake up some nodes corresponding to properties if needed
                 ok_nodes = keepalive[properties]['current_idle'] -  keepalive[properties]['min']
-                nodes = keepalive[properties]['nodes']
-                wakeable_nodes = [n for n in nodes if (n not in occupied_nodes) and (n not in idle_nodes)]
+                keep_nodes = keepalive[properties]['nodes']
+                # wakeable_nodes = keep_nodes - occupied_nodes - idle_nodes
+                wakeable_nodes = [n for n in keep_nodes\
+                                  if (n not in occupied_nodes) and (n not in idle_nodes)]
 
                 for node in wakeable_nodes:
                     if ok_nodes >= 0:
@@ -317,6 +318,7 @@ class Hulot(object):
                 node_toRemind = False
                 if nodes_list_running:
                     # Checking
+
                     for node_running, cmd_info in nodes_list_running.items():
                         if node == node_running:
                             node_finded = True
@@ -388,7 +390,7 @@ class Hulot(object):
                 else:
                     logger.error("Unknown command: '" + cmd +\
                                  "' for node '" + node + "'")
-                    exit(1)
+                    return 1
 
             logger.debug('Launching commands to nodes')
             # Launching commands
@@ -440,13 +442,11 @@ class Hulot(object):
                     hulot_status_dump_name = {'nodes_list_running': nodes_list_running,
                                               'nodes_list_to_remind': nodes_list_to_remind}
                     pickle.dump(hulot_status_dump_name, dump_file, pickle.HIGHEST_PROTOCOL)
-                exit(42)
+                return 42
 
             if not loop:
                 break
-
-
-
+        return 0
 
 def command_executor(cmd_node):
     command, node = cmd_node
@@ -495,7 +495,7 @@ def window_forker(commands, window_size, timeout):
 
 def main(): 
     hulot = Hulot()
-    hulot.run()
+    return hulot.run()
 
 if __name__ == '__main__':  # pragma: no cover
-    main()
+    sys.exit(main())

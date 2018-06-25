@@ -460,6 +460,7 @@ class Almighty(object):
 
             if not loop:
                 break
+        return 0
 
 def main():  # pragma: no cover
     almighty = Almighty()
