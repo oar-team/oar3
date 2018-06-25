@@ -5,7 +5,7 @@
  This module is responsible of waking up / shutting down nodes
  when the scheduler decides it (writes it on a named pipe)
 
- CHECK command is sent on the zmq PULL socket oh Hulot:
+ CHECK command is sent on the zmq PULL socket to Hulot:
 
   - by MetaScheduler if there is no node to wake up / shut down in order:
       - to check timeout and check memorized nodes list <TODO>

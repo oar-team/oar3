@@ -58,11 +58,11 @@ def test_get_timeout():
     timeout = get_timeout({1: 500, 11:1000, 21:2000, 30:3000}, 15)
     assert timeout == 1000
 
-def test_hulot_check_1(monkeypatch):
+def test_hulot_check_void(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
-    #hulot = Hulot()
-    #hulot.run(False)
-
+    hulot = Hulot()
+    hulot.run(False)
+    
 def test_hulot_halt_1(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['node1']}]
     #hulot = Hulot()
