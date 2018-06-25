@@ -107,8 +107,17 @@ def test_hulot_halt_1(monkeypatch):
     #hulot.run(False)
     # TODO TOFINISH
 
-def test_hulot_wakup_1(monkeypatch):
+def test_hulot_wakeup_1(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['node1']}]
     #hulot = Hulot()
     #hulot.run(False)
     # TODO TOFINISH
+
+def test_hulot_client(monkeypatch):
+    hulot_ctl = HulotClient()
+    hulot_ctl.check()
+    assert FakeZmq.sent_msgs[0][0] == {'cmd': 'CHECK'}
+    hulot_ctl.halt_nodes('localhost')
+    assert FakeZmq.sent_msgs[0][1] == {'cmd': 'HALT', 'nodes': 'localhost'}
+    hulot_ctl.wake_up_nodes('localhost')
+    assert FakeZmq.sent_msgs[0][2] == {'cmd': 'WAKEUP', 'nodes': 'localhost'}
