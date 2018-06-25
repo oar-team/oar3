@@ -196,7 +196,6 @@ class Hulot(object):
 
         self.keepalive = {}
         str_keepalive = config['ENERGY_SAVING_NODES_KEEPALIVE']
-
         if not re.match(r'.+:\d+,*', str_keepalive):
             logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
             return 3
@@ -226,7 +225,6 @@ class Hulot(object):
         count_cycles = 1
 
         while True:
-
             message = self.socket.recv_json()
 
             command = message['cmd']
@@ -278,10 +276,10 @@ class Hulot(object):
                         # add WAKEUP: node to list of commands if not already
                         # into the current command list
                         if node not in nodes_list_running:
-                            nodes_list_running[node] = {'command': 'WAKEUP', 'timeout': -1}
+                            nodes_list_to_process[node] = {'command': 'WAKEUP', 'timeout': -1}
                             logger.debug('Waking up ' + node + " to satisfy '" + properties +\
-                                         "' keepalive (ok_nodes=" + ok_nodes +\
-                                         ', wakeable_nodes=' + len(wakeable_nodes))
+                                         "' keepalive (ok_nodes=" + str(ok_nodes) +\
+                                         ', wakeable_nodes=' + str(len(wakeable_nodes)) + ')')
                         else:
                             if nodes_list_running[node]['command'] != 'WAKEUP':
                                 logger.debug('Wanted to wake up ' + node + " to satisfy '" + properties +\
@@ -298,7 +296,7 @@ class Hulot(object):
                         logger.debug("Booting node '" + node + "' seems now up, so removing it from running list.")
                         # Remove node from the list running nodes
                         del nodes_list_running[node]
-                    elif tools.get_date > cmd_info['timeout']:
+                    elif tools.get_date() > cmd_info['timeout']:
                         change_node_state(node, 'Suspected', config)
                         info = 'Node ' + node +\
                                'was suspected because it did not wake up before the end of the timeout'
@@ -306,7 +304,7 @@ class Hulot(object):
                         # Remove suspected node from the list running nodes
                         del nodes_list_running[node]
                         # Remove this node from received list (if node is present) because it was suspected
-                        del nodes[node]
+                        nodes.remove(node)
  
             # Check if some nodes in list_to_remind can be processed
             check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)
@@ -452,9 +450,13 @@ def command_executor(cmd_node):
     command, node = cmd_node
     command_to_exec = 'echo "' + node + '" | '
     if command == 'HALT':
+        if 'ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD' not in config:
+            logger.error('ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD is undefined')
         command_to_exec += config['ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD']
     else:
-        command_to_exec += config['ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD']
+        if 'ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD' not in config:
+            logger.error('ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD is undefined')
+        command_to_exec += config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD']
     # TODO returncode,
     exit_code = tools.call(command_to_exec, shell=True)
     return exit_code
@@ -489,7 +491,7 @@ def window_forker(commands, window_size, timeout):
                 executor.wait(timeout)
             except TimeoutError:
                 cmd, node = cmd_node
-                logger.warning("Exection of command '" + cmd + "' timeouted on node '" + node + "'") 
+                logger.warning("Execution of command '" + cmd + "' timeouted on node '" + node + "'") 
                 # TODO kill process               
 
 

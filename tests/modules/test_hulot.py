@@ -26,14 +26,15 @@ DEFAULT_CONFIG = {
     'ENERGY_SAVING_WINDOW_FORKER_SIZE': 20
 }
 
-def fake_call(cmd):
-    global called_cmd
+called_command = ''
+def fake_call(cmd, shell):
+    global called_command
     called_command = cmd
 
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
-    #monkeypatch.setattr(oar.lib.tools, 'call', fake_call) # TO DEBUG, doesn't work
+    monkeypatch.setattr(oar.lib.tools, 'call', fake_call)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -88,10 +89,16 @@ def test_hulot_check_simple(monkeypatch):
     
 @pytest.mark.usefixtures("minimal_db_initialization")    
 def test_hulot_check_wakeup_for_min_nodes(monkeypatch):
-    config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':3",
+    # localhost2 to wakeup
+    config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':3"
+    config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD'] = 'wake_cmd'
     FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
     hulot = Hulot()
     exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    
+    assert 'localhost2' in hulot.nodes_list_running
+    assert hulot.nodes_list_running['localhost2']['command'] == 'WAKEUP'
     assert exit_code == 0
        
 def test_hulot_halt_1(monkeypatch):
