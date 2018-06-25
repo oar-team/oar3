@@ -25,7 +25,7 @@ def get_resources_of_nodes(hostnames):
     return result
 
 def get_nodes_with_state(nodes):
-    result = db.query(Resource.network_address, (Resource.state))\
+    result = db.query(Resource.network_address, Resource.state)\
            .filter(Resource.network_address.in_(tuple(nodes)))\
            .all()
     return result
@@ -37,6 +37,7 @@ def search_idle_nodes(date):
                .filter(Resource.network_address != '')\
                .filter(Resource.type == 'default')\
                .filter(GanttJobsPrediction.moldable_id == GanttJobsResource.moldable_id)\
+               .all()
 
     busy_nodes = {} #TODO can be remove ? to replace by busy_nodes = result
     for network_address in result:
@@ -87,7 +88,6 @@ def get_next_job_date_on_node(hostname):
                .filter(GanttJobsResource.resource_id == Resource.id)\
                .filter(GanttJobsPrediction.moldable_id == GanttJobsResource.moldable_id)\
                .scalar()
-
     return result
 
 
@@ -97,8 +97,7 @@ def get_last_wake_up_date_of_node(hostname):
                .filter(EventLogHostname.hostname == hostname)\
                .filter(EventLog.type == 'WAKEUP_NODE')\
                .order_by(EventLog.date.desc()).limit(1).scalar()
-
-    return [r[0] for r in result]
+    return result
 
 
 def get_alive_nodes_with_jobs():
@@ -108,7 +107,7 @@ def get_alive_nodes_with_jobs():
                .filter(AssignedResource.moldable_id == MoldableJobDescription.id)\
                .filter(MoldableJobDescription.job_id == Job.id)\
                .filter(Job.state.in_(('Waiting', 'Hold', 'toLaunch', 'toError', 'toAckReservation',
-                                      'Launching', 'Running ', 'Suspended ', 'Resuming ')))\
+                                      'Launching', 'Running', 'Suspended ', 'Resuming')))\
                .filter(or_(Resource.state == 'Alive', Resource.next_state == 'Alive'))\
                .all()
     return [r[0] for r in result]
