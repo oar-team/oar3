@@ -417,7 +417,10 @@ class Hulot(object):
                 else:
                     # Use the window forker to execute commands in parallel
                     logger.debug('Launching commands to nodes by using WindowForker')
-                    w_forker = Process(target=window_forker, args=(command_toLaunch,))
+                    w_forker = Process(target=window_forker,
+                                       args=(command_toLaunch,
+                                             config['ENERGY_SAVING_WINDOW_SIZE'],
+                                             config['ENERGY_SAVING_WINDOW_TIMEOUT']))
                     w_forker.start()
                     w_forker.join()
 
@@ -478,10 +481,10 @@ def window_forker(commands, window_size, timeout):
 
         if halt_nodes:
             add_new_event_with_host('HALT_NODE', 0,
-                                    'Node ' + node + ' halt request', [halt_nodes])
+                                    'Node ' + node + ' halt request', halt_nodes)
         if wakeup_nodes:
             add_new_event_with_host('WAKEUP_NODE', 0,
-                                    'Node ' + node + ' wake-up request', [wakeup_nodes])
+                                    'Node ' + node + ' wake-up request', wakeup_nodes)
 
         pool = Pool(processes=window_size)
         executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in range(commands)}
