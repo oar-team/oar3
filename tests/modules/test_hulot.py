@@ -9,6 +9,7 @@ from oar.lib import (db, config)
 from .fakezmq import FakeZmq
 
 import oar.lib.tools
+import oar.lib.tools as tools
 
 
 # Set undefined config value to default one
@@ -166,16 +167,41 @@ def test_hulot_wakeup_1(monkeypatch):
     assert exit_code == 0
     
 @pytest.mark.usefixtures("minimal_db_initialization") 
-def test_hulot_wakeup_already(monkeypatch):
+def test_hulot_wakeup_already_timeouted(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['localhost2']}]
-
     hulot = Hulot()
     hulot.nodes_list_running = {'localhost2': {'timeout': -1, 'command': 'WAKEUP'}}
-    
     exit_code = hulot.run(False)
     print(hulot.nodes_list_running)
     assert hulot.nodes_list_running == {}
     assert exit_code == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization") 
+def test_hulot_wakeup_already_pending(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['localhost2']}]
+    hulot = Hulot()
+    hulot.nodes_list_running = {'localhost2': {'timeout': tools.get_date()+1000,
+                                               'command': 'WAKEUP'}}
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    print(hulot.nodes_list_to_remind)
+    assert 'localhost2' in hulot.nodes_list_running
+    assert hulot.nodes_list_to_remind == {}
+    assert exit_code == 0
+
+@pytest.mark.usefixtures("minimal_db_initialization") 
+def test_hulot_halt_wakeup_already_pending(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['localhost2']}]
+    hulot = Hulot()
+    hulot.nodes_list_running = {'localhost2': {'timeout': tools.get_date()+1000,
+                                               'command': 'WAKEUP'}}
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    print(hulot.nodes_list_to_remind)
+    assert 'localhost2' in hulot.nodes_list_running
+    assert 'localhost2' in hulot.nodes_list_to_remind
+    assert hulot.nodes_list_to_remind['localhost2']['command'] == 'HALT'
+    assert exit_code == 0    
     
 @pytest.mark.usefixtures("minimal_db_initialization") 
 def test_hulot_check_clean_booted_node(monkeypatch):
