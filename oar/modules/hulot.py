@@ -141,7 +141,8 @@ class Hulot(object):
 
     def __init__(self):
         logger.info('Initiating Hulot, the energy saving module');
-        
+
+        self.exit_code = 0
         # Intialize zeromq context
         self.context = zmq.Context()
         # IP addr is required when bind function is used on zmq socket
@@ -200,15 +201,17 @@ class Hulot(object):
         str_keepalive = config['ENERGY_SAVING_NODES_KEEPALIVE']
         if not re.match(r'.+:\d+,*', str_keepalive):
             logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
-            return 3
+            return
+            self.exit_code = 3
         else:
-            for keepalive_item in re.split(r'\s*\&\s*', str_keepalive):
+            for keepalive_item in str_keepalive.split(','):
                 prop_nb = keepalive_item.split(':')
                 properties = prop_nb[0]
                 nb_nodes = prop_nb[1]
                 if not re.match(r'^(\d+)$', nb_nodes):
                     logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE ! (not an integer)')
-                    return 2
+                    self.exit_code = 2
+                    return
                 self.keepalive[properties] = {'nodes': [], 'min': int(nb_nodes)}
                 logger.debug('Keepalive(' + properties + ') => ' + nb_nodes)
 
@@ -509,6 +512,8 @@ def window_forker(commands, window_size, timeout):
 
 def main():   # pragma: no cover
     hulot = Hulot()
+    if hulot.exit_code:
+        return hulot.exit_code
     return hulot.run()
 
 if __name__ == '__main__':  # pragma: no cover

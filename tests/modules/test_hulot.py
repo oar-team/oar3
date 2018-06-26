@@ -87,7 +87,17 @@ def test_fill_timeouts_2():
 def test_get_timeout(): 
     timeout = get_timeout({1: 500, 11:1000, 21:2000, 30:3000}, 15)
     assert timeout == 1000
+
+def test_bad_energy_saving_nodes_keepalive_1():
+    config['ENERGY_SAVING_NODES_KEEPALIVE'] = 'bad'
+    hulot = Hulot()
+    assert hulot.exit_code == 3
     
+def test_bad_energy_saving_nodes_keepalive_2():
+    config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':3, bad:bad"
+    hulot = Hulot()
+    assert hulot.exit_code == 2
+
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_hulot_check_simple(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
