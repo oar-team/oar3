@@ -361,16 +361,16 @@ class Hulot(object):
                     # Don't halt nodes that needs to be kept alive
                     match = False
                     for properties, prop_info in keepalive.items():
-                        nodes = prop_info['nodes']
-                        if node in nodes:
+                        nodes_keepalive = prop_info['nodes']
+                        if node in nodes_keepalive:
                             if prop_info['current_idle'] <= prop_info['min']:
                                 logger.debug("Not halting '" + node +
                                              "' because I need to keep alive " +
-                                             prop_info['min'] + " nodes having '" +\
+                                             str(prop_info['min']) + " nodes having '" +\
                                              properties + "'")
-                            match = True
-                            del nodes_list_running[node]
-                            del nodes_list_to_process[node]
+                                match = True
+                                del nodes_list_running[node]
+                                del nodes_list_to_process[node]
                     # If the node is ok to be halted
                     if not match:
                         # Update the keepalive counts

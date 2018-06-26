@@ -66,6 +66,7 @@ def minimal_db_initialization(request):
         for i in range(2):
             db['Resource'].create(network_address="localhost3",
                                   state='Absent', available_upto=2147483646)
+        db.commit()
         yield
 
 def test_fill_timeouts_1():
@@ -100,17 +101,20 @@ def test_hulot_check_wakeup_for_min_nodes(monkeypatch):
     assert 'localhost2' in hulot.nodes_list_running
     assert hulot.nodes_list_running['localhost2']['command'] == 'WAKEUP'
     assert exit_code == 0
-       
+    
+@pytest.mark.usefixtures("minimal_db_initialization")        
 def test_hulot_halt_1(monkeypatch):
     config['ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD'] = 'sleep_cmd'
     FakeZmq.recv_msgs[0] = [{'cmd': 'HALT', 'nodes': ['localhost0']}]
     hulot = Hulot()
+    import pdb; pdb.set_trace()
     exit_code = hulot.run(False)
     print(hulot.nodes_list_running)    
     assert 'localhost0' in hulot.nodes_list_running
     assert hulot.nodes_list_running['localhost0']['command'] == 'HALT'
     assert exit_code == 0
-    
+
+@pytest.mark.usefixtures("minimal_db_initialization")     
 def test_hulot_halt_1_forker(monkeypatch):
     config['ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD'] = 'sleep_cmd'
     config['ENERGY_SAVING_WINDOW_FORKER_BYPASS'] = 'no'
@@ -121,7 +125,8 @@ def test_hulot_halt_1_forker(monkeypatch):
     assert 'localhost0' in hulot.nodes_list_running
     assert hulot.nodes_list_running['localhost0']['command'] == 'HALT'
     assert exit_code == 0
-
+    
+@pytest.mark.usefixtures("minimal_db_initialization") 
 def test_hulot_wakeup_1(monkeypatch):
     config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD'] = 'wake_cmd'
     FakeZmq.recv_msgs[0] = [{'cmd': 'WAKEUP', 'nodes': ['localhost2']}]
@@ -132,6 +137,7 @@ def test_hulot_wakeup_1(monkeypatch):
     assert hulot.nodes_list_running['localhost2']['command'] == 'WAKEUP'
     assert exit_code == 0
 
+@pytest.mark.usefixtures("minimal_db_initialization") 
 def test_hulot_wakeup_1_forker(monkeypatch):
     config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD'] = 'wake_cmd'
     config['ENERGY_SAVING_WINDOW_FORKER_BYPASS'] = 'no'
