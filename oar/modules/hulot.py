@@ -292,22 +292,26 @@ class Hulot(object):
             nodes_alive = get_nodes_with_given_sql("state='Alive'")
 
             # Checks if some booting nodes need to be suspected
+            nodes_toRemove = []
             for node, cmd_info in nodes_list_running.items():
                 if cmd_info['command'] == 'WAKEUP':
                     if node in nodes_alive:
                         logger.debug("Booting node '" + node + "' seems now up, so removing it from running list.")
                         # Remove node from the list running nodes
-                        del nodes_list_running[node]
+                        nodes_toRemove.append(node)
                     elif tools.get_date() > cmd_info['timeout']:
                         change_node_state(node, 'Suspected', config)
                         info = 'Node ' + node +\
                                'was suspected because it did not wake up before the end of the timeout'
                         add_new_event_with_host('LOG_SUSPECTED', 0, info, [node])
                         # Remove suspected node from the list running nodes
-                        del nodes_list_running[node]
+                        nodes_toRemove.append(node)
                         # Remove this node from received list (if node is present) because it was suspected
                         nodes.remove(node)
- 
+
+            for node in nodes_toRemove:
+                del nodes_list_running[node]
+
             # Check if some nodes in list_to_remind can be processed
             check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process)
 
