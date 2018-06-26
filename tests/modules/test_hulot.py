@@ -91,11 +91,13 @@ def test_get_timeout():
 def test_bad_energy_saving_nodes_keepalive_1():
     config['ENERGY_SAVING_NODES_KEEPALIVE'] = 'bad'
     hulot = Hulot()
+    config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':0"
     assert hulot.exit_code == 3
     
 def test_bad_energy_saving_nodes_keepalive_2():
     config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':3, bad:bad"
     hulot = Hulot()
+    config['ENERGY_SAVING_NODES_KEEPALIVE'] = "type='default':0"
     assert hulot.exit_code == 2
 
 @pytest.mark.usefixtures("minimal_db_initialization")

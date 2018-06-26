@@ -201,8 +201,8 @@ class Hulot(object):
         str_keepalive = config['ENERGY_SAVING_NODES_KEEPALIVE']
         if not re.match(r'.+:\d+,*', str_keepalive):
             logger.error('Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !')
-            return
             self.exit_code = 3
+            return
         else:
             for keepalive_item in str_keepalive.split(','):
                 prop_nb = keepalive_item.split(':')
