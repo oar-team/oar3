@@ -61,12 +61,14 @@ logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 
 def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process):
-    # Checks if some nodes in list_to_remind can be processed 
+    # Checks if some nodes in list_to_remind can be processed
+    nodes_toRemove = []
     for node, cmd_info in nodes_list_to_remind.items():
         if node not in nodes_list_running:
             # move this node from reminded list to list to process
-            logger.debug("Adding '" + node + '=>' + cmd_info  + "' to list to process.")
+            logger.debug("Adding '" + node + '=>' + str(cmd_info)  + "' to list to process.")
             nodes_list_to_process[node] = {'command': cmd_info['command'], 'timeout': -1}
+    for node in nodes_toRemove:
             del nodes_list_to_remind[node]
 
 

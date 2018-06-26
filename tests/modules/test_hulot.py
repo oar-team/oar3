@@ -93,6 +93,17 @@ def test_hulot_check_simple(monkeypatch):
     hulot = Hulot()
     exit_code = hulot.run(False)
     assert exit_code == 0
+     
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_hulot_check_nodes_to_remind(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
+    hulot = Hulot()
+    hulot.nodes_list_to_remind = {'localhost0': {'timeout': -1, 'command': 'HALT'}}
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    assert 'localhost0' in hulot.nodes_list_running
+    assert hulot.nodes_list_running['localhost0']['command'] == 'HALT'
+    assert exit_code == 0
     
 @pytest.mark.usefixtures("minimal_db_initialization")    
 def test_hulot_check_wakeup_for_min_nodes(monkeypatch):
