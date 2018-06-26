@@ -476,40 +476,38 @@ def command_executor(cmd_node):
     return exit_code
 
 def window_forker(commands, window_size, timeout):
-    if not commands:
-        logger.warning('WindowForker: /!\\ No command specified')
-    else:
-        #Build strings to pass to wakeup and shutdown commands
-        halt_nodes = []
-        wakeup_nodes = []
+    
+    #Build strings to pass to wakeup and shutdown commands
+    halt_nodes = []
+    wakeup_nodes = []
 
-        for cmd_node in commands:
+    for cmd_node in commands:
+        cmd, node = cmd_node
+        if cmd == 'HALT':
+            halt_nodes.append(node)
+        else: #cmd == 'WAKEUP'
+            wakeup_nodes.append(node)
+
+    if halt_nodes:
+        add_new_event_with_host('HALT_NODE', 0,
+                                'Node ' + node + ' halt request', halt_nodes)
+    if wakeup_nodes:
+        add_new_event_with_host('WAKEUP_NODE', 0,
+                                'Node ' + node + ' wake-up request', wakeup_nodes)
+
+    pool = Pool(processes=window_size)
+    executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in commands}
+
+    for executor, cmd_node in executors.items():
+        try:
+            executor.wait(timeout)
+        except TimeoutError:
             cmd, node = cmd_node
-            if cmd == 'HALT':
-                halt_nodes.append(node)
-            else: #cmd == 'WAKEUP'
-                wakeup_nodes.append(node)
-
-        if halt_nodes:
-            add_new_event_with_host('HALT_NODE', 0,
-                                    'Node ' + node + ' halt request', halt_nodes)
-        if wakeup_nodes:
-            add_new_event_with_host('WAKEUP_NODE', 0,
-                                    'Node ' + node + ' wake-up request', wakeup_nodes)
-
-        pool = Pool(processes=window_size)
-        executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in commands}
-
-        for executor, cmd_node in executors.items():
-            try:
-                executor.wait(timeout)
-            except TimeoutError:
-                cmd, node = cmd_node
-                logger.warning("Execution of command '" + cmd + "' timeouted on node '" + node + "'") 
-                # TODO kill process               
+            logger.warning("Execution of command '" + cmd + "' timeouted on node '" + node + "'") 
+            # TODO kill process               
 
 
-def main(): 
+def main():   # pragma: no cover
     hulot = Hulot()
     return hulot.run()
 

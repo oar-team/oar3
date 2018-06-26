@@ -94,7 +94,14 @@ def test_hulot_check_simple(monkeypatch):
     hulot = Hulot()
     exit_code = hulot.run(False)
     assert exit_code == 0
-     
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_hulot_bad_command(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'BAD_COMMAND', 'nodes': ['localhost0']}]
+    hulot = Hulot()
+    exit_code = hulot.run(False)
+    assert exit_code == 1
+
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_hulot_check_nodes_to_remind(monkeypatch):
     FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
