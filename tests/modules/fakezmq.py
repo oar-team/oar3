@@ -71,6 +71,7 @@ class FakeZmq(object):
         
     @classmethod
     def socket(cls, _):
+        print('Create socket: {}'.format(FakeZmq.num_socket))
         sock = FakeZmqSocket(FakeZmq.num_socket)
         FakeZmq.num_socket += 1
         return sock

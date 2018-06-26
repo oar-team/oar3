@@ -351,6 +351,7 @@ class Hulot(object):
             # already waking up + the number of nodes to wake up
             timeout = get_timeout(self.timeouts, len(nodes_list_running) + len(nodes_list_to_process))
 
+            nodes_toRemove_from_list_to_process = []
             for node, cmd_info in nodes_list_to_process.items():
                 cmd = cmd_info['command']
                 if cmd == 'WAKEUP':
@@ -369,8 +370,10 @@ class Hulot(object):
                                              str(prop_info['min']) + " nodes having '" +\
                                              properties + "'")
                                 match = True
-                                del nodes_list_running[node]
-                                del nodes_list_to_process[node]
+                                #import pdb; pdb.set_trace()
+                                if node in nodes_list_running:
+                                    del nodes_list_running[node]
+                                nodes_toRemove_from_list_to_process.append(node)
                     # If the node is ok to be halted
                     if not match:
                         # Update the keepalive counts
@@ -390,6 +393,12 @@ class Hulot(object):
                                  "' for node '" + node + "'")
                     return 1
 
+            # Remove nodes to process list if needed
+            # (disable HALT cmd to satisfy keepAlive condition)
+            
+            for node in nodes_toRemove_from_list_to_process:
+                del nodes_list_to_process[node]
+                
             logger.debug('Launching commands to nodes')
             # Launching commands
             if command_toLaunch:
