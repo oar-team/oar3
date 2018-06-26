@@ -307,7 +307,8 @@ class Hulot(object):
                         # Remove suspected node from the list running nodes
                         nodes_toRemove.append(node)
                         # Remove this node from received list (if node is present) because it was suspected
-                        nodes.remove(node)
+                        if node in nodes:
+                            nodes.remove(node)
 
             for node in nodes_toRemove:
                 del nodes_list_running[node]

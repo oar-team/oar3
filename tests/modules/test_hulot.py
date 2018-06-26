@@ -176,6 +176,16 @@ def test_hulot_wakeup_already(monkeypatch):
     print(hulot.nodes_list_running)
     assert hulot.nodes_list_running == {}
     assert exit_code == 0
+    
+@pytest.mark.usefixtures("minimal_db_initialization") 
+def test_hulot_check_clean_booted_node(monkeypatch):
+    FakeZmq.recv_msgs[0] = [{'cmd': 'CHECK'}]
+    hulot = Hulot()
+    hulot.nodes_list_running = {'localhost0': {'timeout': -1, 'command': 'WAKEUP'}}
+    exit_code = hulot.run(False)
+    print(hulot.nodes_list_running)
+    assert hulot.nodes_list_running == {}
+    assert exit_code == 0
 
 @pytest.mark.usefixtures("minimal_db_initialization") 
 def test_hulot_wakeup_1_forker(monkeypatch):
