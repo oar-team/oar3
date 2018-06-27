@@ -163,8 +163,8 @@ def start_hulot():  # TODO
 
 
 def check_hulot():
-    '''check the hulot process'''
-    return tools.kill(energy_pid, 0)
+    """Check the prescence hulot process"""
+    return tools.check_process(energy_pid)
 
 # functions associated with each state of the automaton
 def meta_scheduler():

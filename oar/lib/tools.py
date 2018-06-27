@@ -18,8 +18,6 @@ from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError
 from pwd import getpwnam
 
 from multiprocessing import Process
-from os import kill
-
 
 # Constants
 DEFAULT_CONFIG = {
@@ -750,4 +748,12 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
     
     return(script)
 
+def check_process(pid):
+    """ Check for the existence process. """
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
 
