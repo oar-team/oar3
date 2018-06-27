@@ -59,7 +59,8 @@ def check_event(event_type, job_id):
     """Turn the field toCheck into NO"""
     db.query(EventLog).filter(EventLog.job_id == job_id)\
                       .filter(EventLog.type == event_type)\
-                      .filter(EventLog.to_check == 'YES').update({'to_check': 'NO'})
+                      .filter(EventLog.to_check == 'YES').update({'to_check': 'NO'},
+                      synchronize_session=False)
     db.commit()
 
 def get_hostname_event(event_id):

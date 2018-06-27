@@ -147,15 +147,17 @@ def remove_resource(resource_id, user=None):
                     .all()
         for job_mod_id in results:
             job_id, moldable_id = job_mod_id
-            db.query(EventLog).where(EventLog.job_id == job_id).delete()
-            db.query(FragJob).where(FragJob.job_id == job_id).delete()
-            db.query(Job).where(Job.id == job_id).delete()
+            db.query(EventLog).where(EventLog.job_id == job_id).delete(synchronize_session=False)
+            db.query(FragJob).where(FragJob.job_id == job_id).delete(synchronize_session=False)
+            db.query(Job).where(Job.id == job_id).delete(synchronize_session=False)
             db.query(AssignedResource)\
-              .filter(AssignedResource.moldable_id == moldable_id).delete()
+              .filter(AssignedResource.moldable_id == moldable_id).delete(synchronize_session=False)
 
-        db.query(AssignedResource).filter(AssignedResource.resource_id == resource_id).delete()
-        db.query(ResourceLog).filter(ResourceLog.resource_id == resource_id).delete()
-        db.query(Resource).filter(Resource.id == resource_id).delete()
+        db.query(AssignedResource).filter(AssignedResource.resource_id == resource_id)\
+                                  .delete(synchronize_session=False)
+        db.query(ResourceLog).filter(ResourceLog.resource_id == resource_id)\
+                             .delete(synchronize_session=False)
+        db.query(Resource).filter(Resource.id == resource_id).delete(synchronize_session=False)
 
         db.session.expire_all() #???
         return(0, None)

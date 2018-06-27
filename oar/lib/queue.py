@@ -16,20 +16,23 @@ def get_all_queue_by_priority():
 
 def stop_a_queue(queue_name):
     """ Stop a queue"""
-    db.query(Queue).filter(Queue.name == queue_name).update({Queue.state: 'notActive'})
+    db.query(Queue).filter(Queue.name == queue_name).update({Queue.state: 'notActive'},
+    synchronize_session=False)
     db.commit()
 
 def start_a_queue(queue_name):
     """ Start a queue"""
-    db.query(Queue).filter(Queue.name == queue_name).update({Queue.state: 'Active'})
+    db.query(Queue).filter(Queue.name == queue_name).update({Queue.state: 'Active'},
+                                                            synchronize_session=False)
     db.commit()
 
 def stop_all_queues():
     """ Stop all queues"""
-    db.query(Queue).update({Queue.state: 'notActive'})
+    db.query(Queue).update({Queue.state: 'notActive'},
+    synchronize_session=False)
     db.commit()
 
 def start_all_queues():
     """ Start all queues"""
-    db.query(Queue).update({Queue.state: 'Active'})
+    db.query(Queue).update({Queue.state: 'Active'},synchronize_session=False)
     db.commit()
