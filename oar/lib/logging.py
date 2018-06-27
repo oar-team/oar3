@@ -22,17 +22,17 @@ def create_logger():
 
     log_file = config.get('LOG_FILE', None)
     if log_file is not None:
-        if log_file == ":stdout:":
+        if log_file == ":stdout:": # pragma: no cover
             handler = get_global_stream_handler("stdout")
         if log_file == ":stderr:":
             handler = get_global_stream_handler("stderr")
-        else:
+        else: # pragma: no cover
             touch(log_file)
             handler = FileHandler(log_file)
 
         if handler not in logger.handlers:
             logger.addHandler(handler)
-    else:
+    else: # pragma: no cover
         logger.addHandler(NullHandler())
 
     logger.propagate = False
@@ -49,7 +49,7 @@ def get_logger(*args, **kwargs):
     sublogger.propage = False
     if forward_stderr:
         stream_handler = get_global_stream_handler("stderr")
-        if stream_handler not in logger.handlers:
+        if stream_handler not in logger.handlers: # pragma: no cover
             sublogger.addHandler(stream_handler)
     return sublogger
 
