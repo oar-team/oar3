@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.tools import (PIPE, kill, get_time)
+from oar.lib.tools import (PIPE, check_process, get_time)
 import oar.lib.tools as tools
 
 import socket
@@ -72,6 +72,7 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
+hullot_command = binpath + 'oar3-hulot'
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -113,12 +114,12 @@ def signal_handler():
     global finishTag
     finishTag = True
 
+#    
 # To avoid zombie processes
 #
 signal.signal(signal.SIGUSR1, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
-
 
 def launch_command(command):
     '''launch the command line passed in parameter'''
@@ -128,8 +129,6 @@ def launch_command(command):
 
     logger.debug('Launching command : [' + command + ']')
 
-    #import pdb; pdb.set_trace()
-    
     exit_value = tools.call(command)
 
     logger.debug(command + ' terminated')
@@ -137,51 +136,25 @@ def launch_command(command):
 
     return exit_value
 
+def start_hulot():
+    return tools.Popen(hulot_command)
 
-    
-
-def start_hulot():  # TODO
-    '''hulot module forking'''
-    # try:
-    #    energy_pid = os.fork()
-    #
-    # if(!defined($energy_pid)){
-    #    oar_error("[Almighty] Cannot fork Hulot, the energy saving module\n");
-    #    exit(6);
-    # }
-    # if (!$energy_pid){
-    #    $SIG{CHLD} = 'DEFAULT';
-    #    $SIG{USR1}  = 'IGNORE';
-    #    $SIG{INT}  = 'IGNORE';
-    #    $SIG{TERM}  = 'IGNORE';
-    #    $0="Almighty: hulot";
-    #    OAR::Modules::Hulot::start_energy_loop();
-    #    oar_error("[Almighty] Energy saving loop (hulot) exited. This should not happen.\n");
-    #    exit(7);
-    #  }
-    # }
-
-
-def check_hulot():
+def check_hulot(hulot):
     """Check the prescence hulot process"""
-    return tools.check_process(energy_pid)
+    return tools.check_process(hulot.pid)
 
 # functions associated with each state of the automaton
 def meta_scheduler():
     return launch_command(meta_sched_command)
 
-
 def check_for_villains():
     return launch_command(check_for_villains_command)
-
 
 def check_nodes():
     return launch_command(check_for_node_changes)
 
-
 def leon():
     return launch_command(leon_command)
-
 
 def nodeChangeState():
     return launch_command(nodeChangeState_command)
@@ -205,8 +178,9 @@ class Almighty(object):
         self.set_appendice_timeout(read_commands_timeout)
         
         # Starting of Hulot, the Energy saving module
+        self.hulot = None
         if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-            start_hulot()
+            self.hulot = start_hulot()
 
         self.lastscheduler = 0
         self.lastvillains = 0
@@ -226,7 +200,7 @@ class Almighty(object):
 
         self.appendice_proxy = tools.Popen(proxy_appendice_command)
         self.bipbip_commander = tools.Popen(bipbip_commander)
-        
+
     def time_update(self):
         current = tools.get_time()  # ---> TODO my $current = time; -> ???
 
@@ -252,7 +226,6 @@ class Almighty(object):
     def set_appendice_timeout(self, timeout):
         '''Set timeout appendice socket'''
         self.appendice.RCVTIMEO = timeout
-
 
     def qget(self, timeout):
         '''function used by the main automaton to get notifications from appendice'''
@@ -324,10 +297,9 @@ class Almighty(object):
                 return 10
 
             # We check Hulot
-            if energy_pid and not check_hulot():
+            if self.hulot and not check_hulot(self.hulot):
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
-                time.sleep(5)
-                start_hulot()
+                start_hulot(self)
 
             # QGET
             elif self.state == 'Qget':
