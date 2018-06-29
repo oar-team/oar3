@@ -27,6 +27,8 @@ from oar.lib.queue import (get_all_queue_by_priority, stop_a_queue)
 
 from oar.lib.event import (get_job_events, add_new_event)
 
+from oar.modules.hulot import HulotClient
+
 from oar.lib.tools import (local_to_sql, duration_to_sql)
 import oar.lib.tools as tools
 
@@ -728,6 +730,8 @@ def meta_schedule(mode='internal', plt=Platform()):
         else:
             logger.error("Error ENERGY_SAVING_MODE unknown: " + config['ENERGY_SAVING_MODE'])
 
+        hulot = HulotClient()
+            
         flag_hulot = False
         timeout_cmd = int(config['SCHEDULER_TIMEOUT'])
 
@@ -737,8 +741,8 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Powering off some nodes (energy saving): " + str(nodes_2_halt))
             # Using the built-in energy saving module to shut down nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('HALT', ' '.join(nodes_2_halt)):
-                    logger.error("Communication problem with the energy saving module (Hulot)\n")
+                hulot.halt_nodes(nodes_2_halt)
+                    #logger.error("Communication problem with the energy saving module (Hulot)\n")
                 flag_hulot = True
             else:
                 # Not using the built-in energy saving module to shut down nodes
@@ -754,8 +758,8 @@ def meta_schedule(mode='internal', plt=Platform()):
             logger.debug("Awaking some nodes: " + str(nodes_2_change))
             # Using the built-in energy saving module to wake up nodes
             if config['ENERGY_SAVING_INTERNAL'] == 'yes':
-                if tools.send_to_hulot('WAKEUP', ' '.join(nodes_2_wakeup)):
-                    logger.error("Communication problem with the energy saving module (Hulot)")
+                hulot.wake_up_nodes(nodes_2_wakeup)
+                #logger.error("Communication problem with the energy saving module (Hulot)")
                 flag_hulot = True
             else:
                 # Not using the built-in energy saving module to wake up nodes
@@ -766,8 +770,8 @@ def meta_schedule(mode='internal', plt=Platform()):
 
         # Send CHECK signal to Hulot if needed
         if not flag_hulot and (config['ENERGY_SAVING_INTERNAL'] == 'yes'):
-            if tools.send_to_hulot('CHECK', []):
-                logger.error("Communication problem with the energy saving module (Hulot)")
+            hulot.check_nodes()
+            #    logger.error("Communication problem with the energy saving module (Hulot)")
 
 
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.

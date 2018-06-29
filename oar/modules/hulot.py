@@ -127,7 +127,7 @@ class HulotClient(object):
             logger.error('Failed to connect to Hulot')
             exit(1)
 
-    def check(self):
+    def check_nodes(self):
         self.socket.send_json({'cmd':'CHECK'})
 
     def halt_nodes(self, nodes):

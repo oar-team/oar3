@@ -246,7 +246,7 @@ def test_hulot_wakeup_1_forker(monkeypatch):
 
 def test_hulot_client(monkeypatch):
     hulot_ctl = HulotClient()
-    hulot_ctl.check()
+    hulot_ctl.check_nodes()
     assert FakeZmq.sent_msgs[0][0] == {'cmd': 'CHECK'}
     hulot_ctl.halt_nodes('localhost')
     assert FakeZmq.sent_msgs[0][1] == {'cmd': 'HALT', 'nodes': 'localhost'}

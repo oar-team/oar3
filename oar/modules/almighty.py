@@ -72,7 +72,8 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
-hullot_command = binpath + 'oar3-hulot'
+hulot_command = binpath + 'oar3-hulot'
+#hulot_command = "/etc/oar/sleep_3600000"
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
