@@ -1877,7 +1877,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     msg = '[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job.id)\
                           + '] Bad cpuset file: ' + cpuset_file
                     logger.error(msg)
-                    events.append(('CPUSET_MANAGER_FILE', msg, None))
+                    events.append(('CPUSET_MANAGER_FILE', msg))
                 elif len(bad) > 0:
                     logger.error('[job_finishing_sequence] [' + str(job.id)\
                                  + ' Cpuset error and register event CPUSET_CLEAN_ERROR on nodes : '\
