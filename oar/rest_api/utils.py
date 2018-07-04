@@ -3,7 +3,7 @@ import os
 import sys
 
 
-from flask import request, abort
+from flask import request, abort, current_app
 
 from oar.lib import config
 from oar.lib.utils import reraise, to_unicode, integer_types
@@ -183,3 +183,14 @@ class ArgParser(object):
             if raw_value is not None:
                 raw_kwargs[argname] = raw_value
         return parsed_kwargs, raw_kwargs
+
+def list_paginate(items, offset, limit, error_out=True):
+    if error_out and (offset < 0 or offset > len(items)):
+        abort(404)
+
+    if limit is None:
+        limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+
+    items_paginated = items[offset:min(len(items), offset + limit)]
+
+    return items_paginated

@@ -8,9 +8,9 @@ Define resources api interaction
 """
 import os
 
-from flask import abort
+from flask import url_for, g, abort
 from . import Blueprint
-from ..utils import Arg
+from ..utils import Arg, list_paginate
 
 import oar.lib.tools as tools
 
@@ -20,6 +20,8 @@ OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
 
 @app.route('/ls/<string:path>', methods=['GET'])
 @app.args({'tail': Arg(int)})
+@app.args({'offset': Arg(int, default=0),
+           'limit': Arg(int)})
 @app.need_authentication()
 def ls(path=''):
     user = g.current_user
@@ -36,27 +38,49 @@ def ls(path=''):
     path = '/' + path
     path.replace('~', pw_dir)
      
-    # Check file existency
-    retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
+    # Check directory existency
+    retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path))
     if retcode:
         abort(404)
 
-    # Check file readability
+    # Check directory readability
     retcode = tools.call('{} test -r {}'.format(OARDODO_CMD, path))
     if retcode:
         abort(403)
 
-    # Get the listing
-    ls_results = tools.check_output([OARDODO_CMD, 'ls', '-l', path]).split('\n')
+    # Check if it's a directory
+    file_listing = tools.check_output([OARDODO_CMD, 'ls']).decode().split('\n')
 
-    for ls_res in ls_results:
-        if ls_res:
-            l_name = ls_rs[5]
-            l_type = ls_rs[4]
-            l_size = ls_rs[3]
-            l_mtime = ls_rs[0]
-            l_mode = ls_rs[0]
+    files_with_path = [path + '/' + filename for filename in file_listing[:-1]]
     
+    # Get the listing stat -c "%f_%s_%Y_%F_%n"
+    ls_results = tools.check_output([OARDODO_CMD, 'stat', '-c', '%f_%s_%Y_%F_%n']
+                                    + files_with_path).decode().split('\n')
+
+    file_stats = []
+    for i, ls_res in enumerate(ls_results[:-1]):
+        f_hex_mode, f_size, f_mtime, f_type = ls_res.split('_')
+        file_stats.append({
+            name: file_listing[i],
+            mode: int(f_hex_mode, 16),
+            size: int(f_size),
+            mtime: int(f_mtime),
+            type: f_type
+        })
+
+    list_paginated = list_paginate(file_stats, offset, limit)
+        
+    g.data['total'] = len(list_paginated)
+    url = url_for('%s.%s' % (app.name, endpoint))
+    g.data['links'] = [{'rel': 'rel', 'href': url}]
+    g.data['offset'] = offset
+    g.data['items'] = list_paginate
+
+@app.route('/<string:path_filename>', methods=['GET'])
+@app.args({'tail': Arg(int)})
+def get_file():
+    pass
+
 def chmod():
     pass
 
