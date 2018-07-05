@@ -8,7 +8,7 @@ Define resources api interaction
 """
 import os
 
-from flask import url_for, g, abort
+from flask import url_for, g, abort, send_from_directory
 from . import Blueprint
 from ..utils import Arg, list_paginate
 
@@ -18,6 +18,19 @@ app = Blueprint('media', __name__, url_prefix='/media')
 
 OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
 
+def path_filename_cleaning(path_filename, user):
+    # Security escaping
+    path_filename = re.sub(r'([$,`, ])',r'\\\1', path_filename)
+    
+    #$path =~ s/(\\*)(`|\$)/$1$1\\$2/g;
+
+    # Get the path and replace "~" by the home directory
+    pw_dir = tools.getpwnam(user).pw_dir
+    path_filename = '/' + path_filename
+    path_filename.replace('~', pw_dir)
+
+    return path_filename
+    
 @app.route('/ls/<string:path>', methods=['GET'])
 @app.args({'tail': Arg(int)})
 @app.args({'offset': Arg(int, default=0),
@@ -28,25 +41,17 @@ def ls(path=''):
     os.environ['OARDO_BECOME_USER'] = user
     #$ENV{OARDO_BECOME_USER} = $authenticated_user;
 
-    # Security escaping
-    path = re.sub(r'([$,`, ])',r'\\\1', path)
+    path = path_filename_cleaning(path, user)
     
-    #$path =~ s/(\\*)(`|\$)/$1$1\\$2/g;
-
-    # Get the path and replace "~" by the home directory
-    pw_dir = tools.getpwnam(user).pw_dir
-    path = '/' + path
-    path.replace('~', pw_dir)
-     
-    # Check directory existency
-    retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path))
+    # Check directory's existence
+    retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
     if retcode:
-        abort(404)
+        abort(404, message='Path not found: {}'.format(path))
 
-    # Check directory readability
+    # Check directory's readability
     retcode = tools.call('{} test -r {}'.format(OARDODO_CMD, path))
     if retcode:
-        abort(403)
+        abort(403, message='File could not be read: {}'.format(path))
 
     # Check if it's a directory
     file_listing = tools.check_output([OARDODO_CMD, 'ls']).decode().split('\n')
@@ -78,9 +83,43 @@ def ls(path=''):
 
 @app.route('/<string:path_filename>', methods=['GET'])
 @app.args({'tail': Arg(int)})
-def get_file():
+@app.need_authentication()
+def get_file(path_filename, tail):
+    user = g.current_user
+    os.environ['OARDO_BECOME_USER'] = user
+    
+    path_filename = path_filename_cleaning(path_filename, user)
+
+    # Check file's existence
+    retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(404, message='File not found: {}'.format(path_filename))
+
+    # Check file's readability
+    retcode = tools.call('{} test -r {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(403, message='File could not be read: {}'.format(path_filename))
+
+    file_content = None
+    if tail:        
+        file_content = check_output([OARDODO_CMD, 'cat', path_filename])
+    else:
+        file_content = check_output([OARDODO_CMD, 'tail', '-n', str(tail), path_filename])
+
+    return Response(file_content, mimetype='application/octet-stream')
+
+def upload_file():
     pass
 
 def chmod():
     pass
 
+
+
+
+# Post
+#elif request.headers['Content-Type'] == 'application/octet-stream':
+#        f = open('./binary', 'wb')
+#        f.write(request.data)
+#                f.close()
+#        return "Binary message written!"
