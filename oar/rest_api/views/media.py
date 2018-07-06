@@ -18,7 +18,11 @@ app = Blueprint('media', __name__, url_prefix='/media')
 
 OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
 
-def path_filename_cleaning(path_filename, user):
+def user_and_filename_setup(path_filename):
+    # user setup
+    user = g.current_user
+    os.environ['OARDO_BECOME_USER'] = user
+
     # Security escaping
     path_filename = re.sub(r'([$,`, ])',r'\\\1', path_filename)
     
@@ -37,11 +41,8 @@ def path_filename_cleaning(path_filename, user):
            'limit': Arg(int)})
 @app.need_authentication()
 def ls(path=''):
-    user = g.current_user
-    os.environ['OARDO_BECOME_USER'] = user
-    #$ENV{OARDO_BECOME_USER} = $authenticated_user;
 
-    path = path_filename_cleaning(path, user)
+    path = user_and_filename_setup(path)
     
     # Check directory's existence
     retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
@@ -85,10 +86,8 @@ def ls(path=''):
 @app.args({'tail': Arg(int)})
 @app.need_authentication()
 def get_file(path_filename, tail):
-    user = g.current_user
-    os.environ['OARDO_BECOME_USER'] = user
-    
-    path_filename = path_filename_cleaning(path_filename, user)
+
+    path_filename = user_and_filename_setup(path_filename)
 
     # Check file's existence
     retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
@@ -112,11 +111,8 @@ def get_file(path_filename, tail):
 @app.args({ 'force': Arg(bool, default=0)})
 @app.need_authentication(path_filename)
 def post_file(path_filename):
-    user = g.current_user
-    os.environ['OARDO_BECOME_USER'] = user
     
-    path_filename = path_filename_cleaning(path_filename, user)
-
+    path_filename = user_and_filename_setup(path_filename)
     # Check file's existence
     if not force:
         retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
@@ -152,11 +148,31 @@ def post_file(path_filename):
 @app.route('/<string:path_filename>', methods=['DELETE'])
 @app.need_authentication(path_filename)
 def delete(path_filename):
-    pass
+    path_filename = user_and_filename_setup(path_filename)
+
+    # Check file's existence
+    retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(404, message='File not found: {}'.format(path_filename))
+
+    # Check file readability
+    retcode = tools.call('{} test -w {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(403, message='File or directory is not writeable: {}'.format(path_filename))
+        
+    # Delete the file
+    retcode = tools.call('{} rm -rf {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(501, message='File unkown error, rm -rf failed for : {}'.format(path_filename))
+    return Response('', mimetype='application/octet-stream')
 
 @app.route('/chmod/<string:path_filename>', methods=['DELETE'])
 @app.need_authentication(path_filename)
 def chmod():
-    pass
-
+    path_filename = user_and_filename_setup(path_filename)
+    # Check file's existence
+    retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path_filename))
+    if retcode:
+        abort(404, message='File not found: {}'.format(path_filename))
+        
 
