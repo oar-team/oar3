@@ -8,7 +8,8 @@ Define resources api interaction
 """
 import os
 
-from flask import url_for, g, abort, send_from_directory
+from flask import (url_for, g, abort, send_from_directory, make_response,
+                   Response)
 from . import Blueprint
 from ..utils import Arg, list_paginate
 
@@ -164,7 +165,11 @@ def delete(path_filename):
     retcode = tools.call('{} rm -rf {}'.format(OARDODO_CMD, path_filename))
     if retcode:
         abort(501, message='File unkown error, rm -rf failed for : {}'.format(path_filename))
-    return Response('', mimetype='application/octet-stream')
+
+    response = make_response('', 204)
+    response.mimetype = 'application/octet-stream'
+    
+    return response
 
 @app.route('/chmod/<string:path_filename>', methods=['DELETE'])
 @app.need_authentication(path_filename)
