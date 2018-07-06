@@ -168,10 +168,10 @@ def delete(path_filename):
 
     response = make_response('', 204)
     response.mimetype = 'application/octet-stream'
-    
     return response
 
-@app.route('/chmod/<string:path_filename>', methods=['DELETE'])
+@app.route('/chmod/<string:path_filename>', methods=['POST'])
+@app.args({'mode': Arg(str)})
 @app.need_authentication(path_filename)
 def chmod():
     path_filename = user_and_filename_setup(path_filename)
@@ -180,4 +180,15 @@ def chmod():
     if retcode:
         abort(404, message='File not found: {}'.format(path_filename))
         
+    # Security checking
+    if not mode.isalnum():
+        abort(402, message='Bad mode value: {}'.format(mode)) 
 
+    # Do the chmod
+    retcode = tools.call('{} chmod {} {}'.format(OARDODO_CMD, mode, path_filename))
+    if retcode:
+        abort(500, message='Could not set mode {} on file {}'.format(mode, path_filename))
+
+    response = make_response('', 202)
+    response.mimetype = 'application/octet-stream'
+    return response
