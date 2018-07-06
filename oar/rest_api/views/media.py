@@ -108,18 +108,55 @@ def get_file(path_filename, tail):
 
     return Response(file_content, mimetype='application/octet-stream')
 
-def upload_file():
+@app.route('/<string:path_filename>', methods=['POST', 'PUT'])
+@app.args({ 'force': Arg(bool, default=0)})
+@app.need_authentication(path_filename)
+def post_file(path_filename):
+    user = g.current_user
+    os.environ['OARDO_BECOME_USER'] = user
+    
+    path_filename = path_filename_cleaning(path_filename, user)
+
+    # Check file's existence
+    if not force:
+        retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
+        if not retcode:
+            abort(403, message='The file already exists: {}'.format(path_filename))
+
+    cmd = [OARDODO_CMD, 'bash', '--noprofile', '--norc', '-c', 'cat > ' + path_filename]
+
+    if request.headers['Content-Type'] == 'application/octet-stream':
+        p = tools.Popen(cmd, stdin=PIPE)
+        try: 
+            p.communicate(request.data)
+        except Exception as ex:
+            p.kill()
+            abort(501, message=ex)
+    else:
+        if 'file' not in request.files:
+            abort(400, 'No file part')
+        file = request.files['file']    
+        if file.filename == '':
+            abort(400, 'No selected file')
+        try: 
+            p = tools.Popen(cmd, stdin=file)
+        except Exception as ex:
+            p.kill()
+            abort(501, message=ex)
+            
+    url = url_for('%s.%s' % (app.name, endpoint))
+    g.data['links'] = [{'rel': 'rel', 'href': url}]
+    g.data['status'] = 'created'
+    g.data['success'] = 'true'
+    
+@app.route('/<string:path_filename>', methods=['DELETE'])
+@app.need_authentication(path_filename)
+def delete(path_filename):
     pass
 
+@app.route('/chmod/<string:path_filename>', methods=['DELETE'])
+@app.need_authentication(path_filename)
 def chmod():
     pass
 
 
-
-
-# Post
-#elif request.headers['Content-Type'] == 'application/octet-stream':
-#        f = open('./binary', 'wb')
-#        f.write(request.data)
-#                f.close()
-#        return "Binary message written!"
