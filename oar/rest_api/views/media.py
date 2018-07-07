@@ -37,13 +37,11 @@ def user_and_filename_setup(path_filename):
     return path_filename
     
 @app.route('/ls/<string:path>', methods=['GET'])
-@app.args({'tail': Arg(int)})
-@app.args({'offset': Arg(int, default=0),
-           'limit': Arg(int)})
+@app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
 @app.need_authentication()
-def ls(path=''):
-
-    path = user_and_filename_setup(path)
+def ls(offset, limit, path='~'):
+    #import pdb; pdb.set_trace()
+    #path = user_and_filename_setup(path)
     
     # Check directory's existence
     retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
@@ -61,27 +59,27 @@ def ls(path=''):
     files_with_path = [path + '/' + filename for filename in file_listing[:-1]]
     
     # Get the listing stat -c "%f_%s_%Y_%F_%n"
-    ls_results = tools.check_output([OARDODO_CMD, 'stat', '-c', '%f_%s_%Y_%F_%n']
+    ls_results = tools.check_output([OARDODO_CMD, 'stat', '-c', '%f_%s_%Y_%F']
                                     + files_with_path).decode().split('\n')
 
     file_stats = []
     for i, ls_res in enumerate(ls_results[:-1]):
         f_hex_mode, f_size, f_mtime, f_type = ls_res.split('_')
         file_stats.append({
-            name: file_listing[i],
-            mode: int(f_hex_mode, 16),
-            size: int(f_size),
-            mtime: int(f_mtime),
-            type: f_type
+            'name': file_listing[i],
+            'mode': int(f_hex_mode, 16),
+            'size': int(f_size),
+            'mtime': int(f_mtime),
+            'type': f_type
         })
 
     list_paginated = list_paginate(file_stats, offset, limit)
         
     g.data['total'] = len(list_paginated)
-    url = url_for('%s.%s' % (app.name, endpoint))
+    url = url_for('%s.%s' % (app.name, 'ls'), path=path)
     g.data['links'] = [{'rel': 'rel', 'href': url}]
     g.data['offset'] = offset
-    g.data['items'] = list_paginate
+    g.data['items'] = list_paginated
 
 @app.route('/<string:path_filename>', methods=['GET'])
 @app.args({'tail': Arg(int)})
@@ -110,7 +108,7 @@ def get_file(path_filename, tail):
 
 @app.route('/<string:path_filename>', methods=['POST', 'PUT'])
 @app.args({ 'force': Arg(bool, default=0)})
-@app.need_authentication(path_filename)
+@app.need_authentication()
 def post_file(path_filename):
     
     path_filename = user_and_filename_setup(path_filename)
@@ -147,7 +145,7 @@ def post_file(path_filename):
     g.data['success'] = 'true'
     
 @app.route('/<string:path_filename>', methods=['DELETE'])
-@app.need_authentication(path_filename)
+@app.need_authentication()
 def delete(path_filename):
     path_filename = user_and_filename_setup(path_filename)
 
@@ -172,7 +170,7 @@ def delete(path_filename):
 
 @app.route('/chmod/<string:path_filename>', methods=['POST'])
 @app.args({'mode': Arg(str)})
-@app.need_authentication(path_filename)
+@app.need_authentication()
 def chmod():
     path_filename = user_and_filename_setup(path_filename)
     # Check file's existence
