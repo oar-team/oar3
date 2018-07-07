@@ -64,4 +64,4 @@ def test_app_media_ls_file(client):
     print(res.json, len(res.json['items']))
     print(fake_calls)
     print(fake_check_output_cmd)
-    assert len(res.json['items'] == 2
+    assert len(res.json['items']) == 2
