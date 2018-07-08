@@ -2,7 +2,7 @@
 
 from oar.modules.almighty import (Almighty, signal_handler, finishTag)
 from oar.lib import config
-from .fakezmq import FakeZmq
+from ..fakezmq import FakeZmq
 from ..faketools import (fake_call, fake_called_command, fake_kill, fake_get_date, set_fake_date)
 import oar.lib.tools
 

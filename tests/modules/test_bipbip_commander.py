@@ -3,7 +3,7 @@
 import oar.lib.tools
 from oar.modules.bipbip_commander import BipbipCommander
 from oar.lib import config
-from .fakezmq import FakeZmq
+from ..fakezmq import FakeZmq
 from ..faketools import (fake_call, fake_called_command, FakeProcess, fake_process)
 
 import time

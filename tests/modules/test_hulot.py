@@ -6,7 +6,7 @@ import zmq
 
 from oar.modules.hulot import (Hulot, HulotClient, fill_timeouts, get_timeout)
 from oar.lib import (db, config)
-from .fakezmq import FakeZmq
+from ..fakezmq import FakeZmq
 
 import oar.lib.tools
 import oar.lib.tools as tools

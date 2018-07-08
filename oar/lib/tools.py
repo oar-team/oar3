@@ -58,7 +58,9 @@ DEFAULT_CONFIG = {
     'COSYSTEM_HOSTNAME': '127.0.0.1',
     'DEPLOY_HOSTNAME': '127.0.0.1',
     'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
-    'OAREXEC_DEBUG_MODE' : '1'
+    'OAREXEC_DEBUG_MODE' : '1',
+    'HULOT_SERVER': 'localhost',
+    'HULOT_PORT' : 6670
     }
 
 logger = get_logger("oar.lib.tools")

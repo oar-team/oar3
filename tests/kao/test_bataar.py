@@ -1,6 +1,6 @@
 # coding: utf-8
 import pytest
-from ..modules.fakezmq import FakeZmq
+from ..fakezmq import FakeZmq
 from click.testing import CliRunner
 
 import redis

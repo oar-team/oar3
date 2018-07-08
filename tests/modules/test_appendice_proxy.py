@@ -2,7 +2,7 @@
 
 from oar.modules.appendice_proxy import AppendiceProxy
 from oar.lib import config
-from .fakezmq import FakeZmq
+from ..fakezmq import FakeZmq
 
 import pytest
 import zmq
