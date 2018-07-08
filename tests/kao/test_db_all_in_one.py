@@ -9,9 +9,13 @@ from oar.lib import (db, config, GanttJobsPrediction, Resource)
 from oar.lib.job_handling import (insert_job, set_jobs_start_time, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
+from ..fakezmq import FakeZmq
+
 import oar.lib.tools  # for monkeypatching
 from oar.lib.tools import get_date
 import oar.kao.quotas as qts
+
+import zmq
 
 # import pdb
 
@@ -96,21 +100,13 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'fork_and_feed_stdin',
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
     monkeypatch.setattr(oar.lib.tools, 'send_checkpoint_signal', lambda job: None)
+    monkeypatch.setattr(zmq, 'Context', FakeZmq)
 
-
-@pytest.fixture(scope="function")
-def create_oar_hulot_pipe(request):
-    try:
-        os.mkfifo('/tmp/oar_hulot_pipe')
-        os.system('cat /tmp/oar_hulot_pipe > /dev/null &')
-    except OSError:
-        print('Failed to create FIFO')
-
-    def teardown():
-        os.remove('/tmp/oar_hulot_pipe')
-
-    request.addfinalizer(teardown)
-
+@pytest.fixture(scope="function", autouse=True)
+def setup(request):
+    FakeZmq.reset()
+    config['HULOT_SERVER'] = 'localhost'
+    config['HULOT_PORT'] = 6670
 
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
@@ -265,7 +261,7 @@ def test_db_all_in_one_AR_5(monkeypatch):
 
     db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
     db.commit()
-
+    
     meta_schedule('internal')
 
     job = db['Job'].query.one()
@@ -414,7 +410,7 @@ def test_db_all_in_one_wakeup_node_1(monkeypatch):
 
 @pytest.mark.usefixtures("active_energy_saving")
 def test_db_all_in_one_sleep_node_1(monkeypatch):
-
+    
     now = get_date()
 
     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
@@ -434,10 +430,10 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
             node_list == [u'localhost1', u'localhost2'])
 
 
-@pytest.mark.usefixtures('create_oar_hulot_pipe')
 @pytest.mark.usefixtures("active_energy_saving")
 def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     config['ENERGY_SAVING_INTERNAL'] = 'yes'
+
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
 
     now = get_date()
@@ -450,13 +446,14 @@ def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     job = db['Job'].query.one()
     print(job.state)
     print(node_list)
+    print('FakeZmq.sent_msgs', FakeZmq.sent_msgs)
     assert (job.state == 'Waiting')
+    assert FakeZmq.sent_msgs == {0: [{'cmd': 'WAKEUP', 'nodes': ['localhost0', 'localhost1']}]}
 
-
-@pytest.mark.usefixtures('create_oar_hulot_pipe')
 @pytest.mark.usefixtures('active_energy_saving')
 def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     config['ENERGY_SAVING_INTERNAL'] = 'yes'
+    
     now = get_date()
 
     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
@@ -471,8 +468,11 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     job = db['Job'].query.one()
     print(job.state)
     print(node_list)
+    print('FakeZmq.sent_msgs', FakeZmq.sent_msgs)
     assert (job.state == 'toLaunch')
-
+    # TO DEBUG
+    #assert FakeZmq.sent_msgs == {0: [{'job_id': 1, 'cmd': 'OARRUN', 'args': []}],
+    #                             1: [{'cmd': 'HALT', 'nodes': ['localhost1', 'localhost2']}]}
 
 def test_db_all_in_one_simple_2(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
