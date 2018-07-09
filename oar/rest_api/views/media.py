@@ -7,6 +7,7 @@ Define resources api interaction
 
 """
 import os
+import re
 
 from flask import (url_for, g, abort, send_from_directory, make_response,
                    Response)
@@ -44,7 +45,7 @@ def user_and_filename_setup(path_filename):
 @app.need_authentication()
 def ls(offset, limit, path='~'):
     #import pdb; pdb.set_trace()
-    #path = user_and_filename_setup(path)
+    path = user_and_filename_setup(path)
     
     # Check directory's existence
     retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
