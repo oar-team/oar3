@@ -7,6 +7,8 @@ from ..fakezmq import FakeZmq
 import pytest
 import zmq
 
+fakezmq = FakeZmq()
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
@@ -17,7 +19,7 @@ def setup(request):
     config['APPENDICE_SERVER_PORT'] = '6668'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
-    FakeZmq.reset()
+    fakezmq.reset()
     
     @request.addfinalizer
     def teardown():
@@ -28,36 +30,36 @@ def setup(request):
 
 def test_appendice_proxy_simple(monkeypatch):
 
-    FakeZmq.recv_msgs[0] = ['yop']
+    fakezmq.recv_msgs[0] = ['yop']
 
     appendice_proxy =  AppendiceProxy()
     appendice_proxy.run(False)
 
-    assert FakeZmq.sent_msgs[1][0] == {'cmd': 'yop'}
+    assert fakezmq.sent_msgs[1][0] == {'cmd': 'yop'}
 
 def test_appendice_proxy_OAREXEC(monkeypatch):
 
-    FakeZmq.recv_msgs[0] = ['OAREXEC_10_2_N_34']
+    fakezmq.recv_msgs[0] = ['OAREXEC_10_2_N_34']
     
     appendice_proxy = AppendiceProxy()
     appendice_proxy.run(False)
     
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}
+    assert fakezmq.sent_msgs[2][0] == {'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}
 
 def test_appendice_proxy_OARRUNJOB(monkeypatch):
 
-    FakeZmq.recv_msgs[0] = ['OARRUNJOB_42']
+    fakezmq.recv_msgs[0] = ['OARRUNJOB_42']
     
     appendice_proxy = AppendiceProxy()
     appendice_proxy.run(False)
     
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'OARRUNJOB'}
+    assert fakezmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'OARRUNJOB'}
 
 def test_appendice_proxy_LEONEXTERMINATE(monkeypatch):
 
-    FakeZmq.recv_msgs[0] = ['LEONEXTERMINATE_42']
+    fakezmq.recv_msgs[0] = ['LEONEXTERMINATE_42']
     
     appendice_proxy = AppendiceProxy()
     appendice_proxy.run(False)
     
-    assert FakeZmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'LEONEXTERMINATE'}
+    assert fakezmq.sent_msgs[2][0] == {'job_id': 42, 'args': [], 'cmd': 'LEONEXTERMINATE'}

@@ -11,7 +11,9 @@ import pytest
 
 import zmq
 import oar.lib.tools
-    
+
+fakezmq = FakeZmq()
+
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
@@ -24,7 +26,7 @@ def setup(request):
     config['APPENDICE_SERVER_PORT'] = '6668'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
-    FakeZmq.reset()
+    fakezmq.reset()
 
     @request.addfinalizer
     def teardown():
@@ -34,7 +36,7 @@ def setup(request):
         del config['BIPBIP_COMMANDER_PORT']
 
 def test_bipbip_commander_OAREXEC():
-    FakeZmq.recv_msgs[0] = [{'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}]
+    fakezmq.recv_msgs[0] = [{'job_id': 10, 'args': ['2', 'N', '34'], 'cmd': 'OAREXEC'}]
     bipbip_commander = BipbipCommander()
     bipbip_commander.run(False)
     #bipbip_commander.bipbip_leon_executors[10].join()
@@ -44,7 +46,7 @@ def test_bipbip_commander_OAREXEC():
     assert ['/usr/local/lib/oar/oar3-bipbip', '10', '2', 'N', '34'] == fake_called_command['cmd']
 
 def test_bipbip_commander_LEONEXTERMINATE():
-    FakeZmq.recv_msgs[0] = [{'job_id': 10, 'cmd': 'LEONEXTERMINATE'}]
+    fakezmq.recv_msgs[0] = [{'job_id': 10, 'cmd': 'LEONEXTERMINATE'}]
     bipbip_commander = BipbipCommander()
     bipbip_commander.run(False)
     #bipbip_commander.bipbip_leon_executors[10].join()
@@ -55,7 +57,7 @@ def test_bipbip_commander_LEONEXTERMINATE():
     assert ['/usr/local/lib/oar/oar3-leon', '10'] == fake_called_command['cmd']
     
 def test_bipbip_commander_LEONEXTERMINATE2():
-    FakeZmq.recv_msgs[0] = [{'job_id': 10, 'cmd': 'LEONEXTERMINATE'},
+    fakezmq.recv_msgs[0] = [{'job_id': 10, 'cmd': 'LEONEXTERMINATE'},
                             {'job_id': 10, 'cmd': 'LEONEXTERMINATE'}]
     bipbip_commander = BipbipCommander()
     

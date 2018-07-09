@@ -16,6 +16,8 @@ from oar.lib.tools import get_date
 
 data_store = {}
 
+fakezmq = FakeZmq()
+
 class FakeRedis(object):
     def __init__(self, host='localchost', port='6379'):
         pass
@@ -35,7 +37,7 @@ def setup(request):
     config['BATSCHED_ENDPOINT'] = 'tcp://localhost:6679'
     config['DS_PREFIX'] = 'oar'
     config['WLOAD_BATSIM'] = 'oar'
-    FakeZmq.reset()
+    fakezmq.reset()
 
     @request.addfinalizer
     def teardown():
@@ -76,7 +78,7 @@ def test_simple_submission(monkeypatch):
           ', "type": "EXECUTE_JOB", "data": {"job_id": "oar!' + str(job.id) +\
           '", "alloc": "1-4"}}]}'
 
-    FakeZmq.recv_msgs = {0: [msg]}
+    fakezmq.recv_msgs = {0: [msg]}
 
     meta_schedule('batsim_sched_proxy')
 

@@ -21,6 +21,8 @@ import zmq
 
 node_list = []
 
+fakezmq = FakeZmq()
+fakezmq.reset()
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -104,7 +106,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    FakeZmq.reset()
+    fakezmq.reset()
     config['HULOT_SERVER'] = 'localhost'
     config['HULOT_PORT'] = 6670
 
@@ -114,7 +116,9 @@ def test_db_all_in_one_simple_1(monkeypatch):
     print('job state:', job.state)
 
     # pdb.set_trace()
+    print("fakezmq.num_socket: ", fakezmq.num_socket)
     meta_schedule('internal')
+    print("fakezmq.num_socket: ", fakezmq.num_socket)
     for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
@@ -446,9 +450,9 @@ def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     job = db['Job'].query.one()
     print(job.state)
     print(node_list)
-    print('FakeZmq.sent_msgs', FakeZmq.sent_msgs)
+    print('fakezmq.sent_msgs', fakezmq.sent_msgs)
     assert (job.state == 'Waiting')
-    assert FakeZmq.sent_msgs == {0: [{'cmd': 'WAKEUP', 'nodes': ['localhost0', 'localhost1']}]}
+    assert fakezmq.sent_msgs == {0: [{'cmd': 'WAKEUP', 'nodes': ['localhost0', 'localhost1']}]}
 
 @pytest.mark.usefixtures('active_energy_saving')
 def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
@@ -468,10 +472,10 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     job = db['Job'].query.one()
     print(job.state)
     print(node_list)
-    print('FakeZmq.sent_msgs', FakeZmq.sent_msgs)
+    print('fakezmq.sent_msgs', fakezmq.sent_msgs)
     assert (job.state == 'toLaunch')
     # TO DEBUG
-    #assert FakeZmq.sent_msgs == {0: [{'job_id': 1, 'cmd': 'OARRUN', 'args': []}],
+    #assert fakezmq.sent_msgs == {0: [{'job_id': 1, 'cmd': 'OARRUN', 'args': []}],
     #                             1: [{'cmd': 'HALT', 'nodes': ['localhost1', 'localhost2']}]}
 
 def test_db_all_in_one_simple_2(monkeypatch):

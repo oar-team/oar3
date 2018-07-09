@@ -17,6 +17,8 @@ from oar.kao.bataar import bataar
 def order_json_str_arrays(a):
     return [json.dumps(json.loads(x), sort_keys=True) for x in a]
 
+fakezmq = FakeZmq()
+
 SENT_MSGS_1 = order_json_str_arrays([
     '{"events": [{"data": {"type": "continue_submission"}, "timestamp": 5.0, "type": "NOTIFY"}], "now": 5.0}',
     '{"events": [{"data": {"alloc": "0 - 3", "job_id": "foo!1"}, "timestamp": 15.0, "type": "EXECUTE_JOB"}, {"data": {"type": "continue_submission"}, "timestamp": 15.0, "type": "NOTIFY"}], "now": 15.0}',
@@ -48,7 +50,7 @@ def monkeypatch_datastore_zmq():
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    FakeZmq.reset()
+    fakezmq.reset()
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -56,7 +58,7 @@ def minimal_db_initialization(request):
         yield
 
 def exec_gene(options):
-    FakeZmq.recv_msgs = {0:[
+    fakezmq.recv_msgs = {0:[
         '{"now":5.0, "events":\
 [{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
 {"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}},\
@@ -79,8 +81,8 @@ def exec_gene(options):
     result = runner.invoke(bataar, args)
     print("exit code:", result.exit_code)
     print(result.output)
-    print("Messages sent:", FakeZmq.sent_msgs)
-    return (result,  FakeZmq.sent_msgs)
+    print("Messages sent:", fakezmq.sent_msgs)
+    return (result,  fakezmq.sent_msgs)
 
 @pytest.mark.skip(reason='need lastest version pybatsim ')
 def test_bataar_no_db():    
@@ -141,7 +143,7 @@ def test_bataar_db_best_effort_contiguous(): #TODO need better test to verify al
 
 
 def exec_gene_tokens(options):
-    FakeZmq.recv_msgs = {0:[
+    fakezmq.recv_msgs = {0:[
         '{"now":5.0, "events":\
 [{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
 {"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}}}}]}',
@@ -170,7 +172,7 @@ def exec_gene_tokens(options):
     result = runner.invoke(bataar, args)
     print("exit code:", result.exit_code)
     print(result.output)
-    return (result,  FakeZmq.sent_msgs)
+    return (result,  fakezmq.sent_msgs)
 
 @pytest.mark.skip(reason='Bug pending........................')
 def test_bataar_tokens_no_db():

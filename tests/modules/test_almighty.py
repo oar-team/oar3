@@ -9,6 +9,8 @@ import oar.lib.tools
 import pytest
 import zmq
 
+fakezmq = FakeZmq()
+
 KAO = '/usr/local/lib/oar/kao'
 FINAUD = '/usr/local/lib/oar/oar3-finaud'
 SARKO = '/usr/local/lib/oar/oar3-sarko'
@@ -28,7 +30,7 @@ def setup(request):
     config['APPENDICE_SERVER_PORT'] = '6668'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
     config['BIPBIP_COMMANDER_PORT'] = '6669'
-    FakeZmq.reset()
+    fakezmq.reset()
 
     @request.addfinalizer
     def teardown():
@@ -53,7 +55,7 @@ def setup(request):
     ])
 def test_almighty_state_Qget(command, state, monkeypatch):
     set_fake_date(1000)
-    FakeZmq.recv_msgs[0] = [{'cmd': command}]
+    fakezmq.recv_msgs[0] = [{'cmd': command}]
     almighty = Almighty()
     almighty.run(False)
     assert almighty.state == state
