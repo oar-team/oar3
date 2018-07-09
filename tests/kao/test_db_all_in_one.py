@@ -24,6 +24,12 @@ node_list = []
 fakezmq = FakeZmq()
 fakezmq.reset()
 
+# Set undefined config value to default one
+DEFAULT_CONFIG = {
+    'HULOT_SERVER': 'localhost',
+    'HULOT_PORT' : 6670,
+}
+
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
@@ -106,10 +112,12 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
+    config.setdefault_config(DEFAULT_CONFIG)
     fakezmq.reset()
-    config['HULOT_SERVER'] = 'localhost'
-    config['HULOT_PORT'] = 6670
-
+    oar.lib.tools.zmq_context = None
+    oar.lib.tools.almighty_socket = None
+    oar.lib.tools.bipbip_commander_socket = None
+    
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
