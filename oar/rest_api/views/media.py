@@ -17,6 +17,9 @@ import oar.lib.tools as tools
 
 app = Blueprint('media', __name__, url_prefix='/media')
 
+if 'OARDIR' not in os.environ:
+    os.environ['OARDIR'] = '/usr/local/lib/oar/'
+     
 OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
 
 def user_and_filename_setup(path_filename):
