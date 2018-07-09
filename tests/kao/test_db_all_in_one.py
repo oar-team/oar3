@@ -482,9 +482,10 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     print(node_list)
     print('fakezmq.sent_msgs', fakezmq.sent_msgs)
     assert (job.state == 'toLaunch')
-    # TO DEBUG
-    #assert fakezmq.sent_msgs == {0: [{'job_id': 1, 'cmd': 'OARRUN', 'args': []}],
-    #                             1: [{'cmd': 'HALT', 'nodes': ['localhost1', 'localhost2']}]}
+
+    assert fakezmq.sent_msgs[1][0]['cmd'] == 'HALT'
+    fakezmq.sent_msgs[1][0]['nodes'].sort()
+    assert fakezmq.sent_msgs[1][0]['nodes'] == ['localhost1', 'localhost2']
 
 def test_db_all_in_one_simple_2(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
