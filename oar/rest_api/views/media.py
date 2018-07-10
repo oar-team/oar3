@@ -10,7 +10,7 @@ import os
 import re
 
 from flask import (url_for, g, abort, send_from_directory, make_response,
-                   Response)
+                   Response, request)
 from . import Blueprint
 from ..utils import Arg, list_paginate
 
@@ -29,7 +29,7 @@ def user_and_filename_setup(path_filename):
     os.environ['OARDO_BECOME_USER'] = user
 
     # Security escaping
-    path_filename = re.sub(r'([$,`, ])',r'\\\1', path_filename)
+    path_filename = re.sub(r'([$,`, ])', r'\\\1', path_filename)
     
     #$path =~ s/(\\*)(`|\$)/$1$1\\$2/g;
 
@@ -110,17 +110,16 @@ def get_file(path_filename, tail):
 
     return Response(file_content, mimetype='application/octet-stream')
 
-@app.route('/<string:path_filename>', methods=['POST', 'PUT'])
+@app.route('/<path:path_filename>', methods=['POST', 'PUT'])
 @app.args({ 'force': Arg(bool, default=0)})
 @app.need_authentication()
-def post_file(path_filename):
-    
+def post_file(path_filename, force):
     path_filename = user_and_filename_setup(path_filename)
     # Check file's existence
     if not force:
         retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
         if not retcode:
-            abort(403, message='The file already exists: {}'.format(path_filename))
+            abort(403, 'The file already exists: {}'.format(path_filename))
 
     cmd = [OARDODO_CMD, 'bash', '--noprofile', '--norc', '-c', 'cat > ' + path_filename]
 
@@ -143,7 +142,8 @@ def post_file(path_filename):
             p.kill()
             abort(501, message=ex)
             
-    url = url_for('%s.%s' % (app.name, endpoint))
+    #url = url_for('%s.post_file' % app.name, path_filename=path_filename[1:])
+    url = app.name + path_filename
     g.data['links'] = [{'rel': 'rel', 'href': url}]
     g.data['status'] = 'created'
     g.data['success'] = 'true'

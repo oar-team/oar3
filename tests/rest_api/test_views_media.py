@@ -2,6 +2,8 @@
 import pytest
 import os
 
+from io import BytesIO
+from tempfile import mkstemp
 from flask import url_for
 import oar.lib.tools  # for monkeypatching
 
@@ -58,10 +60,38 @@ def test_app_media_ls_file(client):
     global fake_check_outputs
     fake_check_outputs = [b'yop\nzozo\n',
                           b'43ff_53248_1530972662_directory\n81a4_2509_1530883655_regular file\n']
-    
     res = client.get(url_for('media.ls', path='yop'), headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 200
     print(res.json, len(res.json['items']))
     print(fake_calls)
     print(fake_check_output_cmd)
     assert len(res.json['items']) == 2
+
+def test_app_media_get_file(client):
+    pass
+
+def test_app_media_post_file_already_exist(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0]
+    temp_path = '~/tmp/yop'
+    res = client.post(url_for('media.post_file', path_filename=temp_path),
+                      data = {'file': (BytesIO(b'my file contents'), 'toto.txt')},
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 403
+    assert res.data == b'{\n  "code": 403, \n  "message": "403 Forbidden: The file already exists: /~/tmp/yop"\n}\n'
+
+def test_app_media_post_file(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [1]
+    _, temp_path = mkstemp()
+    res = client.post(url_for('media.post_file', path_filename='~' + temp_path),
+                      data = {'file': (BytesIO(b'my file contents'), 'toto.txt')},
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 200
+
+    
+def test_app_media_delete_file(client):
+    pass
+
+def test_app_media_chmod(client):
+    pass
