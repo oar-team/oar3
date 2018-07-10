@@ -78,7 +78,6 @@ def test_app_media_post_file_already_exist(client):
                       data = {'file': (BytesIO(b'my file contents'), 'toto.txt')},
                       headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 403
-    assert res.data == b'{\n  "code": 403, \n  "message": "403 Forbidden: The file already exists: /~/tmp/yop"\n}\n'
 
 def test_app_media_post_file(client):
     global fake_call_retcodes
