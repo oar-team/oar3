@@ -67,9 +67,42 @@ def test_app_media_ls_file(client):
     print(fake_check_output_cmd)
     assert len(res.json['items']) == 2
 
-def test_app_media_get_file(client):
-    pass
+def test_app_media_get_file_not_exit(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [1]
+    res = client.get(url_for('media.get_file', path_filename='yop'),
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 404
 
+def test_app_media_get_file_unreadble(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 1]
+    res = client.get(url_for('media.get_file', path_filename='yop'),
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 403
+
+def test_app_media_get_file(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 0]
+    global fake_check_outputs
+    fake_check_outputs = [b'fake content']
+    res = client.get(url_for('media.get_file', path_filename='yop'),
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 200
+    print(res.data)
+    assert res.data == b'fake content'
+
+def test_app_media_get_file_tail(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 0]
+    global fake_check_outputs
+    fake_check_outputs = [b'fake content']
+    res = client.get(url_for('media.get_file', path_filename='yop', tail=1),
+                      headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 200
+    print(res.data)
+    assert res.data == b'fake content'
+    
 def test_app_media_post_file_already_exist(client):
     global fake_call_retcodes
     fake_call_retcodes = [0]
@@ -77,7 +110,7 @@ def test_app_media_post_file_already_exist(client):
     res = client.post(url_for('media.post_file', path_filename=temp_path),
                       data = {'file': (BytesIO(b'my file contents'), 'toto.txt')},
                       headers={'X_REMOTE_IDENT': 'bob'})
-    assert res.status_code == 403
+    assert res.status_code == 403    
 
 def test_app_media_post_file(client):
     global fake_call_retcodes

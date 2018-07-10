@@ -50,12 +50,12 @@ def ls(offset, limit, path='~'):
     # Check directory's existence
     retcode = tools.call('{} test -d {}'.format(OARDODO_CMD, path))
     if retcode:
-        abort(404, message='Path not found: {}'.format(path))
+        abort(404, 'Path not found: {}'.format(path))
 
     # Check directory's readability
     retcode = tools.call('{} test -r {}'.format(OARDODO_CMD, path))
     if retcode:
-        abort(403, message='File could not be read: {}'.format(path))
+        abort(403, 'File could not be read: {}'.format(path))
 
     # Check if it's a directory
     file_listing = tools.check_output([OARDODO_CMD, 'ls']).decode().split('\n')
@@ -85,7 +85,7 @@ def ls(offset, limit, path='~'):
     g.data['offset'] = offset
     g.data['items'] = list_paginated
 
-@app.route('/<string:path_filename>', methods=['GET'])
+@app.route('/<path:path_filename>', methods=['GET'])
 @app.args({'tail': Arg(int)})
 @app.need_authentication()
 def get_file(path_filename, tail):
@@ -95,19 +95,18 @@ def get_file(path_filename, tail):
     # Check file's existence
     retcode = tools.call('{} test -f {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(404, message='File not found: {}'.format(path_filename))
+        abort(404, 'File not found: {}'.format(path_filename))
 
     # Check file's readability
     retcode = tools.call('{} test -r {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(403, message='File could not be read: {}'.format(path_filename))
+        abort(403, 'File could not be read: {}'.format(path_filename))
 
     file_content = None
     if tail:        
-        file_content = check_output([OARDODO_CMD, 'cat', path_filename])
+        file_content = tools.check_output([OARDODO_CMD, 'tail', '-n', str(tail), path_filename])
     else:
-        file_content = check_output([OARDODO_CMD, 'tail', '-n', str(tail), path_filename])
-
+        file_content = tools.check_output([OARDODO_CMD, 'cat', path_filename])
     return Response(file_content, mimetype='application/octet-stream')
 
 @app.route('/<path:path_filename>', methods=['POST', 'PUT'])
@@ -129,7 +128,7 @@ def post_file(path_filename, force):
             p.communicate(request.data)
         except Exception as ex:
             p.kill()
-            abort(501, message=ex)
+            abort(501, ex)
     else:
         if 'file' not in request.files:
             abort(400, 'No file part')
@@ -140,7 +139,7 @@ def post_file(path_filename, force):
             p = tools.Popen(cmd, stdin=file)
         except Exception as ex:
             p.kill()
-            abort(501, message=ex)
+            abort(501, ex)
             
     #url = url_for('%s.post_file' % app.name, path_filename=path_filename[1:])
     url = app.name + path_filename
@@ -156,17 +155,17 @@ def delete(path_filename):
     # Check file's existence
     retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(404, message='File not found: {}'.format(path_filename))
+        abort(404, 'File not found: {}'.format(path_filename))
 
     # Check file readability
     retcode = tools.call('{} test -w {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(403, message='File or directory is not writeable: {}'.format(path_filename))
+        abort(403, 'File or directory is not writeable: {}'.format(path_filename))
         
     # Delete the file
     retcode = tools.call('{} rm -rf {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(501, message='File unkown error, rm -rf failed for : {}'.format(path_filename))
+        abort(501, 'File unkown error, rm -rf failed for : {}'.format(path_filename))
 
     response = make_response('', 204)
     response.mimetype = 'application/octet-stream'
@@ -180,16 +179,16 @@ def chmod():
     # Check file's existence
     retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path_filename))
     if retcode:
-        abort(404, message='File not found: {}'.format(path_filename))
+        abort(404, 'File not found: {}'.format(path_filename))
         
     # Security checking
     if not mode.isalnum():
-        abort(402, message='Bad mode value: {}'.format(mode)) 
+        abort(402, 'Bad mode value: {}'.format(mode)) 
 
     # Do the chmod
     retcode = tools.call('{} chmod {} {}'.format(OARDODO_CMD, mode, path_filename))
     if retcode:
-        abort(500, message='Could not set mode {} on file {}'.format(mode, path_filename))
+        abort(500, 'Could not set mode {} on file {}'.format(mode, path_filename))
 
     response = make_response('', 202)
     response.mimetype = 'application/octet-stream'
