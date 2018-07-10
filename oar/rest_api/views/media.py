@@ -40,7 +40,7 @@ def user_and_filename_setup(path_filename):
 
     return path_filename
     
-@app.route('/ls/<string:path>', methods=['GET'])
+@app.route('/ls/<path:path>', methods=['GET'])
 @app.args({'offset': Arg(int, default=0), 'limit': Arg(int)})
 @app.need_authentication()
 def ls(offset, limit, path='~'):
@@ -171,19 +171,19 @@ def delete(path_filename):
     response.mimetype = 'application/octet-stream'
     return response
 
-@app.route('/chmod/<string:path_filename>', methods=['POST'])
+@app.route('/chmod/<path:path_filename>', methods=['POST'])
 @app.args({'mode': Arg(str)})
 @app.need_authentication()
-def chmod():
+def chmod(path_filename, mode):
     path_filename = user_and_filename_setup(path_filename)
     # Check file's existence
     retcode = tools.call('{} test -e {}'.format(OARDODO_CMD, path_filename))
     if retcode:
         abort(404, 'File not found: {}'.format(path_filename))
-        
+
     # Security checking
     if not mode.isalnum():
-        abort(402, 'Bad mode value: {}'.format(mode)) 
+        abort(400, 'Bad mode value: {}'.format(mode)) 
 
     # Do the chmod
     retcode = tools.call('{} chmod {} {}'.format(OARDODO_CMD, mode, path_filename))

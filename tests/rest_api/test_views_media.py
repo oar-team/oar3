@@ -125,30 +125,55 @@ def test_app_media_post_file(client):
 def test_app_media_delete_file_not_exit(client):
     global fake_call_retcodes
     fake_call_retcodes = [1]
-    res = client.delete(url_for('media.get_file', path_filename='yop'),
+    res = client.delete(url_for('media.delete', path_filename='yop'),
                         headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 404
     
 def test_app_media_delete_file_unreadable(client):
     global fake_call_retcodes
     fake_call_retcodes = [0, 1]
-    res = client.delete(url_for('media.get_file', path_filename='yop'),
+    res = client.delete(url_for('media.delete', path_filename='yop'),
                         headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 403
     
 def test_app_media_delete_file_rm_error(client):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0, 1]
-    res = client.delete(url_for('media.get_file', path_filename='yop'),
+    res = client.delete(url_for('media.delete', path_filename='yop'),
                         headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 501
     
 def test_app_media_delete_file(client):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0, 0]
-    res = client.delete(url_for('media.get_file', path_filename='yop'),
+    res = client.delete(url_for('media.delete', path_filename='yop'),
                         headers={'X_REMOTE_IDENT': 'bob'})
     assert res.status_code == 204
 
-def test_app_media_chmod(client):
-    pass
+def test_app_media_chmod_file_not_exit(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [1]
+    res = client.post(url_for('media.chmod', path_filename='yop', mode="755"),
+                        headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 404
+    
+def test_app_media_chmod_file_not_alnum(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0]
+    res = client.post(url_for('media.chmod', path_filename='yop', mode='###'),
+                        headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 400
+    
+def test_app_media_chmod_file_chmod_error(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 1]
+    res = client.post(url_for('media.chmod', path_filename='yop', mode='755'),
+                        headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 500
+
+def test_app_media_chmod_file_chmod(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 0]
+    res = client.post(url_for('media.chmod', path_filename='yop', mode='755'),
+                        headers={'X_REMOTE_IDENT': 'bob'})
+    assert res.status_code == 202
