@@ -147,7 +147,7 @@ def post_file(path_filename, force):
     g.data['status'] = 'created'
     g.data['success'] = 'true'
     
-@app.route('/<string:path_filename>', methods=['DELETE'])
+@app.route('/<path:path_filename>', methods=['DELETE'])
 @app.need_authentication()
 def delete(path_filename):
     path_filename = user_and_filename_setup(path_filename)
