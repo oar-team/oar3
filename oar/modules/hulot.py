@@ -44,15 +44,15 @@ import zmq
 DEFAULT_CONFIG = {
     'HULOT_SERVER': 'localhost',
     'HULOT_PORT' : 6670,
-    'ENERGY_SAVING_WINDOW_SIZE': 25,
+    'ENERGY_SAVING_WINDOW_FORKER_SIZE': 20,
     'ENERGY_SAVING_WINDOW_TIME': 60,
     'ENERGY_SAVING_WINDOW_TIMEOUT': 120,
     'ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT': 900,
     'ENERGY_MAX_CYCLES_UNTIL_REFRESH': 5000,
     'OAR_RUNTIME_DIRECTORY': '/var/lib/oar',
     'ENERGY_SAVING_NODES_KEEPALIVE': "type='default':0",
-    'ENERGY_SAVING_WINDOW_FORKER_BYPASS': 'yes',
-    'ENERGY_SAVING_WINDOW_FORKER_SIZE': 20
+    #TODO REMOVE 'ENERGY_SAVING_WINDOW_FORKER_BYPASS': 'yes',
+    #TODO REMOVE   'ENERGY_SAVING_WINDOW_SIZE': 25,
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
@@ -214,11 +214,11 @@ class Hulot(object):
                     return
                 self.keepalive[properties] = {'nodes': [], 'min': int(nb_nodes)}
                 logger.debug('Keepalive(' + properties + ') => ' + nb_nodes)
-
+        self.window_forker = WindowForker(config['ENERGY_SAVING_WINDOW_FORKER_SIZE'],
+                                          config['ENERGY_SAVING_WINDOW_TIMEOUT'])       
         # TODO
         #my $count_cycles;
         #
-
 
     def run(self, loop=True):
         logger.info("Starting Hulot's main loop")
@@ -230,6 +230,9 @@ class Hulot(object):
         count_cycles = 1
 
         while True:
+
+            self.window_forker.check_executors(nodes_list_running)
+            
             message = self.socket.recv_json()
 
             command = message['cmd']
@@ -395,7 +398,7 @@ class Hulot(object):
                         # Change state node to "Absent" and halt it
                         change_node_state(node, 'Absent', config)
                         logger.debug("Hulot module puts node '" + node +\
-                                     "' in energy saving mode (state~Absent)")
+                                     "' in energy saving mode (state: Absent/StandBy)")
                         command_toLaunch.append(('HALT', node))
 
                 else:
@@ -412,32 +415,7 @@ class Hulot(object):
             logger.debug('Launching commands to nodes')
             # Launching commands
             if command_toLaunch:
-                if config['ENERGY_SAVING_WINDOW_FORKER_BYPASS'] == 'yes':
-                    #Strings that will be passed to wakeup and shutdown commands
-                    nodes_toWakeUp = []
-                    nodes_toShutDown = []
-
-                    #Build strings to pass to wakeup and shutdown commands
-                    for cmd_node in command_toLaunch:
-                        cmd, node = cmd_node
-                        if cmd == 'HALT':
-                            nodes_toShutDown.append(node)
-                            add_new_event_with_host('HALT_NODE', 0,
-                                                    'Node ' + node + ' halt request', [node])
-                        else: #cmd == 'WAKEUP'
-                            nodes_toWakeUp.append(node)
-                            add_new_event_with_host('WAKEUP_NODE', 0,
-                                                    'Node ' + node + ' wake-up request', [node])
-
-                        executor = Process(target=command_executor, args=(cmd_node,))
-                        executor.start()
-                        executor.join()
-                        # TODO add Timeout
-                else:
-                    # Use the window forker to execute commands in parallel
-                    logger.debug('Launching commands to nodes by using WindowForker')
-                    window_forker(command_toLaunch, config['ENERGY_SAVING_WINDOW_SIZE'],
-                                  config['ENERGY_SAVING_WINDOW_TIMEOUT'])
+                self.window_forker.add_commands_toLaunch(command_toLaunch)
 
             # Adds to running list last new launched commands
             for node, cmd_info in nodes_list_to_process.items():
@@ -474,42 +452,74 @@ def command_executor(cmd_node):
         if 'ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD' not in config:
             logger.error('ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD is undefined')
         command_to_exec += config['ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD']
-    # TODO returncode,
+
     exit_code = tools.call(command_to_exec, shell=True)
     return exit_code
 
-def window_forker(commands, window_size, timeout):
-    
-    #Build strings to pass to wakeup and shutdown commands
-    halt_nodes = []
-    wakeup_nodes = []
+class WindowForker(object):
+    def __init__(self, window_size, timeout):
+        self.timeout = timeout
+        self.pool =  Pool(processes=window_size)
+        self.executors = {}
+        
+    def add_commands_toLaunch(self, commands):
+        #Build strings to pass to wakeup and shutdown commands
+        halt_nodes = []
+        wakeup_nodes = []
 
-    for cmd_node in commands:
-        cmd, node = cmd_node
-        if cmd == 'HALT':
-            halt_nodes.append(node)
-        else: #cmd == 'WAKEUP'
-            wakeup_nodes.append(node)
-
-    if halt_nodes:
-        add_new_event_with_host('HALT_NODE', 0,
-                                'Node ' + node + ' halt request', halt_nodes)
-    if wakeup_nodes:
-        add_new_event_with_host('WAKEUP_NODE', 0,
-                                'Node ' + node + ' wake-up request', wakeup_nodes)
-
-    pool = Pool(processes=window_size)
-    executors = {pool.apply_async(command_executor, (cmd,)): cmd[1] for cmd in commands}
-
-    for executor, cmd_node in executors.items():
-        try:
-            executor.wait(timeout)
-        except TimeoutError:
+        for cmd_node in commands:
             cmd, node = cmd_node
-            logger.warning("Execution of command '" + cmd + "' timeouted on node '" + node + "'") 
-            # TODO kill process               
+            if cmd == 'HALT':
+                halt_nodes.append(node)
+            else: #cmd == 'WAKEUP'
+                wakeup_nodes.append(node)
 
+        if halt_nodes:
+            add_new_event_with_host('HALT_NODE', 0,
+                                    'Node ' + node + ' halt request', halt_nodes)
+        if wakeup_nodes:
+            add_new_event_with_host('WAKEUP_NODE', 0,
+                                    'Node ' + node + ' wake-up request', wakeup_nodes)
 
+        for cmd_node in commands:
+            cmd, node = cmd_node
+            self.executors[self.pool.apply_async(command_executor, (cmd,))] = (node, cmd, tools.get_date)
+    
+    def check_executors(self, nodes_list_running):
+        exectuors_toRemove = []
+        now = tools.get_date()
+        for executor, data in self.executors:
+            node, cmd, date = data
+            if executor.ready():
+                exectuors_toRemove.append(executor)
+                exit_status = executor.get()
+                if exit_status != 0:
+                    # Suspect node if error
+                    change_node_state(node, 'Suspected')
+                    message = 'Node ' + node +\
+                              ' was suspected because an error occurred with a command launched by Hulot'
+                    add_new_event_with_host('LOG_SUSPECTED', 0, message, [node])
+                else:
+                    if cmd == 'HALT': # WAKEUP case is addressed in main run loop 
+                        del nodes_list_running[node]
+
+            elif now - date > self.timeout:
+                exectuors_toRemove.append(executor)
+                try:
+                    # Force timeout to finish executor
+                    executor.get(timeout=0)
+                except:
+                    if cmd == 'HALT': # WAKEUP case is addressed in main run loop
+                        # Suspect node if error
+                        change_node_state(node, 'Suspected')
+                        message = 'Node ' + node +\
+                                  ' was suspected because shutdown command launched by Hulot timeouted'
+                        add_new_event_with_host('LOG_SUSPECTED', 0, message, [node])
+                        del nodes_list_running[node]
+
+        for executor in exectuors_toRemove:
+            del self.executors[executor]
+                
 def main():   # pragma: no cover
     hulot = Hulot()
     if hulot.exit_code:
