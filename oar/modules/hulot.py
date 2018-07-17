@@ -120,7 +120,8 @@ class HulotClient(object):
     def __init__(self):
         # Initialize zeromq context
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUSH) # to signal Almighty
+        self.socket = self.context.socket(zmq.PUSH) # To signal Almighty
+        self.socket.setsockopt(zmq.LINGER, 5000) # To allow client program exit if Hulot is not ready
         try:
             self.socket.connect('tcp://' + config['HULOT_SERVER'] + ':' + str(config['HULOT_PORT']))
         except:

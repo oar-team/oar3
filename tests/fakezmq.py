@@ -14,6 +14,9 @@ class FakeZmqSocket(object):
         self.fakezmq = fakezmq
         self.fakezmq.sent_msgs[self.socket_id] = []
 
+    def setsockopt(self, x,y):
+        pass
+
     def bind(self, url):
         pass
 
@@ -34,7 +37,7 @@ class FakeZmqSocket(object):
     def send_json(self, msg):
         print("send_json", self.socket_id, msg)
         self.fakezmq.sent_msgs[self.socket_id].append(msg)
-
+    
     def _pop_msg(self):
         msgs = self.fakezmq.recv_msgs[self.socket_id]
         if len(msgs) == 0:

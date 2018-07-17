@@ -27,19 +27,8 @@ DEFAULT_CONFIG = {
 
 config.setdefault_config(DEFAULT_CONFIG)
 
-# retrieve umask and set new one
-#old_umask = os.umask(0o022) # TODO TOREMOVE ?
-
-# TODO
-# my $oldfh = select(STDERR); $| = 1; select($oldfh);
-# $oldfh = select(STDOUT); $| = 1; select($oldfh);
-
-
 # Everything is run by oar user (The real uid of this process.)
 os.environ['OARDO_UID'] = str(os.geteuid())
-
-# TODO
-# my $Redirect_STD_process = OAR::Modules::Judas::redirect_everything();
 
 logger = get_logger("oar.modules.almighty", forward_stderr=True)
 logger.info('Start Almighty')
@@ -72,8 +61,7 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
-#hulot_command = binpath + 'oar3-hulot'
-hulot_command = "/etc/oar/sleep_3600000"
+hulot_command = binpath + 'oar3-hulot'
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -298,11 +286,9 @@ class Almighty(object):
                 return 10
 
             # We check Hulot
-            logger.info("Before check Hulot.")
             if self.hulot and not check_hulot(self.hulot):
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
                 start_hulot(self)
-                logger.info("After check Hulot.")
             # QGET
             elif self.state == 'Qget':
                 #if len(self.command_queue) > 0:
