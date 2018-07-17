@@ -72,8 +72,8 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 
 proxy_appendice_command = binpath + 'oar3-appendice-proxy'
 bipbip_commander = binpath + 'oar3-bipbip-commander'
-hulot_command = binpath + 'oar3-hulot'
-#hulot_command = "/etc/oar/sleep_3600000"
+#hulot_command = binpath + 'oar3-hulot'
+hulot_command = "/etc/oar/sleep_3600000"
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -298,10 +298,11 @@ class Almighty(object):
                 return 10
 
             # We check Hulot
+            logger.info("Before check Hulot.")
             if self.hulot and not check_hulot(self.hulot):
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
                 start_hulot(self)
-
+                logger.info("After check Hulot.")
             # QGET
             elif self.state == 'Qget':
                 #if len(self.command_queue) > 0:

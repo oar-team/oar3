@@ -60,7 +60,7 @@ config.setdefault_config(DEFAULT_CONFIG)
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 
-def  check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process):
+def check_reminded_list(nodes_list_running, nodes_list_to_remind, nodes_list_to_process):
     # Checks if some nodes in list_to_remind can be processed
     nodes_toRemove = []
     for node, cmd_info in nodes_list_to_remind.items():
@@ -411,9 +411,10 @@ class Hulot(object):
             for node in nodes_toRemove_from_list_to_process:
                 del nodes_list_to_process[node]
                 
-            logger.debug('Launching commands to nodes')
+            
             # Launching commands
             if command_toLaunch:
+                logger.debug('Launching commands to nodes')
                 self.window_forker.add_commands_toLaunch(command_toLaunch)
 
             # Adds to running list last new launched commands
@@ -465,7 +466,6 @@ class WindowForker(object):
         #Build strings to pass to wakeup and shutdown commands
         halt_nodes = []
         wakeup_nodes = []
-
         for cmd_node in commands:
             cmd, node = cmd_node
             if cmd == 'HALT':
@@ -482,7 +482,8 @@ class WindowForker(object):
 
         for cmd_node in commands:
             cmd, node = cmd_node
-            self.executors[self.pool.apply_async(command_executor, (cmd,))] = (node, cmd, tools.get_date())
+            self.executors[self.pool.apply_async(command_executor,
+                                                 (cmd_node,))] = (node, cmd, tools.get_date())
     
     def check_executors(self, nodes_list_running):
         executors_toRemove = []
