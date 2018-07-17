@@ -222,7 +222,6 @@ class Hulot(object):
 
     def run(self, loop=True):
         logger.info("Starting Hulot's main loop")
-
         nodes_list_to_process = {}
         nodes_list_to_remind = self.nodes_list_to_remind
         nodes_list_running = self.nodes_list_running
@@ -363,7 +362,7 @@ class Hulot(object):
             # Get the timeout taking into account the number of nodes
             # already waking up + the number of nodes to wake up
             timeout = get_timeout(self.timeouts, len(nodes_list_running) + len(nodes_list_to_process))
-
+            
             nodes_toRemove_from_list_to_process = []
             for node, cmd_info in nodes_list_to_process.items():
                 cmd = cmd_info['command']
@@ -483,15 +482,15 @@ class WindowForker(object):
 
         for cmd_node in commands:
             cmd, node = cmd_node
-            self.executors[self.pool.apply_async(command_executor, (cmd,))] = (node, cmd, tools.get_date)
+            self.executors[self.pool.apply_async(command_executor, (cmd,))] = (node, cmd, tools.get_date())
     
     def check_executors(self, nodes_list_running):
-        exectuors_toRemove = []
+        executors_toRemove = []
         now = tools.get_date()
-        for executor, data in self.executors:
-            node, cmd, date = data
+        for executor, data in self.executors.items():
+            node, cmd, launching_date = data
             if executor.ready():
-                exectuors_toRemove.append(executor)
+                executors_toRemove.append(executor)
                 exit_status = executor.get()
                 if exit_status != 0:
                     # Suspect node if error
@@ -503,8 +502,8 @@ class WindowForker(object):
                     if cmd == 'HALT': # WAKEUP case is addressed in main run loop 
                         del nodes_list_running[node]
 
-            elif now - date > self.timeout:
-                exectuors_toRemove.append(executor)
+            elif now - launching_date > self.timeout:
+                executors_toRemove.append(executor)
                 try:
                     # Force timeout to finish executor
                     executor.get(timeout=0)
@@ -517,7 +516,7 @@ class WindowForker(object):
                         add_new_event_with_host('LOG_SUSPECTED', 0, message, [node])
                         del nodes_list_running[node]
 
-        for executor in exectuors_toRemove:
+        for executor in executors_toRemove:
             del self.executors[executor]
                 
 def main():   # pragma: no cover
