@@ -279,3 +279,10 @@ def test_hulot_window_forker_check_executors():
     print(nodes_list_running)
     assert nodes_list_running ==  {'node2': 'command_and_args'}
     
+def test_hulot_window_forker_check_executors_timeout():
+    wf = WindowForker(1, 10)
+    wf.executors = { wf.pool.apply_async(yop, (0,)): ('localhost', 'HALT', 0)}
+    nodes_list_running = {'localhost': 'command_and_args'}
+    wf.check_executors(nodes_list_running)
+    print(nodes_list_running)
+    assert nodes_list_running ==  {}

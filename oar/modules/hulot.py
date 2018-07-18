@@ -509,7 +509,7 @@ class WindowForker(object):
                 try:
                     # Force timeout to finish executor
                     executor.get(timeout=0)
-                except:
+                except TimeoutError:
                     if cmd == 'HALT': # WAKEUP case is addressed in main run loop
                         # Suspect node if error
                         change_node_state(node, 'Suspected')
