@@ -496,7 +496,7 @@ class WindowForker(object):
                 exit_status = executor.get()
                 if exit_status != 0:
                     # Suspect node if error
-                    change_node_state(node, 'Suspected')
+                    change_node_state(node, 'Suspected', config)
                     message = 'Node ' + node +\
                               ' was suspected because an error occurred with a command launched by Hulot'
                     add_new_event_with_host('LOG_SUSPECTED', 0, message, [node])
@@ -512,7 +512,7 @@ class WindowForker(object):
                 except TimeoutError:
                     if cmd == 'HALT': # WAKEUP case is addressed in main run loop
                         # Suspect node if error
-                        change_node_state(node, 'Suspected')
+                        change_node_state(node, 'Suspected', config)
                         message = 'Node ' + node +\
                                   ' was suspected because shutdown command launched by Hulot timeouted'
                         add_new_event_with_host('LOG_SUSPECTED', 0, message, [node])

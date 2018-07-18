@@ -265,7 +265,8 @@ def test_hulot_command_executor(monkeypatch):
     print(called_command)
     assert called_command == 'echo "node1" | wakeup_cmd'
 
-def yop(a):
+def yop(a,b=0):
+    time.sleep(b)
     return a
 def test_hulot_window_forker_check_executors():
     wf = WindowForker(1, 10)
@@ -281,7 +282,7 @@ def test_hulot_window_forker_check_executors():
     
 def test_hulot_window_forker_check_executors_timeout():
     wf = WindowForker(1, 10)
-    wf.executors = { wf.pool.apply_async(yop, (0,)): ('localhost', 'HALT', 0)}
+    wf.executors = { wf.pool.apply_async(yop, (0,3)): ('localhost', 'HALT', 0)}
     nodes_list_running = {'localhost': 'command_and_args'}
     wf.check_executors(nodes_list_running)
     print(nodes_list_running)
