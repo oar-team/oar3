@@ -271,14 +271,16 @@ def yop(a,b=0):
 def test_hulot_window_forker_check_executors():
     wf = WindowForker(1, 10)
     wf.executors = { wf.pool.apply_async(yop, (0,)): ('node1', 'HALT', tools.get_date()),
-                     wf.pool.apply_async(yop, (0,)): ('node2', 'WAKEUP', tools.get_date())}
-    nodes_list_running = {'node1': 'command_and_args', 'node2': 'command_and_args'}
+                     wf.pool.apply_async(yop, (0,)): ('node2', 'WAKEUP', tools.get_date()),
+                     wf.pool.apply_async(yop, (1,)): ('node3', 'HALT', tools.get_date())}
+    nodes_list_running = {'node1': 'command_and_args', 'node2': 'command_and_args',
+                          'node3': 'command_and_args'}
     while True:
         wf.check_executors(nodes_list_running)
-        if len(wf.executors) != 2:
+        if len(wf.executors) != 3:
             break
     print(nodes_list_running)
-    assert nodes_list_running ==  {'node2': 'command_and_args'}
+    assert nodes_list_running ==  {'node2': 'command_and_args', 'node3': 'command_and_args'}
     
 def test_hulot_window_forker_check_executors_timeout():
     wf = WindowForker(1, 10)
