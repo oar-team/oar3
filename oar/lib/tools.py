@@ -432,9 +432,11 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
     #print(error)
     
     if config['OAREXEC_DEBUG_MODE'] in ['1', 1, 'yes', 'YES']:
-        logger.debug('SSH output: ' + output)
-        logger.debug('SSH error: ' + error)
-    
+        if output:
+            logger.debug('SSH stdout: ' + output)
+        if error:
+            logger.debug('SSH stderr: ' + error)
+
     regex_ssh_rdv = re.compile('^' + config['SSH_RENDEZ_VOUS'] + '$')
     for line in output.split('\n'):
         if re.match(regex_ssh_rdv, line):
