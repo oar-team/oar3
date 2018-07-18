@@ -4,7 +4,8 @@ import pytest
 
 import zmq
 
-from oar.modules.hulot import (Hulot, HulotClient, fill_timeouts, get_timeout)
+from oar.modules.hulot import (Hulot, HulotClient, fill_timeouts, get_timeout,
+                               command_executor, WindowForker)
 from oar.lib import (db, config)
 from ..fakezmq import FakeZmq
 
@@ -27,7 +28,7 @@ DEFAULT_CONFIG = {
     'ENERGY_SAVING_NODES_KEEPALIVE': "type='default':0",
     'ENERGY_SAVING_WINDOW_FORKER_BYPASS': 'yes',
     'ENERGY_SAVING_WINDOW_FORKER_SIZE': 20,
-    'ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD': 'wake_cmd',
+    'ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD': 'wakeup_cmd',
     'ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD': 'sleep_cmd'
 }
 
@@ -35,6 +36,7 @@ called_command = ''
 def fake_call(cmd, shell):
     global called_command
     called_command = cmd
+    return 0
 
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
@@ -254,3 +256,15 @@ def test_hulot_client(monkeypatch):
     assert fakezmq.sent_msgs[0][1] == {'cmd': 'HALT', 'nodes': 'localhost'}
     hulot_ctl.wake_up_nodes('localhost')
     assert fakezmq.sent_msgs[0][2] == {'cmd': 'WAKEUP', 'nodes': 'localhost'}
+
+def test_hulot_command_executor(monkeypatch):
+    assert command_executor(('HALT', 'node1')) == 0
+    print(called_command)
+    assert called_command == 'echo "node1" | sleep_cmd'
+    assert command_executor(('WAKEUP', 'node1')) == 0
+    print(called_command)
+    assert called_command == 'echo "node1" | wakeup_cmd'
+
+    #wf = WindowForker(1, 10)
+    #wf.executorsself.pool.apply_async(command_executor,
+    
