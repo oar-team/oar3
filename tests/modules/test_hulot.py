@@ -265,6 +265,15 @@ def test_hulot_command_executor(monkeypatch):
     print(called_command)
     assert called_command == 'echo "node1" | wakeup_cmd'
 
-    #wf = WindowForker(1, 10)
-    #wf.executorsself.pool.apply_async(command_executor,
+def yop(a):
+    return a
+def test_hulot_window_forker_check_executors():
+
+    wf = WindowForker(1, 10)
+    wf.executors = { wf.pool.apply_async(yop, (0,)): ('node1', 'HALT', tools.get_date()),
+                     wf.pool.apply_async(yop, (0,)): ('node2', 'WAKEUP', tools.get_date())}
+    nodes_list_running = {'node1': 'command_and_args', 'node2': 'command_and_args'}
+    wf.check_executors(nodes_list_running)
+    print(nodes_list_running)
+    assert nodes_list_running ==  {'node2': 'command_and_args'}
     
