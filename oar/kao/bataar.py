@@ -340,7 +340,7 @@ class BatSched(BatsimScheduler):
 
 
         print("Ids of jobs to launch: " + str(*jids_to_launch))
-        print("Time befort scheduling round: ", self.bs._current_time, self.sched_delay)
+        print("Time before scheduling round: ", self.bs._current_time, self.sched_delay)
         # update time
         real_sched_time = time.time() - real_time
         if self.sched_delay == -1:
@@ -366,7 +366,7 @@ class BatSched(BatsimScheduler):
                 scheduled_jobs.append(ds_job)
                 jobs_res[ds_job.id] = res
 
-            self.bs.start_jobs(scheduled_jobs, jobs_res)
+            self.bs.start_jobs_str_procset(scheduled_jobs, jobs_res)
 
         #real_sched_time = time.time() - real_time
         #if self.sched_delay == -1:
