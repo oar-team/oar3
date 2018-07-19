@@ -189,7 +189,7 @@ class BatSched(BatsimScheduler):
 
     def onAfterBatsimInit(self):
         """Initialiaze OAR's structures related to plaform (as resources and theirs hierarchies)"""
-        self.nb_res = self.bs.nb_res
+        self.nb_res = self.bs.nb_resources
         nb_res = self.nb_res
         node_size = self.node_size
 
@@ -197,7 +197,7 @@ class BatSched(BatsimScheduler):
             hy_resource_id = [ProcSet(i) for i in range(1, nb_res+1)]
             hierarchy = {'resource_id': hy_resource_id}
             if node_size > 0:
-                node_id = [ProcSet((node_size*i, node_size*(i+1)-1)) for i in range(int(nb_res/node_size))]
+                node_id = [ProcSet((node_size*i+1, node_size*(i+1))) for i in range(int(nb_res/node_size))]
                 hierarchy['node'] = node_id
 
             print('hierarchy: ', hierarchy)
@@ -211,7 +211,7 @@ class BatSched(BatsimScheduler):
 
             res_set = ResourceSetSimu(
                 rid_i2o=range(all_res + 1),
-                rid_o2i=range(all_res + +1),
+                rid_o2i=range(all_res  +1),
                 roid_itvs=ProcSet(*[(1, all_res)]),
                 hierarchy=hierarchy,
                 available_upto={2147483600: ProcSet(*[(1, all_res)])}
@@ -362,11 +362,11 @@ class BatSched(BatsimScheduler):
                     # Keep only default type resource
                     res_set = res_set & self.itvs_res_default
                 # transforms oar ids to str batsim ids (ex. [1,2,3,5] -> '0-2,4')
-                res = format(ProcSet(*[(i-1) for i in list(res_set)]), '-,')
+                #res = format(ProcSet(*[(i-1) for i in list(res_set)]), '-,')
                 scheduled_jobs.append(ds_job)
-                jobs_res[ds_job.id] = res
+                jobs_res[ds_job.id] = ProcSet(*[i-1 for i in res_set]) # 1->0, 2->1 ...
 
-            self.bs.start_jobs_str_procset(scheduled_jobs, jobs_res)
+            self.bs.start_jobs(scheduled_jobs, jobs_res)
 
         #real_sched_time = time.time() - real_time
         #if self.sched_delay == -1:
