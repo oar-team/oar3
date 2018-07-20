@@ -455,7 +455,6 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
         verbose_level = 2
     
     #if database_mode == 'no-db':
-
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode, 'simu', tokens)
     #TODO support batsim usage without redis
     network_handler = NetworkHandler(socket_endpoint)

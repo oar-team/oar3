@@ -9,7 +9,6 @@ import struct
 import sys
 import os
 import json
-
 from oar.lib import db
 
 from oar.kao.bataar import bataar
@@ -19,12 +18,11 @@ def order_json_str_arrays(a):
 
 fakezmq = FakeZmq()
 
-SENT_MSGS_1 = order_json_str_arrays([
-    '{"events": [{"data": {"type": "continue_submission"}, "timestamp": 5.0, "type": "NOTIFY"}], "now": 5.0}',
-    '{"events": [{"data": {"alloc": "0 - 3", "job_id": "foo!1"}, "timestamp": 15.0, "type": "EXECUTE_JOB"}, {"data": {"type": "continue_submission"}, "timestamp": 15.0, "type": "NOTIFY"}], "now": 15.0}',
-    '{"events": [{"data": {"type": "submission_finished"}, "timestamp": 24.0, "type": "NOTIFY"}], "now": 24.0}',
-    '{"events": [], "now": 25.0}'])
-
+SENT_MSGS_1 = order_json_str_arrays(['{"now": 5.0, "events": []}',
+                                     '{"now": 15.0, "events": [{"timestamp": 15.0, "type": "EXECUTE_JOB", "data": {"job_id": "foo!1", "alloc": "0-3"}}]}',
+                                     '{"now": 24.0, "events": []}',
+                                     '{"now": 25.0, "events": []}'
+])
 
 SENT_MSGS_2 = order_json_str_arrays([
     '{"now": 5.0, "events": []}',
@@ -57,20 +55,65 @@ def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         yield
 
+BASE_SIMU_MSGS = [
+    {'now':5.0,
+     'events': [
+         {'timestamp':5.0,
+          'type': 'SIMULATION_BEGINS',
+          'data':{
+              'nb_resources':4,
+              'nb_compute_resources':4,
+              'nb_storage_resources':0,
+              'compute_resources': [
+                  {'id':0, 'name': 'node1'},
+                  {'id':1, 'name': 'node2'},
+                  {'id':2, 'name': 'node3'},
+                  {'id':3, 'name': 'node4'}
+              ],
+              'storage_resources': [],
+              'allow_time_sharing': False,
+              'config': {
+                  'redis':{
+                      'enabled': True, 'hostname': 'localhost',
+                      'port': 6379, 'prefix': 'default'
+                  },
+                  'job_submission': {'forward_profiles': False,
+                                 'from_scheduler': {'enabled': False, 'acknowledge': True}
+                  }
+              },
+              'workloads': {},
+              'profiles': {}
+          }
+         }
+     ]
+    },
+    {'now': 10.0,
+     'events': [
+         {'timestamp': 10.0, 'type': 'JOB_SUBMITTED',
+          'data': {'job_id': 'foo!1'}
+         }
+     ]
+    },
+    {'now': 19.0,
+     'events': [
+         {'timestamp': 19.0, 'type':'JOB_COMPLETED',
+          'data':{
+              'job_id':'foo!1', 'status':'SUCCESS',
+              'job_state': 'terminated', 'kill_reason': 'none', 'return_code':0
+          }
+         }
+     ]},
+    {'now': 25.0,
+     'events': [
+         {'timestamp':25.0, 'type': 'SIMULATION_ENDS',
+          'data': {}
+         }
+     ]}
+    ]
+
 def exec_gene(options):
-    fakezmq.recv_msgs = {0:[
-        '{"now":5.0, "events":\
-[{"timestamp":5.0,"type": "SIMULATION_BEGINS","data":{"nb_resources":4,"config":\
-{"redis": {"enabled": true, "hostname": "localhost", "port": 6379, "prefix": "default"}},\
-        "allow_time_sharing": true, "resources_data": {} }}]}',
-'{"now":10.0, "events":\
-[{"timestamp":10.0,"type": "JOB_SUBMITTED", "data": {"job_id": "foo!1"}}]}',
-'{"now":19.0, "events":\
-[{"timestamp":19.0, "type":"JOB_COMPLETED","data":{"job_id":"foo!1","status":"SUCCESS", "job_state": "terminated", "kill_reason": "none", "return_code":0}}]}',
-'{"now":25.0, "events":\
-[{"timestamp":25.0, "type": "SIMULATION_ENDS", "data": {}}]}'
-    ]}
-    
+    fakezmq.recv_msgs = {0:[json.dumps(msg) for msg in BASE_SIMU_MSGS]}
+    #import pdb; pdb.set_trace()
     global data_storage
     data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}',
                      'default:profile_foo!1': b'{}'}
