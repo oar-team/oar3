@@ -25,12 +25,9 @@ requirements = [
     'flask>=0.10',
     'tabulate',
     'click',
-    'simpy',
     'pyzmq',
-    'redis',
     'requests',
     'procset',
-    'pybatsim',
     'simplejson',
     'psutil',
 ]
@@ -55,6 +52,7 @@ setup(
     package_data={'oar': ['tools/*.pl', 'tools/*.pm', 'tools/*.sh', 'tools/oarexec']},
     install_requires=requirements,
     extras_require={
+        'full': ['simpy', 'pybatsim', 'redis'],
         'coorm': ['zerorpc', 'requests'],
         'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov',
                 'pytest-console-scripts', 'pexpect', 'sphinx']
