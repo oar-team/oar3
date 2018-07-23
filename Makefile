@@ -7,7 +7,7 @@ MODULES = server user node monika drawgantt drawgantt-svg doc api www-conf commo
 
 
 MODULES_LIST= $(patsubst %,% |, $(MODULES))|
-OPTIONS_LIST= OARCONFDIR | OARUSER | OAROWNER | PREFIX | OARDIR | BINDIR | SBINDIR | DOCDIR 
+OPTIONS_LIST= OARCONFDIR | OARUSER | OAROWNER | PREFIX | MANDIR | OARDIR | BINDIR | SBINDIR | DOCDIR 
 
 # Define the makefile targets
 TARGETS_SUFFIX = build clean install uninstall
@@ -121,7 +121,7 @@ api-uninstall: common-uninstall common-libs-uninstall
 
 
 P_ACTIONS = build install clean
-P_TARGETS = $(addprefix packages-%,$(P_ACTIONS))
+P_TARGETS = $(patsubst %,packages-%,$(P_ACTIONS))
 
 packages-build:    P_ACTION = build
 packages-install:  P_ACTION = install
