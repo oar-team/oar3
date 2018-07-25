@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 9),
                po-debconf,
                perl,
                dh-python,
-               python3-all-dev,
+               python3-all,
                python3-setuptools,
                python3-sphinx
 Standards-Version: 4.0.0
