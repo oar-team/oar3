@@ -12,10 +12,6 @@ include /usr/share/dpkg/buildflags.mk
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
-# Disable python test
-export PYBUILD_DISABLE=test
-export PYBUILD_DESTDIR=debian/python3-oar
-
 INSTALLDIR=debian
 
 export OARUSER=oar
@@ -30,6 +26,11 @@ export PERLLIBDIR=/usr/share/perl5
 export VARLIBDIR=/var/lib
 export SETUP_TYPE=deb
 export TARGET_DIST=debian
+
+# Disable python test
+export PYBUILD_DISABLE=test
+export PYBUILD_DESTDIR=debian/python3-oar
+export PYBUILD_INSTALL_ARGS_python3=--install-scripts=$(OARDIR)
 
 CFLAGS += -Wall
 
