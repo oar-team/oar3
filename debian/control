@@ -18,7 +18,19 @@ Package: python3-oar
 Architecture: any
 Section: python
 Depends: ${misc:Depends},
-         ${python3:Depends}
+         ${python3:Depends},
+         python-procset,
+         python3-sqlalchemy,
+         python3-sqlalchemy-utils,
+         python3-alembic,
+         python3-flask,
+         python3-tabulate,
+         python3-click,
+         python3-zmq,
+         python3-requests,
+         python3-simplejson,
+         python3-psutil 
+    
 Description: OAR batch scheduler library package
  OAR is a versatile resource and task manager (also called a batch scheduler)
  for clusters and other computing infrastructures.
