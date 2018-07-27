@@ -24,17 +24,18 @@ include Makefiles/shared/shared.mk
 clean: clean_shared
 	$(MAKE) -f Makefiles/man.mk clean
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnodesetting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	-rm -f $(SRCDIR)/tools/oardodo
 
 build: build_shared
 	$(MAKE) -f Makefiles/man.mk build
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarnodesetting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(SRCDIR)/tools/oardodo $(SRCDIR)/tools/oardodo.c
 
 install: install_shared
-	if [ ! -f $(DESTDIR)$(OARDIR)/oarnodesetting3 ]; then \
+	# For dev and manual install only
+	if [ -f $(DESTDIR)$(BINDIR)/oarnodesetting3 ]; then \
 		mv $(DESTDIR)$(BINDIR)/oarnodesetting3 $(DESTDIR)$(OARDIR)/oarnodesetting3;\
 	fi
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
