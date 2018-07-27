@@ -9,8 +9,8 @@ SHAREDIR_FILES= $(SRCDIR)/../scripts/prologue \
 		  $(SRCDIR)/../scripts/epilogue \
 		  $(SRCDIR)/tools/sshd_config.in
 
-#MANDIR_FILES = $(SRCDIR)/man/man1/oarnodechecklist.1 \
-#	       $(SRCDIR)/man/man1/oarnodecheckquery.1
+MANDIR_FILES = $(SRCDIR)/../docs/man/man1/oarnodechecklist.1 \
+	       $(SRCDIR)/../docs/man/man1/oarnodecheckquery.1
 
 INITDIR_FILES = setup/init.d/oar-node.in
 
@@ -23,11 +23,10 @@ DEFAULTDIR_FILES = setup/default/oar-node.in \
 include Makefiles/shared/shared.mk
 
 build: build_shared
-
-	# $(MAKE) -f Makefiles/man.mk build
+	$(MAKE) -f Makefiles/man.mk build
 
 clean: clean_shared
-	# $(MAKE) -f Makefiles/man.mk clean
+	$(MAKE) -f Makefiles/man.mk clean
 
 install: install_shared
 

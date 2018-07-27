@@ -1,6 +1,6 @@
 MODULE=man
 
-MANDIR_FILES=$(wildcard sources/core/man/man1/*.pod) $(wildcard sources/core/man/man1/*.pod.in)
+MANDIR_FILES=$(wildcard docs/man/man1/*.pod) $(wildcard docs/man/man1/*.pod.in)
 
 include Makefiles/shared/shared.mk
 
