@@ -1828,7 +1828,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
 
             job = get_job(job_id)
             nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
-            if len(nodes_cpuset_fields) > 0:
+            if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 logger.debug('[JOB FINISHING SEQUENCE] [CPUSET] [' + str(job_id) + '] Clean cpuset on each nodes')
                 taktuk_cmd = config['TAKTUK_CMD']
                 job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
@@ -1894,7 +1894,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
     if ('ACTIVATE_PINGCHECKER_AT_JOB_END' in config) and (config['ACTIVATE_PINGCHECKER_AT_JOB_END'] == 'yes')\
        and ('deploy' not in job_types.keys()) and ('noop' not in job_types.keys()):
         hosts = get_job_current_hostnames(job_id)
-        logger.debug('[job_finishing_sequence] ['+ str(job.id)\
+        logger.debug('[job_finishing_sequence] ['+ str(job_id)\
                      + 'Run pingchecker to test nodes at the end of the job on nodes: '\
                      + str(hosts))
         
@@ -1908,7 +1908,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                 reason = 'timeout triggered'
                 suspected_hosts = hosts
 
-            msg = '{}, job {}, nodes: {}'.format(reason, job.id, suspected_hosts) 
+            msg = '{}, job {}, nodes: {}'.format(reason, job_id, suspected_hosts) 
             logger.error('[job_finishing_sequence] PING_CHECKER_NODE_SUSPECTED_END_JOB: ' + msg)
             events.append(('PING_CHECKER_NODE_SUSPECTED_END_JOB',
                            '[job_finishing_sequence] ' + msg, 
@@ -1917,10 +1917,10 @@ def job_finishing_sequence(epilogue_script, job_id, events):
     for event in events:
         if len(event) == 2:
             ev_type, msg = event
-            add_new_event(ev_type, job.id, msg)
+            add_new_event(ev_type, job_id, msg)
         else:
             ev_type, msg, host = event
-            add_new_event_with_host(ev_type, job.id, msg, host)
+            add_new_event_with_host(ev_type, job_id, msg, host)
         
     # Just to force commit (from OAR2, useful for OAR3 ?)
     db.commit()
