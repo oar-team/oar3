@@ -5,6 +5,10 @@ OARDIR_BINFILES = $(SRCDIR)/tools/oarsh/oarsh_shell.in \
 	              $(SRCDIR)/tools/oarsh/oarsh.in \
 		          $(SRCDIR)/tools/sentinelle.pl
 
+MANDIR_FILES = $(SRCDIR)/../docs/man/man1/oarsh.1 \
+	       $(SRCDIR)/../docs/man/man1/oarprint.1 \
+	       $(SRCDIR)/../docs/man/man1/oarnodesetting.
+
 SHAREDIR_FILES = $(SRCDIR)/tools/oar.conf.in \
                    $(SRCDIR)/tools/oarnodesetting_ssh.in \
 		   $(SRCDIR)/tools/update_cpuset_id.sh.in
@@ -18,11 +22,13 @@ PROCESS_TEMPLATE_FILES = $(SRCDIR)/tools/oarsh/oarcp.in \
 include Makefiles/shared/shared.mk
 
 clean: clean_shared
+	$(MAKE) -f Makefiles/man.mk clean
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	-rm -f $(SRCDIR)/tools/oardodo
 
 build: build_shared
+	$(MAKE) -f Makefiles/man.mk build
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
 	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(SRCDIR)/tools/oardodo $(SRCDIR)/tools/oardodo.c

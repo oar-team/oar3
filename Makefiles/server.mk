@@ -17,6 +17,18 @@ OARDIR_BINFILES = $(SRCDIR)/tools/oar_resources_init \
 
 OARCONFDIR_BINFILES = $(SRCDIR)/tools/oar_phoenix.pl
 
+MANDIR_FILES = $(SRCDIR)/../docs/man/man1/almighty.1 \
+	       $(SRCDIR)/../docs/man/man1/oaraccounting.1 \
+	       $(SRCDIR)/../docs/man/man1/oarnotify.1 \
+	       $(SRCDIR)/../docs/man/man1/oarproperty.1 \
+	       $(SRCDIR)/../docs/man/man1/oarremoveresource.1 \
+	       $(SRCDIR)/../docs/man/man1/oar-server.1 \
+	       $(SRCDIR)/../docs/man/man1/oar_resources_init.1 \
+	       $(SRCDIR)/../docs/man/man1/oar_resources_add.1 \
+	       $(SRCDIR)/../docs/man/man1/oar_phoenix.1
+           #TODO TOREMOVE $(SRCDIR)/man/man1/oarmonitor.1 \
+	       #TODO TOREMOVE $(SRCDIR)/man/man1/oaradmissionrules.1 \
+
 SBINDIR_FILES = setup/server/oar-server.in
 
 SHAREDIR_FILES = $(SRCDIR)/tools/job_resource_manager.pl \
@@ -38,6 +50,7 @@ CRONDIR_FILES = setup/cron.d/oar-server.in
 include Makefiles/shared/shared.mk
 
 clean: clean_shared
+	$(MAKE) -f Makefiles/man.mk clean
 	$(OARDO_CLEAN) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarproperty3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
 
@@ -53,6 +66,7 @@ clean: clean_shared
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	
 
 build: build_shared
+	$(MAKE) -f Makefiles/man.mk build
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar_resources_init CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_init
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar_resources_add CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_add
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	

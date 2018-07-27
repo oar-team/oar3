@@ -1,6 +1,8 @@
 MODULE=database
 SRCDIR=setup
 
+MANDIR_FILES = $(SRCDIR)/../docs/man/man1/oar-database.pod.in
+
 SBINDIR_FILES = $(SRCDIR)/database/oar-database.in
 
 include Makefiles/shared/shared.mk

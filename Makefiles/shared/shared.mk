@@ -43,11 +43,11 @@ all:
 
 setup: setup_shared
 
-SHARED_ACTIONS=oardata oarbin doc bin sbin examples setup_scripts init logrotate default cron cgi www
+SHARED_ACTIONS=oardata oarbin doc man1 bin sbin examples setup_scripts init logrotate default cron cgi www
 
 
-clean_shared: clean_templates clean_setup_scripts
-build_shared: build_templates build_setup_scripts
+clean_shared: clean_templates clean_man1 clean_setup_scripts
+build_shared: build_templates build_man1 build_setup_scripts
 	rm -f setup/templates/header.sh
 
 install_shared: $(patsubst %, install_%,$(SHARED_ACTIONS)) install_setup_scripts
@@ -64,6 +64,7 @@ MODULE_SETUP_BUILDED_FILES  = $(patsubst %.in, %.out, $(MODULE_SETUP_SOURCE_FILE
 MODULE_SETUP_TARGET_FILES  = $(addprefix $(DESTDIR)$(OARDIR)/setup/,$(notdir $(basename $(MODULE_SETUP_SOURCE_FILES))))
 
 TEMPLATE_SOURCE_FILES=$(filter %.in, $(PROCESS_TEMPLATE_FILES) \
+									 $(MANDIR_FILES) \
                                      $(INITDIR_FILES) \
                                      $(DEFAULTDIR_FILES) \
                                      $(LOGROTATEDIR_FILES) \
@@ -98,6 +99,7 @@ $(TEMPLATE_BUILDED_FILES) : %: %.in
 	    s#%%PERLLIBDIR%%#$(PERLLIBDIR)#g;;\
 	    s#%%RUNDIR%%#$(RUNDIR)#g;;\
 	    s#%%LOGDIR%%#$(LOGDIR)#g;;\
+		s#%%MANDIR%%#$(MANDIR)#g;;\
 	    s#%%SBINDIR%%#$(SBINDIR)#g;;\
 	    s#%%VARLIBDIR%%#$(VARLIBDIR)#g;;\
 	    s#%%OARHOMEDIR%%#$(OARHOMEDIR)#g;;\
@@ -176,6 +178,27 @@ install_doc:
 
 uninstall_doc:
 	$(SHARED_UNINSTALL) TARGET_DIR="$(DESTDIR)$(DOCDIR)" SOURCE_FILES="$(DOCDIR_FILES)" TARGET_FILE_RIGHTS=0644
+
+#
+# MANDIR_FILES
+#
+SOURCE_MANDIR_FILES = $(filter %.pod, $(patsubst %.pod.in, %.pod, $(MANDIR_FILES)))
+BUILD_MANDIR_FILES = $(patsubst %.pod, %.1, $(SOURCE_MANDIR_FILES)) $(filter %.1,$(MANDIR_FILES))
+TARGET_MANDIR_FILES = $(addprefix $(DESTDIR)$(MANDIR)/man1, $(notdir $(BUILD_MANDIR_FILES)))
+
+install_man1: 
+	$(SHARED_INSTALL) TARGET_DIR="$(DESTDIR)$(MANDIR)/man1" SOURCE_FILES="$(BUILD_MANDIR_FILES)" TARGET_FILE_RIGHTS=0644
+
+uninstall_man1:
+	$(SHARED_UNINSTALL) TARGET_DIR="$(DESTDIR)$(MANDIR)/man1" SOURCE_FILES="$(BUILD_MANDIR_FILES)" TARGET_FILE_RIGHTS=0644
+
+build_man1: $(BUILD_MANDIR_FILES)
+
+clean_man1:
+	-rm -f $(BUILD_MANDIR_FILES)
+
+%.1: %.pod
+	pod2man --section=1 --release="$(notdir $(basename $<))" --center "OAR commands" --name="$(notdir $(basename $<))" "$<" > $@
 
 #
 # BINDIR_FILES
