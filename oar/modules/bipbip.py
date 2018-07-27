@@ -144,10 +144,8 @@ class BipBip(object):
             if cpuset_field:
                 nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
 
-            if len(nodes_cpuset_fields) > 0:
-    
+            if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
-            if len(nodes_cpuset_fields) > 0:
                 cpuset_data_hash = {
                     'job_id': job.id,
                     'name': cpuset_name,
