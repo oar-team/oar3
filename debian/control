@@ -31,7 +31,6 @@ Depends: ${misc:Depends},
          python3-requests,
          python3-simplejson,
          python3-psutil 
-
 Description: OAR batch scheduler library package
  OAR is a versatile resource and task manager (also called a batch scheduler)
  for clusters and other computing infrastructures.
