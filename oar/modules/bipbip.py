@@ -47,12 +47,12 @@ class BipBip(object):
         if len(args) >= 4:
             self.oarexec_challenge = args[3]
         
-    def run(self):        
+    def run(self):
         job_id = self.job_id
         if not job_id:
             self.exit_code = 1
             return
-        
+
         openssh_cmd = config['OPENSSH_CMD']
         
         node_file_db_field = config['NODE_FILE_DB_FIELD']
@@ -71,10 +71,12 @@ class BipBip(object):
                 logger.error(msg)
                 raise Exception(msg)
             cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
-
+            
+        cpuset_full_path = ''
         cpuset_path = config['CPUSET_PATH']
-        cpuset_full_path = cpuset_path +'/' + cpuset_name
-        
+        if cpuset_path and cpuset_name: 
+            cpuset_full_path = cpuset_path +'/' + cpuset_name
+
         job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
 
         hosts = get_job_current_hostnames(job_id)
@@ -144,10 +146,8 @@ class BipBip(object):
             if cpuset_field:
                 nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)
 
-            if len(nodes_cpuset_fields) > 0:
-    
+            if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 ssh_public_key = format_ssh_pub_key(ssh_public_key, cpuset_full_path, job.user, job.user)
-            if len(nodes_cpuset_fields) > 0:
                 cpuset_data_hash = {
                     'job_id': job.id,
                     'name': cpuset_name,
@@ -268,9 +268,6 @@ class BipBip(object):
                 if exit_bipbip == 1:
                     self.exit_code = 2
                     return
-                
-            else:
-               logger.debug('[' + str(job.id) + '] No (enough) bad node')
             # end CHECK
             
         self.call_server_prologue(job)
@@ -298,7 +295,6 @@ class BipBip(object):
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
         job_challenge, _, _ = get_job_challenge(job_id)
-        
         
         oarexec_cpuset_path = ''
         if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and (len(hosts) > 0):
@@ -359,8 +355,8 @@ class BipBip(object):
         else:
             os.environ['OAR_CPUSET'] = ''
 
-        cmd = cmd + '-x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + ' OAREXEC'
-
+        cmd = cmd + ' -x' +  ' -T ' + head_node + ' perl - ' + str(job_id) + ' OAREXEC'
+        
         logger.debug(cmd)
         logger.debug(oarexec_files)
 
