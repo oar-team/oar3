@@ -1822,9 +1822,11 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                     logger.error(msg)
                     raise Exception(msg)
                 cpuset_file = os.environ['OARDIR'] + '/' + cpuset_file
-
+                
+            cpuset_full_path = ''
             cpuset_path = config['CPUSET_PATH']
-            cpuset_full_path = cpuset_path +'/' + cpuset_name
+            if cpuset_path and cpuset_name: 
+                cpuset_full_path = cpuset_path +'/' + cpuset_name
 
             job = get_job(job_id)
             nodes_cpuset_fields = get_cpuset_values(cpuset_field, job.assigned_moldable_job)

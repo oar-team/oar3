@@ -132,7 +132,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         # Essential : you become oar instead of the user
         # Set real to effective uid
         os.setuid(os.geteuid()) #TODO: Do really need to do this ?
-        
+
         print("Connect to OAR job " + str(job_id) + ' via the node ' + host_to_connect_via_ssh)
         return_code = tools.run(cmd, shell=True).returncode
         
