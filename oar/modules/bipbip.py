@@ -266,9 +266,6 @@ class BipBip(object):
                 if exit_bipbip == 1:
                     self.exit_code = 2
                     return
-                
-            else:
-               logger.debug('[' + str(job.id) + '] No (enough) bad node')
             # end CHECK
             
         self.call_server_prologue(job)
@@ -296,7 +293,6 @@ class BipBip(object):
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
         job_challenge, _, _ = get_job_challenge(job_id)
-        
         
         oarexec_cpuset_path = ''
         if cpuset_full_path and ('cosystem' not in job_types.keys()) and ('deploy' not in job_types.keys()) and (len(hosts) > 0):

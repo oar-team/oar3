@@ -19,4 +19,7 @@ grep -q '^ADMISSION_RULES_IN_FILES' /etc/oar/oar.conf || echo 'ADMISSION_RULES_I
 
 dpkg -i /home/orichard/public/oar3-dpkgs/*.deb
 
+
+#TODO oar-server oar-database --check
+
 systemctl start oar-server.service
