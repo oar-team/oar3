@@ -163,6 +163,7 @@ class Almighty(object):
             self.appendice.bind('tcp://' + ip_addr_server + ':' + config['APPENDICE_SERVER_PORT'])
         except:
             logger.error('Failed to activate appendice endpoint')
+            sys.exit(1)
 
         self.set_appendice_timeout(read_commands_timeout)
         
@@ -228,10 +229,13 @@ class Almighty(object):
             answer = self.appendice.recv_json()
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
+            #return (None, {'cmd': 'Time'})
             return {'cmd': 'Time'}
         except zmq.ZMQError as e:
             logger.error("Something is wrong with appendice" + str(e))
-            return 15
+            #return (15, None)
+            return {'cmd': 'Time'}
+        #return (None, answer)
         return answer
 
     def add_command(self, command):
