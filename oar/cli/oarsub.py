@@ -89,7 +89,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         shell = tools.getpwnam(lusr).pw_shell
 
         if not xauth_path or not (os.path.isfile(xauth_path) and os.access(xauth_path, os.X_OK))\
-           or not re.match(r'/^[\w.-]*:\d+(?:\.\d+)?$/', os.environ['DISPLAY']):
+           or not ('DISPLAY' in os.environ and re.match(r'^[\w.-]*:\d+(?:\.\d+)?$', os.environ['DISPLAY'])):
             os.environ['DISPLAY'] = ''
             
         if  ('DISPLAY' in os.environ) and os.environ['DISPLAY']:
@@ -274,9 +274,6 @@ def cli(command, interactive, queue, resource, reservation, connect,
     #    $Cosystem_hostname = $remote_host;
     # }
 
-    cpuset_field = config['JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD']
-    cpuset_path = config['CPUSET_PATH']
-    
     if 'OAR_RUNTIME_DIRECTORY' in config:
         pass
     # if (is_conf("OAR_RUNTIME_DIRECTORY")){
