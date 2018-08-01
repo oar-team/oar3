@@ -88,18 +88,27 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         job_user = job.user
         shell = tools.getpwnam(lusr).pw_shell
 
-        # TODO
-        # unless ((defined($xauth_path)) and (-x $xauth_path) and ($ENV{DISPLAY} =~ /^[\w.-]*:\d+(?:\.\d+)?$/)) {
-        #             $ENV{DISPLAY}="";
-        #         }
-        #         if ($ENV{DISPLAY} ne ""){
-        #             print("# Info: Initialize X11 forwarding...\n");
-        #             # first, get rid of remaining unused .Xautority.{pid} files...
-        #             system({"bash"} "bash","-c",'for f in $HOME/.Xauthority.*; do [ -e "/proc/${f#$HOME/.Xauthority.}" ] || rm -f $f; done');
-        #             my $new_xauthority = $ENV{HOME}."/.Xauthority.$$";
-        #             system({"bash"} "bash","-c",'[ -x "'.$xauth_path.'" ] && OARDO_BECOME_USER='.$lusr.' oardodo bash --noprofile --norc -c "'.$xauth_path.' extract - ${DISPLAY/#localhost:/:}" | XAUTHORITY='.$new_xauthority.' '.$xauth_path.' -q merge - 2>/dev/null');
-        #             $ENV{XAUTHORITY} = $new_xauthority;
-        #         }
+        if not xauth_path or not (os.path.isfile(xauth_path) and os.access(xauth_path, os.X_OK))\
+           or not re.match(r'/^[\w.-]*:\d+(?:\.\d+)?$/', os.environ['DISPLAY']):
+            os.environ['DISPLAY'] = ''
+            
+        if  ('DISPLAY' in os.environ) and os.environ['DISPLAY']:
+            print('Initialize X11 forwarding...')
+            # first, get rid of remaining unused .Xautority.{pid} files...
+            retcode = tools.call("bash -c 'for f in $HOME/.Xauthority.*; do [ -e \"/proc/${f#$HOME/.Xauthority.}\" ] || rm -f $f; done'", shell=True)
+            if retcode:
+                cmd_ret.error('Error on riding of unused Xautority.{pid} file')
+                cmd_ret.exit(retcode)
+                
+            new_xauthority = os.environ['HOME'] + '/.Xauthority.$$'
+            cmd =  "bash -c '[ -x \"{}\" ] && OARDO_BECOME_USER={} oardodo bash --noprofile --norc -c \"{} extract - ${DISPLAY/#localhost:/:}\" | XAUTHORITY={} {} -q merge - 2>/dev/null'"\
+                                                                 .format(xauth_path, luser, xauth_path, new_xauthority, xauth_path)
+            retcode = tools.call(cmd)
+            if retcode:
+                cmd_ret.error('Error on set new xauthority')
+                cmd_ret.exit(retcode)
+
+            os.environ['XAUTHORITY'] = new_xauthority
         
         node_file = config['OAREXEC_DIRECTORY'] + '/' + str(job_id)
         resource_file = node_file + '_resources'
@@ -111,17 +120,19 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         if ('OAR_CPUSET' in os.environ) and (os.environ['OAR_CPUSET'] != ''):
             cmd += ' -oSendEnv=OAR_CPUSET '
 
-        if ('DISPLAY' in os.environ) and (os.environ['DISPLAY'] != ''):
+        if ('DISPLAY' in os.environ) and os.environ['DISPLAY']:
             cmd += ' -X '
         else:
             cmd += ' -x '
 
         cmd += '-t ' + host_to_connect_via_ssh + ' '
         
-        if ('DISPLAY' in os.environ) and (os.environ['DISPLAY'] != ''):
-            # TODO: X display forwarding
-            #$cmd[$i] = "bash -c 'echo \$PPID >> $oarsub_pids && ($xauth_path -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=$lusr oardodo $xauth_path merge -) && [ \"$lusr\" != \"$job_user\" ] && OARDO_BECOME_USER=$lusr oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown $job_user:oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=$job_user oardodo bash --noprofile --norc -c '$str'";$i++;
-            raise Exception('X display forwarding support NOT yet implemented')
+        if ('DISPLAY' in os.environ) and os.environ['DISPLAY']:
+            cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && (" + xauth_path + " -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=" + lusr + " oardodo " + xauth_path + " merge -) && [ \""\
+                + lusr + "\" != \"" + job.user + "\" ] && OARDO_BECOME_USER=" + lusr\
+                + " oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown " + job.user\
+                + ":oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=" + job.user + " oardodo bash --noprofile --norc -c '" + script + "'\"" 
+            #print('oarsub launchs command (W/ DISPLAY {}) : {}'.format(os.environ['DISPLAY'], cmd))
         else:
             # No X display forwarding
             cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && TTY=\$(tty) && test -e \$TTY && oardodo chown "\
