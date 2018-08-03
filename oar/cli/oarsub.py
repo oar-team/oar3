@@ -99,14 +99,17 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             if retcode:
                 cmd_ret.error('Error on riding of unused Xautority.{pid} file')
                 cmd_ret.exit(retcode)
-                
-            new_xauthority = os.environ['HOME'] + '/.Xauthority.$$'
-            cmd =  "bash -c '[ -x \"{}\" ] && OARDO_BECOME_USER={} oardodo bash --noprofile --norc -c \"{} extract - ${DISPLAY/#localhost:/:}\" | XAUTHORITY={} {} -q merge - 2>/dev/null'"\
-                                                                 .format(xauth_path, luser, xauth_path, new_xauthority, xauth_path)
-            retcode = tools.call(cmd)
-            if retcode:
-                cmd_ret.error('Error on set new xauthority')
-                cmd_ret.exit(retcode)
+
+            new_xauthority = os.environ['HOME'] + '/.Xauthority.' + str(os.getpid())
+            cmd =  "bash -c '[ -x \"" + xauth_path + "\" ] && OARDO_BECOME_USER=" + lusr + " oardodo bash --noprofile --norc -c \""\
+                   + xauth_path + " extract - ${DISPLAY/#localhost:/:}\" | XAUTHORITY=" + new_xauthority + " " + xauth_path + " -q merge - 2>/dev/null'"
+            try:
+                retcode = tools.call(cmd, shell=True)
+                if retcode:
+                    cmd_ret.error('Error on set new xauthority')
+                    cmd_ret.exit(retcode)
+            except OSError as e:
+                print("Execution failed:", e, file=sys.stderr)
 
             os.environ['XAUTHORITY'] = new_xauthority
         
