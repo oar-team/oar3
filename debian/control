@@ -134,6 +134,25 @@ Depends: ${misc:Depends},
 Suggests: oar-doc
 Description: OAR batch scheduler visualization tool package
  OAR is a versatile resource and task manager (also called a batch scheduler)
- for clusters and other computing infrastructures.
+ for clusters and other computing infrastructures
+ .
  This package install the OAR batch scheduler web interfaces: drawgantt-svg
  and monika.
+
+Package: oar-restful-api
+Architecture: any
+Section: net
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         ${perl:Depends},
+         oar-user,
+         apache2 | httpd-cgi
+Suggests: oar-doc,
+          oar-server,
+          apache2,
+          apache2-suexec-custom
+Description: OAR web services
+ OAR is a versatile resource and task manager (also called a batch scheduler)
+ for clusters and other computing infrastructures   
+ .
+ This package installs a RESTful API for oar users.
