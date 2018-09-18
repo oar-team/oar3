@@ -1921,8 +1921,8 @@ def job_finishing_sequence(epilogue_script, job_id, events):
             ev_type, msg = event
             add_new_event(ev_type, job_id, msg)
         else:
-            ev_type, msg, host = event
-            add_new_event_with_host(ev_type, job_id, msg, host)
+            ev_type, msg, hosts = event
+            add_new_event_with_host(ev_type, job_id, msg, hosts)
         
     # Just to force commit (from OAR2, useful for OAR3 ?)
     db.commit()

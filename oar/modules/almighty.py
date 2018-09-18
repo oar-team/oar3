@@ -4,6 +4,7 @@ from oar.lib import (config, get_logger)
 from oar.lib.tools import (PIPE, check_process, get_time)
 import oar.lib.tools as tools
 
+import sys
 import socket
 import zmq
 import os

@@ -55,11 +55,11 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
     """Connect to a job and give the shell of the user on the remote host.
     """
     xauth_path = os.environ['OARXAUTHLOCATION'] if 'OARXAUTHLOCATION' in os.environ else None
-    lusr = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
+    luser = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
 
     job = get_job(job_id)
     
-    if ((lusr == job.user) or (lusr == 'oar')) and (job.state == 'Running'):
+    if ((luser == job.user) or (luser == 'oar')) and (job.state == 'Running'):
         types = get_job_types(job_id)
         # No operation job type
         if 'noop' in types:
@@ -86,7 +86,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 
         moldable = get_current_moldable_job(job.assigned_moldable_job)
         job_user = job.user
-        shell = tools.getpwnam(lusr).pw_shell
+        shell = tools.getpwnam(luser).pw_shell
 
         if not xauth_path or not (os.path.isfile(xauth_path) and os.access(xauth_path, os.X_OK))\
            or not ('DISPLAY' in os.environ and re.match(r'^[\w.-]*:\d+(?:\.\d+)?$', os.environ['DISPLAY'])):
@@ -99,14 +99,17 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             if retcode:
                 cmd_ret.error('Error on riding of unused Xautority.{pid} file')
                 cmd_ret.exit(retcode)
-                
-            new_xauthority = os.environ['HOME'] + '/.Xauthority.$$'
-            cmd =  "bash -c '[ -x \"{}\" ] && OARDO_BECOME_USER={} oardodo bash --noprofile --norc -c \"{} extract - ${DISPLAY/#localhost:/:}\" | XAUTHORITY={} {} -q merge - 2>/dev/null'"\
-                                                                 .format(xauth_path, luser, xauth_path, new_xauthority, xauth_path)
-            retcode = tools.call(cmd)
-            if retcode:
-                cmd_ret.error('Error on set new xauthority')
-                cmd_ret.exit(retcode)
+
+            new_xauthority = os.environ['HOME'] + '/.Xauthority.' + str(os.getpid())
+            cmd =  "bash -c '[ -x \"" + xauth_path + "\" ] && OARDO_BECOME_USER=" + luser + " oardodo bash --noprofile --norc -c \""\
+                   + xauth_path + " extract - ${DISPLAY/#localhost:/:}\" | XAUTHORITY=" + new_xauthority + " " + xauth_path + " -q merge - 2>/dev/null'"
+            try:
+                retcode = tools.call(cmd, shell=True)
+                if retcode:
+                    cmd_ret.error('Error on set new xauthority')
+                    cmd_ret.exit(retcode)
+            except OSError as e:
+                print("Execution failed:", e, file=sys.stderr)
 
             os.environ['XAUTHORITY'] = new_xauthority
         
@@ -128,8 +131,8 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         cmd += '-t ' + host_to_connect_via_ssh + ' '
         
         if ('DISPLAY' in os.environ) and os.environ['DISPLAY']:
-            cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && (" + xauth_path + " -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=" + lusr + " oardodo " + xauth_path + " merge -) && [ \""\
-                + lusr + "\" != \"" + job.user + "\" ] && OARDO_BECOME_USER=" + lusr\
+            cmd += "\"bash -c 'echo \$PPID >> " + oarsub_pids + " && (" + xauth_path + " -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER=" + luser + " oardodo " + xauth_path + " merge -) && [ \""\
+                + luser + "\" != \"" + job.user + "\" ] && OARDO_BECOME_USER=" + luser\
                 + " oardodo bash --noprofile --norc -c \"chmod 660 \\\$HOME/.Xauthority\" ;TTY=\$(tty) && test -e \$TTY && oardodo chown " + job.user\
                 + ":oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER=" + job.user + " oardodo bash --noprofile --norc -c '" + script + "'\"" 
             #print('oarsub launchs command (W/ DISPLAY {}) : {}'.format(os.environ['DISPLAY'], cmd))
@@ -163,7 +166,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         if job.state != 'Running':
             cmd_ret.error('Job ' + str(job_id) + ' is not running, current state is ' + job.state + '.')
         
-        if (lusr != job.user) and (lusr != 'oar'):
+        if (luser != job.user) and (luser != 'oar'):
             cmd_ret.error('User mismatch for job ' + str(job_id) + ' (job user is ' + job.user + '.')
         cmd_ret.exit(20)
 
