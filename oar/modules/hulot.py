@@ -25,6 +25,7 @@ Example of received message:
 
 """
 
+import sys
 import os
 import os.path
 import re
