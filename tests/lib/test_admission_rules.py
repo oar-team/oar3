@@ -77,7 +77,16 @@ def test_02_prevent_root_oar_toSubmit_bad():
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
-def test_03_avoid_jobs_on_resources_in_drain_mode():
+def test_04_filter_bad_resources():
+    # job_parameters.resource_request
+    # [([{'property': '', 'resources': [{'resource': 'switch', 'value': '2'}, {'resource': 'resource_id', 'value': '10'}]}, {'property': "lic_type = 'mathlab'", 'resources': [{'resource': 'state', 'value': '2'}]}], 216000)]
+
+    job_parameters = default_job_parameters(resource=["/switch=2/nodes=10+{lic_type = 'mathlab'}/state=2, walltime = 60"])
+    with pytest.raises(Exception):
+        apply_admission_rules(job_parameters)
+
+def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
     apply_admission_rules(job_parameters)
     assert job_parameters.properties_applied_after_validation == "drain='NO'"
+
