@@ -103,9 +103,14 @@ def test_06_besteffort_advance_reservation():
         apply_admission_rules(job_parameters)
         
 def test_07_formatting_deploy():
-     job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'])
+     job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'], resource=['nodes=1'])
      apply_admission_rules(job_parameters)
      assert job_parameters.properties == "(yop=yop) AND deploy = 'YES'"
+
+def test_08_filter_bad_resources_deploy_allow_classic_ssh():
+    job_parameters = default_job_parameters(types=['deploy'], resource=["/cpu=2, walltime = 60"])
+    with pytest.raises(Exception):
+        apply_admission_rules(job_parameters)
 
 def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
