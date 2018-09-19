@@ -85,6 +85,18 @@ def test_04_filter_bad_resources():
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
+def test_05_formatting_besteffort():
+    job_parameters = default_job_parameters(queue='besteffort')
+    apply_admission_rules(job_parameters)
+    assert job_parameters.types == ['besteffort']
+    job_parameters = default_job_parameters(types=['besteffort'])
+    apply_admission_rules(job_parameters)
+    assert job_parameters.queue == 'besteffort'
+    assert job_parameters.properties == "besteffort = 'YES'"
+    job_parameters = default_job_parameters(properties='yop=yop', queue='besteffort')
+    apply_admission_rules(job_parameters)
+    assert job_parameters.properties == "(yop=yop) AND besteffort = 'YES'"
+
 def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
     apply_admission_rules(job_parameters)
