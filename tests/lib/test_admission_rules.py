@@ -101,7 +101,12 @@ def test_06_besteffort_advance_reservation():
     job_parameters = default_job_parameters(queue='besteffort', reservation='2018-09-19 09:59:00')
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
-    
+        
+def test_07_formatting_deploy():
+     job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'])
+     apply_admission_rules(job_parameters)
+     assert job_parameters.properties == "(yop=yop) AND deploy = 'YES'"
+
 def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
     apply_admission_rules(job_parameters)

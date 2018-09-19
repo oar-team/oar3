@@ -1,4 +1,4 @@
-# Formatting besteffort cases
+# Format besteffort cases
 if ('besteffort' in types) and queue != 'besteffort':
     queue = 'besteffort'
     print('[ADMISSION RULE] Automatically redirect in the besteffort queue')
