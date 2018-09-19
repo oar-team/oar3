@@ -1066,7 +1066,10 @@ class JobParameters():
     
             if scanscript and (key in kwargs and not kwargs[key]) and key in scanscript_values:
                 setattr(self, key, scanscript_values[key])
-        
+
+        if not self.types:
+            self.types = []
+
         if not self.initial_request:
             self.initial_request = self.command
 
