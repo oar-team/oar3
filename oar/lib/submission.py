@@ -7,7 +7,7 @@ import random
 
 from socket import gethostname
 
-from sqlalchemy import text, exc
+from sqlalchemy import (distinct, text, or_, func, exc)
 from procset import ProcSet
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobDependencie, JobStateLog, MoldableJobDescription,
@@ -932,8 +932,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     code = compile(str_rules, '<string>', 'exec')
 
     try:
-        #in exec() globals must be a dict,
-        exec(code, job_parameters.__dict__)
+        exec(code, globals(), job_parameters.__dict__)
     except:
         err = sys.exc_info()
         error = (-2, err[1] + ', a failed admission rule prevented submitting the job.') 
