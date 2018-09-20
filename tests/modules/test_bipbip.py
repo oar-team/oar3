@@ -110,7 +110,6 @@ def test_bipbip_toLaunch_noop():
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0
 
-
 def test_bipbip_toLaunch_cpuset_error():
     #import pdb; pdb.set_trace()
     fake_bad_nodes['init'] = ['localhost0']

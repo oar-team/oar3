@@ -134,13 +134,27 @@ def test_09_advance_reservation_limitation():
                                             reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
+        
+def test_10_default_walltime():
+    job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
 
-def test_10_interactive_max_walltime():
+    apply_admission_rules(job_parameters)
+    print(job_parameters.resource_request)
+    assert job_parameters.resource_request[0][1] == 7200
+        
+def test_11_interactive_max_walltime():
     job_parameters = default_job_parameters(job_type='INTERACTIVE',
                                             resource=["/switch=2/nodes=10, walltime=14:00:00"])
     apply_admission_rules(job_parameters)
     print(job_parameters.resource_request)
     assert job_parameters.resource_request[0][1] == 43200
+    
+def test_11_default_walltime():
+    job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
+
+    apply_admission_rules(job_parameters)
+    print(job_parameters.resource_request)
+    assert job_parameters.resource_request[0][1] == 7200
 
 def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
