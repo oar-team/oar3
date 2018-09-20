@@ -4,11 +4,12 @@ import re
 import pytest
 
 from sqlalchemy import or_
-
 from oar.lib import (db, AdmissionRule, Job)
 from oar.lib.submission import (JobParameters, default_submission_config)
-from oar.lib.job_handling import insert_job
+from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
+from oar.lib.job_handling import insert_job
+                           
 @pytest.fixture(scope='function', autouse=True)
 def builtin_config(request):
     default_submission_config()
@@ -132,7 +133,14 @@ def test_09_advance_reservation_limitation():
     job_parameters = default_job_parameters(user='yop', reservation='2018-09-19 09:59:00')
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
-        
+
+def test_10_interactive_max_walltime():
+    job_parameters = default_job_parameters(job_type='INTERACTIVE',
+                                            resource=["/switch=2/nodes=10, walltime=14:00:00"])
+    apply_admission_rules(job_parameters)
+    print(job_parameters.resource_request)
+    assert job_parameters.resource_request[0][1] == 43200
+
 def test_30_avoid_jobs_on_resources_in_drain_mode():
     job_parameters = default_job_parameters()
     apply_admission_rules(job_parameters)
