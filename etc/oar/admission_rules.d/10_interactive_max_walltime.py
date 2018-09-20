@@ -1,7 +1,7 @@
 # Control walltime for interactive job
 max_walltime = sql_to_duration('12:00:00')
 
-if (job_type == 'INTERACTIVE') and (reservation_field == 'None'):
+if (job_type == 'INTERACTIVE') and not reservation_date:
     for i, mold in enumerate(resource_request):
         print(i,mold)
         if max_walltime < mold[1]:

@@ -1,5 +1,5 @@
 # Control advance reservation by limiting their number by user if applied
-if reservation:
+if reservation_date:
     unlimited = False
     try:
         with open(os.environ['HOME'] + '/unlimited_reservation.users', 'r') as f:

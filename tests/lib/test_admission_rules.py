@@ -5,7 +5,7 @@ import pytest
 
 from sqlalchemy import or_
 from oar.lib import (db, AdmissionRule, Job)
-from oar.lib.submission import (JobParameters, default_submission_config)
+from oar.lib.submission import (JobParameters, default_submission_config, check_reservation)
 from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
 from oar.lib.job_handling import insert_job
@@ -47,8 +47,7 @@ def default_job_parameters(**kwargs):
         'initial_request': 'foo',
         'user': 'alice',
         'array_id': 0,
-        'start_time': 0,
-        'reservation_field': None
+        'start_time': 0
     }
 
     if kwargs:
@@ -112,12 +111,13 @@ def test_05_formatting_besteffort():
     assert job_parameters.properties == "(yop=yop) AND besteffort = 'YES'"
 
 def test_06_besteffort_advance_reservation():
-    job_parameters = default_job_parameters(queue='besteffort', reservation='2018-09-19 09:59:00')
+    job_parameters = default_job_parameters(queue='besteffort',
+                                            reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
         
 def test_07_formatting_deploy():
-     job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'], resource=['nodes=1'])
+     job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'], resource=['network_address=1'])
      apply_admission_rules(job_parameters)
      assert job_parameters.properties == "(yop=yop) AND deploy = 'YES'"
 
@@ -130,7 +130,8 @@ def test_08_filter_bad_resources_deploy_allow_classic_ssh():
 def test_09_advance_reservation_limitation():
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
-    job_parameters = default_job_parameters(user='yop', reservation='2018-09-19 09:59:00')
+    job_parameters = default_job_parameters(user='yop',
+                                            reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
