@@ -9,7 +9,7 @@ if ('besteffort' in types) and queue != 'besteffort':
 if queue == 'besteffort' and ('besteffort' not in types):
     types.append('besteffort')
     print('[ADMISSION RULE] Automatically add the besteffort type')
-    
+
 if 'besteffort' in types:
     if properties:
         properties = "({}) AND besteffort = 'YES'".format(properties)   

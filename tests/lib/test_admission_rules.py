@@ -24,8 +24,7 @@ def minimal_db_initialization(request):
 
         db['Queue'].create(name='default')
         yield
-
-    
+ 
 def default_job_parameters(**kwargs):
     default_job_params = {
         'job_type': 'PASSIVE',
@@ -50,7 +49,7 @@ def default_job_parameters(**kwargs):
         'array_id': 0,
         'start_time': 0
     }
-
+    
     if kwargs:
         for key, value in kwargs.items():
             default_job_params[key] = value
@@ -66,7 +65,7 @@ def apply_admission_rules(job_parameters):
     file_names.sort()
     rules = ''
     for file_name in file_names:
-        if re.match(r'^\d+_.*', file_name):
+        if re.match(r'(^|^OFF_)\d+_.*', file_name):
             with open(rules_dir + file_name, 'r') as rule_file:
                 for line in rule_file:
                     rules += line
@@ -149,6 +148,7 @@ def test_11_advance_reservation_limitation():
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
+        
 def test_13_default_walltime():
     job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
 
