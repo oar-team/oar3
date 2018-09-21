@@ -1,4 +1,4 @@
-# Check presence of bad resource type 
+# Prevent the use of system properties
 bad_resources = ('type', 'state', 'next_state', 'finaud_decision',
                  'next_finaud_decision', 'state_num', 'suspended_jobs',
                  'besteffort', 'deploy', 'expiry_date', 'desktop_computing',

@@ -1,4 +1,4 @@
-# Control walltime for interactive job
+# Limit walltime for interactive jobs
 max_walltime = sql_to_duration('12:00:00')
 
 if (job_type == 'INTERACTIVE') and not reservation_date:

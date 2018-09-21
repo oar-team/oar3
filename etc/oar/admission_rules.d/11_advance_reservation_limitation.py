@@ -1,4 +1,6 @@
-# Control advance reservation by limiting their number by user if applied
+# Limit the number of reservations that a user can do.
+# (overrided on user basis using the file: ~oar/unlimited_reservation.users)
+
 if reservation_date:
     unlimited = False
     try:

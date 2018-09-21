@@ -1,3 +1,4 @@
+
 # coding: utf-8
 import os
 import re
@@ -76,12 +77,12 @@ def apply_admission_rules(job_parameters):
     #exec(code, job_parameters.__dict__)
     exec(code, globals(), job_parameters.__dict__)
 
-def test_00_default_queue():
+def test_01_default_queue():
     job_parameters = default_job_parameters()
     apply_admission_rules(job_parameters)
     assert job_parameters.queue == 'default'
 
-def test_01_prevent_root_oar_toSubmit_ok():
+def test_02_prevent_root_oar_toSubmit_ok():
     job_parameters = default_job_parameters(user='alice')
     apply_admission_rules(job_parameters)
 
@@ -90,15 +91,24 @@ def test_02_prevent_root_oar_toSubmit_bad():
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
-def test_04_filter_bad_resources():
+def test_03_avoid_jobs_on_resources_in_drain_mode():
+    job_parameters = default_job_parameters()
+    apply_admission_rules(job_parameters)
+    assert job_parameters.properties_applied_after_validation == "drain='NO'"        
+
+def test_04_submit_in_admin_queue():
+    job_parameters = default_job_parameters(user='yop', queue='admin')
+    with pytest.raises(Exception):
+        apply_admission_rules(job_parameters)
+
+def test_05_filter_bad_resources():
     # job_parameters.resource_request
     # [([{'property': '', 'resources': [{'resource': 'switch', 'value': '2'}, {'resource': 'resource_id', 'value': '10'}]}, {'property': "lic_type = 'mathlab'", 'resources': [{'resource': 'state', 'value': '2'}]}], 216000)]
-
     job_parameters = default_job_parameters(resource=["/switch=2/nodes=10+{lic_type = 'mathlab'}/state=2, walltime = 60"])
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
-def test_05_formatting_besteffort():
+def test_06_formatting_besteffort():
     job_parameters = default_job_parameters(queue='besteffort')
     apply_admission_rules(job_parameters)
     assert job_parameters.types == ['besteffort']
@@ -110,54 +120,47 @@ def test_05_formatting_besteffort():
     apply_admission_rules(job_parameters)
     assert job_parameters.properties == "(yop=yop) AND besteffort = 'YES'"
 
-def test_06_besteffort_advance_reservation():
+def test_07_besteffort_advance_reservation():
     job_parameters = default_job_parameters(queue='besteffort',
                                             reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
         
-def test_07_formatting_deploy():
+def test_08_formatting_deploy():
      job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'], resource=['network_address=1'])
      apply_admission_rules(job_parameters)
      assert job_parameters.properties == "(yop=yop) AND deploy = 'YES'"
 
-def test_08_filter_bad_resources_deploy_allow_classic_ssh():
+def test_09_prevent_deploy_on_non_entire_nodes():
     job_parameters = default_job_parameters(types=['deploy'], resource=["/cpu=2, walltime = 60"])
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
 
+# def test_10_desktop_computingèforamttingr():
+# desktop_computing jobs in OAR3 is not entirely supported       
+# Force desktop_computing jobs to go on nodes with the desktop_computing property
+        
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_09_advance_reservation_limitation():
+def test_11_advance_reservation_limitation():
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
     job_parameters = default_job_parameters(user='yop',
                                             reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
-        
-def test_10_default_walltime():
+
+def test_13_default_walltime():
     job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
 
     apply_admission_rules(job_parameters)
     print(job_parameters.resource_request)
     assert job_parameters.resource_request[0][1] == 7200
         
-def test_11_interactive_max_walltime():
+def test_14_interactive_max_walltime():
     job_parameters = default_job_parameters(job_type='INTERACTIVE',
                                             resource=["/switch=2/nodes=10, walltime=14:00:00"])
     apply_admission_rules(job_parameters)
     print(job_parameters.resource_request)
     assert job_parameters.resource_request[0][1] == 43200
-    
-def test_11_default_walltime():
-    job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
 
-    apply_admission_rules(job_parameters)
-    print(job_parameters.resource_request)
-    assert job_parameters.resource_request[0][1] == 7200
-
-def test_30_avoid_jobs_on_resources_in_drain_mode():
-    job_parameters = default_job_parameters()
-    apply_admission_rules(job_parameters)
-    assert job_parameters.properties_applied_after_validation == "drain='NO'"
 

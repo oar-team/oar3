@@ -1,4 +1,4 @@
-# Set default walltime is necessary
+# Specify the default walltime if it is not specified
 default_walltime = sql_to_duration('2:00:00')
 
 for i, mold in enumerate(resource_request):
@@ -6,4 +6,3 @@ for i, mold in enumerate(resource_request):
         print('[ADMISSION RULE] Set default walltime to {}.'\
               .format(default_walltime))
         resource_request[i] = (mold[0], default_walltime)
-
