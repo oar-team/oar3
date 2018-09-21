@@ -164,3 +164,7 @@ def test_14_interactive_max_walltime():
     assert job_parameters.resource_request[0][1] == 43200
 
 
+def test_15_check_types():
+    job_parameters = default_job_parameters(types=['idempotent', 'cosystem=bug'])
+    with pytest.raises(Exception):
+        apply_admission_rules(job_parameters)

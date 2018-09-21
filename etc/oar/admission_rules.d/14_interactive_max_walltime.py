@@ -8,4 +8,3 @@ if (job_type == 'INTERACTIVE') and not reservation_date:
                   .format(max_walltime))
             # resource_request[i] is a tuple (which is immutable), it must be replaced
             resource_request[i] = (mold[0], max_walltime)
-            
