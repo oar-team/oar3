@@ -175,3 +175,15 @@ def test_16_default_resource_property():
     print(job_parameters.resource_request[0][0][1]['property'])
     assert job_parameters.resource_request[0][0][0]['property'] == "type='default'"
     assert job_parameters.resource_request[0][0][1]['property'] == "(lic='yop') AND type='default'"
+
+def test_20_job_properties_cputype():
+    job_parameters = default_job_parameters(resource=['/switch=2/nodes=10'])
+    apply_admission_rules(job_parameters)
+    print(job_parameters.properties)
+    assert job_parameters.properties == "cputype = 'westmere'"
+
+    job_parameters = default_job_parameters(properties = "t='e'",
+                                            resource=['/switch=2/nodes=10'])
+    apply_admission_rules(job_parameters)
+    print(job_parameters.properties)
+    assert job_parameters.properties == "(t='e') AND cputype = 'westmere'"
