@@ -168,3 +168,10 @@ def test_15_check_types():
     job_parameters = default_job_parameters(types=['idempotent', 'cosystem=bug'])
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
+
+def test_16_default_resource_property():
+    job_parameters = default_job_parameters(resource=["/switch=2/nodes=10+{lic='yop'}/n=1, walltime=14:00:00"])
+    apply_admission_rules(job_parameters)
+    print(job_parameters.resource_request[0][0][1]['property'])
+    assert job_parameters.resource_request[0][0][0]['property'] == "type='default'"
+    assert job_parameters.resource_request[0][0][1]['property'] == "(lic='yop') AND type='default'"

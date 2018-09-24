@@ -452,7 +452,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
             # determine resource constraints
             #
             if (not j_properties) and \
-               (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
+               (not jrg_grp_property or (jrg_grp_property == "type='default'")): #TODO change to re.match
                 # copy itvs
                 constraints = copy.copy(resource_set.roid_itvs)
             else:
