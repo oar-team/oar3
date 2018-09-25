@@ -431,7 +431,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
     """
     # estimate_job_nb_resources
     estimated_nb_resources = []
-    resource_available = False
+    is_resource_available = False
     resource_set = ResourceSet()
     resources_itvs = resource_set.roid_itvs
 
@@ -495,18 +495,18 @@ def estimate_job_nb_resources(resource_request, j_properties):
             break
 
         if estimated_nb_res > 0:
-            resource_available = True
+            is_resource_available = True
 
         estimated_nb_resources.append((estimated_nb_res, walltime))
         print_info('Moldable instance: ', mld_idx + 1,
                    ' Estimated nb resources: ', estimated_nb_res,
                    ' Walltime: ', walltime)
 
-    if not resource_available:
+    if not is_resource_available:
         error = (-5, "There are not enough resources for your request")
         return (error, None, None)
 
-    return((0, ''), resource_available, estimated_nb_resources)
+    return((0, ''), is_resource_available, estimated_nb_resources)
 
 
 def add_micheline_subjob(job_parameters,

@@ -6,7 +6,8 @@ import pytest
 
 from sqlalchemy import or_
 from oar.lib import (db, AdmissionRule, Job)
-from oar.lib.submission import (JobParameters, default_submission_config, check_reservation)
+from oar.lib.submission import (JobParameters, default_submission_config,
+                                estimate_job_nb_resources, check_reservation)
 from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
 from oar.lib.job_handling import insert_job
@@ -19,7 +20,7 @@ def builtin_config(request):
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources
-        for i in range(10):
+        for i in range(15):
             db['Resource'].create(network_address="localhost")
 
         db['Queue'].create(name='default')
@@ -56,8 +57,12 @@ def default_job_parameters(**kwargs):
 
     return JobParameters(**default_job_params)
 
-def apply_admission_rules(job_parameters):
+def apply_admission_rules(job_parameters, rule=None):
 
+    if rule:
+        regex=rule
+    else:
+        regex=r'(^|^OFF_)\d+_.*'
     # Read admission_rules
     rules_dir = os.path.dirname(__file__) +'/etc/oar/admission_rules.d/'
     file_names = os.listdir(rules_dir)
@@ -65,7 +70,7 @@ def apply_admission_rules(job_parameters):
     file_names.sort()
     rules = ''
     for file_name in file_names:
-        if re.match(r'(^|^OFF_)\d+_.*', file_name):
+        if re.match(regex, file_name):
             with open(rules_dir + file_name, 'r') as rule_file:
                 for line in rule_file:
                     rules += line
@@ -109,14 +114,14 @@ def test_05_filter_bad_resources():
 
 def test_06_formatting_besteffort():
     job_parameters = default_job_parameters(queue='besteffort')
-    apply_admission_rules(job_parameters)
+    apply_admission_rules(job_parameters, r'06.*')
     assert job_parameters.types == ['besteffort']
     job_parameters = default_job_parameters(types=['besteffort'])
-    apply_admission_rules(job_parameters)
+    apply_admission_rules(job_parameters, r'06.*')
     assert job_parameters.queue == 'besteffort'
     assert job_parameters.properties == "besteffort = 'YES'"
     job_parameters = default_job_parameters(properties='yop=yop', queue='besteffort')
-    apply_admission_rules(job_parameters)
+    apply_admission_rules(job_parameters, r'06.*')
     assert job_parameters.properties == "(yop=yop) AND besteffort = 'YES'"
 
 def test_07_besteffort_advance_reservation():
@@ -127,7 +132,7 @@ def test_07_besteffort_advance_reservation():
         
 def test_08_formatting_deploy():
      job_parameters = default_job_parameters(properties='yop=yop', types=['deploy'], resource=['network_address=1'])
-     apply_admission_rules(job_parameters)
+     apply_admission_rules(job_parameters, r'08.*')
      assert job_parameters.properties == "(yop=yop) AND deploy = 'YES'"
 
 def test_09_prevent_deploy_on_non_entire_nodes():
@@ -187,3 +192,10 @@ def test_20_job_properties_cputype():
     apply_admission_rules(job_parameters)
     print(job_parameters.properties)
     assert job_parameters.properties == "(t='e') AND cputype = 'westmere'"
+    
+@pytest.mark.usefixtures("minimal_db_initialization")
+def test_21_add_sequential_constraint():
+    job_parameters = default_job_parameters(resource=['resource_id=2,walltime=50:00:00', 'resource_id=12,walltime=1:00:00'])
+    apply_admission_rules(job_parameters, r'^OFF_21.*')
+    print(job_parameters.properties)
+    assert job_parameters.properties == "sequentiel = 'YES'"
