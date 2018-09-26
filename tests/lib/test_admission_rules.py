@@ -184,10 +184,9 @@ def test_16_default_resource_property():
 def test_20_job_properties_cputype():
     job_parameters = default_job_parameters()
 
-    # TODO bug pending w/ Postgresql
-    #apply_admission_rules(job_parameters, r'^OFF_20.*')
-    #print(job_parameters.properties)
-    #assert job_parameters.properties == "cputype = 'westmere'"
+    apply_admission_rules(job_parameters, r'^OFF_20.*')
+    print(job_parameters.properties)
+    assert job_parameters.properties == "cputype = 'westmere'"
 
     job_parameters = default_job_parameters(properties = "t='e'")
     apply_admission_rules(job_parameters, r'^OFF_20.*')
