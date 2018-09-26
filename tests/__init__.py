@@ -53,7 +53,8 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_SIZE': None,
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
-    'QUOTAS': 'no'
+    'QUOTAS': 'no',
+    'HIERARCHY_LABELS': 'resource_id,network_address,cpu,core'
 }
 
 
