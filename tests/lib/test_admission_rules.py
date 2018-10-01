@@ -16,7 +16,7 @@ from oar.lib.job_handling import insert_job
 def builtin_config(request):
     default_submission_config()
 
-@pytest.yield_fixture(scope='function')
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources
@@ -143,8 +143,7 @@ def test_09_prevent_deploy_on_non_entire_nodes():
 # def test_10_desktop_computingèforamttingr():
 # desktop_computing jobs in OAR3 is not entirely supported       
 # Force desktop_computing jobs to go on nodes with the desktop_computing property
-        
-@pytest.mark.usefixtures("minimal_db_initialization")
+
 def test_11_advance_reservation_limitation():
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
     insert_job(res=[(60, [('resource_id=2', "")])], reservation='toSchedule', user='yop')
@@ -152,7 +151,6 @@ def test_11_advance_reservation_limitation():
                                             reservation_date=check_reservation('2018-09-19 09:59:00'))
     with pytest.raises(Exception):
         apply_admission_rules(job_parameters)
-
         
 def test_13_default_walltime():
     job_parameters = default_job_parameters(resource=['/nodes=2/cpu=10'])
@@ -192,8 +190,7 @@ def test_20_job_properties_cputype():
     apply_admission_rules(job_parameters, r'^OFF_20.*')
     print(job_parameters.properties)
     assert job_parameters.properties == "(t='e') AND cputype = 'westmere'"
-    
-@pytest.mark.usefixtures("minimal_db_initialization")
+
 def test_21_add_sequential_constraint():
     job_parameters = default_job_parameters(resource=['resource_id=2,walltime=50:00:00', 'resource_id=12,walltime=1:00:00'])
     apply_admission_rules(job_parameters, r'^OFF_21.*')
