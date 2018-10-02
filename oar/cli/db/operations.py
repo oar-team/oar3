@@ -163,9 +163,13 @@ def reset_db(ctx):
     sys.exit(1)
 
 def check_db(ctx):
-    engine = create_engine(ctx.current_db.engine.url)
-    ctx.log(red('NOT YET IMPLEMENTED'))
-    sys.exit(1)
+    try:
+        engine = create_engine(ctx.current_db.engine.url)
+        ctx.log(' %s ~> %s' % (green('check'), 'Database connection is operational'))
+        sys.exit(0)
+    except Exception as ex:
+        ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
+        sys.exit(1)
 
 def get_table_columns(tables, table_name):
     return [d[table_name] for d in tables if table_name in d.keys()]
