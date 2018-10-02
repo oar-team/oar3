@@ -11,7 +11,7 @@ from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.types import Integer
 from sqlalchemy.sql.expression import select
 from sqlalchemy_utils.functions import (database_exists, create_database,
-                                        render_statement)
+                                        drop_database, render_statement)
 from sqlalchemy.ext.declarative import declarative_base
 
 from oar.lib import models
@@ -119,26 +119,27 @@ def create_db(ctx):
     # return system("echo \"$query\" | su - postgres -c \"psql $db\"");
     #
     
-    pgsql = 'psql -U postgres -c'
-    pgsql_db = 'psql {} -U postgres -c'.format(db_name)
+    pgsql = " |su - postgres -c \"psql\""
+    pgsql_db = " |su - postgres -c \"psql '{}'\"".format(db_name)
+
     
-    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
-               format(pgsql, db_user, db_pass), shell=True);
-    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
-               format(pgsql, db_user_ro, db_pass_ro), shell=True);
+    tools.call("echo \"CREATE ROLE {} LOGIN PASSWORD '{}';\"{}".\
+               format(db_user, db_pass, pgsql), shell=True);
+    tools.call("echo \"CREATE ROLE {} LOGIN PASSWORD '{}';\"{}".\
+               format(db_user_ro, db_pass_ro, pgsql), shell=True);
     
     ctx.log('Creating the database...\n')
-    tools.call("{} \"CREATE DATABASE {} OWNER {};\"".\
-               format(pgsql, db_name, db_user), shell=True);
+    tools.call("echo \"CREATE DATABASE {} OWNER {};\"{}".\
+               format(db_name, db_user, pgsql), shell=True);
 
-    tools.call("{} \"REVOKE CREATE ON SCHEMA public FROM PUBLIC;\"".\
+    tools.call("echo \"REVOKE CREATE ON SCHEMA public FROM PUBLIC;\"{}".\
                format(pgsql_db), shell=True);
 
-    tools.call("{} \"GRANT CREATE ON SCHEMA public TO {};\"".\
-               format(pgsql_db, db_user), shell=True);
+    tools.call("echo \"GRANT CREATE ON SCHEMA public TO {};\"{}".\
+               format(db_user, pgsql_db), shell=True);
 
-    tools.call("{} \"GRANT ALL PRIVILEGES ON DATABASE {} TO {}\"".\
-               format(pgsql, db_name, db_user), shell=True);
+    tools.call("echo \"GRANT ALL PRIVILEGES ON DATABASE {} TO {}\"{}".\
+               format(db_name, db_user, pgsql_db), shell=True);
 
     engine = create_engine(ctx.current_db.engine.url)
     # Create database
@@ -162,9 +163,13 @@ def reset_db(ctx):
     sys.exit(1)
 
 def check_db(ctx):
-    engine = create_engine(ctx.current_db.engine.url)
-    ctx.log(red('NOT YET IMPLEMENTED'))
-    sys.exit(1)
+    try:
+        engine = create_engine(ctx.current_db.engine.url)
+        ctx.log(' %s ~> %s' % (green('check'), 'Database connection is operational'))
+        sys.exit(0)
+    except Exception as ex:
+        ctx.log(*red(to_unicode(ex)).splitlines(), prefix=(' ' * 9))
+        sys.exit(1)
 
 def get_table_columns(tables, table_name):
     return [d[table_name] for d in tables if table_name in d.keys()]
@@ -225,8 +230,8 @@ def create_database_if_not_exists(ctx, engine):
 
 def drop_database_if_exists(ctx, engine):
     if database_exists(engine.url):
-        ctx.log(green(' drop') + ' ~> new database `%r`' % engine.url)
-        create_database(engine.url)
+        ctx.log(green(' drop') + ' ~> drop database `%r`' % engine.url)
+        drop_database(engine.url)
         return True
     return False
 

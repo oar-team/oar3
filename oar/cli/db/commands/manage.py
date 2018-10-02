@@ -51,11 +51,10 @@ def create(ctx, **kwargs):
     """Create OAR database."""
     ctx.update_options(**kwargs)
     ctx.configure_log()
-    import pdb; pdb.set_trace()
     create_db(ctx)
 
 @cli.command()
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
+@click.option('--current-db-url',
               default=default_database_url,
               help='The url for your current OAR database.')
 @pass_context
@@ -66,7 +65,7 @@ def drop(ctx, **kwargs):
     drop_db(ctx)
 
 @cli.command()
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
+@click.option('--current-db-url',
               default=default_database_url,
               help='The url for your current OAR database.')
 @pass_context
@@ -77,7 +76,7 @@ def upgrade(ctx, **kwargs):
     upgrade_db(ctx)
 
 @cli.command()
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
+@click.option('--current-db-url',
               default=default_database_url,
               help='The url for your current OAR database.')
 @pass_context
@@ -88,7 +87,7 @@ def reset(ctx, **kwargs):
     reset_db(ctx)
 
 @cli.command()
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
+@click.option('--current-db-url',
               default=default_database_url,
               help='The url for your current OAR database.')
 @pass_context

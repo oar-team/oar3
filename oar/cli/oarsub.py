@@ -340,7 +340,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
 
     reservation_date = 0
     if reservation:
-        (error, reservation_date) = check_reservation(lstrip_none(reservation))
+        (error, reservation_date) = check_reservation(reservation)
         if error[0] != 0:
             cmd_ret.error('', 0, error)
             cmd_ret.exit()
@@ -367,7 +367,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
                                    initial_request=initial_request,
                                    user=user,
                                    interactive=interactive,
-                                   reservation=reservation_date,
+                                   reservation_date=reservation_date,
                                    connect=connect,
                                    scanscript=scanscript,
                                    array=array,

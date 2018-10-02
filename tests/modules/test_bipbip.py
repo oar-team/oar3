@@ -27,6 +27,11 @@ def fake_launch_oarexec(cmt,data, oarexec_files):
 def fake_manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):
     return (fake_tag, fake_bad_nodes[action])
 
+@pytest.fixture(scope='function', autouse=True)
+def builtin_config(request):
+    config.setdefault_config({'CPUSET_PATH': '/oar',
+                              'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': 'cpuset'})
+
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
@@ -86,12 +91,9 @@ def _test_bipbip_toLaunch(noop=False, job_id=None, state='toLaunch', args=[]):
     for ass_res in db.query(AssignedResource).all():
         print('AssignedResource:', ass_res.moldable_id, ass_res.resource_id) 
 
-
-        
-    
     config['SERVER_HOSTNAME'] = 'localhost'
     config['DETACH_JOB_FROM_SERVER'] = 'localhost'
-    
+
     # Bipbip needs a job id
     bipbip = BipBip([job_id] + args)
     bipbip.run()
@@ -107,7 +109,6 @@ def test_bipbip_toLaunch_noop():
     _, bipbip = _test_bipbip_toLaunch(noop=True)
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0
-
 
 def test_bipbip_toLaunch_cpuset_error():
     #import pdb; pdb.set_trace()

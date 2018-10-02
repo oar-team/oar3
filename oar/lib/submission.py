@@ -7,7 +7,7 @@ import random
 
 from socket import gethostname
 
-from sqlalchemy import text, exc
+from sqlalchemy import (distinct, text, or_, func, exc)
 from procset import ProcSet
 from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
                      JobDependencie, JobStateLog, MoldableJobDescription,
@@ -26,14 +26,12 @@ DEFAULT_CONFIG = {
     'OPENSSH_CMD': 'ssh',
     'OAR_SSH_CONNECTION_TIMEOUT': '200',
     'STAGEIN_DIR': '/tmp',
-    'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD': '',
-    'CPUSET_PATH': '',
     'DEFAULT_JOB_WALLTIME': 3600,
     'OARSUB_DEFAULT_RESOURCES': '/resource_id=1',
     'OARSUB_NODES_RESOURCES': 'resource_id',
-    'queue': 'default',
-    'project': 'default',
-    'signal': 12
+    'QUEUE': 'default',
+    'PROJECT': 'default',
+    'SIGNAL': 12
 }
 
 def default_submission_config(default_value=None):
@@ -433,7 +431,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
     """
     # estimate_job_nb_resources
     estimated_nb_resources = []
-    resource_available = False
+    is_resource_available = False
     resource_set = ResourceSet()
     resources_itvs = resource_set.roid_itvs
 
@@ -454,7 +452,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
             # determine resource constraints
             #
             if (not j_properties) and \
-               (not jrg_grp_property or (jrg_grp_property == "type = 'default'")):
+               (not jrg_grp_property or (jrg_grp_property == "type='default'")): #TODO change to re.match
                 # copy itvs
                 constraints = copy.copy(resource_set.roid_itvs)
             else:
@@ -497,18 +495,18 @@ def estimate_job_nb_resources(resource_request, j_properties):
             break
 
         if estimated_nb_res > 0:
-            resource_available = True
+            is_resource_available = True
 
         estimated_nb_resources.append((estimated_nb_res, walltime))
         print_info('Moldable instance: ', mld_idx + 1,
                    ' Estimated nb resources: ', estimated_nb_res,
                    ' Walltime: ', walltime)
 
-    if not resource_available:
+    if not is_resource_available:
         error = (-5, "There are not enough resources for your request")
         return (error, None, None)
 
-    return((0, ''), resource_available, estimated_nb_resources)
+    return((0, ''), is_resource_available, estimated_nb_resources)
 
 
 def add_micheline_subjob(job_parameters,
@@ -559,8 +557,13 @@ def add_micheline_subjob(job_parameters,
     kwargs = job_parameters.kwargs(array_commands[0], date)
     estimated_nbr, estimated_walltime = estimated_nb_resources[0]
     kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
-                                                job_parameters.reservation, job_parameters.queue,
+                                                job_parameters.reservation_date, job_parameters.queue,
                                                 job_parameters.project, job_parameters.types, '')
+    if job_parameters.reservation_date:
+        kwargs['reservation'] = 'toSchedule'
+    else:
+        kwargs['reservation'] = 'None'
+
     kwargs['array_index'] = array_index
     kwargs['stdout_file'] = stdout
     kwargs['stderr_file'] = stderr
@@ -731,7 +734,7 @@ def add_micheline_simple_array_job(job_parameters,
     kwargs = job_parameters.kwargs(array_commands[0], date)
     estimated_nbr, estimated_walltime = estimated_nb_resources[0]
     kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
-                                                job_parameters.reservation, job_parameters.queue,
+                                                job_parameters.reservation_date, job_parameters.queue,
                                                 job_parameters.project, job_parameters.types, '')
     kwargs['array_index'] = array_index
     
@@ -880,9 +883,9 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
 
     array_id = 0
 
-    if job_parameters.reservation:
-        job_parameters.reservation_field = 'toSchedule'
-        job_parameters.start_time = job_parameters.reservation
+    # TODO can we remove it ?
+    if job_parameters.reservation_date:
+        job_parameters.start_time = job_parameters.reservation_date
 
     # job_vars['user'] = os.environ['OARDO_USER']
 
@@ -932,8 +935,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     code = compile(str_rules, '<string>', 'exec')
 
     try:
-        #in exec() globals must be a dict,
-        exec(code, job_parameters.__dict__)
+        exec(code, globals(), job_parameters.__dict__)
     except:
         err = sys.exc_info()
         error = (-2, err[1] + ', a failed admission rule prevented submitting the job.') 
@@ -1015,11 +1017,11 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
 
     return((0,''), job_id_list)
 
-def check_reservation(reservation):
-    reservation = lstrip_none(reservation)
-    if reservation:
+def check_reservation(reservation_date_str):
+    reservationn_date_str = lstrip_none(reservation_date_str)
+    if reservationn_date_str:
         m = re.search(r'^\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*$',
-                      reservation)
+                      reservationn_date_str)
         if m:
             reservation_date = sql_to_local(m.group(1) + ' ' + m.group(2))
             return ((0, ''), reservation_date) 
@@ -1054,7 +1056,7 @@ class JobParameters():
                     'notify', 'name', 'types', 'directory',
                     'dependencies', 'stdout', 'stderr', 'hold',
                     'project', 'initial_request', 'user',
-                    'interactive', 'reservation', 'connect', 'scanscript',
+                    'interactive', 'reservation_date', 'connect', 'scanscript',
                     'array', 'array_params', 'array_param_file',
                     'use_job_key', 'import_job_key_inline',
                     'import_job_key_file', 'export_job_key_file']:
@@ -1082,13 +1084,13 @@ class JobParameters():
             self.array_nb = 1
 
         if not self.queue:
-            self.queue = config['queue']
+            self.queue = config['QUEUE']
             
         if not self.project:
-            self.project = config['project']
+            self.project = config['PROJECT']
 
         if not self.signal:
-            self.signal = config['signal']
+            self.signal = config['SIGNAL']
 
         if self.directory:
             self.launching_directory = self.directory
@@ -1100,7 +1102,6 @@ class JobParameters():
             
         self.array_id = 0
         self.start_time = 0
-        self.reservation_field = 'None'
 
         # prepare and build resource_request
         default_resources = config['OARSUB_DEFAULT_RESOURCES']
@@ -1120,10 +1121,10 @@ class JobParameters():
         if self.error[0] != 0:
             return self.error
 
-        if not self.command and not self.interactive and not self.reservation and not self.connect:
+        if not self.command and not self.interactive and not self.reservation_date and not self.connect:
             return (5, 'Command or interactive flag or advance reservation time or connection directive must be provided')
 
-        if self.interactive and self.reservation:
+        if self.interactive and self.reservation_date:
             return (7, 'An advance reservation cannot be interactive.')
         
         if self.interactive and 'desktop_computing' in self.types:
@@ -1185,7 +1186,6 @@ class JobParameters():
         kwargs['queue_name'] = self.queue
         kwargs['job_name'] = self.name
         kwargs['checkpoint_signal'] = self.signal
-        kwargs['reservation'] = self.reservation_field
 
         return kwargs
 

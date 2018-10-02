@@ -123,7 +123,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 name=wkld_metadata.name2int(job.name),
                 array=job.array_id,
                 type=0 if job.type == 'PASSIVE' else 1,
-                reservation=1 if job.reservation else 0,
+                reservation=1 if (job.reservation != 'None') else 0,
                 cigri=job.name.split('.')[1] if (job.name and job.name.split('.')[0] == 'cigri') else '0'
             )
             jobs_metrics[job.id] = job_metrics
