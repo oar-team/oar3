@@ -51,7 +51,6 @@ def create(ctx, **kwargs):
     """Create OAR database."""
     ctx.update_options(**kwargs)
     ctx.configure_log()
-    import pdb; pdb.set_trace()
     create_db(ctx)
 
 @cli.command()

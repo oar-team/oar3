@@ -119,26 +119,27 @@ def create_db(ctx):
     # return system("echo \"$query\" | su - postgres -c \"psql $db\"");
     #
     
-    pgsql = 'psql -U postgres -c'
-    pgsql_db = 'psql {} -U postgres -c'.format(db_name)
+    pgsql = " |su - postgres -c \"psql\""
+    pgsql_db = " |su - postgres -c \"psql '{}'\"".format(db_name)
+
     
-    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
-               format(pgsql, db_user, db_pass), shell=True);
-    tools.call("{} \"CREATE ROLE {} LOGIN PASSWORD '{}';\"".\
-               format(pgsql, db_user_ro, db_pass_ro), shell=True);
+    tools.call("echo \"CREATE ROLE {} LOGIN PASSWORD '{}';\"{}".\
+               format(db_user, db_pass, pgsql), shell=True);
+    tools.call("echo \"CREATE ROLE {} LOGIN PASSWORD '{}';\"{}".\
+               format(db_user_ro, db_pass_ro, pgsql), shell=True);
     
     ctx.log('Creating the database...\n')
-    tools.call("{} \"CREATE DATABASE {} OWNER {};\"".\
-               format(pgsql, db_name, db_user), shell=True);
+    tools.call("echo \"CREATE DATABASE {} OWNER {};\"{}".\
+               format(db_name, db_user, pgsql), shell=True);
 
-    tools.call("{} \"REVOKE CREATE ON SCHEMA public FROM PUBLIC;\"".\
+    tools.call("echo \"REVOKE CREATE ON SCHEMA public FROM PUBLIC;\"{}".\
                format(pgsql_db), shell=True);
 
-    tools.call("{} \"GRANT CREATE ON SCHEMA public TO {};\"".\
-               format(pgsql_db, db_user), shell=True);
+    tools.call("echo \"GRANT CREATE ON SCHEMA public TO {};\"{}".\
+               format(db_user, pgsql_db), shell=True);
 
-    tools.call("{} \"GRANT ALL PRIVILEGES ON DATABASE {} TO {}\"".\
-               format(pgsql, db_name, db_user), shell=True);
+    tools.call("echo \"GRANT ALL PRIVILEGES ON DATABASE {} TO {}\"{}".\
+               format(db_name, db_user, pgsql_db), shell=True);
 
     engine = create_engine(ctx.current_db.engine.url)
     # Create database
@@ -146,7 +147,6 @@ def create_db(ctx):
          ctx.log("\nNothing to do.")
 
 def drop_db(ctx):
-    import pdb; pdb.set_trace()
     engine = create_engine(ctx.current_db.engine.url)
     # Drop database
     if not drop_database_if_exists(ctx, engine):
