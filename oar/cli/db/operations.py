@@ -11,7 +11,7 @@ from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.types import Integer
 from sqlalchemy.sql.expression import select
 from sqlalchemy_utils.functions import (database_exists, create_database,
-                                        render_statement)
+                                        drop_database, render_statement)
 from sqlalchemy.ext.declarative import declarative_base
 
 from oar.lib import models
@@ -146,6 +146,7 @@ def create_db(ctx):
          ctx.log("\nNothing to do.")
 
 def drop_db(ctx):
+    import pdb; pdb.set_trace()
     engine = create_engine(ctx.current_db.engine.url)
     # Drop database
     if not drop_database_if_exists(ctx, engine):
@@ -225,8 +226,8 @@ def create_database_if_not_exists(ctx, engine):
 
 def drop_database_if_exists(ctx, engine):
     if database_exists(engine.url):
-        ctx.log(green(' drop') + ' ~> new database `%r`' % engine.url)
-        create_database(engine.url)
+        ctx.log(green(' drop') + ' ~> drop database `%r`' % engine.url)
+        drop_database(engine.url)
         return True
     return False
 
