@@ -45,6 +45,15 @@ override_dh_auto_build:
 override_dh_auto_install:
 	dh_auto_install
 	$(MAKE) -e packages-install PACKAGES_DIR=$(CURDIR)/$(INSTALLDIR)
+	# oar-server
+	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/init.d/oar-server > debian/oar-server.init
+	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/default/oar-server > debian/oar-server.default
+	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/cron.d/oar-server > debian/oar-server.cron.d
+	# oar-node
+	cat $(CURDIR)/$(INSTALLDIR)/oar-node/usr/share/oar/oar-node/init.d/oar-node > debian/oar-node.init
+	cat $(CURDIR)/$(INSTALLDIR)/oar-node/usr/share/oar/oar-node/default/oar-node > debian/oar-node.default
+	# oar-common
+	cat $(CURDIR)/$(INSTALLDIR)/oar-common/usr/share/oar/oar-common/logrotate.d/oar-common > debian/oar-common.logrotate
 	# oar-doc	
 	rm -r $(CURDIR)/$(INSTALLDIR)/oar-doc/usr/share/doc/oar-doc/doctrees
 	dh_install -i
