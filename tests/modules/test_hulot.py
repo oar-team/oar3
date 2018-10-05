@@ -18,7 +18,7 @@ fakezmq = FakeZmq()
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6670,
+    'HULOT_PORT' : 6672,
     'ENERGY_SAVING_WINDOW_SIZE': 25,
     'ENERGY_SAVING_WINDOW_TIME': 60,
     'ENERGY_SAVING_WINDOW_TIMEOUT': 120,

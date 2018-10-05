@@ -27,9 +27,9 @@ def monkeypatch_tools(request, monkeypatch):
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
     config['SERVER_HOSTNAME'] = 'localhost'
-    config['APPENDICE_SERVER_PORT'] = '6668'
+    config['APPENDICE_SERVER_PORT'] = '6670'
     config['BIPBIP_COMMANDER_SERVER'] = 'localhost'
-    config['BIPBIP_COMMANDER_PORT'] = '6669'
+    config['BIPBIP_COMMANDER_PORT'] = '6671'
     fakezmq.reset()
 
     @request.addfinalizer

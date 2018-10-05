@@ -27,7 +27,7 @@ fakezmq.reset()
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6670,
+    'HULOT_PORT' : 6672,
 }
 
 @pytest.yield_fixture(scope='function', autouse=True)
