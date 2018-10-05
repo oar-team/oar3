@@ -32,9 +32,9 @@ import oar.lib.tools as tools
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
-    'APPENDICE_SERVER_PORT': '6668',
+    'APPENDICE_SERVER_PORT': '6670',
     'BIPBIP_COMMANDER_SERVER': 'localhost',
-    'BIPBIP_COMMANDER_PORT': '6669',
+    'BIPBIP_COMMANDER_PORT': '6671',
     'MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING': '25',
     'DETACH_JOB_FROM_SERVER': '1',
     'LOG_FILE': '/var/log/oar.log'

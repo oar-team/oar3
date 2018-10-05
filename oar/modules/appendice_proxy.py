@@ -14,9 +14,9 @@ from oar.lib import (config, get_logger)
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
     'SERVER_PORT': '6666',
-    'APPENDICE_SERVER_PORT': '6668',
+    'APPENDICE_SERVER_PORT': '6670',
     'BIPBIP_COMMANDER_SERVER': 'localhost',
-    'BIPBIP_COMMANDER_PORT': '6669',
+    'BIPBIP_COMMANDER_PORT': '6671',
 }
 
 config.setdefault_config(DEFAULT_CONFIG)

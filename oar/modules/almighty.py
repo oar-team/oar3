@@ -19,7 +19,7 @@ import pdb
 DEFAULT_CONFIG = {
     'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
-    'APPENDICE_SERVER_PORT': '6668', #new endpoint which replace appendic
+    'APPENDICE_SERVER_PORT': '6670', #new endpoint which replaces appendice
     'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
     'FINAUD_FREQUENCY': '300',
     'LOG_FILE': '/var/log/oar.log',

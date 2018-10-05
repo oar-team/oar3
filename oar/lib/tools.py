@@ -23,9 +23,9 @@ from multiprocessing import Process
 DEFAULT_CONFIG = {
     'SERVER_HOSTNAME': 'localhost',
     'SERVER_PORT': '6666',
-    'APPENDICE_SERVER_PORT': '6668',
+    'APPENDICE_SERVER_PORT': '6670',
     'BIPBIP_COMMANDER_SERVER': 'localhost',
-    'BIPBIP_COMMANDER_PORT': '6669',
+    'BIPBIP_COMMANDER_PORT': '6671',
     'LEON_SOFT_WALLTIME': 20,
     'LEON_WALLTIME': 300,
     'TIMEOUT_SSH': 120,
@@ -60,7 +60,7 @@ DEFAULT_CONFIG = {
     'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
     'OAREXEC_DEBUG_MODE' : '1',
     'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6670
+    'HULOT_PORT' : 6672
     }
 
 logger = get_logger("oar.lib.tools")
