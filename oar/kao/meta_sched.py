@@ -49,8 +49,6 @@ from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
 import oar.kao.advanced_extra_metasched
 
-from oar.kao.batsim_sched_proxy import BatsimSchedProxy
-
 from procset import ProcSet
 
 # Constant duration time of a besteffort job *)
@@ -554,7 +552,7 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
 def call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets, job_security_time,
                             queue, now):
     
-    #from oar.kao.batsim_sched_proxy import BatsimSchedProxy
+    from oar.kao.batsim_sched_proxy import BatsimSchedProxy
 
     global batsim_sched_proxy
     batsim_sched_proxy = BatsimSchedProxy(plt, scheduled_jobs, all_slot_sets,
