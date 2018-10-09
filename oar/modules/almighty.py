@@ -155,7 +155,7 @@ class Almighty(object):
     def __init__(self):  
         self.state = 'Init'
         logger.debug("Current state [" + self.state + "]")
-        
+
         # Activate appendice socket
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)

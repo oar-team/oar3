@@ -264,7 +264,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     log_std = ''
 
     remote_host = config['SERVER_HOSTNAME']
-    remote_port = int(config['SERVER_PORT'])
+    remote_port = int(config['APPENDICE_SERVER_PORT'])
 
     # TODO Deploy_hostname / Cosystem_hostname
     # $Deploy_hostname = get_conf("DEPLOY_HOSTNAME");
@@ -442,7 +442,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
             print('OAR_JOB_ID=', job_id)
 
     result = (job_id_lst, oar_array_id)
-    
+
     # Notify Almigthy
     tools.notify_almighty(cmd_executor)
     #import pdb; pdb.set_trace()
