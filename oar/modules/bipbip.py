@@ -48,6 +48,7 @@ class BipBip(object):
             self.oarexec_challenge = args[3]
         
     def run(self):
+
         job_id = self.job_id
         if not job_id:
             self.exit_code = 1
@@ -423,16 +424,20 @@ class BipBip(object):
                 return 1
             
             return 0
-            
-            
+
 def main(): # pragma: no cover
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:])
-        bipbip.run()
+        try:
+            bipbip.run()
+        except Exception as ex:
+            logger.error('Bipbip.run trouble on job {}: {}'.format(sys.argv[1], ex))
         return bipbip.exit_code
     else:
         return 1
     
 if __name__ == '__main__':  # pragma: no cover
     exit_code = main()
+    if exit_code:
+        logger.error('Bipbip.run exit code is not null: '.format(exit_code))
     sys.exit(exit_code)
