@@ -246,7 +246,7 @@ class BipBip(object):
 
             if len(bad) > 0:
                 set_job_message(job_id, 'One or several nodes are not responding correctly')
-                logger.error('[' + str(job.id) + ']  /!\ Some nodes are inaccessible (' + event_type\
+                logger.error('[' + str(job.id) + '] Some nodes are inaccessible (' + event_type\
                              + '):\n' + str(bad))
                 exit_bipbip = 1
                 if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):

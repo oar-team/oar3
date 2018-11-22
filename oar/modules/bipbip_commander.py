@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 """Process that launches and manages bipbip processes
-   OAREXEC_REGEXP   OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)
-   OARRUNJOB_REGEXP   OARRUNJOB_(\d+)
-   LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)
+   OAREXEC_REGEXP   'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
+   OARRUNJOB_REGEXP  'OARRUNJOB_(\d+)'
+   LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)'
 
    Commands:
      OAREXEC
@@ -15,13 +15,13 @@
 
 
    Example
-{
+   {
    "job_id": 5,
    "cmd": "LEONEXTERMINATE"
    "args": [5]
-}
-
+   }
 """
+
 import os
 import socket
 import zmq

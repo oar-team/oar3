@@ -209,7 +209,7 @@ class SWFWorkload(object):
             li = line.strip()
             if not li.startswith(";"):
                 # print(line.rstrip())
-                fields = [int(f) for f in re.split('\W+', line) if f != '']
+                fields = [int(f) for f in re.split(r'\W+', line) if f != '']
                 jid = fields[JID]
                 sub_time = fields[SUB_TIME]
                 self.jobs_fields[fields[JID]] = fields
