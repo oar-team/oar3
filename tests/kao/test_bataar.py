@@ -61,7 +61,7 @@ BASE_SIMU_MSGS = [
          {'timestamp':5.0,
           'type': 'SIMULATION_BEGINS',
           'data':{
-              'nb_resources':4,
+              'nb_resources':4,  #TODO REMOVE
               'nb_compute_resources':4,
               'nb_storage_resources':0,
               'compute_resources': [
@@ -71,9 +71,18 @@ BASE_SIMU_MSGS = [
                   {'id':3, 'name': 'node4'}
               ],
               'storage_resources': [],
-              'allow_time_sharing': False,
+              'allow_time_sharing': False, #TODO REMOVE
+              'allow_time_sharing_on_compute': False,
+              'allow_time_sharing_on_storage': False,
               'config': {
-                  'redis':{
+                  'profiles-forwarded-on-submission': False,
+                  'dynamic-jobs-enabled': False,
+                  'dynamic-jobs-acknowledged': False,
+                  'redis-enabled': True,
+                  'redis-hostname': 'localhost',
+                  'redis-port': 6379,
+                  'redis-prefix': 'default',
+                  'redis':{ #TODO REMOVE
                       'enabled': True, 'hostname': 'localhost',
                       'port': 6379, 'prefix': 'default'
                   },
@@ -82,7 +91,7 @@ BASE_SIMU_MSGS = [
                   }
               },
               'workloads': {},
-              'profiles': {}
+              'profiles': {'foo':{}} #TODO
           }
          }
      ]
@@ -116,7 +125,7 @@ def exec_gene(options):
     #import pdb; pdb.set_trace()
     global data_storage
     data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}',
-                     'default:profile_foo!1': b'{}'}
+                     'default:profile_foo!1': b'{"type":"delay", "runtime": 120}'}
     args = options
     args.append('--scheduler_delay=5')
     runner = CliRunner()
@@ -206,7 +215,9 @@ def exec_gene_tokens(options):
                      'default:job_foo!2':
                      b'{"id":"foo!2","subtime":10,"walltime":100,"res":2,"tokens":2,"profile":"1"}',
                      'default:job_foo!3':
-                     b'{"id":"foo!3","subtime":10,"walltime":100,"res":2,"profile":"1"}'
+                     b'{"id":"foo!3","subtime":10,"walltime":100,"res":2,"profile":"1"}',
+                     'profile_foo!1':
+                     b'{"command": "foo","delay": 290.53, "runtime": "type": "delay"}'
     }
     args = options
     args.append('--scheduler_delay=0.5')

@@ -17,6 +17,7 @@ from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
+from batsim import __version__ as batsim_version
 from batsim.batsim import BatsimScheduler, Batsim
 from batsim.network import NetworkHandler
 import oar.kao.advanced_scheduling
@@ -189,7 +190,12 @@ class BatSched(BatsimScheduler):
 
     def onAfterBatsimInit(self):
         """Initialiaze OAR's structures related to plaform (as resources and theirs hierarchies)"""
-        self.nb_res = self.bs.nb_resources
+        #import pdb; pdb.set_trace()
+        #self.nb_res = self.bs.nb_compute_resources
+        if batsim_version == '2.1.1':
+            self.nb_res = self.bs.nb_res
+        else:
+            self.nb_res = self.bs.nb_resources
         nb_res = self.nb_res
         node_size = self.node_size
 
@@ -450,6 +456,8 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
     print("Scheduler Policy:", scheduler_policy)
     print("Scheduler delay:", scheduler_delay)
 
+    print("Bastim version: ", batsim_version)
+    
     verbose_level = 0
     if verbose:
         verbose_level = 2
@@ -458,8 +466,11 @@ def bataar(database_mode, socket_endpoint, node_size, scheduler_policy, types, s
     scheduler = BatSched(scheduler_policy, types, scheduler_delay, node_size, database_mode, 'simu', tokens)
     #TODO support batsim usage without redis
     network_handler = NetworkHandler(socket_endpoint)
-    batsim = Batsim(scheduler, network_handler)
-
+    #import pdb; pdb.set_trace()
+    try:
+        batsim = Batsim(scheduler, network_handler)
+    except Exception as e:
+        print("Error during Batsim client initialization: ", e)
     #import pdb; pdb.set_trace()
     batsim.start()
 
