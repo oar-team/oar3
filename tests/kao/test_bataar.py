@@ -61,7 +61,7 @@ BASE_SIMU_MSGS = [
          {'timestamp':5.0,
           'type': 'SIMULATION_BEGINS',
           'data':{
-              'nb_resources':4,  #TODO REMOVE
+              'nb_resources':4,  #TODO REMOVE w/ pybatsim 3.0.0
               'nb_compute_resources':4,
               'nb_storage_resources':0,
               'compute_resources': [
@@ -71,9 +71,11 @@ BASE_SIMU_MSGS = [
                   {'id':3, 'name': 'node4'}
               ],
               'storage_resources': [],
-              'allow_time_sharing': False, #TODO REMOVE
-              'allow_time_sharing_on_compute': False,
-              'allow_time_sharing_on_storage': False,
+              'allow_time_sharing': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_time_sharing_on_compute': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_time_sharing_on_storage': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_compute_sharing': False,
+              'allow_storage_sharing': False,             
               'config': {
                   'profiles-forwarded-on-submission': False,
                   'dynamic-jobs-enabled': False,
@@ -82,16 +84,16 @@ BASE_SIMU_MSGS = [
                   'redis-hostname': 'localhost',
                   'redis-port': 6379,
                   'redis-prefix': 'default',
-                  'redis':{ #TODO REMOVE
-                      'enabled': True, 'hostname': 'localhost',
-                      'port': 6379, 'prefix': 'default'
+                  'redis':{ #TODO REMOVE w/ pybatsim 3.0.0
+                      'enabled': True, 'hostname': 'localhost',  #TODO REMOVE w/ pybatsim 3.0.0
+                      'port': 6379, 'prefix': 'default'  #TODO REMOVE w/ pybatsim 3.0.0
                   },
                   'job_submission': {'forward_profiles': False,
                                  'from_scheduler': {'enabled': False, 'acknowledge': True}
                   }
               },
               'workloads': {},
-              'profiles': {'foo':{}} #TODO
+              'profiles': {'foo':{}} #TODO REMOVE w/ pybatsim 3.0.0
           }
          }
      ]
