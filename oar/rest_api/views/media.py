@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-oar.rest_api.views.resource
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oar.rest_api.views.media
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Define resources api interaction
+Define media (aka file access) api interaction
 
 """
 import os
