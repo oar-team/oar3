@@ -1,14 +1,14 @@
 MODULE=api
 
-SRCDIR=.
+SRCDIR=oar
 
 # OAR_PERLLIB = $(SRCDIR)/lib
 
 # OARDIR_BINFILES = $(SRCDIR)/oarapi.pl
 
-SHAREDIR_FILES = $(SRCDIR)/setup/apache2/apache2.conf.in \
-		   $(SRCDIR)/setup/apache2/oarapi.wsgi\
-		   $(SRCDIR)/../oar/tools/stress_factor.sh
+SHAREDIR_FILES = $(SRCDIR)/../setup/apache2/apache2.conf.in \
+		   $(SRCDIR)/../setup/apache2/oarapi.wsgi\
+		   $(SRCDIR)/tools/stress_factor.sh
 
 # EXAMPLEDIR_FILES = $(SRCDIR)/examples/oarapi_examples.txt \
 # 		   $(SRCDIR)/examples/chandler.rb \
