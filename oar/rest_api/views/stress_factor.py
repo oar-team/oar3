@@ -31,7 +31,7 @@ def index():
     if 'API_STRESS_FACTOR_SCRIPT' in config:
         stress_factor_script = config['API_STRESS_FACTOR_SCRIPT']
 
-    cmd = [OARDODO_CMD, 'bash', '--noprofile', '--norc', '-c', 'stress_factor_script']
+    cmd = [OARDODO_CMD, 'bash', '--noprofile', '--norc', '-c', stress_factor_script]
 
     stress_factor_result = tools.check_output(cmd).decode().split('\n')
 
