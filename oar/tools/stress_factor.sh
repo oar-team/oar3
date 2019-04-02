@@ -18,7 +18,7 @@
 . /etc/oar/oar.conf
 
 # By default, returns the load of the OAR server or 1 if could not get it
-global_stress=`(su - oar -c "$OPENSSH_CMD $SERVER_HOSTNAME cat /proc/loadavg" 2>/dev/null|| echo 1)| cut -f 1 -d" "`
+global_stress=`(cat /proc/loadavg 2>/dev/null|| echo 1)| cut -f 1 -d" "`
 echo -n "GLOBAL_STRESS="
 echo $global_stress
 
