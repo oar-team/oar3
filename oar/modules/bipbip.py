@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import socket
 import pkg_resources
 
 from oar.lib import (config, get_logger)
@@ -292,6 +293,10 @@ class BipBip(object):
         elif 'deploy' in job_types.keys():
             head_node = config['DEPLOY_HOSTNAME']
 
+        almighty_hostname = config['SERVER_HOSTNAME']
+        if re.match(r'\s*localhost.*$', almighty_hostname) or re.match(r'^\s*127.*$', almighty_hostname):
+            almighty_hostname = socket.gethostname()
+
 
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
@@ -325,7 +330,7 @@ class BipBip(object):
             'walltime_seconds': mold_job_description.walltime,
             'command': job.command,
             'challenge': job_challenge,
-            'almighty_hostname': config['SERVER_HOSTNAME'],
+            'almighty_hostname': almighty_hostname,
             'almighty_port': config['SERVER_PORT'],
             'checkpoint_signal': job.checkpoint_signal,
             'debug_mode': config['OAREXEC_DEBUG_MODE'],
