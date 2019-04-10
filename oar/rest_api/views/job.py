@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 
 from flask import url_for, g
 
@@ -193,7 +194,18 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         (error, reservation_date) = check_reservation(reservation)
         if error[0] != 0:
             pass #TODO
+        
+    if command and re.match(r'.*\$HOME.*', command):
+        command = command.replace('$HOME', os.path.expanduser('~' + user))
+        
+    if directory and re.match(r'.*\$HOME.*', directory):
+        directory = directory.replace('$HOME', os.path.expanduser('~' + user))
 
+    if workdir and re.match(r'.*\$HOME.*', workdir):
+        workdir = workdir.replace('$HOME', os.path.expanduser('~' + user))
+
+
+        
     #if not isinstance(resource, list):
     #    resource = [resource]
 
