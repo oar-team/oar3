@@ -203,9 +203,12 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 
     if workdir and re.match(r'.*\$HOME.*', workdir):
         workdir = workdir.replace('$HOME', os.path.expanduser('~' + user))
-
-
         
+    array_params = []
+    array_nb = 1
+    if param_file:
+        array_params = param_file.split('\n')
+        array_nb = len(array_params)
     #if not isinstance(resource, list):
     #    resource = [resource]
 
@@ -214,7 +217,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         command=command,
         resource=resource,
         workdir=workdir, #TODO
-        array_param_file=param_file,
+        array_params = array_params,
         array=array,
         #scanscript=scanscript, TODO
         queue=queue,
@@ -248,7 +251,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 
     (error, job_id_lst) = submission.submit()
 
-    if len(job_id_lst) == 1:
+    if len(job_id_lst) >= 1:
         job_id = job_id_lst[0]        
         g.data['id'] = job_id
         url = url_for('%s.%s' % (app.name, 'show'), job_id=job_id)
