@@ -395,7 +395,7 @@ def test_app_job_post_array(client):
             'param_file':'param9 9\nparam8 8\nparam7 7',}
     res = client.post(url_for('jobs.submit'), data=data, headers={'X_REMOTE_IDENT': 'bob'})
     print(res.json)
-    job_array_ids = db.query(Job.id, Job.array_id, Job.array_index).all()
+    job_array_ids = db.query(Job.id, Job.array_id, Job.array_index, Job.command).all()
     print(job_array_ids)
     href = '/jobs/{}'.format(job_array_ids[0][0])
     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])

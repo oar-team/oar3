@@ -512,7 +512,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
 def add_micheline_subjob(job_parameters,
                          ssh_private_key, ssh_public_key,
                          array_id, array_index,
-                         array_commands):
+                         command):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
@@ -554,7 +554,7 @@ def add_micheline_subjob(job_parameters,
     
     # Insert job
 
-    kwargs = job_parameters.kwargs(array_commands[0], date)
+    kwargs = job_parameters.kwargs(command, date)
     estimated_nbr, estimated_walltime = estimated_nb_resources[0]
     kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
                                                 job_parameters.reservation_date, job_parameters.queue,
@@ -950,6 +950,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     # TODO move to job class ?
     if job_parameters.array_params:
         array_commands = [job_parameters.command + ' ' + params for params in job_parameters.array_params]
+        job_parameters.array_nb = len(array_commands)
     else:
         array_commands = [job_parameters.command] * job_parameters.array_nb
 
@@ -957,7 +958,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     job_id_list = []
     ssh_private_key = ''
     ssh_public_key = ''
-    if job_parameters.array_nb > 1 and not job_parameters.use_job_key:
+    if False and job_parameters.array_nb > 1 and not job_parameters.use_job_key:
         # Simple array job submission is used
         (error, job_id_list) = add_micheline_simple_array_job(job_parameters,
                                                               ssh_private_key, ssh_public_key,
@@ -977,7 +978,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
             (error, job_id) = add_micheline_subjob(job_parameters,
                                                    ssh_private_key, ssh_public_key,
                                                    array_id, array_index,
-                                                   array_commands)
+                                                   cmd)
 
             if error[0] == 0:
                 job_id_list.append(job_id)
