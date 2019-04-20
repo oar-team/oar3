@@ -103,9 +103,10 @@ def test_app_jobs_get_ids(client):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_jobs_get_array(client):
-    insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
+    insert_job(res=[(60, [('resource_id=4', "")])], state='Terminated', properties="", array_id=3)
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", array_id=3)
     res = client.get(url_for('jobs.index', array=3))
+    print(res)
     print(res.json, len(res.json['items']))
     assert len(res.json['items']) == 2
 
@@ -394,7 +395,7 @@ def test_app_job_post_array(client):
             'param_file':'param9 9\nparam8 8\nparam7 7',}
     res = client.post(url_for('jobs.submit'), data=data, headers={'X_REMOTE_IDENT': 'bob'})
     print(res.json)
-    job_array_ids = db.query(Job.id, Job.array_id).all()
+    job_array_ids = db.query(Job.id, Job.array_id, Job.array_index).all()
     print(job_array_ids)
     href = '/jobs/{}'.format(job_array_ids[0][0])
     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])

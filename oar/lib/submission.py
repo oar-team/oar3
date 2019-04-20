@@ -756,10 +756,11 @@ def add_micheline_simple_array_job(job_parameters,
     jobs_data = []
     kwargs['array_id'] = array_id
     for command in array_commands[1:]:
+        kwargs['array_index'] += 1
         job_data = kwargs.copy()
         job_data['command'] = command
         jobs_data.append(job_data)
-
+        
     db.session.execute(Job.__table__.insert(), jobs_data)
     db.commit()
 
