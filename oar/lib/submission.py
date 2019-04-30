@@ -958,7 +958,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     job_id_list = []
     ssh_private_key = ''
     ssh_public_key = ''
-    if False and job_parameters.array_nb > 1 and not job_parameters.use_job_key:
+    if job_parameters.array_nb > 1 and not job_parameters.use_job_key:
         # Simple array job submission is used
         (error, job_id_list) = add_micheline_simple_array_job(job_parameters,
                                                               ssh_private_key, ssh_public_key,
