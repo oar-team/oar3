@@ -379,7 +379,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
 
     if (not mode == 'swf') and (not mode == 'owf'):
         print('Mode must set to swf or owf')
-        exit()
+        exit(1)
 
     if db_url:
         db._cache['uri'] = db_url
@@ -394,9 +394,9 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
                                 func.min(Job.id).label('min')).one()
     except Exception as e:
         print(e)
-        exit()
+        exit(1)
     if jobids_range == (None, None):
-        exit()
+        exit(1)
     #else:
     #    exit()
         
@@ -408,7 +408,7 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
 
     if first_jobid > last_jobid:
         print('First job id must be lower then last one.')
-        exit()
+        exit(1)
 
     if not trace_file:
         suffix = 'swf' if mode == 'swf' else 'owf'
