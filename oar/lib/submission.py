@@ -1142,7 +1142,7 @@ class JobParameters():
         if self.notify and re.match(r'^.*exec\s*:.+$', self.notify):
             m = re.search(r'.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', self.notify)
             if not m:
-                return(16, 'insecure characters found in the notification method (the allowed regexp is: [a-zA-Z0-9_.\/ -]+).')
+                return(16, "insecure characters found in the notification method (the allowed regexp is: [a-zA-Z0-9_.\\/ -]+).")
 
         return (0, '')
 
