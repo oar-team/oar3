@@ -251,8 +251,9 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 
     (error, job_id_lst) = submission.submit()
 
+    # TODO Enhance
     if len(job_id_lst) >= 1:
-        job_id = job_id_lst[0]        
+        job_id = min(job_id_lst[0]) # the minimum ids is also the array_id when array of jobs is submitted          
         g.data['id'] = job_id
         url = url_for('%s.%s' % (app.name, 'show'), job_id=job_id)
         g.data['links'] = [{'rel': 'rel', 'href': url}]
