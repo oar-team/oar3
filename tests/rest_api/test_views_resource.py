@@ -7,8 +7,6 @@ from oar.lib import (db, Resource)
 from oar.lib.job_handling import (insert_job, set_job_state)
 from oar.kao.meta_sched import meta_schedule
 
-
-from flask import url_for
 def test_app_resources_index(client):
     res = client.get(url_for('resources.index'))
     print(res.json)
@@ -110,3 +108,20 @@ def test_app_resource_delete(client):
     assert nb_res1 == 11
     assert nb_res2 == 10
     assert res.status_code == 200
+    
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_busy_resources(client, monkeypatch):
+    """GET /resources/used"""
+    job_id0 = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user="bob")
+    job_id1 = insert_job(res=[(60, [('resource_id=2', "")])], properties="", user="bob")
+    job_id2 = insert_job(res=[(60, [('resource_id=2', "")])], properties="", user="bob")
+    meta_schedule('internal')
+    set_job_state(job_id0, 'Running')
+    set_job_state(job_id1, 'Error')
+    db.commit()
+    
+    res = client.get(url_for('resources.busy'))
+    print(res.json)
+    assert res.status_code == 200
+    assert res.json['busy'] == 6

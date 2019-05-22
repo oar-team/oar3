@@ -9,7 +9,7 @@ Define resources api interaction
 
 from flask import url_for, g
 from oar.lib import (db, Resource)
-from oar.lib.resource_handling import set_resource_state, remove_resource
+from oar.lib.resource_handling import set_resource_state, remove_resource, get_count_busy_resources
 
 import oar.lib.tools as tools
 
@@ -169,3 +169,7 @@ def delete(resource_id):
         g.data['status'] = 'Can not determine resource id'
         g.data['exit_value'] = 1
 
+
+@app.route('/busy', methods=['GET'])
+def busy():
+    g.data['busy'] = get_count_busy_resources()
