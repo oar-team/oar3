@@ -15,25 +15,10 @@ api_setup() {
         ${CGIDIR}/oarapi/oarapi.wsgi \
         0644 ${OAROWNER}
 
-    # install_conffile \
-    #     ${SHAREDIR}/api_html_postform.pl \
-    #     ${OARCONFDIR}/api_html_postform.pl \
-    #     0644 ${OAROWNER}
-
-    # install_conffile \
-    #     ${SHAREDIR}/api_html_postform_resources.pl \
-    #     ${OARCONFDIR}/api_html_postform_resources.pl \
-    #     0644 ${OAROWNER}
-
-    # install_conffile \
-    #     ${SHAREDIR}/api_html_postform_rule.pl \
-    #     ${OARCONFDIR}/api_html_postform_rule.pl \
-    #     0644 ${OAROWNER}
-
-    # install_conffile \
-    #     ${SHAREDIR}/stress_factor.sh \
-    #     ${OARCONFDIR}/stress_factor.sh \
-    #     0700 ${OAROWNER}
+    install_conffile \
+         ${SHAREDIR}/stress_factor.sh \
+         ${OARCONFDIR}/stress_factor.sh \
+         0700 ${OAROWNER}
 
     # Install the apache2 configuration file
     #

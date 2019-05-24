@@ -348,3 +348,11 @@ def get_resources_state(resource_ids):
     res = [{r.id: 'Standby' if (r.state == 'Absent') and (r.available_upto >= date) else r.state}\
            for r in result]
     return res
+
+def get_count_busy_resources():
+    active_moldable_job_ids = db.query(Job.assigned_moldable_job)\
+                                .filter(Job.state.in_(('toLaunch', 'Running', 'Resuming')))
+    count_busy_resources = db.query(func.count(distinct(AssignedResource.resource_id)))\
+                             .filter(AssignedResource.moldable_id.in_(active_moldable_job_ids))\
+                             .scalar()
+    return count_busy_resources

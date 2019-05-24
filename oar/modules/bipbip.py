@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import socket
 import pkg_resources
 
 from oar.lib import (config, get_logger)
@@ -48,6 +49,7 @@ class BipBip(object):
             self.oarexec_challenge = args[3]
         
     def run(self):
+
         job_id = self.job_id
         if not job_id:
             self.exit_code = 1
@@ -245,7 +247,7 @@ class BipBip(object):
 
             if len(bad) > 0:
                 set_job_message(job_id, 'One or several nodes are not responding correctly')
-                logger.error('[' + str(job.id) + ']  /!\ Some nodes are inaccessible (' + event_type\
+                logger.error('[' + str(job.id) + '] Some nodes are inaccessible (' + event_type\
                              + '):\n' + str(bad))
                 exit_bipbip = 1
                 if (job.type == 'INTERACTIVE') and (job.reservation == 'None'):
@@ -291,6 +293,10 @@ class BipBip(object):
         elif 'deploy' in job_types.keys():
             head_node = config['DEPLOY_HOSTNAME']
 
+        almighty_hostname = config['SERVER_HOSTNAME']
+        if re.match(r'\s*localhost.*$', almighty_hostname) or re.match(r'^\s*127.*$', almighty_hostname):
+            almighty_hostname = socket.gethostname()
+
 
         logger.debug('[' + str(job.id) + '] Execute oarexec on node: ' + head_node)
 
@@ -324,7 +330,7 @@ class BipBip(object):
             'walltime_seconds': mold_job_description.walltime,
             'command': job.command,
             'challenge': job_challenge,
-            'almighty_hostname': config['SERVER_HOSTNAME'],
+            'almighty_hostname': almighty_hostname,
             'almighty_port': config['SERVER_PORT'],
             'checkpoint_signal': job.checkpoint_signal,
             'debug_mode': config['OAREXEC_DEBUG_MODE'],
@@ -423,16 +429,20 @@ class BipBip(object):
                 return 1
             
             return 0
-            
-            
+
 def main(): # pragma: no cover
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:])
-        bipbip.run()
+        try:
+            bipbip.run()
+        except Exception as ex:
+            logger.error('Bipbip.run trouble on job {}: {}'.format(sys.argv[1], ex))
         return bipbip.exit_code
     else:
         return 1
     
 if __name__ == '__main__':  # pragma: no cover
     exit_code = main()
+    if exit_code:
+        logger.error('Bipbip.run exit code is not null: '.format(exit_code))
     sys.exit(exit_code)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 
 from flask import url_for, g
 
@@ -193,7 +194,21 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         (error, reservation_date) = check_reservation(reservation)
         if error[0] != 0:
             pass #TODO
+        
+    if command and re.match(r'.*\$HOME.*', command):
+        command = command.replace('$HOME', os.path.expanduser('~' + user))
+        
+    if directory and re.match(r'.*\$HOME.*', directory):
+        directory = directory.replace('$HOME', os.path.expanduser('~' + user))
 
+    if workdir and re.match(r'.*\$HOME.*', workdir):
+        workdir = workdir.replace('$HOME', os.path.expanduser('~' + user))
+        
+    array_params = []
+    array_nb = 1
+    if param_file:
+        array_params = param_file.split('\n')
+        array_nb = len(array_params)
     #if not isinstance(resource, list):
     #    resource = [resource]
 
@@ -202,7 +217,7 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         command=command,
         resource=resource,
         workdir=workdir, #TODO
-        array_param_file=param_file,
+        array_params = array_params,
         array=array,
         #scanscript=scanscript, TODO
         queue=queue,
@@ -236,8 +251,9 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 
     (error, job_id_lst) = submission.submit()
 
-    if len(job_id_lst) == 1:
-        job_id = job_id_lst[0]        
+    # TODO Enhance
+    if len(job_id_lst) >= 1:
+        job_id = min(job_id_lst) # the minimum ids is also the array_id when array of jobs is submitted          
         g.data['id'] = job_id
         url = url_for('%s.%s' % (app.name, 'show'), job_id=job_id)
         g.data['links'] = [{'rel': 'rel', 'href': url}]

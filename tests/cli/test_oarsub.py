@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from ..helpers import (insert_running_jobs, insert_terminated_jobs)
 
-from oar.lib import (db, config, Challenge)
+from oar.lib import (db, config, Job, Challenge)
 from oar.lib.job_handling import get_job_types
 from oar.cli.utils import CommandReturns
 from oar.cli.oarsub import cli, connect_job
@@ -167,14 +167,14 @@ def test_oarsub_parameters(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ['-q default', '--project', 'batcave',
                                  '--name', 'yop',
-                                 '--notify', "mail:name\@domain.com", '"sleep 1"'])
+                                 '--notify', "mail:name@domain.com", '"sleep 1"'])
     print(result.output)
     job = db['Job'].query.one()
     print("project: ", job.project)
     assert result.exit_code == 0
     assert job.project == 'batcave'
     assert job.name == 'yop'
-    assert job.notify == 'mail:name\@domain.com'
+    assert job.notify == 'mail:name@domain.com'
 
 def test_oarsub_directory(monkeypatch):
     runner = CliRunner()
@@ -410,4 +410,12 @@ def test_oarsub_reservation_granted(monkeypatch):
     print(result.output)
     print(result.output.split('\n')[3])
     assert re.match(r'.*GRANTED.*', result.output.split('\n')[3])
+    assert result.exit_code == 0
+    
+def test_oarsub_array_index(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['--array', '3','foo_command'])
+    print(result.output)
+    job_array_ids = db.query(Job.id, Job.array_id, Job.array_index).all()
+    print(job_array_ids)
     assert result.exit_code == 0

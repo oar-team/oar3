@@ -6,7 +6,7 @@ import zmq
 
 from oar.modules.hulot import (Hulot, HulotClient, fill_timeouts, get_timeout,
                                command_executor, WindowForker)
-from oar.lib import (db, config)
+from oar.lib import (db, config, Resource)
 from ..fakezmq import FakeZmq
 
 import oar.lib.tools
@@ -268,6 +268,7 @@ def test_hulot_command_executor(monkeypatch):
 def yop(a,b=0):
     time.sleep(b)
     return a
+
 def test_hulot_window_forker_check_executors():
     wf = WindowForker(1, 10)
     wf.executors = { wf.pool.apply_async(yop, (0,)): ('node1', 'HALT', tools.get_date()),
@@ -282,10 +283,14 @@ def test_hulot_window_forker_check_executors():
     print(nodes_list_running)
     assert nodes_list_running ==  {'node2': 'command_and_args', 'node3': 'command_and_args'}
     
+@pytest.mark.usefixtures("minimal_db_initialization")
 def test_hulot_window_forker_check_executors_timeout():
     wf = WindowForker(1, 10)
-    wf.executors = { wf.pool.apply_async(yop, (0,3)): ('localhost', 'HALT', 0)}
-    nodes_list_running = {'localhost': 'command_and_args'}
+    wf.executors = {wf.pool.apply_async(yop, (0, 0.2)): ('localhost0', 'HALT', 0)}
+    nodes_list_running = {'localhost0': 'command_and_args'}
     wf.check_executors(nodes_list_running)
+    time.sleep(0.5) # To prevent deadlock when all tests are executed (due to pytest internals ?)
     print(nodes_list_running)
     assert nodes_list_running ==  {}
+    resource = db.query(Resource).filter(Resource.network_address=='localhost0').first()
+    assert resource.next_state == 'Suspected'

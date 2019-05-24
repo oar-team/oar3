@@ -512,7 +512,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
 def add_micheline_subjob(job_parameters,
                          ssh_private_key, ssh_public_key,
                          array_id, array_index,
-                         array_commands):
+                         command):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against avalaible resources
@@ -554,7 +554,7 @@ def add_micheline_subjob(job_parameters,
     
     # Insert job
 
-    kwargs = job_parameters.kwargs(array_commands[0], date)
+    kwargs = job_parameters.kwargs(command, date)
     estimated_nbr, estimated_walltime = estimated_nb_resources[0]
     kwargs['message'] = format_job_message_text(name, estimated_nbr, estimated_walltime, job_parameters.job_type,
                                                 job_parameters.reservation_date, job_parameters.queue,
@@ -756,10 +756,11 @@ def add_micheline_simple_array_job(job_parameters,
     jobs_data = []
     kwargs['array_id'] = array_id
     for command in array_commands[1:]:
+        kwargs['array_index'] += 1
         job_data = kwargs.copy()
         job_data['command'] = command
         jobs_data.append(job_data)
-
+        
     db.session.execute(Job.__table__.insert(), jobs_data)
     db.commit()
 
@@ -949,6 +950,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     # TODO move to job class ?
     if job_parameters.array_params:
         array_commands = [job_parameters.command + ' ' + params for params in job_parameters.array_params]
+        job_parameters.array_nb = len(array_commands)
     else:
         array_commands = [job_parameters.command] * job_parameters.array_nb
 
@@ -976,7 +978,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
             (error, job_id) = add_micheline_subjob(job_parameters,
                                                    ssh_private_key, ssh_public_key,
                                                    array_id, array_index,
-                                                   array_commands)
+                                                   cmd)
 
             if error[0] == 0:
                 job_id_list.append(job_id)
@@ -1140,7 +1142,7 @@ class JobParameters():
         if self.notify and re.match(r'^.*exec\s*:.+$', self.notify):
             m = re.search(r'.*exec\s*:([a-zA-Z0-9_.\/ -]+)$', self.notify)
             if not m:
-                return(16, 'insecure characters found in the notification method (the allowed regexp is: [a-zA-Z0-9_.\/ -]+).')
+                return(16, "insecure characters found in the notification method (the allowed regexp is: [a-zA-Z0-9_.\\/ -]+).")
 
         return (0, '')
 

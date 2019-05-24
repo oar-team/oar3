@@ -492,7 +492,7 @@ class WindowForker(object):
         now = tools.get_date()
         for executor, data in self.executors.items():
             node, cmd, launching_date = data
-            if executor.ready():
+            if executor.ready(): #TODO executor.successful()
                 executors_toRemove.append(executor)
                 exit_status = executor.get()
                 if exit_status != 0:

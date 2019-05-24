@@ -10,7 +10,7 @@ import re
 def perl_hash_2_dict(str):
     d = {}
     # remove space and curly bracket
-    str = re.sub("{|}|\s", "", str)
+    str = re.sub(r"{|}|\s", "", str)
     for pair in re.split(",", str):
         kv = re.split("=>", pair)
         d[kv[0]] = kv[1]

@@ -61,7 +61,7 @@ BASE_SIMU_MSGS = [
          {'timestamp':5.0,
           'type': 'SIMULATION_BEGINS',
           'data':{
-              'nb_resources':4,
+              'nb_resources':4,  #TODO REMOVE w/ pybatsim 3.0.0
               'nb_compute_resources':4,
               'nb_storage_resources':0,
               'compute_resources': [
@@ -71,18 +71,29 @@ BASE_SIMU_MSGS = [
                   {'id':3, 'name': 'node4'}
               ],
               'storage_resources': [],
-              'allow_time_sharing': False,
+              'allow_time_sharing': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_time_sharing_on_compute': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_time_sharing_on_storage': False, #TODO REMOVE w/ pybatsim 3.0.0
+              'allow_compute_sharing': False,
+              'allow_storage_sharing': False,             
               'config': {
-                  'redis':{
-                      'enabled': True, 'hostname': 'localhost',
-                      'port': 6379, 'prefix': 'default'
+                  'profiles-forwarded-on-submission': False,
+                  'dynamic-jobs-enabled': False,
+                  'dynamic-jobs-acknowledged': False,
+                  'redis-enabled': True,
+                  'redis-hostname': 'localhost',
+                  'redis-port': 6379,
+                  'redis-prefix': 'default',
+                  'redis':{ #TODO REMOVE w/ pybatsim 3.0.0
+                      'enabled': True, 'hostname': 'localhost',  #TODO REMOVE w/ pybatsim 3.0.0
+                      'port': 6379, 'prefix': 'default'  #TODO REMOVE w/ pybatsim 3.0.0
                   },
                   'job_submission': {'forward_profiles': False,
                                  'from_scheduler': {'enabled': False, 'acknowledge': True}
                   }
               },
               'workloads': {},
-              'profiles': {}
+              'profiles': {'foo':{}} #TODO REMOVE w/ pybatsim 3.0.0
           }
          }
      ]
@@ -116,7 +127,7 @@ def exec_gene(options):
     #import pdb; pdb.set_trace()
     global data_storage
     data_storage = { 'default:job_foo!1': b'{"id":"foo!1","subtime":10,"walltime":100,"res":4,"profile":"1"}',
-                     'default:profile_foo!1': b'{}'}
+                     'default:profile_foo!1': b'{"type":"delay", "runtime": 120}'}
     args = options
     args.append('--scheduler_delay=5')
     runner = CliRunner()
@@ -206,7 +217,9 @@ def exec_gene_tokens(options):
                      'default:job_foo!2':
                      b'{"id":"foo!2","subtime":10,"walltime":100,"res":2,"tokens":2,"profile":"1"}',
                      'default:job_foo!3':
-                     b'{"id":"foo!3","subtime":10,"walltime":100,"res":2,"profile":"1"}'
+                     b'{"id":"foo!3","subtime":10,"walltime":100,"res":2,"profile":"1"}',
+                     'profile_foo!1':
+                     b'{"command": "foo","delay": 290.53, "runtime": "type": "delay"}'
     }
     args = options
     args.append('--scheduler_delay=0.5')

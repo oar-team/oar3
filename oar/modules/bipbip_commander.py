@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 """Process that launches and manages bipbip processes
-   OAREXEC_REGEXP   OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)
-   OARRUNJOB_REGEXP   OARRUNJOB_(\d+)
-   LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)
+   OAREXEC_REGEXP   'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
+   OARRUNJOB_REGEXP  'OARRUNJOB_(\d+)'
+   LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)'
 
    Commands:
      OAREXEC
@@ -15,13 +15,13 @@
 
 
    Example
-{
+   {
    "job_id": 5,
    "cmd": "LEONEXTERMINATE"
    "args": [5]
-}
-
+   }
 """
+
 import os
 import socket
 import zmq
@@ -150,6 +150,7 @@ class BipbipCommander(object):
             # Remove finished executors:
             for job_id in list(self.bipbip_leon_executors.keys()):
                 if not self.bipbip_leon_executors[job_id].is_alive():
+                    logger.debug('Executor Exitcode: ' + str(self.bipbip_leon_executors[job_id].exitcode))
                     del self.bipbip_leon_executors[job_id]
 
             if self.bipbip_leon_commands_to_run == []:
