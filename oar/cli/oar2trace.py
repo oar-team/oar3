@@ -145,6 +145,8 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
 
     # Determine nb_default_ressources and nb_extra_ressources for jobs in Terminated or Error state
     result = db.query(AssignedResource)\
+               .filter(AssignedResource.moldable_id >= min_mld_id)\
+               .filter(AssignedResource.moldable_id <= max_mld_id)\
                .order_by(AssignedResource.moldable_id, AssignedResource.resource_id)
 
     moldable_id = 0
