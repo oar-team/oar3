@@ -433,9 +433,9 @@ def cli(db_url, trace_file, first_jobid, last_jobid, chunk_size, metadata_file, 
             end_jobid = last_jobid
         else:
             end_jobid = begin_jobid + chunk_size - 1
-        print('# Jobids Range: [{}-{}], Chunck: {}'.format(first_jobid, end_jobid, (chunk + 1)))
+        print('# Jobids Range: [{}-{}], Chunck: {}'.format(begin_jobid, end_jobid, (chunk + 1)))
 
-        jobs_metrics = get_jobs(first_jobid, end_jobid, wkld_metadata)
+        jobs_metrics = get_jobs(begin_jobid, end_jobid, wkld_metadata)
         jobs2trace(jobs_metrics, fh, unix_start_time, mode, display)
 
         begin_jobid = end_jobid + 1
