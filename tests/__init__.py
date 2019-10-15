@@ -65,4 +65,5 @@ def assert_raises(exception_class, msg=None):
         yield
     if msg is not None:
         message = '%s' % exception
+        import pdb; pdb.set_trace()
         assert msg.lower() in message.lower()
