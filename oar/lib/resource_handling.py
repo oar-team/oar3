@@ -3,7 +3,7 @@
 import os
 
 from sqlalchemy import (distinct, text, or_, func)
-from oar.lib import (db, config, Resource, ResourceLog, Job, AssignedResource,
+from oar.lib import (db, config, Resource , ResourceLog, Job, AssignedResource,
                      EventLog, FragJob, JobType, MoldableJobDescription, get_logger)
 from oar.lib.event import (add_new_event, is_an_event_exists)
 
@@ -31,7 +31,8 @@ def add_resource(name, state):
         {ResourceLog.resource_id: r_id, ResourceLog.attribute: 'state',
          ResourceLog.value: state, ResourceLog.date_start: date})
     db.session.execute(ins)
-
+    db.session.commit()
+    
     return r_id
 
 def get_resource(resource_id):
