@@ -22,7 +22,7 @@ import oar.lib.tools as tools
 from oar.lib.tools import DEFAULT_CONFIG
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
-logger.info('Start Note Change State')
+logger.info('Start Node Change State')
 
 class NodeChangeState(object):
 
