@@ -55,7 +55,7 @@ setup(
         'full': ['simpy', 'pybatsim', 'redis'],
         'coorm': ['zerorpc', 'requests'],
         'dev': ['zerorpc', 'requests', 'pytest', 'pytest-flask', 'pytest-cov',
-                'pytest-console-scripts', 'pexpect', 'sphinx']
+                'pytest-console-scripts', 'pexpect', 'sphinx', 'black']
     },
     include_package_data=True,
     zip_safe=False,
