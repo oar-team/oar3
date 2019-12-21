@@ -19,8 +19,8 @@ readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
-    'SQLAlchemy',
     'SQLAlchemy-Utils',
+    'SQLAlchemy',
     'alembic',
     'Flask>=0.10',
     'tabulate',
