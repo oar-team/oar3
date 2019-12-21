@@ -19,12 +19,12 @@ readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
-    'sqlalchemy',
-    'sqlalchemy_utils',
+    'SQLAlchemy',
+    'SQLAlchemy-Utils',
     'alembic',
-    'flask>=0.10',
+    'Flask>=0.10',
     'tabulate',
-    'click',
+    'Click',
     'pyzmq',
     'requests',
     'procset',
