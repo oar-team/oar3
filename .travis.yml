@@ -1,20 +1,23 @@
-language: minimal
+language: python
 
 services:
   - docker
 
 env:
-- PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:11
-- PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:12
-- PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:11
-- PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:12
-- PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
-- PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
+  - PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:12
+  - PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:12
+  - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
 
 jobs:
   allow_failures:
     - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
     - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
+
+before_install:
+  - pip install codecov
 
 before_script:
   - ./scripts/ci/build-docker-env.sh
@@ -24,4 +27,4 @@ script:
 
 after_success:
   # Report coverage results to codecov.io
-  - bash <(curl -s https://codecov.io/bash)
+  - codecov
