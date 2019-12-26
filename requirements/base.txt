@@ -1,0 +1,11 @@
+SQLAlchemy-Utils
+SQLAlchemy
+alembic
+Flask>=0.10
+tabulate
+Click
+pyzmq
+requests
+procset
+simplejson
+psutil
