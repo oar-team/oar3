@@ -10,6 +10,8 @@ import time
 from oar import VERSION
 from oar.lib import (db, config)
 
+from oar.lib.database import wait_db_ready
+
 from oar.lib.job_handling import get_job
 from oar.lib.node import (set_node_nextState,get_all_resources_on_node, get_node_job_to_frag,
                           get_node_job_to_frag)
@@ -102,7 +104,7 @@ def set_maintenance(cmd_ret, resources, maintenance, no_wait):
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
     notify_server_tag_list = []
-    #import pdb; pdb.set_trace()
+
     cmd_ret = CommandReturns()
 
     if version:
@@ -171,7 +173,8 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             state = 'Alive'
 
         for host in hostnames:
-            add_resource(host, state)
+            # wait_db_ready to manage DB taking time to be up during boot 
+            wait_db_ready(add_resource, (host, state))
             cmd_ret.print_('New resource added: ' + host)
 
         notify_server_tag_list.append('ChState')
