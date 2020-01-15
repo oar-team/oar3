@@ -22,8 +22,10 @@ app = Blueprint('stress_factor', __name__, url_prefix='/stress_factor')
 
 if 'OARDIR' not in os.environ:
     os.environ['OARDIR'] = '/usr/local/lib/oar'
-     
+
 OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
+if 'OARDODO' in config:
+    OARDODO_CMD = config['OARDODO']
 
 @app.route('/', methods=['GET'])
 def index():
