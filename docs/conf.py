@@ -21,7 +21,7 @@ import datetime
 import sphinx.environment
 from docutils.utils import get_source_line
 
-YEAR = 2018
+YEAR = 2020
 HERE = os.path.dirname(__file__)
 AUTHORS = ["Bruno Bzeznik", "Nicolas Capit", "Joseph Emeras", "Salem Harrache",
            "Michael Mercier", "Pierre Neyron", "Olivier Richard"]
@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OAR next generation'
-copyright = u'2018, OAR Team'
+copyright = u'{}, OAR Team'.format(YEAR)
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
