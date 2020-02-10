@@ -4,6 +4,7 @@ import pwd
 import time
 import re
 import os
+import getpass
 import zmq
 import random
 import string
@@ -63,7 +64,7 @@ DEFAULT_CONFIG = {
     'HULOT_PORT' : 6672
     }
 
-logger = get_logger("oar.lib.tools")
+tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
 zmq_context = None
 almighty_socket = None
@@ -96,18 +97,18 @@ def notify_user(job, state, msg):  # pragma: no cover
                                                           format(config['OPENSSH_CMD'], host,
                                                                  job.user, m.group(1), job.id, job.name,
                                                                  state, msg)
-                    logger.error(cmd)
+                    tools_logger.error(cmd)
                     try:
                         p = check_output(cmd, stderr=STDOUT, shell=True,
                                          timeout=config['OAR_SSH_CONNECTION_TIMEOUT'])
                     except CalledProcessError as e:
-                        logger.error('User notification failed: ' + e.output)
+                        tools_logger.error('User notification failed: ' + e.output)
                         return False
                     except TimeoutExpired as e:
                         p.kill()
                         msg = 'User notification failed: ssh timeout (cmd: ' +\
                               cmd + ')'
-                        logger.error(msg)
+                        tools_logger.error(msg)
                         add_new_event('USER_EXEC_NOTIFICATION_ERROR', job.id, msg)
                         return False
 
@@ -153,7 +154,7 @@ def create_almighty_socket():  # pragma: no cover
     #try:
     #    almighty_socket.connect((server, port))
     #except socket.error as exc:
-    #    logger.error("Connection to Almighty" + server + ":" + str(port) +
+    #    tools_logger.error("Connection to Almighty" + server + ":" + str(port) +
     #                 " raised exception socket.error: " + str(exc))
     #    sys.exit(1)   
 
@@ -206,11 +207,11 @@ def notify_interactif_user(job, message): # pragma: no cover
 def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    logger.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
+    tools_logger.debug('notify_tcp_socket:' + addr + ":" + port + ', msg:' + message)
     try:
         tcp_socket.connect((addr, int(port)))
     except socket.error as exc:
-        logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
+        tools_logger.error("notify_tcp_socket: Connection to " + addr + ":" + port +
                      " raised exception socket.error: " + str(exc))
         return 0
     message += '\n'
@@ -270,7 +271,7 @@ def pingchecker(hosts): # pragma: no cover
             if m and m.group(1) and 'alive' in m.group(2):
                 return m.group(1)
     else:
-        logger.debug('[PingChecker] no PINGCHECKER configuration found')
+        tools_logger.debug('[PingChecker] no PINGCHECKER configuration found')
 
     return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts) 
 
@@ -398,7 +399,7 @@ def send_to_hulot(cmd, data):
             fifo.flush()
     except IOError as e: # pragma: no cover
         e.strerror = 'Unable to communication with Hulot: %s (%s)' % fifoname % e.strerror
-        logger.error(e.strerror)
+        tools_logger.error(e.strerror)
         return 1
     return 0
 
@@ -422,7 +423,7 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
         out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
     except TimeoutExpired:
         p.kill()
-        logger.debug("Oarexec's Launching TimeoutExpired")
+        tools_logger.debug("Oarexec's Launching TimeoutExpired")
         return False
 
     output = out.decode()
@@ -433,9 +434,9 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
     
     if config['OAREXEC_DEBUG_MODE'] in ['1', 1, 'yes', 'YES']:
         if output:
-            logger.debug('SSH stdout: ' + output)
+            tools_logger.debug('SSH stdout: ' + output)
         if error:
-            logger.debug('SSH stderr: ' + error)
+            tools_logger.debug('SSH stderr: ' + error)
 
     regex_ssh_rdv = re.compile('^' + config['SSH_RENDEZ_VOUS'] + '$')
     for line in output.split('\n'):
@@ -471,10 +472,13 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
               + ' broadcast exec [ perl - '\
               + action\
               + ' ], broadcast input file [ - ], broadcast input close'
-        # print(cmd)
-        
+
         # Launch taktuk
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+
+        child_returncode = p.poll()
+        if child_returncode:
+            tools_logger.error('Trouble with Taktuk, returncode :' + str(child_returncode))
 
         bad_hosts = {}
         # Send hosts to address 
@@ -486,23 +490,20 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
         os.remove(fifoname)
 
         try: 
-            out, err = p.communicate(str_to_transfer.encode('utf8'),
-                                     timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+            out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
         except TimeoutExpired:
+            tools_logger.error('Popen.comminicate TimeoutExpired')
             p.kill()
-            # TODO
-            print('TimeoutExpired')
             #m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
             return (0, [])
-        
+
         output = out.decode()
         error = err.decode()
-        
-        #import pdb; pdb.set_trace()
+
         if config['DEBUG_REMOTE_COMMANDS'] in ['1', 1, 'yes', 'YES']:
-            logger.debug('Taktuk output: ' + output)
+            tools_logger.debug('Taktuk output: ' + output)
             if error:
-                logger.debug('Taktuk error: ' + error)
+                tools_logger.debug('Taktuk error: ' + error)
             
         for line in output.split('\n'):
             m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
@@ -513,6 +514,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
                         del bad_hosts[m.group(1)]
 
         return (1, list(bad_hosts.keys()))
+
     return (0, []) 
 
 
@@ -594,8 +596,8 @@ def get_duration(seconds):
 
 def send_checkpoint_signal(job): # pragma: no cover
     raise NotImplementedError("TODO")
-    logger.debug("Send checkpoint signal to the job " + str(job.id))
-    logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
+    tools_logger.debug("Send checkpoint signal to the job " + str(job.id))
+    tools_logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
 
 

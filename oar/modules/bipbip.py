@@ -14,13 +14,12 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
-
 import oar.lib.tools as tools
 from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, resources2dump_perl,
                            TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import (add_new_event, add_new_event_with_host)
-                           
+
 logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
 class BipBip(object):
@@ -49,7 +48,6 @@ class BipBip(object):
             self.oarexec_challenge = args[3]
         
     def run(self):
-
         job_id = self.job_id
         if not job_id:
             self.exit_code = 1

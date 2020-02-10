@@ -1,0 +1,8 @@
+pybatsim
+redis
+simpy
+pytest
+pytest-cov
+pytest-flask
+pexpect
+psycopg2

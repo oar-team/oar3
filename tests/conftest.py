@@ -1,17 +1,15 @@
 # coding: utf-8
 
 import os
-import tempfile
 import shutil
-
+import tempfile
 from codecs import open
 
 import pytest
-
 from oar.lib import config, db
+
 from . import DEFAULT_CONFIG
 
-from oar.lib.tools import TimeoutExpired
 
 @pytest.yield_fixture(scope='session', autouse=True)
 def setup_config(request):
@@ -35,12 +33,12 @@ def setup_config(request):
     else:
         config['DB_TYPE'] = 'Pg'
         config['DB_PORT'] = '5432'
-        config['DB_BASE_NAME'] = 'oar'
-        config['DB_BASE_PASSWD'] = 'oar'
-        config['DB_BASE_LOGIN'] = 'oar'
-        config['DB_BASE_PASSWD_RO'] = 'oar_ro'
-        config['DB_BASE_LOGIN_RO'] = 'oar_ro'
-        config['DB_HOSTNAME'] = 'localhost'
+        config['DB_BASE_NAME'] = os.environ.get('POSTGRES_DB', 'oar')
+        config['DB_BASE_PASSWD'] = os.environ.get('POSTGRES_PASSWORD', 'oar')
+        config['DB_BASE_LOGIN'] = os.environ.get('POSTGRES_USER', 'oar')
+        config['DB_BASE_PASSWD_RO'] = os.environ.get('POSTGRES_PASSWORD', 'oar_ro')
+        config['DB_BASE_LOGIN_RO'] = os.environ.get('POSTGRES_USER_RO', 'oar_ro')
+        config['DB_HOSTNAME'] = os.environ.get('POSTGRES_HOST', 'localhost')
 
     def dump_configuration(filename):
         folder = os.path.dirname(filename)

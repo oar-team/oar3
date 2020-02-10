@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Sample script for stress_factor
 # This script should return at least a real value between 0 and 1 that is given by 
 # the OAR api for the "GET /stress_factor" URI.

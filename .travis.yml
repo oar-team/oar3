@@ -1,44 +1,30 @@
-# Config file for automatic testing at travis-ci.org
-
-sudo: required
-dist: trusty
-
-addons:
-  hosts:
-    - node1
-    - node2
-    - server
-    - frontend
-
 language: python
 
-python:
-  # unused ? 
-  - "3.6"
+services:
+  - docker
 
 env:
-  - DB=postgresql
+  - PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.6 POSTGRES_IMAGE=postgres:12
+  - PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:12
+  - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
+  - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
+
+jobs:
+  allow_failures:
+    - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
+    - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
 
 before_install:
- - sudo mkdir -p /etc/oar
- - sudo chown -R $USER /etc/oar
-
-install:
-  - pip install tox coverage
-  - coverage erase
+  - pip install codecov
 
 before_script:
-  - psql -U postgres -c "CREATE USER oar WITH PASSWORD 'oar';"
-  - psql -U postgres -c "CREATE DATABASE oar;"
-  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE oar to oar;"
-  - psql -U postgres -c "CREATE USER oar_ro WITH PASSWORD 'oar_ro';"
-  - PGPASSWORD=oar psql -U oar -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO oar_ro;" -h localhost
+  - ./scripts/ci/build-docker-env.sh
 
 script:
-  - tox -e py-$DB oar tests
+  - ./scripts/ci/run-tests-with-docker.sh
 
 after_success:
-    - coverage combine
-    # Report coverage results to codecov.io
-    - pip install codecov
-    - codecov
+  # Report coverage results to codecov.io
+  - codecov

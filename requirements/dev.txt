@@ -1,0 +1,9 @@
+zerorpc
+requests
+pytest
+pytest-flask
+pytest-cov
+pytest-console-scripts
+pexpect
+sphinx
+black

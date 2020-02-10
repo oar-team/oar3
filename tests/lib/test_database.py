@@ -129,7 +129,7 @@ def test_collected_tables_and_models(db):
         assert table_name in db
         assert isinstance(db[table_name], Table)
 
-    with assert_raises(KeyError, "totototo"):
+    with assert_raises(KeyError):
         db['totototo']
 
 

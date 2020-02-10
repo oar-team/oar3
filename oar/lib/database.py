@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
 import threading
+import time
 
 from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, exc
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
                                         DeclarativeMeta)
@@ -21,6 +22,19 @@ from .utils import cached_property, merge_dicts, get_table_name, to_json, rerais
 
 __all__ = ['Database']
 
+def wait_db_ready(f, args, attempt = 7):
+    delay = 0.2
+    while attempt > 0:
+        try:
+            f(*args)
+        except exc.OperationalError as error:
+            time.sleep(delay)
+            delay = 2*delay
+            attempt -= 1
+            if not attempt:
+                raise
+        else:
+            break
 
 class BaseModel(object):
 

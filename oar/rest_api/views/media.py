@@ -14,14 +14,18 @@ from flask import (url_for, g, abort, send_from_directory, make_response,
 from . import Blueprint
 from ..utils import Arg, list_paginate
 
+from oar.lib import config
+
 import oar.lib.tools as tools
 
 app = Blueprint('media', __name__, url_prefix='/media')
 
 if 'OARDIR' not in os.environ:
     os.environ['OARDIR'] = '/usr/local/lib/oar'
-     
+
 OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
+if 'OARDODO' in config:
+    OARDODO_CMD = config['OARDODO']
 
 def user_and_filename_setup(path_filename):
     # user setup
