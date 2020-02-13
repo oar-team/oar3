@@ -24,8 +24,8 @@ User Documentation
 
 .. toctree::
     :maxdepth: 2
-
-    Commands <user/commands.rst>
+              
+    User Commands <user/commands.rst>
 ..               
     user/quickstart
     user/usecases
@@ -42,8 +42,8 @@ Admin Documentation
 
 .. toctree::
     :maxdepth: 2
-               
-    Commands <admin/commands.rst>
+ 
+    Admin Commands <admin/commands.rst>
 ..
     admin/installation
     admin/configuration
