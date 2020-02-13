@@ -23,7 +23,7 @@ User Documentation
 ==================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
               
     User Commands <user/commands.rst>
 ..               
@@ -41,7 +41,7 @@ Admin Documentation
 ===================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
  
     Admin Commands <admin/commands.rst>
 ..
