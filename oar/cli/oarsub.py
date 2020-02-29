@@ -254,7 +254,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     global job_id_lst
     
     # Set default config for submission
-    default_submission_config(tools.DEFAULT_CONFIG)
+    default_submission_config(DEFAULT_CONFIG)
     
     cmd_ret = CommandReturns()
     
