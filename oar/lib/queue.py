@@ -35,11 +35,12 @@ def start_all_queues():
     db.commit()
 
 def create_queue(name, priority, policy):
-    Queue.create(name=name, priority=priority, policy=policy, state='Active')
+    Queue.create(name=name, priority=priority, scheduler_policy=policy, state='Active')
     db.commit()
 
 def change_queue(name, priority, policy):
-    db.query(Queue).filter(Queue.name == name).update({Queue.priority: priority, Queue.policy: policy},
+    db.query(Queue).filter(Queue.name == name).update({Queue.priority: priority,
+                                                       Queue.scheduler_policy: policy},
                                                       synchronize_session=False)
     db.commit()
 
