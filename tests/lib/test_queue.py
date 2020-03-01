@@ -7,7 +7,7 @@ from oar.lib.queue import (stop_queue, start_queue, stop_all_queues,
                            start_all_queues, create_queue, change_queue,
                            remove_queue)
 
-@pytest.yield_fixture(scope='module', autouse=True)
+@pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         Queue.create(name='default', state='unkown')
@@ -41,7 +41,6 @@ def test_create_queue():
     create_queue('admin', 10, 'kamelot')
     queue = db.query(Queue).filter(Queue.scheduler_policy=='kamelot').one()
     assert queue.name == 'admin'
-    remove_queue('admin')
 
 def test_change_queue():
     change_queue('default',42,'fast')
