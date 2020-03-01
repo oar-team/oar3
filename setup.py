@@ -78,6 +78,7 @@ setup(
     oarresume3=oar.cli.oarresume:cli
     oarnodes3=oar.cli.oarnodes:cli
     oarnotify3=oar.cli.oarnotify:cli
+    oarqueue3=oar.cli.oarqueue:cli
     oarconnect3=oar.cli.oarconnect:cli
     oarremoveresource3=oar.cli.oarremoveresource:cli
     oarnodesetting3=oar.cli.oarnodesetting:cli
