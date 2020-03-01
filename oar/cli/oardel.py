@@ -208,7 +208,7 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
               help='Send the checkpoint signal designed from the "--signal"\
               oarsub command option (default is SIGUSR2) to the process launched by the job "job_id".')
 @click.option('-s', '--signal', type=click.STRING,
-              help='Send signal  to the process launched by the selected jobs.')
+              help='Send signal to the process launched by the selected jobs.')
 @click.option('-b', '--besteffort', is_flag=True, help='Change jobs to besteffort (or remove them if they are already besteffort)')
 @click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
 @click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
