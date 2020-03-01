@@ -23,7 +23,7 @@ from oar.lib.job_handling import (get_current_not_waiting_jobs,
                          set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
                          resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.lib.queue import (get_all_queue_by_priority, stop_a_queue)
+from oar.lib.queue import (get_all_queue_by_priority, stop_queue)
 
 from oar.lib.event import (get_job_events, add_new_event)
 
@@ -526,14 +526,14 @@ def call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
         logger.error("Execution of " + queue.scheduler_policy +
                      " failed, inactivating queue " + queue.name + " (see `oarnotify')")
         # stop queue
-        stop_a_queue(queue.name)
+        stop_queue(queue.name)
 
     if sched_exit_code != 0:
         logger.error("Scheduler " + queue.scheduler_policy + " returned a bad value: " +
                      str(sched_exit_code) + ". Inactivating queue " + queue.scheduler_policy +
                      " (see `oarnotify')")
         # stop queue
-        stop_a_queue(queue.name)
+        stop_queue(queue.name)
 
     # retrieve jobs and assignement decision from previous scheduling step
     scheduled_jobs = get_after_sched_no_AR_jobs(queue.name, resource_set,

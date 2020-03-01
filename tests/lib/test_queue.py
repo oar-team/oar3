@@ -3,10 +3,8 @@ import pytest
 
 from oar.lib import (Queue, db)
 
-from oar.lib.queue import (stop_a_queue, start_a_queue, stop_all_queues,
+from oar.lib.queue import (stop_queue, start_queue, stop_all_queues,
                            start_all_queues)
-
-
 
 @pytest.yield_fixture(scope='module', autouse=True)
 def minimal_db_initialization(request):
@@ -14,13 +12,13 @@ def minimal_db_initialization(request):
         Queue.create(name='default', state='unkown')
         yield
 
-def test_stop_a_queue():
-    stop_a_queue('default')
+def test_stop_queue():
+    stop_queue('default')
     queue = db.query(Queue).filter(Queue.name=='default').one()
     assert queue.state == 'notActive'
     
-def test_start_a_queue():
-    start_a_queue('default')
+def test_start_queue():
+    start_queue('default')
     queue = db.query(Queue).filter(Queue.name=='default').one()
     assert queue.state == 'Active'
 
