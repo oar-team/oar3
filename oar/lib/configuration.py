@@ -18,7 +18,6 @@ class Configuration(dict):
     DEFAULT_CONFIG = {
         'DB_PORT': '5432',
         'DB_TYPE': 'Pg',
-        'SQLALCHEMY_CONVERT_UNICODE': True,
         'SQLALCHEMY_ECHO': False,
         'SQLALCHEMY_POOL_SIZE': None,
         'SQLALCHEMY_POOL_TIMEOUT': None,

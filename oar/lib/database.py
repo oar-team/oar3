@@ -305,7 +305,6 @@ class EngineConnector(object):
         _setdefault('pool_timeout', 'SQLALCHEMY_POOL_TIMEOUT')
         _setdefault('pool_recycle', 'SQLALCHEMY_POOL_RECYCLE')
         _setdefault('max_overflow', 'SQLALCHEMY_MAX_OVERFLOW')
-        _setdefault('convert_unicode', 'SQLALCHEMY_CONVERT_UNICODE')
 
     def apply_driver_hacks(self, info, options):
         """This method is called before engine creation and used to inject
