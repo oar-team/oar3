@@ -230,7 +230,7 @@ class UserOption(click.Command):
 @click.option('-u', '--user', type=click.STRING, help='show informations for this user only')
 @click.option('-a', '--array', type=int, help='show informations for the specified array_job(s) and toggle array view in')
 @click.option('-c', '--compact', is_flag=True, help='prints a single line for array jobs')
-@click.option('-g', '--gantt', type=click.STRING, help='show job informations between two date-times')
+@click.option('-g', '--gantt', type=click.STRING, help='show job informations between two date-times "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"')
 @click.option('-e', '--events', is_flag=True, type=click.STRING, help='show job events')
 @click.option('-p', '--properties', is_flag=True, help='show job properties')
 @click.option('-A', '--accounting', type=click.STRING, help='show accounting informations between two dates')
@@ -240,6 +240,7 @@ class UserOption(click.Command):
 @click.option('-J', '--json', is_flag=True, help='print result in JSON format')
 @click.option('-V', '--version', is_flag=True, help='print OAR version number')
 def cli(job, full, state, user, array, compact, gantt, events, properties, accounting, sql, format, json, version):
+    """Print job information"""
     job_ids = job
     array_id = array
 
