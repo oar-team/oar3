@@ -37,7 +37,7 @@ extras_require = {
 }
 
 setup(
-    name="oar3",
+    name="oar",
     author="Olivier Richard, Salem Harrache",
     author_email="oar-devel@lists.gforge.inria.fr",
     version=version,
@@ -64,36 +64,36 @@ setup(
     ],
     entry_points="""
     [console_scripts]
-    oar3-database-migrate=oar.cli.db.commands.migrate:cli
-    oar3-database-archive=oar.cli.db.commands.archive:cli
-    oar3-database-manage=oar.cli.db.commands.manage:cli
-    oar3-almighty=oar.modules.almighty:main
-    oar3-bipbip-commander=oar.modules.bipbip_commander:main
-    oar3-appendice-proxy=oar.modules.appendice_proxy:main
-    oar3-hulot=oar.modules.hulot:main
-    oarsub3=oar.cli.oarsub:cli
-    oarstat3=oar.cli.oarstat:cli
-    oardel3=oar.cli.oardel:cli
-    oarhold3=oar.cli.oarhold:cli
-    oarresume3=oar.cli.oarresume:cli
-    oarnodes3=oar.cli.oarnodes:cli
-    oarnotify3=oar.cli.oarnotify:cli
-    oarqueue3=oar.cli.oarqueue:cli
-    oarconnect3=oar.cli.oarconnect:cli
-    oarremoveresource3=oar.cli.oarremoveresource:cli
-    oarnodesetting3=oar.cli.oarnodesetting:cli
-    oaraccounting3=oar.cli.oaraccounting:cli
-    oarproperty3=oar.cli.oarproperty:cli
+    oar-database-migrate=oar.cli.db.commands.migrate:cli
+    oar-database-archive=oar.cli.db.commands.archive:cli
+    oar-database-manage=oar.cli.db.commands.manage:cli
+    oar-almighty=oar.modules.almighty:main
+    oar-bipbip-commander=oar.modules.bipbip_commander:main
+    oar-appendice-proxy=oar.modules.appendice_proxy:main
+    oar-hulot=oar.modules.hulot:main
+    .oarsub=oar.cli.oarsub:cli
+    .oarstat=oar.cli.oarstat:cli
+    .oardel=oar.cli.oardel:cli
+    .oarhold=oar.cli.oarhold:cli
+    .oarresume=oar.cli.oarresume:cli
+    .oarnodes=oar.cli.oarnodes:cli
+    .oarnotify=oar.cli.oarnotify:cli
+    .oarqueue=oar.cli.oarqueue:cli
+    .oarconnect=oar.cli.oarconnect:cli
+    .oarremoveresource=oar.cli.oarremoveresource:cli
+    .oarnodesetting=oar.cli.oarnodesetting:cli
+    .oaraccounting=oar.cli.oaraccounting:cli
+    .oarproperty=oar.cli.oarproperty:cli
     oar2trace=oar.cli.oar2trace:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
     kamelot-fifo=oar.kao.kamelot_fifo:main
     bataar=oar.kao.bataar:bataar
     oar-batsim-sched-proxy=oar.kao.batsim_sched_proxy:cli
-    oar3-sarko=oar.modules.sarko:main
-    oar3-finaud=oar.modules.finaud:main
-    oar3-leon=oar.modules.leon:main
-    oar3-node-change-state=oar.modules.node_change_state:main
-    oar3-bipbip=oar.modules.bipbip:main
+    oar-sarko=oar.modules.sarko:main
+    oar-finaud=oar.modules.finaud:main
+    oar-leon=oar.modules.leon:main
+    oar-node-change-state=oar.modules.node_change_state:main
+    oar-bipbip=oar.modules.bipbip:main
     """,
 )

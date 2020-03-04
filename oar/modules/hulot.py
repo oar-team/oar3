@@ -158,7 +158,7 @@ class Hulot(object):
 
         #self.executors_socket = self.context.socket(zmq.PULL)
         #try:
-        #    self.socket.bind('ipc://tmp/oar3_executor_notification')
+        #    self.socket.bind('ipc://tmp/oar_executor_notification')
         #except:
         #    logger.error('Failed to bind Hulot endpoint to receive executor notifications')
         #    exit(1)

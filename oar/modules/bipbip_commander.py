@@ -59,8 +59,8 @@ else:
     os.environ['OARDIR'] = binpath
     logger.warning("OARDIR env variable must be defined, " + binpath + " is used by default")
 
-leon_command = binpath + 'oar3-leon'
-bipbip_command = binpath + 'oar3-bipbip'
+leon_command = binpath + 'oar-leon'
+bipbip_command = binpath + 'oar-bipbip'
 #leon_command = binpath + 'Leon'
 #bipbip_command = binpath + 'bipbip'
 #bipbip_command = 'true'
