@@ -7,7 +7,7 @@ OARDIR_BINFILES = $(SRCDIR)/tools/oarsh/oarsh_shell.in \
 
 MANDIR_FILES = $(SRCDIR)/../docs/man/man1/oarsh.1 \
 	       $(SRCDIR)/../docs/man/man1/oarprint.1 \
-	       $(SRCDIR)/../docs/man/man1/oarnodesetting.
+	       $(SRCDIR)/../docs/man/man1/oarnodesetting.1
 
 SHAREDIR_FILES = $(SRCDIR)/tools/oar.conf.in \
                    $(SRCDIR)/tools/oarnodesetting_ssh.in \
@@ -24,22 +24,25 @@ include Makefiles/shared/shared.mk
 clean: clean_shared
 	$(MAKE) -f Makefiles/man.mk clean
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnodesetting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	-rm -f $(SRCDIR)/tools/oardodo
 
 build: build_shared
 	$(MAKE) -f Makefiles/man.mk build
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarnodesetting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $(SRCDIR)/tools/oardodo $(SRCDIR)/tools/oardodo.c
 
-install: install_shared
-	# For dev and manual install only
-	if [ -f $(DESTDIR)$(BINDIR)/oarnodesetting3 ]; then \
-		mv $(DESTDIR)$(BINDIR)/oarnodesetting3 $(DESTDIR)$(OARDIR)/oarnodesetting3;\
-	fi
+install: build install_shared
+	for file in .oarnodesetting;\
+	do \
+		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then\
+			mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
+		fi \
+	done
+
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarnodesetting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 
 	install -d $(DESTDIR)$(BINDIR)
 	install -m 0755 $(SRCDIR)/tools/oarsh/oarcp $(DESTDIR)$(BINDIR)/
@@ -50,7 +53,7 @@ install: install_shared
 
 uninstall: uninstall_shared
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	rm -rf $(DESTDIR)$(OARDIR)/oardodo
 	rm -rf $(DESTDIR)$(EXAMPLEDIR)
 
