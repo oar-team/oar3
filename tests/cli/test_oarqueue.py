@@ -21,6 +21,7 @@ def test_version():
     assert re.match(r'.*\d\.\d\.\d.*', result.output)
 
 def test_oarqueue_bad_user():
+    os.environ['OARDO_USER'] = 'bob'
     runner = CliRunner()
     result = runner.invoke(cli)
     assert result.exit_code == 8
