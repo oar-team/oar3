@@ -48,10 +48,10 @@ m = re.match(r'^\/', meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
 
-leon_command = binpath + 'oar3-leon'
-check_for_villains_command = binpath + 'oar3-sarko'
-check_for_node_changes = binpath + 'oar3-finaud'
-nodeChangeState_command = binpath + 'oar3-node-change-state'
+leon_command = binpath + 'oar-leon'
+check_for_villains_command = binpath + 'oar-sarko'
+check_for_node_changes = binpath + 'oar-finaud'
+nodeChangeState_command = binpath + 'oar-node-change-state'
 
 #Legacy OAR2
 #leon_command = binpath + 'Leon'
@@ -60,9 +60,9 @@ nodeChangeState_command = binpath + 'oar3-node-change-state'
 #nodeChangeState_command = binpath + 'NodeChangeState'
 #nodeChangeState_command = 'true'
 
-proxy_appendice_command = binpath + 'oar3-appendice-proxy'
-bipbip_commander = binpath + 'oar3-bipbip-commander'
-hulot_command = binpath + 'oar3-hulot'
+proxy_appendice_command = binpath + 'oar-appendice-proxy'
+bipbip_commander = binpath + 'oar-bipbip-commander'
+hulot_command = binpath + 'oar-hulot'
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
