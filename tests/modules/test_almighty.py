@@ -12,10 +12,10 @@ import zmq
 fakezmq = FakeZmq()
 
 KAO = '/usr/local/lib/oar/kao'
-FINAUD = '/usr/local/lib/oar/oar3-finaud'
-SARKO = '/usr/local/lib/oar/oar3-sarko'
-LEON = '/usr/local/lib/oar/oar3-leon'
-NODE_CHANGE_STATE = '/usr/local/lib/oar/oar3-node-change-state'
+FINAUD = '/usr/local/lib/oar/oar-finaud'
+SARKO = '/usr/local/lib/oar/oar-sarko'
+LEON = '/usr/local/lib/oar/oar-leon'
+NODE_CHANGE_STATE = '/usr/local/lib/oar/oar-node-change-state'
 
 @pytest.fixture(scope='function', autouse=True)
 def monkeypatch_tools(request, monkeypatch):
