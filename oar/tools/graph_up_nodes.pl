@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Simple script to graph the number of nodes that are not Absent
 # (supposing "not in energy saving standby") depending on the time 
 # Result can be plotted using gnuplot:
