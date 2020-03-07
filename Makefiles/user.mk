@@ -35,6 +35,7 @@ build: build_shared
 install: install_shared
 	install -d $(DESTDIR)$(BINDIR)
 	install -m 0755 $(SRCDIR)/tools/oarmonitor_graph_gen.pl $(DESTDIR)$(BINDIR)/oarmonitor_graph_gen
+	install -m 0755 $(SRCDIR)/tools/oarprint $(DESTDIR)$(BINDIR)/oarprint
 	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
 		.oarproperty oar-hulot kao kamelot kamelot-fifo \
@@ -55,13 +56,14 @@ install: install_shared
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
 
 uninstall: uninstall_shared
-	rm -f $(DESTDIR)$(BINDIR)/oarmonitor_graph_gen	
+	rm -f $(DESTDIR)$(BINDIR)/oarmonitor_graph_gen
+	rm -f $(DESTDIR)$(BINDIR)/oarprint
 
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarnodes CMD_TARGET=$(DESTDIR)$(BINDIR)/oarnodes
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
+	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
 
