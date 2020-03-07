@@ -1,5 +1,4 @@
-#!/usr/bin/env perl -w
-# $Id$
+#!/usr/bin/env perl
 # Simple Perl script to parse, sort and format a job resource properties file
 #
 use strict;
