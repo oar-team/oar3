@@ -18,6 +18,7 @@ clean: clean_shared
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarconnect CMD_TARGET=$(DESTDIR)$(BINDIR)/oarconnect
 	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
@@ -28,6 +29,7 @@ build: build_shared
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarconnect CMD_TARGET=$(DESTDIR)$(BINDIR)/oarconnect
 	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
@@ -39,7 +41,7 @@ install: install_shared
 	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
 		.oarproperty oar-hulot kao kamelot kamelot-fifo \
-		.oarremoveresource .oaraccounting \
+		.oarremoveresource .oaraccounting .oarconnect \
 		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume;\
 	do \
 		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then \
@@ -51,6 +53,7 @@ install: install_shared
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarconnect CMD_TARGET=$(DESTDIR)$(BINDIR)/oarconnect
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
@@ -59,13 +62,14 @@ uninstall: uninstall_shared
 	rm -f $(DESTDIR)$(BINDIR)/oarmonitor_graph_gen
 	rm -f $(DESTDIR)$(BINDIR)/oarprint
 
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarnodes CMD_TARGET=$(DESTDIR)$(BINDIR)/oarnodes
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
-	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarnodes CMD_TARGET=$(DESTDIR)$(BINDIR)/oarnodes
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oardel CMD_TARGET=$(DESTDIR)$(BINDIR)/oardel
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarstat CMD_TARGET=$(DESTDIR)$(BINDIR)/oarstat
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarsub CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsub
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarconnect CMD_TARGET=$(DESTDIR)$(BINDIR)/oarconnect
+	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarwalltime CMD_TARGET=$(DESTDIR)$(BINDIR)/oarwalltime
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarhold CMD_TARGET=$(DESTDIR)$(BINDIR)/oarhold
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarresume CMD_TARGET=$(DESTDIR)$(BINDIR)/oarresume
 
 
 .PHONY: install setup uninstall build clean

@@ -81,7 +81,7 @@ install: build install_shared
 	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
 		.oarproperty oar-hulot kao kamelot kamelot-fifo \
-		.oarremoveresource .oaraccounting .oarqueue \
+		.oarremoveresource .oaraccounting .oarqueue .oarconnect \
 		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume;\
 	do \
 		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then\
