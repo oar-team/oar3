@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
+import os
 import oar.lib
-from flask import url_for, g
+from flask import (url_for, g, abort)
+
+from passlib.apache import HtpasswdFile
 
 from oar import VERSION
+from oar.lib import config
 
 from . import Blueprint
 from .. import API_VERSION
+from ..utils import Arg
 
 app = Blueprint('frontend', __name__)
 
@@ -51,5 +56,28 @@ def whoami():
 @app.route('/timezone')
 def timezone():
     """Gives the timezone of the OAR API server. The api_timestamp given in each query is an UTC timestamp (epoch unix time). This timezone information allows you to re-construct the local time. Time is send by defaut (see __init__.py)"""
-   
     pass
+
+@app.route('/authentication')
+@app.args({'basic_user': Arg(str)})
+@app.args({'basic_password': Arg(str)})
+def authentication(basic_user, basic_password):
+    """allow to test is user/password math htpasswd, can be use as workaround to avoid popup open on browser, usefull for integrated dashboard"""
+    htpasswd_filename = None
+    if not (basic_user and basic_password) :
+        abort(400, 'Basic authentication is not provided')
+
+    if 'HTPASSWD_FILE' in config:
+        htpasswd_filename = config['HTPASSWD_FILE']
+    elif os.path.exists('/etc/oar/api-users'):
+        htpasswd_filename = '/etc/oar/api-users'
+    else:
+        abort(404, 'File for basic authentication is not found')
+
+    ht = HtpasswdFile(htpasswd_filename)
+    
+    if ht.check_password(basic_user, basic_password):
+        g.data['basic authentication'] = 'valid'
+        return
+
+    abort(400, 'basic authentication is not validated')
