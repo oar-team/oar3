@@ -60,10 +60,14 @@ def oarwalltime(job_id, new_walltime, force, delay_next_jobs, version, cli=True)
     luser = os.environ['OARDO_USER'] if 'OARDO_USER' in os.environ else None
     (error, _, status, message) = walltime.request(job_id, luser, new_walltime, 'YES' if force else 'NO',
                                                    'YES' if delay_next_jobs else 'NO')
-    
+
     #TODO error
-    cmd_ret.print_('{}: {}'.format(status, message))
-    
+    msg = '{}: {}'.format(status.capitalize(), message)
+    if error:
+        cmd_ret.error(msg,error)
+    else:
+        cmd_ret.print_(msg)
+
     return cmd_ret
                 
 @click.command()
