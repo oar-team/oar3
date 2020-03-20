@@ -574,6 +574,16 @@ def duration_to_sql(t):
     hour, min, sec = duration_to_hms(t)
     return hms_to_sql(hour, min, sec)
 
+def duration_to_sql_signed(duration):
+    """As duration_to_sql but with sign"""
+    sign = ''
+    if duration > 0:
+        sign = '+'
+    elif duration < 0:
+        sign = '-'
+    (hour, min, sec) = duration_to_hms(abs(duration));
+    return sign + hms_to_sql(hour, min, sec)
+
 def sql_to_duration(t):
     """Converts a date specified in the format used by the sql database to a
     duration in seconds."""
