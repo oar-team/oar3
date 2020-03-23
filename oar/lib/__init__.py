@@ -23,7 +23,7 @@ all_by_module = {
         'GanttJobsResourcesLog', 'GanttJobsResourcesVisu', 'Job',
         'JobDependencie', 'JobResourceDescription', 'JobResourceGroup',
         'JobStateLog', 'JobType', 'MoldableJobDescription', 'Queue',
-        'Resource', 'ResourceLog', 'Scheduler',
+        'Resource', 'ResourceLog', 'Scheduler', 'WalltimeChange'
     ],
     'oar.lib.exceptions': [
         'OARException', 'InvalidConfiguration', 'DatabaseError',
