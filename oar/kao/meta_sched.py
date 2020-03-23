@@ -47,7 +47,10 @@ from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 # for quotas
 from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 
-import oar.kao.advanced_extra_metasched
+# for walltime change requests
+from oar.kao.walltime_change import  process_walltime_change_requests
+
+import oar.kao.advanced_extra_metaschedx
 
 from procset import ProcSet
 
@@ -73,11 +76,18 @@ DEFAULT_CONFIG = {
     'SCHEDULER_NODE_MANAGER_WAKEUP_TIME': 1,
     'EXTRA_METASCHED': 'default',
     'EXTRA_METASCHED_CONFIG': '',
-    'ENERGY_SAVING_MODE': ''
+    'ENERGY_SAVING_MODE': '',
+    'WALLTIME_MAX_INCREASE': 0.0,
+    'WALLTIME_MIN_FOR_CHANGE' : 0.0,
+    'WALLTIME_CHANGE_APPLY_TIME' :0.0,
+    'WALLTIME_INCREMENT' :0.0,
+    'WALLTIME_ALLOWED_USERS_TO_FORCE': '',
+    'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
+    'WALLTIME_MAX_INCREASE': '{default => 7200}',
+    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{_ => '*', besteffort => ''}"
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
-
 
 # waiting time when a reservation has not all of its nodes
 reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
@@ -623,6 +633,9 @@ def meta_schedule(mode='internal', plt=Platform()):
         if 'QUOTAS_FILE' not in config:
             config['QUOTAS_FILE'] = './quotas_conf.json'
         load_quotas_rules()
+
+    if ('WALLTIME_CHANGE_ENABLED' in config) and (config['WALLTIME_CHANGE_ENABLED'] == 'yes'):
+         process_walltime_change_requests(plt, config)
 
     tools.create_almighty_socket()
 
