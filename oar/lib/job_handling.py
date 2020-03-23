@@ -17,8 +17,7 @@ from oar.lib import (db, Job, MoldableJobDescription, JobResourceDescription,
                      JobResourceGroup, Resource, GanttJobsPrediction,
                      JobDependencie, GanttJobsResource, JobType,
                      JobStateLog, AssignedResource, FragJob,
-                     get_logger, config, Challenge)
-
+                     get_logger, config, Challenge , WalltimeChange)
 from oar.lib.resource_handling import get_current_resources_with_suspended_job, update_current_scheduler_priority
 from oar.lib.event import (add_new_event, add_new_event_with_host, is_an_event_exists)
 
@@ -2007,3 +2006,113 @@ def get_jobs_state(job_ids):
 def get_job_state(job_id):
     """Returns state for each given job designated by its id"""
     return db.query(Job.state).filter(Job.id == job_id).one()[0]
+
+
+
+# WALLTIME CHANGE interaction between related Job tables and WalltimeChange one,
+# see walltime.py for WalltimeChange only 
+
+class JobWalltimeChange(object):
+    def __init__(self, **kwargs):
+        self.mld_res_rqts = []
+        for key, value in kwargs.items():
+            setattr(self, key, value) 
+
+def get_jobs_with_walltime_change():
+    """Get all jobs with extra time requests to process"""
+    results = db.query(Job.id, Job.queue_name, Job.start_time, Job.user, Job.name,
+                       MoldableJobDescription.walltime, WalltimeChange.pending,
+                       WalltimeChange.force, WalltimeChange.delay_next_jobs,
+                       WalltimeChange.granted, WalltimeChange.granted_with_force,
+                       WalltimeChange.granted_with_delay_next_jobs,
+                       AssignedResource.resource_id)\
+                .filter(Job.state == 'Running').filter(Job.id == WalltimeChange.job_id)\
+                .filter(Job.assigned_moldable_job == MoldableJobDescription.id)\
+                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
+                .filter(WalltimeChange.pending != 0)\
+                .all()
+
+    jobs_wtc = {}
+    for x in results:
+        (jid, queue, start_time, user, name, walltime, pending, force, delay_next_jobs,
+         granted, granted_with_force, granted_with_delay_next_jobs, rid) = x
+
+        if jid not in jobs_wtc :
+            j = JobWalltimeChange(queue=queue, start_time=start_time, user=user, name=name,
+                                  walltime=walltime, pending=pending, force=force,
+                                  delay_next_jobs=delay_next_jobs, granted=granted,
+                                  granted_with_force= granted_with_force,
+                                  granted_with_delay_next_jobs=granted_with_delay_next_jobs,
+                                  rids=[rid])
+            jobs_wtc[jid] = j
+        else:
+            j_wtc = jobs_wtc[jid]
+            j_wtc.rids.append(rid)        
+    return jobs_wtc
+
+def get_possible_job_end_time_in_interval(t_from, to, resources, scheduler_job_security_time, delay_next_jobs,
+                                          job_types, job_user, job_name, first):
+    """Compute the possible end time for a job in an interval of the gantt of the predicted jobs"""
+    to += scheduler_job_security_time
+    only_adv_reservations = ''
+    if delay_next_jobs == 'YES':
+        only_adv_reservations = "j.reservation != 'None' AND"
+    resources_list = ','.join([str(i) for i in resources]) 
+
+    # NB: we do not remove jobs from the same user, because other jobs can be behind and this may change
+    # the scheduling for other users. The user can always delete his job if needed for extratime.
+    exclude = ''
+    if 'timesharing' in job_types:
+        if (job_types['timesharing'] == 'user,*') or (job_types['timesharing'] == '*,user'):
+            exclude += "((t.type = 'timesharing=user,*' OR t.type = 'timesharing=*,user') and j.job_user = {}) OR ".format(job_user)
+        elif (job_types['timesharing'] == 'name,*' or job_types['timesharing'] == '*,name'):
+            exclude += "((t.type = 'timesharing=*,name' OR t.type = 'timesharing=name,*') and j.job_name = {}) OR ".format(job_name)
+        elif (job_types['timesharing'] == 'name,user' or job_types['timesharing'] == 'user,name'):
+            exclude += "((t.type = 'timesharing=user,name' OR t.type = 'timesharing=name,user') and j.job_name = '$job_name' AND j.job_user = '{}') OR ".format(job_user)
+        elif (job_types['timesharing'] == '*,*'):
+            exclude += "t.type = 'timesharing=*,*' OR"
+
+    if 'allowed' in job_types:
+      exclude = "t.type = 'placeholder={}' OR ".format(job_types['allowed'])
+    
+    req = """
+SELECT
+  DISTINCT gp.start_time
+FROM 
+  jobs j, moldable_job_descriptions m, gantt_jobs_predictions gp, gantt_jobs_resources gr
+WHERE
+  j.job_id = m.moldable_job_id AND
+  {}
+  gp.moldable_job_id = m.moldable_id AND
+  gp.start_time > {} AND
+  gp.start_time <= {} AND
+  gr.moldable_job_id = gp.moldable_job_id AND
+  NOT EXISTS (
+    SELECT
+      t.job_id
+    FROM
+      job_types t
+    WHERE
+      t.job_id = j.job_id AND (
+      {}
+      t.type = 'besteffort' )
+  ) AND
+  gr.resource_id IN ( {} )
+    """.format(only_adv_reservations, from_, only_adv_reservations, to, exclude, resource_list)
+
+    raw_start_times = db.engine.execute(text(req))
+    for start_time in raw_start_times.fetchall():
+        if (not first) or (first > (start_time[0] - scheduler_job_security_time)):
+            first = start_time[0] - scheduler_job_security_time - 1
+    
+    return first
+
+def change_walltime(job_id, new_walltime, message):
+    """Change the walltime of a job and add an event"""
+    db.query(MoldableJobDescription).filter(MoldableJobDescription.job_id == Job.id)\
+                                    .update({MoldableJobDescription.walltime: walltime},
+                                            synchronize_session=False)
+    db.commit()
+    event_data = EventLog(type='WALLTIME', job_id=job_id ,date=tools.get_date(),
+                          description=message[:255], to_check='NO')
+    db.commit()
