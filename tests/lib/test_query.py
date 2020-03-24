@@ -28,7 +28,7 @@ def test_simple_models():
         'GanttJobsResourcesLog', 'GanttJobsResourcesVisu', 'Job',
         'JobDependencie', 'JobResourceDescription', 'JobResourceGroup',
         'JobStateLog', 'JobType', 'MoldableJobDescription', 'Queue',
-        'Resource', 'ResourceLog', 'Scheduler'
+        'Resource', 'ResourceLog', 'Scheduler', 'WalltimeChange'
     ]
     assert set(list(db.models.keys())) == set(expected_models)
     assert set(list(dict(all_models()).keys())) == set(expected_models)
