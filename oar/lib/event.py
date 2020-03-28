@@ -9,10 +9,10 @@ import oar.lib.tools as tools
 logger = get_logger('oar.lib.event')
 
 
-def add_new_event(ev_type, job_id, description):
+def add_new_event(ev_type, job_id, description, to_check='YES'):
     """Add a new entry in event_log table""" 
     event_data = EventLog(type=ev_type, job_id=job_id, date=tools.get_date(),
-                          description=description[:255])
+                          description=description[:255], to_check='YES')
     db.add(event_data)
     db.commit()
 
