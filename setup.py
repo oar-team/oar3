@@ -84,6 +84,7 @@ setup(
     .oarnodesetting=oar.cli.oarnodesetting:cli
     .oaraccounting=oar.cli.oaraccounting:cli
     .oarproperty=oar.cli.oarproperty:cli
+    .oarwalltime=oar.cli.oarwalltime:cli
     oar2trace=oar.cli.oar2trace:cli
     kao=oar.kao.kao:main
     kamelot=oar.kao.kamelot:main
