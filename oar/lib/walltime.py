@@ -259,17 +259,18 @@ def add_walltime_change_request(job_id, pending, force, delay_next_jobs):
 
 def update_walltime_change_request(job_id, pending, force, delay_next_jobs, granted,
                                    granted_with_force, granted_with_delay_next_jobs):
-    """Update an walltime change request after processing"""
+    """Update a walltime change request after processing"""
     walltime_change_update = {
         WalltimeChange.pending: pending,
         WalltimeChange.force: (force if force else ''),
         WalltimeChange.delay_next_jobs: (delay_next_jobs if delay_next_jobs else ''),
-        WalltimeChange.granted : (granted if granted  else ''),
-        WalltimeChange.granted_with_force : (granted_with_force if granted_with_force  else ''),
+        WalltimeChange.granted : (granted if granted  else 0),
+        WalltimeChange.granted_with_force : (granted_with_force if granted_with_force  else 0),
         WalltimeChange.granted_with_delay_next_jobs : (granted_with_delay_next_jobs
-                                                       if granted_with_delay_next_jobs  else '')
+                                                       if granted_with_delay_next_jobs  else 0)
     }
 
     db.query(WalltimeChange).filter(WalltimeChange.job_id == job_id)\
                             .update(walltime_change_update, synchronize_session=False)
     db.commit()
+

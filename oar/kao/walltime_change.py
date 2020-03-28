@@ -1,24 +1,25 @@
+from oar.lib import (config, get_logger)
 
 from oar.lib.job_handling import (get_jobs_with_walltime_change, get_job_suspended_sum_duration,
-                                  get_job_types, get_running_job, change_walltime)
+                                  get_job_types, get_running_job, change_walltime,
+                                  get_possible_job_end_time_in_interval)
+
+from oar.lib.tools import (duration_to_sql, duration_to_sql_signed)
 
 from oar.lib.walltime import (get_conf, update_walltime_change_request)
 
-# TODO
-#  container_job._moldable_walltime
-#  job.resources,  job.delay_next_jobs, ....
-#  get_possible_job_end_time_in_interval
+logger = get_logger('oar.kao.walltime_change')
 
-def process_walltime_change_requests(plt, config, logger):
+def process_walltime_change_requests(plt):
     
     now = plt.get_time()
     walltime_change_apply_time = config['WALLTIME_CHANGE_APPLY_TIME']
     walltime_increment = config['WALLTIME_INCREMENT']
 
-    for job_wtc in get_jobs_with_walltime_change():
-        #(queue, start_time, user, name, walltime, pending, force, delay_next_jobs,
-        # granted, granted_with_force, granted_with_delay_next_jobs) 
-        
+    job_wtcs = get_jobs_with_walltime_change()
+    
+    for job_id,job in job_wtcs.items():
+           
         suspended = get_job_suspended_sum_duration(job_id, now)
         fit = job.pending
         if fit > 0:
@@ -51,9 +52,17 @@ def process_walltime_change_requests(plt, config, logger):
                 else:
                     logger.debug('[{}] walltime change for inner job but container is not found ?'.format(job_id))
 
-            # TODO job.resources,  job.delay_next_jobs, ....
-            fit = get_possible_job_end_time_in_interval(from_, to, job.resources, logger,
-                                                        SCHEDULER_JOB_SECURITY_TIME,
+            # TODO       
+            # if (exists($types->{deadline})) {
+            #     my $deadline = OAR::IO::sql_to_local($types->{deadline});
+            #     if ($deadline < $to) {
+            #         $to = $deadline;
+            #         oar_debug("[MetaSched] [$jobid] walltime change for job limited by its dealdine to ".($to - $from)."s\n");
+            #     }
+            # }
+
+            fit = get_possible_job_end_time_in_interval(from_, to, job.rids,
+                                                        int(config['SCHEDULER_JOB_SECURITY_TIME']),
                                                         job.delay_next_jobs, job_types,
                                                         job.user, job.name) - from_
             if fit <= 0:
@@ -69,11 +78,13 @@ def process_walltime_change_requests(plt, config, logger):
         new_walltime = job.walltime + fit
         new_pending = job.pending - fit
 
-        logger.debug('[{}] walltime changed: {} (granted: {}/pending: {}{})'\
-                     .format(job_id, duration_to_sql(new_walltime), duration_to_sql_signed(fit),
-                             duration_to_sql_signed(new_pending), '/force' if (job.force=='YES') else '',
-                             '/delay next jobs' if (job.delay_next_jobs == 'YES') else ''))
+        message = 'walltime changed: {} (granted: {}/pending: {}{})'\
+                   .format(duration_to_sql(new_walltime), duration_to_sql_signed(fit),
+                           duration_to_sql_signed(new_pending), '/force' if (job.force=='YES') else '',
+                           '/delay next jobs' if (job.delay_next_jobs == 'YES') else '')
 
+        logger.debug('[{}] {}'.format(job_id, message))
+        
         update_walltime_change_request(job_id, new_pending,
                                        'NO' if (new_pending == 0) else None,
                                        'NO' if (new_pending == 0) else None,

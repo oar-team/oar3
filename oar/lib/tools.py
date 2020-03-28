@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
     'PROLOGUE_EXEC_FILE': None,
     'EPILOGUE_EXEC_FILE': None,
     'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
+    'SCHEDULER_JOB_SECURITY_TIME': '60', # TODO should be int
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
     'OPENSSH_CMD': 'ssh',
     'JOB_RESOURCE_MANAGER_FILE': '/etc/oar/job_resource_manager_cgroups.pl',
@@ -61,7 +62,16 @@ DEFAULT_CONFIG = {
     'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
     'OAREXEC_DEBUG_MODE' : '1',
     'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6672
+    'HULOT_PORT' : 6672,
+    'WALLTIME_CHANGE_ENABLED': 'NO',
+    'WALLTIME_MAX_INCREASE': 0.0,
+    'WALLTIME_MIN_FOR_CHANGE' : 0.0,
+    'WALLTIME_CHANGE_APPLY_TIME' :0.0,
+    'WALLTIME_INCREMENT' :0.0,
+    'WALLTIME_ALLOWED_USERS_TO_FORCE': '',
+    'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
+    'WALLTIME_MAX_INCREASE': "{'default': 7200}",
+    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}"
     }
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)

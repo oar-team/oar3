@@ -2050,14 +2050,15 @@ def get_jobs_with_walltime_change():
             j_wtc.rids.append(rid)        
     return jobs_wtc
 
-def get_possible_job_end_time_in_interval(t_from, to, resources, scheduler_job_security_time, delay_next_jobs,
-                                          job_types, job_user, job_name, first):
+def get_possible_job_end_time_in_interval(from_, to, resources, scheduler_job_security_time, delay_next_jobs,
+                                          job_types, job_user, job_name):
     """Compute the possible end time for a job in an interval of the gantt of the predicted jobs"""
+    first = to
     to += scheduler_job_security_time
     only_adv_reservations = ''
     if delay_next_jobs == 'YES':
         only_adv_reservations = "j.reservation != 'None' AND"
-    resources_list = ','.join([str(i) for i in resources]) 
+    resources_str = ','.join([str(i) for i in resources]) 
 
     # NB: we do not remove jobs from the same user, because other jobs can be behind and this may change
     # the scheduling for other users. The user can always delete his job if needed for extratime.
@@ -2098,21 +2099,21 @@ WHERE
       t.type = 'besteffort' )
   ) AND
   gr.resource_id IN ( {} )
-    """.format(only_adv_reservations, from_, only_adv_reservations, to, exclude, resource_list)
-
+    """.format(only_adv_reservations, from_, to, exclude, resources_str)
     raw_start_times = db.engine.execute(text(req))
+
     for start_time in raw_start_times.fetchall():
         if (not first) or (first > (start_time[0] - scheduler_job_security_time)):
             first = start_time[0] - scheduler_job_security_time - 1
-    
+            
+            
     return first
 
 def change_walltime(job_id, new_walltime, message):
     """Change the walltime of a job and add an event"""
-    db.query(MoldableJobDescription).filter(MoldableJobDescription.job_id == Job.id)\
-                                    .update({MoldableJobDescription.walltime: walltime},
+    db.query(MoldableJobDescription).filter(MoldableJobDescription.job_id == job_id)\
+                                    .update({MoldableJobDescription.walltime: new_walltime},
                                             synchronize_session=False)
     db.commit()
-    event_data = EventLog(type='WALLTIME', job_id=job_id ,date=tools.get_date(),
-                          description=message[:255], to_check='NO')
+    event_data = add_new_event('WALLTIME', job_id, message, to_check='NO')
     db.commit()

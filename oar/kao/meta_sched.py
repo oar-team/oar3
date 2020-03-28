@@ -50,7 +50,7 @@ from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
 # for walltime change requests
 from oar.kao.walltime_change import  process_walltime_change_requests
 
-import oar.kao.advanced_extra_metaschedx
+import oar.kao.advanced_extra_metasched
 
 from procset import ProcSet
 
@@ -635,7 +635,7 @@ def meta_schedule(mode='internal', plt=Platform()):
         load_quotas_rules()
 
     if ('WALLTIME_CHANGE_ENABLED' in config) and (config['WALLTIME_CHANGE_ENABLED'] == 'yes'):
-         process_walltime_change_requests(plt, config)
+         process_walltime_change_requests(plt)
 
     tools.create_almighty_socket()
 
