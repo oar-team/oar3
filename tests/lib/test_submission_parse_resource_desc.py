@@ -49,3 +49,8 @@ def test_parse_resource_descriptions_5():
                        ([{u'property': u"gpu='NO'",
                           u'resources': [{u'resource': u'core', u'value': '20'}]}],
                         None)]
+    
+def test_parse_resource_descriptions_walltime_only():
+    str_res_req = ["walltime=4:0"]
+    res_req = parse_resource_descriptions(str_res_req, default_res, nodes_res)
+    assert res_req == [([{'property': '', 'resources': [{'resource': 'resource_id', 'value': '1'}]}], 14400)]

@@ -371,7 +371,12 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
     resource_request = []  # resource_request = [moldable_instance , ...]
     for str_resource_request in str_resource_request_list:
         res_req_walltime = str_resource_request.split(',')
+        # only walltime is provided
+        if re.match(r'walltime=.*', res_req_walltime[0]):
+            req_walltime = res_req_walltime[0]
+            res_req_walltime = [default_resources, req_walltime]
         str_prop_res_req = res_req_walltime[0]
+        
         walltime = None
         if len(res_req_walltime) == 2:
             walltime_desc = res_req_walltime[1].split('=')
