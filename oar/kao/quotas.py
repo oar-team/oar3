@@ -2,14 +2,28 @@
 import simplejson as json
 from collections import defaultdict
 from copy import deepcopy
+
+from crontab import CronTab
+
 from oar.lib import config
 
 import oar.lib.resource as rs
 
-quotas_rules = {}
-quotas_job_types = ['*']
-
-
+class CrontabQuotas(object):
+    def __init__(self, crontab_quotas_str):
+        crontab_str, self.quotas_name, self.description = crontab_quotas_str
+        self.crontab = Crontab(crontab_str)
+        
+class CrontabQuotasList(object):
+    crontab_list = {}
+    def __init__(self, crontab_list_str):
+        self.crontabquotas_list = crontabq_list
+        i=0
+        self.ct2idx = {}
+        for ct in self.crontab_list:
+            crontab, quotas_name, descrition = ct
+            #if quotas_name in
+            
 class Quotas(object):
     """
 
@@ -114,6 +128,17 @@ account (but the inner jobs are used to compute the quotas).
 
     """
 
+    enabled = False
+    temporal = False
+    rules = {}
+    job_types = ['*']
+    crontabs = None
+    
+    @classmethod
+    def enable(cls):
+        cls.enabled = True
+        cls.load_quotas_rules()
+
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
 
@@ -144,7 +169,7 @@ account (but the inner jobs are used to compute the quotas).
         else:
             duration = prev_duration
 
-        for t in quotas_job_types:
+        for t in Quotas.job_types:
             if (t == '*') or (t in job.types):
                 # Update the number of used resources
                 self.counters['*', '*', t, '*'][0] += nb_resources
@@ -183,9 +208,8 @@ account (but the inner jobs are used to compute the quotas).
         # self.show_counters('combine after')
 
     def check(self, job):
-        global quotas_rules
         # self.show_counters('before check, job id: ' + str(job.id))
-        for rl_fields, rl_quotas in quotas_rules.items():
+        for rl_fields, rl_quotas in Quotas.rules.items():
             # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
@@ -225,41 +249,78 @@ account (but the inner jobs are used to compute the quotas).
         return (True, 'quotas ok', '', 0)
 
 
-def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
-    # loop over slot_set
-    slots_quotas = Quotas()
-    sid = sid_left
-    while True:
-        slot = slots[sid]
-        # slot.quotas.show_counters('check_slots_quotas, b e: ' + str(slot.b) + ' ' + str(slot.e))
-        slots_quotas.combine(slot.quotas)
-
-        if (sid == sid_right):
-            break
-        else:
-            sid = slot.next
-    # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
-    slots_quotas.update(job, job_nb_resources, duration)
-    return slots_quotas.check(job)
-
-
-def load_quotas_rules():
-    global quotas_rules
-    global quotas_job_types
-    """
-    {
-        "quotas": {
-               "*,*,*,*": [120,-1,-1],
-                "*,*,*,john": [150,-1,-1]
+    
+    def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
+        # loop over slot_set
+        slots_quotas = Quotas()
+        sid = sid_left
+        while True:
+            slot = slots[sid]
+            # slot.quotas.show_counters('check_slots_quotas, b e: ' + str(slot.b) + ' ' + str(slot.e))
+            slots_quotas.combine(slot.quotas)
+    
+            if (sid == sid_right):
+                break
+            else:
+                sid = slot.next
+        # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
+        slots_quotas.update(job, job_nb_resources, duration)
+        return slots_quotas.check(job)
+    
+    @classmethod
+    def load_quotas_rules(cls):
+        """
+        Simple exemple
+    
+        {
+            "quotas": {
+                   "*,*,*,*": [120,-1,-1],
+                    "*,*,*,john": [150,-1,-1]
+            }
+            "job_types": ['besteffort','deploy','console']
         }
-        "quotas_job_types": ['besteffort','deploy','console']
-    }
-
-    """
-    quotas_rules_filename = config['QUOTAS_FILE']
-    with open(quotas_rules_filename) as json_file:
-        json_quotas = json.load(json_file)
-        for k, v in json_quotas['quotas'].items():
-            quotas_rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
-        if 'quotas_job_types' in json_quotas:
-            quotas_job_types.extend(json_quotas['quotas_job_types'])
+    
+        Temportal quotas exemple
+    
+        {
+            "crontab": [
+                ["* 9-18 MON-FRI * *", "quotas_workdays", "workdays"],
+                ["* 19-23 MON-THU * *", "quotas_nigths", "nights of workdays"],
+                ["* 0-8 TUE-FRI * *", "quotas_nigths", "nights of workdays"],
+                ["* 19-32 FRI * *", "quotas_weekends", "weekend"],
+                ["* * * SAT-SUN * *", "quotas_weekends", "weekend"],
+                ["* 0-8 MON * *", "quotas_weekends ,", "weekend"]
+            ],
+            "quotas_workdays": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            },
+            "quotas_nigths": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            },
+            "quotas_weekends": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            }
+        }
+        
+    
+        """
+        quotas_rules_filename = config['QUOTAS_FILE']
+        with open(quotas_rules_filename) as json_file:
+            json_quotas = json.load(json_file)
+            if 'crontab' in json_quotas:
+                pass
+                # quotas_crontab = CrontabList(json_quotas)
+                # for quotas_name in quotas_crontab.quotas_names:
+                #     qr = {}
+                #     for k, v in json_quotas['quotas'].items():
+                #         qr[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
+                #     clsrules.append(qr)
+            else:
+                for k, v in json_quotas['quotas'].items():
+                    cls.rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
+            if 'job_types' in json_quotas:
+                cls.job_types.extend(json_quotas['job_types'])
+    

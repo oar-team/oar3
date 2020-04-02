@@ -10,7 +10,7 @@ from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
-import oar.kao.quotas as qts
+from oar.kao.quotas import Quotas
 import oar.lib.resource as rs
 
 from oar.lib import config, get_logger
@@ -57,13 +57,15 @@ def oar_conf(request):
 
 @pytest.fixture(scope='function', autouse=True)
 def reset_quotas():
-    qts.quotas_rules = {}
-    qts.quotas_job_types = ['*']
-
+    Quotas.enabled = False
+    Quotas.temporal = False
+    Quotas.rules = {}
+    Quotas.job_types = ['*']
+    Quotas.crontabs = None
 
 def test_quotas_one_job_no_rules():
-    config['QUOTAS'] = 'yes'
-
+    Quotas.enabled = True
+ 
     v = [(0, 59, ProcSet(*[(17, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -85,10 +87,8 @@ def test_quotas_one_job_no_rules():
 
 
 def test_quotas_one_job_rule_nb_res_1():
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [1, -1, -1]}
+    Quotas.enabled = True
+    Quotas.rules = {('*', '*', '*', '/'): [1, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = ProcSet(*res)
@@ -107,11 +107,8 @@ def test_quotas_one_job_rule_nb_res_1():
 
 
 def test_quotas_one_job_rule_nb_res_2():
-
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1]}
+    Quotas.enabled = True
+    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
@@ -135,10 +132,8 @@ def test_quotas_one_job_rule_nb_res_2():
 
 def test_quotas_four_jobs_rule_1():
 
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
+    Quotas.enabled = True
+    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
     res = ProcSet(*[(1, 32)])
@@ -177,10 +172,8 @@ def test_quotas_four_jobs_rule_1():
 
 def test_quotas_three_jobs_rule_1():
 
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
+    Quotas.enabled = True
+    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('default', '*', '*', '*'): [-1, -1, 2000]}
 
     res = ProcSet(*[(1, 32)])
@@ -216,7 +209,6 @@ def test_quotas_three_jobs_rule_1():
 
 def test_quotas_two_job_rules_nb_res_quotas_file():
 
-    config['QUOTAS'] = 'yes'
     _, quotas_file_name = mkstemp()
     config['QUOTAS_FILE'] = quotas_file_name
 
@@ -224,7 +216,7 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
     with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
         quotas_fd.write('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
 
-    qts.load_quotas_rules()
+    Quotas.enable()
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
@@ -256,17 +248,17 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
 
 def test_quotas_two_jobs_job_type_proc():
-    config['QUOTAS'] = 'yes'
+
     _, quotas_file_name = mkstemp()
     config['QUOTAS_FILE'] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
     with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
-        quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "quotas_job_types": ["yop"]}')
+        quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "job_types": ["yop"]}')
 
-    qts.load_quotas_rules()
+    Quotas.enable()
 
-    print(qts.quotas_rules, qts.quotas_job_types)
+    print(Quotas.rules, Quotas.job_types)
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res

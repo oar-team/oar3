@@ -10,7 +10,7 @@ from oar.lib import get_logger, config
 
 # for quotas
 import oar.lib.resource as rs
-from oar.kao.quotas import check_slots_quotas
+from oar.kao.quotas import Quotas
 
 logger = get_logger("oar.kamelot")
 
@@ -183,9 +183,9 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
-            if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+            if Quotas.enabled:
                 nb_res = len(itvs & rs.default_resource_itvs)
-                res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
+                res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     logger.info("Quotas limitaion reached, job:" + str(job.id) +

@@ -45,7 +45,7 @@ from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
                           get_next_job_date_on_node, get_last_wake_up_date_of_node)
 
 # for quotas
-from oar.kao.quotas import (check_slots_quotas, load_quotas_rules)
+from oar.kao.quotas import Quotas
 
 # for walltime change requests
 from oar.kao.walltime_change import  process_walltime_change_requests
@@ -105,6 +105,8 @@ to_launch_jobs_already_treated = {}
 
 
 batsim_sched_proxy = None 
+
+
 
 
 ##########################################################################
@@ -346,13 +348,13 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
             itvs = find_resource_hierarchies_job(
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
-            if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+            if Quotas.enabled:
                 nb_res = len(itvs & resource_set.default_resource_itvs)
-                res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
+                res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     itvs = ProcSet()
-                    logger.info("Quotas limitaion reached, job:" + str(job.id) +
+                    logger.info("Quotas limitation reached, job:" + str(job.id) +
                                 ", " + quotas_msg + ", rule: " + str(rule) +
                                 ", value: " + str(value))
                     set_job_state(job.id, 'toError')
@@ -630,10 +632,8 @@ def meta_schedule(mode='internal', plt=Platform()):
     job_security_time = int(config['SCHEDULER_JOB_SECURITY_TIME'])
 
     if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-        if 'QUOTAS_FILE' not in config:
-            config['QUOTAS_FILE'] = './quotas_conf.json'
-        load_quotas_rules()
-
+        Quotas.enable()
+        
     if ('WALLTIME_CHANGE_ENABLED' in config) and (config['WALLTIME_CHANGE_ENABLED'] == 'yes'):
          process_walltime_change_requests(plt)
 

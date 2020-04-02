@@ -8,7 +8,8 @@ from oar.lib.utils import dict_ps_copy
 
 from oar.lib.job_handling import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 
-import oar.kao.quotas as qts
+from oar.kao.quotas import Quotas
+
 
 MAX_TIME = 2147483648  # (* 2**31 *)
 
@@ -34,8 +35,9 @@ class Slot(object):
             self.ph_itvs = {}
         else:
             self.ph_itvs = ph_itvs  # placeholder ph_itvs: [ph_name] * itvs
-        if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-            self.quotas = qts.Quotas()
+
+        if Quotas.enabled:
+            self.quotas = Quotas()
 
     def show(self):
         print("%s" % self)
