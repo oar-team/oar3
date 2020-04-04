@@ -540,6 +540,22 @@ def get_date(): # pragma: no cover
 def get_time(): # pragma: no cover
     return(time.time())
 
+
+def hms_str_to_duration(hms_str):
+    """convert hour, minute, second string separated by ':' to second
+    examples:
+         1 -> 3600
+         1:1 -> 3660
+         0:2:10 -> 130
+    """
+    hms=hms_str.split(':')
+    if len(hms) == 1:
+        return (3600*int(hms[0]))
+    elif len(hms) == 2:
+        return (3600*int(hms[0]) + 60*int(hms[1]))
+    else:
+        return (3600*int(hms[0]) + 60*int(hms[1]) + int(hms[2]))
+    
 def sql_to_local(date):
     """Converts a date specified in the format used by the sql database to an
     integer local time format

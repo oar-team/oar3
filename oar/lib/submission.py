@@ -16,7 +16,8 @@ from oar.lib import (db, Job, JobType, AdmissionRule, Challenge, Queue,
 
 from oar.lib.resource import ResourceSet
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, PIPE, format_job_message_text)
+from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, hms_str_to_duration,
+                           PIPE, format_job_message_text)
 
 import oar.lib.tools as tools
 
@@ -381,14 +382,8 @@ def parse_resource_descriptions(str_resource_request_list, default_resources, no
         if len(res_req_walltime) == 2:
             walltime_desc = res_req_walltime[1].split('=')
             if len(walltime_desc) == 2:
-                str_walltime = walltime_desc[1]
-                lg_wallime_lst = len(str_walltime.split(':'))
-                if lg_wallime_lst == 1:
-                    str_walltime += ':00:00'
-                elif lg_wallime_lst == 2:
-                    str_walltime += ':00'
-                walltime = sql_to_duration(str_walltime)
-
+                walltime = hms_str_to_duration(walltime_desc[1])
+                
         prop_res_reqs = str_prop_res_req.split('+')
 
         resource_desc = []  # resource_desc = [{property: prop, resources: res}]
