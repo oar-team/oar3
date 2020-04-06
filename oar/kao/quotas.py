@@ -321,7 +321,7 @@ account (but the inner jobs are used to compute the quotas).
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
         self.rules = Quotas.default_rules
-
+        
     def deepcopy_from(self, quotas):
         self.counters = deepcopy(quotas.counters)
 
@@ -427,8 +427,6 @@ account (but the inner jobs are used to compute the quotas).
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
         return (True, 'quotas ok', '', 0)
-
-
     
     def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
         # loop over slot_set
@@ -447,6 +445,10 @@ account (but the inner jobs are used to compute the quotas).
         slots_quotas.update(job, job_nb_resources, duration)
         return slots_quotas.check(job)
 
+    def set_rules(self, rules_id):
+        """Use for temporal calendar, when rules must be change from default"""
+        self.rules = Quotas.calendar.quotas_rules_list[rules_id]
+    
     @staticmethod
     def quotas_rules_fromJson(json_quotas_rules):
         rules = {}

@@ -338,6 +338,7 @@ class SlotSet:
             slot_duration = (slot.e - slot.b) + 1 
             if slot_duration  <= remaining_duration:
                 slot.quotas_rules_id = quotas_rules_id
+                slot.quotas.set_rules(quotas_rules_id)
                 return (quotas_rules_id, remaining_duration - slot_duration)
             else:
                 # created B slot, modify current A slot according to remaining_duration 
@@ -354,6 +355,7 @@ class SlotSet:
                 slot.next = b_id
                 slot.e = slot.b + remaining_duration -1
                 slot.quotas_rules_id = quotas_rules_id
+                slot.quotas.set_rules(quotas_rules_id)
 
                 # What is next new rules_id / duration or quatos_period_reached
                 quotas_rules_id, remaining_duration = Quotas.calendar.next_rules(b_slot.b)
