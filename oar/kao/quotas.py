@@ -310,7 +310,7 @@ account (but the inner jobs are used to compute the quotas).
 
     enabled = False
     calendar = None
-    rules = {}
+    default_rules = {}
     job_types = ['*']
     
     @classmethod
@@ -320,6 +320,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
+        self.rules = Quotas.default_rules
 
     def deepcopy_from(self, quotas):
         self.counters = deepcopy(quotas.counters)
@@ -388,7 +389,7 @@ account (but the inner jobs are used to compute the quotas).
 
     def check(self, job):
         # self.show_counters('before check, job id: ' + str(job.id))
-        for rl_fields, rl_quotas in Quotas.rules.items():
+        for rl_fields, rl_quotas in self.rules.items():
             # pdb.set_trace()
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
@@ -501,7 +502,7 @@ account (but the inner jobs are used to compute the quotas).
             if ('periodical' in json_quotas) or ('oneshot' in json_quotas):
                 cls.calendar = Calendar(json_quotas)
             if 'quotas' in json_quotas:
-                cls.rules = cls.quotas_rules_fromJson(json_quotas['quotas'])
+                cls.default_rules = cls.quotas_rules_fromJson(json_quotas['quotas'])
             if 'job_types' in json_quotas:
                 cls.job_types.extend(json_quotas['job_types'])
     

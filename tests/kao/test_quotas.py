@@ -58,10 +58,9 @@ def oar_conf(request):
 @pytest.fixture(scope='function', autouse=True)
 def reset_quotas():
     Quotas.enabled = False
-    Quotas.temporal = False
-    Quotas.rules = {}
+    Quotas.default_rules = {}
     Quotas.job_types = ['*']
-    Quotas.crontabs = None
+
 
 def test_quotas_one_job_no_rules():
     Quotas.enabled = True
@@ -88,7 +87,7 @@ def test_quotas_one_job_no_rules():
 
 def test_quotas_one_job_rule_nb_res_1():
     Quotas.enabled = True
-    Quotas.rules = {('*', '*', '*', '/'): [1, -1, -1]}
+    Quotas.default_rules = {('*', '*', '*', '/'): [1, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = ProcSet(*res)
@@ -108,7 +107,7 @@ def test_quotas_one_job_rule_nb_res_1():
 
 def test_quotas_one_job_rule_nb_res_2():
     Quotas.enabled = True
-    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1]}
+    Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
@@ -133,7 +132,7 @@ def test_quotas_one_job_rule_nb_res_2():
 def test_quotas_four_jobs_rule_1():
 
     Quotas.enabled = True
-    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1],
+    Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
     res = ProcSet(*[(1, 32)])
@@ -173,7 +172,7 @@ def test_quotas_four_jobs_rule_1():
 def test_quotas_three_jobs_rule_1():
 
     Quotas.enabled = True
-    Quotas.rules = {('*', '*', '*', '/'): [16, -1, -1],
+    Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1],
                         ('default', '*', '*', '*'): [-1, -1, 2000]}
 
     res = ProcSet(*[(1, 32)])
@@ -258,7 +257,7 @@ def test_quotas_two_jobs_job_type_proc():
 
     Quotas.enable()
 
-    print(Quotas.rules, Quotas.job_types)
+    print(Quotas.default_rules, Quotas.job_types)
 
     res = ProcSet(*[(1, 32)])
     rs.default_resource_itvs = res
