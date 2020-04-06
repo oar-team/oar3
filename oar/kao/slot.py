@@ -16,7 +16,7 @@ MAX_TIME = 2147483648  # (* 2**31 *)
 
 class Slot(object):
 
-    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None):
+    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None, quotas_rules_id=-1):
         self.id = id
         self.prev = prev
         self.next = next
@@ -38,6 +38,7 @@ class Slot(object):
 
         if Quotas.enabled:
             self.quotas = Quotas()
+            self.quotas_rules_id = quotas_rules_id
 
     def show(self):
         print("%s" % self)
@@ -59,7 +60,6 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
         itvs_acc = itvs_acc & slots[sid].itvs
 
     return itvs_acc
-
 
 def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
 
@@ -114,6 +114,7 @@ class SlotSet:
             self.begin = b
             self.slots = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
         else:
+            # Given slots is, in fact, one slot
             self.slots = {1: slots}
             self.begin = slots.b
 
@@ -122,6 +123,19 @@ class SlotSet:
         #  (same requested resources w/ constraintes)
         self.cache = {}
 
+        # Slots must be splitted according to Quotas' calendar if applied and the first has not
+        # rules affected
+        #import pdb; pdb.set_trace()
+        if Quotas.enabled and Quotas.calendar and (self.slots[1].quotas_rules_id == -1):
+            i = 1
+            t = self.begin 
+            quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(self.begin)
+            while i and remaining_duration: # no more slots or quotas_period_end reached
+                slot = self.slots[i]
+                i = slot.next
+                quotas_rules_id, remaining_duration = self.temporal_quotas_split_slot(slot,
+                                                                                  quotas_rules_id,
+                                                                                  remaining_duration)                
     def __str__(self):
         lines = []
         for i, slot in self.slots.items():
@@ -162,8 +176,9 @@ class SlotSet:
 
         if hasattr(a_slot, 'quotas'):
             a_slot.quotas.deepcopy_from(slot.quotas)
-
-    # Generate B slot (substract job resources)
+            a_slot.quotas_rules_id = slot.quotas_rules_id
+            
+    # Transform given slot to B slot (substract job resources)
     def sub_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
@@ -187,7 +202,7 @@ class SlotSet:
             slot.quotas.update(job)
             # slot.quotas.show_counters()
 
-    # Generate B slot
+    #  Transform given slot to B slot
     def add_slot_during_job(self, slot, job):
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
@@ -222,7 +237,8 @@ class SlotSet:
 
         if hasattr(c_slot, 'quotas'):
             c_slot.quotas.deepcopy_from(slot.quotas)
-
+            c_slot.quotas_rules_id = slot.quotas_rules_id
+            
     def split_slots(self, sid_left, sid_right, job, sub=True):
         sid = sid_left
         we_will_break = False
@@ -313,3 +329,37 @@ class SlotSet:
                 slot = self.slots[slot.next]
 
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
+
+
+    def temporal_quotas_split_slot(self, slot, quotas_rules_id, remaining_duration):
+        while True:
+            #import pdb; pdb.set_trace()
+            # slot is included in actual quotas_rules
+            slot_duration = (slot.e - slot.b) + 1 
+            if slot_duration  <= remaining_duration:
+                slot.quotas_rules_id = quotas_rules_id
+                return (quotas_rules_id, remaining_duration - slot_duration)
+            else:
+                # created B slot, modify current A slot according to remaining_duration 
+                # -----
+                # |A|B|
+                # -----
+                self.last_id += 1
+                b_id = self.last_id 
+                b_slot = Slot(b_id, slot.id, slot.next, copy.copy(slot.itvs),
+                              slot.b + remaining_duration, slot.e ,
+                              dict_ps_copy(slot.ts_itvs), dict_ps_copy(slot.ph_itvs))
+                self.slots[b_id] = b_slot
+                # modify current A
+                slot.next = b_id
+                slot.e = slot.b + remaining_duration -1
+                slot.quotas_rules_id = quotas_rules_id
+
+                # What is next new rules_id / duration or quatos_period_reached
+                quotas_rules_id, remaining_duration = Quotas.calendar.next_rules(b_slot.b)
+                if not remaining_duration:
+                    return (quotas_rules_id, remaining_duration)
+                
+                # for next iteration 
+                slot = b_slot
+                
