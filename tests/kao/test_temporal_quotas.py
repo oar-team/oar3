@@ -10,7 +10,7 @@ from tempfile import mkstemp
 import time
 from datetime import (date, datetime, timedelta)
 
-#from oar.lib.job_handling import JobPseudo
+from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 #from oar.kao.scheduling import (schedule_id_jobs_ct,
 #                                set_slots_with_prev_scheduled_jobs)
@@ -19,8 +19,6 @@ from oar.kao.quotas import Quotas, Calendar
 import oar.lib.resource as rs
 
 from oar.lib import config, get_logger
-
-# import pdb
 
 config['LOG_FILE'] = ':stderr:'
 logger = get_logger("oar.test")
@@ -71,7 +69,7 @@ json_example_simple = {
         ["* thu-sun * *", "quotas_2", "test2"]
     ],
     "quotas_1": {
-        "*,*,*,john": [10,-1,-1],
+        "*,*,*,/": [16,-1,-1],
         "*,projA,*,*": [20,-1,-1]
     },
     "quotas_2": {
@@ -110,7 +108,7 @@ def oar_conf(request):
 def reset_quotas():
     Quotas.enabled = False
     Quotas.temporal = False
-    Quotas.rules = {}
+    Quotas.default_rules = {}
     Quotas.job_types = ['*']
 
 def period_weekstart():
@@ -270,3 +268,48 @@ def test_calendar_simple_slotSet_5():
 
 def test_calendar_simple_slotSet_multi_slot_1():
     assert True
+
+
+def test_check_slots_quotas_1():
+    config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+    Quotas.enabled = True
+    Quotas.calendar = Calendar(json_example_simple)
+    Quotas.calendar.show()
+    check, periodical_id = Quotas.calendar.check_periodicals()
+    print(check, periodical_id)
+    res = ProcSet(*[(1, 32)])
+    t0 = period_weekstart()
+    t1 = t0 + 2*7*86400 - 1
+
+    ss = SlotSet(Slot(1, 0, 0, res, t0, t1))
+
+    j1 = JobPseudo(id=2, types={}, deps=[], key_cache={},
+                   queue='default', user='toto', project='', ts=False, ph=0)
+    
+    res = Quotas.check_slots_quotas(ss.slots, 1, 4, j1, 2, 7*86400)
+    print(res)
+    assert res == (False, "different quotas rules over job's time", '', 0)
+    
+def test_check_slots_quotas_2():
+    config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+    Quotas.enabled = True
+    Quotas.calendar = Calendar(json_example_simple)
+    Quotas.calendar.show()
+    check, periodical_id = Quotas.calendar.check_periodicals()
+    print(check, periodical_id)
+    res = ProcSet(*[(1, 32)])
+    t0 = period_weekstart()
+    t1 = t0 + 2*7*86400 - 1
+
+    ss = SlotSet(Slot(1, 0, 0, res, t0, t1))
+
+    j1 = JobPseudo(id=2, types={}, deps=[], key_cache={},
+                   queue='default', user='john', project='', ts=False, ph=0)
+
+    
+    res = Quotas.check_slots_quotas(ss.slots, 1, 1, j1, 10, 86400)
+    print(res)
+    assert res == (True, 'quotas ok', '', 0)
+
+    res = Quotas.check_slots_quotas(ss.slots, 1, 1, j1, 20, 86400)
+    assert res == (False, 'nb resources quotas failed', ('*', '*', '*', '/'), 16)

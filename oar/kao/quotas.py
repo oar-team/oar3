@@ -427,10 +427,12 @@ account (but the inner jobs are used to compute the quotas).
                                         return (False, 'resources hours quotas failed',
                                                 rl_fields, rl_resources_time)
         return (True, 'quotas ok', '', 0)
-    
+
+    @staticmethod
     def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
         # loop over slot_set
         slots_quotas = Quotas()
+        slots_quotas.rules = slots[sid_left].quotas.rules
         sid = sid_left
         while True:
             slot = slots[sid]
@@ -441,6 +443,8 @@ account (but the inner jobs are used to compute the quotas).
                 break
             else:
                 sid = slot.next
+                if slot.next and (slot.quotas_rules_id != slots[slot.next].quotas_rules_id):
+                    return (False, "different quotas rules over job's time", '', 0)
         # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
         slots_quotas.update(job, job_nb_resources, duration)
         return slots_quotas.check(job)
