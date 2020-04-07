@@ -151,18 +151,44 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         else:
             # TODO error
             # print("TODO error can't schedule job.id:", job.id)
-            logger.info(
-                "can't schedule job with id:" + str(job.id) + ", due resources")
+            logger.info("can't schedule job with id: {}, no suitable resources"\
+                        .format(job.id))
             return (ProcSet(), -1, -1)
+        
+        if Quotas.calendar: #TODO and not job.no_quotas_temporal
+            while ((slot_e - slot_b + 1) < walltime):
+                # test next slot need to be temporal_quotas sliced
+                if slots[sid_right].quotas_rules_id == -1:
+                    # assumption is done that this part is rarely executed (either it's abnormal)
+                    t_begin = slots[sid_right].b
+                    quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(t_begin)
+                    slots_set.temporal_quotas_split_slot(slots[sid_right], quotas_rules_id,
+                                                         remaining_duration)
+                    #TODO to long extenion extension here also
 
-        while ((slot_e - slot_b + 1) < walltime):
-            sid_right = slots[sid_right].next
-            if sid_right != 0:
-                slot_e = slots[sid_right].e
-            else:
-                logger.info(
-                    "can't schedule job with id:" + str(job.id) + ", due time")
-                return (ProcSet(), -1, -1)
+                sid_right = slots[sid_right].next
+                if sid_right != 0:
+                    slot_e = slots[sid_right].e
+                else:
+                    logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
+                          .format(job.id, walttime))
+                    return (ProcSet(), -1, -1)
+                
+                if slots[sid_left].quotas_rules_id != slots[sid_right].quotas_rules_id:
+                    sid_left = sid_right
+                    if sid_left == 0:
+                        logger.info("can't schedule job with id: {}, temporal quotas, no more slot"\
+                                    .format(job.id))
+                        return (ProcSet(), -1, -1)            
+        else:    
+            while ((slot_e - slot_b + 1) < walltime):
+                sid_right = slots[sid_right].next
+                if sid_right != 0:
+                    slot_e = slots[sid_right].e
+                else:
+                    logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
+                          .format(job.id, walttime))
+                    return (ProcSet(), -1, -1)
 
         #        if not updated_cache and (slots[sid_left].itvs != []):
         #            cache[walltime] = sid_left

@@ -16,7 +16,7 @@ MAX_TIME = 2147483648  # (* 2**31 *)
 
 class Slot(object):
 
-    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None, quotas_rules_id=-1):
+    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None):
         self.id = id
         self.prev = prev
         self.next = next
@@ -38,7 +38,7 @@ class Slot(object):
 
         if Quotas.enabled:
             self.quotas = Quotas()
-            self.quotas_rules_id = quotas_rules_id
+            self.quotas_rules_id = -1
 
     def show(self):
         print("%s" % self)
@@ -126,7 +126,7 @@ class SlotSet:
         # Slots must be splitted according to Quotas' calendar if applied and the first has not
         # rules affected
         #import pdb; pdb.set_trace()
-        if Quotas.enabled and Quotas.calendar and (self.slots[1].quotas_rules_id == -1):
+        if Quotas.calendar and (self.slots[1].quotas_rules_id == -1):
             i = 1
             t = self.begin 
             quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(self.begin)
@@ -177,6 +177,7 @@ class SlotSet:
         if hasattr(a_slot, 'quotas'):
             a_slot.quotas.deepcopy_from(slot.quotas)
             a_slot.quotas_rules_id = slot.quotas_rules_id
+            a_slot.quotas.set_rules(slot.quotas_rules_id)
             
     # Transform given slot to B slot (substract job resources)
     def sub_slot_during_job(self, slot, job):
@@ -238,7 +239,8 @@ class SlotSet:
         if hasattr(c_slot, 'quotas'):
             c_slot.quotas.deepcopy_from(slot.quotas)
             c_slot.quotas_rules_id = slot.quotas_rules_id
-            
+            c_slot.quotas.set_rules(slot.quotas_rules_id)
+
     def split_slots(self, sid_left, sid_right, job, sub=True):
         sid = sid_left
         we_will_break = False
@@ -331,6 +333,7 @@ class SlotSet:
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
 
+    
     def temporal_quotas_split_slot(self, slot, quotas_rules_id, remaining_duration):
         while True:
             #import pdb; pdb.set_trace()

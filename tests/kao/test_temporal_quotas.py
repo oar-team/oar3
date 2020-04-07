@@ -12,8 +12,8 @@ from datetime import (date, datetime, timedelta)
 
 from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
-#from oar.kao.scheduling import (schedule_id_jobs_ct,
-#                                set_slots_with_prev_scheduled_jobs)
+from oar.kao.scheduling import (schedule_id_jobs_ct,
+                                set_slots_with_prev_scheduled_jobs)
 
 from oar.kao.quotas import Quotas, Calendar
 import oar.lib.resource as rs
@@ -73,7 +73,7 @@ json_example_simple = {
         "*,projA,*,*": [20,-1,-1]
     },
     "quotas_2": {
-        "*,*,*,lili": [20,-1,-1],
+        "*,*,*,/": [24,-1,-1],
         "*,projB,*,*": [15,-1,-1]
     }
 }
@@ -291,7 +291,7 @@ def test_check_slots_quotas_1():
     assert res == (False, "different quotas rules over job's time", '', 0)
     
 def test_check_slots_quotas_2():
-    config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+    config["QUOTAS_PERIOD"] = 3*7*86400 # 3 weeks
     Quotas.enabled = True
     Quotas.calendar = Calendar(json_example_simple)
     Quotas.calendar.show()
@@ -313,3 +313,45 @@ def test_check_slots_quotas_2():
 
     res = Quotas.check_slots_quotas(ss.slots, 1, 1, j1, 20, 86400)
     assert res == (False, 'nb resources quotas failed', ('*', '*', '*', '/'), 16)
+
+
+def test_temporal_quotas_one_job_rule_nb_res_1():
+    config["QUOTAS_PERIOD"] = 3*7*86400 # 3 weeks
+    Quotas.enabled = True
+    Quotas.calendar = Calendar(json_example_simple)
+    res = ProcSet(*[(1, 32)])
+    rs.default_resource_itvs = ProcSet(*res)
+
+    t0 = period_weekstart()
+    t1 = t0 + 7*86400 - 1
+    
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), t0, t1))
+    
+    all_ss = {"default": ss}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(id=1, queue='default', user='toto', project='')
+    j1.simple_req(('node', 3), 60, res)
+    
+    j2 = JobPseudo(id=2, queue='default', user='toto', project='')
+    j2.simple_req(('node', 4), 60, res)
+
+    j3 = JobPseudo(id=3, queue='default', user='toto', project='')
+    j3.simple_req(('node', 1), int(3.5*86400), res)
+
+    j4 = JobPseudo(id=4, queue='default', user='toto', project='')
+    j4.simple_req(('node', 1), 60, res)
+    
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2, 3:j3, 4:j4}, hy, [1, 2, 3, 4], 20)
+    
+    for j in [j1, j2, j3, j4]:
+        print(j.id, j.start_time-t0, j.res_set if hasattr(j, 'res_set') else None)
+    assert j1.start_time-t0 == 259200
+    assert j2.start_time == -1
+    assert j3.start_time-t0 == 259260
+    assert j4.start_time-t0 == 0
+    
+    assert j1.res_set == ProcSet(*[(1, 24)])
+    assert j2.res_set == ProcSet()
+    assert j3.res_set == ProcSet(*[(1, 8)])
+    assert j4.res_set == ProcSet(*[(1, 8)])
