@@ -10,7 +10,7 @@ from oar.lib import get_logger, config
 
 # for quotas
 import oar.lib.resource as rs
-from oar.kao.quotas import check_slots_quotas
+from oar.kao.quotas import Quotas
 
 logger = get_logger("oar.kamelot")
 
@@ -151,18 +151,44 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
         else:
             # TODO error
             # print("TODO error can't schedule job.id:", job.id)
-            logger.info(
-                "can't schedule job with id:" + str(job.id) + ", due resources")
+            logger.info("can't schedule job with id: {}, no suitable resources"\
+                        .format(job.id))
             return (ProcSet(), -1, -1)
+        
+        if Quotas.calendar: #TODO and not job.no_quotas_temporal
+            while ((slot_e - slot_b + 1) < walltime):
+                # test next slot need to be temporal_quotas sliced
+                if slots[sid_right].quotas_rules_id == -1:
+                    # assumption is done that this part is rarely executed (either it's abnormal)
+                    t_begin = slots[sid_right].b
+                    quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(t_begin)
+                    slots_set.temporal_quotas_split_slot(slots[sid_right], quotas_rules_id,
+                                                         remaining_duration)
+                    #TODO to long extenion extension here also
 
-        while ((slot_e - slot_b + 1) < walltime):
-            sid_right = slots[sid_right].next
-            if sid_right != 0:
-                slot_e = slots[sid_right].e
-            else:
-                logger.info(
-                    "can't schedule job with id:" + str(job.id) + ", due time")
-                return (ProcSet(), -1, -1)
+                sid_right = slots[sid_right].next
+                if sid_right != 0:
+                    slot_e = slots[sid_right].e
+                else:
+                    logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
+                          .format(job.id, walttime))
+                    return (ProcSet(), -1, -1)
+                
+                if slots[sid_left].quotas_rules_id != slots[sid_right].quotas_rules_id:
+                    sid_left = sid_right
+                    if sid_left == 0:
+                        logger.info("can't schedule job with id: {}, temporal quotas, no more slot"\
+                                    .format(job.id))
+                        return (ProcSet(), -1, -1)            
+        else:    
+            while ((slot_e - slot_b + 1) < walltime):
+                sid_right = slots[sid_right].next
+                if sid_right != 0:
+                    slot_e = slots[sid_right].e
+                else:
+                    logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
+                          .format(job.id, walttime))
+                    return (ProcSet(), -1, -1)
 
         #        if not updated_cache and (slots[sid_left].itvs != []):
         #            cache[walltime] = sid_left
@@ -183,12 +209,12 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
-            if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+            if Quotas.enabled:
                 nb_res = len(itvs & rs.default_resource_itvs)
-                res = check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
+                res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
-                    logger.info("Quotas limitaion reached, job:" + str(job.id) +
+                    logger.info("Quotas limitation reached, job:" + str(job.id) +
                                 ", " + quotas_msg + ", rule: " + str(rule) +
                                 ", value: " + str(value))
                     # quotas limitation trigger therefore disable cache update for this entry

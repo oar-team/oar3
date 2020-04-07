@@ -53,6 +53,7 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
     'QUOTAS': 'no',
+    'QUOTAS_PERIOD': 1296000, # 15 days in seconds 
     'HIERARCHY_LABELS': 'resource_id,network_address,cpu,core'
 }
 

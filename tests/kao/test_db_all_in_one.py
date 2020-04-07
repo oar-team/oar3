@@ -13,7 +13,7 @@ from ..fakezmq import FakeZmq
 
 import oar.lib.tools  # for monkeypatching
 from oar.lib.tools import get_date
-import oar.kao.quotas as qts
+from oar.kao.quotas import Quotas
 
 import zmq
 
@@ -48,10 +48,15 @@ def active_quotas(request):
     config['QUOTAS_FILE'] = quotas_file_name
 
     def teardown():
+        Quotas.enabled = False
+        Quotas.temporal = False
+        Quotas.rules = {}
+        Quotas.job_types = ['*']
+        Quotas.crontabs = None
         config['QUOTAS'] = 'no'
         os.remove(config['QUOTAS_FILE'])
         del config['QUOTAS_FILE']
-
+        
     request.addfinalizer(teardown)
 
 
@@ -80,7 +85,7 @@ def create_quotas_rules_file(quotas_rules):
     '''
     with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
         quotas_fd.write(quotas_rules)
-    qts.load_quotas_rules()
+    Quotas.enable()
 
 
 def insert_and_sched_ar(start_time, walltime=60):
