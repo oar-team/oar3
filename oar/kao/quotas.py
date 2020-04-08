@@ -153,16 +153,23 @@ class Calendar(object):
             return(False, i)
         return(True, None)
     
-    def oneshot_at(self, t_epoch):
+    def oneshot_at(self, t_epoch, periodical_remaining_duration, periodical_rules_id):
         """Determine rules_id and remaining if an oneshot period overlaps t_epoch"""
         remaining_duration = 0
         rules_id = -1
         o_id = -1
-        if self.oneshots and (t_epoch >= self.oneshots_begin) and (t_epoch <= self.oneshots_end):
+        if self.oneshots:
             for o_id in self.ordered_oneshot_ids:
+                # begin of the periodical period is overlaped by oneshot
                 if  (t_epoch >= self.oneshots[o_id][0]) and (t_epoch <= self.oneshots[o_id][1]):
                     remaining_duration = self.oneshots[o_id][1] - t_epoch
                     rules_id = self.oneshots[o_id][2]
+                    break
+                # end of the periodical period is overlaped by oneshot
+                if (t_epoch < self.oneshots[o_id][0])\
+                   and (self.oneshots[o_id][0] < (t_epoch + periodical_remaining_duration)):
+                    rules_id = periodical_rules_id
+                    remaining_duration = self.oneshots[o_id][0] - t_epoch
                     break
         return (remaining_duration, rules_id, o_id)
         
@@ -191,7 +198,8 @@ class Calendar(object):
         remaining_duration = self.periodicals[index][1] - (t_epoch - period_origin)
 
         # test if an overshot apply ? If so set remaining duration and rules_id accordingly
-        (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch)  
+        #import pdb; pdb.set_trace()
+        (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch, remaining_duration, rules_id)
         if o_remaining_duration:
                 remaining_duration = o_remaining_duration
                 rules_id = o_rules_id
@@ -205,18 +213,15 @@ class Calendar(object):
             remaining_duration = 0
         else:
             self.op_index = (self.op_index + 1) % self.nb_periodicals
-
+            index = self.ordered_periodical_ids[self.op_index]
+            rules_id =  self.periodicals[index][2]
+            remaining_duration = self.periodicals[index][1]
+            
             # test if an overshot apply ? If so set remaining duration and rules_id accordingly
-            (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch)  
+            (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch, remaining_duration, rules_id)  
             if o_remaining_duration:
                 remaining_duration = o_remaining_duration
-                rules_id = o_rules_id
-            else:
-                
-                index = self.ordered_periodical_ids[self.op_index]
-                rules_id =  self.periodicals[index][2]
-                remaining_duration = self.periodicals[index][1]
-            
+                rules_id = o_rules_id            
         return (rules_id, remaining_duration)
     
     def show(self, t=None, begin=None, end=None, check=True, json=False):
@@ -259,14 +264,20 @@ class Calendar(object):
 
         if t_epoch:
             print('\n** At time: {}, from epoch: {}\n'.format(t, t_epoch))
-            (remaining_duration, rules_id, o_id) = self.oneshot_at(t_epoch)
+            rules_id, remaining_duration = self.rules_at(t_epoch)
+            
+            (o_remaining_duration, o_rules_id, o_id) = self.oneshot_at(t_epoch, remaining_duration, rules_id)
+            
             if o_id != -1:
                 print('oneshot apply:\n id {}: {}'.format(o_id, self.oneshots[o_id]))
+                rules_id = o_rules_id
+                remaining_duration = o_remaining_duration
+                # TODO case where oneshot reduce remain duraturation
+                
             else:
-                rules_id, remaining_duration = self.rules_at(t_epoch)
                 index = self.ordered_periodical_ids[self.op_index]
                 print('periodical apply:\n id {} periodical: {}'.format(index, self.periodicals[index]))
-            
+                
             print('\nrules_id: {}\nrules: {}'.format(rules_id, self.quotas_id2rules[rules_id]))
             print('remaining_duration {}'.format(remaining_duration))
 
