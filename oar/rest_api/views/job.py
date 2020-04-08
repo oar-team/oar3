@@ -399,3 +399,23 @@ def resume(job_id):
     g.data['id'] = job_id
     g.data['cmd_output'] = cmd_ret.to_str()
     g.data['exit_status'] = cmd_ret.get_exit_value()
+    
+@app.route('/<int:job_id>/walltime-change/<int:new-walltime>', methods=['POST'])
+@app.need_authentication()
+def walltime_change(job_id, signal=None):
+
+    user = g.current_user
+
+    if signal:
+        checkpointing = False
+    else:
+        checkpointing = True
+
+
+    #    request(job_id, user, new_walltime, force, delay_next_jobs):
+    cmd_ret = oardel([job_id], checkpointing, signal, None, None,
+                     None, None, None, user, False)
+
+    g.data['id'] = job_id
+    g.data['cmd_output'] = cmd_ret.to_str()
+    g.data['exit_status'] = cmd_ret.get_exit_value()

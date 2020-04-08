@@ -7,7 +7,7 @@ from datetime import (date, datetime, timedelta)
    
 from oar.lib import (config, get_logger)
 from oar.lib.submission import check_reservation
-from oar.lib.tools import hms_str_to_duration
+from oar.lib.tools import hms_str_to_duration, local_to_sql
 
 import oar.lib.resource as rs
 
@@ -131,8 +131,15 @@ class Calendar(object):
             logger.error('Parsing error on {} or/and {}, expected format is: "YYYY-MM-DD hh:mm"'\
                          .format(d0, d1))
             exit(1)
-        self.oneshots[self.nb_oneshots] = (d0, d1-d0, self.quotas_rules2id[oneshot_json[2]],
-                                           oneshot_json[3])
+
+        if (not self.oneshots_begin) or (d0 < self.oneshots_begin):
+            self.oneshots_begin = d0
+
+        if (not self.oneshots_end) or (d1 > self.oneshots_end):
+            self.oneshots_end = d1
+            
+        self.oneshots[self.nb_oneshots] = (d0, d1, self.quotas_rules2id[oneshot_json[2]],
+                                           oneshot_json[0],  oneshot_json[1], oneshot_json[3])
         self.nb_oneshots += 1
 
     def check_periodicals(self):
@@ -145,6 +152,19 @@ class Calendar(object):
         if t != 7 * 24 * 3600:
             return(False, i)
         return(True, None)
+    
+    def oneshot_at(self, t_epoch):
+        """Determine rules_id and remaining if an oneshot period overlaps t_epoch"""
+        remaining_duration = 0
+        rules_id = -1
+        o_id = -1
+        if self.oneshots and (t_epoch >= self.oneshots_begin) and (t_epoch <= self.oneshots_end):
+            for o_id in self.ordered_oneshot_ids:
+                if  (t_epoch >= self.oneshots[o_id][0]) and (t_epoch <= self.oneshots[o_id][1]):
+                    remaining_duration = self.oneshots[o_id][1] - t_epoch
+                    rules_id = self.oneshots[o_id][2]
+                    break
+        return (remaining_duration, rules_id, o_id)
         
     def rules_at(self, t_epoch):
         # TODO take into account oneshot case
@@ -169,9 +189,15 @@ class Calendar(object):
         index = self.ordered_periodical_ids[self.op_index]
         rules_id =  self.periodicals[index][2]
         remaining_duration = self.periodicals[index][1] - (t_epoch - period_origin)
-        
-        return (rules_id, remaining_duration)
 
+        # test if an overshot apply ? If so set remaining duration and rules_id accordingly
+        (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch)  
+        if o_remaining_duration:
+                remaining_duration = o_remaining_duration
+                rules_id = o_rules_id
+
+        return (rules_id, remaining_duration)
+    
     def next_rules(self, t_epoch):
         # TODO take into account oneshot case
         if t_epoch >= self.period_end:
@@ -179,31 +205,72 @@ class Calendar(object):
             remaining_duration = 0
         else:
             self.op_index = (self.op_index + 1) % self.nb_periodicals
-            index = self.ordered_periodical_ids[self.op_index]
-            rules_id =  self.periodicals[index][2]
-            remaining_duration = self.periodicals[index][1]
+
+            # test if an overshot apply ? If so set remaining duration and rules_id accordingly
+            (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch)  
+            if o_remaining_duration:
+                remaining_duration = o_remaining_duration
+                rules_id = o_rules_id
+            else:
+                
+                index = self.ordered_periodical_ids[self.op_index]
+                rules_id =  self.periodicals[index][2]
+                remaining_duration = self.periodicals[index][1]
             
         return (rules_id, remaining_duration)
     
-    def show(self, begin=None, end=None, json=False):
+    def show(self, t=None, begin=None, end=None, check=True, json=False):
 
-        for i in self.ordered_periodical_ids:
-            b, d, rules_id, period = self.periodicals[i]
-            print('{:>3}: ({:>6}, {:>6}, {:<23}, {:>2}, {:<15})'.format(i, b, d, period, rules_id,
+        t_epoch = None
+        if t:
+            try:
+                t = int(t)
+                t_epoch = t
+                t = local_to_sql(t_epoch)[:-3]
+            except ValueError:
+                error, t_epoch = check_reservation(t + ':00')
+                if error[0]:
+                    logger.error('Parsing error on {}, expected format is: "YYYY-MM-DD hh:mm"'\
+                                 .format(t))
+                    exit(1)
+                    
+        if self.periodicals:
+            print("\nPeriodicals:\n------------")
+            for i in self.ordered_periodical_ids:
+                b, d, rules_id, period = self.periodicals[i]
+                print('{:>3}: ({:>6}, {:>6}, {:<23}, {:>2}, {:<15})'.format(i, b, d, period, rules_id,
                                                                  self.quotas_id2rules[rules_id]))
 
-        check, p_id = self.check_periodicals()
-        if not check:
-            print('Periodical issue around: {}'.format(p_id))
-
-        print()
-
-        for i in self.ordered_oneshot_ids:
-            b, e, rules_id, description = self.oneshots[i]
-            print('{:>3}: ({:>10}, {:>10}, {:>2}, {:<15}, {:<20})'.format(i, b, e, rules_id,
-                                                                          self.quotas_id2rules[rules_id],
-                                                                          description))
+            if check:
+                check_per, p_id = self.check_periodicals()
+                print()
+                if not check_per:
+                    print('** Periodical issue around: {}'.format(p_id))
+                else:   
+                    print("** Periodicals' contiguity checked")
+                print()
             
+        if self.oneshots:
+            print('Oneshots:\n---------')
+            for i in self.ordered_oneshot_ids:
+                b, e, rules_id, d0, d1, description = self.oneshots[i]
+                print('{:>3}: ({:>10}, {:>10}, {}, {}, {:>2}, {:<15}, {:<20})'\
+                      .format(i, b, e, d0, d1, rules_id, self.quotas_id2rules[rules_id], description))
+
+        if t_epoch:
+            print('\n** At time: {}, from epoch: {}\n'.format(t, t_epoch))
+            (remaining_duration, rules_id, o_id) = self.oneshot_at(t_epoch)
+            if o_id != -1:
+                print('oneshot apply:\n id {}: {}'.format(o_id, self.oneshots[o_id]))
+            else:
+                rules_id, remaining_duration = self.rules_at(t_epoch)
+                index = self.ordered_periodical_ids[self.op_index]
+                print('periodical apply:\n id {} periodical: {}'.format(index, self.periodicals[index]))
+            
+            print('\nrules_id: {}\nrules: {}'.format(rules_id, self.quotas_id2rules[rules_id]))
+            print('remaining_duration {}'.format(remaining_duration))
+
+
 class Quotas(object):
     """
 

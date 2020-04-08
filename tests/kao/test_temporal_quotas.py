@@ -14,6 +14,7 @@ from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
+from oar.lib.tools import local_to_sql
 
 from oar.kao.quotas import Quotas, Calendar
 import oar.lib.resource as rs
@@ -134,7 +135,7 @@ def test_calendar_periodical_fromJson_bad():
     # ["09:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
 
 
-def test_calendar_rules_at():
+def test_calendar_rules_at_1():
     config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
     Quotas.enabled = True
     Quotas.calendar = Calendar(json_example_simple)
@@ -145,6 +146,33 @@ def test_calendar_rules_at():
 
     assert quotas_rules_id == 0
     assert remaining_period == 259200
+
+def test_calendar_rules_at_2():
+    config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+    Quotas.enabled = True
+    example_w_oneshot = deepcopy(json_example_simple)
+
+    t0 = period_weekstart()
+    t  = t0 + int(1.5*86400)  
+    t0 += int(86400/2)
+    t1 = t0 + int(2.5 * 86400)
+    example_w_oneshot['oneshot'] = [
+        [local_to_sql(t0)[:-3], local_to_sql(t1)[:-3], "quotas_holiday", "summer holiday"]
+        ]
+    example_w_oneshot['quotas_holiday'] = {
+        "*,*,*,john": [100,-1,-1],
+        "*,projA,*,*": [200,-1,-1]
+    }
+    
+    Quotas.calendar = Calendar(example_w_oneshot)
+    
+    Quotas.calendar.show(t)
+    
+    quotas_rules_id, remaining_period = Quotas.calendar.rules_at(t)
+
+    assert quotas_rules_id == 2
+    assert remaining_period == 129600
+
     
 def test_calendar_simple_slotSet_1():
     config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
