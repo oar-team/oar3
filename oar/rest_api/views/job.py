@@ -400,7 +400,7 @@ def resume(job_id):
     g.data['cmd_output'] = cmd_ret.to_str()
     g.data['exit_status'] = cmd_ret.get_exit_value()
     
-@app.route('/<int:job_id>/walltime-change/<int:new-walltime>', methods=['POST'])
+@app.route('/<int:job_id>/walltime-change/<int:new_walltime>', methods=['POST'])
 @app.need_authentication()
 def walltime_change(job_id, signal=None):
 
