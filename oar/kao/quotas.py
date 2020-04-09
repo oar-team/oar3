@@ -159,22 +159,24 @@ class Calendar(object):
         rules_id = -1
         o_id = -1
         if self.oneshots:
-            for o_id in self.ordered_oneshot_ids:
+            for r_id in self.ordered_oneshot_ids:
                 # begin of the periodical period is overlaped by oneshot
-                if  (t_epoch >= self.oneshots[o_id][0]) and (t_epoch <= self.oneshots[o_id][1]):
-                    remaining_duration = self.oneshots[o_id][1] - t_epoch
-                    rules_id = self.oneshots[o_id][2]
+                if  (t_epoch >= self.oneshots[r_id][0]) and (t_epoch <= self.oneshots[r_id][1]):
+                    remaining_duration = self.oneshots[r_id][1] - t_epoch
+                    rules_id = self.oneshots[r_id][2]
+                    o_id = r_id
                     break
                 # end of the periodical period is overlaped by oneshot
-                if (t_epoch < self.oneshots[o_id][0])\
-                   and (self.oneshots[o_id][0] < (t_epoch + periodical_remaining_duration)):
+                if (t_epoch < self.oneshots[r_id][0])\
+                   and (self.oneshots[r_id][0] < (t_epoch + periodical_remaining_duration)):
                     rules_id = periodical_rules_id
-                    remaining_duration = self.oneshots[o_id][0] - t_epoch
+                    remaining_duration = self.oneshots[r_id][0] - t_epoch
+                    o_id = r_id
                     break
         return (remaining_duration, rules_id, o_id)
-        
-    def rules_at(self, t_epoch):
-        # TODO take into account oneshot case
+
+    def periodical_rules_at(self, t_epoch):
+        """Determine which periodical apply and return rules_id and the remaining duration"""
         t_dt = datetime.fromtimestamp(t_epoch).date()
         # determine weekstart's day
         t_weekstart_day_dt = t_dt - timedelta(days=t_dt.weekday())
@@ -197,6 +199,12 @@ class Calendar(object):
         rules_id =  self.periodicals[index][2]
         remaining_duration = self.periodicals[index][1] - (t_epoch - period_origin)
 
+        return(rules_id, remaining_duration)
+    
+    def rules_at(self, t_epoch):
+        
+        (rules_id, remaining_duration) = self.periodical_rules_at(t_epoch)
+        
         # test if an overshot apply ? If so set remaining duration and rules_id accordingly
         #import pdb; pdb.set_trace()
         (o_remaining_duration, o_rules_id, _) = self.oneshot_at(t_epoch, remaining_duration, rules_id)
@@ -264,23 +272,26 @@ class Calendar(object):
 
         if t_epoch:
             print('\n** At time: {}, from epoch: {}\n'.format(t, t_epoch))
-            rules_id, remaining_duration = self.rules_at(t_epoch)
+            rules_id, remaining_duration = self.periodical_rules_at(t_epoch)
+            index = self.ordered_periodical_ids[self.op_index]
             
+            #import pdb; pdb.set_trace()
             (o_remaining_duration, o_rules_id, o_id) = self.oneshot_at(t_epoch, remaining_duration, rules_id)
-            
             if o_id != -1:
-                print('oneshot apply:\n id {}: {}'.format(o_id, self.oneshots[o_id]))
+                oneshot = self.oneshots[o_id]
+                if (oneshot[0] <= t_epoch) and (t_epoch <= oneshot[1]):
+                    print('oneshot apply:\n id {}: {}'.format(o_id, self.oneshots[o_id]))
+                else:
+                    print('periodical apply:\n id {} periodical: {}'.format(index, self.periodicals[index]))
+                    print('oneshot apply by reducing remaining duration:\n id {}: {}'\
+                          .format(o_id, self.oneshots[o_id]))
                 rules_id = o_rules_id
                 remaining_duration = o_remaining_duration
-                # TODO case where oneshot reduce remain duraturation
-                
             else:
-                index = self.ordered_periodical_ids[self.op_index]
                 print('periodical apply:\n id {} periodical: {}'.format(index, self.periodicals[index]))
                 
             print('\nrules_id: {}\nrules: {}'.format(rules_id, self.quotas_id2rules[rules_id]))
             print('remaining_duration {}'.format(remaining_duration))
-
 
 class Quotas(object):
     """
@@ -556,30 +567,36 @@ account (but the inner jobs are used to compute the quotas).
         Temporal example
         ----------------
         {
-            periodical": [
-               ["00:00-09:00 mon * *", "quotas_weekend"]
-               ["09:00-19:00 mon-fri * *", "quotas_workday"],
-               ["19:00-00:00 mon-thu * *", "quotas_nigth"],
-               ["00:00-08:00 tue-fri * *", "quotas_nigth"],
-               ["19:00-00:00 fri * *", "quotas_weekend"],
-               ["* sat-sun * *", "quotas_weekend"],
-            ],         
-            oneshot": [
-               ["2020-07-23 19:30", "2012-08-29 8:30", "quotas_holiday"]
-            quotas_workdays": {
-               "*,*,*,john": [100,-1,-1],
-               "*,projA,*,*": [200,-1,-1]
-            ,
-            quotas_nigths": {
-               "*,*,*,john": [100,-1,-1],
-               "*,projA,*,*": [200,-1,-1]
-            ,
-            quotas_weekends": {
-               "*,*,*,john": [100,-1,-1],
-               "*,projA,*,*": [200,-1,-1]
+            "periodical": [
+                ["08:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
+                ["19:00-00:00 mon-thu * *", "quotas_nigth", "nights of workdays"],
+                ["00:00-08:00 tue-fri * *", "quotas_nigth", "nights of workdays"],
+                ["19:00-00:00 fri * *", "quotas_weekend", "weekend"],
+                ["* sat-sun * *", "quotas_weekend", "weekend"],
+                ["00:00-08:00 mon * *", "quotas_weekend", "weekend"]
+            ],
+            "oneshot": [
+                ["2020-07-23 19:30", "2020-08-29 8:30", "quotas_holiday", "summer holiday"],
+                ["2020-03-16 19:30", "2020-05-10 8:30", "quotas_holiday", "confinement"]
+            ],
+            "quotas_workday": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            },
+            "quotas_nigth": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            },
+            "quotas_weekend": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
+            },
+            "quotas_holiday": {
+                "*,*,*,john": [100,-1,-1],
+                "*,projA,*,*": [200,-1,-1]
             }
-       }        
-        
+        }   
+             
         """
         quotas_rules_filename = config['QUOTAS_FILE']
         with open(quotas_rules_filename) as json_file:

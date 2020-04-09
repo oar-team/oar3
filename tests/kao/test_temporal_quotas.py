@@ -279,6 +279,8 @@ def test_temporal_slotSet_oneshot():
     
     Quotas.calendar = Calendar(example_w_oneshot)
 
+    Quotas.calendar.show(tw+3600)
+
     t1 = tw + 7*86400 - 1
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), tw, t1))
@@ -296,6 +298,8 @@ def test_temporal_slotSet_oneshot():
         v.append((i, s.e-s.b+1, s.quotas_rules_id))
         i = s.next
 
+    
+        
     assert v == [(1, 43200, 0), (2, 216000, 2), (3, 259200, 0), (4, 86400, 1)]
     
 def test_calendar_simple_slotSet_multi_slot_1():
