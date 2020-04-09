@@ -529,8 +529,9 @@ account (but the inner jobs are used to compute the quotas).
 
     def set_rules(self, rules_id):
         """Use for temporal calendar, when rules must be change from default"""
-        self.rules = Quotas.calendar.quotas_rules_list[rules_id]
-    
+        if Quotas.calendar:
+            self.rules = Quotas.calendar.quotas_rules_list[rules_id]
+
     @staticmethod
     def quotas_rules_fromJson(json_quotas_rules):
         rules = {}

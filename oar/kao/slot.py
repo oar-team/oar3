@@ -45,8 +45,8 @@ class Slot(object):
 
     def __str__(self):
         repr_string = "id=%(id)s, prev=%(prev)s, next=%(next)s, itvs=%(itvs)s, " \
-                      "b=%(b)s, e=%(e)s, ts_itvs=%(ts_itvs)s, ph_itvs=%(ph_itvs)s, "\
-                      "quotas_rules_id=%(quotas_rules_id)s"
+                      "b=%(b)s, e=%(e)s, ts_itvs=%(ts_itvs)s, ph_itvs=%(ph_itvs)s"
+        repr_string += ", quotas_rules_id=%(quotas_rules_id)s" if hasattr(self, 'quotas_rules_id') else ""
         return "Slot(%s)" % (repr_string % vars(self))
 
     def __repr__(self):
