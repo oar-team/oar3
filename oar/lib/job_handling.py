@@ -77,7 +77,8 @@ class JobPseudo(object):
     queue_name = 'default'
     user = ''
     project = ''
-
+    no_temporal_quotas = False
+    
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
         for key, value in kwargs.items():
@@ -141,6 +142,8 @@ def get_jobs_types(jids, jobs):
             raw_args = '='.join(t_v[1:])
             funcname, job.find_args, job.find_kwargs = extract_find_assign_args(raw_args)
             job.find_func = getattr(oar.kao.advanced_scheduling, 'find_%s' % funcname)
+        elif t== "no_temporal_quotas":
+            job.no_temporal_quotas = True
         else:
             if len(t_v) == 2:
                 v = t_v[1]
@@ -267,6 +270,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
                 job.ph = NO_PLACEHOLDER
                 job.assign = False
                 job.find = False
+                job.no_temporal_quotas = False
 
             prev_mld_id = moldable_id
             prev_j_id = j_id
@@ -349,6 +353,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time,
     job.ph = NO_PLACEHOLDER
     job.assign = False
     job.find = False
+    job.no_temporal_quotas = False
 
     get_jobs_types(jids, jobs)
     get_current_jobs_dependencies(jobs)
@@ -408,6 +413,7 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
                 job.ph = NO_PLACEHOLDER
                 job.assign = False
                 job.find = False
+                job.no_temporal_quotas = False
                 if job.suspended == 'YES':
                     job.walltime += get_job_suspended_sum_duration(job.id, now)
 

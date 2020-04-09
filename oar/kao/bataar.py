@@ -299,6 +299,7 @@ class BatSched(BatsimScheduler):
                       ts=False, ph=0,
                       assign=self.sp_params.assign, assign_func=self.sp_params.assign_func,
                       find=self.sp_params.find, find_func=self.sp_params.find_func,
+                      no_temporal_quotas = False,
                       db_jid=jid+1 # TODO First job is 0 in DB ?
         )
 
