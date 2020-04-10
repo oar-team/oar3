@@ -134,7 +134,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching',
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
-    plt.save_assigns(current_jobs, resource_set)
+    plt.save_assigns(current_jobs, resource_set) ## TODO to verify
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
