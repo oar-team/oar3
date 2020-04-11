@@ -171,7 +171,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
                     slot_e = slots[sid_right].e
                 else:
                     logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
-                          .format(job.id, walttime))
+                          .format(job.id, walltime))
                     return (ProcSet(), -1, -1)
                 
                 if slots[sid_left].quotas_rules_id != slots[sid_right].quotas_rules_id:
@@ -187,7 +187,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
                     slot_e = slots[sid_right].e
                 else:
                     logger.info("can't schedule job with id: {}, walltime not satisfied: {}"\
-                          .format(job.id, walttime))
+                          .format(job.id, walltime))
                     return (ProcSet(), -1, -1)
 
         #        if not updated_cache and (slots[sid_left].itvs != []):
