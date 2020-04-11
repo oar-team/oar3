@@ -403,8 +403,13 @@ account (but the inner jobs are used to compute the quotas).
     job_types = ['*']
     
     @classmethod
-    def enable(cls, resource_set=None, mode='default'):
+    def enable(cls, resource_set=None):
         cls.enabled = True
+        if 'QUOTAS_ALL_NB_RESOURCES_MODE' in config:
+            mode = 'default'
+        else:
+            mode = config['QUOTAS_ALL_NB_RESOURCES_MODE']
+
         if resource_set:
             all_value = resource_set.nb_resources_default
             if mode == 'default_not_dead':

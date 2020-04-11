@@ -73,7 +73,8 @@ DEFAULT_CONFIG = {
     'WALLTIME_MAX_INCREASE': "{'default': 7200}",
     'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}",
     'QUOTAS': 'no',
-    'QUOTAS_PERIOD': 1296000, # 15 days in seconds 
+    'QUOTAS_PERIOD': 1296000, # 15 days in seconds
+    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default'
     }
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
@@ -800,4 +801,3 @@ def check_process(pid):
         return False
     else:
         return True
-
