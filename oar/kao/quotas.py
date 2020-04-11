@@ -544,12 +544,32 @@ account (but the inner jobs are used to compute the quotas).
             self.rules = Quotas.calendar.quotas_rules_list[rules_id]
 
     @staticmethod
-    def quotas_rules_fromJson(json_quotas_rules):
+    def quotas_rules_fromJson(json_quotas_rules, all_value=None):
+        def alphanum_to_int(v):
+            """eval simple expression: int|float|ALL|int*ALL|float*ALL -> int"""
+            if isinstance(v, int):
+                return v
+            else:
+                try:
+                    f=float(v)
+                except ValueError:
+                    c = 1
+                    if '*' in v:
+                        c,v = v.split('*')
+                        c = float(c)
+                    if v == 'ALL':
+                        v = all_value
+                    else:
+                        v = float(v)
+                    f = c * v                        
+            return int(f)
+        
         rules = {}
         for k, v in json_quotas_rules.items():
-            rules[tuple(k.split(','))] = [v[0], v[1], int(3600 * v[2])]
+            rules[tuple(k.split(','))] = [alphanum_to_int(v[0]), alphanum_to_int(v[1]),
+                                          int(3600 * alphanum_to_int(v[2]))]
         return rules
-
+    
     @classmethod
     def load_quotas_rules(cls):
         """

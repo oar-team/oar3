@@ -62,6 +62,19 @@ def reset_quotas():
     Quotas.job_types = ['*']
 
 
+def test_quotas_rules_fromJson():
+    quotas_rules_json = {
+        "*,*,*,john": [100,'ALL','0.5*ALL'],
+        "*,projA,*,*": ['34.5','ALL','2*ALL']
+    }
+
+    quotas_rules = Quotas.quotas_rules_fromJson(quotas_rules_json, 100)
+    print(quotas_rules)
+
+    assert ('*', '*', '*', 'john') in quotas_rules and ('*', 'projA', '*', '*') in  quotas_rules
+    assert quotas_rules[('*', '*', '*', 'john')] == [100, 100, 180000]
+    assert quotas_rules[('*', 'projA', '*', '*')] == [34, 100, 720000]
+    
 def test_quotas_one_job_no_rules():
     Quotas.enabled = True
  
