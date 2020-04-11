@@ -256,7 +256,8 @@ class SWFWorkload(object):
                                              deps=[],
                                              key_cache={},
                                              ts=False, ph=0,
-                                             assign=False, find=False)
+                                             assign=False, find=False,
+                                             no_temporal_quotas = False)
 
             i += 1
 

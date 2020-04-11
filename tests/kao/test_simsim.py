@@ -48,7 +48,7 @@ def test_simsim_1():
     for i in range(1, nb_jobs + 1):
         jobs[i] = JobSimu(id=i,
                           state="Waiting",
-                          queue="test",
+                          queue ="test",
                           start_time=0,
                           walltime=0,
                           types={},
@@ -60,7 +60,8 @@ def test_simsim_1():
                           deps=[],
                           key_cache={},
                           ts=False, ph=0,
-                          assign=False, find=False)
+                          assign=False, find=False,
+                          no_temporal_quotas = False)
 
         submission_time_jids.append((10, [i]))
 
