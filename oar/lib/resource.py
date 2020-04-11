@@ -17,7 +17,13 @@ default_resource_itvs = ProcSet()
 class ResourceSet(object):
 
     def __init__(self):
-
+        self.nb_resources_all = 0
+        self.nb_resources_not_dead = 0
+        self.nb_resources_default_not_dead = 0
+        
+        self.nb_resources = 0
+        self.nb_resources_default = 0
+        
         # prepare resource order/indirection stuff
         order_by_clause = config["SCHEDULER_RESOURCE_ORDER"]
         self.rid_i2o = array("i", [0] * MAX_NB_RESOURCES)
@@ -58,12 +64,20 @@ class ResourceSet(object):
 
         # fill the different structures
         for roid, r in enumerate(self.resources_db):
+            self.nb_resources_all += 1
+            if r.state != 'Dead':
+                self.nb_resources_not_dead += 1
+                if r.type == 'default':
+                    self.nb_resources_default_not_dead += 1
+                
             if (r.state == "Alive") or (r.state == "Absent"):
+                self.nb_resources += 0
                 rid = int(r.id)
                 roids.append(roid)
                 if r.type == 'default':
                     default_rids.append(rid)
-
+                    self.nb_resources_default = +1
+                    
                 self.rid_i2o[rid] = roid
                 self.rid_o2i[roid] = rid
 
