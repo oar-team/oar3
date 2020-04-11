@@ -629,7 +629,7 @@ account (but the inner jobs are used to compute the quotas).
         }   
              
         """
-        quotas_rules_filename = config['QUOTAS_FILE']
+        quotas_rules_filename = config['QUOTAS_CONF_FILE']
         with open(quotas_rules_filename) as json_file:
             json_quotas = json.load(json_file)
             if ('periodical' in json_quotas) or ('oneshot' in json_quotas):

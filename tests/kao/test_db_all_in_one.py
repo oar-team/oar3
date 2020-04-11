@@ -45,7 +45,7 @@ def active_quotas(request):
     print('active_quotas')
     config['QUOTAS'] = 'yes'
     _, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
+    config['QUOTAS_CONF_FILE'] = quotas_file_name
 
     def teardown():
         Quotas.enabled = False
@@ -54,8 +54,8 @@ def active_quotas(request):
         Quotas.job_types = ['*']
         Quotas.crontabs = None
         config['QUOTAS'] = 'no'
-        os.remove(config['QUOTAS_FILE'])
-        del config['QUOTAS_FILE']
+        os.remove(config['QUOTAS_CONF_FILE'])
+        del config['QUOTAS_CONF_FILE']
         
     request.addfinalizer(teardown)
 
@@ -83,7 +83,7 @@ def active_energy_saving(request):
 def create_quotas_rules_file(quotas_rules):
     ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
     '''
-    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+    with open(config['QUOTAS_CONF_FILE'], 'w', encoding="utf-8") as quotas_fd:
         quotas_fd.write(quotas_rules)
     Quotas.enable()
 

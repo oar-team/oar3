@@ -73,6 +73,7 @@ DEFAULT_CONFIG = {
     'WALLTIME_MAX_INCREASE': "{'default': 7200}",
     'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}",
     'QUOTAS': 'no',
+    'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json', 
     'QUOTAS_PERIOD': 1296000, # 15 days in seconds
     'QUOTAS_ALL_NB_RESOURCES_MODE': 'default'
     }

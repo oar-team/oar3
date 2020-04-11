@@ -222,10 +222,10 @@ def test_quotas_three_jobs_rule_1():
 def test_quotas_two_job_rules_nb_res_quotas_file():
 
     _, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
+    config['QUOTAS_CONF_FILE'] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
-    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+    with open(config['QUOTAS_CONF_FILE'], 'w', encoding="utf-8") as quotas_fd:
         quotas_fd.write('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
 
     Quotas.enable()
@@ -262,10 +262,10 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 def test_quotas_two_jobs_job_type_proc():
 
     _, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
+    config['QUOTAS_CONF_FILE'] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
-    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
+    with open(config['QUOTAS_CONF_FILE'], 'w', encoding="utf-8") as quotas_fd:
         quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "job_types": ["yop"]}')
 
     Quotas.enable()
