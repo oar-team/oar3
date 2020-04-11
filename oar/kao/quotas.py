@@ -403,9 +403,15 @@ account (but the inner jobs are used to compute the quotas).
     job_types = ['*']
     
     @classmethod
-    def enable(cls):
+    def enable(cls, resource_set=None, mode='default'):
         cls.enabled = True
-        cls.load_quotas_rules()
+        if resource_set:
+            all_value = resource_set.nb_resources_default
+            if mode == 'default_not_dead':
+                all_value = resource_set.nb_resources_default_not_dead
+        else:
+            all_value = None
+        cls.load_quotas_rules(all_value)
 
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
@@ -571,7 +577,7 @@ account (but the inner jobs are used to compute the quotas).
         return rules
     
     @classmethod
-    def load_quotas_rules(cls):
+    def load_quotas_rules(cls, all_value=None):
         """
         Simple example
         --------------
@@ -624,7 +630,7 @@ account (but the inner jobs are used to compute the quotas).
             if ('periodical' in json_quotas) or ('oneshot' in json_quotas):
                 cls.calendar = Calendar(json_quotas)
             if 'quotas' in json_quotas:
-                cls.default_rules = cls.quotas_rules_fromJson(json_quotas['quotas'])
+                cls.default_rules = cls.quotas_rules_fromJson(json_quotas['quotas'], all_value)
             if 'job_types' in json_quotas:
                 cls.job_types.extend(json_quotas['job_types'])
     

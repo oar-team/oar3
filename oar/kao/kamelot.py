@@ -31,9 +31,6 @@ DEFAULT_CONFIG = {
 
 logger = get_logger("oar.kamelot")
 
-if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-    Quotas.enable()
-
 def karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt):
 
     waiting_ordered_jids = waiting_jids
@@ -195,6 +192,10 @@ def main():
 
     plt = Platform()
 
+    if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+        Quotas.enable(plt.resource_set())
+
+    
     logger.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:

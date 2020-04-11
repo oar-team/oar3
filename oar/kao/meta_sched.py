@@ -632,7 +632,7 @@ def meta_schedule(mode='internal', plt=Platform()):
     job_security_time = int(config['SCHEDULER_JOB_SECURITY_TIME'])
 
     if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
-        Quotas.enable()
+        Quotas.enable(plt.resource_set())
         
     if ('WALLTIME_CHANGE_ENABLED' in config) and (config['WALLTIME_CHANGE_ENABLED'] == 'yes'):
          process_walltime_change_requests(plt)
