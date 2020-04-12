@@ -32,7 +32,8 @@ DEFAULT_CONFIG = {
     'OARSUB_NODES_RESOURCES': 'resource_id',
     'QUEUE': 'default',
     'PROJECT': 'default',
-    'SIGNAL': 12
+    'SIGNAL': 12,
+    'QUOTAS': 'NO'
 }
 
 def default_submission_config(default_value=None):
@@ -910,7 +911,11 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         error = (-13, 'invalid stderr file name (bad character)')
         return (error, [])
 
-    
+    # Remove no_temporal_quotas must set within admission rules or automatically for admin jobs
+    if config['QUOTAS'] == 'YES' and 'no_temporal_quotas' in job_parameters.types:
+        # TODO print Warning
+        job_parameters.types.remove('no_temporal_quotas'])
+
     # Retrieve Micheline's rules 
     str_rules = ''
     if ('ADMISSION_RULES_IN_FILES' in config) and  (config['ADMISSION_RULES_IN_FILES'] == 'yes'):
@@ -946,6 +951,10 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
     if not db.query(Queue).filter(Queue.name == job_parameters.queue).all():
         error = (-8, 'queue ' + job_parameters.queue + ' does not exist')
         return(error, [])
+
+    # Automatically add no quotas restriction for admin job
+    if config['QUOTAS'] == 'YES' and job_parameters.queue = 'admin':
+        job_parameters.types.append('no_temporal_quotas')
 
     # TODO move to job class ?
     if job_parameters.array_params:
