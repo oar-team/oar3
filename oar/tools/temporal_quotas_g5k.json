@@ -1,16 +1,16 @@
 {
     "periodical": [
         ["09:00-19:00 mon-fri * *", "quotas_workday"],
-        ["19:00-00:00 mon-thu * *", "quotas_nigth_weekend"],
-        ["00:00-08:00 tue-fri * *", "quotas_nigth_weekend"],
-        ["19:00-00:00 fri * *", "quotas_nigth_weekend"],
-        ["* sat-sun * *", "quotas_nigth_weekend"],
-        ["00:00-09:00 mon * *", "quotas_nigth_weekend"]
+        ["19:00-00:00 mon-thu * *", "quotas_night_weekend"],
+        ["00:00-08:00 tue-fri * *", "quotas_night_weekend"],
+        ["19:00-00:00 fri * *", "quotas_night_weekend"],
+        ["* sat-sun * *", "quotas_night_weekend"],
+        ["00:00-09:00 mon * *", "quotas_night_weekend"]
     ],
     "quotas_workday": {
         "*,*,*,*": [-1,-1,'2*ALL'],
     },
-    "quotas_nigth_weekend": {
+    "quotas_night_weekend": {
         "*,*,*,*": [-1,-1,-1],
     }
 }
