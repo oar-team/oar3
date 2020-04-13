@@ -1,0 +1,12 @@
+{
+    "periodical": [
+        ["* * * *", "quotas_night_weekend"]
+        ["09:00-19:00 mon-fri * *", "quotas_workday"],
+    ],
+    "quotas_workday": {
+        "*,*,*,*": [-1,-1,'2*ALL'],
+    },
+    "quotas_night_weekend": {
+        "*,*,*,*": [-1,-1,-1],
+    }
+}
