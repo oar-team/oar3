@@ -56,7 +56,7 @@ DEFAULT_CONFIG = {
     'NOTIFY_TCP_SOCKET_ENABLED': 1,
     'SUSPECTED_HEALING_TIMEOUT': 10, 
     'SUSPECTED_HEALING_EXEC_FILE': None,
-    'DEBUG_REMOTE_COMMANDS': 'yes',
+    'DEBUG_REMOTE_COMMANDS': 'YES',
     'COSYSTEM_HOSTNAME': '127.0.0.1',
     'DEPLOY_HOSTNAME': '127.0.0.1',
     'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
@@ -75,7 +75,8 @@ DEFAULT_CONFIG = {
     'QUOTAS': 'no',
     'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json', 
     'QUOTAS_PERIOD': 1296000, # 15 days in seconds
-    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default'
+    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead', # ALL w/ correspond to all default source 
+    'QUOTAS_WINDOW_TIME_LIMIT': 4*1296000 # 2 months, window time limit for a scheduling round where to place a job  
     }
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
