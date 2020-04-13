@@ -430,9 +430,9 @@ account (but the inner jobs are used to compute the quotas).
     def enable(cls, resource_set=None):
         cls.enabled = True
         if 'QUOTAS_ALL_NB_RESOURCES_MODE' in config:
-            mode = 'default_not_dead'
-        else:
             mode = config['QUOTAS_ALL_NB_RESOURCES_MODE']
+        else:
+            mode = 'default_not_dead'
 
         if resource_set:
             all_value = resource_set.nb_resources_default

@@ -3,7 +3,11 @@ import pytest
 
 import os
 from codecs import open
+from copy import deepcopy
 from tempfile import mkstemp
+
+import time
+from datetime import (date, datetime, timedelta)
 
 from oar.lib import (db, config, GanttJobsPrediction, Resource)
 from oar.lib.job_handling import (insert_job, set_jobs_start_time, set_job_state)
@@ -12,7 +16,7 @@ from oar.kao.meta_sched import meta_schedule
 from ..fakezmq import FakeZmq
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.tools import get_date
+from oar.lib.tools import get_date, local_to_sql
 from oar.kao.quotas import Quotas
 
 import zmq
@@ -25,9 +29,22 @@ fakezmq = FakeZmq()
 fakezmq.reset()
 
 # Set undefined config value to default one
+# TO REMOVE
 DEFAULT_CONFIG = {
     'HULOT_SERVER': 'localhost',
     'HULOT_PORT' : 6672,
+}
+
+quotas_simple_temporal_rules = {
+    "periodical":[
+        ["*,*,*,*", "quotas_1", "default"]
+    ],
+    "quotas_1": {
+        "*,*,*,/": [1, -1, -1]
+    },
+    "quotas_2": {
+        "*,*,*,/": [-1, -1, -1]
+    }
 }
 
 @pytest.yield_fixture(scope='function', autouse=True)
@@ -49,10 +66,8 @@ def active_quotas(request):
 
     def teardown():
         Quotas.enabled = False
-        Quotas.temporal = False
         Quotas.rules = {}
         Quotas.job_types = ['*']
-        Quotas.crontabs = None
         config['QUOTAS'] = 'no'
         os.remove(config['QUOTAS_CONF_FILE'])
         del config['QUOTAS_CONF_FILE']
@@ -79,6 +94,10 @@ def active_energy_saving(request):
 
     request.addfinalizer(teardown)
 
+def period_weekstart():
+    t_dt = datetime.fromtimestamp(time.time()).date()
+    t_weekstart_day_dt = t_dt - timedelta(days=t_dt.weekday())
+    return int(datetime.combine(t_weekstart_day_dt, datetime.min.time()).timestamp())
 
 def create_quotas_rules_file(quotas_rules):
     ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
@@ -165,7 +184,6 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
 
-    # pdb.set_trace()
     now = get_date()
     meta_schedule('internal')
 
@@ -220,6 +238,33 @@ def test_db_all_in_one_quotas_AR(monkeypatch):
 
     assert job.state == 'Error'
 
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_temporal_quotas_1(monkeypatch):
+    a =  deepcopy(quotas_simple_temporal_rules)
+    
+    now = get_date()
+    t1 = now + int(2*86400)
+    t2 = t1 + 86400
+    a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
+
+    rules_str  = str(a).replace("'", '"')
+    print(rules_str)
+    create_quotas_rules_file(rules_str)
+
+    insert_job(res=[(100, [('resource_id=5', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
+
+    # pdb.set_trace()
+    meta_schedule('internal')
+
+    print('now:{} t1: {} t1-now: {}'.format(now,t1, t1-now))
+    
+    res = []
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
+        res.append(i.start_time)
+
+    assert res == [t1 - (t1%60), now]
 
 def test_db_all_in_one_AR_2(monkeypatch):
 

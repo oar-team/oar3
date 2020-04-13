@@ -154,7 +154,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             logger.info("can't schedule job with id: {}, no suitable resources"\
                         .format(job.id))
             return (ProcSet(), -1, -1)
-
+        #import pdb; pdb.set_trace()
         if Quotas.calendar and (not job.no_temporal_quotas):
             while ((slot_e - slot_b + 1) < walltime):
                 # test next slot need to be temporal_quotas sliced

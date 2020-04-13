@@ -123,4 +123,6 @@ class ResourceSet(object):
         self.default_resource_itvs = ProcSet(*default_roids)
         # update global variable
         #TODO
+        #default_resource_itvs = self.default_resource_itvs
+        global default_resource_itvs
         default_resource_itvs = self.default_resource_itvs
