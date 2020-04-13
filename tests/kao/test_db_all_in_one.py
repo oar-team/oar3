@@ -51,6 +51,7 @@ quotas_simple_temporal_rules = {
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
+        db['Queue'].create(name='admin', priority=0, scheduler_policy='kamelot', state='Active')
         # add some resources
         for i in range(5):
             db['Resource'].create(network_address="localhost" + str(int(i / 2)))
@@ -267,6 +268,34 @@ def test_db_all_in_one_temporal_quotas_1(monkeypatch):
 
     assert res == [t1 - (t1%60), now]
 
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_temporal_quotas_2(monkeypatch):
+    a =  deepcopy(quotas_simple_temporal_rules)
+    
+    now = get_date()
+    t1 = now + int(2*86400)
+    t2 = t1 + 86400
+    a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
+
+    rules_str  = str(a).replace("'", '"')
+    print(rules_str)
+    create_quotas_rules_file(rules_str)
+    
+    insert_job(res=[(100, [('resource_id=5', "")])], properties="", user="toto")
+    insert_job(res=[(200, [('resource_id=5', "")])], properties="", types=['no_temporal_quotas'])
+
+    # pdb.set_trace()
+    meta_schedule('internal')
+
+    print('now:{} t1: {} t1-now: {}'.format(now,t1, t1-now))
+    
+    res = []
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+        print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
+        res.append(i.start_time)
+
+    assert res == [t1 - (t1%60), now]
+    
 def test_db_all_in_one_AR_2(monkeypatch):
 
     job = insert_and_sched_ar(get_date() - 1000)
