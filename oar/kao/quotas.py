@@ -50,10 +50,34 @@ class Calendar(object):
 
         # create periodicals and oneshots data structure from json
         if 'periodical' in json_quotas:
+            default = None
             for p in json_quotas['periodical']:
-                self.periodical_fromJson(p)    
+                if p[0] == '*,*,*,*' or p[0] == 'default':
+                    default = self.quotas_rules2id[p[1]]
+                else:
+                    self.periodical_fromJson(p)    
             self.ordered_periodical_ids = sorted(range(self.nb_periodicals),
                                                  key=lambda k: self.periodicals[k][0])
+            if default != None:
+                t=0
+                i=0
+                nb_per = self.nb_periodicals
+                while (t < 7*86400) and (i < nb_per):
+                    t1 = self.periodicals[self.ordered_periodical_ids[i]][0]
+                    duration =  self.periodicals[self.ordered_periodical_ids[i]][1]
+                    # fill the gap w/ default is needed
+                    if t != t1:
+                       self.periodicals[self.nb_periodicals] = (t, t1-t, default, '*,*,*,*')
+                       self.nb_periodicals += 1
+                    t = t1 + duration
+                    i += 1
+                if t != 7*86400:
+                       self.periodicals[self.nb_periodicals] = (t, 7*86400-t, default, '*,*,*,*')
+                       self.nb_periodicals += 1
+                # reorder the all
+                self.ordered_periodical_ids = sorted(range(self.nb_periodicals),
+                                                     key=lambda k: self.periodicals[k][0]) 
+                       
         if 'oneshot' in json_quotas:
             for o in json_quotas['oneshot']:
                 self.oneshot_fromJson(o)    
@@ -600,8 +624,8 @@ account (but the inner jobs are used to compute the quotas).
         {
             "periodical": [
                 ["08:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
-                ["19:00-00:00 mon-thu * *", "quotas_nigth", "nights of workdays"],
-                ["00:00-08:00 tue-fri * *", "quotas_nigth", "nights of workdays"],
+                ["19:00-00:00 mon-thu * *", "quotas_night", "nights of workdays"],
+                ["00:00-08:00 tue-fri * *", "quotas_night", "nights of workdays"],
                 ["19:00-00:00 fri * *", "quotas_weekend", "weekend"],
                 ["* sat-sun * *", "quotas_weekend", "weekend"],
                 ["00:00-08:00 mon * *", "quotas_weekend", "weekend"]
@@ -614,7 +638,7 @@ account (but the inner jobs are used to compute the quotas).
                 "*,*,*,john": [100,-1,-1],
                 "*,projA,*,*": [200,-1,-1]
             },
-            "quotas_nigth": {
+            "quotas_night": {
                 "*,*,*,john": [100,-1,-1],
                 "*,projA,*,*": [200,-1,-1]
             },

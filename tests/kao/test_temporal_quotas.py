@@ -35,8 +35,8 @@ logger = get_logger("oar.test")
 rules_example_full = {
     "periodical": [
         ["08:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
-        ["19:00-00:00 mon-thu * *", "quotas_nigth", "nights of workdays"],
-        ["00:00-08:00 tue-fri * *", "quotas_nigth", "nights of workdays"],
+        ["19:00-00:00 mon-thu * *", "quotas_night", "nights of workdays"],
+        ["00:00-08:00 tue-fri * *", "quotas_night", "nights of workdays"],
         ["19:00-00:00 fri * *", "quotas_weekend", "weekend"],
         ["* sat-sun * *", "quotas_weekend", "weekend"],
         ["00:00-08:00 mon * *", "quotas_weekend", "weekend"]
@@ -50,7 +50,7 @@ rules_example_full = {
         "*,*,*,john": [100,-1,-1],
         "*,projA,*,*": [200,-1,-1]
     },
-    "quotas_nigth": {
+    "quotas_night": {
         "*,*,*,john": [100,-1,-1],
         "*,projA,*,*": [200,-1,-1]
     },
@@ -76,6 +76,21 @@ rules_example_simple = {
     "quotas_2": {
         "*,*,*,/": [24,-1,-1],
         "*,projB,*,*": [15,-1,-1]
+    }
+}
+
+rules_default_example = {
+    "periodical": [
+        ["*,*,*,*", "quotas_night_weekend", "workdays"],
+        ["08:00-19:00 mon-fri * *", "quotas_workday", "workdays"]
+    ],
+    "quotas_workday": {
+        "*,*,*,john": [100,-1,-1],
+        "*,projA,*,*": [200,-1,-1]
+    },
+    "quotas_night_weekend": {
+        "*,*,*,john": [100,-1,-1],
+        "*,projA,*,*": [200,-1,-1]
     }
 }
 
@@ -143,13 +158,27 @@ def test_calendar_periodical_fromJson():
     print(check, periodical_id)
     #import pdb; pdb.set_trace()
     assert check
+    
+def test_calendar_periodical_default_fromJson():
 
+    calendar = Calendar(rules_default_example)
+    print()
+    calendar.show()
+    
+    check, periodical_id = calendar.check_periodicals()
+
+    print(check, periodical_id)
+    #import pdb; pdb.set_trace()
+    assert check
+    
 def test_calendar_periodical_fromJson_bad():
     assert True
     #    pass
     # ["09:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
 
 
+
+    
 def test_calendar_rules_at_1():
     config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
     Quotas.enabled = True
