@@ -94,6 +94,15 @@ rules_default_example = {
     }
 }
 
+rules_only_default_example = {
+    "periodical": [
+        ["*,*,*,*", "quotas_workday", "workdays"],
+    ],
+    "quotas_workday": {
+        "*,*,*,john": [100,-1,-1],
+    },
+}
+
 def add_oneshot_to_simple_example():
     example_w_oneshot = deepcopy(rules_example_simple)
 
@@ -138,7 +147,7 @@ def oar_conf(request):
 @pytest.fixture(scope='function', autouse=True)
 def reset_quotas():
     Quotas.enabled = False
-    Quotas.temporal = False
+    Quotas.calendar = None
     Quotas.default_rules = {}
     Quotas.job_types = ['*']
 
@@ -148,36 +157,33 @@ def period_weekstart():
     return int(datetime.combine(t_weekstart_day_dt, datetime.min.time()).timestamp())
 
 def test_calendar_periodical_fromJson():
-
     calendar = Calendar(rules_example_full)
     print()
     calendar.show()
-    
     check, periodical_id = calendar.check_periodicals()
-
     print(check, periodical_id)
-    #import pdb; pdb.set_trace()
     assert check
     
 def test_calendar_periodical_default_fromJson():
-
     calendar = Calendar(rules_default_example)
     print()
     calendar.show()
-    
     check, periodical_id = calendar.check_periodicals()
-
     print(check, periodical_id)
-    #import pdb; pdb.set_trace()
     assert check
     
+def test_calendar_periodical_only_default_fromJson():
+    calendar = Calendar(rules_only_default_example)
+    print()
+    calendar.show()
+    check, periodical_id = calendar.check_periodicals()
+    print(check, periodical_id)
+    #import pdb; pdb.set_trace()
+    assert check  
 def test_calendar_periodical_fromJson_bad():
     assert True
     #    pass
     # ["09:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
-
-
-
     
 def test_calendar_rules_at_1():
     config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks

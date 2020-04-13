@@ -66,7 +66,8 @@ def active_quotas(request):
 
     def teardown():
         Quotas.enabled = False
-        Quotas.rules = {}
+        Quotas.calendar = None
+        Quotas.default_rules = {}
         Quotas.job_types = ['*']
         config['QUOTAS'] = 'no'
         os.remove(config['QUOTAS_CONF_FILE'])
@@ -178,7 +179,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
               maximum resources times (hours) ------------+
     """
 
-    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 0.55]}}')
+    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 5]}}')
 
     insert_job(res=[(100, [('resource_id=1', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=1', "")])], properties="", user="toto")
