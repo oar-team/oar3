@@ -1,7 +1,7 @@
 {
     "periodical": [
-        ["* * * *", "quotas_night_weekend"]
-        ["09:00-19:00 mon-fri * *", "quotas_workday"],
+        ["* * * *", "quotas_night_weekend", "default no quotas"]
+        ["09:00-19:00 mon-fri * *", "quotas_workday", "quotas during workhours"],
     ],
     "quotas_workday": {
         "*,*,*,*": [-1,-1,'2*ALL'],
