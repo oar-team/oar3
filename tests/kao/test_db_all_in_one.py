@@ -295,7 +295,39 @@ def test_db_all_in_one_temporal_quotas_2(monkeypatch):
         res.append(i.start_time)
 
     assert res == [t1 - (t1%60), now]
+
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_temporal_quotas_AR_1(monkeypatch):
+    a =  deepcopy(quotas_simple_temporal_rules)
+    rules_str  = str(a).replace("'", '"')
+    print(rules_str)
     
+    create_quotas_rules_file(rules_str)
+
+    job = insert_and_sched_ar(get_date() + 10)
+    print(job.state, ' ', job.reservation)
+
+    assert job.state == 'Error'
+
+@pytest.mark.usefixtures("active_quotas")
+def test_db_all_in_one_temporal_quotas_AR_2(monkeypatch):
+    a =  deepcopy(quotas_simple_temporal_rules)
+    now = get_date()
+    t1 = now + int(2*86400)
+    t2 = t1 + 86400
+    a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
+    
+    rules_str  = str(a).replace("'", '"')
+    print(rules_str)
+    
+    create_quotas_rules_file(rules_str)
+
+    job = insert_and_sched_ar(t1 + 3600)
+    print(job.state, ' ', job.reservation)
+
+    assert job.state == 'Waiting'
+
+
 def test_db_all_in_one_AR_2(monkeypatch):
 
     job = insert_and_sched_ar(get_date() - 1000)
