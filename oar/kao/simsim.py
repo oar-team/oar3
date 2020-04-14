@@ -257,7 +257,7 @@ class SWFWorkload(object):
                                              key_cache={},
                                              ts=False, ph=0,
                                              assign=False, find=False,
-                                             no_temporal_quotas = False)
+                                             no_quotas = False)
 
             i += 1
 

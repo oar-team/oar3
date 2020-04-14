@@ -155,7 +155,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
                         .format(job.id))
             return (ProcSet(), -1, -1)
         #import pdb; pdb.set_trace()
-        if Quotas.calendar and (not job.no_temporal_quotas):
+        if Quotas.calendar and (not job.no_quotas):
             while ((slot_e - slot_b + 1) < walltime):
                 # test next slot need to be temporal_quotas sliced
                 if slots[sid_right].quotas_rules_id == -1:
@@ -209,7 +209,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
-            if Quotas.enabled and (not job.no_temporal_quotas):
+            if Quotas.enabled and (not job.no_quotas):
                 nb_res = len(itvs & rs.default_resource_itvs)
                 res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res

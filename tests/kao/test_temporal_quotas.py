@@ -459,7 +459,7 @@ def test_temporal_quotas_oneshot_1_job_rule_nb_res_1():
     assert j.start_time - tw == 43200
     assert j.res_set == ProcSet(*[(1, 32)])
 
-def test_temporal_quotas_job_no_temporal_quotas():
+def test_temporal_quotas_job_no_quotas():
     config["QUOTAS_PERIOD"] = 3*7*86400 # 3 weeks
     Quotas.enabled = True
 
@@ -475,7 +475,7 @@ def test_temporal_quotas_job_no_temporal_quotas():
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j = JobPseudo(id=2, queue='default', user='toto', project='', no_temporal_quotas=True)
+    j = JobPseudo(id=2, queue='default', user='toto', project='', no_quotas=True)
     j.simple_req(('node', 4), 60, res)
     
     schedule_id_jobs_ct(all_ss, {1: j}, hy, [1], 20)

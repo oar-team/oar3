@@ -282,7 +282,7 @@ def test_db_all_in_one_temporal_quotas_2(monkeypatch):
     create_quotas_rules_file(rules_str)
     
     insert_job(res=[(100, [('resource_id=5', "")])], properties="", user="toto")
-    insert_job(res=[(200, [('resource_id=5', "")])], properties="", types=['no_temporal_quotas'])
+    insert_job(res=[(200, [('resource_id=5', "")])], properties="", types=['no_quotas'])
 
     # pdb.set_trace()
     meta_schedule('internal')
