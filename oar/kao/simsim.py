@@ -75,8 +75,7 @@ class SimSched(object):
                     and not self.waiting_jids
                     and not self.evt_running_jobs):
                 print("All job submitted, no more waiting or running jobs ...", now)
-                self.env.exit()
-
+                return
             print("call schedule_cycle.... ", now)
 
             schedule_cycle(self.platform, now, "test")
