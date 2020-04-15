@@ -51,6 +51,8 @@ def oar_conf(request):
 
     def remove_quotas():
         config['QUOTAS'] = 'no'
+        Quotas.enabled = False
+        Quotas.calendar = None
 
     request.addfinalizer(remove_quotas)
 

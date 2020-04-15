@@ -69,7 +69,6 @@ def test_simsim_1():
         # submission_time_jids= [(10, [1,2]), (10, [3])]
 
     print(submission_time_jids)
-
     simsched = SimSched(res_set, jobs, submission_time_jids)
     simsched.run()
 

@@ -133,13 +133,14 @@ def compare_slots_val_ref(slots, v):
         i += 1
     return True
 
-
 @pytest.fixture(scope='module', autouse=True)
 def oar_conf(request):
     config['QUOTAS'] = 'yes'
 
     def remove_quotas():
         config['QUOTAS'] = 'no'
+        Quotas.enabled = False
+        Quotas.calendar = None
 
     request.addfinalizer(remove_quotas)
 
