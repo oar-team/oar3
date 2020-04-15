@@ -12,7 +12,7 @@ import oar.lib.walltime as walltime
 from .utils import CommandReturns
 
 def oarwalltime(job_id, new_walltime, force, delay_next_jobs, version, user=None, cli=True):
-    
+
     config.setdefault_config(DEFAULT_CONFIG)
     
     cmd_ret = CommandReturns(cli)
@@ -32,7 +32,7 @@ def oarwalltime(job_id, new_walltime, force, delay_next_jobs, version, user=None
     if new_walltime and (not re.search(r'^[-+]?\d+(?::\d+(?::\d+)?)?$', new_walltime)):
         cmd_ret.error('New walltime is malformatted', 4, 1)
         return cmt_ret
-    #import pdb; pdb.set_trace()
+
     if not new_walltime:        
         (walltime_change, message, state) = walltime.get(job_id)
         if not walltime_change:

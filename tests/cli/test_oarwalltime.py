@@ -34,6 +34,13 @@ def minimal_db_initialization(request):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', fake_notify_almighty)
 
+@pytest.fixture(scope='function', autouse=True)
+def finalizer(request):
+    @request.addfinalizer
+    def teardown():
+        if 'OARDO_USER' in os.environ:
+            del os.environ['OARDO_USER']
+
 def test_version():
     runner = CliRunner()
     result = runner.invoke(cli, ['-V'])
@@ -70,7 +77,7 @@ def test_oardel_not_running_job1():
     assert re.match(r'.*job is not running yet.*', result.output)
 
 def test_oardel_request_bad_user():
-    os.environ['USER'] = 'toto'
+    os.environ['OARDO_USER'] = 'toto'
     config['WALLTIME_CHANGE_ENABLED'] = 'YES'
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bad_user')
     runner = CliRunner()
@@ -80,8 +87,9 @@ def test_oardel_request_bad_user():
     assert re.match(r'.*does not belong to you.*', result.output)
 
 def test_oardel_request_not_running():
-    os.environ['USER'] = 'alice'
+    os.environ['OARDO_USER'] = 'alice'
     config['WALLTIME_CHANGE_ENABLED'] = 'YES'
+
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='alice')
     runner = CliRunner()
     result = runner.invoke(cli, [str(job_id), '1:2:3'])
@@ -90,7 +98,7 @@ def test_oardel_request_not_running():
     assert re.match(r'.*is not running.*', result.output)
     
 def test_oardel_request(minimal_db_initialization):
-    os.environ['USER'] = 'alice'
+    os.environ['OARDO_USER'] = 'alice'
     config['WALLTIME_CHANGE_ENABLED'] = 'YES'
     job_id = insert_running_jobs(1, user='alice')[0]
 
