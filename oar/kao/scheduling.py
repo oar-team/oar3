@@ -156,7 +156,12 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             return (ProcSet(), -1, -1)
         #import pdb; pdb.set_trace()
         if Quotas.calendar and (not job.no_quotas):
+            time_limit =  slot_b + config['QUOTAS_WINDOW_TIME_LIMIT']
             while ((slot_e - slot_b + 1) < walltime):
+                if (slot_e > time_limit):
+                    logger.info("can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached"\
+                          .format(job.id, walltime))
+                    return (ProcSet(), -1, -1)
                 # test next slot need to be temporal_quotas sliced
                 if slots[sid_right].quotas_rules_id == -1:
                     # assumption is done that this part is rarely executed (either it's abnormal)

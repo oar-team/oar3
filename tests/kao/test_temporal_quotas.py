@@ -484,3 +484,32 @@ def test_temporal_quotas_job_no_quotas():
     print(j.id, j.start_time-t0, j.res_set if hasattr(j, 'res_set') else None)
     assert j.start_time - t0 == 0
     assert j.res_set == ProcSet(*[(1, 32)])
+    
+def test_temporal_quotas_window_time_limit_reached():
+    config["QUOTAS_PERIOD"] = 3*7*86400 # 3 weeks
+    Quotas.enabled = True
+    Quotas.calendar = Calendar(rules_example_simple)
+    res = ProcSet(*[(1, 32)])
+    rs.default_resource_itvs = ProcSet(*res)
+
+    t0 = period_weekstart()
+    t1 = t0 + 7*86400 - 1
+    
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), t0, t1))
+    
+    all_ss = {"default": ss}
+    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(id=1, queue='default', user='toto', project='')
+    j1.simple_req(('node', 3), 5*86400, res)
+    j2 = JobPseudo(id=1, queue='default', user='toto', project='')
+    j2.simple_req(('node', 5), 10*86400, res)
+    
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+    
+    assert j1.start_time-t0 == 259200
+    assert j2.start_time == -1
+        
+    assert j1.res_set == ProcSet(*[(1, 24)])
+    assert j2.res_set == ProcSet()
+    
