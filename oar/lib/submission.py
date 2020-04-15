@@ -912,7 +912,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         return (error, [])
 
     # Remove no_quotas must set within admission rules or automatically for admin jobs
-    if config['QUOTAS'] == 'YES' and 'no_quotas' in job_parameters.types:
+    if config['QUOTAS'] == 'yes' and 'no_quotas' in job_parameters.types:
         # TODO print Warning
         job_parameters.types.remove('no_quotas')
 
@@ -953,7 +953,7 @@ def add_micheline_jobs(job_parameters, import_job_key_inline, import_job_key_fil
         return(error, [])
 
     # Automatically add no quotas restriction for admin job
-    if config['QUOTAS'] == 'YES' and job_parameters.queue == 'admin':
+    if config['QUOTAS'] == 'yes' and job_parameters.queue == 'admin':
         job_parameters.types.append('no_quotas')
 
     # TODO move to job class ?

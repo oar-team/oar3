@@ -3,9 +3,11 @@ import pytest
 
 import os
 
-from oar.lib import (db, AdmissionRule)
+from oar.lib import (db, AdmissionRule, config)
 from oar.lib.submission import (JobParameters, parse_resource_descriptions, add_micheline_jobs,
                                 default_submission_config, scan_script)
+from oar.lib.job_handling import get_job_types
+from oar.kao.quotas import Quotas
 
 import oar.lib.tools  # for monkeypatching
 
@@ -36,7 +38,7 @@ def minimal_db_initialization(request):
     db.delete_all()
     with db.session(ephemeral=True):
         db['Queue'].create(name='default', priority=3, scheduler_policy='kamelot', state='Active')
-
+        db['Queue'].create(name='admin', priority=1, scheduler_policy='kamelot', state='Active')
         # add some resources
         for i in range(5):
             db['Resource'].create(network_address="localhost" + str(int(i / 2)))
@@ -45,6 +47,19 @@ def minimal_db_initialization(request):
         db['AdmissionRule'].create(rule="name='yop'")
         yield
 
+@pytest.fixture(scope="function")
+def active_quotas(request):
+    print('active_quotas')
+    config['QUOTAS'] = 'yes'
+
+    def teardown():
+        Quotas.enabled = False
+        Quotas.calendar = None
+        Quotas.default_rules = {}
+        Quotas.job_types = ['*']
+        config['QUOTAS'] = 'no'
+        
+    request.addfinalizer(teardown)
 
 def default_job_parameters(resource_request):
     return  JobParameters(
@@ -66,7 +81,7 @@ def default_job_parameters(resource_request):
         stderr=None,
         hold=None,
         initial_request='foo',
-        user=os.environ['USER'],
+        user='bob',
         array_id=0,
         start_time=0,
         reservation_field=None
@@ -104,6 +119,52 @@ def test_add_micheline_jobs_2():
     print("error:", error)
     assert error == (0, '')
     assert len(job_id_lst) == 1
+    
+@pytest.mark.usefixtures("active_quotas")
+def test_add_micheline_jobs_no_quotas_1():
+
+    job_parameters = default_job_parameters(None)
+    import_job_key_inline = ''
+    import_job_key_file = ''
+    export_job_key_file = ''
+    job_parameters.stdout = 'yop'
+    job_parameters.stderr = 'poy'
+    job_parameters.types = ['foo','no_quotas']
+
+    (error, job_id_lst) = add_micheline_jobs(job_parameters, import_job_key_inline, \
+                                           import_job_key_file, export_job_key_file)
+
+
+    print("job id:", job_id_lst)
+    print("error:", error)
+    assert error == (0, '')
+    assert len(job_id_lst) == 1
+    job_types = get_job_types(job_id_lst[0])
+    assert job_types == {'foo': True}
+
+@pytest.mark.usefixtures("active_quotas")
+def test_add_micheline_jobs_quotas_admin():
+
+    job_parameters = default_job_parameters(None)
+    import_job_key_inline = ''
+    import_job_key_file = ''
+    export_job_key_file = ''
+    job_parameters.stdout = 'yop'
+    job_parameters.stderr = 'poy'
+    job_parameters.types = ['foo']
+    job_parameters.queue = 'admin'
+
+    (error, job_id_lst) = add_micheline_jobs(job_parameters, import_job_key_inline, \
+                                           import_job_key_file, export_job_key_file)
+
+
+    print("job id:", job_id_lst)
+    print("error:", error)
+    assert error == (0, '')
+    assert len(job_id_lst) == 1
+    job_types = get_job_types(job_id_lst[0])
+    print(job_types)
+    assert 'no_quotas' in job_types
 
 def test_add_micheline_simple_array_job():
 
@@ -185,7 +246,7 @@ def test_scan_script(monkeypatch_tools):
 
 def test_job_parameter_notify():
     job_parameters = default_job_parameters(None)
-    job_parameters.notify = "mail:name\@domain.com"
+    job_parameters.notify = 'mail:name@domain.com'
     error = job_parameters.check_parameters()
     assert error[0] == 0
     
