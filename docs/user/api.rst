@@ -2,6 +2,9 @@
  User REST API
 ==============
 
+.. image:: https://img.shields.io/badge/doc-Outdated-yellow
+           :target: http://oar.imag.fr/oar_3
+
 The OAR REST API allows to interact with OAR over http using a REST library. Most of the operations usually done with the oar Unix commands may be done using this API from your favourite language.
 
 Concepts

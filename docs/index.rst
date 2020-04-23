@@ -3,9 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to OAR's documentation!
+Welcome to OAR3's documentation!
 ===============================
-   
+
+
+   **THIS DOCUMENTATION IS UNDER CONSTRUCTION (NOT READY TO PRODUCTION USE)**
 
 .. include:: ../README.rst
              
@@ -46,20 +48,17 @@ Admin Documentation
 ===================
 
 .. toctree::
-    :maxdepth: 1
- 
-    Admin Commands <admin/commands.rst>
-..
+    :maxdepth: 2
+
     admin/installation
-    admin/configuration
-    admin/commands
+    admin/configuration         
+    Admin Commands <admin/commands.rst>
     admin/api
     admin/security
     admin/modules
     admin/internal-mechanisms
     admin/database-scheme
     admin/faq
-
 
 .. _ref-dev-docs:
 
