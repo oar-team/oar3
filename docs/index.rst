@@ -14,7 +14,7 @@ This documentation is organized into a few different sections below:
 * :ref:`ref-user-docs`
 * :ref:`ref-admin-docs`
 * :ref:`ref-dev-docs`
-* :ref:`Changelog <changelogfile-anchor>`.
+* :ref:`ref-dev-changelog`.
 * :ref:`Copyright and license <licensefile-anchor>`.
 
 .. _ref-user-docs:
@@ -23,9 +23,14 @@ User Documentation
 ==================
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 2
               
-    User Commands <user/commands.rst>
+   user/quickstart
+   user/usecases
+   user/mechanisms
+   User Commands <user/commands.rst>
+   user/api
+   user/faq
 ..               
     user/quickstart
     user/usecases

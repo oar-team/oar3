@@ -1,7 +1,9 @@
 .. :changelog:
 
-Oar Next Generation changelog
-==================================================
+.. _ref-dev-changelog:
+
+Changelog
+=========
 
 Version 3.0.0.dev4
 ------------------
