@@ -11,11 +11,10 @@ from collections import OrderedDict
 
 MAX_NB_RESOURCES = 100000
 
-default_resource_itvs = ProcSet()
-
-
 class ResourceSet(object):
 
+    default_itvs = ProcSet()
+    
     def __init__(self):
         self.nb_resources_all = 0
         self.nb_resources_not_dead = 0
@@ -120,9 +119,5 @@ class ResourceSet(object):
         self.suspendable_roid_itvs = ProcSet(*suspendable_roids)
 
         default_roids = [self.rid_i2o[i] for i in default_rids]
-        self.default_resource_itvs = ProcSet(*default_roids)
-        # update global variable
-        #TODO
-        #default_resource_itvs = self.default_resource_itvs
-        global default_resource_itvs
-        default_resource_itvs = self.default_resource_itvs
+        self.default_itvs = ProcSet(*default_roids)
+        ResourceSet.default_itvs = self.default_itvs # for Quotas

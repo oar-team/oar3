@@ -11,7 +11,7 @@ from oar.kao.slot import Slot, SlotSet
 from oar.kao.scheduling import (schedule_id_jobs_ct,
                                 set_slots_with_prev_scheduled_jobs)
 from oar.kao.quotas import Quotas
-import oar.lib.resource as rs
+from oar.lib.resource import ResourceSet
 
 from oar.lib import config, get_logger
 
@@ -105,7 +105,7 @@ def test_quotas_one_job_rule_nb_res_1():
     Quotas.default_rules = {('*', '*', '*', '/'): [1, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 100))
     all_ss = {"default": ss}
@@ -125,7 +125,7 @@ def test_quotas_one_job_rule_nb_res_2():
     Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
@@ -151,7 +151,7 @@ def test_quotas_four_jobs_rule_1():
                         ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
@@ -191,7 +191,7 @@ def test_quotas_three_jobs_rule_1():
                         ('default', '*', '*', '*'): [-1, -1, 2000]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
@@ -233,7 +233,7 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
     Quotas.enable()
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
@@ -275,7 +275,7 @@ def test_quotas_two_jobs_job_type_proc():
     print(Quotas.default_rules, Quotas.job_types)
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}

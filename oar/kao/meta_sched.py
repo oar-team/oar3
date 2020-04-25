@@ -349,7 +349,7 @@ def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current
                 itvs_avail, hy_res_rqts, resource_set.hierarchy)
 
             if Quotas.enabled:
-                nb_res = len(itvs & resource_set.default_resource_itvs)
+                nb_res = len(itvs & resource_set.default_itvs)
                 res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:

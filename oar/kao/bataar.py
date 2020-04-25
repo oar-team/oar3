@@ -13,6 +13,8 @@ from oar.lib import (db, config, get_logger, Job, Resource, Queue)
 
 from oar.lib.job_handling import (insert_job, set_job_state)
 
+from oar.lib.resource import ResourceSet
+
 from oar.kao.simsim import ResourceSetSimu, JobSimu
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
@@ -223,6 +225,7 @@ class BatSched(BatsimScheduler):
             )
             self.itvs_res = ProcSet(*[(1, all_res)])
             self.itvs_res_default = ProcSet(*[(1, nb_res)])
+            ResourceSet.default_itvs = self.itvs_res_default # For Quotas
 
         elif self.database_mode == 'memory':
             if self.tokens > 0:

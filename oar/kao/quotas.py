@@ -9,7 +9,7 @@ from oar.lib import (config, get_logger)
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
 
-import oar.lib.resource as rs
+from oar.lib.resource import ResourceSet
 
 _day2week_offset = {'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6}
 
@@ -463,7 +463,7 @@ account (but the inner jobs are used to compute the quotas).
         # TOREMOVE ?
         if hasattr(job, 'res_set'):
             if not hasattr(self, 'nb_res'):
-                job.nb_res = len(job.res_set & rs.default_resource_itvs)
+                job.nb_res = len(job.res_set & ResourceSet.default_itvs)
                 nb_resources = job.nb_res
         else:
             nb_resources = prev_nb_res

@@ -17,7 +17,8 @@ from oar.kao.scheduling import (schedule_id_jobs_ct,
 from oar.lib.tools import local_to_sql
 
 from oar.kao.quotas import Quotas, Calendar
-import oar.lib.resource as rs
+
+from oar.lib.resource import ResourceSet
 
 from oar.lib import config, get_logger
 
@@ -309,7 +310,7 @@ def test_temporal_slotSet_oneshot():
     Quotas.enabled = True
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     (rules_example_w_oneshot, t, tw, _, _) = add_oneshot_to_simple_example()
     
@@ -392,7 +393,7 @@ def test_temporal_quotas_4_jobs_rule_nb_res_1():
     Quotas.enabled = True
     Quotas.calendar = Calendar(rules_example_simple)
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     t0 = period_weekstart()
     t1 = t0 + 7*86400 - 1
@@ -433,7 +434,7 @@ def test_temporal_quotas_oneshot_1_job_rule_nb_res_1():
     Quotas.enabled = True
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     (rules_example_w_oneshot, t, tw, _, _) = add_oneshot_to_simple_example()
     
@@ -465,7 +466,7 @@ def test_temporal_quotas_job_no_quotas():
     Quotas.enabled = True
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
     
     Quotas.calendar = Calendar(rules_example_simple)
 
@@ -490,7 +491,7 @@ def test_temporal_quotas_window_time_limit_reached():
     Quotas.enabled = True
     Quotas.calendar = Calendar(rules_example_simple)
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     t0 = period_weekstart()
     t1 = t0 + 7*86400 - 1

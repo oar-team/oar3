@@ -9,7 +9,7 @@ from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs
 from oar.lib import get_logger, config
 
 # for quotas
-import oar.lib.resource as rs
+from oar.lib.resource import ResourceSet
 from oar.kao.quotas import Quotas
 
 logger = get_logger("oar.kamelot")
@@ -215,7 +215,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
         if len(itvs) != 0:
             if Quotas.enabled and (not job.no_quotas):
-                nb_res = len(itvs & rs.default_resource_itvs)
+                nb_res = len(itvs & ResourceSet.default_itvs)
                 res = Quotas.check_slots_quotas(slots, sid_left, sid_right, job, nb_res, walltime)
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
