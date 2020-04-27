@@ -2,7 +2,10 @@
  User REST API
 ==============
 
-.. image:: https://img.shields.io/badge/doc-Outdated-yellow
+.. image:: https://img.shields.io/badge/docs-outdated-yellow
+           :target: http://oar.imag.fr/oar_3
+
+.. image:: https://img.shields.io/badge/docs-WIP-red
            :target: http://oar.imag.fr/oar_3
 
 The OAR REST API allows to interact with OAR over http using a REST library. Most of the operations usually done with the oar Unix commands may be done using this API from your favourite language.
@@ -15,20 +18,20 @@ Access
 A simple GET query to the API using wget may look like this::
 
     # Get the list of resources
-    wget -O - http://www.mydomain.org/oarapi/resources.yaml?structure=simple
+    wget -O - http://www.mydomain.org/oarapi/resources?structure=simple
 
 You can also access to the API using a browser. Make it point to http://www.myoarcluster.local/oarapi/index.html and you'll see a very simple HTML interface allowing you to browse the cluster resources, post a job using a form or even create resources if you are a OAR administrator. (of course, replace www.myoarcluster.local by a valid name allowing you to join the http service of the host where the API is installed).
 
-But generally, you'll use a REST client or a REST library provided for your favorite language. You'll see examples using a ruby rest library in the next parts of this document.
+But generally, you'll use a REST client or a REST library provided for your favorite language. You'll see examples using a Python rest library in the next parts of this document.
 
 Check your system administrator to know on which URI the OAR API is installed.
 
 Authentication
 --------------
 
-Most of the time, you'll make requests that needs you to be authenticated. The way you are authenticated depends on what your local admistrator configured. There's almost as many possibilities as what Apache (the http server used by this API) may manage.
-The simplest method is a "Basic authentication" with a login/password. It may be binded to a local directory (for example LDAP). You may also find an "ident" based authentication that guesses automatically your login from a little daemon running on your client host.
-If the "ident" method is used, your unix login is automatically used. But as only a few hosts may be trusted, you'll probably have to open a tunnel to one of this host. You may use ssh to do this. For example, supposing access.mycluster.fr is a gateway host trusted by the api host::
+Most of the time, you'll make requests that needs you to be authenticated. The way you are authenticated depends on what your local admistrator configured. There's almost as many possibilities as what the http server used by this API (Apache or Ngnix to cite a few) may manage.
+The simplest method is a "Basic authentication" with a login/password. It may be binded to a local directory service (for example LDAP). You may also find an "ident" based authentication that guesses automatically your login from a little daemon running on your client host.
+If the "ident" method is used, your Unix login is automatically used. But as only a few hosts may be trusted, you'll probably have to open a tunnel to one of this host. You may use ssh to do this. For example, supposing access.mycluster.fr is a gateway host trusted by the api host::
 
   $ ssh -NL 8080:api.mycluster.fr:80 login@access.mycluster.fr
 
@@ -40,33 +43,7 @@ If the "ident" method is used, your unix login is automatically used. But as onl
 Formats and data structure types
 --------------------------------
 
-The API currently can serve data into *YAML*, *JSON* or *HTML*. Posted data can also be coded into *YAML*, *JSON* or *x-www-form-urlencoded* (for HTML from posts). You may specify the requested format by 2 ways:
-
-    * giving an extension to resources: **.yaml**, **.json** or **.html**
-    * setting the **HTTP_ACCEPT** header variable to **text/yaml**, **application/json** or **text/html**
-
-For the posted data, you have to correctly set the **HTTP_CONTENT_TYPE** variable to **text/yaml**, **application/json** or **application/x-www-form-urlencoded**.
-
-Sometimes, the data structures returned (not the coding format, but the contents: array, hashes, array of hashes,...) may be changed. Currently, we have 2 available data structure types: *simple* and *oar*. The structure is passed through the variable *structure* that you may pass in the url, for example: ?structure=simple
-
-    * The **simple** data structure tries to be as simple as possible, using simple arrays in place of hashes wherever it is possible
-    * The **oar** data structure serves data in the way oar does with the oarnodes/oarstat export options (-Y, -D, -J,...) Be aware that this data structure is not meant to be maintained since 2.5 release of OAR. The simple data structure is highly recommended.
-
-By default, we use the *simple* data structure.
-
-Here are some examples, using the ruby restclient (see next section)::
-
-  # Getting resources infos
-    # in JSON
-  irb(main):004:0> puts get('/resources.json')
-    # in YAML
-  irb(main):005:0> puts get('/resources.yaml')
-    # Same thing
-  irb(main):050:0> puts get('/resources', :accept=>"text/yaml")
-    # Specifying the "oar" data structure
-  irb(main):050:0> puts get('/resources.json?structure=oar')
-    # Specifying the "simple" data structure
-  irb(main):050:0> puts get('/resources.json?structure=simple')
+The API currently serves and consumes data into *JSON* format. 
 
 
 Errors and debug
@@ -80,7 +57,7 @@ When the API returns an error, it generally uses a standard HTTP return status (
   "code" : "200"
  }
 
-This error body is formated in the requested format. But if this format was not given, it uses JSON by default.
+This error body is also formated in the *JSON* format.
 
 To allow you to see the error body, you may find it useful to activate the **debug=1** variable. It will force the API to always return a 200 OK status, even if there's an error so that you can see the body with a simple browser or a rest client without having to manage the errors. For example::
 
@@ -104,6 +81,8 @@ Here is an example of error catching in ruby::
     end
   end
 
+Pytyon REST client
+==================
 
 Ruby REST client
 ================
