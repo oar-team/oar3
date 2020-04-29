@@ -1,7 +1,6 @@
 Admin commands
 ==============
 
-
 .. toctree::
     :maxdepth: 2
 

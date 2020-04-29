@@ -2,6 +2,10 @@
 Admin REST - API
 ================
 
+.. toctree::
+   :maxdepth: 2
+   :caption: REST - API
+             
 The OAR REST API is currently a cgi script being served by an http server (we
 recommend Apache) that allows the programming of interfaces to OAR using a REST
 library. Most of the operations usually done with the oar Unix commands may be
