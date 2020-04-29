@@ -1,7 +1,7 @@
 Welcome to OAR3's documentation!
 ================================
 
-.. note::
+.. warning::
 
    **THIS DOCUMENTATION IS UNDER CONSTRUCTION (NOT READY FOR PRODUCTION USE)**
 
