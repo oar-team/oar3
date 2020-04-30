@@ -34,6 +34,8 @@ This documentation is organized into a few different sections below:
 
    admin/installation
    admin/configuration
+   Admission Rules <admin/admission_rules.rst>
+   Scheduling <admin/scheduling.rst>
    Admin Commands <admin/commands.rst>
    admin/api
    admin/security
