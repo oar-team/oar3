@@ -319,7 +319,7 @@ class BatSched(BatsimScheduler):
         jids_to_launch = [] 
         real_time = time.time()
         if self.platform_model == 'simu':
-            schedule_cycle(self.platform, self.env.now, "default")
+            schedule_cycle(self.platform, self.env.now, ["default"])
 
             # retrieve jobs to launch
             for jid, job in self.platform.assigned_jobs.items():

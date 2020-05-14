@@ -56,14 +56,14 @@ def karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt):
     return waiting_ordered_jids
 
 
-def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue):
+def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
 
     resource_set = plt.resource_set()
 
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
 
     if nb_waiting_jobs > 0:
         logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
@@ -76,7 +76,7 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue):
         plt.get_data_jobs(
             waiting_jobs, waiting_jids, resource_set, job_security_time)
 
-        waiting_ordered_jids = karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = karma_job_sorting(queues, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Scheduled
@@ -97,14 +97,14 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queue):
         logger.info("no waiting jobs")
 
 
-def schedule_cycle(plt, now, queue="default"):
+def schedule_cycle(plt, now, queues=["default"]):
 
-    logger.info("Begin scheduling....now: " + str(now) + ", queue: " + queue)
-
+    logger.info("Begin scheduling....now: {}, queue(s): {}"
+                .format(now, ' '.join([q for q in queues])))
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
 
     if nb_waiting_jobs > 0:
         logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
@@ -145,7 +145,7 @@ def schedule_cycle(plt, now, queue="default"):
             waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         # Job sorting (karma and advanced)
-        waiting_ordered_jids = karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = karma_job_sorting(queues, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
@@ -155,7 +155,7 @@ def schedule_cycle(plt, now, queue="default"):
         all_slot_sets = {'default': initial_slot_set}
 
         if scheduled_jobs != []:
-            if queue == 'besteffort':
+            if (len(queues) == 1) and (queues[0] == 'besteffort'):
                 filter_besteffort = False
             else:
                 filter_besteffort = True
@@ -199,7 +199,7 @@ def main():
     logger.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:
-        schedule_cycle(plt, int(float(sys.argv[2])), sys.argv[1])
+        schedule_cycle(plt, int(float(sys.argv[2])), [sys.argv[1]])
     elif len(sys.argv) == 2:
         schedule_cycle(plt, plt.get_time(), sys.argv[1])
     else:

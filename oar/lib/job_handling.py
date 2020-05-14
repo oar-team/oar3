@@ -97,16 +97,22 @@ class JobPseudo(object):
         self.mld_res_rqts = [(1, walltime, [(res_req, ProcSet(*resources_constraint))])]
 
 
-def get_waiting_jobs(queue, reservation='None'):
-    # TODO  fairsharing_nb_job_limit
+def get_waiting_jobs(queues, reservation='None'):
+    # TODO fairsharing_nb_job_limit
     waiting_jobs = {}
     waiting_jids = []
     nb_waiting_jobs = 0
 
-    for j in db.query(Job).filter(Job.state == "Waiting")\
-                          .filter(Job.queue_name == queue)\
-                          .filter(Job.reservation == reservation)\
-                          .order_by(Job.id).all():
+    query = db.query(Job).filter(Job.state == "Waiting")
+    if len(queues) == 1:
+        query = query.filter(Job.queue_name == queues[0])
+    else: 
+        query = query.filter(Job.queue_name.in_(tuple(queues)))
+
+    query = query.filter(Job.reservation == reservation)\
+                 .order_by(Job.id)
+        
+    for j in query.all():
         jid = int(j.id)
         waiting_jobs[jid] = j
         waiting_jids.append(jid)

@@ -78,7 +78,7 @@ class SimSched(object):
                 return
             print("call schedule_cycle.... ", now)
 
-            schedule_cycle(self.platform, now, "test")
+            schedule_cycle(self.platform, now, ["test"])
 
             # launch jobs if needed
             for jid, job in self.platform.assigned_jobs.items():

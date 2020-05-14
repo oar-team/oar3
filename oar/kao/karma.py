@@ -1,12 +1,14 @@
 # coding: utf-8
 
-from oar.lib import config, db, Accounting
+from oar.lib import (config, db, Accounting, get_logger)
 from sqlalchemy import func
 import re
 
+# Log category
+logger = get_logger('oar.kao.karma')
+
+
 # convert perl hash 2 dict
-
-
 def perl_hash_2_dict(str):
     d = {}
     # remove space and curly bracket
@@ -94,18 +96,21 @@ def get_sum_accounting_by_user(queue, window_start, window_stop):
 #
 # Karma and Fairsharing stuff
 #
-def karma_jobs_sorting(queue, now, jids, jobs, plt):
+def karma_jobs_sorting(queues, now, jids, jobs, plt):
 
+    # TODO multiqueues support
+    if len(queues) > 1:
+        logger.warning('Upto now only ONE QUEUE IS SUPPORTED')
+    queue = queues[0]
+        
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
-        # TODO NOT UDSED
-        # fairsharing_nb_job_limit = 100000
-
-
+    # TODO NOT UDSED
+    # fairsharing_nb_job_limit = 100000
 
     # Set undefined config value to default one
     default_config = {
-        "SCHEDULER_FAIRSHARING_WINDOW_SIZE": 3600 * 30 * 24, 
+        "SCHEDULER_FAIRSHARING_WINDOW_SIZE": 3600 * 30 * 24,
         "SCHEDULER_FAIRSHARING_PROJECT_TARGETS": "{default => 21.0}",
         "SCHEDULER_FAIRSHARING_USER_TARGETS": "{default => 22.0}",
         "SCHEDULER_FAIRSHARING_COEF_PROJECT": "0",
@@ -115,7 +120,7 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
     config.setdefault_config(default_config)
 
     karma_window_size = config["SCHEDULER_FAIRSHARING_WINDOW_SIZE"]
-    
+
     # get fairsharing config if any
     karma_proj_targets = perl_hash_2_dict(
         config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])
@@ -175,12 +180,10 @@ def karma_jobs_sorting(queue, now, jids, jobs, plt):
         # x2 = karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0))
         # x3 = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
         # print "yopypop", x1, x2, x3
-        job.karma = (karma_coeff_proj_consumption * ((karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0)) +
-                     karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0)) +
-                     karma_coeff_user_asked_consumption *
-                     ((karma_user_asked_j / karma_sum_time_asked) -
-                      (karma_user_target / 100.0))
-                     )
+        projet = karma_coeff_proj_consumption * ((karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0))
+        user = karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0))
+        user_ask = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
+        job.karma = projet + user + user_ask
 
         # print "job.karma", job.karma
 

@@ -18,7 +18,7 @@ DEFAULT_CONFIG = {
 logger = get_logger('oar.kamelot_basic')
 
 
-def schedule_cycle(plt, queue='default'):
+def schedule_cycle(plt, queues=['default']):
     now = plt.get_time()
 
     logger.info('Begin scheduling....', now)
@@ -26,7 +26,7 @@ def schedule_cycle(plt, queue='default'):
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
 
     logger.info(waiting_jobs, waiting_jids, nb_waiting_jobs)
 

@@ -10,20 +10,20 @@ from oar.lib.tools import (TimeoutExpired, PIPE)
 from oar.lib.job_handling import (frag_job)
 
 from oar.lib.job_handling import (get_current_not_waiting_jobs,
-                         get_gantt_jobs_to_launch,
-                         add_resource_job_pairs, set_job_state,
-                         get_gantt_waiting_interactive_prediction_date,
-                         set_job_resa_state, set_job_message,
-                         get_waiting_reservations_already_scheduled,
-                         ALLOW, NO_PLACEHOLDER, JobPseudo,
-                         save_assigns, set_job_start_time_assigned_moldable_id,
-                         get_jobs_in_multiple_states, gantt_flush_tables,
-                         get_after_sched_no_AR_jobs, get_waiting_scheduled_AR_jobs,
-                         remove_gantt_resource_job, set_moldable_job_max_time,
-                         set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
-                         resume_job_action, is_timesharing_for_two_jobs)
+                                  get_gantt_jobs_to_launch,
+                                  add_resource_job_pairs, set_job_state,
+                                  get_gantt_waiting_interactive_prediction_date,
+                                  set_job_resa_state, set_job_message,
+                                  get_waiting_reservations_already_scheduled,
+                                  ALLOW, NO_PLACEHOLDER, JobPseudo,
+                                  save_assigns, set_job_start_time_assigned_moldable_id,
+                                  get_jobs_in_multiple_states, gantt_flush_tables,
+                                  get_after_sched_no_AR_jobs, get_waiting_scheduled_AR_jobs,
+                                  remove_gantt_resource_job, set_moldable_job_max_time,
+                                  set_gantt_job_start_time, get_jobs_on_resuming_job_resources,
+                                  resume_job_action, is_timesharing_for_two_jobs)
 
-from oar.lib.queue import (get_all_queue_by_priority, stop_queue)
+from oar.lib.queue import (get_queues_groupby_priority, stop_queue)
 
 from oar.lib.event import (get_job_events, add_new_event)
 
@@ -48,7 +48,7 @@ from oar.lib.node import (search_idle_nodes, get_gantt_hostname_to_wake_up,
 from oar.kao.quotas import Quotas
 
 # for walltime change requests
-from oar.kao.walltime_change import  process_walltime_change_requests
+from oar.kao.walltime_change import process_walltime_change_requests
 
 import oar.kao.advanced_extra_metasched
 
@@ -104,9 +104,7 @@ to_launch_jobs_already_treated = {}
 # order_part = config['SCHEDULER_RESOURCE_ORDER']
 
 
-batsim_sched_proxy = None 
-
-
+batsim_sched_proxy = None
 
 
 ##########################################################################
@@ -134,7 +132,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     current_jobs = get_jobs_in_multiple_states(['Running', 'toLaunch', 'Launching',
                                                 'Finishing', 'Suspended', 'Resuming'],
                                                resource_set)
-    plt.save_assigns(current_jobs, resource_set) ## TODO to verify
+    plt.save_assigns(current_jobs, resource_set) # TODO to verify
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -189,15 +187,15 @@ def notify_to_run_job(jid):
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            completed = tools.notify_bipbip_commander({'job_id': int(jid), 'cmd': 'OARRUN', 'args':[]})
-                            
+            completed = tools.notify_bipbip_commander({'job_id': int(jid), 'cmd': 'OARRUN',
+                                                       'args': []})
+
             if completed:
                 to_launch_jobs_already_treated[jid] = 1
-                logger.debug("Notify bipbip commander to launch the job "\
-                             + str(jid))
+                logger.debug("Notify bipbip commander to launch the job " + str(jid))
             else:
                 logger.warning(
-                    "Not able to notify bipbip commander to launch the job "\
+                    "Not able to notify bipbip commander to launch the job " \
                     + str(jid) + " (socket error)")
 
 
@@ -277,7 +275,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
 
                     add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_RESERVATION',
                                   job.id,
-                                  "[MetaSched] Reduce the number of resources for the job "
+                                  "[MetaSched] Reduce the number of resources for the job " \
                                   + str(job.id))
 
                     nb_res = len(job.res_set) - len(missing_resources_itvs)
@@ -285,8 +283,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                     if new_message != job.message:
                         set_job_message(job.id, new_message)
 
-    logger.debug("Queue " + queue_name +
-                 ": end processing of reservations with missing resources")
+    logger.debug("Queue " + queue_name + ": end processing of reservations with missing resources")
 
 
 def check_reservation_jobs(plt, resource_set, queue_name, all_slot_sets, current_time_sec):
@@ -573,16 +570,16 @@ def call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets, job_security_tim
 
 
 def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_time,
-                            queue, now):
+                            queues, now):
 
     # Place running besteffort jobs if their queue is considered
-    if queue.name == 'besteffort':
+    if (len(queues) == 1) and (queues[0].name == 'besteffort'):
         set_slots_with_prev_scheduled_jobs(all_slot_sets, scheduled_jobs,
                                            job_security_time, now,
                                            False, True)
 
     internal_schedule_cycle(plt, now, all_slot_sets, job_security_time,
-                            queue.name)
+                            [q.name for q in queues])
 
 def nodes_energing_saving(current_time_sec):
 
@@ -676,37 +673,46 @@ def meta_schedule(mode='internal', plt=Platform()):
         extra_metasched_func = lambda *args: None # null function
         extra_metasched_config = ''
 
-    prev_queue = None
+    prev_queues = None
 
-    for queue in get_all_queue_by_priority():
+    for queues in get_queues_groupby_priority():
 
-        extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
-                             job_security_time, queue, initial_time_sec,
+        extra_metasched_func(prev_queues, plt, scheduled_jobs, all_slot_sets,
+                             job_security_time, queues, initial_time_sec,
                              extra_metasched_config)
 
-        if queue.state == 'Active':
+        logger.debug("Queue(s): {},  Launching scheduler, at time: {} "
+                     .format(' '.join([q.name for q in queues]), initial_time_sql))
 
-            logger.debug("Queue " + queue.name + ": Launching scheduler " +
-                         queue.scheduler_policy + " at time " + initial_time_sql)
-            prev_queue = queue
+        prev_queues = queues
 
-            if mode == 'external':  # pragma: no cover
-                call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
-                                        resource_set, job_security_time, queue,
-                                        initial_time_sec, initial_time_sql)
-            elif mode == 'batsim_sched_proxy':
-                call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets,
-                                        job_security_time, queue, initial_time_sec)
-            else:
-                call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
-                                        job_security_time, queue, initial_time_sec)
+        # filter active queues
+        active_queues = [ q for q in queues if q.state == 'Active']
 
-            handle_waiting_reservation_jobs(queue.name, resource_set,
-                                            job_security_time, current_time_sec)
+        # Only internal scheduler support non-strict priorities between queues 
+        if mode == 'internal':
+            call_internal_scheduler(plt, scheduled_jobs, all_slot_sets,
+                                    job_security_time, active_queues, initial_time_sec)
+            for queue in active_queues:
+                handle_waiting_reservation_jobs(queue.name, resource_set,
+                                                job_security_time, current_time_sec)
+                # handle_new_AR_jobs
+                check_reservation_jobs(
+                    plt, resource_set, queue.name, all_slot_sets, current_time_sec)
+        else:
+            for queue in active_queues: 
+                if mode == 'external':  # pragma: no cover
+                    call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
+                                            resource_set, job_security_time, queue,
+                                            initial_time_sec, initial_time_sql)
+                elif mode == 'batsim_sched_proxy':
+                    call_batsim_sched_proxy(plt, scheduled_jobs, all_slot_sets,
+                                            job_security_time, queue, initial_time_sec)
+                else:
+                    logger.error("Specified mode is unknown: " + mode)
 
-            # handle_new_AR_jobs
-            check_reservation_jobs(
-                plt, resource_set, queue.name, all_slot_sets, current_time_sec)
+                handle_waiting_reservation_jobs(queue.name, resource_set,
+                                                job_security_time, current_time_sec)
 
     #TODO remove ?
     #extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,

@@ -13,7 +13,8 @@ def get_all_queue_by_priority():
     return db.query(Queue).order_by(Queue.priority.desc()).all()
 
 
-def get_queues_by_priority():
+def get_queues_groupby_priority():
+    """ Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
     queues_ordered = db.query(Queue).order_by(Queue.priority.desc()).all()
     res = []
 
