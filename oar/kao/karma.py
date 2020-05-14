@@ -19,15 +19,16 @@ def perl_hash_2_dict(str):
     return d
 
 
-def get_sum_accounting_window(queue, window_start, window_stop):
+def get_sum_accounting_window(queues, window_start, window_stop):
+
 
     req = db.query(Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
-            .filter(Accounting.queue_name == queue)\
+            .filter(Accounting.queue_name.in_(tuple(queues)))\
             .filter(Accounting.window_start >= window_start)\
             .filter(Accounting.window_stop < window_stop)\
             .group_by(Accounting.consumption_type).all()
-
+    
     karma_sum_time_asked = 1
     karma_sum_time_used = 1
 
@@ -44,11 +45,11 @@ def get_sum_accounting_window(queue, window_start, window_stop):
 # window_start window_stop
 
 
-def get_sum_accounting_by_project(queue, window_start, window_stop):
+def get_sum_accounting_by_project(queues, window_start, window_stop):
 
     req = db.query(Accounting.project, Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
-        .filter(Accounting.queue_name == queue)\
+        .filter(Accounting.queue_name.in_(tuple(queues)))\
         .filter(Accounting.window_start >= window_start)\
         .filter(Accounting.window_stop < window_stop)\
         .group_by(Accounting.project, Accounting.consumption_type)\
@@ -68,12 +69,12 @@ def get_sum_accounting_by_project(queue, window_start, window_stop):
     return (karma_asked, karma_used)
 
 
-def get_sum_accounting_by_user(queue, window_start, window_stop):
+def get_sum_accounting_by_user(queues, window_start, window_stop):
 
     # print " window_start, window_stop", window_start, window_stop
     req = db.query(Accounting.user, Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
-        .filter(Accounting.queue_name == queue)\
+        .filter(Accounting.queue_name.in_(tuple(queues)))\
         .filter(Accounting.window_start >= window_start)\
         .filter(Accounting.window_stop <= window_stop)\
         .group_by(Accounting.user, Accounting.consumption_type)\
@@ -97,11 +98,6 @@ def get_sum_accounting_by_user(queue, window_start, window_stop):
 # Karma and Fairsharing stuff
 #
 def karma_jobs_sorting(queues, now, jids, jobs, plt):
-
-    # TODO multiqueues support
-    if len(queues) > 1:
-        logger.warning('Upto now only ONE QUEUE IS SUPPORTED')
-    queue = queues[0]
         
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
@@ -141,11 +137,11 @@ def karma_jobs_sorting(queues, now, jids, jobs, plt):
     window_stop = now
 
     karma_sum_time_asked, karma_sum_time_used = plt.get_sum_accounting_window(
-        queue, window_start, window_stop)
+        queues, window_start, window_stop)
     karma_projects_asked, karma_projects_used = plt.get_sum_accounting_by_project(
-        queue, window_start, window_stop)
+        queues, window_start, window_stop)
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
-        queue, window_start, window_stop)
+        queues, window_start, window_stop)
     #
     # compute karma for each job
     #
