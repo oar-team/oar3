@@ -104,8 +104,8 @@ def get_waiting_jobs(queues, reservation='None'):
     nb_waiting_jobs = 0
 
     query = db.query(Job).filter(Job.state == "Waiting")
-    if len(queues) == 1:
-        query = query.filter(Job.queue_name == queues[0])
+    if isinstance(queues, str):
+        query = query.filter(Job.queue_name == queues)
     else: 
         query = query.filter(Job.queue_name.in_(tuple(queues)))
 
