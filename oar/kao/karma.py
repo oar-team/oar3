@@ -180,14 +180,6 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
         user_ask = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
         job.karma = projet + user + user_ask
 
-        # print "job.karma", job.karma
-
-    # sort jids according to jobs' karma value
-    # print jids
-    karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma)
-    # print karma_ordered_jids
-    return karma_ordered_jids
-
 
 def karma_jobs_sorting(queues, now, jids, jobs, plt):
     evaluate_jobs_karma(queues, now, jids, jobs, plt)
