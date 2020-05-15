@@ -19,16 +19,17 @@ def minimal_db_initialization(request):
 
 @pytest.fixture(scope='module', autouse=True)
 def oar_conf(request):
-    config['FAIRSHARING_ENABLED'] = 'yes'
+    config['JOB_PRIORITY'] = 'FAIRSHARE'
 
     @request.addfinalizer
     def remove_fairsharing():
-        config['FAIRSHARING_ENABLED'] = 'no'
+        config['JOB_PRIORITY'] = 'FIFO'
 
 
 def del_accounting():
     db.session.execute(db['accounting'].delete())
     db.commit()
+
 
 def set_accounting(accountings, consumption_type):
     ins_accountings = []
@@ -44,6 +45,7 @@ def set_accounting(accountings, consumption_type):
 
     db.session.execute(db['accounting'].insert(), ins_accountings)
     db.commit()
+
 
 def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
                          project="default"):
