@@ -1,24 +1,18 @@
-# coding: utf-8
-import sys
-import pwd
 import time
 import re
 import os
-import getpass
 import zmq
 import random
 import string
 import socket
 from socket import gethostname
-from sqlalchemy import distinct
-from oar.lib import (db, config, get_logger, Resource, AssignedResource)
+from oar.lib import (db, config, get_logger)
 from oar.lib import logger as log
-import signal, psutil
-from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
+from oar.lib.event import add_new_event
 
-from pwd import getpwnam
-
-from multiprocessing import Process
+import signal
+import psutil
+from subprocess import (Popen, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
 # Constants
 DEFAULT_CONFIG = {
@@ -43,9 +37,8 @@ DEFAULT_CONFIG = {
     'PROLOGUE_EXEC_FILE': None,
     'EPILOGUE_EXEC_FILE': None,
     'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
-    'SCHEDULER_JOB_SECURITY_TIME': '60', # TODO should be int
+    'SCHEDULER_JOB_SECURITY_TIME': '60',  # TODO should be int
     'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
-    'OPENSSH_CMD': 'ssh',
     'JOB_RESOURCE_MANAGER_FILE': '/etc/oar/job_resource_manager_cgroups.pl',
     'MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
     'SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
@@ -54,30 +47,28 @@ DEFAULT_CONFIG = {
     'NODE_FILE_DB_FIELD': 'network_address',
     'NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
     'NOTIFY_TCP_SOCKET_ENABLED': 1,
-    'SUSPECTED_HEALING_TIMEOUT': 10, 
+    'SUSPECTED_HEALING_TIMEOUT': 10,
     'SUSPECTED_HEALING_EXEC_FILE': None,
     'DEBUG_REMOTE_COMMANDS': 'YES',
     'COSYSTEM_HOSTNAME': '127.0.0.1',
     'DEPLOY_HOSTNAME': '127.0.0.1',
     'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
-    'OAREXEC_DEBUG_MODE' : '1',
+    'OAREXEC_DEBUG_MODE': '1',
     'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6672,
+    'HULOT_PORT': 6672,
     'WALLTIME_CHANGE_ENABLED': 'NO',
-    'WALLTIME_MAX_INCREASE': 0.0,
-    'WALLTIME_MIN_FOR_CHANGE' : 0.0,
-    'WALLTIME_CHANGE_APPLY_TIME' :0.0,
-    'WALLTIME_INCREMENT' :0.0,
-    'WALLTIME_ALLOWED_USERS_TO_FORCE': '',
+    'WALLTIME_MIN_FOR_CHANGE': 0.0,
+    'WALLTIME_CHANGE_APPLY_TIME': 0.0,
+    'WALLTIME_INCREMENT': 0.0,
     'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
     'WALLTIME_MAX_INCREASE': "{'default': 7200}",
     'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}",
     'QUOTAS': 'no',
-    'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json', 
-    'QUOTAS_PERIOD': 1296000, # 15 days in seconds
-    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead', # ALL w/ correspond to all default source 
-    'QUOTAS_WINDOW_TIME_LIMIT': 4*1296000 # 2 months, window time limit for a scheduling round where to place a job  
-    }
+    'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json',
+    'QUOTAS_PERIOD': 1296000,  # 15 days in seconds
+    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead',  # ALL w/ correspond to all default source
+    'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000  # 2 months, window time limit for a scheduling round where to place a job
+}
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -85,14 +76,15 @@ zmq_context = None
 almighty_socket = None
 bipbip_commander_socket = None
 
+
 def notify_user(job, state, msg):  # pragma: no cover
-    
+
     if job.notify:
         tags = ['RUNNING', 'END', 'ERROR', 'INFO', 'SUSPENDED', 'RESUMING']
         m = re.match(r'^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$', job.notify)
         if m:
             tags = m.group(1).split(',')
-            
+
         if state in tags:
             m = re.match(r'^.*mail\s*:(.+)$', job.notify)
             if m:
@@ -109,9 +101,9 @@ def notify_user(job, state, msg):  # pragma: no cover
                     host = job.info_type.split(':')[0]
                     
                     cmd = '{} -x -T {} OARDO_BECOME_USER={} oardodo {} {} {} {} "{}"  > /dev/null 2>&1'.\
-                                                          format(config['OPENSSH_CMD'], host,
-                                                                 job.user, m.group(1), job.id, job.name,
-                                                                 state, msg)
+                        format(config['OPENSSH_CMD'], host,
+                               job.user, m.group(1), job.id, job.name,
+                               state, msg)
                     tools_logger.error(cmd)
                     try:
                         p = check_output(cmd, stderr=STDOUT, shell=True,
@@ -119,7 +111,7 @@ def notify_user(job, state, msg):  # pragma: no cover
                     except CalledProcessError as e:
                         tools_logger.error('User notification failed: ' + e.output)
                         return False
-                    except TimeoutExpired as e:
+                    except TimeoutExpired:
                         p.kill()
                         msg = 'User notification failed: ssh timeout (cmd: ' +\
                               cmd + ')'
@@ -133,10 +125,10 @@ def notify_user(job, state, msg):  # pragma: no cover
     return True
 
 
-def send_mail(job, mail_address, subject, msg_content): # pragma: no cover
+def send_mail(job, mail_address, subject, msg_content):  # pragma: no cover
     import smtplib
     from email.message import EmailMessage
-    
+
     msg = EmailMessage()
     msg.set_content(msg_content)
 
@@ -148,30 +140,19 @@ def send_mail(job, mail_address, subject, msg_content): # pragma: no cover
     s.send_message(msg)
     s.quit()
 
-    
+
 def create_almighty_socket():  # pragma: no cover
     global zmq_context
     global almighty_socket
-    
+
     config.setdefault_config(DEFAULT_CONFIG)
-    
+
     if not zmq_context:
         zmq_context = zmq.Context()
-        
+
     almighty_socket = zmq_context.socket(zmq.PUSH)
-    almighty_socket.connect('tcp://' + config['SERVER_HOSTNAME'] + ':'
-                             + config['APPENDICE_SERVER_PORT'])
-    
-    #global almighty_socket
-    #almighty_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #server = config["SERVER_HOSTNAME"]
-    #port = config["SERVER_PORT"]
-    #try:
-    #    almighty_socket.connect((server, port))
-    #except socket.error as exc:
-    #    tools_logger.error("Connection to Almighty" + server + ":" + str(port) +
-    #                 " raised exception socket.error: " + str(exc))
-    #    sys.exit(1)   
+    almighty_socket.connect('tcp://' + config['SERVER_HOSTNAME'] + ':' + config['APPENDICE_SERVER_PORT'])
+
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
@@ -183,7 +164,7 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
         message['job_id'] = job_id
     if args:
         message['args'] = args
-        
+
     completed = True
     try:
         almighty_socket.send_json(message)
@@ -191,22 +172,23 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
         completed = False
     return completed
 
+
 def create_bipbip_commander_socket():  # pragma: no cover
     global zmq_context
     global bipbip_commander_socket
-    
+
     config.setdefault_config(DEFAULT_CONFIG)
     if not zmq_context:
         zmq_context = zmq.Context()
     bipbip_commander_socket = zmq_context.socket(zmq.PUSH)
-    bipbip_commander_socket.connect('tcp://' + config['BIPBIP_COMMANDER_SERVER']\
-                                    + ':' + config['BIPBIP_COMMANDER_PORT'])
-    
+    bipbip_commander_socket.connect('tcp://' + config['BIPBIP_COMMANDER_SERVER'] + ':' + config['BIPBIP_COMMANDER_PORT'])
+
+
 def notify_bipbip_commander(message):  # pragma: no cover
-    
+
     if not bipbip_commander_socket:
         create_bipbip_commander_socket()
-        
+
     completed = True
     try:
         bipbip_commander_socket.send_json(message)
@@ -214,11 +196,13 @@ def notify_bipbip_commander(message):  # pragma: no cover
         completed = False
     return completed
 
-def notify_interactif_user(job, message): # pragma: no cover
+
+def notify_interactif_user(job, message):  # pragma: no cover
     addr, port = job.info_type.split(':')
     return notify_tcp_socket(addr, port, message)
 
-# TODO: refactor to use zmq,  TO CARE of notify_interactif_user 
+
+# TODO: refactor to use zmq,  TO CARE of notify_interactif_user
 def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -231,23 +215,25 @@ def notify_tcp_socket(addr, port, message):  # pragma: no cover
         return 0
     message += '\n'
     nb_sent = tcp_socket.send(message.encode('utf8'))
-    
+
     tcp_socket.close()
     return nb_sent
 
-def pingchecker(hosts): # pragma: no cover
+
+def pingchecker(hosts):  # pragma: no cover
     """Check compute nodes remotely accordindly to method specified in oar.conf"""
     cmd = ''
     ip2hostname = {}
     pipe_hosts = None
     add_bad_hosts = False
 
-    if 'PINGCHECKER_TAKTUK_ARG_COMMAND' in config and 'TAKTUK_CMD' in config :
+    if 'PINGCHECKER_TAKTUK_ARG_COMMAND' in config and 'TAKTUK_CMD' in config:
         cmd = config['TAKTUK_CMD']\
               + " -c '" + config['OPENSSH_CMD'] + "'"\
               + ' -o status=\'"STATUS $host $line\\n"\''\
               + ' -f - ' + config['PINGCHECKER_TAKTUK_ARG_COMMAND']
         pipe_hosts = ('\n'.join(hosts) + '\n').encode('utf-8')
+
         def filter_output(line, _):
             m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line)
             if m and m.group(2) == '0':
@@ -258,21 +244,24 @@ def pingchecker(hosts): # pragma: no cover
         cmd = config['PINGCHECKER_SENTINELLE_SCRIPT_COMMAND']\
               + " -c '" + config['OPENSSH_CMD'] + "' -f -  "
         pipe_hosts = ('\n'.join(hosts) + '\n').encode('utf-8')
+
         def filter_output(line, _):
-             m = re.match(r'^([\w\.\-]+)\s:\sBAD\s.*$', line)
-             if m and m.group(1):
-                 return m.group(1)
+            m = re.match(r'^([\w\.\-]+)\s:\sBAD\s.*$', line)
+            if m and m.group(1):
+                return m.group(1)
 
     elif 'PINGCHECKER_NMAP_COMMAND' in config:
         cmd = config['PINGCHECKER_NMAP_COMMAND'] + ' -oG - ' + ' '.join(hosts)
         ip2hostname = {socket.gethostbyname(h): h for h in hosts}
+
         def filter_output(line, ip2hostname):
             m = re.match(r'^Host:\s(\d+\.\d+\.\d+\.\d+).*/open/.*$', line)
             if m and m.group(1):
                 return ip2hostname[m.group(1)]
     elif 'PINGCHECKER_GENERIC_COMMAND' in config:
-        add_bad_hosts = True 
+        add_bad_hosts = True
         cmd = config['PINGCHECKER_GENERIC_COMMAND'] + " ".join(hosts)
+
         def filter_output(line, _):
             m = re.match(r'^\s*([\w\.\-]+)\s*$', line)
             if m and m.group(1):
@@ -281,31 +270,33 @@ def pingchecker(hosts): # pragma: no cover
     elif 'PINGCHECKER_FPING_COMMAND' in config:
         add_bad_hosts = True
         cmd = config['PINGCHECKER_FPING_COMMAND'] + ' -u ' + ' '.join(hosts)
+
         def filter_output(line, _): 
-            m = re.match(r'^\s*([\w\.\d-]+)\s*(.*)$', line) 
+            m = re.match(r'^\s*([\w\.\d-]+)\s*(.*)$', line)
             if m and m.group(1) and 'alive' in m.group(2):
                 return m.group(1)
     else:
         tools_logger.debug('[PingChecker] no PINGCHECKER configuration found')
 
-    return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts) 
+    return pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts)
 
-def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log): # pragma: no cover
+
+def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log):  # pragma: no cover
     log.debug('[PingChecker] command to run : {}'.format(cmd))
-    
+
     if add_bad_hosts:
         bad_hosts_list = []
-    else: 
+    else:
         bad_hosts = {h: True for h in hosts}
-  
+
     env = os.environ.copy()
     env['ENV'] = ''
     env['IFS'] = ''
     # Launch taktuk
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, env=env)
 
-    try: 
-        out, err = p.communicate(pipe_hosts, 2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+    try:
+        out, err = p.communicate(pipe_hosts, 2 * DEFAULT_CONFIG['TIMEOUT_SSH'])
     except TimeoutExpired:
         p.kill()
         log.debug('[PingChecker] TimeoutExpired')
@@ -313,9 +304,9 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
 
     output = out.decode()
     error = err.decode()
-    
+
     for line in output.split('\n'):
-        host = filter_output(*(line,ip2hostname))
+        host = filter_output(*(line, ip2hostname))
         if host and host in bad_hosts:
             if add_bad_hosts:
                 bad_hosts_list.append(host)
@@ -328,11 +319,12 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
         return (1, list(bad_hosts.keys()))
 
 
-def send_log_by_email(title, message): # pragma: no cover
-    #raise NotImplementedError("TODO")
+def send_log_by_email(title, message):  # pragma: no cover
+    raise NotImplementedError("TODO")
     return
 
-def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']): # pragma: no cover
+
+def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):  # pragma: no cover
     # Launch admin script
     error_msg = ''
     try:
@@ -344,57 +336,61 @@ def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']): # pragma: no 
 
     return error_msg
 
-def kill_child_processes(parent_pid, sig=signal.SIGTERM): # pragma: no cover
+
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):  # pragma: no cover
     """from: https://stackoverflow.com/questions/3332043/obtaining-pid-of-child-process"""
     try:
-      parent = psutil.Process(parent_pid)
+        parent = psutil.Process(parent_pid)
     except psutil.NoSuchProcess:
-      return
+        return
     children = parent.children(recursive=True)
     for process in children:
-      process.send_signal(sig)
+        process.send_signal(sig)
 
 
-def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal): # pragma: no cover
+def fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):  # pragma: no cover
     raise NotImplementedError("TODO")
+
 
 def get_oar_pid_file_name(job_id):
     """Get the name of the file which contains the pid of oarexec"""
     return config['OAREXEC_DIRECTORY'] + '/' + config['OAREXEC_PID_FILE_NAME'] + str(job_id)
 
-def get_oar_user_signal_file_name(job_id): # pragma: no cover
+
+def get_oar_user_signal_file_name(job_id):  # pragma: no cover
     """Get the name of the file which contains the signal given by the user"""
     return config['OAREXEC_DIRECTORY'] + '/USER_SIGNAL_' + str(job_id)
 
-def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None): # pragma: no cover
+
+def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):  # pragma: no cover
     """Send the given signal to the right oarexec process
-    args : host name, job id, signal, wait or not (0 or 1), 
-    DB ref (to close it in the child process), ssh cmd, user defined signal 
+    args : host name, job id, signal, wait or not (0 or 1),
+    DB ref (to close it in the child process), ssh cmd, user defined signal
     for oardel -s (null by default if not used)
     return an array with exit values.
     """
-    filename = get_oar_pid_file_name(job_id);
+    filename = get_oar_pid_file_name(job_id)
     cmd = ssh_cmd.split()
     cmd += ['-x', '-T', host]
     if user_signal:
         signal_file = get_oar_user_signal_file_name(job_id)
-        cmd.append("bash -c 'echo " + user_signal + " > " + signal_file + " && test -e " + filename + " && PROC=$(cat "\
+        cmd.append("bash -c 'echo " + user_signal + " > " + signal_file + " && test -e " + filename + " && PROC=$(cat " \
                    + filename + ") && kill -s CONT $PROC && kill -s " + signal + " $PROC'")
     else:
-        cmd.append("bash -c 'test -e " + filename + " && PROC=$(cat " + filename + ") && kill -s CONT $PROC && kill -s "\
+        cmd.append("bash -c 'test -e " + filename + " && PROC=$(cat " + filename + ") && kill -s CONT $PROC && kill -s " \
                    + signal + " $PROC'")
 
     comment = None
     if wait:
-        try: 
+        try:
             check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
         except CalledProcessError as e:
             comment = 'The kill command return a bad exit code (' + str(e.returncode)\
-                      + 'for the job ' + str(job_id) +  'on the node ' + head_host\
+                      + 'for the job ' + str(job_id) + 'on the node ' + host\
                       + ', output: ' + str(e.output)
-        except TimeoutExpired as e:
-            comment = 'Cannot contact ' + head_host + ', operation timouted. Cannot send kill signal to the job '\
-                      + str(job.id) + ' on ' + head_host + ' node'
+        except TimeoutExpired:
+            comment = 'Cannot contact ' + host + ', operation timouted. Cannot send kill signal to the job '\
+                      + str(job_id) + ' on ' + host + ' node'
     else:
         # TODO kill after timeout, note Popen launchs process in background
         Popen(cmd)
@@ -404,6 +400,7 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None): # pra
 # get_date
 # returns the current time in the format used by the sql database
 
+
 # TODO
 def send_to_hulot(cmd, data):
     config.setdefault_config({"FIFO_HULOT": "/tmp/oar_hulot_pipe"})
@@ -412,19 +409,20 @@ def send_to_hulot(cmd, data):
         with open(fifoname, 'w') as fifo:
             fifo.write('HALT:%s\n' % data)
             fifo.flush()
-    except IOError as e: # pragma: no cover
+    except IOError as e:  # pragma: no cover
         e.strerror = 'Unable to communication with Hulot: %s (%s)' % fifoname % e.strerror
         tools_logger.error(e.strerror)
         return 1
     return 0
 
+
 def get_default_suspend_resume_file():
     raise NotImplementedError("TODO")
 
 
-def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
+def launch_oarexec(cmd, data_str, oarexec_files):  # pragma: no cover
     # Prepare string to transfer to perl interpreter on head node
-      
+
     str_to_transfer = ''
     for oarexec_file in oarexec_files:
         with open(oarexec_file, 'r') as mg_file:
@@ -434,8 +432,8 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
     # Launch perl interpreter on remote
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
-    try: 
-        out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+    try:
+        out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * DEFAULT_CONFIG['TIMEOUT_SSH']))
     except TimeoutExpired:
         p.kill()
         tools_logger.debug("Oarexec's Launching TimeoutExpired")
@@ -444,9 +442,9 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
     output = out.decode()
     error = err.decode()
 
-    #print(output)
-    #print(error)
-    
+    # print(output)
+    # print(error)
+
     if config['OAREXEC_DEBUG_MODE'] in ['1', 1, 'yes', 'YES']:
         if output:
             tools_logger.debug('SSH stdout: ' + output)
@@ -459,13 +457,14 @@ def launch_oarexec(cmd, data_str, oarexec_files): # pragma: no cover
             return True
     return False
 
-def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None): # pragma: no cover
+
+def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None):  # pragma: no cover
     # args : array of host to connect to, hashtable to transfer, name of the file containing the perl script,
     # action to perform (start or stop), SSH command to use, taktuk cmd or undef
 
     str_to_transfer = ''
     with open(manage_file, 'r') as mg_file:
-         str_to_transfer = mg_file.read()
+        str_to_transfer = mg_file.read()
     str_to_transfer += '__END__\n' + data_str
 
     if not taktuk_cmd:
@@ -479,14 +478,14 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
             output_connector_tpl = ''
 
         cmd = taktuk_cmd\
-              + " -c '" + ssh_command + "'"\
-              + ' -o status=\'"STATUS $host $line\\n"\''\
-              + output_connector_tpl\
-              + ' -f '\
-              + fifoname\
-              + ' broadcast exec [ perl - '\
-              + action\
-              + ' ], broadcast input file [ - ], broadcast input close'
+            + " -c '" + ssh_command + "'"\
+            + ' -o status=\'"STATUS $host $line\\n"\''\
+            + output_connector_tpl\
+            + ' -f '\
+            + fifoname\
+            + ' broadcast exec [ perl - '\
+            + action\
+            + ' ], broadcast input file [ - ], broadcast input close'
 
         # Launch taktuk
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
@@ -496,7 +495,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
             tools_logger.error('Trouble with Taktuk, returncode :' + str(child_returncode))
 
         bad_hosts = {}
-        # Send hosts to address 
+        # Send hosts to address
         w = open(fifoname, 'w')
         for host in hosts:
             bad_hosts[host] = True
@@ -504,12 +503,12 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
         w.close()
         os.remove(fifoname)
 
-        try: 
-            out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=2*DEFAULT_CONFIG['TIMEOUT_SSH'])
+        try:
+            out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * DEFAULT_CONFIG['TIMEOUT_SSH']))
         except TimeoutExpired:
             tools_logger.error('Popen.comminicate TimeoutExpired')
             p.kill()
-            #m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
+            # m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
             return (0, [])
 
         output = out.decode()
@@ -519,9 +518,9 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
             tools_logger.debug('Taktuk output: ' + output)
             if error:
                 tools_logger.debug('Taktuk error: ' + error)
-            
+
         for line in output.split('\n'):
-            m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line) 
+            m = re.match(r'^STATUS ([\w\.\-\d]+) (\d+)$', line)
             if m:
                 if m.group(2) == '0':
                     # Host is OK
@@ -530,10 +529,10 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
 
         return (1, list(bad_hosts.keys()))
 
-    return (0, []) 
+    return (0, [])
 
 
-def get_date(): # pragma: no cover
+def get_date():  # pragma: no cover
     if db.engine.dialect.name == 'sqlite':
         req = "SELECT strftime('%s','now')"
     else:
@@ -542,7 +541,8 @@ def get_date(): # pragma: no cover
     result = db.session.execute(req).scalar()
     return int(result)
 
-def get_time(): # pragma: no cover
+
+def get_time():  # pragma: no cover
     return(time.time())
 
 
@@ -553,14 +553,15 @@ def hms_str_to_duration(hms_str):
          1:1 -> 3660
          0:2:10 -> 130
     """
-    hms=hms_str.split(':')
+    hms = hms_str.split(':')
     if len(hms) == 1:
-        return (3600*int(hms[0]))
+        return (3600 * int(hms[0]))
     elif len(hms) == 2:
-        return (3600*int(hms[0]) + 60*int(hms[1]))
+        return (3600 * int(hms[0]) + 60 * int(hms[1]))
     else:
-        return (3600*int(hms[0]) + 60*int(hms[1]) + int(hms[2]))
-    
+        return (3600 * int(hms[0]) + 60 * int(hms[1]) + int(hms[2]))
+
+
 def sql_to_local(date):
     """Converts a date specified in the format used by the sql database to an
     integer local time format
@@ -569,10 +570,12 @@ def sql_to_local(date):
     t = time.strptime(date, "%Y %m %d %H %M %S")
     return int(time.mktime(t))
 
+
 def local_to_sql(local):
     """Converts a date specified in an integer local time format to the format used
     by the sql database"""
     return time.strftime("%F %T", time.localtime(local))
+
 
 def sql_to_hms(t):
     """Converts a date specified in the format used by the sql database to hours,
@@ -580,30 +583,35 @@ def sql_to_hms(t):
     hms = t.split(':')
     return (hms[0], hms[1], hms[2])
 
+
 def hms_to_sql(hour, min, sec):
     """Converts a date specified in hours, minutes, secondes values to the format
     used by the sql database"""
     return(str(hour) + ":" + str(min) + ":" + str(sec))
+
 
 def hms_to_duration(hour, min, sec):
     """Converts a date specified in hours, minutes, secondes values to a duration
     in seconds."""
     return int(hour) * 3600 + int(min) * 60 + int(sec)
 
+
 def duration_to_hms(t_sec):
     """Converts a date specified as a duration in seconds to hours, minutes,
     secondes values"""
     hour = t_sec // 3600
-    min = (t_sec - hour * 3600) // 60 
+    min = (t_sec - hour * 3600) // 60
     sec = t_sec % 60
 
     return (hour, min, sec)
+
 
 def duration_to_sql(t):
     """converts a date specified as a duration in seconds to the format used by the
     sql database"""
     hour, min, sec = duration_to_hms(t)
     return hms_to_sql(hour, min, sec)
+
 
 def duration_to_sql_signed(duration):
     """As duration_to_sql but with sign"""
@@ -612,8 +620,9 @@ def duration_to_sql_signed(duration):
         sign = '+'
     elif duration < 0:
         sign = '-'
-    (hour, min, sec) = duration_to_hms(abs(duration));
+    (hour, min, sec) = duration_to_hms(abs(duration))
     return sign + hms_to_sql(hour, min, sec)
+
 
 def sql_to_duration(t):
     """Converts a date specified in the format used by the sql database to a
@@ -621,11 +630,12 @@ def sql_to_duration(t):
     (hour, min, sec) = sql_to_hms(t)
     return hms_to_duration(hour, min, sec)
 
+
 def get_duration(seconds):
     """Convert seconds to compound duration taken from rosettacode site
     https://rosettacode.org/wiki/Convert_seconds_to_compound_duration#Python
     """
-    t= []
+    t = []
     for dm in (60, 60, 24, 7):
         seconds, m = divmod(seconds, dm)
         t.append(m)
@@ -635,28 +645,30 @@ def get_duration(seconds):
                      if num)
 
 
-def send_checkpoint_signal(job): # pragma: no cover
+def send_checkpoint_signal(job):  # pragma: no cover
     raise NotImplementedError("TODO")
     tools_logger.debug("Send checkpoint signal to the job " + str(job.id))
     tools_logger.warning("Send checkpoint signal NOT YET IMPLEMENTED ")
     # Have a look to  check_jobs_to_kill/oar_meta_sched.pl
 
 
-def get_username(): # pragma: no cover
-    #return pwd.getpwuid( os.getuid() ).pw_name
+def get_username():  # pragma: no cover
+    # return pwd.getpwuid( os.getuid() ).pw_name
     return os.environ['OARDO_USER']
+
 
 def check_resource_property(prop):
     """ Check if a property can be deleted or created by a user
     return 0 if all is good otherwise return 1
     """
     if prop in ['resource_id', 'network_address', 'state', 'state_num', 'next_state',
-           'finaud_decision', 'next_finaud_decision', 'besteffort', 'desktop_computing',
-           'deploy', 'expiry_date', 'last_job_date', 'available_upto', 'last_available_upto',
-           'walltime', 'nodes', 'type', 'suspended_jobs', 'scheduler_priority', 'cpuset', 'drain']:
+                'finaud_decision', 'next_finaud_decision', 'besteffort', 'desktop_computing',
+                'deploy', 'expiry_date', 'last_job_date', 'available_upto', 'last_available_upto',
+                'walltime', 'nodes', 'type', 'suspended_jobs', 'scheduler_priority', 'cpuset', 'drain']:
         return True
     else:
         return False
+
 
 def check_resource_system_property(prop):
     """Check if a property can be manipulated by a user
@@ -669,6 +681,7 @@ def check_resource_system_property(prop):
     else:
         return False
 
+
 def format_ssh_pub_key(key, cpuset, user, job_user=None):
     """Add right environment variables to the given public key"""
     if not job_user:
@@ -676,7 +689,7 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
     if not cpuset:
         cpuset = 'undef'
 
-    formated_key = 'environment="OAR_CPUSET=' + cpuset + '",environment="OAR_JOB_USER='\
+    formated_key = 'environment="OAR_CPUSET=' + cpuset + '",environment="OAR_JOB_USER=' \
                                  + job_user + '" ' + key + "\n"
     return formated_key
 
@@ -693,7 +706,7 @@ def format_job_message_text(job_name, estimated_nb_resources, estimated_walltime
         job_mode = 'R'
     elif job_type == 'INTERACTIVE':
         job_mode = 'I'
-        
+
     types_to_text = ''
     if types_list:
         types_to_text = 'T=' + '|'.join(types_list) + ','
@@ -712,19 +725,18 @@ def format_job_message_text(job_name, estimated_nb_resources, estimated_walltime
 
     if additional_msg:
         job_message += ' (' + additional_msg + ')'
-    
-    return(job_message)
 
+    return(job_message)
 
 
 def limited_dict2hash_perl(d):
     """Serialize python dictionnary to string hash perl representaion"""
     s = '{'
-    for k,v in d.items():
+    for k, v in d.items():
         s = s + "'" + k + "' => "
-        #print (s + ' - ' + str(v) + ' - ' + str(type(v)))
+        # print (s + ' - ' + str(v) + ' - ' + str(type(v)))
         if v is None:
-            s = s + 'undef'  
+            s = s + 'undef'
         elif isinstance(v, dict):
             if not v:
                 s = s + '{}'
@@ -739,6 +751,7 @@ def limited_dict2hash_perl(d):
             s = s + str(v)
         s = s + ','
     return s[:-1] + '}'
+
 
 def resources2dump_perl(resources):
     a = '['
@@ -756,10 +769,11 @@ def resources2dump_perl(resources):
     #             h = h + str(v)
     #         s = s + ',
 
-def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resource_file): # pragma: no cover
+
+def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resource_file):  # pragma: no cover
     """ Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
-    """           
+    """
     script = "if [ \"a\$TERM\" == \"a\" ] || [ \"x\$TERM\" == \"xunknown\" ]; then export TERM=xterm; fi;"\
               + (job.env if job.env else '')\
               + "export OAR_FILE_NODES=\"" + node_file + "\";"\
@@ -792,8 +806,9 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
               + " fi;"\
               + " (exec -a -\${SHELL##*/} \$SHELL);"\
               + " exit 0"
-    
+
     return(script)
+
 
 def check_process(pid):
     """ Check for the existence process. """
