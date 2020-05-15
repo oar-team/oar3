@@ -12,7 +12,7 @@ from oar.lib import logger as log
 
 import signal
 import psutil
-from subprocess import (Popen, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
+from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
 
 # Constants
 DEFAULT_CONFIG = {
