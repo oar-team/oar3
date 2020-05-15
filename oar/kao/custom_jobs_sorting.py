@@ -1,4 +1,3 @@
-# coding: utf-8
 """Collection of Job Sorting functions to provide priority policies
 """
 from oar.lib import (get_logger, config)
@@ -7,7 +6,8 @@ import json
 
 logger = get_logger("oar.kamelot")
 
-def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
+
+def jobs_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
     priority_config = json.loads(str_config)
 
     # import pdb; pdb.set_trace()
@@ -15,10 +15,8 @@ def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
         waiting_time_weight = float(priority_config['WAITING_TIME_WEIGHT'])
     else:
         waiting_time_weight = 0.0
-
-
     #
-    # establish  job priori 
+    # establish job priority
     #
 
     for job in jobs.values():
@@ -29,11 +27,10 @@ def job_sorting_simple_priority(queue, now, jids, jobs, str_config, plt):
                 logger.warning("job priority failed to convert to float: " % job.types['priority'])
                 priority = 0.0
 
-        job.karma = priority + waiting_time_weight * float(now-job.submission_time) / float(now)
-
+        job.priority = priority + waiting_time_weight * float(now - job.submission_time) / float(now)
 
     # sort jids according to jobs' karma value
     # print jids
-    karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma, reverse=True)
+    ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
     # print karma_ordered_jids
-    return karma_ordered_jids
+    return ordered_jids

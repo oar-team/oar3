@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 import sys
 
 from oar.lib import config, get_logger
@@ -8,9 +7,10 @@ from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
                                 schedule_id_jobs_ct)
+from oar.kao.multifactor_priority import multifactor_jobs_sorting
 from oar.kao.karma import karma_jobs_sorting
 from oar.kao.quotas import Quotas
-import oar.kao.advanced_job_sorting
+import oar.kao.custom_jobs_sorting
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -24,34 +24,36 @@ DEFAULT_CONFIG = {
     'FAIRSHARING_ENABLED': 'no',
     'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30',
     'QUOTAS': 'no',
-    'JOB_SORTING': 'default',
-    'JOB_SORTING_CONFIG': ''
+    'JOB_PRIORITY': 'FIFO',
+    'CUSTOM_JOB_SORTING': '',
+    'CUSTOM_JOB_SORTING_CONFIG_FILE': ''
 }
 
 
 logger = get_logger("oar.kamelot")
 
-def karma_job_sorting(queue, now, waiting_jids, waiting_jobs, plt):
+
+def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
 
     waiting_ordered_jids = waiting_jids
-    #
-    # Karma job sorting (Fairsharing)
-    #
-    if "FAIRSHARING_ENABLED" in config:
-        if config["FAIRSHARING_ENABLED"] == "yes":
-            waiting_ordered_jids = karma_jobs_sorting(queue, now, waiting_jids, waiting_jobs, plt)
 
-    #
-    # Advanced job sorting
-    #
-    if ("JOB_SORTING" in config) and (config["JOB_SORTING"] != "default"):
-        job_sorting_func = getattr(oar.kao.advanced_job_sorting,
-                                   'job_sorting_%s' % config["JOB_SORTING"])
-        if "JOB_SORTING_CONFIG" not in config:
-            config["JOB_SORTING_CONFIG"] = "{}"
+    if "JOB_PRIORITY" in config:
+        if config["JOB_PRIORITY"] == "FAIRSHARE":
+            #
+            # Karma job sorting (Fairsharing)
+            #
+            waiting_ordered_jids = karma_jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+        elif config["JOB_PRIORITY"] == "MULTIFACTOR":
+            waiting_ordered_jids = multifactor_jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
 
-            waiting_ordered_jids = job_sorting_func(queue, now, waiting_jids,
-                                                    waiting_jobs, config["JOB_SORTING_CONFIG"], plt)
+        elif config["JOB_PRIORITY"] == "CUSTOM":
+            custom_jobs_sorting_func = getattr(oar.kao.custom_jobs_sorting,
+                                               'jobs_sorting_%s' % config["CUSTOM_JOB_SORTING"])
+            if "CUSTOM_JOB_SORTING_CONFIG" not in config:
+                config["CUSTOM_JOB_SORTING_CONFIG"] = "{}"
+
+            waiting_ordered_jids = custom_jobs_sorting_func(queues, now, waiting_jids, waiting_jobs,
+                                                            config["CUSTOM_JOB_SORTING_CONFIG"], plt)
 
     return waiting_ordered_jids
 
@@ -76,7 +78,7 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
         plt.get_data_jobs(
             waiting_jobs, waiting_jids, resource_set, job_security_time)
 
-        waiting_ordered_jids = karma_job_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Scheduled
@@ -137,7 +139,7 @@ def schedule_cycle(plt, now, queues=["default"]):
 
         if pseudo_jobs != []:
             initial_slot_set.split_slots_jobs(pseudo_jobs)
-            
+
         #
         # Get  additional waiting jobs' data
         #
@@ -145,7 +147,7 @@ def schedule_cycle(plt, now, queues=["default"]):
             waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         # Job sorting (karma and advanced)
-        waiting_ordered_jids = karma_job_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
@@ -182,6 +184,7 @@ def schedule_cycle(plt, now, queues=["default"]):
     else:
         logger.info("no waiting jobs")
 
+
 #
 # Main function
 #
@@ -195,7 +198,6 @@ def main():
     if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
         Quotas.enable(plt.resource_set())
 
-    
     logger.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:
