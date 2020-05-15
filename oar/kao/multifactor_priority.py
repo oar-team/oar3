@@ -1,47 +1,98 @@
 import simplejson as json
 from oar.lib import (config, get_logger)
+
+from oar.kao.karma import evaluate_jobs_karma
 # Log category
 
 logger = get_logger('oar.kao.priorty')
 
-def apply_priority(queues, now, jids, jobs, plt):
+
+def evaluate_jobs_priority(queues, now, jids, jobs, plt):
     """
-    Job's Priority = Sum of (criterion_weight * criterion_factor) where criteria are: 
+    Job's Priority = Sum of (criterion_weight * criterion_factor) where criteria are:
     age, queue, work, size, karma, qos, nice
-       
+
     Criterion Factors:
 
-    age_factor = max(1, age_coef * age) 
+    age_factor = max(1, age_coef * age)
     queue_factor = f(queue)
-    work_factor = 1 / min(1, work) [small],  1 - 1 / min(1, work) [big] 
-    size_factor = 1 - (size / cluster_size) [small],  1 - (size / cluster_size) [big] 
+    work_factor = 1 / min(1, work) [smalls priortized],  1 - 1 / min(1, work) [bigs priortized]
+    size_factor = 1 - (size / cluster_size) [smalls priortized],  (size / cluster_size) [bigs priortized]
     karma_factor = 1 / (1 + karma)
-    qos_factor = 0.0 - 1.0  
-    nice_factor = max(nice, 1.0) 
+    qos_factor = 0.0 - 1.0 # must be fixed through admission rules
+    nice_factor = max(nice, 1.0)
 
     Criterion Weights:
 
-    Each criterion is positive integer 
+    Each criterion is positive integer
 
-
-    Note: The priorty approach is largely inspired from Slurm's one
+    Note: The priority approach is largely inspired by Slurm's one
     """
-    
+
     age_weight = 0
-    age_coef = 1.65e-06 #7 days in seconds
+    age_coef = 1.65e-06  # 7 days in seconds
     queue_weight = 0
     work_weight = 0
-    work_mode = 0 # priorize small job
+    work_mode = 0  # prioritize small jobs
     size_weight = 0
-    siez_mode = 0 # priorize small job
+    size_mode = 0  # prioritize small jobs
     karma_weight = 0
     qos_weight = 0
     nice_weight = 0
 
+    queue_coefs = {}
+
     priority_conf_filename = config['PRIORITY_CONF_FILE']
-    with open(quotas_rules_filename) as json_file:
+    with open(priority_conf_filename) as json_file:
         json_priority = json.load(json_file)
+        if ('age_weight') in json_priority:
+            age_weight = json_priority['age_weight']
+        if ('age_coef') in json_priority:
+            age_coef = json_priority['age_coef']
+        if ('queue_weight') in json_priority:
+            queue_weight = json_priority['queue_weight']
+        if ('queue_coefs') in json_priority:
+            queue_coefs = json_priority['queue_coefs']
+        if ('work_weight') in json_priority:
+            work_weight = json_priority['work_weight']
+        if ('work_mode') in json_priority:
+            work_mode = json_priority['work_mode']
+        if ('size_weight') in json_priority:
+            size_weight = json_priority['size_weight']
+        if ('size_mode') in json_priority:
+            size_mode = json_priority['size_mode']
+        if ('karma_weight') in json_priority:
+            karma_weight = json_priority['karma_weight']
+        if ('qos_weight') in json_priority:
+            qos_weight = json_priority['qos_weight']
+        if ('nice_weight') in json_priority:
+            nice_weight = json_priority['nice_weight']
+
+    # evalute and retrieve jobs' karma for fair-share
+    evaluate_jobs_karma(queues, now, jids, jobs, plt)
+
+    for job in jobs.values():
+        job.priority = age_weight * max(1.0, age_coef * (now - job.submission_time))
+        job.priority += queue_weight * queue_coefs[job.queue]
+        if work_mode:
+            # prioritize big jobs over small ones (work = nb_resources * walltime)
+            job.priority += work_weight * (1.0 - 1.0 / min(1.0, job.work))
+        else:
+            # prioritize small jobs over big ones  (work = nb_resources * walltime)
+            job.priority += work_weight * 1.0 / min(1.0, job.work)
+        if size_mode:
+            # prioritize big jobs over small ones
+            job.priority += size_weight * (job.size / plt.nb_default_resources)
+        else:
+            # prioritize small jobs over big ones
+            job.priority += size_weight * (1.0 - (job.size / plt.nb_default_resources))
+        job.priority += karma_weight * (1.0 / (1.0 + job.karma))
+        job.priority += qos_weight * job.qos
+        job.priority += nice_weight * max(1.0, job.nice)
 
 
 def multifactor_jobs_sorting(queues, now, jids, jobs, plt):
-    pass
+
+    ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
+    # print karma_ordered_jids
+    return ordered_jids
