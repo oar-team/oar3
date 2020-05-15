@@ -10,15 +10,15 @@ config['LOG_FILE'] = ':stderr:'
 
 
 def set_assign_func(job, name):
-    import oar.kao.advanced_scheduling
+    import oar.kao.custom_scheduling
     job.assign = True
-    job.assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + name)
+    job.assign_func = getattr(oar.kao.custom_scheduling, 'assign_' + name)
 
 
 def set_find_func(job, name):
-    import oar.kao.advanced_scheduling
+    import oar.kao.custom_scheduling
     job.find = True
-    job.find_func = getattr(oar.kao.advanced_scheduling, 'find_' + name)
+    job.find_func = getattr(oar.kao.custom_scheduling, 'find_' + name)
 
 
 def compare_slots_val_ref(slots, v):
@@ -27,8 +27,7 @@ def compare_slots_val_ref(slots, v):
     while True:
         slot = slots[sid]
         (b, e, itvs) = v[i]
-        if ((slot.b != b) or (slot.e != e)
-                or not (slot.itvs == itvs)):
+        if ((slot.b != b) or (slot.e != e) or not (slot.itvs == itvs)):
             return False
         sid = slot.next
         if (sid == 0):
@@ -351,18 +350,17 @@ def test_find_begin():
     hy = {'resource_id': [ProcSet(i) for i in range(1, 33)]}
 
     j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(1, 60,[([("resource_id", 32)], res)])])
-    
+                   mld_res_rqts=[(1, 60, [([("resource_id", 32)], res)])])
+
     j2 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   mld_res_rqts=[(2, 60,[([("resource_id", 32)], res)])])
+                   mld_res_rqts=[(2, 60, [([("resource_id", 32)], res)])])
 
     set_find_func(j1, 'begin')
     set_find_func(j2, 'begin')
-    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1,2], 20)
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
     print(j1.res_set)
     print(j2.res_set)
-    
+
     assert j1.res_set == ProcSet(*[(1, 32)])
     assert j2.res_set == ProcSet(*[(1, 16)])
-  

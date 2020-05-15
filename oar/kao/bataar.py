@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-# coding: utf-8
 # BatAar: BatSim Adaptor for OAR
 
-import pdb
 import sys
-import re
 import time
 import math
 import click
@@ -22,7 +19,7 @@ from oar.kao.platform import Platform
 from batsim import __version__ as batsim_version
 from batsim.batsim import BatsimScheduler, Batsim
 from batsim.network import NetworkHandler
-import oar.kao.advanced_scheduling
+import oar.kao.custom_scheduling
 
 from oar.kao.meta_sched import meta_schedule
 from procset import ProcSet
@@ -121,13 +118,13 @@ class SchedPolicyParams(object):
         elif sp == 'BEST_EFFORT_CONTIGUOUS' or sp == '1':
             print("BEST_EFFORT_CONTIGUOUS scheduler_policy selected")
             find = True
-            find_func = getattr(oar.kao.advanced_scheduling, 'find_contiguous_1h')
+            find_func = getattr(oar.kao.custom_scheduling, 'find_contiguous_1h')
             assign = True
-            assign_func = getattr(oar.kao.advanced_scheduling, 'assign_one_time_find')
+            assign_func = getattr(oar.kao.custom_scheduling, 'assign_one_time_find')
         elif sp == 'CONTIGUOUS' or sp == '2':
             print("CONTIGUOUS scheduler_policy selected")
             find = True
-            find_func = getattr(oar.kao.advanced_scheduling, 'find_contiguous_1h')
+            find_func = getattr(oar.kao.custom_scheduling, 'find_contiguous_1h')
         elif sp == 'BEST_EFFORT_LOCAL' or sp == '3':
             print("BEST_EFFORT_LOCAL scheduler_policy selected")
             add_1h = True
@@ -143,11 +140,11 @@ class SchedPolicyParams(object):
                 if t == "assign":
                     print("type assign with function: ", v)
                     assign = True
-                    assign_func = getattr(oar.kao.advanced_scheduling, 'assign_' + v)
+                    assign_func = getattr(oar.kao.custom_scheduling, 'assign_' + v)
                 if t == "find":
                     print("type find with function: ", v)
                     find = True
-                    find_func = getattr(oar.kao.advanced_scheduling, 'find_' + v)
+                    find_func = getattr(oar.kao.custom_scheduling, 'find_' + v)
         self.assign = assign
         self.assign_func = assign_func
         self.find = find
