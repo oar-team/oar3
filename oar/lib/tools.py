@@ -8,7 +8,7 @@ import socket
 from socket import gethostname
 from oar.lib import (db, config, get_logger)
 from oar.lib import logger as log
-from oar.lib.event import add_new_event
+#from oar.lib.event import add_new_event
 
 import signal
 import psutil
