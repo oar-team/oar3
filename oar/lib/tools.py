@@ -8,11 +8,14 @@ import socket
 from socket import gethostname
 from oar.lib import (db, config, get_logger)
 from oar.lib import logger as log
-#from oar.lib.event import add_new_event
-
+# from oar.lib.event import add_new_event
 import signal
 import psutil
+# run, call use via tools.run, tools.call (simplify mocking)
 from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError, TimeoutExpired, STDOUT)
+
+from pwd import getpwnam  # use via tools.getpass (simplify mocking)
+from multiprocessing import Process  # use via tools.getpass (simplify mocking)
 
 # Constants
 DEFAULT_CONFIG = {
@@ -303,7 +306,7 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
         return (0, [])
 
     output = out.decode()
-    error = err.decode()
+    error = err.decode()  # TODO: not used
 
     for line in output.split('\n'):
         host = filter_output(*(line, ip2hostname))
@@ -320,7 +323,7 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
 
 
 def send_log_by_email(title, message):  # pragma: no cover
-    raise NotImplementedError("TODO")
+    # raise NotImplementedError("TODO")
     return
 
 
