@@ -50,7 +50,7 @@ from oar.kao.quotas import Quotas
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
 
-import oar.kao.advanced_extra_metasched
+import oar.kao.extra_metasched
 
 from procset import ProcSet
 
@@ -647,7 +647,7 @@ def meta_schedule(mode='internal', plt=Platform()):
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
-    
+
     gantt_init_results = gantt_init_with_running_jobs(plt, initial_time_sec,
                                                       job_security_time)
     all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
@@ -661,16 +661,16 @@ def meta_schedule(mode='internal', plt=Platform()):
         logger.warning(
             "OARDIR env variable must be defined, " + binpath + " is used by default")
 
-
     if ("EXTRA_METASCHED" in config) and (config["EXTRA_METASCHED"] != "default"):
-        extra_metasched_func = getattr(oar.kao.advanced_extra_metasched,
+        extra_metasched_func = getattr(oar.kao.extra_metasched,
                                        'extra_metasched_%s' % config["EXTRA_METASCHED"])
         if "EXTRA_METASCHED_CONFIG" in config:
             extra_metasched_config = config["EXTRA_METASCHED_CONFIG"]
         else:
             extra_metasched_config = ''
     else:
-        extra_metasched_func = lambda *args: None # null function
+        def extra_metasched_func(*args):  # null function
+            pass
         extra_metasched_config = ''
 
     prev_queues = None
@@ -687,7 +687,7 @@ def meta_schedule(mode='internal', plt=Platform()):
         prev_queues = queues
 
         # filter active queues
-        active_queues = [ q for q in queues if q.state == 'Active']
+        active_queues = [q for q in queues if q.state == 'Active']
 
         # Only internal scheduler support non-strict priorities between queues 
         if mode == 'internal':
@@ -700,7 +700,7 @@ def meta_schedule(mode='internal', plt=Platform()):
                 check_reservation_jobs(
                     plt, resource_set, queue.name, all_slot_sets, current_time_sec)
         else:
-            for queue in active_queues: 
+            for queue in active_queues:
                 if mode == 'external':  # pragma: no cover
                     call_external_scheduler(binpath, scheduled_jobs, all_slot_sets,
                                             resource_set, job_security_time, queue,
@@ -713,12 +713,6 @@ def meta_schedule(mode='internal', plt=Platform()):
 
                 handle_waiting_reservation_jobs(queue.name, resource_set,
                                                 job_security_time, current_time_sec)
-
-    #TODO remove ?
-    #extra_metasched_func(prev_queue, plt, scheduled_jobs, all_slot_sets,
-    #                     job_security_time, queue, initial_time_sec,
-    #                     extra_metasched_config)
-
 
     jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(resource_set,
                                                                                      job_security_time,
