@@ -21,7 +21,6 @@ def perl_hash_2_dict(str):
 
 def get_sum_accounting_window(queues, window_start, window_stop):
 
-
     req = db.query(Accounting.consumption_type,
                    func.sum(Accounting.consumption))\
             .filter(Accounting.queue_name.in_(tuple(queues)))\
@@ -95,10 +94,10 @@ def get_sum_accounting_by_user(queues, window_start, window_stop):
 
 
 #
-# Karma and Fairsharing stuff
+# Evaluate Karma value for each job
 #
-def karma_jobs_sorting(queues, now, jids, jobs, plt):
-        
+def evaluate_jobs_karma(queues, now, jids, jobs, plt):
+
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
     # TODO NOT UDSED
@@ -130,8 +129,8 @@ def karma_jobs_sorting(queues, now, jids, jobs, plt):
         config["SCHEDULER_FAIRSHARING_COEF_USER_ASK"])
 
     #
-    # Sort jobs accordingly to karma value (fairsharing)  *)
-    #                                                     *)
+    # Retrieve karma part value from past
+    #
 
     window_start = now - karma_window_size
     window_stop = now
@@ -143,7 +142,7 @@ def karma_jobs_sorting(queues, now, jids, jobs, plt):
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
         queues, window_start, window_stop)
     #
-    # compute karma for each job
+    # Compute actual karma for each job
     #
 
     for job in jobs.values():
@@ -185,6 +184,16 @@ def karma_jobs_sorting(queues, now, jids, jobs, plt):
 
     # sort jids according to jobs' karma value
     # print jids
+    karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma)
+    # print karma_ordered_jids
+    return karma_ordered_jids
+
+
+def karma_jobs_sorting(queues, now, jids, jobs, plt):
+    evaluate_jobs_karma(queues, now, jids, jobs, plt)
+    #
+    # Sort jobs accordingly to karma value (fairsharing)  *)
+    #
     karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma)
     # print karma_ordered_jids
     return karma_ordered_jids
