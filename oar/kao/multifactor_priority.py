@@ -1,4 +1,4 @@
-import simplejson as json
+import yaml 
 from oar.lib import (config, get_logger)
 
 from oar.kao.karma import evaluate_jobs_karma
@@ -42,31 +42,34 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
 
     queue_coefs = {}
 
-    priority_conf_filename = config['PRIORITY_CONF_FILE']
-    with open(priority_conf_filename) as json_file:
-        json_priority = json.load(json_file)
-        if ('age_weight') in json_priority:
-            age_weight = json_priority['age_weight']
-        if ('age_coef') in json_priority:
-            age_coef = json_priority['age_coef']
-        if ('queue_weight') in json_priority:
-            queue_weight = json_priority['queue_weight']
-        if ('queue_coefs') in json_priority:
-            queue_coefs = json_priority['queue_coefs']
-        if ('work_weight') in json_priority:
-            work_weight = json_priority['work_weight']
-        if ('work_mode') in json_priority:
-            work_mode = json_priority['work_mode']
-        if ('size_weight') in json_priority:
-            size_weight = json_priority['size_weight']
-        if ('size_mode') in json_priority:
-            size_mode = json_priority['size_mode']
-        if ('karma_weight') in json_priority:
-            karma_weight = json_priority['karma_weight']
-        if ('qos_weight') in json_priority:
-            qos_weight = json_priority['qos_weight']
-        if ('nice_weight') in json_priority:
-            nice_weight = json_priority['nice_weight']
+    with open(config['PRIORITY_CONF_FILE'], 'r') as stream:
+        try:
+            yaml_priority = yaml.safe_load(stream))
+        except yaml.YAMLError as exc:
+            logger.error(exc)
+
+    if ('age_weight') in yaml_priority:
+        age_weight = yaml_priority['age_weight']
+    if ('age_coef') in yaml_priority:
+        age_coef = yaml_priority['age_coef']
+    if ('queue_weight') in yaml_priority:
+        queue_weight = yaml_priority['queue_weight']
+    if ('queue_coefs') in yaml_priority:
+        queue_coefs = yaml_priority['queue_coefs']
+    if ('work_weight') in yaml_priority:
+        work_weight = yaml_priority['work_weight']
+    if ('work_mode') in yaml_priority:
+        work_mode = yaml_priority['work_mode']
+    if ('size_weight') in yaml_priority:
+        size_weight = yaml_priority['size_weight']
+    if ('size_mode') in yaml_priority:
+        size_mode = yaml_priority['size_mode']
+    if ('karma_weight') in yaml_priority:
+        karma_weight = yaml_priority['karma_weight']
+    if ('qos_weight') in yaml_priority:
+        qos_weight = yaml_priority['qos_weight']
+    if ('nice_weight') in yaml_priority:
+        nice_weight = yaml_priority['nice_weight']
 
     # evalute and retrieve jobs' karma for fair-share
     evaluate_jobs_karma(queues, now, jids, jobs, plt)
