@@ -66,20 +66,21 @@ def reset_quotas():
 
 def test_quotas_rules_fromJson():
     quotas_rules_json = {
-        "*,*,*,john": [100,'ALL','0.5*ALL'],
-        "*,projA,*,*": ['34.5','ALL','2*ALL']
+        "*,*,*,john": [100, 'ALL', '0.5*ALL'],
+        "*,projA,*,*": ['34.5', 'ALL', '2*ALL']
     }
 
     quotas_rules = Quotas.quotas_rules_fromJson(quotas_rules_json, 100)
     print(quotas_rules)
 
-    assert ('*', '*', '*', 'john') in quotas_rules and ('*', 'projA', '*', '*') in  quotas_rules
+    assert ('*', '*', '*', 'john') in quotas_rules and ('*', 'projA', '*', '*') in quotas_rules
     assert quotas_rules[('*', '*', '*', 'john')] == [100, 100, 180000]
     assert quotas_rules[('*', 'projA', '*', '*')] == [34, 100, 720000]
-    
+
+
 def test_quotas_one_job_no_rules():
     Quotas.enabled = True
- 
+
     v = [(0, 59, ProcSet(*[(17, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -148,7 +149,7 @@ def test_quotas_four_jobs_rule_1():
 
     Quotas.enabled = True
     Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1],
-                        ('*', 'yop', '*', '*'): [-1, 1, -1]}
+                            ('*', 'yop', '*', '*'): [-1, 1, -1]}
 
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = ProcSet(*res)
@@ -188,7 +189,7 @@ def test_quotas_three_jobs_rule_1():
 
     Quotas.enabled = True
     Quotas.default_rules = {('*', '*', '*', '/'): [16, -1, -1],
-                        ('default', '*', '*', '*'): [-1, -1, 2000]}
+                            ('default', '*', '*', '*'): [-1, -1, 2000]}
 
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = ProcSet(*res)
@@ -280,7 +281,7 @@ def test_quotas_two_jobs_job_type_proc():
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
     hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
-    
+
     j1 = JobPseudo(id=1, queue='default', user='toto', project='', types={'yop'})
     j1.simple_req(('node', 1), 50, res)
     j2 = JobPseudo(id=2, queue='default', user='toto', project='', types={'yop'})
