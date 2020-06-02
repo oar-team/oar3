@@ -44,7 +44,7 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
 
     with open(config['PRIORITY_CONF_FILE'], 'r') as stream:
         try:
-            yaml_priority = yaml.safe_load(stream))
+            yaml_priority = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             logger.error(exc)
 

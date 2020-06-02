@@ -239,7 +239,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
         # Test if AR job is expired and handle it
         if (current_time_sec > (job.start_time + walltime)):
             logger.warning("[" + str(job.id) +
-                        "] set job state to Error: avdance reservation expired and couldn't be started")
+                           "] set job state to Error: avdance reservation expired and couldn't be started")
             set_job_state(job.id, 'Error')
             set_job_message(job.id, "Reservation expired and couldn't be started.")
         else:
@@ -250,7 +250,7 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
             # Test if the AR job is waiting to be launched due to nodes' unavailabilities
             if (len(avail_res) == 0) and (job.start_time < current_time_sec):
                 logger.warning("[%s] advance reservation is waiting because no resource is present"
-                            % str(job.id))
+                               % str(job.id))
 
                 # Delay launching time
                 set_gantt_job_start_time(moldable_id, current_time_sec + 1)
@@ -261,8 +261,8 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                         # The expected ressources are not all available,
                         # wait the specified timeout
                         logger.warning("[" + str(job.id) +
-                                    "] advance reservation is waiting because not all \
-                                    resources are available yet")
+                                       "] advance reservation is waiting because not all \
+                                       resources are available yet")
                         set_gantt_job_start_time(moldable_id, current_time_sec + 1)
                 else:
                     # It's time to launch the AR job, remove missing ressources
@@ -270,8 +270,8 @@ def handle_waiting_reservation_jobs(queue_name, resource_set, job_security_time,
                     remove_gantt_resource_job(moldable_id, missing_resources_itvs,
                                               resource_set)
                     logger.warning("[" + str(job.id) +
-                                "remove some resources assigned to this advance reservation, \
-                                because there are not Alive")
+                                   "remove some resources assigned to this advance reservation, \
+                                   because there are not Alive")
 
                     add_new_event('SCHEDULER_REDUCE_NB_RESSOURCES_FOR_RESERVATION',
                                   job.id,
