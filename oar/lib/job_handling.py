@@ -783,7 +783,11 @@ def insert_job(**kwargs):
 def resubmit_job(job_id):
     """Resubmit a job and give the new job_id"""
 
-    user = os.environ['OARDO_USER']
+    if 'OARDO_USER' in os.environ:
+        user = os.environ['OARDO_USER']
+    else:
+        user = 'oar'
+
     job = get_job(job_id)
 
     if job is None:
