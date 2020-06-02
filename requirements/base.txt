@@ -10,3 +10,4 @@ procset
 simplejson
 psutil
 passlib
+pyyaml
