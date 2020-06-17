@@ -41,7 +41,7 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
     nice_weight = 0
 
     queue_coefs = {}
-
+    
     with open(config['PRIORITY_CONF_FILE'], 'r') as stream:
         try:
             yaml_priority = yaml.safe_load(stream)
@@ -76,26 +76,41 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
 
     for job in jobs.values():
         job.priority = age_weight * max(1.0, age_coef * (now - job.submission_time))
-        job.priority += queue_weight * queue_coefs[job.queue]
-        if work_mode:
-            # prioritize big jobs over small ones (work = nb_resources * walltime)
-            job.priority += work_weight * (1.0 - 1.0 / min(1.0, job.work))
-        else:
-            # prioritize small jobs over big ones  (work = nb_resources * walltime)
-            job.priority += work_weight * 1.0 / min(1.0, job.work)
-        if size_mode:
-            # prioritize big jobs over small ones
-            job.priority += size_weight * (job.size / plt.nb_default_resources)
-        else:
-            # prioritize small jobs over big ones
-            job.priority += size_weight * (1.0 - (job.size / plt.nb_default_resources))
-        job.priority += karma_weight * (1.0 / (1.0 + job.karma))
-        job.priority += qos_weight * job.qos
-        job.priority += nice_weight * max(1.0, job.nice)
+        if queue_weight > 0.0:
+            if job.queue_name in queue_coefs: 
+                job.priority += queue_weight * queue_coefs[job.queue_name]
+            else:
+                logger.warning('queue {} is define in queue_coefs but the queue_weight is.'
+                               .format(job.queue_name))
+        if work_weight > 0.0:        
+            if work_mode:
+                # prioritize big jobs over small ones (work = nb_resources * walltime)
+                job.priority += work_weight * (1.0 - 1.0 / min(1.0, job.work))
+            else:
+                # prioritize small jobs over big ones  (work = nb_resources * walltime)
+                job.priority += work_weight * 1.0 / min(1.0, job.work)
+        if size_weight > 0.0:
+            if size_mode:
+                # prioritize big jobs over small ones
+                job.priority += size_weight * (job.size / plt.nb_default_resources)
+            else:
+                # prioritize small jobs over big ones
+                job.priority += size_weight * (1.0 - (job.size / plt.nb_default_resources))
 
+        print("job id {} Karma {}".format(job.id, job.karma))         
+        job.priority += karma_weight * (1.0 / (1.0 + job.karma))
+        if qos_weight > 0.0:
+            job.priority += qos_weight * job.qos
+        if nice_weight > 0.0:
+            job.priority += nice_weight * max(1.0, job.nice)
 
 def multifactor_jobs_sorting(queues, now, jids, jobs, plt):
 
+    evaluate_jobs_priority(queues, now, jids, jobs, plt)
+    
     ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
-    # print karma_ordered_jids
+    #print("job priorty")
+    #for job in jobs.values():
+    #    print("job id: {} priority: {}".format(job.id, job.priority))
+    #print(ordered_jids)
     return ordered_jids
