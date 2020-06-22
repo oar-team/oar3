@@ -70,7 +70,9 @@ DEFAULT_CONFIG = {
     'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json',
     'QUOTAS_PERIOD': 1296000,  # 15 days in seconds
     'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead',  # ALL w/ correspond to all default source
-    'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000  # 2 months, window time limit for a scheduling round where to place a job
+    'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000,  # 2 months, window time limit for a scheduling round where to place a job
+    'OAR_PROXY_INTERNAL': 'no',
+    'OAR_PROXY_BASE_URL': '/oarapi-priv/proxy'
 }
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
@@ -798,6 +800,7 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
               + "export OAR_PROJECT_NAME=\"" + job.project + "\";"\
               + "export OAR_JOB_WALLTIME=\"" + duration_to_sql(job_walltime) + "\";"\
               + "export OAR_JOB_WALLTIME_SECONDS=" + str(job_walltime) + ";"\
+              + ("export OAR_PROXY_BASE_URL={}".format(config['OAR_PROXY_BASE_URL']) if (config['OAR_PROXY_INTERNAL' == 'yes') else ""\
               + "export SHELL=\"" + shell + "\";"\
               + " export SUDO_COMMAND=OAR;"\
               + " SHLVL=1;"\
