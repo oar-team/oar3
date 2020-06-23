@@ -3,17 +3,14 @@ import pytest
 
 from procset import ProcSet
 
-from codecs import open
 from copy import deepcopy
-from tempfile import mkstemp
 
 import time
-from datetime import (date, datetime, timedelta)
+from datetime import (datetime, timedelta)
 
 from oar.lib.job_handling import JobPseudo
 from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import (schedule_id_jobs_ct,
-                                set_slots_with_prev_scheduled_jobs)
+from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.lib.tools import local_to_sql
 
 from oar.kao.quotas import Quotas, Calendar

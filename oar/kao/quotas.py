@@ -15,17 +15,18 @@ _day2week_offset = {'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 
 
 logger = get_logger('oar.kao.quotas')
 
+
 class Calendar(object):
 
     def __init__(self, json_quotas):
         self.quotas_period = config['QUOTAS_PERIOD']
-        self.period_end = 0 # period_end = period_begin = quotas_period
-        
+        self.period_end = 0  # period_end = period_begin = quotas_period
+
         self.ordered_periodical_ids = []
         self.op_index = 0
-        self.periodicals = {} 
+        self.periodicals = {}
         self.nb_periodicals = 0
-         
+
         self.ordered_oneshot_ids = []
         self.oneshots = {}
         self.oneshots_begin = None
@@ -539,17 +540,17 @@ account (but the inner jobs are used to compute the quotas).
                                 # 1) test nb_resources
                                 if (rl_nb_resources > -1) and\
                                    (rl_nb_resources < nb_resources):
-                                        return (False, 'nb resources quotas failed',
-                                                rl_fields, rl_nb_resources)
+                                    return (False, 'nb resources quotas failed',
+                                            rl_fields, rl_nb_resources)
                                 # 2) test nb_jobs
                                 if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-                                        return (False, 'nb jobs quotas failed',
-                                                rl_fields, rl_nb_jobs)
+                                    return (False, 'nb jobs quotas failed',
+                                            rl_fields, rl_nb_jobs)
                                 # 3) test resources_time (work)
                                 if (rl_resources_time > -1) and\
                                    (rl_resources_time < resources_time):
-                                        return (False, 'resources hours quotas failed',
-                                                rl_fields, rl_resources_time)
+                                    return (False, 'resources hours quotas failed',
+                                            rl_fields, rl_resources_time)
         return (True, 'quotas ok', '', 0)
 
     @staticmethod
@@ -562,7 +563,7 @@ account (but the inner jobs are used to compute the quotas).
             slot = slots[sid]
             # slot.quotas.show_counters('check_slots_quotas, b e: ' + str(slot.b) + ' ' + str(slot.e))
             slots_quotas.combine(slot.quotas)
-    
+
             if (sid == sid_right):
                 break
             else:
@@ -586,31 +587,31 @@ account (but the inner jobs are used to compute the quotas).
                 return v
             else:
                 try:
-                    f=float(v)
+                    f = float(v)
                 except ValueError:
                     c = 1
                     if '*' in v:
-                        c,v = v.split('*')
+                        c, v = v.split('*')
                         c = float(c)
                     if v == 'ALL':
                         v = all_value
                     else:
                         v = float(v)
-                    f = c * v                        
+                    f = c * v
             return int(f)
-        
+
         rules = {}
         for k, v in json_quotas_rules.items():
             rules[tuple(k.split(','))] = [alphanum_to_int(v[0]), alphanum_to_int(v[1]),
                                           int(3600 * alphanum_to_int(v[2]))]
         return rules
-    
+
     @classmethod
     def load_quotas_rules(cls, all_value=None):
         """
         Simple example
         --------------
-    
+
         {
             "quotas": {
                    "*,*,*,*": [120,-1,-1],
@@ -618,7 +619,7 @@ account (but the inner jobs are used to compute the quotas).
             }
             "job_types": ['besteffort','deploy','console']
         }
-    
+
         Temporal example
         ----------------
         {
@@ -650,8 +651,8 @@ account (but the inner jobs are used to compute the quotas).
                 "*,*,*,john": [100,-1,-1],
                 "*,projA,*,*": [200,-1,-1]
             }
-        }   
-             
+        }
+
         """
         quotas_rules_filename = config['QUOTAS_CONF_FILE']
         with open(quotas_rules_filename) as json_file:
@@ -662,4 +663,4 @@ account (but the inner jobs are used to compute the quotas).
                 cls.default_rules = cls.quotas_rules_fromJson(json_quotas['quotas'], all_value)
             if 'job_types' in json_quotas:
                 cls.job_types.extend(json_quotas['job_types'])
-    
+

@@ -1,4 +1,4 @@
-import yaml 
+import yaml
 from oar.lib import (config, get_logger)
 
 from oar.kao.karma import evaluate_jobs_karma
@@ -41,7 +41,7 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
     nice_weight = 0
 
     queue_coefs = {}
-    
+
     with open(config['PRIORITY_CONF_FILE'], 'r') as stream:
         try:
             yaml_priority = yaml.safe_load(stream)
