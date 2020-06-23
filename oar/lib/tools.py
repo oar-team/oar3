@@ -779,6 +779,10 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
     """ Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
     """
+    oar_proxy_base_url_varenv = ''
+    if config['OAR_PROXY_INTERNAL'] == 'yes':
+        oar_proxy_base_url_varenv = "export OAR_PROXY_BASE_URL={};".format(config['OAR_PROXY_BASE_URL'])
+
     script = "if [ \"a\$TERM\" == \"a\" ] || [ \"x\$TERM\" == \"xunknown\" ]; then export TERM=xterm; fi;"\
               + (job.env if job.env else '')\
               + "export OAR_FILE_NODES=\"" + node_file + "\";"\
@@ -800,7 +804,7 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
               + "export OAR_PROJECT_NAME=\"" + job.project + "\";"\
               + "export OAR_JOB_WALLTIME=\"" + duration_to_sql(job_walltime) + "\";"\
               + "export OAR_JOB_WALLTIME_SECONDS=" + str(job_walltime) + ";"\
-              + ("export OAR_PROXY_BASE_URL={}".format(config['OAR_PROXY_BASE_URL']) if (config['OAR_PROXY_INTERNAL' == 'yes') else ""\
+              + oar_proxy_base_url_varenv \
               + "export SHELL=\"" + shell + "\";"\
               + " export SUDO_COMMAND=OAR;"\
               + " SHLVL=1;"\

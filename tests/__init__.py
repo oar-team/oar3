@@ -53,9 +53,11 @@ DEFAULT_CONFIG = {
     'SQLALCHEMY_POOL_TIMEOUT': None,
     'TAKTUK_CMD': '/usr/bin/taktuk -t 30 -s',
     'QUOTAS': 'no',
-    'QUOTAS_PERIOD': 1296000, # 15 days in seconds
-    'QUOTAS_WINDOW_TIME_LIMIT': 4*1296000, # 2 months
-    'HIERARCHY_LABELS': 'resource_id,network_address,cpu,core'
+    'QUOTAS_PERIOD': 1296000,  # 15 days in seconds
+    'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000,  # 2 months
+    'HIERARCHY_LABELS': 'resource_id,network_address,cpu,core',
+    'OAR_PROXY_INTERNAL': 'no',
+    'OAR_PROXY_BASE_URL': '/oarapi-priv/proxy'
 }
 
 

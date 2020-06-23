@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from flask import (g, abort, request, Response)
 import requests
-from flask_caching import Cache
+from ..cache import cache
 
 from . import Blueprint
 
@@ -11,15 +11,6 @@ from oar.lib import config
 from oar.lib.job_handling import get_job
 
 app = Blueprint('proxy', __name__)
-
-config = {
-    "DEBUG": True,		# some Flask specific configs
-    "CACHE_TYPE": "simple",     # Flask-Caching related configs
-    "CACHE_DEFAULT_TIMEOUT": 300
-}
-
-app.config.from_mapping(config)
-cache = Cache(app)
 
 
 @app.route('/proxy/<int:job_id>/', defaults={'path': None})
@@ -29,14 +20,17 @@ def proxy(job_id, path):
     if config['OAR_PROXY_INTERNAL'] != 'yes':
         abort(404, 'Proxy is not configured')
 
-    user = g.current_user
     job = get_job(job_id)
-    if (job.user != g.current_user) and (g.current_user != 'oar') and (g.current_user != 'root'):
+    if not job:
+        abort(404, 'Job: {} does not exist'.format(job_id))
+
+    user = g.current_user
+    if (job.user != user) and (user != 'oar') and (user != 'root'):
         abort(403, 'User {} not allowed'.format(g.current_user))
 
     proxy_target = cache.get(job_id)
     if not proxy_target:
-        proxy_filename = '{}/OAR.{}.proxy.json'.forma(job.launching_directory, job.id)
+        proxy_filename = '{}/OAR.{}.proxy.json'.format(job.launching_directory, job.id)
         try:
             json_file = open(proxy_filename)
             proxy_target = json.load(json_file)
@@ -50,9 +44,9 @@ def proxy(job_id, path):
             else:
                 url_parsed = urlparse(proxy_target['url'])
                 if not url_parsed.netloc:
-                    abort((404, 'url malformed: {}'.format(proxy_target['url']))
-                proxy_target['url'] = 'http://{}'.format(url_parsed.netloc)
-            cache.set(job_id, proxy_target )
+                    abort(404, 'url malformed: {}'.format(proxy_target['url']))
+                proxy_target['url'] = 'http://{}/'.format(url_parsed.netloc)
+            cache.set(job_id, proxy_target)
 
     resp = requests.request(
         method=request.method,

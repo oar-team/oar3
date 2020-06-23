@@ -15,12 +15,15 @@ from .views import register_blueprints
 from .errors import register_error_handlers
 from .extensions import register_extensions
 from .hooks import register_hooks
+from .cache import cache
 
 default_config = {
     "API_TRUST_IDENT": 1,
     "API_DEFAULT_DATA_STRUCTURE": "simple",
     "API_DEFAULT_MAX_ITEMS_NUMBER": 500,
     "API_ABSOLUTE_URIS": 1,
+    "CACHE_TYPE": "simple",     # Flask-Caching related configs
+    "CACHE_DEFAULT_TIMEOUT": 300
 }
 
 
@@ -37,9 +40,12 @@ def create_app():
     register_hooks(app)
     register_extensions(app)
     register_blueprints(app)
-    
+
+    cache.init_app(app)
+
     return app
-    
+
+
 def wsgi_app(environ, start_response):
     # For use within WSGI context (for instance mod_wsgi for apache2)
     # cat /usr/local/lib/cgi-bin/oarapi/oarapi.wsgi
