@@ -42,7 +42,7 @@ setup(
     author_email="oar-devel@lists.gforge.inria.fr",
     version=version,
     url="https://github.com/oar-team/oar3",
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests"]),
     package_dir={"oar": "oar"},
     package_data={"oar": ["tools/*.pl", "tools/*.pm", "tools/*.sh", "tools/oarexec"]},
     install_requires=get_requirements("base"),
