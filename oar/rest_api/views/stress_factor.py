@@ -11,7 +11,6 @@ import os
 from flask import (url_for, g, abort)
 
 from . import Blueprint
-from ..utils import Arg
 
 from oar.lib import config
 
@@ -27,6 +26,7 @@ OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
 if 'OARDODO' in config:
     OARDODO_CMD = config['OARDODO']
 
+
 @app.route('/', methods=['GET'])
 def index():
     stress_factor_script = '/etc/oar/stress_factor.sh'
@@ -39,7 +39,7 @@ def index():
 
     global_stress = None
     stress_factor_value = ''
-    
+
     for sf_res in stress_factor_result:
         sf = sf_res.split('=')
         if (len(sf) == 2) and (sf[0] == 'GLOBAL_STRESS'):
@@ -48,7 +48,7 @@ def index():
     if global_stress:
         g.data[global_stress] = stress_factor_value
         url = url_for('%s.index' % app.name)
-        g.data['links'] = [{'rel': 'rel', 'href': url}] 
+        g.data['links'] = [{'rel': 'rel', 'href': url}]
 
     else:
         abort(404, 'Unable to retrieve STRESS_FACTOR')
