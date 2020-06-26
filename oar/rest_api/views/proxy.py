@@ -1,3 +1,4 @@
+import os
 import simplejson as json
 from urllib.parse import urlparse
 
@@ -10,13 +11,23 @@ from . import Blueprint
 from oar.lib import config
 from oar.lib.job_handling import get_job
 
-app = Blueprint('proxy', __name__)
+import oar.lib.tools as tools
+
+app = Blueprint('proxy', __name__, url_prefix='/proxy')
+
+if 'OARDIR' not in os.environ:
+    os.environ['OARDIR'] = '/usr/local/lib/oar'
+
+OARDODO_CMD = os.environ['OARDIR'] + '/oardodo/oardodo'
+if 'OARDODO' in config:
+    OARDODO_CMD = config['OARDODO']
 
 
-@app.route('/proxy/<int:job_id>/', defaults={'path': None})
-@app.route('/proxy/<int:job_id>/<path:path>')
+@app.route('/<int:job_id>/', defaults={'path': None})
+@app.route('/<int:job_id>/<path:path>')
 @app.need_authentication()
 def proxy(job_id, path):
+
     if config['OAR_PROXY_INTERNAL'] != 'yes':
         abort(404, 'Proxy is not configured')
 
@@ -31,11 +42,24 @@ def proxy(job_id, path):
     proxy_target = cache.get(job_id)
     if not proxy_target:
         proxy_filename = '{}/OAR.{}.proxy.json'.format(job.launching_directory, job.id)
+
+        oar_user_env = os.environ.copy()
+        oar_user_env['OARDO_BECOME_USER'] = user
+
+        # Check file's existence
+        retcode = tools.call([OARDODO_CMD, 'test', '-e', proxy_filename], env=oar_user_env)
+        if retcode:
+            abort(404, 'File not found: {}'.format(proxy_filename))
+
+        # Check file's readability
+        retcode = tools.call([OARDODO_CMD, 'test', '-r', proxy_filename], env=oar_user_env)
+        if retcode:
+            abort(403, 'File could not be read: {}'.format(proxy_filename))
+
+        proxy_file_content = tools.check_output([OARDODO_CMD, 'cat', proxy_filename], env=oar_user_env)
+
         try:
-            json_file = open(proxy_filename)
-            proxy_target = json.load(json_file)
-        except IOError as err:
-            abort(404, 'Failed to read {}, OS error: {}'.format(proxy_filename, err))
+            proxy_target = json.loads(proxy_file_content)
         except Exception as err:
             abort(500, 'Failed to parse {}, error: {}'.format(proxy_filename, err))
         else:
@@ -45,13 +69,13 @@ def proxy(job_id, path):
                 url_parsed = urlparse(proxy_target['url'])
                 if not url_parsed.netloc:
                     abort(404, 'url malformed: {}'.format(proxy_target['url']))
-                proxy_target['url'] = 'http://{}/'.format(url_parsed.netloc)
+                proxy_target['url'] = 'http://{}/oarapi-priv/'.format(url_parsed.netloc)
             cache.set(job_id, proxy_target)
 
     resp = requests.request(
         method=request.method,
         url=request.url.replace(request.host_url, proxy_target['url']),
-        headers={key: value for (key, value) in request.headers if key != 'Host'},
+        headers={key: value for (key, value) in request.headers},
         data=request.get_data(),
         cookies=request.cookies,
         allow_redirects=False)
