@@ -3,19 +3,42 @@ import pytest
 from oar.lib import config
 from oar.lib.job_handling import insert_job
 
-from tempfile import mkdtemp
-import shutil
+import oar.lib.tools  # for monkeypatching
 
 from flask import url_for
+
+fake_call_retcodes = []
+fake_calls = []
+
+
+def fake_call(x, env=None):
+    fake_calls.append(x)
+    print('fake_call: ', x)
+    return fake_call_retcodes.pop(0)
+
+
+fake_check_outputs = []
+fake_check_output_cmd = []
+
+
+def fake_check_output(cmd):
+    fake_check_output_cmd.append(cmd)
+    return fake_check_outputs.pop(0)
+
+
+@pytest.fixture(scope='function', autouse=True)
+def monkeypatch_tools(request, monkeypatch):
+    monkeypatch.setattr(oar.lib.tools, 'call', fake_call)
+    monkeypatch.setattr(oar.lib.tools, 'check_output', fake_check_output)
 
 
 @pytest.fixture(scope='module', autouse=True)
 def oar_conf(request):
-    config['OAR_PROXY_INTERNAL'] = 'yes'
+    config['PROXY'] = 'traefik'
 
     @request.addfinalizer
     def remove_fairsharing():
-        config['OAR_PROXY_INTERNAL'] = 'no'
+        config['PROXY'] = 'no'
 
 
 def test_proxy_no_auth(client):
@@ -32,6 +55,9 @@ def test_proxy_no_jobid(client):
 
 
 def test_proxy_no_proxy_file(client):
+    global fake_call_retcodes
+    fake_call_retcodes = [1]
+
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bob')
     res = client.get(url_for('proxy.proxy', job_id=job_id),
                      headers={'X_REMOTE_IDENT': 'bob'})
@@ -40,18 +66,18 @@ def test_proxy_no_proxy_file(client):
 
 
 def test_proxy(client):
-    proxy_file_dir = mkdtemp()
+    global fake_call_retcodes
+    fake_call_retcodes = [0, 0]
 
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="", user='bob',
-                        launching_directory=proxy_file_dir)
+                        launching_directory='/tmp')
 
-    with open('{}/OAR.{}.proxy.json'.format(proxy_file_dir, job_id), 'w', encoding="utf-8") as proxy_file_fd:
-        proxy_file_fd.write('{{"url": "http://node1.acme.org:8899/oarapi-priv/proxy/{}"}}'.format(job_id))
+    global fake_check_outputs
 
-    res = client.get(url_for('proxy.proxy', job_id=job_id),
-                     headers={'X_REMOTE_IDENT': 'bob'})
+    fake_check_outputs = ['{{"url": "http://node1.acme.org:8899/oarapi-priv/proxy/{}"}}'.format(job_id)]
+
+    res = client.get(url_for('proxy.proxy', job_id=job_id), headers={'X_REMOTE_IDENT': 'bob'})
 
     print(res)
     # import pdb; pdb.set_trace()
     assert res.status_code == 500
-    shutil.rmtree(proxy_file_dir)
