@@ -11,4 +11,5 @@ simplejson
 psutil
 passlib
 pyyaml
-Flask-Caching
+escapism
+toml

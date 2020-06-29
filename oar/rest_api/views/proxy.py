@@ -2,9 +2,10 @@ import os
 import simplejson as json
 from urllib.parse import urlparse
 
-from flask import (g, abort, request, Response)
+from flask import (g, abort, request, Response, redirect)
 import requests
-from ..cache import cache
+from ..proxy_utils import (acquire_lock, release_lock, add_traefik_rule, load_traefik_rules,
+                           save_treafik_rules)
 
 from . import Blueprint
 
@@ -28,7 +29,7 @@ if 'OARDODO' in config:
 @app.need_authentication()
 def proxy(job_id, path):
 
-    if config['OAR_PROXY_INTERNAL'] != 'yes':
+    if config['PROXY'] != 'traefik':
         abort(404, 'Proxy is not configured')
 
     job = get_job(job_id)
@@ -39,50 +40,52 @@ def proxy(job_id, path):
     if (job.user != user) and (user != 'oar') and (user != 'root'):
         abort(403, 'User {} not allowed'.format(g.current_user))
 
-    proxy_target = cache.get(job_id)
-    if not proxy_target:
-        proxy_filename = '{}/OAR.{}.proxy.json'.format(job.launching_directory, job.id)
+    proxy_filename = '{}/OAR.{}.proxy.json'.format(job.launching_directory, job.id)
+    
+    oar_user_env = os.environ.copy()
+    oar_user_env['OARDO_BECOME_USER'] = user
 
-        oar_user_env = os.environ.copy()
-        oar_user_env['OARDO_BECOME_USER'] = user
+    # Check file's existence
+    retcode = tools.call([OARDODO_CMD, 'test', '-e', proxy_filename], env=oar_user_env)
+    if retcode:
+        abort(404, 'File not found: {}'.format(proxy_filename))
 
-        # Check file's existence
-        retcode = tools.call([OARDODO_CMD, 'test', '-e', proxy_filename], env=oar_user_env)
-        if retcode:
-            abort(404, 'File not found: {}'.format(proxy_filename))
+    # Check file's readability
+    retcode = tools.call([OARDODO_CMD, 'test', '-r', proxy_filename], env=oar_user_env)
+    if retcode:
+        abort(403, 'File could not be read: {}'.format(proxy_filename))
 
-        # Check file's readability
-        retcode = tools.call([OARDODO_CMD, 'test', '-r', proxy_filename], env=oar_user_env)
-        if retcode:
-            abort(403, 'File could not be read: {}'.format(proxy_filename))
-
-        proxy_file_content = tools.check_output([OARDODO_CMD, 'cat', proxy_filename], env=oar_user_env)
-
-        try:
-            proxy_target = json.loads(proxy_file_content)
-        except Exception as err:
-            abort(500, 'Failed to parse {}, error: {}'.format(proxy_filename, err))
+    proxy_file_content = tools.check_output([OARDODO_CMD, 'cat', proxy_filename], env=oar_user_env)
+    
+    try:
+        proxy_target = json.loads(proxy_file_content)
+    except Exception as err:
+        abort(500, 'Failed to parse {}, error: {}'.format(proxy_filename, err))
+    else:
+        if 'url' not in proxy_target:
+            abort(404, 'Proxy url not in {}: {}'.format(proxy_filename, proxy_target))
         else:
-            if 'url' not in proxy_target:
-                abort(404, 'Proxy url not in {}: {}'.format(proxy_filename, proxy_target))
-            else:
-                url_parsed = urlparse(proxy_target['url'])
-                if not url_parsed.netloc:
-                    abort(404, 'url malformed: {}'.format(proxy_target['url']))
-                proxy_target['url'] = 'http://{}/oarapi-priv/'.format(url_parsed.netloc)
-            cache.set(job_id, proxy_target)
+            url_parsed = urlparse(proxy_target['url'])
 
-    resp = requests.request(
-        method=request.method,
-        url=request.url.replace(request.host_url, proxy_target['url']),
-        headers={key: value for (key, value) in request.headers},
-        data=request.get_data(),
-        cookies=request.cookies,
-        allow_redirects=False)
+            if not url_parsed.netloc:
+                abort(404, 'url malformed: {}'.format(proxy_target['url']))
 
-    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-    headers = [(name, value) for (name, value) in resp.raw.headers.items()
-               if name.lower() not in excluded_headers]
+            if url_parsed.scheme != 'http':
+                abort(404, 'only http scheme url is supported: {}'.format(url_parsed.scheme))
 
-    response = Response(resp.content, resp.status_code, headers)
-    return response
+            url_base_target = '{}://{}'.format(url_parsed.scheme, url_parsed.netloc)
+                
+            prefix_url = '{}/{}'.format(config['OAR_PROXY_BASE_URL'], job_id)
+
+            lock_fd = acquire_lock()
+            oar_proxy_rules_filename = config['PROXY_TRAEFIK_RULES_FILE']
+            try:
+                rules = load_traefik_rules(oar_proxy_rules_filename)
+                add_traefik_rule(rules, prefix_url, url_base_target)
+                save_treafik_rules(oar_proxy_rules_filename, rules)
+            except Exception as err:
+                release_lock(lock_fd)
+                abort(500, 'Failed to set proxy rules for job: {} Error {}'.format(job_id, err))
+                    
+            release_lock(lock_fd)
+            return redirect('{}{}'.format(config['PROXY_TRAEFIK_ENTRYPOINT'], prefix_url))

@@ -71,8 +71,10 @@ DEFAULT_CONFIG = {
     'QUOTAS_PERIOD': 1296000,  # 15 days in seconds
     'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead',  # ALL w/ correspond to all default source
     'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000,  # 2 months, window time limit for a scheduling round where to place a job
-    'OAR_PROXY_INTERNAL': 'no',
-    'OAR_PROXY_BASE_URL': '/oarapi-priv/proxy'
+    'PROXY': 'no', # or treafik this only one supported proxy
+    'PROXY_TRAEFIK_ENTRYPOINT': 'http://localhost:5000',
+    'PROXY_TRAEFIK_RULES_FILE': '/etc/oar/rules_oar_traefik_proxy.toml',
+    'OAR_PROXY_BASE_URL': '/proxy'
 }
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
@@ -780,7 +782,7 @@ def get_oarexecuser_script_for_oarsub(job, job_walltime, node_file, shell, resou
     The resulting script can be launched with : bash -c 'script'
     """
     oar_proxy_base_url_varenv = ''
-    if config['OAR_PROXY_INTERNAL'] == 'yes':
+    if config['PROXY'] == 'traefik':
         oar_proxy_base_url_varenv = "export OAR_PROXY_BASE_URL={};".format(config['OAR_PROXY_BASE_URL'])
 
     script = "if [ \"a\$TERM\" == \"a\" ] || [ \"x\$TERM\" == \"xunknown\" ]; then export TERM=xterm; fi;"\
