@@ -2,8 +2,8 @@ import os
 import simplejson as json
 from urllib.parse import urlparse
 
-from flask import (g, abort, request, Response, redirect)
-import requests
+from flask import (g, abort, redirect)
+
 from ..proxy_utils import (acquire_lock, release_lock, add_traefik_rule, load_traefik_rules,
                            save_treafik_rules)
 
@@ -41,7 +41,7 @@ def proxy(job_id, path):
         abort(403, 'User {} not allowed'.format(g.current_user))
 
     proxy_filename = '{}/OAR.{}.proxy.json'.format(job.launching_directory, job.id)
-    
+
     oar_user_env = os.environ.copy()
     oar_user_env['OARDO_BECOME_USER'] = user
 
@@ -56,7 +56,7 @@ def proxy(job_id, path):
         abort(403, 'File could not be read: {}'.format(proxy_filename))
 
     proxy_file_content = tools.check_output([OARDODO_CMD, 'cat', proxy_filename], env=oar_user_env)
-    
+
     try:
         proxy_target = json.loads(proxy_file_content)
     except Exception as err:
@@ -74,7 +74,7 @@ def proxy(job_id, path):
                 abort(404, 'only http scheme url is supported: {}'.format(url_parsed.scheme))
 
             url_base_target = '{}://{}'.format(url_parsed.scheme, url_parsed.netloc)
-                
+
             prefix_url = '{}/{}'.format(config['OAR_PROXY_BASE_URL'], job_id)
 
             lock_fd = acquire_lock()
@@ -86,6 +86,6 @@ def proxy(job_id, path):
             except Exception as err:
                 release_lock(lock_fd)
                 abort(500, 'Failed to set proxy rules for job: {} Error {}'.format(job_id, err))
-                    
+
             release_lock(lock_fd)
             return redirect('{}{}'.format(config['PROXY_TRAEFIK_ENTRYPOINT'], prefix_url))
