@@ -78,11 +78,11 @@ def proxy(job_id, path):
             prefix_url = '{}/{}'.format(config['OAR_PROXY_BASE_URL'], job_id)
 
             lock_fd = acquire_lock()
-            oar_proxy_rules_filename = config['PROXY_TRAEFIK_RULES_FILE']
+            proxy_rules_filename = config['PROXY_TRAEFIK_RULES_FILE']
             try:
-                rules = load_traefik_rules(oar_proxy_rules_filename)
+                rules = load_traefik_rules(proxy_rules_filename)
                 add_traefik_rule(rules, prefix_url, url_base_target)
-                save_treafik_rules(oar_proxy_rules_filename, rules)
+                save_treafik_rules(proxy_rules_filename, rules)
             except Exception as err:
                 release_lock(lock_fd)
                 abort(500, 'Failed to set proxy rules for job: {} Error {}'.format(job_id, err))

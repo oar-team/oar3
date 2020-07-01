@@ -15,6 +15,9 @@ from .views import register_blueprints
 from .errors import register_error_handlers
 from .extensions import register_extensions
 from .hooks import register_hooks
+from .proxy_utils import proxy_cleaning
+
+import threading
 
 default_config = {
     "API_TRUST_IDENT": 1,
@@ -37,6 +40,12 @@ def create_app():
     register_hooks(app)
     register_extensions(app)
     register_blueprints(app)
+    print("jkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+    if config['PROXY'] != 'traefik':
+        proxy_rules_filename = config['PROXY_TRAEFIK_RULES_FILE']
+        print("jkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        t = threading.Thread(target=proxy_cleaning, args=(proxy_rules_filename,), daemon=True)
+        t.start()
     return app
 
 
