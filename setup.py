@@ -96,5 +96,6 @@ setup(
     oar-leon=oar.modules.leon:main
     oar-node-change-state=oar.modules.node_change_state:main
     oar-bipbip=oar.modules.bipbip:main
+    oar-proxy-cleaner=oar.cli.oarproxycleaner:cli
     """,
 )

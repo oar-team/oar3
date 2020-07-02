@@ -101,37 +101,3 @@ def atomic_writing(path):
         except FileNotFoundError:
             # already deleted by os.replace above
             pass
-
-
-def proxy_cleaning(proxy_rules_filename):
-    """ Loop of 120 sec period which checks if jobs associated to Traefik rule is running if not
-        rule is deleted from rules file"""
-
-    while True:
-        print("UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
-        lock_fd = None
-        rules = None
-        try:
-            lock_fd = acquire_lock()
-            rules = load_traefik_rules(proxy_rules_filename)
-
-        except Exception as err:
-            print(f'Rest API: proxy_cleaning failed to read proxy rules files {err}')
-        finally:
-            if rules and 'frontends' in rules:
-                # retrieve job_ids from rules
-                job_ids = [escapism.unescape(k).split('/')[-1] for k in rules['frontends'].keys()]
-
-                if job_ids:
-                    flag_to_save = False
-                    for job_id_state in get_jobs_state(job_ids):
-                        job_id, state = job_id_state
-                        if state == 'Error' or state == 'Terminated':
-                            flag_to_save = True
-                            proxy_path = '{}/{}'.format(config['OAR_PROXY_BASE_URL'], job_id)
-                            del_traefik_rule(rules, proxy_path)
-                    if flag_to_save:
-                        save_treafik_rules(proxy_rules_filename, rules)
-            if lock_fd:
-                release_lock(lock_fd)
-            time.sleep(20)
