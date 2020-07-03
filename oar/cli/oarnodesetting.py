@@ -8,13 +8,11 @@
 import time
 
 from oar import VERSION
-from oar.lib import (db, config)
 
 from oar.lib.database import wait_db_ready
 
 from oar.lib.job_handling import get_job
-from oar.lib.node import (set_node_nextState,get_all_resources_on_node, get_node_job_to_frag,
-                          get_node_job_to_frag)
+from oar.lib.node import (set_node_nextState, get_all_resources_on_node, get_node_job_to_frag)
 from oar.lib.resource_handling import (set_resources_property, add_resource, get_resource,
                                        get_resources_with_given_sql, set_resources_nextState,
                                        log_resource_maintenance_event, get_resource_job_to_frag,
@@ -26,7 +24,7 @@ import oar.lib.tools as tools
 
 from .utils import CommandReturns
 
-from socket import gethostname  
+from socket import gethostname
 
 import click
 
@@ -50,6 +48,7 @@ def set_resources_properties(cmd_ret, resources, hostnames, properties):
         else:
             cmd_ret.warning('Bad property syntax: {}\n'.format(name_value))
             cmd_ret.exit_values.append(10)
+
 
 def wait_end_of_running_jobs(cmd_ret, jobs):
     # active waiting: it is not very nice but it works!!
@@ -100,7 +99,8 @@ def set_maintenance(cmd_ret, resources, maintenance, no_wait):
                 set_resources_properties(cmd_ret, [resource_id], None, prop_to_set)
             set_resource_nextState(resource_id, 'Absent')
             tools.notify_almighty('ChState')
-                                        
+
+
 def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance, drain,
                    properties, no_wait, last_property_value, version):
     notify_server_tag_list = []
@@ -111,33 +111,31 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         cmd_ret.print_('OAR version : ' + VERSION)
         return cmd_ret
 
-    if not (properties or state or add or maintenance or drain\
-            or last_property_value):
+    if not (properties or state or add or maintenance or drain or last_property_value):
         cmd_ret.warning('Option for setting (add, state, maintenance, drain, properties oar last-property-value) is expected')
         cmd_ret.usage(1)
         return cmd_ret
-    
+
     if state and state not in ['Alive', 'Absent', 'Dead']:
         cmd_ret.warning('Bad state value. Possible values are: Alive | Absent | Dead')
         cmd_ret.usage(1)
         return cmd_ret
-    
+
     if maintenance and maintenance not in ['on', 'off']:
         cmd_ret.warning('Bad maintenance mode value. Possible values are: on | off')
         cmd_ret.usage(1)
         return cmd_ret
-    
-    if drain and drain  not in ['on', 'off']:
+
+    if drain and drain not in ['on', 'off']:
         cmd_ret.warning('Bad drain mode value. Possible values are: on | off')
         cmd_ret.usage(1)
         return cmd_ret
-    
+
     if sql:
         resources = get_resources_with_given_sql(sql)
         if not resources:
             cmd_ret.warning("There are no resource(s) for this SQL WHERE clause ({})".format(sql), 12)
             return cmd_ret
-
 
     # Get hostnames from a file
     if filename:
@@ -145,7 +143,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         try:
             with open(filename, 'r') as hostfile:
                 hosts = tuple([host for host in hostfile])
-        except OSError as e: # pragma: no cover
+        except OSError as e:  # pragma: no cover
             cmd_ret.warning(str(e), 13)
 
         hostnames += hosts
@@ -154,17 +152,17 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
         cmd_ret.warning('You cannot use -r|--resource or --sql and -a|--add options at a same time')
         cmd_ret.usage(1)
         return cmd_ret
-    
+
     if not hostnames:
         hostnames = [gethostname()]
 
     if last_property_value:
-        value =  get_resource_max_value_of_property(last_property_value)
+        value = get_resource_max_value_of_property(last_property_value)
         if value:
             cmd_ret.print_(str(value))
         else:
-            cmd_ret.warning('Cannot retrieve the last value for ' + last_property_value\
-                         + '. Either no resource or no such property exists (yet).')
+            cmd_ret.warning('Cannot retrieve the last value for ' + last_property_value \
+                            + '. Either no resource or no such property exists (yet).')
             return cmd_ret
 
     elif add:
@@ -173,7 +171,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             state = 'Alive'
 
         for host in hostnames:
-            # wait_db_ready to manage DB taking time to be up during boot 
+            # wait_db_ready to manage DB taking time to be up during boot
             wait_db_ready(add_resource, (host, state))
             cmd_ret.print_('New resource added: ' + host)
 
@@ -185,7 +183,7 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
             if state:
                 nb_match_for_update = set_resources_nextState(resources, state)
                 if nb_match_for_update < len(resources):
-                    cmd_ret.warning(str(len(resources) - nb_match_for_update) +\
+                    cmd_ret.warning(str(len(resources) - nb_match_for_update) + \
                                     ' resource(s) will be not updated (not exist ?).', 3)
                 else:
                     cmd_ret.print_(str(resources) + ' --> ' + state)
@@ -194,15 +192,15 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
                 if (state in ['Dead', 'Absent']) and not no_wait:
                     for resource in resources:
-                        cmd_ret.print_('Check jobs to delete on resource: ' + str(resource))     
+                        cmd_ret.print_('Check jobs to delete on resource: ' + str(resource))
                         jobs = get_resource_job_to_frag(resource)
                         wait_end_of_running_jobs(cmd_ret, jobs)
                 elif state == 'Alive':
                     cmd_ret.print_('Done')
 
             if maintenance:
-                   set_maintenance(cmd_ret, resources, maintenance, no_wait);
-            
+                set_maintenance(cmd_ret, resources, maintenance, no_wait)
+
         else:
             # update all resources with netwokAdress = $hostname
             if maintenance:
@@ -219,8 +217,8 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
                         cmd_ret.print_(host + ' --> ' + state)
                         hosts_to_check.append(host)
                     else:
-                        cmd_ret.warning('Node ' + host\
-                                     + ' does not exist in OAR database.', 4)
+                        cmd_ret.warning('Node ' + host \
+                                        + ' does not exist in OAR database.', 4)
                 tools.notify_almighty('ChState')
 
                 if (state in ['Dead', 'Absent']) and not no_wait:
@@ -248,11 +246,11 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
 
     for tag in notify_server_tag_list:
         tools.notify_almighty(tag)
-            
+
     return cmd_ret
 
-@click.command()
 
+@click.command()
 @click.option('-r', '--resource', type=click.INT, multiple=True,
               help='Resource id of the resource to modify')
 @click.option('-h', '--hostname', type=click.STRING, multiple=True,
@@ -261,9 +259,9 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
               help='Get a hostname list from a file (1 hostname by line) for resources to modify')
 @click.option('--sql', type=click.STRING,
               help='Select resources to modify from database using a SQL where clause on the resource table (e.g.: "type = \'default\'")')
-@click.option('-a','--add', is_flag=True, help='Add a new resource')
-@click.option('-s','--state', type=click.STRING, help='Set the new state of the node')
-@click.option('-m','--maintenance', type=click.STRING,
+@click.option('-a', '--add', is_flag=True, help='Add a new resource')
+@click.option('-s', '--state', type=click.STRING, help='Set the new state of the node')
+@click.option('-m', '--maintenance', type=click.STRING,
               help='Set/unset maintenance mode (on|off) for resources, this is equivalent to setting its state to Absent and its available_upto to 0')
 @click.option('-d', '--drain', type=click.STRING,
               help='Prevent new job to be scheduled on resources, this is equivalent to setting the drain property to YES')
@@ -273,9 +271,8 @@ def oarnodesetting(resources, hostnames, filename, sql, add, state, maintenance,
               help='Do not wait for job end when the node switches to Absent or Dead')
 @click.option('--last-property-value', type=click.STRING,
               help='Get the last value used for a property (as sorted by SQL\'s ORDER BY DESC)')
-#@click.option('--verbose', is_flag=True, help='Verbose output')
+# @click.option('--verbose', is_flag=True, help='Verbose output')
 @click.option('-V', '--version', is_flag=True, help='Print OAR version number')
-
 def cli(resource, hostname, file, sql, add, state, maintenance, drain, property,
         no_wait, last_property_value, version):
     resources = resource

@@ -7,7 +7,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
-from sqlalchemy import create_engine, inspect, exc
+from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
                                         DeclarativeMeta)
@@ -22,19 +22,22 @@ from .utils import cached_property, merge_dicts, get_table_name, to_json, rerais
 
 __all__ = ['Database']
 
-def wait_db_ready(f, args, attempt = 7):
+
+def wait_db_ready(f, args, attempt=7):
     delay = 0.2
     while attempt > 0:
         try:
             f(*args)
-        except exc.OperationalError as error:
+        # except exc.OperationalError as error:
+        except Exception:
             time.sleep(delay)
-            delay = 2*delay
+            delay = 2 * delay
             attempt -= 1
             if not attempt:
                 raise
         else:
             break
+
 
 class BaseModel(object):
 
@@ -53,7 +56,7 @@ class BaseModel(object):
             cls._db.session.add(record)
             cls._db.session.commit()
             return record
-        except:
+        except Exception:
             exc_type, exc_value, tb = sys.exc_info()
             cls._db.session.rollback()
             reraise(exc_type, exc_value, tb.tb_next)
