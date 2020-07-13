@@ -28,13 +28,6 @@ node_list = []
 fakezmq = FakeZmq()
 fakezmq.reset()
 
-# Set undefined config value to default one
-# TO REMOVE
-DEFAULT_CONFIG = {
-    'HULOT_SERVER': 'localhost',
-    'HULOT_PORT' : 6672,
-}
-
 quotas_simple_temporal_rules = {
     "periodical":[
         ["*,*,*,*", "quotas_1", "default"]
@@ -87,13 +80,16 @@ def active_energy_saving(request):
     config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD'] = 'wakeup_node_command'
 
     def teardown():
+        #config.clear()
+        #config.update(config.DEFAULT_CONFIG)
+
         del config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
-        del config['SCHEDULER_NODE_MANAGER_SLEEP_TIME']
+        del  config['SCHEDULER_NODE_MANAGER_SLEEP_TIME']
         del config['SCHEDULER_NODE_MANAGER_IDLE_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
         del config['ENERGY_SAVING_MODE']
-
+               
     request.addfinalizer(teardown)
 
 def period_weekstart():
@@ -135,10 +131,10 @@ def monkeypatch_tools(request, monkeypatch):
                         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes))
     monkeypatch.setattr(oar.lib.tools, 'send_checkpoint_signal', lambda job: None)
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
-
+    monkeypatch.setattr(oar.lib.tools, 'notify_bipbip_commander', lambda json_msg: True)
+    
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
-    config.setdefault_config(DEFAULT_CONFIG)
     fakezmq.reset()
     oar.lib.tools.zmq_context = None
     oar.lib.tools.almighty_socket = None

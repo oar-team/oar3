@@ -2,7 +2,6 @@ import os
 import click
 
 from oar.lib import config
-from oar.lib.tools import DEFAULT_CONFIG
 from oar.cli.oarsub import connect_job 
 
 from .utils import CommandReturns
@@ -11,8 +10,6 @@ from .utils import CommandReturns
 @click.argument('job_id', nargs=1, required=True,  type=int)
 def cli(job_id):
 
-    config.setdefault_config(DEFAULT_CONFIG)
-    
     cmd_ret = CommandReturns()
     binpath = ''
     if 'OARDIR' in os.environ:

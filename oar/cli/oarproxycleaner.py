@@ -4,7 +4,7 @@ import time
 import escapism
 
 from oar.lib import config
-from oar.lib.tools import DEFAULT_CONFIG
+
 from oar.lib.job_handling import get_jobs_state
 
 from oar.rest_api.proxy_utils import (acquire_lock, release_lock, load_traefik_rules,
@@ -18,8 +18,6 @@ from .utils import CommandReturns
 def cli(period):
     """ Proxy's rules cleaner which checks if jobs associated to Traefik proxy rule is running if not
         rule is deleted from rules file"""
-
-    config.setdefault_config(DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns()
     proxy_rules_filename = config['PROXY_TRAEFIK_RULES_FILE']

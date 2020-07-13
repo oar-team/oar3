@@ -134,7 +134,8 @@ def compare_slots_val_ref(slots, v):
 @pytest.fixture(scope='module', autouse=True)
 def oar_conf(request):
     config['QUOTAS'] = 'yes'
-
+    # config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+    
     def remove_quotas():
         config['QUOTAS'] = 'no'
         Quotas.enabled = False

@@ -15,7 +15,7 @@ from oar.lib.job_handling import (get_job, get_job_challenge, get_job_current_ho
 from oar.lib.resource_handling import get_current_assigned_job_resources
 
 import oar.lib.tools as tools
-from oar.lib.tools import (DEFAULT_CONFIG, limited_dict2hash_perl, resources2dump_perl,
+from oar.lib.tools import (limited_dict2hash_perl, resources2dump_perl,
                            TimeoutExpired, format_ssh_pub_key, get_private_ssh_key_file_name)
 
 from oar.lib.event import (add_new_event, add_new_event_with_host)
@@ -31,7 +31,6 @@ class BipBip(object):
             return
         self.job_id = int(args[0])
         
-        config.setdefault_config(DEFAULT_CONFIG)
         self.server_prologue = config['SERVER_PROLOGUE_EXEC_FILE']
         self.server_epilogue = config['SERVER_EPILOGUE_EXEC_FILE']
 

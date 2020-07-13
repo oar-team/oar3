@@ -19,7 +19,6 @@ from oar.lib.queue import stop_all_queues
 
 import oar.lib.tools as tools
 
-from oar.lib.tools import DEFAULT_CONFIG
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info('Start Node Change State')
@@ -27,7 +26,6 @@ logger.info('Start Node Change State')
 class NodeChangeState(object):
 
     def __init__(self):
-        config.setdefault_config(DEFAULT_CONFIG)
         self.exit_code = 0
         self.resources_to_heal = []
         self.cpuset_field = None

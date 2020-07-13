@@ -13,7 +13,7 @@
 import sys
 from json import dumps
 
-from oar import (VERSION)
+from oar import VERSION
 from oar.lib import (db, config, Resource)
 
 from oar.lib.resource_handling import (get_resources_with_given_sql, get_resources_from_ids,
@@ -110,7 +110,6 @@ def print_resources_nodes_infos(cmd_ret, resources, nodes, json):
         print(dumps([r.to_dict() for r in resources]))
 
 def oarnodes(nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed=False):
-    config.setdefault_config(tools.DEFAULT_CONFIG)
     
     cmd_ret = CommandReturns(cli)      
 

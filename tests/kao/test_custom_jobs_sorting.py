@@ -30,7 +30,7 @@ def test_db_job_sorting_simple_priority_no_waiting_time():
 
     plt = Platform()
     now = plt.get_time()
-
+    
     # add some resources
     for i in range(4):
         db['Resource'].create(network_address="localhost")

@@ -24,8 +24,7 @@ def oarnotify(tag, version):
         comment = "You must be oar or root"
         cmd_ret.error(comment, 1, 8)
         return cmd_ret
-        
-    config.setdefault_config(tools.DEFAULT_CONFIG)
+
     tools.notify_almighty(tag)
 
     return cmd_ret

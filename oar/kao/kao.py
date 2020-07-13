@@ -4,12 +4,6 @@
 from oar.lib import (config, get_logger)
 from oar.kao.meta_sched import meta_schedule
 
-DEFAULT_CONFIG = {
-    'METASCHEDULER_MODE': 'internal'
-}
-
-config.setdefault_config(DEFAULT_CONFIG)
-
 logger = get_logger("oar.kao")
 
 def main():

@@ -17,65 +17,6 @@ from subprocess import (Popen, run, call, PIPE, check_output, CalledProcessError
 from pwd import getpwnam  # use via tools.getpass (simplify mocking)
 from multiprocessing import Process  # use via tools.getpass (simplify mocking)
 
-# Constants
-DEFAULT_CONFIG = {
-    'SERVER_HOSTNAME': 'localhost',
-    'SERVER_PORT': '6666',
-    'APPENDICE_SERVER_PORT': '6670',
-    'BIPBIP_COMMANDER_SERVER': 'localhost',
-    'BIPBIP_COMMANDER_PORT': '6671',
-    'LEON_SOFT_WALLTIME': 20,
-    'LEON_WALLTIME': 300,
-    'TIMEOUT_SSH': 120,
-    'OAR_SSH_CONNECTION_TIMEOUT': 120,
-    'SERVER_PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'SERVER_PROLOGUE_EXEC_FILE': None,
-    'SERVER_EPILOGUE_EXEC_FILE': None,
-    'BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT': 30,
-    'DEAD_SWITCH_TIME': 0,
-    'OAREXEC_DIRECTORY': '/var/lib/oar',
-    'OAREXEC_PID_FILE_NAME': 'pid_of_oarexec_for_jobId_',
-    'OARSUB_FILE_NAME_PREFIX': 'oarsub_connections_',
-    'PROLOGUE_EPILOGUE_TIMEOUT': 60,
-    'PROLOGUE_EXEC_FILE': None,
-    'EPILOGUE_EXEC_FILE': None,
-    'SUSPEND_RESUME_SCRIPT_TIMEOUT': 60,
-    'SCHEDULER_JOB_SECURITY_TIME': '60',  # TODO should be int
-    'SSH_RENDEZ_VOUS': 'oarexec is initialized and ready to do the job',
-    'JOB_RESOURCE_MANAGER_FILE': '/etc/oar/job_resource_manager_cgroups.pl',
-    'MONITOR_FILE_SENSOR': '/etc/oar/oarmonitor_sensor.pl',
-    'SUSPEND_RESUME_FILE_MANAGER': '/etc/oar/suspend_resume_manager.pl',
-    'OAR_SSH_CONNECTION_TIMEOUT': 120,
-    'OAR_SSH_AUTHORIZED_KEYS_FILE': '.ssh/authorized_keys',
-    'NODE_FILE_DB_FIELD': 'network_address',
-    'NODE_FILE_DB_FIELD_DISTINCT_VALUES': 'resource_id',
-    'NOTIFY_TCP_SOCKET_ENABLED': 1,
-    'SUSPECTED_HEALING_TIMEOUT': 10,
-    'SUSPECTED_HEALING_EXEC_FILE': None,
-    'DEBUG_REMOTE_COMMANDS': 'YES',
-    'COSYSTEM_HOSTNAME': '127.0.0.1',
-    'DEPLOY_HOSTNAME': '127.0.0.1',
-    'OPENSSH_CMD': '/usr/bin/ssh -p 6667',
-    'OAREXEC_DEBUG_MODE': '1',
-    'HULOT_SERVER': 'localhost',
-    'HULOT_PORT': 6672,
-    'WALLTIME_CHANGE_ENABLED': 'NO',
-    'WALLTIME_MIN_FOR_CHANGE': 0.0,
-    'WALLTIME_CHANGE_APPLY_TIME': 0.0,
-    'WALLTIME_INCREMENT': 0.0,
-    'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
-    'WALLTIME_MAX_INCREASE': "{'default': 7200}",
-    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}",
-    'QUOTAS': 'no',
-    'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json',
-    'QUOTAS_PERIOD': 1296000,  # 15 days in seconds
-    'QUOTAS_ALL_NB_RESOURCES_MODE': 'default_not_dead',  # ALL w/ correspond to all default source
-    'QUOTAS_WINDOW_TIME_LIMIT': 4 * 1296000,  # 2 months, window time limit for a scheduling round where to place a job
-    'PROXY': 'no', # or treafik this only one supported proxy
-    'PROXY_TRAEFIK_ENTRYPOINT': 'http://localhost:5000',
-    'PROXY_TRAEFIK_RULES_FILE': '/etc/oar/rules_oar_traefik_proxy.toml',
-    'OAR_PROXY_BASE_URL': '/proxy'
-}
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -85,7 +26,7 @@ bipbip_commander_socket = None
 
 
 def notify_user(job, state, msg):  # pragma: no cover
-
+    
     if job.notify:
         tags = ['RUNNING', 'END', 'ERROR', 'INFO', 'SUSPENDED', 'RESUMING']
         m = re.match(r'^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$', job.notify)
@@ -152,8 +93,9 @@ def create_almighty_socket():  # pragma: no cover
     global zmq_context
     global almighty_socket
 
-    config.setdefault_config(DEFAULT_CONFIG)
-
+    # config.setdefault_config(DEFAULT_CONFIG) TOREMOVE
+    import pdb; pdb.set_trace()
+    
     if not zmq_context:
         zmq_context = zmq.Context()
 
@@ -163,6 +105,7 @@ def create_almighty_socket():  # pragma: no cover
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
+    import pdb; pdb.set_trace()
     if not almighty_socket:
         create_almighty_socket()
 
@@ -181,10 +124,11 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
 
 
 def create_bipbip_commander_socket():  # pragma: no cover
+    import pdb; pdb.set_trace()
     global zmq_context
     global bipbip_commander_socket
 
-    config.setdefault_config(DEFAULT_CONFIG)
+    # config.setdefault_config(DEFAULT_CONFIG) TOREMOVE
     if not zmq_context:
         zmq_context = zmq.Context()
     bipbip_commander_socket = zmq_context.socket(zmq.PUSH)
@@ -192,7 +136,7 @@ def create_bipbip_commander_socket():  # pragma: no cover
 
 
 def notify_bipbip_commander(message):  # pragma: no cover
-
+    import pdb; pdb.set_trace()
     if not bipbip_commander_socket:
         create_bipbip_commander_socket()
 
@@ -303,7 +247,7 @@ def pingchecker_exec_command(cmd, hosts, filter_output, ip2hostname, pipe_hosts,
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, env=env)
 
     try:
-        out, err = p.communicate(pipe_hosts, 2 * DEFAULT_CONFIG['TIMEOUT_SSH'])
+        out, err = p.communicate(pipe_hosts, 2 * config['TIMEOUT_SSH'])
     except TimeoutExpired:
         p.kill()
         log.debug('[PingChecker] TimeoutExpired')
@@ -331,7 +275,7 @@ def send_log_by_email(title, message):  # pragma: no cover
     return
 
 
-def exec_with_timeout(cmd, timeout=DEFAULT_CONFIG['TIMEOUT_SSH']):  # pragma: no cover
+def exec_with_timeout(cmd, timeout=config['TIMEOUT_SSH']):  # pragma: no cover
     # Launch admin script
     error_msg = ''
     try:
@@ -390,7 +334,7 @@ def signal_oarexec(host, job_id, signal, wait, ssh_cmd, user_signal=None):  # pr
     comment = None
     if wait:
         try:
-            check_output(cmd, stderr=STDOUT, timeout=DEFAULT_CONFIG['TIMEOUT_SSH'])
+            check_output(cmd, stderr=STDOUT, timeout=config['TIMEOUT_SSH'])
         except CalledProcessError as e:
             comment = 'The kill command return a bad exit code (' + str(e.returncode)\
                       + 'for the job ' + str(job_id) + 'on the node ' + host\
@@ -440,7 +384,7 @@ def launch_oarexec(cmd, data_str, oarexec_files):  # pragma: no cover
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
     try:
-        out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * DEFAULT_CONFIG['TIMEOUT_SSH']))
+        out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * config['TIMEOUT_SSH']))
     except TimeoutExpired:
         p.kill()
         tools_logger.debug("Oarexec's Launching TimeoutExpired")
@@ -511,7 +455,7 @@ def manage_remote_commands(hosts, data_str, manage_file, action, ssh_command, ta
         os.remove(fifoname)
 
         try:
-            out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * DEFAULT_CONFIG['TIMEOUT_SSH']))
+            out, err = p.communicate(str_to_transfer.encode('utf8'), timeout=(2 * config['TIMEOUT_SSH']))
         except TimeoutExpired:
             tools_logger.error('Popen.comminicate TimeoutExpired')
             p.kill()

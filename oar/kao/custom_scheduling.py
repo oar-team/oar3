@@ -13,12 +13,6 @@ except ImportError:
     zerorpc = None
 
 
-# Set undefined config value to default one
-config.setdefault_config({
-    'COORM_DEFAULT_TIMEOUT': 10,
-})
-
-
 def find_default(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs):
     """Simple wrap function to default function for test purpose"""
     return oar.kao.scheduling.find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)

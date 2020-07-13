@@ -4,7 +4,6 @@ import click
 
 from oar import VERSION
 from oar.lib import config
-from oar.lib.tools import DEFAULT_CONFIG
 from oar.cli.oarsub import connect_job 
 
 import oar.lib.walltime as walltime
@@ -12,8 +11,6 @@ import oar.lib.walltime as walltime
 from .utils import CommandReturns
 
 def oarwalltime(job_id, new_walltime, force, delay_next_jobs, version, user=None, cli=True):
-
-    config.setdefault_config(DEFAULT_CONFIG)
     
     cmd_ret = CommandReturns(cli)
 

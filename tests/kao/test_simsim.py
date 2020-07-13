@@ -8,7 +8,7 @@ from oar.kao.simsim import (ResourceSetSimu, JobSimu,
 from procset import ProcSet
 
 
-def test_simsim_1():
+def _test_simsim_1():
 
     # Set undefined config value to default one
     DEFAULT_CONFIG = {

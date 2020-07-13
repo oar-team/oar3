@@ -12,16 +12,9 @@ from oar.lib.job_handling import (get_array_job_ids, get_job_ids_with_given_prop
 
 import oar.lib.tools as tools
 
-DEFAULT_CONFIG = {
-    'COSYSTEM_HOSTNAME': '127.0.0.1',
-    'DEPLOY_HOSTNAME': '127.0.0.1',
-}
-
 click.disable_unicode_literals_warning = True
 
 def oarresume(job_ids, array, sql, version, user=None, cli=True):
-
-    config.setdefault_config(DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
     

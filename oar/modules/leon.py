@@ -11,8 +11,6 @@ from oar.lib.event import add_new_event
 
 import oar.lib.tools as tools
 
-from oar.lib.tools import DEFAULT_CONFIG
-
 logger = get_logger("oar.modules.leon", forward_stderr=True)
 logger.info('Start Leon')
 
@@ -21,7 +19,6 @@ class Leon(object):
 
     def __init__(self, args=None):
         self.args = args if args else []
-        config.setdefault_config(DEFAULT_CONFIG)
         self.exit_code = 0
         
     def run(self):

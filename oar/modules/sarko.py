@@ -17,7 +17,6 @@ from oar.lib.event import (add_new_event, add_new_event_with_host)
 
 import oar.lib.tools as tools
 
-from oar.lib.tools import DEFAULT_CONFIG
 
 logger = get_logger("oar.modules.sarko", forward_stderr=True)
 logger.info('Start Sarko')
@@ -25,7 +24,6 @@ logger.info('Start Sarko')
 class Sarko(object):
 
     def __init__(self):
-        config.setdefault_config(DEFAULT_CONFIG)
         self.guilty_found = 0
         
     def run(self):

@@ -278,7 +278,6 @@ def test_oarsub_multiple_types(monkeypatch):
     assert result.exit_code == 0
     
 def test_oarsub_connect_job_function(monkeypatch):
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'oar'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1)[0]
@@ -288,7 +287,6 @@ def test_oarsub_connect_job_function(monkeypatch):
     assert cmd_ret.exit_values == []
 
 def test_oarsub_connect_job_function_bad_user(monkeypatch):
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'yop'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1)[0]
@@ -299,7 +297,6 @@ def test_oarsub_connect_job_function_bad_user(monkeypatch):
     assert cmd_ret.exit_values[-1] == 20
     
 def test_oarsub_connect_job_function_noop(monkeypatch):
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'oar'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1, types=['noop'])[0]
@@ -310,7 +307,6 @@ def test_oarsub_connect_job_function_noop(monkeypatch):
     assert cmd_ret.exit_values[-1] == 17
 
 def test_oarsub_connect_job_function_cosystem(monkeypatch):
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'oar'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1, types=['cosystem'])[0]
@@ -320,7 +316,6 @@ def test_oarsub_connect_job_function_cosystem(monkeypatch):
     assert cmd_ret.exit_values == []
     
 def test_oarsub_connect_job_function_deploy(monkeypatch):
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'oar'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1, types=['deploy'])[0]
@@ -333,7 +328,6 @@ def test_oarsub_connect_job_function_deploy(monkeypatch):
 def test_oarsub_connect_job_function_returncode(return_code, exit_values, monkeypatch):
     global fake_run_return_code
     fake_run_return_code = return_code << 8
-    config.setdefault_config(oar.lib.tools.DEFAULT_CONFIG)
     os.environ['OARDO_USER'] = 'oar'
     os.environ['DISPLAY'] = ''
     job_id = insert_running_jobs(1)[0]

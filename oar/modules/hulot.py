@@ -56,7 +56,7 @@ DEFAULT_CONFIG = {
     #TODO REMOVE   'ENERGY_SAVING_WINDOW_SIZE': 25,
 }
 
-config.setdefault_config(DEFAULT_CONFIG)
+#config.setdefault_config(DEFAULT_CONFIG)
 
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
 

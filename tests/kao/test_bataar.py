@@ -9,7 +9,7 @@ import struct
 import sys
 import os
 import json
-from oar.lib import db
+from oar.lib import (config, db)
 
 from oar.kao.bataar import bataar
 
@@ -32,6 +32,8 @@ SENT_MSGS_2 = order_json_str_arrays([
 
 data_storage = {}
 
+config_backup = {}
+
 class FakeRedis(object):
     def __init__(self, host='localhost', port='6379'):
         pass
@@ -46,6 +48,16 @@ def monkeypatch_datastore_zmq():
     zmq.Context = FakeZmq
     #monkeypatch.setattr(zmq, 'Context', FakeZmq)
 
+@pytest.fixture(scope='module', autouse=True)
+def save_oar_conf(request):
+    global config_backup
+    config_backup = config.copy()
+    
+    @request.addfinalizer
+    def restore_config():
+        config.clear()
+        config.update(config_backup)
+    
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
     fakezmq.reset()

@@ -6,7 +6,6 @@ from ..helpers import insert_running_jobs
 from oar.lib import (config, db, get_logger, WalltimeChange, EventLog)
 from oar.lib.job_handling import insert_job
 from oar.kao.platform import Platform
-from oar.lib.tools import DEFAULT_CONFIG
 
 from oar.kao.walltime_change import process_walltime_change_requests
 
@@ -23,13 +22,11 @@ def minimal_db_initialization(request):
     
 def test_process_walltime_change_requests_void():
     plt = Platform()
-    config.setdefault_config(DEFAULT_CONFIG)
     process_walltime_change_requests(plt)
     assert not db.query(WalltimeChange).all() #of course remains void
 
 def test_process_walltime_change_requests_job_not_running():
     plt = Platform()
-    config.setdefault_config(DEFAULT_CONFIG)
     job_id = insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     db['WalltimeChange'].create(job_id=job_id, pending=3663)
 
@@ -43,7 +40,6 @@ def test_process_walltime_change_requests_job_not_running():
                     reason="bug raises with sqlite database")
 def test_process_walltime_change_requests():
     plt = Platform()
-    config.setdefault_config(DEFAULT_CONFIG)
     job_id = insert_running_jobs(1)[0]
     db['WalltimeChange'].create(job_id=job_id, pending=3663)
     

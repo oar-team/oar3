@@ -84,10 +84,13 @@ DEFAULT_CONFIG = {
     'WALLTIME_ALLOWED_USERS_TO_FORCE': '',
     'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
     'WALLTIME_MAX_INCREASE': '{default => 7200}',
-    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{_ => '*', besteffort => ''}"
+    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{_ => '*', besteffort => ''}",
+
+    # Misc 
+    'COORM_DEFAULT_TIMEOUT': 10,
 }
 
-config.setdefault_config(DEFAULT_CONFIG)
+# config.setdefault_config(DEFAULT_CONFIG)
 
 # waiting time when a reservation has not all of its nodes
 reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
@@ -182,7 +185,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
 
 # Tell Almighty to run a job
 def notify_to_run_job(jid):
-
+    
     if jid not in to_launch_jobs_already_treated:
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
@@ -733,7 +736,7 @@ def meta_schedule(mode='internal', plt=Platform()):
     #
     # Manage dynamic node feature for energy saving:
     #
-    if ('ENERGY_SAVING_MODE' in config) and config['ENERGY_SAVING_MODE']:
+    if ('ENERGY_SAVING_MODE' in config) and config['ENERGY_SAVING_MODE'] != '':
         if config['ENERGY_SAVING_MODE'] == 'metascheduler_decision_making':
             nodes_2_change = nodes_energing_saving(current_time_sec)
         elif config['ENERGY_SAVING_MODE'] == 'batsim_scheduler_proxy_decision_making':

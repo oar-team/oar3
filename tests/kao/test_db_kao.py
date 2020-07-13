@@ -32,14 +32,13 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
     monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
-
+    monkeypatch.setattr(oar.lib.tools, 'notify_bipbip_commander', lambda json_msg: True)
 
 def test_db_kao_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
     print('job state:', job.state)
 
-    # pdb.set_trace()
     main()
 
     for i in db['GanttJobsPrediction'].query.all():

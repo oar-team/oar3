@@ -3,7 +3,7 @@
 import os
 
 import click
-from oar import (VERSION)
+from oar import VERSION
 from .utils import CommandReturns
 
 from oar.lib import config
@@ -29,8 +29,6 @@ def oardel(job_ids, checkpoint, signal, besteffort, array, sql, force_terminate_
             user = os.environ['OARDO_USER']
         else:
             user = os.environ['USER']
-
-    config.setdefault_config(tools.DEFAULT_CONFIG)
 
     cmd_ret = CommandReturns(cli)
 

@@ -23,7 +23,7 @@ from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostna
 
 from oar.cli.oardel import oardel
 
-from oar.lib.tools import (DEFAULT_CONFIG, get_oarexecuser_script_for_oarsub)
+from oar.lib.tools import get_oarexecuser_script_for_oarsub
 
 import oar.lib.tools as tools
 
@@ -252,10 +252,7 @@ def cli(command, interactive, queue, resource, reservation, connect,
     """Submit a job to OAR batch scheduler."""
 
     global job_id_lst
-    
-    # Set default config for submission
-    default_submission_config(DEFAULT_CONFIG)
-    
+
     cmd_ret = CommandReturns()
     
     log_warning = ''  # TODO

@@ -21,25 +21,10 @@ from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, hms_str_to_d
 
 import oar.lib.tools as tools
 
-DEFAULT_CONFIG = {
-    'SERVER_HOSTNAME': 'localhost',
-    'SERVER_PORT': '6666',
-    'OPENSSH_CMD': 'ssh',
-    'OAR_SSH_CONNECTION_TIMEOUT': '200',
-    'STAGEIN_DIR': '/tmp',
-    'DEFAULT_JOB_WALLTIME': 3600,
-    'OARSUB_DEFAULT_RESOURCES': '/resource_id=1',
-    'OARSUB_NODES_RESOURCES': 'resource_id',
-    'QUEUE': 'default',
-    'PROJECT': 'default',
-    'SIGNAL': 12,
-    'QUOTAS': 'NO'
-}
-
+# TOREMOVE
 def default_submission_config(default_value=None):
     if default_value:
-        DEFAULT_CONFIG.update(default_value)
-    config.setdefault_config(DEFAULT_CONFIG)
+        config.update(default_value)
 
 def lstrip_none(s):
     if s:
