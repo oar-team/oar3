@@ -30,7 +30,7 @@ def oarwalltime(job_id, new_walltime, force, delay_next_jobs, version, user=None
         cmd_ret.error('New walltime is malformatted', 4, 1)
         return cmt_ret
 
-    if not new_walltime:        
+    if not new_walltime:
         (walltime_change, message, state) = walltime.get(job_id)
         if not walltime_change:
              cmd_ret.error(message, 2, 2)

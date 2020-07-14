@@ -17,8 +17,8 @@ logger = get_logger('oar.lib.walltime')
 
 def get_conf(config_value, queue, walltime, value):
     value = config_value
-    
     if isinstance(config_value, str) and (config_value != ''):
+        # TODO add try / except
         conf_val = eval(config_value)
         if isinstance(conf_val, dict):
             if queue and queue in conf_val:

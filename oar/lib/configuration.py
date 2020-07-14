@@ -87,8 +87,8 @@ class Configuration(dict):
         'ENERGY_SAVING_MODE': '',
 
         'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
-        'WALLTIME_MAX_INCREASE': '{default => 7200}',
-        'WALLTIME_ALLOWED_USERS_TO_FORCE': "{_ => '*', besteffort => ''}",
+        'WALLTIME_MAX_INCREASE': "{'default': 7200}",
+        'WALLTIME_ALLOWED_USERS_TO_FORCE': "{'_': '*', 'besteffort': ''}",
         'WALLTIME_CHANGE_ENABLED': 'NO',
         'WALLTIME_MIN_FOR_CHANGE': 0.0,
         'WALLTIME_CHANGE_APPLY_TIME': 0.0,
