@@ -40,10 +40,6 @@ def test_db_multifactor_fairshare():
 
     generate_accountings()
 
-    # add some resources
-    for i in range(5):
-        db['Resource'].create(network_address="localhost")
-
     nb_users = 5
 
     users = [str(x) for x in sample(range(nb_users), nb_users)]
@@ -74,7 +70,7 @@ def test_db_multifactor_fairshare():
 
     min_jid = min(r.moldable_id for r in req)
     min_jid -= 1
-
+    
     for i, r in enumerate(req):
         print("req:", r.moldable_id, jid_2_u[r.moldable_id - min_jid], i)
         if jid_2_u[r.moldable_id - min_jid] != i:
