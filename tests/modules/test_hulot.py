@@ -42,7 +42,7 @@ def fake_call(cmd, shell):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
     monkeypatch.setattr(oar.lib.tools, 'call', fake_call)
-
+    monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
