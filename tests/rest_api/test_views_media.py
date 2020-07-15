@@ -11,7 +11,7 @@ fake_popen_data = None
 
 
 class FakePopen(object):
-    def __init__(self, cmd, stdin):
+    def __init__(self, cmd, env, stdin):
         pass
 
     def communicate(self, data):
@@ -26,9 +26,9 @@ fake_call_retcodes = []
 fake_calls = []
 
 
-def fake_call(x):
+def fake_call(x, env):
     fake_calls.append(x)
-    print('fake_call: ', x)
+    print('fake_call: ', x, env)
     return fake_call_retcodes.pop(0)
 
 
@@ -36,7 +36,7 @@ fake_check_outputs = []
 fake_check_output_cmd = []
 
 
-def fake_check_output(cmd):
+def fake_check_output(cmd, env):
     fake_check_output_cmd.append(cmd)
     return fake_check_outputs.pop(0)
 
