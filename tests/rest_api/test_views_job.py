@@ -138,6 +138,7 @@ def test_app_job_post(client):
     res = client.post(url_for('jobs.submit'), data=data, headers={'X_REMOTE_IDENT': 'bob'})
     print(res.json)
     job_ids = db.query(Job.id).all()
+    assert job_ids != []
     href = '/jobs/{}'.format(job_ids[0][0])
     assert ordered(res.json['links']) == ordered([{'rel': 'rel', 'href': href}])
     assert res.status_code == 200
