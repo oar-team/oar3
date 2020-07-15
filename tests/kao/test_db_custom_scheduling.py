@@ -25,7 +25,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'notify_almighty', lambda x: True)
     monkeypatch.setattr(oar.lib.tools, 'notify_tcp_socket', lambda addr, port, msg: len(msg))
     monkeypatch.setattr(oar.lib.tools, 'notify_user', lambda job, state, msg: len(state + msg))
-
+    monkeypatch.setattr(oar.lib.tools, 'notify_bipbip_commander', lambda json_msg: True)
 
 def test_db_all_in_assign_default_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="", types=["assign=default"])

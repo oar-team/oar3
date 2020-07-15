@@ -584,6 +584,7 @@ def call_internal_scheduler(plt, scheduled_jobs, all_slot_sets, job_security_tim
     internal_schedule_cycle(plt, now, all_slot_sets, job_security_time,
                             [q.name for q in queues])
 
+
 def nodes_energing_saving(current_time_sec):
 
     nodes_2_halt = []
@@ -622,7 +623,7 @@ def nodes_energing_saving(current_time_sec):
         wakeup_time = int(config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME'])
         nodes_2_wakeup = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
 
-    return {'halt':nodes_2_halt, 'wakeup':nodes_2_wakeup}
+    return {'halt': nodes_2_halt, 'wakeup': nodes_2_wakeup}
 
 
 def meta_schedule(mode='internal', plt=Platform()):
@@ -633,9 +634,9 @@ def meta_schedule(mode='internal', plt=Platform()):
 
     if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
         Quotas.enable(plt.resource_set())
-        
+
     if ('WALLTIME_CHANGE_ENABLED' in config) and (config['WALLTIME_CHANGE_ENABLED'] == 'yes'):
-         process_walltime_change_requests(plt)
+        process_walltime_change_requests(plt)
 
     tools.create_almighty_socket()
 
