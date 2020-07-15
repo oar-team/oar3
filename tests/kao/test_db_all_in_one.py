@@ -7,7 +7,7 @@ from copy import deepcopy
 from tempfile import mkstemp
 
 import time
-from datetime import (date, datetime, timedelta)
+from datetime import (datetime, timedelta)
 
 from oar.lib import (db, config, GanttJobsPrediction, Resource)
 from oar.lib.job_handling import (insert_job, set_jobs_start_time, set_job_state)
@@ -29,7 +29,7 @@ fakezmq = FakeZmq()
 fakezmq.reset()
 
 quotas_simple_temporal_rules = {
-    "periodical":[
+    "periodical": [
         ["*,*,*,*", "quotas_1", "default"]
     ],
     "quotas_1": {
@@ -39,6 +39,7 @@ quotas_simple_temporal_rules = {
         "*,*,*,/": [-1, -1, -1]
     }
 }
+
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
@@ -66,7 +67,7 @@ def active_quotas(request):
         config['QUOTAS'] = 'no'
         os.remove(config['QUOTAS_CONF_FILE'])
         del config['QUOTAS_CONF_FILE']
-        
+
     request.addfinalizer(teardown)
 
 
@@ -80,22 +81,24 @@ def active_energy_saving(request):
     config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD'] = 'wakeup_node_command'
 
     def teardown():
-        #config.clear()
-        #config.update(config.DEFAULT_CONFIG)
+        # config.clear()
+        # config.update(config.DEFAULT_CONFIG)
 
         del config['SCHEDULER_NODE_MANAGER_SLEEP_CMD']
-        del  config['SCHEDULER_NODE_MANAGER_SLEEP_TIME']
+        del config['SCHEDULER_NODE_MANAGER_SLEEP_TIME']
         del config['SCHEDULER_NODE_MANAGER_IDLE_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKEUP_TIME']
         del config['SCHEDULER_NODE_MANAGER_WAKE_UP_CMD']
         del config['ENERGY_SAVING_MODE']
-               
+
     request.addfinalizer(teardown)
+
 
 def period_weekstart():
     t_dt = datetime.fromtimestamp(time.time()).date()
     t_weekstart_day_dt = t_dt - timedelta(days=t_dt.weekday())
     return int(datetime.combine(t_weekstart_day_dt, datetime.min.time()).timestamp())
+
 
 def create_quotas_rules_file(quotas_rules):
     ''' create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
@@ -132,14 +135,16 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'send_checkpoint_signal', lambda job: None)
     monkeypatch.setattr(zmq, 'Context', FakeZmq)
     monkeypatch.setattr(oar.lib.tools, 'notify_bipbip_commander', lambda json_msg: True)
-    
+
+
 @pytest.fixture(scope="function", autouse=True)
 def setup(request):
     fakezmq.reset()
     oar.lib.tools.zmq_context = None
     oar.lib.tools.almighty_socket = None
     oar.lib.tools.bipbip_commander_socket = None
-    
+
+
 def test_db_all_in_one_simple_1(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
     job = db['Job'].query.one()
@@ -149,7 +154,7 @@ def test_db_all_in_one_simple_1(monkeypatch):
     print("fakezmq.num_socket: ", fakezmq.num_socket)
     meta_schedule('internal')
     print("fakezmq.num_socket: ", fakezmq.num_socket)
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     job = db['Job'].query.one()
@@ -186,7 +191,7 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time - now)
 
@@ -218,7 +223,7 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     meta_schedule('internal')
 
     res = []
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - t1)
         res.append(i.start_time - t1)
 
@@ -236,16 +241,17 @@ def test_db_all_in_one_quotas_AR(monkeypatch):
 
     assert job.state == 'Error'
 
+
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_temporal_quotas_1(monkeypatch):
-    a =  deepcopy(quotas_simple_temporal_rules)
-    
+    a = deepcopy(quotas_simple_temporal_rules)
+
     now = get_date()
-    t1 = now + int(2*86400)
+    t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
-    rules_str  = str(a).replace("'", '"')
+    rules_str = str(a).replace("'", '"')
     print(rules_str)
     create_quotas_rules_file(rules_str)
 
@@ -255,49 +261,51 @@ def test_db_all_in_one_temporal_quotas_1(monkeypatch):
     # pdb.set_trace()
     meta_schedule('internal')
 
-    print('now:{} t1: {} t1-now: {}'.format(now,t1, t1-now))
-    
+    print('now:{} t1: {} t1-now: {}'.format(now, t1, t1 - now))
+
     res = []
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time)
 
-    assert res == [t1 - (t1%60), now]
+    assert res == [t1 - (t1 % 60), now]
+
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_temporal_quotas_2(monkeypatch):
-    a =  deepcopy(quotas_simple_temporal_rules)
-    
+    a = deepcopy(quotas_simple_temporal_rules)
+
     now = get_date()
-    t1 = now + int(2*86400)
+    t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
-    rules_str  = str(a).replace("'", '"')
+    rules_str = str(a).replace("'", '"')
     print(rules_str)
     create_quotas_rules_file(rules_str)
-    
+
     insert_job(res=[(100, [('resource_id=5', "")])], properties="", user="toto")
     insert_job(res=[(200, [('resource_id=5', "")])], properties="", types=['no_quotas'])
 
     # pdb.set_trace()
     meta_schedule('internal')
 
-    print('now:{} t1: {} t1-now: {}'.format(now,t1, t1-now))
-    
+    print('now:{} t1: {} t1-now: {}'.format(now, t1, t1 - now))
+
     res = []
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time - now)
         res.append(i.start_time)
 
-    assert res == [t1 - (t1%60), now]
+    assert res == [t1 - (t1 % 60), now]
+
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_temporal_quotas_AR_1(monkeypatch):
-    a =  deepcopy(quotas_simple_temporal_rules)
-    rules_str  = str(a).replace("'", '"')
+    a = deepcopy(quotas_simple_temporal_rules)
+    rules_str = str(a).replace("'", '"')
     print(rules_str)
-    
+
     create_quotas_rules_file(rules_str)
 
     job = insert_and_sched_ar(get_date() + 10)
@@ -305,17 +313,18 @@ def test_db_all_in_one_temporal_quotas_AR_1(monkeypatch):
 
     assert job.state == 'Error'
 
+
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_temporal_quotas_AR_2(monkeypatch):
-    a =  deepcopy(quotas_simple_temporal_rules)
+    a = deepcopy(quotas_simple_temporal_rules)
     now = get_date()
-    t1 = now + int(2*86400)
+    t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a['oneshot'] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
-    
-    rules_str  = str(a).replace("'", '"')
+
+    rules_str = str(a).replace("'", '"')
     print(rules_str)
-    
+
     create_quotas_rules_file(rules_str)
 
     job = insert_and_sched_ar(t1 + 3600)
@@ -381,7 +390,7 @@ def test_db_all_in_one_AR_5(monkeypatch):
 
     db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
     db.commit()
-    
+
     meta_schedule('internal')
 
     job = db['Job'].query.one()
@@ -414,7 +423,7 @@ def test_db_all_in_one_AR_7(monkeypatch):
 
     now = get_date()
     insert_job(res=[(60, [('resource_id=4', "")])],
-               reservation='toSchedule', start_time=now+10,
+               reservation='toSchedule', start_time=now + 10,
                info_type='localhost:4242', types=["timesharing=*,*"])
 
     meta_schedule('internal')
@@ -435,6 +444,7 @@ def test_db_all_in_one_BE(monkeypatch):
     print(job.state)
     assert (job.state == 'toLaunch')
 
+
 @pytest.mark.skip(reason='Bug occurs only in travis-CI upto now')
 def test_db_all_in_one_BE_to_kill(monkeypatch):
 
@@ -451,7 +461,7 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     insert_job(res=[(100, [('resource_id=5', "")])])
 
     meta_schedule('internal')
-    
+
     jobs = db['Job'].query.order_by(db['Job'].id).all()
     print(jobs[0].state, jobs[1].state)
 
@@ -460,6 +470,7 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
     assert jobs[0].state == 'toLaunch'
     assert jobs[1].state == 'Waiting'
     assert frag_job.job_id == jobs[0].id
+
 
 @pytest.mark.skip(reason='Bug occurs only in travis-CI upto now')
 def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
@@ -485,6 +496,7 @@ def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
 
     assert jobs[0].state == 'toLaunch'
     assert jobs[1].state == 'Waiting'
+
 
 @pytest.mark.skip(reason='Bug occurs only in travis-CI upto now')
 def test_db_all_in_one_BE_2(monkeypatch):
@@ -530,7 +542,7 @@ def test_db_all_in_one_wakeup_node_1(monkeypatch):
 
 @pytest.mark.usefixtures("active_energy_saving")
 def test_db_all_in_one_sleep_node_1(monkeypatch):
-    
+
     now = get_date()
 
     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
@@ -570,10 +582,11 @@ def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     assert (job.state == 'Waiting')
     assert fakezmq.sent_msgs == {0: [{'cmd': 'WAKEUP', 'nodes': ['localhost0', 'localhost1']}]}
 
+
 @pytest.mark.usefixtures('active_energy_saving')
 def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     config['ENERGY_SAVING_INTERNAL'] = 'yes'
-    
+
     now = get_date()
 
     insert_job(res=[(60, [('resource_id=1', "")])], properties="")
@@ -591,9 +604,10 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     print('fakezmq.sent_msgs', fakezmq.sent_msgs)
     assert (job.state == 'toLaunch')
 
-    assert fakezmq.sent_msgs[1][0]['cmd'] == 'HALT'
-    fakezmq.sent_msgs[1][0]['nodes'].sort()
-    assert fakezmq.sent_msgs[1][0]['nodes'] == ['localhost1', 'localhost2']
+    assert fakezmq.sent_msgs[0][0]['cmd'] == 'HALT'
+    fakezmq.sent_msgs[0][0]['nodes'].sort()
+    assert fakezmq.sent_msgs[0][0]['nodes'] == ['localhost1', 'localhost2']
+
 
 def test_db_all_in_one_simple_2(monkeypatch):
     insert_job(res=[(60, [('resource_id=4', "")])], properties="")
@@ -604,7 +618,7 @@ def test_db_all_in_one_simple_2(monkeypatch):
 
     meta_schedule('internal')
 
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     job = db['Job'].query.one()
@@ -619,7 +633,7 @@ def test_db_all_in_one_simple_interactive_waiting_1(monkeypatch):
 
     meta_schedule('internal')
 
-    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all(): 
+    for i in db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all():
         print("moldable_id: ", i.moldable_id, ' start_time: ', i.start_time)
 
     jobs = db['Job'].query.order_by(db['Job'].id).all()
