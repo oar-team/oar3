@@ -93,9 +93,6 @@ def create_almighty_socket():  # pragma: no cover
     global zmq_context
     global almighty_socket
 
-    # config.setdefault_config(DEFAULT_CONFIG) TOREMOVE
-    import pdb; pdb.set_trace()
-    
     if not zmq_context:
         zmq_context = zmq.Context()
 
@@ -105,7 +102,7 @@ def create_almighty_socket():  # pragma: no cover
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
-    import pdb; pdb.set_trace()
+
     if not almighty_socket:
         create_almighty_socket()
 
@@ -124,7 +121,6 @@ def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
 
 
 def create_bipbip_commander_socket():  # pragma: no cover
-    import pdb; pdb.set_trace()
     global zmq_context
     global bipbip_commander_socket
 
@@ -136,7 +132,6 @@ def create_bipbip_commander_socket():  # pragma: no cover
 
 
 def notify_bipbip_commander(message):  # pragma: no cover
-    import pdb; pdb.set_trace()
     if not bipbip_commander_socket:
         create_bipbip_commander_socket()
 
