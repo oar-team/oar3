@@ -94,6 +94,14 @@ class Configuration(dict):
         'WALLTIME_CHANGE_APPLY_TIME': 0.0,
         'WALLTIME_INCREMENT': 0.0,
 
+        'SCHEDULER_FAIRSHARING_WINDOW_SIZE': 3600 * 30 * 24,
+        'SCHEDULER_FAIRSHARING_PROJECT_TARGETS': "{default => 21.0}",
+        'SCHEDULER_FAIRSHARING_USER_TARGETS': "{default => 22.0}",
+        'SCHEDULER_FAIRSHARING_COEF_PROJECT': '0',
+        'SCHEDULER_FAIRSHARING_COEF_USER': '1',
+        'SCHEDULER_FAIRSHARING_COEF_USER_ASK': '1',
+
+        
         'QUOTAS': 'no',
         'QUOTAS_CONF_FILE': '/etc/oar/quotas_conf.json',
         'QUOTAS_PERIOD': 1296000,  # 15 days in seconds

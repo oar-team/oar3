@@ -103,17 +103,6 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
     # TODO NOT UDSED
     # fairsharing_nb_job_limit = 100000
 
-    # Set undefined config value to default one
-    default_config = {
-        "SCHEDULER_FAIRSHARING_WINDOW_SIZE": 3600 * 30 * 24,
-        "SCHEDULER_FAIRSHARING_PROJECT_TARGETS": "{default => 21.0}",
-        "SCHEDULER_FAIRSHARING_USER_TARGETS": "{default => 22.0}",
-        "SCHEDULER_FAIRSHARING_COEF_PROJECT": "0",
-        "SCHEDULER_FAIRSHARING_COEF_USER": "1",
-        "SCHEDULER_FAIRSHARING_COEF_USER_ASK": "1"
-    }
-    config.setdefault_config(default_config)
-
     karma_window_size = config["SCHEDULER_FAIRSHARING_WINDOW_SIZE"]
 
     # get fairsharing config if any
