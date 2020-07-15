@@ -21,11 +21,6 @@ from oar.lib.tools import (sql_to_duration, get_date, sql_to_local, hms_str_to_d
 
 import oar.lib.tools as tools
 
-# TOREMOVE
-def default_submission_config(default_value=None):
-    if default_value:
-        config.update(default_value)
-
 def lstrip_none(s):
     if s:
         return s.lstrip()

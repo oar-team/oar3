@@ -3,9 +3,9 @@ import pytest
 
 import os
 
-from oar.lib import (db, AdmissionRule, config)
-from oar.lib.submission import (JobParameters, parse_resource_descriptions, add_micheline_jobs,
-                                default_submission_config, scan_script)
+from oar.lib import (db, config, AdmissionRule, config)
+from oar.lib.submission import (JobParameters, parse_resource_descriptions,
+                                add_micheline_jobs,scan_script)
 from oar.lib.job_handling import get_job_types
 from oar.kao.quotas import Quotas
 
@@ -29,10 +29,7 @@ class FakePopen(object):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, 'Popen', FakePopen)
 
-@pytest.fixture(scope='function', autouse=True)
-def builtin_config(request):
-    default_submission_config()
-
+    
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):
     db.delete_all()
@@ -168,11 +165,11 @@ def test_add_micheline_jobs_quotas_admin():
 
 def test_add_micheline_simple_array_job():
 
-    additional_config = {
-        'OARSUB_DEFAULT_RESOURCES': 'network_address=2/resource_id=1+/resource_id=2',
-        'OARSUB_NODES_RESOURCES': 'resource_id'
-    }
-    default_submission_config(additional_config)
+    prev_conf0 = config['OARSUB_DEFAULT_RESOURCES']
+    prev_conf1 = config['OARSUB_NODES_RESOURCES']
+    
+    config['OARSUB_DEFAULT_RESOURCES'] = 'network_address=2/resource_id=1+/resource_id=2'
+    config['OARSUB_NODES_RESOURCES'] = 'resource_id'
 
     job_parameters = default_job_parameters(None)
     import_job_key_inline = ''
@@ -199,6 +196,10 @@ def test_add_micheline_simple_array_job():
     print("error:", error)
     assert error == (0, '')
     assert len(job_id_lst) == 5
+    
+    config['OARSUB_DEFAULT_RESOURCES'] = prev_conf0
+    config['OARSUB_NODES_RESOURCES'] = prev_conf1
+
 
 def test_scan_script(monkeypatch_tools):
     global fake_popen_process_stdout

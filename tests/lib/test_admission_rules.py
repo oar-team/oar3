@@ -6,15 +6,12 @@ import pytest
 
 from sqlalchemy import or_
 from oar.lib import (db, AdmissionRule, Job)
-from oar.lib.submission import (JobParameters, default_submission_config,
-                                estimate_job_nb_resources, check_reservation)
+from oar.lib.submission import (JobParameters, estimate_job_nb_resources,
+                                check_reservation)
 from oar.lib.tools import (sql_to_duration, get_date, sql_to_local)
 
 from oar.lib.job_handling import insert_job
-                           
-@pytest.fixture(scope='function', autouse=True)
-def builtin_config(request):
-    default_submission_config()
+
 
 @pytest.yield_fixture(scope='function', autouse=True)
 def minimal_db_initialization(request):

@@ -5,8 +5,7 @@ import re
 from flask import url_for, g
 
 from oar.lib import (db, Job)
-from oar.lib.submission import (JobParameters, Submission,
-                                check_reservation, default_submission_config)
+from oar.lib.submission import (JobParameters, Submission, check_reservation)
 
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
@@ -15,9 +14,9 @@ from oar.cli.oarresume import oarresume
 from . import Blueprint
 from ..utils import Arg
 
-DEFAULT_VALUE = {
-    'directory': os.getcwd()
-}
+#DEFAULT_VALUE = {
+#    'directory': os.getcwd()
+#}
 
 app = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -183,9 +182,6 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
 
     """
     user = g.current_user
-    
-    #set default config for submission
-    default_submission_config(DEFAULT_VALUE)
 
     initial_request = '' #TODO Json version ?
     
@@ -243,6 +239,8 @@ def submit(resource, command, workdir, param_file, array, queue, properties, res
         hold=hold
     )
 
+    #import pdb; pdb.set_trace()
+    
     error = job_parameters.check_parameters()
     if error[0] != 0:
         pass #TODO

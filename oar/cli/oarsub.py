@@ -14,8 +14,7 @@ from oar import VERSION
 
 from oar.lib import (config, db, Job)
 
-from oar.lib.submission import (JobParameters, Submission, lstrip_none,
-                                check_reservation, default_submission_config)
+from oar.lib.submission import (JobParameters, Submission, lstrip_none, check_reservation)
 
 from oar.lib.job_handling import (get_job, get_job_types, get_job_current_hostnames,
                                   get_job_cpuset_name, get_current_moldable_job,
