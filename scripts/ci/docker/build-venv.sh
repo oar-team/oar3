@@ -7,6 +7,7 @@ cd /app
 source /venv/bin/activate
 
 pip install -U pip
+pip install wheel
 
 for filename in `ls -1 /app/requirements/ | grep -v dev`; do
     pip install -r /app/requirements/$filename
