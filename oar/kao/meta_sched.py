@@ -61,37 +61,6 @@ besteffort_duration = 300  # TODO conf ???
 # timeout for validating reservation
 # reservation_validation_timeout = 30
 
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'DB_PORT': '5432',
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
-    'FAIRSHARING_ENABLED': 'no',
-    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30',
-    'RESERVATION_WAITING_RESOURCES_TIMEOUT': '300',
-    'SCHEDULER_TIMEOUT': '10',
-    'ENERGY_SAVING_INTERNAL': 'no',
-    'SCHEDULER_NODE_MANAGER_WAKEUP_TIME': 1,
-    'EXTRA_METASCHED': 'default',
-    'EXTRA_METASCHED_CONFIG': '',
-    'ENERGY_SAVING_MODE': '',
-    'WALLTIME_MAX_INCREASE': 0.0,
-    'WALLTIME_MIN_FOR_CHANGE' : 0.0,
-    'WALLTIME_CHANGE_APPLY_TIME' :0.0,
-    'WALLTIME_INCREMENT' :0.0,
-    'WALLTIME_ALLOWED_USERS_TO_FORCE': '',
-    'WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS': '',
-    'WALLTIME_MAX_INCREASE': '{default => 7200}',
-    'WALLTIME_ALLOWED_USERS_TO_FORCE': "{_ => '*', besteffort => ''}",
-
-    # Misc 
-    'COORM_DEFAULT_TIMEOUT': 10,
-}
-
-# config.setdefault_config(DEFAULT_CONFIG)
-
 # waiting time when a reservation has not all of its nodes
 reservation_waiting_timeout = int(config['RESERVATION_WAITING_RESOURCES_TIMEOUT'])
 

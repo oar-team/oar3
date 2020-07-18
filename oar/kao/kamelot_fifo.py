@@ -12,16 +12,6 @@ from procset import ProcSet
 # configuration file *)
 
 
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
-    'FAIRSHARING_ENABLED': 'no',
-}
-
-
 logger = get_logger("oar.kamelot_fifo")
 
 
@@ -113,7 +103,6 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 def main():
     config['LOG_FILE'] = '/tmp/oar_kamelot.log'
     logger = get_logger("oar.kamelot_fifo", forward_stderr=True)
-    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_fifo_cycle(plt, "default")
     logger.info("That's all folks")

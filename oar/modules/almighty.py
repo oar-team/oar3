@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 from oar.lib import (config, get_logger)
-from oar.lib.tools import (PIPE, check_process, get_time)
+
 import oar.lib.tools as tools
 
 import sys
@@ -11,15 +11,12 @@ import os
 import re
 import time
 import signal
-from pwd import getpwnam
-
-import pdb
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
     'META_SCHED_CMD': 'kao',
     'SERVER_HOSTNAME': 'localhost',
-    'APPENDICE_SERVER_PORT': '6670', #new endpoint which replaces appendice
+    'APPENDICE_SERVER_PORT': '6670', # new endpoint which replaces appendice
     'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
     'FINAUD_FREQUENCY': '300',
     'LOG_FILE': '/var/log/oar.log',
@@ -53,12 +50,12 @@ check_for_villains_command = binpath + 'oar-sarko'
 check_for_node_changes = binpath + 'oar-finaud'
 nodeChangeState_command = binpath + 'oar-node-change-state'
 
-#Legacy OAR2
-#leon_command = binpath + 'Leon'
-#check_for_villains_command = binpath + 'sarko'
-#check_for_node_changes = binpath + 'finaud'
-#nodeChangeState_command = binpath + 'NodeChangeState'
-#nodeChangeState_command = 'true'
+# Legacy OAR2
+# leon_command = binpath + 'Leon'
+# check_for_villains_command = binpath + 'sarko'
+# check_for_node_changes = binpath + 'finaud'
+# nodeChangeState_command = binpath + 'NodeChangeState'
+# nodeChangeState_command = 'true'
 
 proxy_appendice_command = binpath + 'oar-appendice-proxy'
 bipbip_commander = binpath + 'oar-bipbip-commander'
@@ -72,13 +69,13 @@ hulot_command = binpath + 'oar-hulot'
 # dramatically (because it blocks only when nothing else is to be done).
 # Nevertheless it is closely related to the precision at which the
 # internal counters are checked
-read_commands_timeout = 5 * 1000 # in ms
+read_commands_timeout = 5 * 1000  # in ms
 
 # This parameter sets the number of pending commands read from
 # appendice before proceeding with internal work
 # should not be set at a too high value as this would make the
 # Almighty weak against flooding
-max_successive_read = 1;
+max_successive_read = 1
 
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
@@ -100,22 +97,26 @@ energy_pid = 0
 # Signal handle
 finishTag = False
 
+
 def signal_handler():
     global finishTag
     finishTag = True
 
-#    
+#
 # To avoid zombie processes
 #
+
+
 signal.signal(signal.SIGUSR1, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+
 def launch_command(command):
     '''launch the command line passed in parameter'''
 
-    #TODO move to oar.lib.tools
-    #global finishTag
+    # TODO move to oar.lib.tools
+    # global finishTag
 
     logger.debug('Launching command : [' + command + ']')
 
@@ -126,25 +127,35 @@ def launch_command(command):
 
     return exit_value
 
+
 def start_hulot():
     return tools.Popen(hulot_command)
+
 
 def check_hulot(hulot):
     """Check the prescence hulot process"""
     return tools.check_process(hulot.pid)
 
+#
 # functions associated with each state of the automaton
+#
+
+
 def meta_scheduler():
     return launch_command(meta_sched_command)
+
 
 def check_for_villains():
     return launch_command(check_for_villains_command)
 
+
 def check_nodes():
     return launch_command(check_for_node_changes)
 
+
 def leon():
     return launch_command(leon_command)
+
 
 def nodeChangeState():
     return launch_command(nodeChangeState_command)
@@ -152,7 +163,7 @@ def nodeChangeState():
 
 class Almighty(object):
 
-    def __init__(self):  
+    def __init__(self):
         self.state = 'Init'
         logger.debug("Current state [" + self.state + "]")
 
@@ -162,12 +173,12 @@ class Almighty(object):
         ip_addr_server = socket.gethostbyname(config['SERVER_HOSTNAME'])
         try:
             self.appendice.bind('tcp://' + ip_addr_server + ':' + config['APPENDICE_SERVER_PORT'])
-        except:
-            logger.error('Failed to activate appendice endpoint')
+        except Exception as e:
+            logger.error(f"Failed to activate appendice endpoint: {e}")
             sys.exit(1)
 
         self.set_appendice_timeout(read_commands_timeout)
-        
+
         # Starting of Hulot, the Energy saving module
         self.hulot = None
         if config['ENERGY_SAVING_INTERNAL'] == 'yes':
@@ -178,14 +189,13 @@ class Almighty(object):
         self.lastchecknodes = 0
         self.command_queue = []
 
-        self.scheduler_wanted = 0 # 1 if the scheduler must be run next time update
+        self.scheduler_wanted = 0  # 1 if the scheduler must be run next time update
 
         logger.debug('Init done')
         self.state = 'Qget'
-        
+
         self.start_companions()
-        
-        
+
     def start_companions(self):
         """Start appendice proxy  and bipbip commander processes"""
 
@@ -221,22 +231,22 @@ class Almighty(object):
     def qget(self, timeout):
         '''function used by the main automaton to get notifications from appendice'''
 
-        #timeout = 10 * 1000
+        # timeout = 10 * 1000
         self.set_appendice_timeout(timeout)
 
         logger.debug("Timeout value:" + str(timeout))
-        
+
         try:
             answer = self.appendice.recv_json()
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
-            #return (None, {'cmd': 'Time'})
+            # return (None, {'cmd': 'Time'})
             return {'cmd': 'Time'}
         except zmq.ZMQError as e:
             logger.error("Something is wrong with appendice" + str(e))
-            #return (15, None)
+            # return (15, None)
             return {'cmd': 'Time'}
-        #return (None, answer)
+        # return (None, answer)
         return answer
 
     def add_command(self, command):
@@ -272,7 +282,7 @@ class Almighty(object):
             logger.debug('Got command ' + command['cmd'] + ', ' + str(remaining) + ' remaining')
 
     def run(self, loop=True):
-        
+
         global finishTag
         while True:
             logger.debug("Current state [" + self.state + "]")
@@ -285,7 +295,7 @@ class Almighty(object):
                 Redirect_STD_process = False
                 if Redirect_STD_process:
                     tools.kill(Redirect_STD_process, signal.SIGKILL)
-                #TODO ipc_clean()
+                # TODO ipc_clean()
                 logger.warning("Stop Almighty\n")
                 # TODO: send_log_by_email("Stop OAR server", "[Almighty] Stop Almighty")
                 return 10
@@ -296,19 +306,18 @@ class Almighty(object):
                 start_hulot(self)
             # QGET
             elif self.state == 'Qget':
-                #if len(self.command_queue) > 0:
-                #self.read_commands(0)
+                # if len(self.command_queue) > 0:
+                # self.read_commands(0)
                 #    pass
-                #else:
+                # else:
                 self.read_commands(read_commands_timeout)
 
                 logger.debug('Command queue : ' + str(self.command_queue))
                 command = self.command_queue.pop(0)
                 # Remove useless 'Time' command to enhance reactivity
-                if command == 'Time' and self.command_queue !=[]:
+                if command == 'Time' and self.command_queue != []:
                     command = self.command_queue.pop(0)
-                
-                
+
                 logger.debug('Qtype = [' + command + ']')
                 if (command == 'Qsub') or (command == 'Qsub -I') or (command == 'Term')\
                    or (command == 'BipBip') or (command == 'Scheduling')\
@@ -428,9 +437,11 @@ class Almighty(object):
                 break
         return 0
 
+
 def main():  # pragma: no cover
     almighty = Almighty()
     return almighty.run()
-    
+
+
 if __name__ == '__main__':  # pragma: no cover
-     sys.exit(main())
+    sys.exit(main())

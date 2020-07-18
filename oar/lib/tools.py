@@ -124,7 +124,6 @@ def create_bipbip_commander_socket():  # pragma: no cover
     global zmq_context
     global bipbip_commander_socket
 
-    # config.setdefault_config(DEFAULT_CONFIG) TOREMOVE
     if not zmq_context:
         zmq_context = zmq.Context()
     bipbip_commander_socket = zmq_context.socket(zmq.PUSH)

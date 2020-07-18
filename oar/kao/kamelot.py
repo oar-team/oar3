@@ -15,21 +15,6 @@ import oar.kao.custom_jobs_sorting
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
-    'FAIRSHARING_ENABLED': 'no',
-    'SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER': '30',
-    'QUOTAS': 'no',
-    'JOB_PRIORITY': 'FIFO',
-    'CUSTOM_JOB_SORTING': '',
-    'CUSTOM_JOB_SORTING_CONFIG_FILE': ''
-}
-
-
 logger = get_logger("oar.kamelot")
 
 
@@ -191,7 +176,6 @@ def schedule_cycle(plt, now, queues=["default"]):
 def main():
     config['LOG_FILE'] = '/tmp/oar_kamelot.log'
     logger = get_logger("oar.kamelot", forward_stderr=True)
-    #config.setdefault_config(DEFAULT_CONFIG)
 
     plt = Platform()
 

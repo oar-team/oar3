@@ -6,15 +6,6 @@ from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-}
-
-
 logger = get_logger('oar.kamelot_basic')
 
 
@@ -97,7 +88,6 @@ def schedule_cycle(plt, queues=['default']):
 #
 def main():
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
-    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_cycle(plt)
     logger.info("That's all folks")
