@@ -7,46 +7,50 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
 
 
-@pytest.yield_fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         yield
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def oar_conf(request):
-    config['JOB_PRIORITY'] = 'CUSTOM'
+    config["JOB_PRIORITY"] = "CUSTOM"
 
     @request.addfinalizer
     def remove_job_sorting():
-        config['JOB_PRIORITY'] = 'FIFO'
-        config['CUSTOM_JOB_SORTING'] = ""
+        config["JOB_PRIORITY"] = "FIFO"
+        config["CUSTOM_JOB_SORTING"] = ""
         config["CUSTOM_JOB_SORTING_CONFIG"] = ""
 
 
 def test_db_job_sorting_simple_priority_no_waiting_time():
 
-    config['CUSTOM_JOB_SORTING'] = "simple_priority"
+    config["CUSTOM_JOB_SORTING"] = "simple_priority"
 
     plt = Platform()
     now = plt.get_time()
-    
+
     # add some resources
     for i in range(4):
-        db['Resource'].create(network_address="localhost")
+        db["Resource"].create(network_address="localhost")
 
     # add some job with priority
     for i in range(10):
         priority = str(float(i) / 10.0)
-        insert_job(res=[(60, [('resource_id=4', "")])],
-                   submission_time=now,
-                   types=['priority=' + priority])
+        insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            submission_time=now,
+            types=["priority=" + priority],
+        )
 
     schedule_cycle(plt, plt.get_time())
 
-    req = db['GanttJobsPrediction'].query\
-                                   .order_by(db['GanttJobsPrediction'].start_time)\
-                                   .all()
+    req = (
+        db["GanttJobsPrediction"]
+        .query.order_by(db["GanttJobsPrediction"].start_time)
+        .all()
+    )
     flag = True
 
     print(req)

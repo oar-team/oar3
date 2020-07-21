@@ -2,14 +2,15 @@
 flag_property = False
 for mold in resource_request:
     for resource_desc_lst in mold[0]:
-        property_ = resource_desc_lst['property']
-        if not re.match('.*type[\\s]=.*', property_):
+        property_ = resource_desc_lst["property"]
+        if not re.match(".*type[\\s]=.*", property_):
             flag_property = True
             if not property_:
-                resource_desc_lst['property'] = "type='default'"
+                resource_desc_lst["property"] = "type='default'"
             else:
-                resource_desc_lst['property'] = "({}) AND type='default'"\
-                                                                .format(property_)
-                                                                
+                resource_desc_lst["property"] = "({}) AND type='default'".format(
+                    property_
+                )
+
 if flag_property:
-    print('[ADMISSION RULE] Modify resource description with type constraints')
+    print("[ADMISSION RULE] Modify resource description with type constraints")

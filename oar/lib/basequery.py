@@ -1,24 +1,28 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy.orm import Query, Load
-from sqlalchemy import (text)
+from sqlalchemy import text
 
 from .exceptions import DoesNotExist
 from . import db
-from .models import (Job, MoldableJobDescription, AssignedResource,
-                     GanttJobsPredictionsVisu, GanttJobsResourcesVisu,
-                     Resource)
+from .models import (
+    Job,
+    MoldableJobDescription,
+    AssignedResource,
+    GanttJobsPredictionsVisu,
+    GanttJobsResourcesVisu,
+    Resource,
+)
 from .utils import render_query
 
-__all__ = ['BaseQuery', 'BaseQueryCollection']
+__all__ = ["BaseQuery", "BaseQueryCollection"]
 
 
 class BaseQuery(Query):
-
     def render(self):
         class QueryStr(str):
             # Useful for debug
             def __repr__(self):
-                return self.replace(' \n', '\n').strip()
+                return self.replace(" \n", "\n").strip()
 
         return QueryStr(render_query(self))
 
@@ -40,26 +44,38 @@ class BaseQuery(Query):
             raise DoesNotExist()
         return rv
 
-    def filter_jobs_for_user(self, user, from_time, to_time, states,
-                             job_ids, array_id, sql_property):
+    def filter_jobs_for_user(
+        self, user, from_time, to_time, states, job_ids, array_id, sql_property
+    ):
         if not states and (not job_ids or not array_id):
-            states = ['Finishing', 'Running', 'Resuming', 'Suspended',
-                      'Launching', 'toLaunch', 'Waiting', 'Hold',
-                      'toAckReservation']
-            if from_time or to_time or  job_ids or array_id:
-                states.append('Terminated')
+            states = [
+                "Finishing",
+                "Running",
+                "Resuming",
+                "Suspended",
+                "Launching",
+                "toLaunch",
+                "Waiting",
+                "Hold",
+                "toAckReservation",
+            ]
+            if from_time or to_time or job_ids or array_id:
+                states.append("Terminated")
 
         c1_from, c2_from, c3_from = None, None, None
         if from_time is not None:
             # first sub query start time filter
             c1 = (Job.start_time + MoldableJobDescription.walltime) >= from_time
-            c2 = Job.state == 'Running'
-            c3 = Job.state.in_(('Suspended', 'Resuming'))
+            c2 = Job.state == "Running"
+            c3 = Job.state.in_(("Suspended", "Resuming"))
             c4 = Job.stop_time == 0
             c5 = Job.stop_time >= from_time
             c1_from = c5 | (c4 & ((c2 & c1) | c3))
             # second sub query start time filter
-            c2_from = GanttJobsPredictionsVisu.start_time + MoldableJobDescription.walltime >= from_time
+            c2_from = (
+                GanttJobsPredictionsVisu.start_time + MoldableJobDescription.walltime
+                >= from_time
+            )
             # third sub query start time filter
             c3_from = Job.submission_time >= from_time
 
@@ -82,45 +98,61 @@ class BaseQuery(Query):
                 q = q.filter(criteria) if criteria is not None else q
             return q
 
-        q1 = db.query(Job.id.label('job_id')).distinct()\
-               .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)\
-               .filter(MoldableJobDescription.job_id == Job.id)
+        q1 = (
+            db.query(Job.id.label("job_id"))
+            .distinct()
+            .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
+            .filter(MoldableJobDescription.job_id == Job.id)
+        )
         q1 = apply_commons_filters(q1, c1_from, c1_to)
 
-        q2 = db.query(Job.id.label('job_id')).distinct()\
-               .filter(GanttJobsPredictionsVisu.moldable_id == GanttJobsResourcesVisu.moldable_id)\
-               .filter(GanttJobsPredictionsVisu.moldable_id == MoldableJobDescription.id)\
-               .filter(Job.id == MoldableJobDescription.job_id)
+        q2 = (
+            db.query(Job.id.label("job_id"))
+            .distinct()
+            .filter(
+                GanttJobsPredictionsVisu.moldable_id
+                == GanttJobsResourcesVisu.moldable_id
+            )
+            .filter(GanttJobsPredictionsVisu.moldable_id == MoldableJobDescription.id)
+            .filter(Job.id == MoldableJobDescription.job_id)
+        )
         q2 = apply_commons_filters(q2, c2_from, c2_to)
 
-        q3 = db.query(Job.id.label('job_id')).distinct()\
-               .filter(Job.stop_time == 0)
+        q3 = db.query(Job.id.label("job_id")).distinct().filter(Job.stop_time == 0)
         q3 = apply_commons_filters(q3, c3_from, c3_to)
 
         unionquery = q1.union(q2, q3).subquery()
-        return self.outerjoin(MoldableJobDescription, Job.assigned_moldable_job == MoldableJobDescription.id)\
-                   .join(unionquery, Job.id == unionquery.c.job_id)
+        return self.outerjoin(
+            MoldableJobDescription,
+            Job.assigned_moldable_job == MoldableJobDescription.id,
+        ).join(unionquery, Job.id == unionquery.c.job_id)
 
 
 class BaseQueryCollection(object):
     """ Queries collection. """
-    def get_jobs_for_user(self, user, from_time=None, to_time=None,
-                          states=None, job_ids=None, array_id=None,
-                          sql_property=None, detailed=True):
-        #import pdb; pdb.set_trace()
+
+    def get_jobs_for_user(
+        self,
+        user,
+        from_time=None,
+        to_time=None,
+        states=None,
+        job_ids=None,
+        array_id=None,
+        sql_property=None,
+        detailed=True,
+    ):
+        # import pdb; pdb.set_trace()
         """ Get all distinct jobs for a user query. """
         if detailed:
             query = db.query(Job)
         else:
-            columns = ("id", "name", "queue_name", "user", "submission_time",
-                       "state")
+            columns = ("id", "name", "queue_name", "user", "submission_time", "state")
             query = db.query(Job).options(Load(Job).load_only(*columns))
 
-        return query.order_by(Job.id)\
-                    .filter_jobs_for_user(user, from_time,
-                                          to_time, states,
-                                          job_ids, array_id,
-                                          sql_property)
+        return query.order_by(Job.id).filter_jobs_for_user(
+            user, from_time, to_time, states, job_ids, array_id, sql_property
+        )
 
     def get_resources(self, network_address, detailed=True):
         if detailed:
@@ -141,32 +173,40 @@ class BaseQueryCollection(object):
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
-        columns = ("id","network_address",)
-        job_id_column = AssignedResource.moldable_id.label('job_id')
-        query = db.query(job_id_column, Resource)\
-                  .options(Load(Resource).load_only(*columns))\
-                  .join(Resource, Resource.id == AssignedResource.resource_id)\
-                  .filter(job_id_column.in_([job.id for job in jobs]))\
-                  .order_by(job_id_column.asc())
+        columns = (
+            "id",
+            "network_address",
+        )
+        job_id_column = AssignedResource.moldable_id.label("job_id")
+        query = (
+            db.query(job_id_column, Resource)
+            .options(Load(Resource).load_only(*columns))
+            .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(job_id_column.in_([job.id for job in jobs]))
+            .order_by(job_id_column.asc())
+        )
         return self.groupby_jobs_resources(jobs, query)
 
     def get_gantt_visu_scheduled_jobs_resources(self, jobs):
         """Returns network_address allocated to a (waiting) reservation."""
         columns = ("id",)
-        job_id_column = MoldableJobDescription.id.label('job_id')
-        query = db.query(job_id_column.label('job_id'), Resource)\
-                  .options(Load(Resource).load_only(*columns))\
-                  .filter(Resource.id == GanttJobsResourcesVisu.resource_id)\
-                  .filter(job_id_column == GanttJobsResourcesVisu.moldable_id)\
-                  .filter(job_id_column.in_([job.id for job in jobs]))\
-                  .order_by(job_id_column.asc())
+        job_id_column = MoldableJobDescription.id.label("job_id")
+        query = (
+            db.query(job_id_column.label("job_id"), Resource)
+            .options(Load(Resource).load_only(*columns))
+            .filter(Resource.id == GanttJobsResourcesVisu.resource_id)
+            .filter(job_id_column == GanttJobsResourcesVisu.moldable_id)
+            .filter(job_id_column.in_([job.id for job in jobs]))
+            .order_by(job_id_column.asc())
+        )
         return self.groupby_jobs_resources(jobs, query)
-
 
     def get_jobs_resource(self, resource_id):
         """Returns job ids associated to a resource which is allocated to."""
-        query = db.query(Job.id)\
-                  .filter(AssignedResource.resource_id == resource_id)\
-                  .filter(MoldableJobDescription.id == AssignedResource.moldable_id)\
-                  .filter(MoldableJobDescription.job_id == Job.id)
+        query = (
+            db.query(Job.id)
+            .filter(AssignedResource.resource_id == resource_id)
+            .filter(MoldableJobDescription.id == AssignedResource.moldable_id)
+            .filter(MoldableJobDescription.job_id == Job.id)
+        )
         return query.order_by(Job.id)

@@ -14,33 +14,42 @@ class WSGIProxyFix(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        user = os.environ.get('AUTHENTICATE_UID', None)
+        user = os.environ.get("AUTHENTICATE_UID", None)
         if user is not None:
-            environ['USER'] = user
+            environ["USER"] = user
         else:
-            if config.get('API_TRUST_IDENT', 0) == 1:
-                user = environ.pop('HTTP_X_REMOTE_IDENT', None)
+            if config.get("API_TRUST_IDENT", 0) == 1:
+                user = environ.pop("HTTP_X_REMOTE_IDENT", None)
                 if user not in ("", "unknown", "(null)"):
-                    environ['USER'] = user
+                    environ["USER"] = user
         return self.app(environ, start_response)
+
 
 class PrefixMiddleware(object):
     def __init__(self, app):
         self.app = app
 
     def __call__(self, environ, start_response):
-        prefix = environ.pop('HTTP_X_API_PATH_PREFIX', None)
+        prefix = environ.pop("HTTP_X_API_PATH_PREFIX", None)
         if prefix is not None:
-            environ['SCRIPT_NAME'] = prefix
+            environ["SCRIPT_NAME"] = prefix
         return self.app(environ, start_response)
+
 
 class Arg(object):
     """Request argument type."""
 
-    DEFAULT_LOCATIONS = ('querystring', 'form', 'json')
+    DEFAULT_LOCATIONS = ("querystring", "form", "json")
 
-    def __init__(self, type_=None, default=None, required=False,
-                 error=None, locations=None, dest=None):
+    def __init__(
+        self,
+        type_=None,
+        default=None,
+        required=False,
+        error=None,
+        locations=None,
+        dest=None,
+    ):
         if isinstance(type_, (tuple, list)):
             if len(type_) >= 2:
                 self.type = ListArg(type_[0], type_[1])
@@ -78,17 +87,19 @@ class ListArg(object):
         self.sep = sep
 
     def __call__(self, value, callback):
-        if not self.sep: # TOFINISH
+        if not self.sep:  # TOFINISH
             return value
+
         def convert():
             string = to_unicode(value)
             if string:
                 for item in string.split(self.sep):
                     yield callback(item, self.type)
+
         return list(convert())
 
     def raw_value(self, values):
-        sep = self.sep if self.sep else ', ' 
+        sep = self.sep if self.sep else ", "
         return to_unicode(sep.join(("%s" % v for v in values)))
 
 
@@ -104,7 +115,7 @@ class ArgParser(object):
         if isinstance(argobj.type, ListArg) and not argobj.type.sep:
             return data.getlist(name)
         else:
-            return data.get(name, self.MISSING)    
+            return data.get(name, self.MISSING)
 
     def parse_arg(self, argname, argobj):
         """Pull a form value from the request."""
@@ -126,9 +137,9 @@ class ArgParser(object):
 
     def convert_bool(self, value):
         """ Try to convert ``value`` to a Boolean."""
-        if value.lower() in ('True', 'yes', '1'):
+        if value.lower() in ("True", "yes", "1"):
             return True
-        if value.lower() in ('false', 'no', '0'):
+        if value.lower() in ("false", "no", "0"):
             return False
         raise ValueError("Cannot convert '%s' to a Boolean value" % value)
 
@@ -166,11 +177,12 @@ class ArgParser(object):
             parsed_value = self.parse_arg(argname, argobj)
             if parsed_value is not self.MISSING:
                 try:
-                    parsed_kwargs[dest] = self.convert(parsed_value,
-                                                       argobj.type)
+                    parsed_kwargs[dest] = self.convert(parsed_value, argobj.type)
                 except Exception as e:
-                    msg = ("The parameter '%s' specified in the request "
-                           "URI is not supported. %s" % (argname, e))
+                    msg = (
+                        "The parameter '%s' specified in the request "
+                        "URI is not supported. %s" % (argname, e)
+                    )
                     try:
                         abort(400)
                     except Exception:
@@ -184,6 +196,7 @@ class ArgParser(object):
                 raw_kwargs[argname] = raw_value
         return parsed_kwargs, raw_kwargs
 
+
 def list_paginate(items, offset, limit, error_out=True):
     if error_out and (offset < 0 or offset > len(items)):
         abort(404)
@@ -191,6 +204,6 @@ def list_paginate(items, offset, limit, error_out=True):
     if limit is None:
         limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
 
-    items_paginated = items[offset:min(len(items), offset + limit)]
+    items_paginated = items[offset : min(len(items), offset + limit)]
 
     return items_paginated

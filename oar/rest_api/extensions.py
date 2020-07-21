@@ -11,4 +11,4 @@ class RegexConverter(BaseConverter):
 def register_extensions(app):
     # Use the RegexConverter function as a converter
     # method for mapped urls
-    app.url_map.converters['regex'] = RegexConverter
+    app.url_map.converters["regex"] = RegexConverter

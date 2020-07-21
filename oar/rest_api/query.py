@@ -3,12 +3,12 @@ from math import ceil
 
 from flask import abort, current_app, request, url_for, g
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
+
 # from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property, row2dict
 
 
 class APIQuery(BaseQuery):
-
     def get_or_404(self, ident):
         try:
             return self.get_or_error(ident)
@@ -81,8 +81,8 @@ class PaginationQuery(object):
         if self.has_next:
             kwargs = g.request_args.copy()
             kwargs.update(request.view_args.copy())
-            kwargs['offset'] = self.offset + self.limit
-            kwargs['limit'] = self.limit
+            kwargs["offset"] = self.offset + self.limit
+            kwargs["limit"] = self.limit
             return url_for(request.endpoint, **kwargs)
 
     @cached_property
@@ -91,8 +91,8 @@ class PaginationQuery(object):
         if self.has_previous:
             kwargs = g.request_args.copy()
             kwargs.update(request.view_args.copy())
-            kwargs['offset'] = self.offset - self.limit
-            kwargs['limit'] = self.limit
+            kwargs["offset"] = self.offset - self.limit
+            kwargs["limit"] = self.limit
             return url_for(request.endpoint, **kwargs)
 
     @cached_property
@@ -100,26 +100,26 @@ class PaginationQuery(object):
         """Returns the url for the current endpoint."""
         kwargs = g.request_args.copy()
         kwargs.update(request.view_args.copy())
-        kwargs['offset'] = self.offset
+        kwargs["offset"] = self.offset
         if self.limit > 0:
-            kwargs['limit'] = self.limit
+            kwargs["limit"] = self.limit
         return url_for(request.endpoint, **kwargs)
 
     @cached_property
     def links(self):
         links = []
         if self.has_previous:
-            links.append({'rel': 'previous', 'href': self.previous_url})
-        links.append({'rel': 'self', 'href': self.current_url})
+            links.append({"rel": "previous", "href": self.previous_url})
+        links.append({"rel": "self", "href": self.current_url})
         if self.has_next:
-            links.append({'rel': 'next', 'href': self.next_url})
+            links.append({"rel": "next", "href": self.next_url})
         return links
 
     def __iter__(self):
         for item in self.items:
-            if hasattr(item, 'keys') and callable(getattr(item, 'keys')):
+            if hasattr(item, "keys") and callable(getattr(item, "keys")):
                 yield row2dict(item)
-            elif hasattr(item, 'asdict') and callable(getattr(item, 'asdict')):
+            elif hasattr(item, "asdict") and callable(getattr(item, "asdict")):
                 yield item.asdict()
             else:
                 yield item

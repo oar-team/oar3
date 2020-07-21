@@ -8,7 +8,7 @@ class CommandReturns(object):
     INFO = 1
     WARNING = 2
     ERROR = 3
-    TAG2STR = {PRINT: '', INFO: '', WARNING: '#WARNING: ', ERROR: '#ERROR: '}
+    TAG2STR = {PRINT: "", INFO: "", WARNING: "#WARNING: ", ERROR: "#ERROR: "}
 
     def __init__(self, cli=True):
         self.cli = cli
@@ -23,16 +23,16 @@ class CommandReturns(object):
             print(objs)
         else:
             #    msg = '{} {} {}'.format(CommandReturns.TAG2STR[tag], objs, error)
-            print('{}{}'.format(CommandReturns.TAG2STR[tag], objs), file=sys.stderr)
+            print("{}{}".format(CommandReturns.TAG2STR[tag], objs), file=sys.stderr)
 
     def to_str(self):
-        str_out = ''
+        str_out = ""
         for msg_typed_value in self.buffer:
             tag, objs, error = msg_typed_value
             str_out += CommandReturns.TAG2STR[tag] + objs
             if error != 0:
-                str_out += ' ' + str(error)
-            str_out += '\n'
+                str_out += " " + str(error)
+            str_out += "\n"
         return str_out
 
     def get_exit_value(self):
@@ -69,7 +69,7 @@ class CommandReturns(object):
         self.print_or_push(CommandReturns.ERROR, objs, error, exit_value)
 
     def usage(self, exit_value):
-        '''Print usage message.'''
+        """Print usage message."""
         if self.cli:
             ctx = click.get_current_context()
             click.echo(ctx.get_help())

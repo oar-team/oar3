@@ -7,6 +7,7 @@ from oar.lib.hierarchy import extract_n_scattered_block_itv
 
 import copy
 import pickle
+
 try:
     import zerorpc
 except ImportError:
@@ -20,7 +21,9 @@ def find_default(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwar
 
 def assign_default(slots_set, job, hy, min_start_time, *assign_args, **assign_kwargs):
     """Simple wrap function to default function for test purpose"""
-    return oar.kao.scheduling.assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
+    return oar.kao.scheduling.assign_resources_mld_job_split_slots(
+        slots_set, job, hy, min_start_time
+    )
 
 
 def find_begin(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs):
@@ -28,15 +31,18 @@ def find_begin(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs
     It's only for test/example purpose"""
 
     if beginning:
-        return oar.kao.scheduling.find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy) 
+        return oar.kao.scheduling.find_resource_hierarchies_job(
+            itvs_avail, hy_res_rqts, hy
+        )
     else:
-        return ProcSet(*[(1,16)])
+        return ProcSet(*[(1, 16)])
+
 
 def find_contiguous_1h(itvs_avail, hy_res_rqts, hy, beginning):
     # NOT FOR PRODUCTION USE
     # Notes support only one resource group and ordered resource_id hierarchy level
     # Sorted by building
-    
+
     hy_level_nbs, constraints = hy_res_rqts[0]  # one resource group
     l_name, n = hy_level_nbs[0]  # one hierarchy level
     # hy_level = hy[l_name]
@@ -46,7 +52,7 @@ def find_contiguous_1h(itvs_avail, hy_res_rqts, hy, beginning):
     if l_name == "resource_id":
         for itv in itvs_cts_slots.intervals():
             if len(itv) >= n:
-                return ProcSet(ProcInt(itv.inf, itv.inf + (n-1)))
+                return ProcSet(ProcInt(itv.inf, itv.inf + (n - 1)))
 
     return ProcSet()
 
@@ -59,7 +65,7 @@ def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy, beginning):
     l_name, n = hy_level_nbs[0]  # one hierarchy level
     # hy_level = hy[l_name]
 
-    itvs_unsorted = [itv for itv in  (constraints & itvs_avail).intervals()]
+    itvs_unsorted = [itv for itv in (constraints & itvs_avail).intervals()]
     lg = len(itvs_unsorted)
 
     ids_sorted = sorted(range(lg), key=lambda k: len(itvs_unsorted[k]))
@@ -68,9 +74,10 @@ def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy, beginning):
         for i in ids_sorted:
             itv = itvs_unsorted[i]
             if len(itv) >= n:
-                return ProcSet(ProcInt(itv.inf, itv.inf + (n-1)))
+                return ProcSet(ProcInt(itv.inf, itv.inf + (n - 1)))
 
     return ProcSet()
+
 
 #
 # LOCAL
@@ -79,7 +86,7 @@ def find_contiguous_sorted_1h(itvs_avail, hy_res_rqts, hy, beginning):
 
 def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
 
-    n = rqts[h+1]
+    n = rqts[h + 1]
     size_bks = []
     avail_bks = []
 
@@ -100,14 +107,15 @@ def find_resource_n_h_local(itvs, hy, rqts, top, h, h_bottom):
                     res_itvs.insert(itv)
                     k += len(itv)
                 else:
-                    res_itvs.insert(ProcInt(itv.inf, itv.inf + (n-k-1)))
+                    res_itvs.insert(ProcInt(itv.inf, itv.inf + (n - k - 1)))
                     return res_itvs
     return ProcSet()
+
 
 def find_resource_hierarchies_scattered_local(itvs, hy, rqts):
     l_hy = len(hy)
     #    print "find itvs: ", itvs, rqts[0]
-    if (l_hy == 1):
+    if l_hy == 1:
         return extract_n_scattered_block_itv(itvs, hy[0], rqts[0])
     else:
         return find_resource_n_h_local(itvs, hy, rqts, hy[0], 0, l_hy)
@@ -127,8 +135,10 @@ def find_local(itvs_slots, hy_res_rqts, hy, beginning):
             hy_nbs.append(n)
 
         itvs_cts_slots = constraints & itvs_slots
-        #import pdb; pdb.set_trace()
-        res = find_resource_hierarchies_scattered_local(itvs_cts_slots, hy_levels, hy_nbs)
+        # import pdb; pdb.set_trace()
+        res = find_resource_hierarchies_scattered_local(
+            itvs_cts_slots, hy_levels, hy_nbs
+        )
         if res:
             result = result | res
         else:
@@ -138,7 +148,7 @@ def find_local(itvs_slots, hy_res_rqts, hy, beginning):
 
 
 def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
-    ''''''
+    """"""
     # NOT FOR PRODUCTION USE
 
     flag_find = True
@@ -151,8 +161,13 @@ def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
 
     for res_rqt in job.mld_res_rqts:
         mld_id, walltime, _ = res_rqt
-        res_set, sid_left, sid_right = oar.kao.scheduling.find_first_suitable_contiguous_slots(
-            slots_set, job, res_rqt, hy, min_start_time)
+        (
+            res_set,
+            sid_left,
+            sid_right,
+        ) = oar.kao.scheduling.find_first_suitable_contiguous_slots(
+            slots_set, job, res_rqt, hy, min_start_time
+        )
         if len(res_set) == 0:  # no suitable time*resources found
             job.res_set = ProcSet()
             job.start_time = -1
@@ -160,7 +175,7 @@ def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
             return
         # print("after find fisrt suitable")
         t_finish = slots[sid_left].b + walltime
-        if (t_finish < prev_t_finish):
+        if t_finish < prev_t_finish:
             prev_start_time = slots[sid_left].b
             prev_t_finish = t_finish
             prev_res_set = res_set
@@ -191,7 +206,7 @@ def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
 
 
 def assign_one_time_find(slots_set, job, hy, min_start_time):
-    ''''''
+    """"""
     # NOT FOR PRODUCTION USE
 
     flag_find = True
@@ -208,8 +223,13 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
 
     while True:
         mld_id, walltime, _ = res_rqt
-        res_set, sid_left, sid_right = oar.kao.scheduling.find_first_suitable_contiguous_slots(
-            slots_set, job, res_rqt, hy, min_start_time)
+        (
+            res_set,
+            sid_left,
+            sid_right,
+        ) = oar.kao.scheduling.find_first_suitable_contiguous_slots(
+            slots_set, job, res_rqt, hy, min_start_time
+        )
         if len(res_set) == 0:  # no suitable time*resources found
             job.res_set = ProcSet()
             job.start_time = -1
@@ -217,7 +237,7 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
             return
         # print("after find fisrt suitable")
         t_finish = slots[sid_left].b + walltime
-        if (t_finish < prev_t_finish):
+        if t_finish < prev_t_finish:
             prev_start_time = slots[sid_left].b
             prev_t_finish = t_finish
             prev_res_set = res_set
@@ -256,22 +276,17 @@ def find_coorm(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs
     c = zerorpc.Client()
     protocol, ip, port = find_args[:3]
     c.connect("%s://%s:%s" % (protocol, ip, port))
-    return c.find_resource_hierarchies(
-        itvs_avail,
-        hy_res_rqts,
-        hy,
-    )
+    return c.find_resource_hierarchies(itvs_avail, hy_res_rqts, hy,)
 
 
-def assign_coorm(slots_set, job, hy, min_start_time,
-                 *assign_args, **assign_kwargs):
+def assign_coorm(slots_set, job, hy, min_start_time, *assign_args, **assign_kwargs):
     if zerorpc is None:
         return assign_default(slots_set, job, hy, min_start_time)
-    timeout = assign_kwargs.get('timeout', None)
+    timeout = assign_kwargs.get("timeout", None)
     if timeout is not None and timeout.isdigit():
         default_timeout = int(timeout)
-        if config['COORM_DEFAULT_TIMEOUT'] < default_timeout:
-            default_timeout = config['COORM_DEFAULT_TIMEOUT']
+        if config["COORM_DEFAULT_TIMEOUT"] < default_timeout:
+            default_timeout = config["COORM_DEFAULT_TIMEOUT"]
     else:
         default_timeout = None
     # Init connetion with COORM application
@@ -282,24 +297,20 @@ def assign_coorm(slots_set, job, hy, min_start_time,
     # Convert the job to dict, to preserve values after de/serialisation
     missing = object()
     dict_job = job.to_dict()
-    for k in ('mld_res_rqts', 'key_cache', 'ts', 'ph', 'find'):
+    for k in ("mld_res_rqts", "key_cache", "ts", "ph", "find"):
         if getattr(job, k, missing) is not missing:
             dict_job[k] = getattr(job, k)
 
     # Remote call
     prev_sid_left, prev_sid_right, dict_job = c.assign_resources(
-        pickle.dumps(slots_set),
-        dict_job,
-        hy,
-        min_start_time
+        pickle.dumps(slots_set), dict_job, hy, min_start_time
     )
 
     # Propagate modified job values outside
-    for k in ('moldable_id', 'res_set', 'start_time', 'walltime'):
+    for k in ("moldable_id", "res_set", "start_time", "walltime"):
         if k in dict_job:
             setattr(job, k, dict_job.get(k))
 
     # Split SlotSet to add our reservation
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
     return prev_sid_left, prev_sid_right, job
-

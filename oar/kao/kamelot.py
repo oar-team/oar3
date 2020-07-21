@@ -5,8 +5,7 @@ from oar.lib import config, get_logger
 from oar.kao.platform import Platform
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
-from oar.kao.scheduling import (set_slots_with_prev_scheduled_jobs,
-                                schedule_id_jobs_ct)
+from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs, schedule_id_jobs_ct
 from oar.kao.multifactor_priority import multifactor_jobs_sorting
 from oar.kao.karma import karma_jobs_sorting
 from oar.kao.quotas import Quotas
@@ -27,18 +26,30 @@ def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
             #
             # Karma job sorting (Fairsharing)
             #
-            waiting_ordered_jids = karma_jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+            waiting_ordered_jids = karma_jobs_sorting(
+                queues, now, waiting_jids, waiting_jobs, plt
+            )
         elif config["JOB_PRIORITY"] == "MULTIFACTOR":
-            waiting_ordered_jids = multifactor_jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+            waiting_ordered_jids = multifactor_jobs_sorting(
+                queues, now, waiting_jids, waiting_jobs, plt
+            )
 
         elif config["JOB_PRIORITY"] == "CUSTOM":
-            custom_jobs_sorting_func = getattr(oar.kao.custom_jobs_sorting,
-                                               'jobs_sorting_%s' % config["CUSTOM_JOB_SORTING"])
+            custom_jobs_sorting_func = getattr(
+                oar.kao.custom_jobs_sorting,
+                "jobs_sorting_%s" % config["CUSTOM_JOB_SORTING"],
+            )
             if "CUSTOM_JOB_SORTING_CONFIG" not in config:
                 config["CUSTOM_JOB_SORTING_CONFIG"] = "{}"
 
-            waiting_ordered_jids = custom_jobs_sorting_func(queues, now, waiting_jids, waiting_jobs,
-                                                            config["CUSTOM_JOB_SORTING_CONFIG"], plt)
+            waiting_ordered_jids = custom_jobs_sorting_func(
+                queues,
+                now,
+                waiting_jids,
+                waiting_jobs,
+                config["CUSTOM_JOB_SORTING_CONFIG"],
+                plt,
+            )
 
     return waiting_ordered_jids
 
@@ -60,19 +71,22 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(
-            waiting_jobs, waiting_jids, resource_set, job_security_time)
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
-        waiting_ordered_jids = jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = jobs_sorting(
+            queues, now, waiting_jids, waiting_jobs, plt
+        )
 
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets,
-                            waiting_jobs,
-                            resource_set.hierarchy,
-                            waiting_ordered_jids,
-                            job_security_time)
+        schedule_id_jobs_ct(
+            all_slot_sets,
+            waiting_jobs,
+            resource_set.hierarchy,
+            waiting_ordered_jids,
+            job_security_time,
+        )
 
         #
         # Save assignement
@@ -86,8 +100,11 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
 
 def schedule_cycle(plt, now, queues=["default"]):
 
-    logger.info("Begin scheduling....now: {}, queue(s): {}"
-                .format(now, ' '.join([q for q in queues])))
+    logger.info(
+        "Begin scheduling....now: {}, queue(s): {}".format(
+            now, " ".join([q for q in queues])
+        )
+    )
     #
     # Retrieve waiting jobs
     #
@@ -128,37 +145,38 @@ def schedule_cycle(plt, now, queues=["default"]):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(
-            waiting_jobs, waiting_jids, resource_set, job_security_time)
+        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
 
         # Job sorting (karma and advanced)
-        waiting_ordered_jids = jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt)
+        waiting_ordered_jids = jobs_sorting(
+            queues, now, waiting_jids, waiting_jobs, plt
+        )
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
         scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, now)
 
-        all_slot_sets = {'default': initial_slot_set}
+        all_slot_sets = {"default": initial_slot_set}
 
         if scheduled_jobs != []:
-            if (len(queues) == 1) and (queues[0] == 'besteffort'):
+            if (len(queues) == 1) and (queues[0] == "besteffort"):
                 filter_besteffort = False
             else:
                 filter_besteffort = True
-            set_slots_with_prev_scheduled_jobs(all_slot_sets,
-                                               scheduled_jobs,
-                                               job_security_time,
-                                               now,
-                                               filter_besteffort)
+            set_slots_with_prev_scheduled_jobs(
+                all_slot_sets, scheduled_jobs, job_security_time, now, filter_besteffort
+            )
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets,
-                            waiting_jobs,
-                            resource_set.hierarchy,
-                            waiting_ordered_jids,
-                            job_security_time)
+        schedule_id_jobs_ct(
+            all_slot_sets,
+            waiting_jobs,
+            resource_set.hierarchy,
+            waiting_ordered_jids,
+            job_security_time,
+        )
 
         #
         # Save assignement
@@ -174,12 +192,12 @@ def schedule_cycle(plt, now, queues=["default"]):
 # Main function
 #
 def main():
-    config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+    config["LOG_FILE"] = "/tmp/oar_kamelot.log"
     logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()
 
-    if ('QUOTAS' in config) and (config['QUOTAS'] == 'yes'):
+    if ("QUOTAS" in config) and (config["QUOTAS"] == "yes"):
         Quotas.enable(plt.resource_set())
 
     logger.debug("argv..." + str(sys.argv))
@@ -193,10 +211,11 @@ def main():
 
     logger.info("That's all folks")
     from oar.lib import db
+
     db.commit()
 
 
-if __name__ == '__main__':  # pragma: no cover
-    config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+if __name__ == "__main__":  # pragma: no cover
+    config["LOG_FILE"] = "/tmp/oar_kamelot.log"
     logger = get_logger("oar.kamelot", forward_stderr=True)
     main()

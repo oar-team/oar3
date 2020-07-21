@@ -16,31 +16,35 @@ from procset import ProcSet
 import simplejson as json
 
 basestring = (str, bytes)
-integer_types = (int, )
-numeric_types = integer_types + (float, )
+integer_types = (int,)
+numeric_types = integer_types + (float,)
 builtin_str = str
 
 try:  # pragma: no cover
     import __pypy__
+
     is_pypy = True
 except:  # pragma: no cover
     __pypy__ = None
     is_pypy = False
 
+
 def dict_ps_copy(dict_ps):
     d = {}
     for key, value in dict_ps.items():
         if type(value) == dict:
-            d[key] = {k: copy.copy(v) for k,v in value.items()}
+            d[key] = {k: copy.copy(v) for k, v in value.items()}
         else:
             d[key] = value
     return d
     # return {k: ps_copy(v) for k,v in dict_ps.items()}
 
+
 def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
 
-def to_unicode(obj, encoding='utf-8'):
+
+def to_unicode(obj, encoding="utf-8"):
     """
     Convert ``obj`` to unicode"""
     # unicode support
@@ -49,29 +53,33 @@ def to_unicode(obj, encoding='utf-8'):
 
     # bytes support
     if is_bytes(obj):
-        if hasattr(obj, 'tobytes'):
+        if hasattr(obj, "tobytes"):
             return str(obj.tobytes(), encoding)
         return str(obj, encoding)
 
     # string support
     if isinstance(obj, basestring):
-        if hasattr(obj, 'decode'):
+        if hasattr(obj, "decode"):
             return obj.decode(encoding)
         else:
             return str(obj, encoding)
 
     return str(obj)
 
+
 def reraise(tp, value, tb=None):
     if value.__traceback__ is not tb:
         raise value.with_traceback(tb)
     raise value
 
+
 def is_bytes(x):
     return isinstance(x, (bytes, memoryview, bytearray))
 
+
 def callable(obj):
     return isinstance(obj, Callable)
+
 
 class JSONEncoder(json.JSONEncoder):
     """JSON Encoder class that handles conversion for a number of types not
@@ -85,9 +93,9 @@ class JSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         elif isinstance(obj, (decimal.Decimal)):
             return to_unicode(obj)
-        elif hasattr(obj, 'asdict') and callable(getattr(obj, 'asdict')):
+        elif hasattr(obj, "asdict") and callable(getattr(obj, "asdict")):
             return obj.asdict()
-        elif hasattr(obj, 'to_dict') and callable(getattr(obj, 'to_dict')):
+        elif hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict")):
             return obj.to_dict()
         else:
             return json.JSONEncoder.default(self, obj)
@@ -95,18 +103,18 @@ class JSONEncoder(json.JSONEncoder):
 
 def to_json(obj, **kwargs):
     """Dumps object to json string. """
-    kwargs.setdefault('ensure_ascii', False)
-    kwargs.setdefault('cls', JSONEncoder)
-    kwargs.setdefault('indent', 4)
-    kwargs.setdefault('separators', (',', ': '))
+    kwargs.setdefault("ensure_ascii", False)
+    kwargs.setdefault("cls", JSONEncoder)
+    kwargs.setdefault("indent", 4)
+    kwargs.setdefault("separators", (",", ": "))
     return json.dumps(obj, **kwargs)
 
 
 def touch(fname, times=None):
-    dirname = '/'.join(fname.split('/')[:-1])
+    dirname = "/".join(fname.split("/")[:-1])
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    with open(fname, 'a'):
+    with open(fname, "a"):
         os.utime(fname, times)
 
 
@@ -120,6 +128,7 @@ class CachedProperty(object):
     """A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
     property."""
+
     def __init__(self, func):
         self.__name__ = func.__name__
         self.__module__ = func.__module__
@@ -140,6 +149,7 @@ class CachedProperty(object):
         cache_obj = getattr(obj, "_cache", {})
         if self.__name__ in cache_obj:
             del cache_obj[self.__name__]
+
 
 cached_property = CachedProperty
 
@@ -200,12 +210,15 @@ def render_query(statement, bind=None, reindent=True):
     statement.
     """
     from sqlalchemy_utils.functions import render_statement
+
     raw_sql = render_statement(statement, bind)
     try:  # pragma: no cover
         import sqlparse
+
         return sqlparse.format(raw_sql, reindent=reindent)
     except ImportError:  # pragma: no cover
         return raw_sql
+
 
 def merge_dicts(*dict_args):
     """Merge given dicts into a new dict."""
@@ -214,38 +227,40 @@ def merge_dicts(*dict_args):
         result.update(dictionary)
     return result
 
+
 def get_table_name(name):
     def _join(match):
         word = match.group()
         if len(word) > 1:
-            return ('_%s_%s' % (word[:-1], word[-1])).lower()
-        return '_' + word.lower()
-    return re.compile(r'([A-Z]+)(?=[a-z0-9])').sub(_join, name).lstrip('_')
+            return ("_%s_%s" % (word[:-1], word[-1])).lower()
+        return "_" + word.lower()
+
+    return re.compile(r"([A-Z]+)(?=[a-z0-9])").sub(_join, name).lstrip("_")
+
 
 def print_query_results(results, name=None):
     if name:
         print(name)
-        print('-' * len(name))
+        print("-" * len(name))
 
     if results:
         colnames = results[0].to_dict().keys()
 
         # Print header (colname in diagonal)
-        nb_lines= len(max(colnames, key=len))
+        nb_lines = len(max(colnames, key=len))
         step = 8
         header = []
         for i in range(nb_lines):
-            h = [ l[i] if len(l)>i else " " for l in colnames]
-            header.append(' '*i + (' '*(step-1)).join(h))
+            h = [l[i] if len(l) > i else " " for l in colnames]
+            header.append(" " * i + (" " * (step - 1)).join(h))
 
         for i in reversed(range(nb_lines)):
             print(header[i])
 
         # Print vlaues
-        fmt = ('{:' + str(step) + '.' + str(step-1) + '}') * len(colnames)
-        #fmt = * len(colnames)
-        #print(fmt.format(*colnames))
+        fmt = ("{:" + str(step) + "." + str(step - 1) + "}") * len(colnames)
+        # fmt = * len(colnames)
+        # print(fmt.format(*colnames))
 
         for res in results:
             print(fmt.format(*[str(s) for s in res.to_dict().values()]))
-

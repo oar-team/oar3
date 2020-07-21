@@ -13,10 +13,9 @@ from ..utils import ArgParser
 
 
 class Blueprint(FlaskBlueprint):
-
     def __init__(self, *args, **kwargs):
-        self.root_prefix = kwargs.pop('url_prefix', '')
-        self.trailing_slash = kwargs.pop('trailing_slash', True)
+        self.root_prefix = kwargs.pop("url_prefix", "")
+        self.trailing_slash = kwargs.pop("trailing_slash", True)
         super(Blueprint, self).__init__(*args, **kwargs)
         self.before_request(self._prepare_response)
 
@@ -36,32 +35,39 @@ class Blueprint(FlaskBlueprint):
             args = {}
         rule = partial_rule
         if self.root_prefix:
-            rule = (self.root_prefix + partial_rule)
+            rule = self.root_prefix + partial_rule
         if self.trailing_slash and len(rule) > 1:
             rule = rule.rstrip("/")
 
         def decorator(f):
             endpoint = options.pop("endpoint", f.__name__)
             if jsonify and not hasattr(f, "decorated_with_jsonify") and args:
+
                 @self.args(args)
                 @self.jsonify
                 @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
+
             elif jsonify and not hasattr(f, "decorated_with_jsonify"):
+
                 @self.jsonify
                 @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
+
             elif args:
+
                 @self.args(args)
                 @wraps(f)
                 def wrapper(*proxy_args, **proxy_kwargs):
                     return f(*proxy_args, **proxy_kwargs)
+
             else:
                 wrapper = f
             self.add_url_rule(rule, endpoint, wrapper, **options)
             return wrapper
+
         return decorator
 
     @property
@@ -75,6 +81,7 @@ class Blueprint(FlaskBlueprint):
                 g.data["foo"] = name  # or return {"foo": name}
 
         """
+
         def decorator(func):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
@@ -84,8 +91,10 @@ class Blueprint(FlaskBlueprint):
                 if not isinstance(result, (dict, list, BaseModel)):
                     return result
                 return self._jsonify_response(result)
+
             decorated.decorated_with_jsonify = True
             return decorated
+
         return decorator
 
     def args(self, argmap):
@@ -100,6 +109,7 @@ class Blueprint(FlaskBlueprint):
                 return {'result': math.factorial(x)}
 
         """
+
         def decorator(func):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
@@ -107,13 +117,16 @@ class Blueprint(FlaskBlueprint):
                 parsed_kwargs, raw_kwargs = parser.parse()
                 proxy_kwargs.update(parsed_kwargs)
                 g.request_args.update(raw_kwargs)
-                #g.request_args.update(proxy_kwargs)
+                # g.request_args.update(proxy_kwargs)
                 return func(*proxy_args, **proxy_kwargs)
+
             return decorated
+
         return decorator
 
     def need_authentication(self):
         """Decorator that check is user is authenticate."""
+
         def decorator(func):
             @wraps(func)
             def decorated(*proxy_args, **proxy_kwargs):
@@ -121,39 +134,40 @@ class Blueprint(FlaskBlueprint):
                     return func(*proxy_args, **proxy_kwargs)
                 else:
                     abort(403)
+
             return decorated
+
         return decorator
 
     def _prepare_response(self):
         g.request_args = {}
         g.data = OrderedDict()
-        g.data['api_timezone'] = 'UTC'
+        g.data["api_timezone"] = "UTC"
         # timestamp is the time in seconds since the epoch
         # (January 1, 1970, 00:00:00 (UTC)) as a int.
-        g.data['api_timestamp'] = int(time.time())
-
+        g.data["api_timestamp"] = int(time.time())
 
     def _json_dumps(self, obj, **kwargs):
         """Dump object to json string."""
-        kwargs.setdefault('ensure_ascii', False)
-        kwargs.setdefault('cls', JSONEncoder)
-        kwargs.setdefault('indent', 4)
-        kwargs.setdefault('separators', (',', ': '))
+        kwargs.setdefault("ensure_ascii", False)
+        kwargs.setdefault("cls", JSONEncoder)
+        kwargs.setdefault("indent", 4)
+        kwargs.setdefault("separators", (",", ": "))
         return json.dumps(obj, **kwargs)
 
     def _jsonify_response(self, obj):
         """Get a json response."""
-        return Response(self._json_dumps(obj), mimetype='application/json')
+        return Response(self._json_dumps(obj), mimetype="application/json")
 
 
 def load_blueprints():
     folder = os.path.abspath(os.path.dirname(__file__))
     for filename in os.listdir(folder):
-        if filename.endswith('.py') and not filename.startswith('__'):
+        if filename.endswith(".py") and not filename.startswith("__"):
             name = filename[:-3]
-            module_path = 'oar.rest_api.views.%s' % name
-            module = __import__(module_path, None, None, ['app'])
-            yield getattr(module, 'app')
+            module_path = "oar.rest_api.views.%s" % name
+            module = __import__(module_path, None, None, ["app"])
+            yield getattr(module, "app")
 
 
 def register_blueprints(app):

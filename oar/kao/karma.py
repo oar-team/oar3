@@ -1,11 +1,11 @@
 # coding: utf-8
 
-from oar.lib import (config, db, Accounting, get_logger)
+from oar.lib import config, db, Accounting, get_logger
 from sqlalchemy import func
 import re
 
 # Log category
-logger = get_logger('oar.kao.karma')
+logger = get_logger("oar.kao.karma")
 
 
 # convert perl hash 2 dict
@@ -21,13 +21,15 @@ def perl_hash_2_dict(str):
 
 def get_sum_accounting_window(queues, window_start, window_stop):
 
-    req = db.query(Accounting.consumption_type,
-                   func.sum(Accounting.consumption))\
-            .filter(Accounting.queue_name.in_(tuple(queues)))\
-            .filter(Accounting.window_start >= window_start)\
-            .filter(Accounting.window_stop < window_stop)\
-            .group_by(Accounting.consumption_type).all()
-    
+    req = (
+        db.query(Accounting.consumption_type, func.sum(Accounting.consumption))
+        .filter(Accounting.queue_name.in_(tuple(queues)))
+        .filter(Accounting.window_start >= window_start)
+        .filter(Accounting.window_stop < window_stop)
+        .group_by(Accounting.consumption_type)
+        .all()
+    )
+
     karma_sum_time_asked = 1
     karma_sum_time_used = 1
 
@@ -39,6 +41,7 @@ def get_sum_accounting_window(queues, window_start, window_stop):
 
     return (karma_sum_time_asked, karma_sum_time_used)
 
+
 # and karma_projects_asked, karma_projects_used =
 # Iolib.get_sum_accounting_for_param dbh queue "accounting_project"
 # window_start window_stop
@@ -46,13 +49,18 @@ def get_sum_accounting_window(queues, window_start, window_stop):
 
 def get_sum_accounting_by_project(queues, window_start, window_stop):
 
-    req = db.query(Accounting.project, Accounting.consumption_type,
-                   func.sum(Accounting.consumption))\
-        .filter(Accounting.queue_name.in_(tuple(queues)))\
-        .filter(Accounting.window_start >= window_start)\
-        .filter(Accounting.window_stop < window_stop)\
-        .group_by(Accounting.project, Accounting.consumption_type)\
+    req = (
+        db.query(
+            Accounting.project,
+            Accounting.consumption_type,
+            func.sum(Accounting.consumption),
+        )
+        .filter(Accounting.queue_name.in_(tuple(queues)))
+        .filter(Accounting.window_start >= window_start)
+        .filter(Accounting.window_stop < window_stop)
+        .group_by(Accounting.project, Accounting.consumption_type)
         .all()
+    )
 
     karma_used = {}
     karma_asked = {}
@@ -71,13 +79,18 @@ def get_sum_accounting_by_project(queues, window_start, window_stop):
 def get_sum_accounting_by_user(queues, window_start, window_stop):
 
     # print " window_start, window_stop", window_start, window_stop
-    req = db.query(Accounting.user, Accounting.consumption_type,
-                   func.sum(Accounting.consumption))\
-        .filter(Accounting.queue_name.in_(tuple(queues)))\
-        .filter(Accounting.window_start >= window_start)\
-        .filter(Accounting.window_stop <= window_stop)\
-        .group_by(Accounting.user, Accounting.consumption_type)\
+    req = (
+        db.query(
+            Accounting.user,
+            Accounting.consumption_type,
+            func.sum(Accounting.consumption),
+        )
+        .filter(Accounting.queue_name.in_(tuple(queues)))
+        .filter(Accounting.window_start >= window_start)
+        .filter(Accounting.window_stop <= window_stop)
+        .group_by(Accounting.user, Accounting.consumption_type)
         .all()
+    )
 
     karma_used = {}
     karma_asked = {}
@@ -107,15 +120,14 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
 
     # get fairsharing config if any
     karma_proj_targets = perl_hash_2_dict(
-        config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"])
-    karma_user_targets = perl_hash_2_dict(
-        config["SCHEDULER_FAIRSHARING_USER_TARGETS"])
-    karma_coeff_proj_consumption = float(
-        config["SCHEDULER_FAIRSHARING_COEF_PROJECT"])
-    karma_coeff_user_consumption = float(
-        config["SCHEDULER_FAIRSHARING_COEF_USER"])
+        config["SCHEDULER_FAIRSHARING_PROJECT_TARGETS"]
+    )
+    karma_user_targets = perl_hash_2_dict(config["SCHEDULER_FAIRSHARING_USER_TARGETS"])
+    karma_coeff_proj_consumption = float(config["SCHEDULER_FAIRSHARING_COEF_PROJECT"])
+    karma_coeff_user_consumption = float(config["SCHEDULER_FAIRSHARING_COEF_USER"])
     karma_coeff_user_asked_consumption = float(
-        config["SCHEDULER_FAIRSHARING_COEF_USER_ASK"])
+        config["SCHEDULER_FAIRSHARING_COEF_USER_ASK"]
+    )
 
     #
     # Retrieve karma part value from past
@@ -125,11 +137,14 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
     window_stop = now
 
     karma_sum_time_asked, karma_sum_time_used = plt.get_sum_accounting_window(
-        queues, window_start, window_stop)
+        queues, window_start, window_stop
+    )
     karma_projects_asked, karma_projects_used = plt.get_sum_accounting_by_project(
-        queues, window_start, window_stop)
+        queues, window_start, window_stop
+    )
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
-        queues, window_start, window_stop)
+        queues, window_start, window_stop
+    )
     #
     # Compute actual karma for each job
     #
@@ -164,9 +179,15 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
         # x2 = karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0))
         # x3 = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
         # print "yopypop", x1, x2, x3
-        projet = karma_coeff_proj_consumption * ((karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0))
-        user = karma_coeff_user_consumption * ((karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0))
-        user_ask = karma_coeff_user_asked_consumption * ((karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0))
+        projet = karma_coeff_proj_consumption * (
+            (karma_proj_used_j / karma_sum_time_used) - (karma_proj_target / 100.0)
+        )
+        user = karma_coeff_user_consumption * (
+            (karma_user_used_j / karma_sum_time_used) - (karma_user_target / 100.0)
+        )
+        user_ask = karma_coeff_user_asked_consumption * (
+            (karma_user_asked_j / karma_sum_time_asked) - (karma_user_target / 100.0)
+        )
         job.karma = projet + user + user_ask
 
 

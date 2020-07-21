@@ -1,4 +1,4 @@
-if 'sandy' in types:
+if "sandy" in types:
     if properties:
         properties = "({}) AND cputype = 'sandybridge'".format(properties)
     else:

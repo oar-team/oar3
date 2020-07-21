@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-from oar.lib import (config, get_logger)
+from oar.lib import config, get_logger
 
 import oar.lib.tools as tools
 
@@ -14,41 +14,43 @@ import signal
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    'META_SCHED_CMD': 'kao',
-    'SERVER_HOSTNAME': 'localhost',
-    'APPENDICE_SERVER_PORT': '6670', # new endpoint which replaces appendice
-    'SCHEDULER_MIN_TIME_BETWEEN_2_CALLS': '1',
-    'FINAUD_FREQUENCY': '300',
-    'LOG_FILE': '/var/log/oar.log',
-    'ENERGY_SAVING_INTERNAL': 'no'
+    "META_SCHED_CMD": "kao",
+    "SERVER_HOSTNAME": "localhost",
+    "APPENDICE_SERVER_PORT": "6670",  # new endpoint which replaces appendice
+    "SCHEDULER_MIN_TIME_BETWEEN_2_CALLS": "1",
+    "FINAUD_FREQUENCY": "300",
+    "LOG_FILE": "/var/log/oar.log",
+    "ENERGY_SAVING_INTERNAL": "no",
 }
 
 config.setdefault_config(DEFAULT_CONFIG)
 
 # Everything is run by oar user (The real uid of this process.)
-os.environ['OARDO_UID'] = str(os.geteuid())
+os.environ["OARDO_UID"] = str(os.geteuid())
 
 logger = get_logger("oar.modules.almighty", forward_stderr=True)
-logger.info('Start Almighty')
+logger.info("Start Almighty")
 # TODO
 # send_log_by_email("Start OAR server","[Almighty] Start Almighty");
 
-if 'OARDIR' in os.environ:
-    binpath = os.environ['OARDIR'] + '/'
+if "OARDIR" in os.environ:
+    binpath = os.environ["OARDIR"] + "/"
 else:
-    binpath = '/usr/local/lib/oar/'
-    logger.warning("OARDIR env variable must be defined, set it to default value:" + binpath)
-    os.environ['OARDIR'] = binpath
+    binpath = "/usr/local/lib/oar/"
+    logger.warning(
+        "OARDIR env variable must be defined, set it to default value:" + binpath
+    )
+    os.environ["OARDIR"] = binpath
 
-meta_sched_command = config['META_SCHED_CMD']
-m = re.match(r'^\/', meta_sched_command)
+meta_sched_command = config["META_SCHED_CMD"]
+m = re.match(r"^\/", meta_sched_command)
 if not m:
     meta_sched_command = binpath + meta_sched_command
 
-leon_command = binpath + 'oar-leon'
-check_for_villains_command = binpath + 'oar-sarko'
-check_for_node_changes = binpath + 'oar-finaud'
-nodeChangeState_command = binpath + 'oar-node-change-state'
+leon_command = binpath + "oar-leon"
+check_for_villains_command = binpath + "oar-sarko"
+check_for_node_changes = binpath + "oar-finaud"
+nodeChangeState_command = binpath + "oar-node-change-state"
 
 # Legacy OAR2
 # leon_command = binpath + 'Leon'
@@ -57,9 +59,9 @@ nodeChangeState_command = binpath + 'oar-node-change-state'
 # nodeChangeState_command = binpath + 'NodeChangeState'
 # nodeChangeState_command = 'true'
 
-proxy_appendice_command = binpath + 'oar-appendice-proxy'
-bipbip_commander = binpath + 'oar-bipbip-commander'
-hulot_command = binpath + 'oar-hulot'
+proxy_appendice_command = binpath + "oar-appendice-proxy"
+bipbip_commander = binpath + "oar-bipbip-commander"
+hulot_command = binpath + "oar-hulot"
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -81,16 +83,16 @@ max_successive_read = 1
 # no notification)
 schedulertimeout = 60
 # Min waiting time before 2 scheduling attempts
-scheduler_min_time_between_2_calls = int(config['SCHEDULER_MIN_TIME_BETWEEN_2_CALLS'])
+scheduler_min_time_between_2_calls = int(config["SCHEDULER_MIN_TIME_BETWEEN_2_CALLS"])
 
 
 # Max waiting time before check for jobs whose time allowed has elapsed
 villainstimeout = 10
 
 # Max waiting time before check node states
-checknodestimeout = int(config['FINAUD_FREQUENCY'])
+checknodestimeout = int(config["FINAUD_FREQUENCY"])
 
-Log_file = config['LOG_FILE']
+Log_file = config["LOG_FILE"]
 
 energy_pid = 0
 
@@ -101,6 +103,7 @@ finishTag = False
 def signal_handler():
     global finishTag
     finishTag = True
+
 
 #
 # To avoid zombie processes
@@ -113,17 +116,17 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 
 def launch_command(command):
-    '''launch the command line passed in parameter'''
+    """launch the command line passed in parameter"""
 
     # TODO move to oar.lib.tools
     # global finishTag
 
-    logger.debug('Launching command : [' + command + ']')
+    logger.debug("Launching command : [" + command + "]")
 
     exit_value = tools.call(command)
 
-    logger.debug(command + ' terminated')
-    logger.debug('Exit value : ' + str(exit_value))
+    logger.debug(command + " terminated")
+    logger.debug("Exit value : " + str(exit_value))
 
     return exit_value
 
@@ -135,6 +138,7 @@ def start_hulot():
 def check_hulot(hulot):
     """Check the prescence hulot process"""
     return tools.check_process(hulot.pid)
+
 
 #
 # functions associated with each state of the automaton
@@ -162,17 +166,18 @@ def nodeChangeState():
 
 
 class Almighty(object):
-
     def __init__(self):
-        self.state = 'Init'
+        self.state = "Init"
         logger.debug("Current state [" + self.state + "]")
 
         # Activate appendice socket
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
-        ip_addr_server = socket.gethostbyname(config['SERVER_HOSTNAME'])
+        ip_addr_server = socket.gethostbyname(config["SERVER_HOSTNAME"])
         try:
-            self.appendice.bind('tcp://' + ip_addr_server + ':' + config['APPENDICE_SERVER_PORT'])
+            self.appendice.bind(
+                "tcp://" + ip_addr_server + ":" + config["APPENDICE_SERVER_PORT"]
+            )
         except Exception as e:
             logger.error(f"Failed to activate appendice endpoint: {e}")
             sys.exit(1)
@@ -181,7 +186,7 @@ class Almighty(object):
 
         # Starting of Hulot, the Energy saving module
         self.hulot = None
-        if config['ENERGY_SAVING_INTERNAL'] == 'yes':
+        if config["ENERGY_SAVING_INTERNAL"] == "yes":
             self.hulot = start_hulot()
 
         self.lastscheduler = 0
@@ -191,8 +196,8 @@ class Almighty(object):
 
         self.scheduler_wanted = 0  # 1 if the scheduler must be run next time update
 
-        logger.debug('Init done')
-        self.state = 'Qget'
+        logger.debug("Init done")
+        self.state = "Qget"
 
         self.start_companions()
 
@@ -205,31 +210,35 @@ class Almighty(object):
     def time_update(self):
         current = tools.get_time()  # ---> TODO my $current = time; -> ???
 
-        logger.debug('Timeouts check : ' + str(current))
+        logger.debug("Timeouts check : " + str(current))
         # check timeout for scheduler
-        if (current >= (self.lastscheduler + schedulertimeout))\
-           or (self.scheduler_wanted >= 1)\
-           and (current >= (self.lastscheduler + scheduler_min_time_between_2_calls)):
-            logger.debug('Scheduling timeout')
+        if (
+            (current >= (self.lastscheduler + schedulertimeout))
+            or (self.scheduler_wanted >= 1)
+            and (current >= (self.lastscheduler + scheduler_min_time_between_2_calls))
+        ):
+            logger.debug("Scheduling timeout")
             # lastscheduler = current + schedulertimeout
-            self.add_command('Scheduling')
+            self.add_command("Scheduling")
 
         if current >= (self.lastvillains + villainstimeout):
-            logger.debug('Villains check timeout')
+            logger.debug("Villains check timeout")
             # lastvillains =  current +  villainstimeout
-            self.add_command('Villains')
+            self.add_command("Villains")
 
-        if (current >= (self.lastchecknodes + checknodestimeout)) and (checknodestimeout > 0):
-            logger.debug('Node check timeout')
+        if (current >= (self.lastchecknodes + checknodestimeout)) and (
+            checknodestimeout > 0
+        ):
+            logger.debug("Node check timeout")
             # lastchecknodes = -current + checknodestimeout
-            self.add_command('Finaud')
+            self.add_command("Finaud")
 
     def set_appendice_timeout(self, timeout):
-        '''Set timeout appendice socket'''
+        """Set timeout appendice socket"""
         self.appendice.RCVTIMEO = timeout
 
     def qget(self, timeout):
-        '''function used by the main automaton to get notifications from appendice'''
+        """function used by the main automaton to get notifications from appendice"""
 
         # timeout = 10 * 1000
         self.set_appendice_timeout(timeout)
@@ -241,20 +250,20 @@ class Almighty(object):
         except zmq.error.Again as e:
             logger.debug("Timeout from appendice:" + str(e))
             # return (None, {'cmd': 'Time'})
-            return {'cmd': 'Time'}
+            return {"cmd": "Time"}
         except zmq.ZMQError as e:
             logger.error("Something is wrong with appendice" + str(e))
             # return (15, None)
-            return {'cmd': 'Time'}
+            return {"cmd": "Time"}
         # return (None, answer)
         return answer
 
     def add_command(self, command):
-        '''as commands are just notifications that will
+        """as commands are just notifications that will
         handle all the modifications in the base up to now, we should
-        avoid duplication in the command file'''
+        avoid duplication in the command file"""
 
-        m = re.compile('^' + command + '$')
+        m = re.compile("^" + command + "$")
         flag = True
         for cmd in self.command_queue:
             if re.match(m, cmd):
@@ -265,21 +274,23 @@ class Almighty(object):
             self.command_queue.append(command)
 
     def read_commands(self, timeout=read_commands_timeout):  # TODO
-        ''' read commands until reaching the maximal successive read value or
-        having read all of the pending commands'''
+        """ read commands until reaching the maximal successive read value or
+        having read all of the pending commands"""
 
         command = None
         remaining = max_successive_read
 
-        while (command != 'Time') and remaining:
+        while (command != "Time") and remaining:
             command = self.qget(timeout)
             if remaining != max_successive_read:
                 timeout = 0
             if command is None:
                 break
-            self.add_command(command['cmd'])
+            self.add_command(command["cmd"])
             remaining -= 1
-            logger.debug('Got command ' + command['cmd'] + ', ' + str(remaining) + ' remaining')
+            logger.debug(
+                "Got command " + command["cmd"] + ", " + str(remaining) + " remaining"
+            )
 
     def run(self, loop=True):
 
@@ -305,132 +316,154 @@ class Almighty(object):
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
                 start_hulot(self)
             # QGET
-            elif self.state == 'Qget':
+            elif self.state == "Qget":
                 # if len(self.command_queue) > 0:
                 # self.read_commands(0)
                 #    pass
                 # else:
                 self.read_commands(read_commands_timeout)
 
-                logger.debug('Command queue : ' + str(self.command_queue))
+                logger.debug("Command queue : " + str(self.command_queue))
                 command = self.command_queue.pop(0)
                 # Remove useless 'Time' command to enhance reactivity
-                if command == 'Time' and self.command_queue != []:
+                if command == "Time" and self.command_queue != []:
                     command = self.command_queue.pop(0)
 
-                logger.debug('Qtype = [' + command + ']')
-                if (command == 'Qsub') or (command == 'Qsub -I') or (command == 'Term')\
-                   or (command == 'BipBip') or (command == 'Scheduling')\
-                   or (command == 'Qresume') or (command == 'Walltime'):
-                    self.state = 'Scheduler'
-                elif command == 'Qdel':
-                    self.state = 'Leon'
-                elif command == 'Villains':
-                    self.state = 'Check for villains'
-                elif command == 'Finaud':
-                    self.state = 'Check node states'
-                elif command == 'Time':
-                    self.state = 'Time update'
-                elif command == 'ChState':
-                    self.state = 'Change node state'
+                logger.debug("Qtype = [" + command + "]")
+                if (
+                    (command == "Qsub")
+                    or (command == "Qsub -I")
+                    or (command == "Term")
+                    or (command == "BipBip")
+                    or (command == "Scheduling")
+                    or (command == "Qresume")
+                    or (command == "Walltime")
+                ):
+                    self.state = "Scheduler"
+                elif command == "Qdel":
+                    self.state = "Leon"
+                elif command == "Villains":
+                    self.state = "Check for villains"
+                elif command == "Finaud":
+                    self.state = "Check node states"
+                elif command == "Time":
+                    self.state = "Time update"
+                elif command == "ChState":
+                    self.state = "Change node state"
                 else:
-                    logger.error('Unknown command found in queue : ' + command)
+                    logger.error("Unknown command found in queue : " + command)
 
             # SCHEDULER
-            elif self.state == 'Scheduler':
+            elif self.state == "Scheduler":
                 current_time = tools.get_time()
-                if current_time >= (self.lastscheduler + scheduler_min_time_between_2_calls):
+                if current_time >= (
+                    self.lastscheduler + scheduler_min_time_between_2_calls
+                ):
                     self.scheduler_wanted = 0
                     # First, check pending events
                     check_result = nodeChangeState()
                     if check_result == 2:
-                        self.state = 'Leon'
-                        self.add_command('Term')
+                        self.state = "Leon"
+                        self.add_command("Term")
                     elif check_result == 1:
-                        self.state = 'Scheduler'
+                        self.state = "Scheduler"
                     elif check_result == 0:
                         # Launch the scheduler
                         # We check Hulot just before starting the scheduler
                         # because if the pipe is not read, it may freeze oar
                         if (energy_pid > 0) and not check_hulot():
-                            logger.warning('Energy saving module (hulot) died. Restarting it.')
+                            logger.warning(
+                                "Energy saving module (hulot) died. Restarting it."
+                            )
                             time.sleep(5)
                             start_hulot()
 
                         scheduler_result = meta_scheduler()
                         self.lastscheduler = tools.get_time()
                         if scheduler_result == 0:
-                            self.state = 'Time update'
+                            self.state = "Time update"
                         elif scheduler_result == 1:
-                            self.state = 'Scheduler'
+                            self.state = "Scheduler"
                         elif scheduler_result == 2:
-                            self.state = 'Leon'
+                            self.state = "Leon"
                         else:
-                            logger.error('Scheduler returned an unknown value : scheduler_result')
+                            logger.error(
+                                "Scheduler returned an unknown value : scheduler_result"
+                            )
                             finishTag = 1
 
                     else:
-                        logger.error('nodeChangeState_command returned an unknown value.')
+                        logger.error(
+                            "nodeChangeState_command returned an unknown value."
+                        )
                         finishTag = 1
                 else:
                     self.scheduler_wanted = 1
-                    self.state = 'Time update'
-                    logger.debug('Scheduler call too early, waiting... (' + str(current_time) +
-                                 '>= (' + str(self.lastscheduler) + ' + '
-                                 + str(scheduler_min_time_between_2_calls) + ')')
+                    self.state = "Time update"
+                    logger.debug(
+                        "Scheduler call too early, waiting... ("
+                        + str(current_time)
+                        + ">= ("
+                        + str(self.lastscheduler)
+                        + " + "
+                        + str(scheduler_min_time_between_2_calls)
+                        + ")"
+                    )
 
             # TIME UPDATE
-            elif self.state == 'Time update':
+            elif self.state == "Time update":
                 self.time_update()
-                self.state = 'Qget'
+                self.state = "Qget"
 
             # CHECK FOR VILLAINS
-            elif self.state == 'Check for villains':
+            elif self.state == "Check for villains":
                 check_result = check_for_villains()
                 self.lastvillains = tools.get_time()
                 if check_result == 1:
-                    self.state = 'Leon'
+                    self.state = "Leon"
                 elif check_result == 0:
-                    self.state = 'Time update'
+                    self.state = "Time update"
                 else:
-                    logger.error('check_for_villains_command returned an unknown value : check_result.')
+                    logger.error(
+                        "check_for_villains_command returned an unknown value : check_result."
+                    )
                     finishTag = 1
 
             # CHECK NODE STATES
-            elif self.state == 'Check node states':
+            elif self.state == "Check node states":
                 check_result = check_nodes()
                 self.lastchecknodes = tools.get_time()
                 if check_result == 1:
-                    self.state = 'Change node state'
+                    self.state = "Change node state"
                 elif check_result == 0:
-                    self.state = 'Time update'
+                    self.state = "Time update"
                 else:
-                    logger.error('check_for_node_changes returned an unknown value.')
+                    logger.error("check_for_node_changes returned an unknown value.")
                     finishTag = 1
 
             # LEON
-            elif self.state == 'Leon':
+            elif self.state == "Leon":
                 check_result = leon()
-                self.state = 'Time update'
+                self.state = "Time update"
                 if check_result == 1:
-                    self.add_command('Term')
+                    self.add_command("Term")
 
             # Change state for dynamic nodes
-            elif self.state == 'Change node state':
+            elif self.state == "Change node state":
                 check_result = nodeChangeState()
                 if check_result == 2:
-                    self.state = 'Leon'
-                    self.add_command('Term')
+                    self.state = "Leon"
+                    self.add_command("Term")
                 elif check_result == 1:
-                    self.state = 'Scheduler'
+                    self.state = "Scheduler"
                 elif check_result == 0:
-                    self.state = 'Time update'
+                    self.state = "Time update"
                 else:
-                    logger.error('nodeChangeState_command returned an unknown value.')
+                    logger.error("nodeChangeState_command returned an unknown value.")
                     finishTag = 1
             else:
-                logger.warning('Critical bug !!!!\n')
-                logger.error('Almighty just falled into an unknown state !!!.')
+                logger.warning("Critical bug !!!!\n")
+                logger.error("Almighty just falled into an unknown state !!!.")
                 finishTag = 1
 
             if not loop:
@@ -443,5 +476,5 @@ def main():  # pragma: no cover
     return almighty.run()
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())

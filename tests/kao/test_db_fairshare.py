@@ -11,23 +11,23 @@ from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
 
 
-@pytest.yield_fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         yield
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def oar_conf(request):
-    config['JOB_PRIORITY'] = 'FAIRSHARE'
+    config["JOB_PRIORITY"] = "FAIRSHARE"
 
     @request.addfinalizer
     def remove_fairsharing():
-        config['JOB_PRIORITY'] = 'FIFO'
+        config["JOB_PRIORITY"] = "FIFO"
 
 
 def del_accounting():
-    db.session.execute(db['accounting'].delete())
+    db.session.execute(db["accounting"].delete())
     db.commit()
 
 
@@ -35,20 +35,25 @@ def set_accounting(accountings, consumption_type):
     ins_accountings = []
     for a in accountings:
         w_start, w_stop, proj, user, queue, consumption = a
-        ins_accountings.append({'window_start': w_start,
-                                'window_stop': w_stop,
-                                'accounting_project': proj,
-                                'accounting_user': user,
-                                'queue_name': queue,
-                                'consumption_type': consumption_type,
-                                'consumption': consumption})
+        ins_accountings.append(
+            {
+                "window_start": w_start,
+                "window_stop": w_stop,
+                "accounting_project": proj,
+                "accounting_user": user,
+                "queue_name": queue,
+                "consumption_type": consumption_type,
+                "consumption": consumption,
+            }
+        )
 
-    db.session.execute(db['accounting'].insert(), ins_accountings)
+    db.session.execute(db["accounting"].insert(), ins_accountings)
     db.commit()
 
 
-def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
-                         project="default"):
+def generate_accountings(
+    nb_users=5, t_window=24 * 36000, queue="default", project="default"
+):
     del_accounting()
 
     nb_accounts = 5
@@ -67,9 +72,9 @@ def generate_accountings(nb_users=5, t_window=24 * 36000, queue="default",
             consumption = 1000 * (1 + u)
 
             accountings_a.append(
-                (w_start, w_stop, project, user, queue, consumption + 1000))
-            accountings_u.append(
-                (w_start, w_stop, project, user, queue, consumption))
+                (w_start, w_stop, project, user, queue, consumption + 1000)
+            )
+            accountings_u.append((w_start, w_stop, project, user, queue, consumption))
 
     set_accounting(accountings_a, "ASKED")
     set_accounting(accountings_u, "USED")
@@ -85,7 +90,7 @@ def test_db_fairsharing():
 
     # add some resources
     for i in range(5):
-        db['Resource'].create(network_address="localhost")
+        db["Resource"].create(network_address="localhost")
 
     nb_users = 5
 
@@ -95,9 +100,7 @@ def test_db_fairsharing():
     jid_2_u = {}
     for i, user in enumerate(users):
         insert_job(
-            job_user="zozo" + user,
-            res=[(60, [('resource_id=4', "")])],
-            properties=""
+            job_user="zozo" + user, res=[(60, [("resource_id=4", "")])], properties=""
         )
         jid_2_u[i + 1] = int(user)
 
@@ -108,9 +111,11 @@ def test_db_fairsharing():
 
     schedule_cycle(plt, plt.get_time())
 
-    req = db['GanttJobsPrediction'].query\
-                                   .order_by(db['GanttJobsPrediction'].start_time)\
-                                   .all()
+    req = (
+        db["GanttJobsPrediction"]
+        .query.order_by(db["GanttJobsPrediction"].start_time)
+        .all()
+    )
     flag = True
 
     print(jid_2_u)

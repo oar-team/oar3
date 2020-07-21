@@ -8,18 +8,17 @@ from oar.lib import config
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 
-config['LOG_FILE'] = ':stderr:'
+config["LOG_FILE"] = ":stderr:"
 
 
 class SimSched(object):
-
-    def __init__(self, res_set, jobs, submission_time_jids,
-                 mode_platform="simu"):
+    def __init__(self, res_set, jobs, submission_time_jids, mode_platform="simu"):
 
         self.env = simpy.Environment()
 
         self.platform = Platform(
-            mode_platform, env=self.env, resource_set=res_set, jobs=jobs)
+            mode_platform, env=self.env, resource_set=res_set, jobs=jobs
+        )
 
         self.jobs = jobs
         self.sub_time_jids = submission_time_jids
@@ -44,7 +43,7 @@ class SimSched(object):
 
         while True:
 
-            print('Wait for job arrivals or job endings', self.env.now)
+            print("Wait for job arrivals or job endings", self.env.now)
 
             events = list(self.evt_running_jobs)
             if next_job_arrival is not None:
@@ -71,9 +70,11 @@ class SimSched(object):
 
             now = self.env.now
 
-            if ((next_job_arrival is None)
-                    and not self.waiting_jids
-                    and not self.evt_running_jobs):
+            if (
+                (next_job_arrival is None)
+                and not self.waiting_jids
+                and not self.evt_running_jobs
+            ):
                 print("All job submitted, no more waiting or running jobs ...", now)
                 return
             print("call schedule_cycle.... ", now)
@@ -102,18 +103,18 @@ class SimSched(object):
 
 
 class ResourceSetSimu(object):
-
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 
 class JobSimu(object):
-
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-'''
+
+
+"""
 SWF Format (extracted from http://www.cs.huji.ac.il/labs/parallel/workload/swf.html)
 
 1    Job Number -- a counter field, starting from 1.
@@ -177,7 +178,7 @@ SWF Format (extracted from http://www.cs.huji.ac.il/labs/parallel/workload/swf.h
 
 18    Think Time from Preceding Job -- this is the number of seconds that should elapse between the termination of the preceding job
       and the submittal of this one.
-'''
+"""
 JID = 0
 SUB_TIME = 1
 WAIT_TIME = 2
@@ -199,7 +200,6 @@ THINK_TIME = 16
 
 
 class SWFWorkload(object):
-
     def __init__(self, filename):
         self.jobs_fields = {}
         self.sub_times = []
@@ -208,7 +208,7 @@ class SWFWorkload(object):
             li = line.strip()
             if not li.startswith(";"):
                 # print(line.rstrip())
-                fields = [int(f) for f in re.split(r'\W+', line) if f != '']
+                fields = [int(f) for f in re.split(r"\W+", line) if f != ""]
                 jid = fields[JID]
                 sub_time = fields[SUB_TIME]
                 self.jobs_fields[fields[JID]] = fields
@@ -240,23 +240,31 @@ class SWFWorkload(object):
                     fields = self.jobs_fields[jid]
                     req_walltime = fields[REQ_TIME]
                     req_procs = fields[REQ_PROCS]
-                    simu_jobs[jid] = JobSimu(id=jid,
-                                             state="Waiting",
-                                             queue=str(fields[QUEUE_NUM]),
-                                             start_time=0,
-                                             walltime=0,
-                                             types={},
-                                             res_set=[],
-                                             moldable_id=0,
-                                             mld_res_rqts=[(i, req_walltime,
-                                                            [([("resource_id", req_procs)],
-                                                                [(0, nb_res - 1)])])],
-                                             run_time=fields[RUN_TIME],
-                                             deps=[],
-                                             key_cache={},
-                                             ts=False, ph=0,
-                                             assign=False, find=False,
-                                             no_quotas = False)
+                    simu_jobs[jid] = JobSimu(
+                        id=jid,
+                        state="Waiting",
+                        queue=str(fields[QUEUE_NUM]),
+                        start_time=0,
+                        walltime=0,
+                        types={},
+                        res_set=[],
+                        moldable_id=0,
+                        mld_res_rqts=[
+                            (
+                                i,
+                                req_walltime,
+                                [([("resource_id", req_procs)], [(0, nb_res - 1)])],
+                            )
+                        ],
+                        run_time=fields[RUN_TIME],
+                        deps=[],
+                        key_cache={},
+                        ts=False,
+                        ph=0,
+                        assign=False,
+                        find=False,
+                        no_quotas=False,
+                    )
 
             i += 1
 

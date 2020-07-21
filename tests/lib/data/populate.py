@@ -4,7 +4,7 @@ import time
 from oar.lib import db, load_fixtures
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # populate database
     here = os.path.abspath(os.path.dirname(__file__))
     filename = os.path.join(here, "dataset_1.json")

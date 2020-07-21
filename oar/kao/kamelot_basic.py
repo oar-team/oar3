@@ -6,13 +6,13 @@ from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 
-logger = get_logger('oar.kamelot_basic')
+logger = get_logger("oar.kamelot_basic")
 
 
-def schedule_cycle(plt, queues=['default']):
+def schedule_cycle(plt, queues=["default"]):
     now = plt.get_time()
 
-    logger.info('Begin scheduling....', now)
+    logger.info("Begin scheduling....", now)
 
     #
     # Retrieve waiting jobs
@@ -69,11 +69,9 @@ def schedule_cycle(plt, queues=['default']):
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets,
-                            waiting_jobs,
-                            resource_set.hierarchy,
-                            waiting_jids,
-                            0)
+        schedule_id_jobs_ct(
+            all_slot_sets, waiting_jobs, resource_set.hierarchy, waiting_jids, 0
+        )
 
         #
         # Save assignement
@@ -93,6 +91,6 @@ def main():
     logger.info("That's all folks")
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     main()

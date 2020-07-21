@@ -1,10 +1,11 @@
 import yaml
-from oar.lib import (config, get_logger)
+from oar.lib import config, get_logger
 
 from oar.kao.karma import evaluate_jobs_karma
+
 # Log category
 
-logger = get_logger('oar.kao.priorty')
+logger = get_logger("oar.kao.priorty")
 
 
 def evaluate_jobs_priority(queues, now, jids, jobs, plt):
@@ -42,34 +43,34 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
 
     queue_coefs = {}
 
-    with open(config['PRIORITY_CONF_FILE'], 'r') as stream:
+    with open(config["PRIORITY_CONF_FILE"], "r") as stream:
         try:
             yaml_priority = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             logger.error(exc)
 
-    if ('age_weight') in yaml_priority:
-        age_weight = yaml_priority['age_weight']
-    if ('age_coef') in yaml_priority:
-        age_coef = yaml_priority['age_coef']
-    if ('queue_weight') in yaml_priority:
-        queue_weight = yaml_priority['queue_weight']
-    if ('queue_coefs') in yaml_priority:
-        queue_coefs = yaml_priority['queue_coefs']
-    if ('work_weight') in yaml_priority:
-        work_weight = yaml_priority['work_weight']
-    if ('work_mode') in yaml_priority:
-        work_mode = yaml_priority['work_mode']
-    if ('size_weight') in yaml_priority:
-        size_weight = yaml_priority['size_weight']
-    if ('size_mode') in yaml_priority:
-        size_mode = yaml_priority['size_mode']
-    if ('karma_weight') in yaml_priority:
-        karma_weight = yaml_priority['karma_weight']
-    if ('qos_weight') in yaml_priority:
-        qos_weight = yaml_priority['qos_weight']
-    if ('nice_weight') in yaml_priority:
-        nice_weight = yaml_priority['nice_weight']
+    if ("age_weight") in yaml_priority:
+        age_weight = yaml_priority["age_weight"]
+    if ("age_coef") in yaml_priority:
+        age_coef = yaml_priority["age_coef"]
+    if ("queue_weight") in yaml_priority:
+        queue_weight = yaml_priority["queue_weight"]
+    if ("queue_coefs") in yaml_priority:
+        queue_coefs = yaml_priority["queue_coefs"]
+    if ("work_weight") in yaml_priority:
+        work_weight = yaml_priority["work_weight"]
+    if ("work_mode") in yaml_priority:
+        work_mode = yaml_priority["work_mode"]
+    if ("size_weight") in yaml_priority:
+        size_weight = yaml_priority["size_weight"]
+    if ("size_mode") in yaml_priority:
+        size_mode = yaml_priority["size_mode"]
+    if ("karma_weight") in yaml_priority:
+        karma_weight = yaml_priority["karma_weight"]
+    if ("qos_weight") in yaml_priority:
+        qos_weight = yaml_priority["qos_weight"]
+    if ("nice_weight") in yaml_priority:
+        nice_weight = yaml_priority["nice_weight"]
 
     # evalute and retrieve jobs' karma for fair-share
     evaluate_jobs_karma(queues, now, jids, jobs, plt)
@@ -77,12 +78,15 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
     for job in jobs.values():
         job.priority = age_weight * max(1.0, age_coef * (now - job.submission_time))
         if queue_weight > 0.0:
-            if job.queue_name in queue_coefs: 
+            if job.queue_name in queue_coefs:
                 job.priority += queue_weight * queue_coefs[job.queue_name]
             else:
-                logger.warning('queue {} is define in queue_coefs but the queue_weight is.'
-                               .format(job.queue_name))
-        if work_weight > 0.0:        
+                logger.warning(
+                    "queue {} is define in queue_coefs but the queue_weight is.".format(
+                        job.queue_name
+                    )
+                )
+        if work_weight > 0.0:
             if work_mode:
                 # prioritize big jobs over small ones (work = nb_resources * walltime)
                 job.priority += work_weight * (1.0 - 1.0 / min(1.0, job.work))
@@ -95,22 +99,25 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
                 job.priority += size_weight * (job.size / plt.nb_default_resources)
             else:
                 # prioritize small jobs over big ones
-                job.priority += size_weight * (1.0 - (job.size / plt.nb_default_resources))
+                job.priority += size_weight * (
+                    1.0 - (job.size / plt.nb_default_resources)
+                )
 
-        print("job id {} Karma {}".format(job.id, job.karma))         
+        print("job id {} Karma {}".format(job.id, job.karma))
         job.priority += karma_weight * (1.0 / (1.0 + job.karma))
         if qos_weight > 0.0:
             job.priority += qos_weight * job.qos
         if nice_weight > 0.0:
             job.priority += nice_weight * max(1.0, job.nice)
 
+
 def multifactor_jobs_sorting(queues, now, jids, jobs, plt):
 
     evaluate_jobs_priority(queues, now, jids, jobs, plt)
-    
+
     ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
-    #print("job priorty")
-    #for job in jobs.values():
+    # print("job priorty")
+    # for job in jobs.values():
     #    print("job id: {} priority: {}".format(job.id, job.priority))
-    #print(ordered_jids)
+    # print(ordered_jids)
     return ordered_jids

@@ -5,10 +5,10 @@ from oar.kao.slot import intersec_itvs_slots, Slot
 
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
-    '''
+    """
     Find resources in interval for all resource subrequests of a moldable
     instance of a job
-    '''
+    """
     result = ProcSet()
     for hy_res_rqt in hy_res_rqts:
         (hy_level_nbs, constraints) = hy_res_rqt
@@ -20,15 +20,15 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
             hy_nbs.append(n)
 
         itvs_cts_slots = constraints & itvs_slots
-        result = result | find_resource_hierarchies_scattered(itvs_cts_slots,
-                                                              hy_levels,
-                                                              hy_nbs)
+        result = result | find_resource_hierarchies_scattered(
+            itvs_cts_slots, hy_levels, hy_nbs
+        )
 
     return result
 
 
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
-    '''find first_suitable_contiguous_slot '''
+    """find first_suitable_contiguous_slot """
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = ProcSet()
 
@@ -58,7 +58,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
 
         # print "slot_e, slot_b, walltime ", slot_e, slot_b, walltime
 
-        while ((slot_e - slot_b + 1) < walltime):
+        while (slot_e - slot_b + 1) < walltime:
             sid_right = slots[sid_right].next
             slot_e = slots[sid_right].e
 
@@ -69,7 +69,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
         itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
-        if (len(itvs) != 0):
+        if len(itvs) != 0:
             break
 
         sid_left = slots[sid_left].next
@@ -81,10 +81,10 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
 
 
 def assign_resources_mld_job_split_slots(slots_set, job, hy):
-    '''
+    """
     Assign resources to a job and update by spliting the concerned slots -
     moldable version
-    '''
+    """
     prev_t_finish = 2 ** 32 - 1  # large enough
     prev_res_set = ProcSet()
     prev_res_rqt = ProcSet()
@@ -94,11 +94,12 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
     for res_rqt in job.mld_res_rqts:
         (mld_id, walltime, hy_res_rqts) = res_rqt
-        (res_set, sid_left, sid_right) = \
-            find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy)
+        (res_set, sid_left, sid_right) = find_first_suitable_contiguous_slots(
+            slots_set, job, res_rqt, hy
+        )
         # print("after find fisrt suitable")
         t_finish = slots[sid_left].b + walltime
-        if (t_finish < prev_t_finish):
+        if t_finish < prev_t_finish:
             prev_start_time = slots[sid_left].b
             prev_t_finish = t_finish
             prev_res_set = res_set
@@ -121,10 +122,10 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
 
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
-    '''
+    """
     Schedule loop with support for jobs container - can be recursive
     (recursivity has not be tested)
-    '''
+    """
 
     #    for k,job in iteritems(jobs):
     # print "*********j_id:", k, job.mld_res_rqts[0]
@@ -132,7 +133,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
     for jid in id_jobs:
         job = jobs[jid]
 
-        ss_id = 'default'
+        ss_id = "default"
         if "inner" in job.types:
             ss_id = job.types["inner"]
 
@@ -143,5 +144,11 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, security_time):
         assign_resources_mld_job_split_slots(slots_set, job, hy)
 
         if "container" in job.types:
-            Slot(1, 0, 0, job.res_set, job.start_time,
-                 job.start_time + job.walltime - security_time)
+            Slot(
+                1,
+                0,
+                0,
+                job.res_set,
+                job.start_time,
+                job.start_time + job.walltime - security_time,
+            )

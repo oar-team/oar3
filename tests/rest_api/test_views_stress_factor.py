@@ -27,7 +27,7 @@ fake_calls = []
 
 def fake_call(x):
     fake_calls.append(x)
-    print('fake_call: ', x)
+    print("fake_call: ", x)
     return fake_call_retcodes.pop(0)
 
 
@@ -42,29 +42,29 @@ def fake_check_output(cmd):
 
 @pytest.fixture(scope="module", autouse=True)
 def set_env(request):
-    os.environ['OARDIR'] = '/tmp'
+    os.environ["OARDIR"] = "/tmp"
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, 'check_output', fake_check_output)
+    monkeypatch.setattr(oar.lib.tools, "check_output", fake_check_output)
 
 
 def test_stress_factor_success(client):
     global fake_check_outputs
-    fake_check_outputs = [b'GLOBAL_STRESS=0.15\n']
-    res = client.get(url_for('stress_factor.index'))
+    fake_check_outputs = [b"GLOBAL_STRESS=0.15\n"]
+    res = client.get(url_for("stress_factor.index"))
 
     assert res.status_code == 200
     print(res.json)
     print(fake_check_output_cmd)
-    assert res.json['GLOBAL_STRESS'] == '0.15'
+    assert res.json["GLOBAL_STRESS"] == "0.15"
 
 
 def test_stress_factor_failed(client):
     global fake_check_outputs
-    fake_check_outputs = [b'bad\n']
-    res = client.get(url_for('stress_factor.index'))
+    fake_check_outputs = [b"bad\n"]
+    res = client.get(url_for("stress_factor.index"))
 
     print(res.json)
     print(fake_check_output_cmd)

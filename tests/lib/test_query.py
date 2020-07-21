@@ -10,7 +10,7 @@ from oar.lib import db
 REFTIME = 1437050120
 
 
-@pytest.yield_fixture(scope='function', autouse=True)
+@pytest.yield_fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         here = os.path.abspath(os.path.dirname(__file__))
@@ -21,14 +21,32 @@ def minimal_db_initialization(request):
 
 def test_simple_models():
     expected_models = [
-        'Accounting', 'AdmissionRule', 'AssignedResource', 'Challenge',
-        'EventLog', 'EventLogHostname', 'File', 'FragJob',
-        'GanttJobsPrediction', 'GanttJobsPredictionsLog',
-        'GanttJobsPredictionsVisu', 'GanttJobsResource',
-        'GanttJobsResourcesLog', 'GanttJobsResourcesVisu', 'Job',
-        'JobDependencie', 'JobResourceDescription', 'JobResourceGroup',
-        'JobStateLog', 'JobType', 'MoldableJobDescription', 'Queue',
-        'Resource', 'ResourceLog', 'Scheduler', 'WalltimeChange'
+        "Accounting",
+        "AdmissionRule",
+        "AssignedResource",
+        "Challenge",
+        "EventLog",
+        "EventLogHostname",
+        "File",
+        "FragJob",
+        "GanttJobsPrediction",
+        "GanttJobsPredictionsLog",
+        "GanttJobsPredictionsVisu",
+        "GanttJobsResource",
+        "GanttJobsResourcesLog",
+        "GanttJobsResourcesVisu",
+        "Job",
+        "JobDependencie",
+        "JobResourceDescription",
+        "JobResourceGroup",
+        "JobStateLog",
+        "JobType",
+        "MoldableJobDescription",
+        "Queue",
+        "Resource",
+        "ResourceLog",
+        "Scheduler",
+        "WalltimeChange",
     ]
     assert set(list(db.models.keys())) == set(expected_models)
     assert set(list(dict(all_models()).keys())) == set(expected_models)
@@ -42,9 +60,9 @@ def test_get_jobs_for_user_query():
     assert len(jobs) == 2
     assert jobs[0].id == 5
     assert jobs[1].id == 6
-    jobs = db.queries.get_jobs_for_user("user1",
-                                        from_time=jobs[0].submission_time,
-                                        to_time=jobs[0].submission_time).all()
+    jobs = db.queries.get_jobs_for_user(
+        "user1", from_time=jobs[0].submission_time, to_time=jobs[0].submission_time
+    ).all()
     assert len(jobs) == 1
     assert jobs[0].id == 5
-    assert jobs[0].state == 'Waiting'
+    assert jobs[0].state == "Waiting"

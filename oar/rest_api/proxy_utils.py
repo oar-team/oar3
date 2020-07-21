@@ -13,49 +13,49 @@ from oar.lib.job_handling import get_jobs_state
 
 def frontend_backend_traefik(proxy_path):
     path_prefix = escapism.escape(proxy_path)
-    frontend = 'frontend_' + path_prefix
-    backend = 'backend_' + path_prefix
+    frontend = "frontend_" + path_prefix
+    backend = "backend_" + path_prefix
     return (frontend, backend)
 
 
 def add_traefik_rule(rules, proxy_path, target_url):
     frontend, backend = frontend_backend_traefik(proxy_path)
 
-    if 'frontends' not in rules:
-        rules['frontends'] = {}
+    if "frontends" not in rules:
+        rules["frontends"] = {}
 
-    rules['frontends'][frontend] = {
-        'backend': backend,
-        'passHostHeader': True,
-        'routes': {'test': {'rule': 'PathPrefix:' + proxy_path}}
+    rules["frontends"][frontend] = {
+        "backend": backend,
+        "passHostHeader": True,
+        "routes": {"test": {"rule": "PathPrefix:" + proxy_path}},
     }
 
-    if 'backends' not in rules:
-        rules['backends'] = {}
+    if "backends" not in rules:
+        rules["backends"] = {}
 
-    rules['backends'][backend] = {
-        'servers': {'server1': {'url': target_url, 'weight': 1}}
+    rules["backends"][backend] = {
+        "servers": {"server1": {"url": target_url, "weight": 1}}
     }
 
 
 def del_traefik_rule(rules, proxy_path):
     frontend, backend = frontend_backend_traefik(proxy_path)
-    if 'frontends' in rules and frontend in rules['frontends']:
-        del rules['frontends'][frontend]
+    if "frontends" in rules and frontend in rules["frontends"]:
+        del rules["frontends"][frontend]
 
-    if 'backends' in rules and backend in rules['backends']:
-        del rules['backends'][backend]
+    if "backends" in rules and backend in rules["backends"]:
+        del rules["backends"][backend]
 
 
 def acquire_lock():
-    ''' acquire exclusive lock file access '''
-    locked_file_descriptor = open('/tmp/rules_oar_proxy.lock', 'w+')
+    """ acquire exclusive lock file access """
+    locked_file_descriptor = open("/tmp/rules_oar_proxy.lock", "w+")
     fcntl.lockf(locked_file_descriptor, fcntl.LOCK_EX)
     return locked_file_descriptor
 
 
 def release_lock(locked_file_descriptor):
-    ''' release exclusive lock file access '''
+    """ release exclusive lock file access """
     locked_file_descriptor.close()
 
 
@@ -64,7 +64,7 @@ def load_traefik_rules(filename):
         with open(filename, "r") as rules_fd:
             return toml.load(rules_fd)
     except:
-        raise  
+        raise
 
 
 def save_treafik_rules(filename, rules):

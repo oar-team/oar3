@@ -11,7 +11,6 @@ from .utils import JSONEncoder, ResultProxyIter
 
 
 class JsonSerializer(object):
-
     def __init__(self, filename, ref_time=None):
         self.filename = filename
         self.ref_time = ref_time
@@ -26,35 +25,34 @@ class JsonSerializer(object):
     def convert_datetime(self, dct):
         for key, value in dct.items():
             try:
-                dct[key] = datetime(*map(int, re.split('[^\d]', value)[:-1]))
+                dct[key] = datetime(*map(int, re.split("[^\d]", value)[:-1]))
             except Exception:
                 pass
         return dct
 
     def load(self, time_columns=()):
         self.old_ref_time = int(time.time())
-        with open(self.filename, 'r', encoding='utf-8') as fd:
+        with open(self.filename, "r", encoding="utf-8") as fd:
             dct = json.load(fd, object_hook=self.convert_datetime)
-            self.old_ref_time = dct['metadata']['ref_time']
+            self.old_ref_time = dct["metadata"]["ref_time"]
             if self.time_offset != 0:
-                for data in dct['data']:
-                    for record in data['records']:
+                for data in dct["data"]:
+                    for record in data["records"]:
                         for key, value in record.items():
-                            if (key in time_columns
-                                    and 0 < record[key] < 2147483647):
+                            if key in time_columns and 0 < record[key] < 2147483647:
                                 record[key] = record[key] + self.time_offset
-            return dct['data']
+            return dct["data"]
 
     def dump(self, data):
         obj = OrderedDict()
-        obj['metadata'] = {'ref_time': self.ref_time}
-        obj['data'] = data
-        with open(self.filename, 'w', encoding='utf-8') as fd:
+        obj["metadata"] = {"ref_time": self.ref_time}
+        obj["data"] = data
+        with open(self.filename, "w", encoding="utf-8") as fd:
             kwargs = {
-                'ensure_ascii': True,
-                'cls': JSONEncoder,
-                'indent': 2,
-                'separators': (',', ': ')
+                "ensure_ascii": True,
+                "cls": JSONEncoder,
+                "indent": 2,
+                "separators": (",", ": "),
             }
             json.dump(obj, fd, **kwargs)
 
@@ -70,17 +68,17 @@ def get_defined_tables(db):
 
 
 def load_fixtures(db, filename, ref_time=None, clear=False, time_columns=()):
-    time_columns = time_columns or getattr(db, '__time_columns__', [])
+    time_columns = time_columns or getattr(db, "__time_columns__", [])
     data = JsonSerializer(filename, ref_time).load(time_columns)
     if clear:
         db.delete_all()
     for fixture in data:
         if "table" in fixture:
-            table = db[fixture['table']]
-            db.session.execute(table.insert(), fixture['records'])
+            table = db[fixture["table"]]
+            db.session.execute(table.insert(), fixture["records"])
         else:
-            model = db[fixture['model']]
-            db.session.bulk_insert_mappings(model, fixture['records'])
+            model = db[fixture["model"]]
+            db.session.bulk_insert_mappings(model, fixture["records"])
         db.commit()
 
 
@@ -90,13 +88,13 @@ def dump_fixtures(db, filename, ref_time=None):
     data = []
     for table_name, table in tables.items():
         entry = OrderedDict()
-        entry['table'] = table_name
-        entry['records'] = ResultProxyIter(db.session.execute(table.select()))
+        entry["table"] = table_name
+        entry["records"] = ResultProxyIter(db.session.execute(table.select()))
         data.append(entry)
     for model_name, model in db.models.items():
         entry = OrderedDict()
-        entry['model'] = model_name
-        entry['records'] = db.query(model).all()
+        entry["model"] = model_name
+        entry["records"] = db.query(model).all()
         data.append(entry)
 
     JsonSerializer(filename, ref_time).dump(data)

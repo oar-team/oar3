@@ -1,9 +1,9 @@
 # Example of how to perform actions given usernames stored in a file
-if queue != 'admin':
+if queue != "admin":
     try:
-        with open('/tmp/users.txt', 'r') as f:
+        with open("/tmp/users.txt", "r") as f:
             for line in f:
                 if re.search(user, line):
-                    queue = 'admin'
+                    queue = "admin"
     except EnvironmentError:
         pass
