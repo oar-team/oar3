@@ -30,7 +30,10 @@ def wait_db_ready(f, args=None, attempt=7):
     delay = 0.2
     while attempt > 0:
         try:
-            r = f(*args)
+            if args:
+                r = f(*args)
+            else:
+                r = f()
         # except exc.OperationalError as error:
         except Exception:
             time.sleep(delay)
