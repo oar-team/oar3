@@ -244,12 +244,10 @@ class Hulot(object):
 
         # wait db at launch
         try:
-            logger.error(f"Before  wait_db_ready")
             wait_db_ready(get_alive_nodes_with_jobs)
         except Exception as e:
             logger.error(f"Failed to contact database: {e}")
             return 1
-        logger.error(f"After  wait_db_ready")
 
         while True:
 
