@@ -26,11 +26,11 @@ from .utils import cached_property, merge_dicts, get_table_name, to_json, rerais
 __all__ = ["Database"]
 
 
-def wait_db_ready(f, args, attempt=7):
+def wait_db_ready(f, args=None, attempt=7):
     delay = 0.2
     while attempt > 0:
         try:
-            f(*args)
+            r = f(*args)
         # except exc.OperationalError as error:
         except Exception:
             time.sleep(delay)
@@ -39,7 +39,7 @@ def wait_db_ready(f, args, attempt=7):
             if not attempt:
                 raise
         else:
-            break
+            return r
 
 
 class BaseModel(object):

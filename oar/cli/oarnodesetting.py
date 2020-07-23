@@ -222,7 +222,11 @@ def oarnodesetting(
 
         for host in hostnames:
             # wait_db_ready to manage DB taking time to be up during boot
-            wait_db_ready(add_resource, (host, state))
+            try:
+                wait_db_ready(add_resource, (host, state))
+            except Exception as e:
+                cmd_ret.error(f"Failed to contact database: {e}", 1, 1)
+                cmd_ret.exit()
             cmd_ret.print_("New resource added: " + host)
 
         notify_server_tag_list.append("ChState")
