@@ -41,24 +41,10 @@ from oar.lib.node import (
     change_node_state,
     get_nodes_that_can_be_waked_up,
 )
+from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
 import oar.lib.tools as tools
 import zmq
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    "HULOT_SERVER": "localhost",
-    "HULOT_PORT": 6672,
-    "ENERGY_SAVING_WINDOW_FORKER_SIZE": 20,
-    "ENERGY_SAVING_WINDOW_TIME": 60,
-    "ENERGY_SAVING_WINDOW_TIMEOUT": 120,
-    "ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT": 900,
-    "ENERGY_MAX_CYCLES_UNTIL_REFRESH": 5000,
-    "OAR_RUNTIME_DIRECTORY": "/var/lib/oar",
-    "ENERGY_SAVING_NODES_KEEPALIVE": "type='default':0",
-}
-
-# config.setdefault_config(DEFAULT_CONFIG)
 
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
@@ -130,10 +116,13 @@ def get_timeout(timeouts, nb_nodes):
 
 
 class HulotClient(object):
+    """Hulot client part used by metascheduler to interact with Hulot server
+    """
+
     def __init__(self):
         # Initialize zeromq context
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUSH)  # To signal Almighty
+        self.socket = self.context.socket(zmq.PUSH)
         self.socket.setsockopt(
             zmq.LINGER, 5000
         )  # To allow client program exit if Hulot is not ready
@@ -252,6 +241,15 @@ class Hulot(object):
         nodes_list_running = self.nodes_list_running
         keepalive = self.keepalive
         count_cycles = 1
+
+        # wait db at launch
+        try:
+            logger.error(f"Before  wait_db_ready")
+            wait_db_ready(get_alive_nodes_with_jobs)
+        except Exception as e:
+            logger.error(f"Failed to contact database: {e}")
+            return 1
+        logger.error(f"After  wait_db_ready")
 
         while True:
 
