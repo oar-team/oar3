@@ -116,6 +116,15 @@ class Configuration(dict):
         "QUEUE": "default",
         "PROJECT": "default",
         "SIGNAL": 12,
+        # Hulot stuff
+        "HULOT_SERVER": "localhost",
+        "HULOT_PORT": 6672,
+        "ENERGY_SAVING_WINDOW_FORKER_SIZE": 20,
+        "ENERGY_SAVING_WINDOW_TIME": 60,
+        "ENERGY_SAVING_WINDOW_TIMEOUT": 120,
+        "ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT": 900,
+        "ENERGY_MAX_CYCLES_UNTIL_REFRESH": 5000,
+        "ENERGY_SAVING_NODES_KEEPALIVE": "type='default':0",
     }
 
     def __init__(self, defaults=None):
