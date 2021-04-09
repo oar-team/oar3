@@ -622,7 +622,7 @@ def hms_str_to_duration(hms_str):
 def sql_to_local(date):
     """Converts a date specified in the format used by the sql database to an
     integer local time format
-    Date 'year mon mday hour min sec' """
+    Date 'year mon mday hour min sec'"""
     date = " ".join(re.findall(r"[\d']+", date))
     t = time.strptime(date, "%Y %m %d %H %M %S")
     return int(time.mktime(t))
@@ -717,7 +717,7 @@ def get_username():  # pragma: no cover
 
 
 def check_resource_property(prop):
-    """ Check if a property can be deleted or created by a user
+    """Check if a property can be deleted or created by a user
     return 0 if all is good otherwise return 1
     """
     if prop in [
@@ -876,7 +876,7 @@ def resources2dump_perl(resources):
 def get_oarexecuser_script_for_oarsub(
     job, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
-    """ Create the shell script used to execute right command for the user
+    """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
     """
     oar_proxy_base_url_varenv = ""

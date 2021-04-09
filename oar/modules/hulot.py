@@ -71,12 +71,12 @@ def check_reminded_list(
 # Fill the timeouts hash with the different timeouts
 def fill_timeouts(str_timeouts):
     """
-     Timeout to consider a node broken (suspected) if it has not woken up
-     The value can be an integer of seconds or a set of pairs.
-     For example, "1:500 11:1000 21:2000" will produce a timeout of 500
-     seconds if 1 to 10 nodes have to wakeup, 1000 seconds if 11 t 20 nodes
-     have to wake up and 2000 seconds otherwise.
-     ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT="900"
+    Timeout to consider a node broken (suspected) if it has not woken up
+    The value can be an integer of seconds or a set of pairs.
+    For example, "1:500 11:1000 21:2000" will produce a timeout of 500
+    seconds if 1 to 10 nodes have to wakeup, 1000 seconds if 11 t 20 nodes
+    have to wake up and 2000 seconds otherwise.
+    ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT="900"
     """
 
     timeouts = {}
@@ -116,8 +116,7 @@ def get_timeout(timeouts, nb_nodes):
 
 
 class HulotClient(object):
-    """Hulot client part used by metascheduler to interact with Hulot server
-    """
+    """Hulot client part used by metascheduler to interact with Hulot server"""
 
     def __init__(self):
         # Initialize zeromq context

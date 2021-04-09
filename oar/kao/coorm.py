@@ -106,7 +106,11 @@ class CoormApplication(object):
                     self.logger.info("[%s] New job submission" % (job_id))
 
         submission_process = Process(
-            target=batch_submission, args=(submit_iteration, submit_interval,)
+            target=batch_submission,
+            args=(
+                submit_iteration,
+                submit_interval,
+            ),
         )
         submission_process.start()
         rpc_server = zerorpc.Server(_CoormApplicationProxy(self))

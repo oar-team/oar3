@@ -26,8 +26,8 @@ from .utils import CommandReturns
     help="Period between each proxy's rules cleaning (delete rule is associated Job is finished",
 )
 def cli(period):
-    """ Proxy's rules cleaner which checks if jobs associated to Traefik proxy rule is running if not
-        rule is deleted from rules file"""
+    """Proxy's rules cleaner which checks if jobs associated to Traefik proxy rule is running if not
+    rule is deleted from rules file"""
 
     cmd_ret = CommandReturns()
     proxy_rules_filename = config["PROXY_TRAEFIK_RULES_FILE"]

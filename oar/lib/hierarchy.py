@@ -6,7 +6,9 @@ class Hierarchy(object):
     # TODO extract hierarchy from ressources table
 
     def __init__(
-        self, hy=None, hy_rid=None,
+        self,
+        hy=None,
+        hy_rid=None,
     ):
         if hy_rid:
             self.hy = {}

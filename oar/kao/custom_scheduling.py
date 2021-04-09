@@ -276,7 +276,11 @@ def find_coorm(itvs_avail, hy_res_rqts, hy, beginning, *find_args, **find_kwargs
     c = zerorpc.Client()
     protocol, ip, port = find_args[:3]
     c.connect("%s://%s:%s" % (protocol, ip, port))
-    return c.find_resource_hierarchies(itvs_avail, hy_res_rqts, hy,)
+    return c.find_resource_hierarchies(
+        itvs_avail,
+        hy_res_rqts,
+        hy,
+    )
 
 
 def assign_coorm(slots_set, job, hy, min_start_time, *assign_args, **assign_kwargs):

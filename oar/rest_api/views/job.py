@@ -132,11 +132,11 @@ def submit(
                          For example: {“resource”:”/nodes=1, “command”:”sleep”, “param_file”:”60n90n30”}
 
     All other option accepted by the oarsub unix command: every long option that may be passed to
-    the oarsub command is known as a key of the input hash. If the option is a toggle (no value), 
-    you just have to set it to “1” (for example: ‘use-job-key’ => ‘1’). Some options may be arrays 
+    the oarsub command is known as a key of the input hash. If the option is a toggle (no value),
+    you just have to set it to “1” (for example: ‘use-job-key’ => ‘1’). Some options may be arrays
     (for example if you want to specify several ‘types’ for a job)
 
-    
+
     array <number>            Specify an array job with 'number' subjobs
     param-file <file>         Specify an array job on which each subjob will
                               receive one line of the file as parameter
@@ -187,7 +187,7 @@ def submit(
                               so that it is not scheduled (you must run
                               "oarresume" to turn it into the Waiting state)
     stagein=<dir|tgz>         Set the stagein directory or archive
-    stagein-md5sum=<md5sum>   Set the stagein file md5sum 
+    stagein-md5sum=<md5sum>   Set the stagein file md5sum
 
 
     Input yaml example

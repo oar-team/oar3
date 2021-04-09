@@ -29,7 +29,7 @@ logger = get_logger("oar.lib.resource_handling")
 
 
 def add_resource(name, state):
-    """ Adds a new resource in the table resources and resource_properties
+    """Adds a new resource in the table resources and resource_properties
     # parameters : base, name, state
     # return value : new resource id"""
     ins = Resource.__table__.insert().values(
@@ -315,8 +315,7 @@ def update_scheduler_last_job_date(date, moldable_id):
 
 
 def update_current_scheduler_priority(job, value, state):
-    """Update the scheduler_priority field of the table resources
-    """
+    """Update the scheduler_priority field of the table resources"""
     # TODO: need to adress this s
     from oar.lib.job_handling import get_job_types
 
@@ -438,7 +437,7 @@ def get_resources_with_given_sql(sql):
 
 
 def log_resource_maintenance_event(resource_id, maintenance, date):
-    """ log maintenance event, two cases according to maintenance value (on|off)
+    """log maintenance event, two cases according to maintenance value (on|off)
     maintenance on:
     add an event in the table resource_logs indicating that this
     resource is in maintenance (state = Absent, available_upto = 0)
