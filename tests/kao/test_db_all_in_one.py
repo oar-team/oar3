@@ -99,8 +99,7 @@ def period_weekstart():
 
 
 def create_quotas_rules_file(quotas_rules):
-    """ create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
-    """
+    """create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')"""
     with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
         quotas_fd.write(quotas_rules)
     Quotas.enable()

@@ -59,8 +59,7 @@ signal.signal(signal.SIGPIPE, qdel)
 
 
 def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
-    """Connect to a job and give the shell of the user on the remote host.
-    """
+    """Connect to a job and give the shell of the user on the remote host."""
     xauth_path = (
         os.environ["OARXAUTHLOCATION"] if "OARXAUTHLOCATION" in os.environ else None
     )

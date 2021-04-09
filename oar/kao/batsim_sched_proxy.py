@@ -105,7 +105,7 @@ class BatsimSchedProxy(object):
             self.data_store.redis.set("check_resources_2_" + pstate, "")
 
     def check_pstate_changes(self):
-        """  check and notify if previously pstate changes are finished
+        """check and notify if previously pstate changes are finished
 
         *WARNING:* it's assume that there is only one resource by node
         """

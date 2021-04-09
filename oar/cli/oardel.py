@@ -122,8 +122,10 @@ def oardel(
                 if error != 0:
                     cmd_ret.print_("ERROR")
                     if error == 3:
-                        comment = "Cannot contact {}, operation timouted ({} s).".format(
-                            host_to_connect, timeout_ssh
+                        comment = (
+                            "Cannot contact {}, operation timouted ({} s).".format(
+                                host_to_connect, timeout_ssh
+                            )
                         )
                         cmd_ret.error(comment, 3, 3)
                     else:
@@ -132,8 +134,10 @@ def oardel(
                     add_new_event("{}_ERROR".format(tag), job_id, comment)
                 else:
                     cmd_ret.print_("DONE")
-                    comment = "The job {} was notified to checkpoint itself on {}.".format(
-                        job_id, host_to_connect
+                    comment = (
+                        "The job {} was notified to checkpoint itself on {}.".format(
+                            job_id, host_to_connect
+                        )
                     )
                     add_new_event("{}_SUCCESS".format(tag), job_id, comment)
 

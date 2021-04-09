@@ -37,7 +37,7 @@ def index():
 @app.route("/version")
 def version():
     """Give OAR and OAR API version.
-       Also gives the timezone of the API server.
+    Also gives the timezone of the API server.
     """
     g.data["oar_server_version"] = VERSION
     g.data["oar_version"] = VERSION

@@ -173,9 +173,9 @@ def oarnodes(
 
 
 def events_option_flag_or_string():
-    """ Click seems unable to manage option which is of type flag or string, _this_user_ is added to 
-    sys.argv when --user is used as flag , by example: 
-      -u --accounting "1970-01-01, 1970-01-20" -> -u _this_user_ --accounting "1970-01-01, 1970-01-20"  
+    """Click seems unable to manage option which is of type flag or string, _this_user_ is added to
+    sys.argv when --user is used as flag , by example:
+      -u --accounting "1970-01-01, 1970-01-20" -> -u _this_user_ --accounting "1970-01-01, 1970-01-20"
     """
     argv = []
     for i in range(len(sys.argv) - 1):

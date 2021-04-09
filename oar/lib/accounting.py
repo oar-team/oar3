@@ -50,7 +50,7 @@ def get_accounting_summary(start_time, stop_time, user="", sql_property=""):
 def get_accounting_summary_byproject(
     start_time, stop_time, user="", limit="", offset=""
 ):
-    """"Get an array of consumptions by project for a given user
+    """ "Get an array of consumptions by project for a given user
     params: start date, ending date, user"""
 
     user_query = ""

@@ -58,7 +58,7 @@ def job_key_management(
     export_job_key_file,
     user=None,
 ):
-    """ Manage the job key if option is activated. 
+    """Manage the job key if option is activated.
     Read job key file if import from file and generate a job key if no import.
     This function returns with job_key_priv and job_key_pub set if use_job_key is set.
     """
@@ -380,7 +380,7 @@ def scan_script(submitted_filename, initial_request_str, user=None):
 def parse_resource_descriptions(
     str_resource_request_list, default_resources, nodes_resources
 ):
-    """Parse and transform a cli oar resource request in python structure which is manipulated 
+    """Parse and transform a cli oar resource request in python structure which is manipulated
     in admission process
 
     Resource request output composition:
@@ -401,7 +401,7 @@ def parse_resource_descriptions(
 
      - str_resource_request_list input:
          ["/switch=2/nodes=10+{lic_type = 'mathlab'}/licence=2, walltime = 60"]
-    
+
      - resource_request output:
          [
             ([{property: '', resources:  [{resource: 'switch', value: 2}, {resource: 'nodes', value: 10}]},

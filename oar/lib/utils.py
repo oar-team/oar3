@@ -155,8 +155,8 @@ cached_property = CachedProperty
 
 
 class ResultProxyIter(list):
-    """ SQLAlchemy ResultProxies are not iterable to get a
-    list of dictionaries. This is to wrap them. """
+    """SQLAlchemy ResultProxies are not iterable to get a
+    list of dictionaries. This is to wrap them."""
 
     def __init__(self, result_proxy):
         self.items = result_proxy.fetchall()

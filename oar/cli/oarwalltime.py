@@ -135,7 +135,7 @@ def oarwalltime(
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(job_id, new_walltime, force, delay_next_jobs, version):
     """Manage walltime change requests for a job.
-    - If no new walltime is given, the command shows the current walltime change 
+    - If no new walltime is given, the command shows the current walltime change
       status for the job.
     - If a new walltime is given, the command requests a change of the walltime of the
       job, or update a previous request.

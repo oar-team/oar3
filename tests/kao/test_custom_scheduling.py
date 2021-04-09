@@ -223,8 +223,7 @@ def test_find_local():
 
 def test_find_local_1():
 
-    """Test if find_local assigns resource from node with less available resources
-    """
+    """Test if find_local assigns resource from node with less available resources"""
 
     v = [(0, 59, ProcSet(*[(1, 8), (13, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 

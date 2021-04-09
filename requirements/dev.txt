@@ -7,3 +7,4 @@ pytest-console-scripts
 pexpect
 sphinx
 black
+pre-commit

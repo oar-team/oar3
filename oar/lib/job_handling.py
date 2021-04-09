@@ -83,8 +83,7 @@ ALLOW = 2
 
 
 class JobPseudo(object):
-    """ Define a simple job class without database counter part
-    """
+    """Define a simple job class without database counter part"""
 
     types = {}
     deps = []
@@ -108,7 +107,7 @@ class JobPseudo(object):
             setattr(self, key, value)
 
     def simple_req(self, resources_req, walltime, resources_constraint):
-        """ Allow declaration of simple resources request.
+        """Allow declaration of simple resources request.
         Examples:
         - j.simple_req(('node', 2), 60, [(1, 32)])
         - j.simple_req([('node', 2), ('core', 4)], 600, [(1, 64)])
@@ -507,8 +506,7 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
 
 
 def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now):
-    """ Get waiting jobs which are not AR and after scheduler round
-    """
+    """Get waiting jobs which are not AR and after scheduler round"""
     result = (
         db.query(
             Job,
@@ -775,7 +773,7 @@ def get_gantt_waiting_interactive_prediction_date():
 
 
 def insert_job(**kwargs):
-    """ Insert job in database
+    """Insert job in database
 
     #   "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
     #
@@ -1054,7 +1052,7 @@ def is_job_already_resubmitted(job_id):
 
 
 def set_job_resa_state(job_id, state):
-    """ sets the reservation field of the job of id passed in parameter
+    """sets the reservation field of the job of id passed in parameter
     parameters : base, jobid, state
     return value : None
     side effects : changes the field state of the job in the table Jobs
@@ -1089,8 +1087,7 @@ def get_waiting_reservation_jobs_specific_queue(queue_name):
 
 
 def update_scheduler_last_job_date(date, moldable_id):
-    """ used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)
-    """
+    """used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)"""
 
     if db.dialect == "sqlite":
         subquery = (
@@ -1574,7 +1571,7 @@ def remove_current_job_types(job_id, j_type):
 
 
 def log_job(job):  # pragma: no cover
-    """  sets the index fields to LOG on several tables
+    """sets the index fields to LOG on several tables
     this will speed up future queries
     """
     if db.dialect == "sqlite":
@@ -2534,8 +2531,7 @@ def archive_some_moldable_job_nodes(moldable_id, hosts):
 
 
 def get_job_resources_properties(job_id):
-    """ Returns the list of resources properties associated to the job passed in parameter
-    """
+    """Returns the list of resources properties associated to the job passed in parameter"""
     results = (
         db.query(Resource)
         .filter(Job.id == job_id)

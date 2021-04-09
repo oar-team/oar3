@@ -92,7 +92,7 @@ def cli(
     submit_count,
     submit_interval,
 ):
-    """ This application submits a job requiring a  random number of nodes for
+    """This application submits a job requiring a  random number of nodes for
     each OAR scheduler pass.
     It is a tool used to test the system stability in the worst case scenario.
     """

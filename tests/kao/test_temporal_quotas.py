@@ -68,8 +68,12 @@ rules_default_example = {
 }
 
 rules_only_default_example = {
-    "periodical": [["*,*,*,*", "quotas_workday", "workdays"],],
-    "quotas_workday": {"*,*,*,john": [100, -1, -1],},
+    "periodical": [
+        ["*,*,*,*", "quotas_workday", "workdays"],
+    ],
+    "quotas_workday": {
+        "*,*,*,john": [100, -1, -1],
+    },
 }
 
 

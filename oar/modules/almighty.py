@@ -274,7 +274,7 @@ class Almighty(object):
             self.command_queue.append(command)
 
     def read_commands(self, timeout=read_commands_timeout):  # TODO
-        """ read commands until reaching the maximal successive read value or
+        """read commands until reaching the maximal successive read value or
         having read all of the pending commands"""
 
         command = None

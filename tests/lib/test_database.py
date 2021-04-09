@@ -264,7 +264,8 @@ def test_load_fixtures(db, tmpdir):
     db.create_all()
 
     db.op.add_column(
-        table_name="actor", column=db.Column("start_time", db.Integer, nullable=True),
+        table_name="actor",
+        column=db.Column("start_time", db.Integer, nullable=True),
     )
 
     db.reflect()
