@@ -1,7 +1,8 @@
 # coding: utf-8
 from procset import ProcSet
+
+from oar.kao.slot import MAX_TIME, Slot, SlotSet, intersec_itvs_slots
 from oar.lib.job_handling import JobPseudo
-from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, MAX_TIME
 
 
 def compare_slots_val_ref(slots, v):

@@ -1,12 +1,12 @@
 # coding: utf-8
-import pytest
 import sys
 import time
 
-from oar.lib import db
+import pytest
 
-from oar.lib.job_handling import insert_job
 from oar.kao.kamelot import main
+from oar.lib import db
+from oar.lib.job_handling import insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

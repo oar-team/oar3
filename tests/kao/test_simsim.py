@@ -1,10 +1,11 @@
 # coding: utf-8
 import os
-import pytest
 
-from oar.lib import config
-from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched, SWFWorkload
+import pytest
 from procset import ProcSet
+
+from oar.kao.simsim import JobSimu, ResourceSetSimu, SimSched, SWFWorkload
+from oar.lib import config
 
 
 def _test_simsim_1():

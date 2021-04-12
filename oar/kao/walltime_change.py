@@ -1,16 +1,13 @@
 from oar.lib import config, get_logger
-
 from oar.lib.job_handling import (
-    get_jobs_with_walltime_change,
+    change_walltime,
     get_job_suspended_sum_duration,
     get_job_types,
-    get_running_job,
-    change_walltime,
+    get_jobs_with_walltime_change,
     get_possible_job_end_time_in_interval,
+    get_running_job,
 )
-
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed
-
 from oar.lib.walltime import get_conf, update_walltime_change_request
 
 logger = get_logger("oar.kao.walltime_change")

@@ -1,13 +1,10 @@
 # coding: utf-8
 import pytest
 
-from oar.modules.bipbip import BipBip
-
-from oar.lib import db, config, Job, Challenge, Resource, AssignedResource, EventLog
-
-from oar.lib.job_handling import insert_job
-
 import oar.lib.tools  # for monkeypatching
+from oar.lib import AssignedResource, Challenge, EventLog, Job, Resource, config, db
+from oar.lib.job_handling import insert_job
+from oar.modules.bipbip import BipBip
 
 from ..faketools import FakePopen, fake_popen
 

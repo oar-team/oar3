@@ -1,15 +1,12 @@
 # coding: utf-8
 import copy
 
-from oar.lib import config
-
 from procset import ProcSet
-from oar.lib.utils import dict_ps_copy
-
-from oar.lib.job_handling import NO_PLACEHOLDER, PLACEHOLDER, ALLOW
 
 from oar.kao.quotas import Quotas
-
+from oar.lib import config
+from oar.lib.job_handling import ALLOW, NO_PLACEHOLDER, PLACEHOLDER
+from oar.lib.utils import dict_ps_copy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
 

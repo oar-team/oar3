@@ -1,36 +1,30 @@
 # -*- coding: utf-8 -*-
-import re
-import sys
 import os
-import socket
+import re
 import signal
+import socket
+import sys
+
 import click
 
 from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
+import oar.lib.tools as tools
 from oar import VERSION
-
-from oar.lib import config, db, Job
-
-from oar.lib.submission import JobParameters, Submission, lstrip_none, check_reservation
-
+from oar.cli.oardel import oardel
+from oar.lib import Job, config, db
 from oar.lib.job_handling import (
-    get_job,
-    get_job_types,
-    get_job_current_hostnames,
-    get_job_cpuset_name,
     get_current_moldable_job,
+    get_job,
+    get_job_cpuset_name,
+    get_job_current_hostnames,
+    get_job_types,
     resubmit_job,
 )
-
-from oar.cli.oardel import oardel
-
+from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
-
-import oar.lib.tools as tools
-
 
 # Global variable needed for signal handler to trigger job deletion accordingly
 job_id_lst = []

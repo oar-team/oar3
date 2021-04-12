@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import re
 import time
-
 from codecs import open
 from collections import OrderedDict
 from datetime import datetime
 
 import simplejson as json
+
 from .utils import JSONEncoder, ResultProxyIter
 
 

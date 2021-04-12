@@ -1,6 +1,6 @@
 # coding: utf-8
-import random
 import colorsys
+import random
 
 NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
@@ -23,8 +23,8 @@ def annotate(ax, rect, annot):  # pragma: no cover
 
 
 def plot_slots_and_job(slots_set, jobs, nb_res, t_max):  # pragma: no cover
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatch
+    import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots()
 

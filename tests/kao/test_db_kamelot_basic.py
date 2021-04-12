@@ -1,10 +1,9 @@
 # coding: utf-8
 import pytest
 
-from oar.lib import db
-
-from oar.lib.job_handling import insert_job
 from oar.kao.kamelot_basic import main
+from oar.lib import db
+from oar.lib.job_handling import insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

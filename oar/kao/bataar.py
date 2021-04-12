@@ -1,31 +1,25 @@
 #!/usr/bin/env python
 # BatAar: BatSim Adaptor for OAR
 
+import math
 import sys
 import time
-import math
+
 import click
-
-from oar.lib import db, config, get_logger, Job, Resource, Queue
-
-from oar.lib.job_handling import insert_job, set_job_state
-
-from oar.lib.resource import ResourceSet
-
-from oar.kao.simsim import ResourceSetSimu, JobSimu
-from oar.kao.kamelot import schedule_cycle
-from oar.kao.platform import Platform
-
 from batsim import __version__ as batsim_version
-from batsim.batsim import BatsimScheduler, Batsim
+from batsim.batsim import Batsim, BatsimScheduler
 from batsim.network import NetworkHandler
-import oar.kao.custom_scheduling
-
-from oar.kao.meta_sched import meta_schedule
 from procset import ProcSet
 
+import oar.kao.custom_scheduling
 import oar.lib.tools
-
+from oar.kao.kamelot import schedule_cycle
+from oar.kao.meta_sched import meta_schedule
+from oar.kao.platform import Platform
+from oar.kao.simsim import JobSimu, ResourceSetSimu
+from oar.lib import Job, Queue, Resource, config, db, get_logger
+from oar.lib.job_handling import insert_job, set_job_state
+from oar.lib.resource import ResourceSet
 
 plt = None
 orig_func = {}

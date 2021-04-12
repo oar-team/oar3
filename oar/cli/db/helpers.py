@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-import sys
-import re
-import click
-import time
 import logging
-
+import re
+import sys
+import time
 from functools import update_wrapper
+
+import click
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from oar.lib import config
 from oar.lib.utils import reraise
-
 
 magenta = lambda x, **kwargs: click.style("%s" % x, fg="magenta", **kwargs)
 yellow = lambda x, **kwargs: click.style("%s" % x, fg="yellow", **kwargs)

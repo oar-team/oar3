@@ -1,18 +1,16 @@
 # coding: utf-8
-import pytest
 import re
 
-from ..helpers import insert_terminated_jobs
-
-from oar.lib import db, config, Job, Accounting, Resource, AssignedResource
-from oar.lib.job_handling import insert_job
-from oar.lib.accounting import check_accounting_update
-
+import pytest
 from click.testing import CliRunner
 
-from oar.cli.oaraccounting import cli
-
 import oar.lib.tools  # for monkeypatching
+from oar.cli.oaraccounting import cli
+from oar.lib import Accounting, AssignedResource, Job, Resource, config, db
+from oar.lib.accounting import check_accounting_update
+from oar.lib.job_handling import insert_job
+
+from ..helpers import insert_terminated_jobs
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

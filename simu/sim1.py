@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from oar.lib import config
-
-from oar.kao.simsim import ResourceSetSimu, JobSimu, SimSched
 from oar.kao.helpers import plot_slots_and_job
-
+from oar.kao.simsim import JobSimu, ResourceSetSimu, SimSched
+from oar.lib import config
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {

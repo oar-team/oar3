@@ -1,7 +1,8 @@
 # coding: utf-8
 from procset import ProcSet
+
+from oar.kao.slot import Slot, intersec_itvs_slots
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.kao.slot import intersec_itvs_slots, Slot
 
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):

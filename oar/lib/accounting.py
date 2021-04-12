@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import func, or_
+
 from oar.lib import (
-    db,
     Accounting,
+    AssignedResource,
     Job,
     MoldableJobDescription,
-    AssignedResource,
     Resource,
+    db,
 )
 
 # ACCOUNTING functions

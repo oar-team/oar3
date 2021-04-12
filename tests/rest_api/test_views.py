@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import pytest
-
-from flask import url_for
 from tempfile import mkstemp
+
+import pytest
+from flask import url_for
+
 from oar.lib import config
 
 

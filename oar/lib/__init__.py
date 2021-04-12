@@ -6,8 +6,8 @@
     Python version of OAR Common Library
 
 """
-from types import ModuleType
 import sys
+from types import ModuleType
 
 # The implementation of a lazy-loading module in this file replaces the
 # oar package when imported from within.  Attribute access to the oar

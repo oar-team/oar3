@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import sys
 import pprint
-
+import sys
 from io import open
 
-from .utils import try_convert_decimal, reraise
 from .exceptions import InvalidConfiguration
+from .utils import reraise, try_convert_decimal
 
 
 class Configuration(dict):

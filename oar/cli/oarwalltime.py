@@ -1,12 +1,12 @@
 import os
 import re
+
 import click
 
-from oar import VERSION
-from oar.lib import config
-from oar.cli.oarsub import connect_job
-
 import oar.lib.walltime as walltime
+from oar import VERSION
+from oar.cli.oarsub import connect_job
+from oar.lib import config
 
 from .utils import CommandReturns
 

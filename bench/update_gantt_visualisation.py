@@ -1,15 +1,16 @@
 # coding: utf-8
-from oar.lib import config, db, GanttJobsPrediction
-from oar.lib.interval import itvs2ids
-from oar.kao.job import JobPseudo, save_assigns
-from oar.kao.simsim import ResourceSetSimu
-from oar.lib.psycopg2 import pg_bulk_insert
-
 # import oar.kao.job
 import os
 import tempfile
 import time
+
 import redis
+
+from oar.kao.job import JobPseudo, save_assigns
+from oar.kao.simsim import ResourceSetSimu
+from oar.lib import GanttJobsPrediction, config, db
+from oar.lib.interval import itvs2ids
+from oar.lib.psycopg2 import pg_bulk_insert
 
 nb_max_res = 200000
 rs = ResourceSetSimu(rid_o2i=range(nb_max_res))

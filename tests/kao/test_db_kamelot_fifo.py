@@ -1,11 +1,10 @@
 # coding: utf-8
 import pytest
 
-from oar.lib import db
-
-from oar.lib.job_handling import insert_job
-from oar.kao.platform import Platform
 from oar.kao.kamelot_fifo import main, schedule_fifo_cycle
+from oar.kao.platform import Platform
+from oar.lib import db
+from oar.lib.job_handling import insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

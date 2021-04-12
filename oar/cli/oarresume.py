@@ -2,18 +2,17 @@
 """oarresume - Resumes a job, it will be rescheduled."""
 
 import click
+
+import oar.lib.tools as tools
 from oar import VERSION
-from .utils import CommandReturns
-
 from oar.lib import config
-
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_ids_with_given_properties,
     resume_job,
 )
 
-import oar.lib.tools as tools
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

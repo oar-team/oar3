@@ -2,11 +2,10 @@
 import os
 import sys
 
-
-from flask import request, abort, current_app
+from flask import abort, current_app, request
 
 from oar.lib import config
-from oar.lib.utils import reraise, to_unicode, integer_types
+from oar.lib.utils import integer_types, reraise, to_unicode
 
 
 class WSGIProxyFix(object):

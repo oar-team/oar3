@@ -1,9 +1,10 @@
 # coding: utf-8
 from procset import ProcSet
+
 from oar.lib.hierarchy import (
     extract_n_scattered_block_itv,
-    keep_no_empty_scat_bks,
     find_resource_hierarchies_scattered,
+    keep_no_empty_scat_bks,
 )
 
 

@@ -13,28 +13,25 @@
 import sys
 from json import dumps
 
-from oar import VERSION
-from oar.lib import db, config, Resource
-
-from oar.lib.resource_handling import (
-    get_resources_with_given_sql,
-    get_resources_from_ids,
-    get_resources_state,
-)
-from oar.lib.node import (
-    get_all_network_address,
-    get_resources_state_for_host,
-    get_resources_of_nodes,
-)
-from oar.lib.event import get_events_for_hostname_from
-
-from oar.lib.tools import check_resource_system_property, local_to_sql
+import click
 
 import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib import Resource, config, db
+from oar.lib.event import get_events_for_hostname_from
+from oar.lib.node import (
+    get_all_network_address,
+    get_resources_of_nodes,
+    get_resources_state_for_host,
+)
+from oar.lib.resource_handling import (
+    get_resources_from_ids,
+    get_resources_state,
+    get_resources_with_given_sql,
+)
+from oar.lib.tools import check_resource_system_property, local_to_sql
 
 from .utils import CommandReturns
-
-import click
 
 click.disable_unicode_literals_warning = True
 

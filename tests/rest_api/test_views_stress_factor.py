@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import pytest
 import os
 
-
+import pytest
 from flask import url_for
+
 import oar.lib.tools  # for monkeypatching
 
 fake_popen_data = None

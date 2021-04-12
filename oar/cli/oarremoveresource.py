@@ -1,7 +1,8 @@
 import click
 
-from .utils import CommandReturns
 from oar.lib.resource_handling import remove_resource
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

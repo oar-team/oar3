@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import pytest
 import os
-
 from io import BytesIO
 from tempfile import mkstemp
+
+import pytest
 from flask import url_for
+
 import oar.lib.tools  # for monkeypatching
 
 fake_popen_data = None

@@ -1,7 +1,7 @@
 import yaml
-from oar.lib import config, get_logger
 
 from oar.kao.karma import evaluate_jobs_karma
+from oar.lib import config, get_logger
 
 # Log category
 

@@ -1,20 +1,19 @@
 # coding: utf-8
 import pytest
-from oar.modules.sarko import Sarko
 
+import oar.lib.tools  # for monkeypatching
 from oar.lib import (
-    db,
-    config,
-    Job,
-    Resource,
     AssignedResource,
     EventLog,
     FragJob,
+    Job,
+    Resource,
     ResourceLog,
+    config,
+    db,
 )
 from oar.lib.job_handling import insert_job
-
-import oar.lib.tools  # for monkeypatching
+from oar.modules.sarko import Sarko
 
 fake_date = 0
 

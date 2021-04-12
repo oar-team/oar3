@@ -3,8 +3,7 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-
-from oar.lib import db, Resource, Queue
+from oar.lib import Queue, Resource, db
 
 # @pytest.yield_fixture(scope='function', autouse=True)
 # def minimal_db_initialization(request):

@@ -1,11 +1,10 @@
 # coding: utf-8
 import pytest
 
+import oar.lib.tools  # for monkeypatching
+from oar.kao.kao import main
 from oar.lib import config, db
 from oar.lib.job_handling import insert_job
-from oar.kao.kao import main
-
-import oar.lib.tools  # for monkeypatching
 
 
 @pytest.fixture(scope="function", autouse=True)

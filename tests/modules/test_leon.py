@@ -1,11 +1,10 @@
 # coding: utf-8
 import pytest
-from oar.modules.leon import Leon
 
-from oar.lib.job_handling import insert_job
-
-from oar.lib import db, config, FragJob, EventLog, Job, Resource, AssignedResource
 import oar.lib.tools  # for monkeypatching
+from oar.lib import AssignedResource, EventLog, FragJob, Job, Resource, config, db
+from oar.lib.job_handling import insert_job
+from oar.modules.leon import Leon
 
 
 @pytest.yield_fixture(scope="module", autouse=True)

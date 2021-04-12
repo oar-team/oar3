@@ -1,13 +1,12 @@
 # coding: utf-8
-from sqlalchemy import text
-
-from procset import ProcSet
-
-from oar.lib import config, db, Resource
-from oar.lib.hierarchy import Hierarchy
-
 from array import array
 from collections import OrderedDict
+
+from procset import ProcSet
+from sqlalchemy import text
+
+from oar.lib import Resource, config, db
+from oar.lib.hierarchy import Hierarchy
 
 MAX_NB_RESOURCES = 100000
 

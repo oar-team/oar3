@@ -1,13 +1,14 @@
 # coding: utf-8
 from procset import ProcSet
-from oar.lib.job_handling import JobPseudo
-from oar.kao.slot import Slot, SlotSet
+
 from oar.kao.scheduling import (
     assign_resources_mld_job_split_slots,
     schedule_id_jobs_ct,
     set_slots_with_prev_scheduled_jobs,
 )
+from oar.kao.slot import Slot, SlotSet
 from oar.lib import config
+from oar.lib.job_handling import JobPseudo
 
 # import pdb
 

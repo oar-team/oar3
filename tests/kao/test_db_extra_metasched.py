@@ -1,11 +1,10 @@
 # coding: utf-8
 import pytest
 
-from oar.lib import config, db, Job
-from oar.lib.job_handling import insert_job
-from oar.kao.meta_sched import meta_schedule
-
 import oar.lib.tools  # for monkeypatching
+from oar.kao.meta_sched import meta_schedule
+from oar.lib import Job, config, db
+from oar.lib.job_handling import insert_job
 from oar.lib.tools import get_date
 
 

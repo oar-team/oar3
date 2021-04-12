@@ -1,12 +1,11 @@
 # coding: utf-8
 import pytest
-
 from click.testing import CliRunner
 
-from oar.lib import db
-from oar.lib.job_handling import insert_job, set_jobs_start_time, set_job_state
-from oar.kao.meta_sched import meta_schedule
 from oar.cli.oar2trace import cli
+from oar.kao.meta_sched import meta_schedule
+from oar.lib import db
+from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
 
 NB_NODES = 5
 

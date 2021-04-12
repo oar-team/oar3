@@ -6,6 +6,7 @@ import tempfile
 from codecs import open
 
 import pytest
+
 from oar.lib import config, db
 
 from . import DEFAULT_CONFIG

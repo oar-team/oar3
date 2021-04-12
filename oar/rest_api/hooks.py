@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+
 from flask import g, request
+
 from oar.lib import db
 
 

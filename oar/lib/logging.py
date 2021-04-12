@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 import sys
-
 from logging import (
-    getLogger,
-    NullHandler,
-    FileHandler,
-    StreamHandler,
-    Formatter,
-    INFO,
-    ERROR,
-    WARN,
     DEBUG,
+    ERROR,
+    INFO,
+    WARN,
+    FileHandler,
+    Formatter,
+    NullHandler,
+    StreamHandler,
+    getLogger,
 )
+
 from .utils import touch
 
 LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}

@@ -1,12 +1,12 @@
 # coding: utf-8
-import pytest
 import os
 
-from oar.modules.node_change_state import main, NodeChangeState
-from oar.lib import db, config, Job, EventLog, Challenge, Resource, AssignedResource
-from oar.lib.job_handling import insert_job
+import pytest
 
 import oar.lib.tools  # for monkeypatching
+from oar.lib import AssignedResource, Challenge, EventLog, Job, Resource, config, db
+from oar.lib.job_handling import insert_job
+from oar.modules.node_change_state import NodeChangeState, main
 
 fake_manage_remote_commands_return = (1, [])
 

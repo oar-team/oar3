@@ -1,18 +1,18 @@
 # coding: utf-8
 import pytest
 
-from ..helpers import insert_terminated_jobs
-
-from oar.lib import db, config, Job, Accounting, Resource, AssignedResource
-from oar.lib.job_handling import insert_job
+from oar.lib import Accounting, AssignedResource, Job, Resource, config, db
 from oar.lib.accounting import (
     check_accounting_update,
-    delete_all_from_accounting,
     delete_accounting_windows_before,
-    get_last_project_karma,
+    delete_all_from_accounting,
     get_accounting_summary,
     get_accounting_summary_byproject,
+    get_last_project_karma,
 )
+from oar.lib.job_handling import insert_job
+
+from ..helpers import insert_terminated_jobs
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

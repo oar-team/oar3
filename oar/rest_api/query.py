@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from math import ceil
 
-from flask import abort, current_app, request, url_for, g
+from flask import abort, current_app, g, request, url_for
+
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 
 # from oar.lib.models import (db, Job, Resource)

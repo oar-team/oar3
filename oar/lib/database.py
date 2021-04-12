@@ -2,26 +2,24 @@
 import sys
 import threading
 import time
-
 from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import (
-    declarative_base,
-    DeferredReflection,
     DeclarativeMeta,
+    DeferredReflection,
+    declarative_base,
 )
-from sqlalchemy.orm import sessionmaker, class_mapper
-from sqlalchemy.orm.state import InstanceState
+from sqlalchemy.orm import class_mapper, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
+from sqlalchemy.orm.state import InstanceState
 
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-
-from .utils import cached_property, merge_dicts, get_table_name, to_json, reraise
+from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
 
 __all__ = ["Database"]
 

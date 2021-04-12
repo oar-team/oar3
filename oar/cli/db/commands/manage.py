@@ -3,21 +3,17 @@ import click
 
 click.disable_unicode_literals_warning = True
 
-from oar.lib import config
-from oar.lib import Database
-
-
+from oar.lib import Database, config
 from oar.lib.utils import cached_property
 
 from ..helpers import (
-    make_pass_decorator,
-    Context,
     DATABASE_URL_PROMPT,
+    Context,
     default_database_url,
     load_configuration_file,
+    make_pass_decorator,
 )
-
-from ..operations import create_db, drop_db, upgrade_db, reset_db, check_db
+from ..operations import check_db, create_db, drop_db, reset_db, upgrade_db
 
 
 class ManageContext(Context):

@@ -9,14 +9,14 @@ Define media (aka file access) api interaction
 import os
 import re
 
-from flask import url_for, g, abort, make_response, Response, request
-from . import Blueprint
-from ..utils import Arg, list_paginate
+from flask import Response, abort, g, make_response, request, url_for
 
+import oar.lib.tools as tools
 from oar.lib import config
 from oar.lib.tools import PIPE
 
-import oar.lib.tools as tools
+from ..utils import Arg, list_paginate
+from . import Blueprint
 
 app = Blueprint("media", __name__, url_prefix="/media")
 

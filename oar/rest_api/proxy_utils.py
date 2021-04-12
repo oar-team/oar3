@@ -1,11 +1,11 @@
-import toml
 import fcntl
-import escapism
 import os
 import time
-
-from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
+from tempfile import NamedTemporaryFile
+
+import escapism
+import toml
 
 from oar.lib import config
 from oar.lib.job_handling import get_jobs_state

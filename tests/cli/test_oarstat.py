@@ -1,17 +1,17 @@
 # coding: utf-8
-import pytest
 import re
-from ..helpers import insert_terminated_jobs
 
+import pytest
 from click.testing import CliRunner
 
-from oar.lib import db, Job
-from oar.cli.oarstat import cli
-from oar.lib.job_handling import insert_job
-from oar.lib.event import add_new_event
 import oar.lib.tools  # for monkeypatching
-
+from oar.cli.oarstat import cli
+from oar.lib import Job, db
+from oar.lib.event import add_new_event
+from oar.lib.job_handling import insert_job
 from oar.lib.utils import print_query_results
+
+from ..helpers import insert_terminated_jobs
 
 NB_JOBS = 5
 

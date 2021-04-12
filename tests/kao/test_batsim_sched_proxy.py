@@ -1,18 +1,17 @@
 # coding: utf-8
-import pytest
-from ..fakezmq import FakeZmq
-
 import sys
+
+import pytest
 import redis
 import zmq
 
-from oar.lib import config, db
-from oar.lib.tools import get_date
-from oar.lib.job_handling import insert_job
-from oar.kao.meta_sched import meta_schedule
-
 import oar.lib.tools  # for monkeypatching
+from oar.kao.meta_sched import meta_schedule
+from oar.lib import config, db
+from oar.lib.job_handling import insert_job
 from oar.lib.tools import get_date
+
+from ..fakezmq import FakeZmq
 
 data_store = {}
 

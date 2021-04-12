@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import pwd
 import copy
-import re
-import decimal
 import datetime
-
+import decimal
+import os
+import pwd
+import re
+import sys
+from collections import Callable, OrderedDict
 from decimal import Decimal, InvalidOperation
-from collections import OrderedDict, Callable
-
-from procset import ProcSet
 
 import simplejson as json
+from procset import ProcSet
 
 basestring = (str, bytes)
 integer_types = (int,)

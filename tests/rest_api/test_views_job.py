@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-import pytest
 import json
-from .conftest import ordered
 
+import pytest
 from flask import url_for
-from oar.lib import db, Job, FragJob
-from oar.lib.job_handling import insert_job, set_job_state
+
 from oar.kao.meta_sched import meta_schedule
+from oar.lib import FragJob, Job, db
+from oar.lib.job_handling import insert_job, set_job_state
 from oar.lib.tools import get_date
+
+from .conftest import ordered
 
 # TODO test PAGINATION
 # nodes / resource

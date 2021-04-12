@@ -3,20 +3,17 @@ import click
 
 click.disable_unicode_literals_warning = True
 
-from oar.lib import config
-from oar.lib import Database
+from oar.lib import Database, config
 from oar.lib.utils import cached_property
 
 from ..helpers import (
-    make_pass_decorator,
-    Context,
     DATABASE_URL_PROMPT,
+    Context,
     default_database_url,
     load_configuration_file,
+    make_pass_decorator,
 )
-
 from ..operations import migrate_db
-
 
 CONTEXT_SETTINGS = dict(
     auto_envvar_prefix="oar_migrate", help_option_names=["-h", "--help"]

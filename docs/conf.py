@@ -13,10 +13,11 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
+
 # import sys
 import os
 import re
-import datetime
 
 import sphinx.environment
 from docutils.utils import get_source_line
@@ -76,9 +77,9 @@ copyright = u"{}, OAR Team".format(YEAR)
 #
 version_file = os.path.join(HERE, os.pardir, "oar", "__init__.py")
 
-release = re.search("__version__ = \"([^']+)\"", open(version_file).read().strip()).group(
-    1
-)
+release = re.search(
+    '__version__ = "([^\']+)"', open(version_file).read().strip()
+).group(1)
 # The short X.Y version.
 version = ".".join(release.split(".")[:2])
 

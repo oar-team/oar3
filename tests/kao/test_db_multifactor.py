@@ -1,12 +1,13 @@
-import pytest
 from random import sample
 from tempfile import mkstemp
 
-from oar.lib import db, config
-from oar.kao.platform import Platform
-from oar.kao.kamelot import schedule_cycle
+import pytest
 
+from oar.kao.kamelot import schedule_cycle
+from oar.kao.platform import Platform
+from oar.lib import config, db
 from oar.lib.job_handling import insert_job
+
 from .test_db_fairshare import generate_accountings
 
 

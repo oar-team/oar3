@@ -8,13 +8,13 @@ Define stress_factor retreiving api
 
 """
 import os
-from flask import url_for, g, abort
 
-from . import Blueprint
-
-from oar.lib import config
+from flask import abort, g, url_for
 
 import oar.lib.tools as tools
+from oar.lib import config
+
+from . import Blueprint
 
 app = Blueprint("stress_factor", __name__, url_prefix="/stress_factor")
 

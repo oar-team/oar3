@@ -1,15 +1,15 @@
-from oar.lib import (
-    db,
-    config,
-    Job,
-    Accounting,
-    Resource,
-    AssignedResource,
-    MoldableJobDescription,
-)
-from oar.lib.job_handling import insert_job
-from oar.lib.accounting import check_accounting_update
 import oar.lib.tools as tools
+from oar.lib import (
+    Accounting,
+    AssignedResource,
+    Job,
+    MoldableJobDescription,
+    Resource,
+    config,
+    db,
+)
+from oar.lib.accounting import check_accounting_update
+from oar.lib.job_handling import insert_job
 
 
 def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400):

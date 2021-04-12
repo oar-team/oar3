@@ -1,28 +1,27 @@
 # -*- coding: utf-8 -*-
-import time
-import random
-
-import pytest
 import datetime
-
+import random
 import sys
-
+import time
 from collections import OrderedDict
 from decimal import Decimal
 
+import pytest
+
 from oar.lib import Database
 from oar.lib.utils import (
+    ResultProxyIter,
     SimpleNamespace,
     cached_property,
-    ResultProxyIter,
-    try_convert_decimal,
-    row2dict,
-    merge_dicts,
     get_table_name,
+    is_pypy,
+    merge_dicts,
     render_query,
+    row2dict,
     to_json,
+    try_convert_decimal,
 )
-from oar.lib.utils import is_pypy
+
 from .. import assert_raises
 
 

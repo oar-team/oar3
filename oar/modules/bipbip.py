@@ -1,39 +1,36 @@
 #!/usr/bin/env python
 # coding: utf-8
-import sys
 import os
 import re
 import socket
+import sys
+
 import pkg_resources
 
+import oar.lib.tools as tools
 from oar.lib import config, get_logger
-
+from oar.lib.event import add_new_event, add_new_event_with_host
 from oar.lib.job_handling import (
+    archive_some_moldable_job_nodes,
+    check_end_of_job,
+    get_cpuset_values,
+    get_current_moldable_job,
     get_job,
     get_job_challenge,
-    get_job_current_hostnames,
-    check_end_of_job,
-    get_current_moldable_job,
-    set_job_state,
-    archive_some_moldable_job_nodes,
     get_job_cpuset_name,
+    get_job_current_hostnames,
     get_job_types,
-    get_cpuset_values,
     set_job_message,
+    set_job_state,
 )
-
 from oar.lib.resource_handling import get_current_assigned_job_resources
-
-import oar.lib.tools as tools
 from oar.lib.tools import (
-    limited_dict2hash_perl,
-    resources2dump_perl,
     TimeoutExpired,
     format_ssh_pub_key,
     get_private_ssh_key_file_name,
+    limited_dict2hash_perl,
+    resources2dump_perl,
 )
-
-from oar.lib.event import add_new_event, add_new_event_with_host
 
 logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 

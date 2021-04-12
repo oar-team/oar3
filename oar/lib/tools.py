@@ -1,33 +1,33 @@
-import time
-import re
 import os
-import zmq
 import random
-import string
-import socket
-from socket import gethostname
-from oar.lib import db, config, get_logger
-from oar.lib import logger as log
+import re
 
 # from oar.lib.event import add_new_event
 import signal
-import psutil
+import socket
+import string
+import time
+from multiprocessing import Process  # use via tools.getpass (simplify mocking)
+from pwd import getpwnam  # use via tools.getpass (simplify mocking)
+from socket import gethostname
 
 # run, call use via tools.run, tools.call (simplify mocking)
 from subprocess import (
-    Popen,
-    run,
-    call,
     PIPE,
-    check_output,
-    CalledProcessError,
-    TimeoutExpired,
     STDOUT,
+    CalledProcessError,
+    Popen,
+    TimeoutExpired,
+    call,
+    check_output,
+    run,
 )
 
-from pwd import getpwnam  # use via tools.getpass (simplify mocking)
-from multiprocessing import Process  # use via tools.getpass (simplify mocking)
+import psutil
+import zmq
 
+from oar.lib import config, db, get_logger
+from oar.lib import logger as log
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 

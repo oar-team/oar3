@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
+from alembic.autogenerate import compare_metadata
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from sqlalchemy import MetaData
 
 from oar.lib.utils import to_unicode
 
-from .helpers import yellow, blue, red
-
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-from alembic.autogenerate import compare_metadata
-
+from .helpers import blue, red, yellow
 
 SUPPORTED_ALEMBIC_OPERATIONS = {
     "remove_column": "drop column %s from table %s",

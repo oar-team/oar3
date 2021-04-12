@@ -1,17 +1,16 @@
 # coding: utf-8
-import re
 import os
+import re
+
 import pytest
-
-from ..helpers import insert_running_jobs
-
 from click.testing import CliRunner
 
-from oar.lib import db, config, WalltimeChange
+import oar.lib.tools  # for monkeypatching
 from oar.cli.oarwalltime import cli
+from oar.lib import WalltimeChange, config, db
 from oar.lib.job_handling import insert_job
 
-import oar.lib.tools  # for monkeypatching
+from ..helpers import insert_running_jobs
 
 fake_notifications = []
 

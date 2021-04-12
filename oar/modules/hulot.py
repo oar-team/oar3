@@ -25,26 +25,26 @@ Example of received message:
 
 """
 
-import sys
 import os
 import os.path
-import re
 import pickle
+import re
 import socket
-
+import sys
 from multiprocessing import Pool, TimeoutError
 
+import zmq
+
+import oar.lib.tools as tools
 from oar.lib import config, get_logger
-from oar.lib.node import (
-    get_alive_nodes_with_jobs,
-    get_nodes_with_given_sql,
-    change_node_state,
-    get_nodes_that_can_be_waked_up,
-)
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
-import oar.lib.tools as tools
-import zmq
+from oar.lib.node import (
+    change_node_state,
+    get_alive_nodes_with_jobs,
+    get_nodes_that_can_be_waked_up,
+    get_nodes_with_given_sql,
+)
 
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
 

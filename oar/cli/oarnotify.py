@@ -1,12 +1,12 @@
-import click
 import os
 
-from oar import VERSION
-
-from .utils import CommandReturns
-from oar.lib import config
+import click
 
 import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib import config
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

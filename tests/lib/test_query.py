@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
+
 import pytest
 
-from oar.lib.models import all_models, all_tables
-from oar.lib.fixture import load_fixtures
 from oar.lib import db
-
+from oar.lib.fixture import load_fixtures
+from oar.lib.models import all_models, all_tables
 
 REFTIME = 1437050120
 

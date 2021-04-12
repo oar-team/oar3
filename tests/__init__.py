@@ -1,8 +1,9 @@
 # coding: utf-8
-from __future__ import unicode_literals, print_function
-import pytest
+from __future__ import print_function, unicode_literals
 
 from contextlib import contextmanager
+
+import pytest
 
 DEFAULT_CONFIG = {
     "COSYSTEM_HOSTNAME": "127.0.0.1",

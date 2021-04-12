@@ -2,9 +2,9 @@
 """ Functions to handle queues"""
 # QUEUES MANAGEMENT
 # TODO is_waiting_job_specific_queue_present($$);
-from oar.lib import db, Queue, get_logger
 from itertools import groupby
 
+from oar.lib import Queue, db, get_logger
 
 logger = get_logger("oar.lib.queue")
 

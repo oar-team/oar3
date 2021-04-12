@@ -1,13 +1,12 @@
 # coding: utf-8
 import re
-import pytest
 
+import pytest
 from click.testing import CliRunner
 
-from oar.lib import db, EventLog, EventLogHostname, Resource
-from oar.lib.event import add_new_event_with_host
 from oar.cli.oarnodes import cli
-
+from oar.lib import EventLog, EventLogHostname, Resource, db
+from oar.lib.event import add_new_event_with_host
 
 NB_NODES = 5
 NB_LINES_PER_NODE = 4  # network_address: localhost\n resource_id: 1\n state: Alive\n

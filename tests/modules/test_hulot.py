@@ -1,23 +1,22 @@
 # coding: utf-8
 import time
+
 import pytest
-
 import zmq
-
-from oar.modules.hulot import (
-    Hulot,
-    HulotClient,
-    fill_timeouts,
-    get_timeout,
-    command_executor,
-    WindowForker,
-)
-from oar.lib import db, config, Resource
-from ..fakezmq import FakeZmq
 
 import oar.lib.tools
 import oar.lib.tools as tools
+from oar.lib import Resource, config, db
+from oar.modules.hulot import (
+    Hulot,
+    HulotClient,
+    WindowForker,
+    command_executor,
+    fill_timeouts,
+    get_timeout,
+)
 
+from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
 

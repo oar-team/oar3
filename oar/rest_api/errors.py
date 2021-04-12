@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import jsonify
-from werkzeug.exceptions import default_exceptions
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, default_exceptions
 
 from oar.lib.utils import to_unicode
 

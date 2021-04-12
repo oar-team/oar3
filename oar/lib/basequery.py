@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy.orm import Query, Load
 from sqlalchemy import text
+from sqlalchemy.orm import Load, Query
 
-from .exceptions import DoesNotExist
 from . import db
+from .exceptions import DoesNotExist
 from .models import (
-    Job,
-    MoldableJobDescription,
     AssignedResource,
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
+    Job,
+    MoldableJobDescription,
     Resource,
 )
 from .utils import render_query

@@ -1,18 +1,16 @@
-import click
-
 import time
+
+import click
 import escapism
 
 from oar.lib import config
-
 from oar.lib.job_handling import get_jobs_state
-
 from oar.rest_api.proxy_utils import (
     acquire_lock,
-    release_lock,
-    load_traefik_rules,
-    save_treafik_rules,
     del_traefik_rule,
+    load_traefik_rules,
+    release_lock,
+    save_treafik_rules,
 )
 
 from .utils import CommandReturns

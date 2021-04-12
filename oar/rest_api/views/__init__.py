@@ -4,10 +4,11 @@ import time
 from collections import OrderedDict
 from functools import wraps
 
-from flask import Blueprint as FlaskBlueprint, Response, g, abort
+from flask import Blueprint as FlaskBlueprint
+from flask import Response, abort, g
 
 from oar.lib.database import BaseModel
-from oar.lib.utils import json, JSONEncoder
+from oar.lib.utils import JSONEncoder, json
 
 from ..utils import ArgParser
 

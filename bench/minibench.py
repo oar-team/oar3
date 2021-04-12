@@ -1,9 +1,9 @@
 # coding: utf-8
 import time
 
-from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.job import JobPseudo, set_jobs_cache_keys
+from oar.kao.scheduling import schedule_id_jobs_ct
+from oar.kao.slot import Slot, SlotSet
 
 
 class Timer(object):

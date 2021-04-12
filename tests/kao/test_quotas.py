@@ -1,18 +1,17 @@
 # coding: utf-8
-import pytest
-
-from procset import ProcSet
-
 from codecs import open
 from copy import deepcopy
 from tempfile import mkstemp
-from oar.lib.job_handling import JobPseudo
-from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
-from oar.kao.quotas import Quotas
-from oar.lib.resource import ResourceSet
 
+import pytest
+from procset import ProcSet
+
+from oar.kao.quotas import Quotas
+from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
+from oar.kao.slot import Slot, SlotSet
 from oar.lib import config, get_logger
+from oar.lib.job_handling import JobPseudo
+from oar.lib.resource import ResourceSet
 
 # import pdb
 

@@ -1,11 +1,11 @@
-import pytest
-
 import json
 
+import pytest
 from flask import url_for
-from oar.lib import db, Resource
-from oar.lib.job_handling import insert_job, set_job_state
+
 from oar.kao.meta_sched import meta_schedule
+from oar.lib import Resource, db
+from oar.lib.job_handling import insert_job, set_job_state
 
 
 def test_app_resources_index(client):

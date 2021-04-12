@@ -6,38 +6,33 @@
 # - If not specified, the hostname will be retrieved with the 'hostname' command.
 # - "-a, --add" and "-r, --resource" or "--sql"  cannot be used at a same time.
 import time
-
-from oar import VERSION
-
-from oar.lib.database import wait_db_ready
-
-from oar.lib.job_handling import get_job
-from oar.lib.node import (
-    set_node_nextState,
-    get_all_resources_on_node,
-    get_node_job_to_frag,
-)
-from oar.lib.resource_handling import (
-    set_resources_property,
-    add_resource,
-    get_resource,
-    get_resources_with_given_sql,
-    set_resources_nextState,
-    log_resource_maintenance_event,
-    get_resource_job_to_frag,
-    get_resource_max_value_of_property,
-    set_resource_nextState,
-)
-
-from oar.lib.tools import check_resource_system_property
-
-import oar.lib.tools as tools
-
-from .utils import CommandReturns
-
 from socket import gethostname
 
 import click
+
+import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib.database import wait_db_ready
+from oar.lib.job_handling import get_job
+from oar.lib.node import (
+    get_all_resources_on_node,
+    get_node_job_to_frag,
+    set_node_nextState,
+)
+from oar.lib.resource_handling import (
+    add_resource,
+    get_resource,
+    get_resource_job_to_frag,
+    get_resource_max_value_of_property,
+    get_resources_with_given_sql,
+    log_resource_maintenance_event,
+    set_resource_nextState,
+    set_resources_nextState,
+    set_resources_property,
+)
+from oar.lib.tools import check_resource_system_property
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

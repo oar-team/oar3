@@ -5,17 +5,15 @@
 
 import re
 
-from oar.lib import db, WalltimeChange, get_logger, config
-from oar.lib.job_handling import (
-    get_job,
-    get_job_types,
-    get_job_suspended_sum_duration,
-    get_current_moldable_job,
-)
-
-from oar.lib.tools import duration_to_sql, duration_to_sql_signed, hms_to_duration
-
 import oar.lib.tools as tools
+from oar.lib import WalltimeChange, config, db, get_logger
+from oar.lib.job_handling import (
+    get_current_moldable_job,
+    get_job,
+    get_job_suspended_sum_duration,
+    get_job_types,
+)
+from oar.lib.tools import duration_to_sql, duration_to_sql_signed, hms_to_duration
 
 logger = get_logger("oar.lib.walltime")
 

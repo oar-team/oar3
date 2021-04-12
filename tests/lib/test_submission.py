@@ -1,19 +1,18 @@
 # coding: utf-8
-import pytest
-
 import os
 
-from oar.lib import db, config, AdmissionRule, config
-from oar.lib.submission import (
-    JobParameters,
-    parse_resource_descriptions,
-    add_micheline_jobs,
-    scan_script,
-)
-from oar.lib.job_handling import get_job_types
-from oar.kao.quotas import Quotas
+import pytest
 
 import oar.lib.tools  # for monkeypatching
+from oar.kao.quotas import Quotas
+from oar.lib import AdmissionRule, config, db
+from oar.lib.job_handling import get_job_types
+from oar.lib.submission import (
+    JobParameters,
+    add_micheline_jobs,
+    parse_resource_descriptions,
+    scan_script,
+)
 
 fake_popen_process_stdout = ""
 

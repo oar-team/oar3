@@ -3,11 +3,11 @@
 
 import copy
 
-from oar.lib import config, get_logger
+from procset import ProcSet
+
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
-
-from procset import ProcSet
+from oar.lib import config, get_logger
 
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)

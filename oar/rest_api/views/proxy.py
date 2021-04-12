@@ -1,23 +1,21 @@
 import os
-import simplejson as json
 from urllib.parse import urlparse
 
-from flask import g, abort, redirect
+import simplejson as json
+from flask import abort, g, redirect
 
-from ..proxy_utils import (
-    acquire_lock,
-    release_lock,
-    add_traefik_rule,
-    load_traefik_rules,
-    save_treafik_rules,
-)
-
-from . import Blueprint
-
+import oar.lib.tools as tools
 from oar.lib import config
 from oar.lib.job_handling import get_job
 
-import oar.lib.tools as tools
+from ..proxy_utils import (
+    acquire_lock,
+    add_traefik_rule,
+    load_traefik_rules,
+    release_lock,
+    save_treafik_rules,
+)
+from . import Blueprint
 
 app = Blueprint("proxy", __name__, url_prefix="/proxy")
 

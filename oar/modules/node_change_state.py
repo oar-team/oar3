@@ -1,44 +1,41 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
-import re
 import os
-
-from oar.lib import config, get_logger
-from oar.lib.event import (
-    get_to_check_events,
-    is_an_event_exists,
-    check_event,
-    add_new_event_with_host,
-    add_new_event,
-    get_hostname_event,
-)
-from oar.lib.job_handling import (
-    get_job,
-    get_job_types,
-    set_job_state,
-    suspend_job_action,
-    is_job_already_resubmitted,
-    resubmit_job,
-    get_job_host_log,
-    get_job_cpuset_name,
-    get_cpuset_values,
-    frag_job,
-)
-from oar.lib.node import set_node_state, get_all_resources_on_node
-from oar.lib.resource_handling import (
-    get_resources_change_state,
-    get_resource,
-    set_resource_state,
-    set_resource_nextState,
-    get_resource_job_to_frag,
-)
-from oar.lib.queue import stop_all_queues
-
+import re
+import sys
 
 import oar.lib.tools as tools
-
+from oar.lib import config, get_logger
+from oar.lib.event import (
+    add_new_event,
+    add_new_event_with_host,
+    check_event,
+    get_hostname_event,
+    get_to_check_events,
+    is_an_event_exists,
+)
+from oar.lib.job_handling import (
+    frag_job,
+    get_cpuset_values,
+    get_job,
+    get_job_cpuset_name,
+    get_job_host_log,
+    get_job_types,
+    is_job_already_resubmitted,
+    resubmit_job,
+    set_job_state,
+    suspend_job_action,
+)
+from oar.lib.node import get_all_resources_on_node, set_node_state
+from oar.lib.queue import stop_all_queues
+from oar.lib.resource_handling import (
+    get_resource,
+    get_resource_job_to_frag,
+    get_resources_change_state,
+    set_resource_nextState,
+    set_resource_state,
+)
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info("Start Node Change State")

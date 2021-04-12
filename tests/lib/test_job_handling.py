@@ -1,10 +1,9 @@
 # coding: utf-8
 import pytest
 
-from oar.lib import db, config, EventLog
-from oar.lib.job_handling import check_end_of_job, insert_job
-
 import oar.lib.tools  # for monkeypatching
+from oar.lib import EventLog, config, db
+from oar.lib.job_handling import check_end_of_job, insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

@@ -3,16 +3,16 @@ import click
 
 click.disable_unicode_literals_warning = True
 
+import oar.lib.tools as tools
 from oar import VERSION
-from .utils import CommandReturns
-
 from oar.lib import config
 from oar.lib.accounting import (
-    delete_all_from_accounting,
-    delete_accounting_windows_before,
     check_accounting_update,
+    delete_accounting_windows_before,
+    delete_all_from_accounting,
 )
-import oar.lib.tools as tools
+
+from .utils import CommandReturns
 
 
 @click.command()

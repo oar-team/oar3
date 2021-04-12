@@ -24,10 +24,11 @@
 
 import os
 import socket
+
 import zmq
 
-from oar.lib import config, get_logger
 import oar.lib.tools as tools
+from oar.lib import config, get_logger
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {

@@ -1,86 +1,74 @@
 # coding: utf-8
-import sys
 import os
 import re
+import sys
 
-from oar.lib import (
-    config,
-    db,
-    get_logger,
-    GanttJobsPredictionsVisu,
-    GanttJobsResourcesVisu,
-)
-from oar.lib.tools import TimeoutExpired, PIPE
+from procset import ProcSet
 
-from oar.lib.job_handling import frag_job
-
-from oar.lib.job_handling import (
-    get_current_not_waiting_jobs,
-    get_gantt_jobs_to_launch,
-    add_resource_job_pairs,
-    set_job_state,
-    get_gantt_waiting_interactive_prediction_date,
-    set_job_resa_state,
-    set_job_message,
-    get_waiting_reservations_already_scheduled,
-    ALLOW,
-    NO_PLACEHOLDER,
-    JobPseudo,
-    save_assigns,
-    set_job_start_time_assigned_moldable_id,
-    get_jobs_in_multiple_states,
-    gantt_flush_tables,
-    get_after_sched_no_AR_jobs,
-    get_waiting_scheduled_AR_jobs,
-    remove_gantt_resource_job,
-    set_moldable_job_max_time,
-    set_gantt_job_start_time,
-    get_jobs_on_resuming_job_resources,
-    resume_job_action,
-    is_timesharing_for_two_jobs,
-)
-
-from oar.lib.queue import get_queues_groupby_priority, stop_queue
-
-from oar.lib.event import get_job_events, add_new_event
-
-from oar.modules.hulot import HulotClient
-
-from oar.lib.tools import local_to_sql, duration_to_sql
+import oar.kao.extra_metasched
 import oar.lib.tools as tools
-
-from oar.kao.platform import Platform
-
-from oar.kao.slot import (
-    SlotSet,
-    intersec_ts_ph_itvs_slots,
-    intersec_itvs_slots,
-    MAX_TIME,
-)
-from oar.kao.scheduling import (
-    set_slots_with_prev_scheduled_jobs,
-    get_encompassing_slots,
-    find_resource_hierarchies_job,
-)
-
 from oar.kao.kamelot import internal_schedule_cycle
-
-from oar.lib.node import (
-    search_idle_nodes,
-    get_gantt_hostname_to_wake_up,
-    get_next_job_date_on_node,
-    get_last_wake_up_date_of_node,
-)
+from oar.kao.platform import Platform
 
 # for quotas
 from oar.kao.quotas import Quotas
+from oar.kao.scheduling import (
+    find_resource_hierarchies_job,
+    get_encompassing_slots,
+    set_slots_with_prev_scheduled_jobs,
+)
+from oar.kao.slot import (
+    MAX_TIME,
+    SlotSet,
+    intersec_itvs_slots,
+    intersec_ts_ph_itvs_slots,
+)
 
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
-
-import oar.kao.extra_metasched
-
-from procset import ProcSet
+from oar.lib import (
+    GanttJobsPredictionsVisu,
+    GanttJobsResourcesVisu,
+    config,
+    db,
+    get_logger,
+)
+from oar.lib.event import add_new_event, get_job_events
+from oar.lib.job_handling import (
+    ALLOW,
+    NO_PLACEHOLDER,
+    JobPseudo,
+    add_resource_job_pairs,
+    frag_job,
+    gantt_flush_tables,
+    get_after_sched_no_AR_jobs,
+    get_current_not_waiting_jobs,
+    get_gantt_jobs_to_launch,
+    get_gantt_waiting_interactive_prediction_date,
+    get_jobs_in_multiple_states,
+    get_jobs_on_resuming_job_resources,
+    get_waiting_reservations_already_scheduled,
+    get_waiting_scheduled_AR_jobs,
+    is_timesharing_for_two_jobs,
+    remove_gantt_resource_job,
+    resume_job_action,
+    save_assigns,
+    set_gantt_job_start_time,
+    set_job_message,
+    set_job_resa_state,
+    set_job_start_time_assigned_moldable_id,
+    set_job_state,
+    set_moldable_job_max_time,
+)
+from oar.lib.node import (
+    get_gantt_hostname_to_wake_up,
+    get_last_wake_up_date_of_node,
+    get_next_job_date_on_node,
+    search_idle_nodes,
+)
+from oar.lib.queue import get_queues_groupby_priority, stop_queue
+from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
+from oar.modules.hulot import HulotClient
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???

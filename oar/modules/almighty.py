@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
-from oar.lib import config, get_logger
-
-import oar.lib.tools as tools
-
-import sys
-import socket
-import zmq
 import os
 import re
-import time
 import signal
+import socket
+import sys
+import time
+
+import zmq
+
+import oar.lib.tools as tools
+from oar.lib import config, get_logger
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {

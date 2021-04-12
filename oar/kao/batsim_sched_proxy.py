@@ -49,17 +49,17 @@
 
 import copy
 import json
-import zmq
+
 import click
-
-from oar.lib import config, get_logger
-from oar.lib.tools import get_date
-
+import zmq
 from batsim.batsim import DataStorage
-from oar.lib.node import get_nodes_with_state
-from oar.lib.job_handling import get_jobs_ids_in_multiple_states, JobPseudo
-from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
 from procset import ProcSet
+
+from oar.kao.scheduling import set_slots_with_prev_scheduled_jobs
+from oar.lib import config, get_logger
+from oar.lib.job_handling import JobPseudo, get_jobs_ids_in_multiple_states
+from oar.lib.node import get_nodes_with_state
+from oar.lib.tools import get_date
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {

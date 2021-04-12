@@ -1,10 +1,9 @@
 # coding: utf-8
-from oar.modules.finaud import Finaud
-from oar.lib import db, config, Resource
+import pytest
 
 import oar.lib.tools  # for monkeypatching
-
-import pytest
+from oar.lib import Resource, config, db
+from oar.modules.finaud import Finaud
 
 fake_bad_nodes = (1, [])
 

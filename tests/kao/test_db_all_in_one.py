@@ -1,25 +1,22 @@
 # coding: utf-8
-import pytest
-
 import os
+import time
 from codecs import open
 from copy import deepcopy
+from datetime import datetime, timedelta
 from tempfile import mkstemp
 
-import time
-from datetime import datetime, timedelta
-
-from oar.lib import db, config, GanttJobsPrediction, Resource
-from oar.lib.job_handling import insert_job, set_jobs_start_time, set_job_state
-from oar.kao.meta_sched import meta_schedule
-
-from ..fakezmq import FakeZmq
+import pytest
+import zmq
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.tools import get_date, local_to_sql
+from oar.kao.meta_sched import meta_schedule
 from oar.kao.quotas import Quotas
+from oar.lib import GanttJobsPrediction, Resource, config, db
+from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
+from oar.lib.tools import get_date, local_to_sql
 
-import zmq
+from ..fakezmq import FakeZmq
 
 # import pdb
 

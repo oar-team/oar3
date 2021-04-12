@@ -5,21 +5,20 @@ click.disable_unicode_literals_warning = True
 
 from functools import reduce
 
-from sqlalchemy import func, and_, not_
+from sqlalchemy import and_, func, not_
+from tabulate import tabulate
 
 from oar.lib import Database, config
 from oar.lib.utils import cached_property
-from tabulate import tabulate
 
 from ..helpers import (
-    make_pass_decorator,
-    Context,
     DATABASE_URL_PROMPT,
+    Context,
     default_database_url,
     load_configuration_file,
+    make_pass_decorator,
 )
-from ..operations import archive_db, purge_db, inspect_db
-
+from ..operations import archive_db, inspect_db, purge_db
 
 CONTEXT_SETTINGS = dict(
     auto_envvar_prefix="oar_migrate", help_option_names=["-h", "--help"]

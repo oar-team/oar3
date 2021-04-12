@@ -1,15 +1,14 @@
 # coding: utf-8
-import simplejson as json
 from collections import defaultdict
 from copy import deepcopy
-
 from datetime import date, datetime, timedelta
 
+import simplejson as json
+
 from oar.lib import config, get_logger
+from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
-
-from oar.lib.resource import ResourceSet
 
 _day2week_offset = {
     "mon": 0,

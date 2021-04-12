@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
-import oar.lib
-from flask import url_for, g, abort
 
+from flask import abort, g, url_for
 from passlib.apache import HtpasswdFile
 
+import oar.lib
 from oar import VERSION
 from oar.lib import config
 
-from . import Blueprint
 from .. import API_VERSION
 from ..utils import Arg
+from . import Blueprint
 
 app = Blueprint("frontend", __name__)
 

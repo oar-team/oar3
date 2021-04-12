@@ -4,10 +4,12 @@
 #  Requirement: a live configured OAR installation (oardocker is ok)
 #  Usage: OAR_LIVE_TEST=1 pytest
 #
-import pytest
 import re
-import pexpect
 from subprocess import call
+
+import pexpect
+import pytest
+
 from . import live_testing, pytestmark
 
 

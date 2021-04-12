@@ -2,23 +2,23 @@
 # coding: utf-8
 
 import sys
-from oar.lib import config, get_logger
-from oar.lib.job_handling import (
-    get_job_frag_state,
-    job_arm_leon_timer,
-    job_finishing_sequence,
-    get_jobs_to_kill,
-    set_job_message,
-    get_job_types,
-    set_job_state,
-    set_finish_date,
-    get_job_current_hostnames,
-    get_to_exterminate_jobs,
-    set_running_date,
-)
-from oar.lib.event import add_new_event
 
 import oar.lib.tools as tools
+from oar.lib import config, get_logger
+from oar.lib.event import add_new_event
+from oar.lib.job_handling import (
+    get_job_current_hostnames,
+    get_job_frag_state,
+    get_job_types,
+    get_jobs_to_kill,
+    get_to_exterminate_jobs,
+    job_arm_leon_timer,
+    job_finishing_sequence,
+    set_finish_date,
+    set_job_message,
+    set_job_state,
+    set_running_date,
+)
 
 logger = get_logger("oar.modules.leon", forward_stderr=True)
 logger.info("Start Leon")

@@ -1,23 +1,18 @@
 # coding: utf-8
-import pytest
-
-from procset import ProcSet
-
-from copy import deepcopy
-
 import time
+from copy import deepcopy
 from datetime import datetime, timedelta
 
-from oar.lib.job_handling import JobPseudo
-from oar.kao.slot import Slot, SlotSet
+import pytest
+from procset import ProcSet
+
+from oar.kao.quotas import Calendar, Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct
-from oar.lib.tools import local_to_sql
-
-from oar.kao.quotas import Quotas, Calendar
-
-from oar.lib.resource import ResourceSet
-
+from oar.kao.slot import Slot, SlotSet
 from oar.lib import config, get_logger
+from oar.lib.job_handling import JobPseudo
+from oar.lib.resource import ResourceSet
+from oar.lib.tools import local_to_sql
 
 config["LOG_FILE"] = ":stderr:"
 logger = get_logger("oar.test")

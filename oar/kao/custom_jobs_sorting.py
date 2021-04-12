@@ -1,8 +1,8 @@
 """Collection of Job Sorting functions to provide priority policies
 """
-from oar.lib import get_logger, config
-
 import json
+
+from oar.lib import config, get_logger
 
 logger = get_logger("oar.kamelot")
 

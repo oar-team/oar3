@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import random
-
-from tempfile import NamedTemporaryFile
 from struct import pack
+from tempfile import NamedTemporaryFile
 
 from sqlalchemy import types as sa_types
 
-from oar.lib.utils import is_bytes, basestring
+from oar.lib.utils import basestring, is_bytes
 
 
 def serialize_rows_to_csv(rows, null_value, output):

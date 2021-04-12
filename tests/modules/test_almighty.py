@@ -1,19 +1,20 @@
 # coding: utf-8
 
-from oar.modules.almighty import Almighty, signal_handler, finishTag
+import pytest
+import zmq
+
+import oar.lib.tools
 from oar.lib import config
-from ..fakezmq import FakeZmq
+from oar.modules.almighty import Almighty, finishTag, signal_handler
+
 from ..faketools import (
     fake_call,
     fake_called_command,
-    fake_kill,
     fake_get_date,
+    fake_kill,
     set_fake_date,
 )
-import oar.lib.tools
-
-import pytest
-import zmq
+from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
 

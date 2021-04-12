@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import sys
 import inspect
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
-from sqlalchemy import Table
-from .globals import db
+import sys
 
+from sqlalchemy import Table
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
+
+from .globals import db
 
 JOBS_TABLES = [
     {"jobs": "job_id"},

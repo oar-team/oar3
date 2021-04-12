@@ -1,11 +1,12 @@
 # coding: utf-8
 
-from oar.modules.appendice_proxy import AppendiceProxy
-from oar.lib import config
-from ..fakezmq import FakeZmq
-
 import pytest
 import zmq
+
+from oar.lib import config
+from oar.modules.appendice_proxy import AppendiceProxy
+
+from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
 

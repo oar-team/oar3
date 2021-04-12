@@ -2,15 +2,14 @@
 import pytest
 
 from oar.lib import Queue, db
-
 from oar.lib.queue import (
-    stop_queue,
+    change_queue,
+    create_queue,
+    remove_queue,
+    start_all_queues,
     start_queue,
     stop_all_queues,
-    start_all_queues,
-    create_queue,
-    change_queue,
-    remove_queue,
+    stop_queue,
 )
 
 

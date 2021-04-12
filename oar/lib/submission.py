@@ -1,42 +1,40 @@
 # -*- coding: utf-8 -*-
-import re
-import os
-import sys
 import copy
+import os
 import random
-
+import re
+import sys
 from socket import gethostname
 
-from sqlalchemy import distinct, text, or_, func, exc
 from procset import ProcSet
-from oar.lib import (
-    db,
-    Job,
-    JobType,
-    AdmissionRule,
-    Challenge,
-    Queue,
-    JobDependencie,
-    JobStateLog,
-    MoldableJobDescription,
-    JobResourceGroup,
-    JobResourceDescription,
-    Resource,
-    config,
-)
-
-from oar.lib.resource import ResourceSet
-from oar.lib.hierarchy import find_resource_hierarchies_scattered
-from oar.lib.tools import (
-    sql_to_duration,
-    get_date,
-    sql_to_local,
-    hms_str_to_duration,
-    PIPE,
-    format_job_message_text,
-)
+from sqlalchemy import distinct, exc, func, or_, text
 
 import oar.lib.tools as tools
+from oar.lib import (
+    AdmissionRule,
+    Challenge,
+    Job,
+    JobDependencie,
+    JobResourceDescription,
+    JobResourceGroup,
+    JobStateLog,
+    JobType,
+    MoldableJobDescription,
+    Queue,
+    Resource,
+    config,
+    db,
+)
+from oar.lib.hierarchy import find_resource_hierarchies_scattered
+from oar.lib.resource import ResourceSet
+from oar.lib.tools import (
+    PIPE,
+    format_job_message_text,
+    get_date,
+    hms_str_to_duration,
+    sql_to_duration,
+    sql_to_local,
+)
 
 
 def lstrip_none(s):

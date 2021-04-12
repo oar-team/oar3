@@ -3,30 +3,27 @@
 import os
 
 import click
-from oar import VERSION
-from .utils import CommandReturns
-
-from oar.lib import config
-
-from oar.lib.job_handling import (
-    get_array_job_ids,
-    ask_checkpoint_signal_job,
-    get_job_ids_with_given_properties,
-    get_job_types,
-    get_job_current_hostnames,
-    frag_job,
-    add_new_event,
-    get_job_duration_in_state,
-    get_job_state,
-    get_job,
-    get_job_types,
-    remove_current_job_types,
-    add_current_job_types,
-)
-
-from oar.lib.resource_handling import update_current_scheduler_priority
 
 import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib import config
+from oar.lib.job_handling import (
+    add_current_job_types,
+    add_new_event,
+    ask_checkpoint_signal_job,
+    frag_job,
+    get_array_job_ids,
+    get_job,
+    get_job_current_hostnames,
+    get_job_duration_in_state,
+    get_job_ids_with_given_properties,
+    get_job_state,
+    get_job_types,
+    remove_current_job_types,
+)
+from oar.lib.resource_handling import update_current_scheduler_priority
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

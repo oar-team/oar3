@@ -1,12 +1,12 @@
-import re
 import os
-import pytest
+import re
 
+import pytest
 from click.testing import CliRunner
 
+from oar.cli.oarqueue import cli
 from oar.lib import Queue, db
 from oar.lib.queue import create_queue
-from oar.cli.oarqueue import cli
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

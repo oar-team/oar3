@@ -1,20 +1,21 @@
-import click
 import os
 
-from oar import VERSION
+import click
 
-from .utils import CommandReturns
+from oar import VERSION
 from oar.lib import config
 from oar.lib.queue import (
+    change_queue,
+    create_queue,
     get_all_queue_by_priority,
-    stop_queue,
+    remove_queue,
+    start_all_queues,
     start_queue,
     stop_all_queues,
-    start_all_queues,
-    create_queue,
-    remove_queue,
-    change_queue,
+    stop_queue,
 )
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

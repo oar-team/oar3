@@ -1,18 +1,18 @@
 # coding: utf-8
 import os
 import re
-import pytest
 
+import pytest
 from sqlalchemy import or_
-from oar.lib import db, AdmissionRule, Job
+
+from oar.lib import AdmissionRule, Job, db
+from oar.lib.job_handling import insert_job
 from oar.lib.submission import (
     JobParameters,
-    estimate_job_nb_resources,
     check_reservation,
+    estimate_job_nb_resources,
 )
-from oar.lib.tools import sql_to_duration, get_date, sql_to_local
-
-from oar.lib.job_handling import insert_job
+from oar.lib.tools import get_date, sql_to_duration, sql_to_local
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

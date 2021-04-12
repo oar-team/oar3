@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
-import re
 import datetime
+import os
+import re
+import sys
 from json import dumps
 
-from oar import VERSION
-from .utils import CommandReturns
+import click
 
-from oar.lib import db, config
+import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib import config, db
 from oar.lib.accounting import (
     get_accounting_summary,
     get_accounting_summary_byproject,
@@ -21,17 +22,15 @@ from oar.lib.job_handling import (
     get_jobs_state,
 )
 from oar.lib.tools import (
-    get_username,
-    sql_to_local,
-    local_to_sql,
-    get_duration,
     check_resource_system_property,
+    get_duration,
+    get_username,
+    local_to_sql,
+    sql_to_local,
 )
-import oar.lib.tools as tools
-
 from oar.lib.utils import render_query
 
-import click
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

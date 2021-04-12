@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import time
 import pickle
-
+import time
 from multiprocessing import Process
 
 import requests
 import zerorpc
 
-from oar.lib.utils import SimpleNamespace
 from oar.lib.tools import duration_to_hms
+from oar.lib.utils import SimpleNamespace
 
 
 class CoormApplication(object):

@@ -1,54 +1,49 @@
 # coding: utf-8
 """ Functions to handle jobs"""
-import os
-import re
 import copy
+import os
 import random
-
-from sqlalchemy import func, text, distinct
-from sqlalchemy.orm import aliased
-from sqlalchemy.orm.session import make_transient
-
-from sqlalchemy.sql.expression import select
+import re
 
 from procset import ProcSet
+from sqlalchemy import distinct, func, text
+from sqlalchemy.orm import aliased
+from sqlalchemy.orm.session import make_transient
+from sqlalchemy.sql.expression import select
 
+import oar.lib.tools as tools
+from oar.kao.helpers import extract_find_assign_args
 from oar.lib import (
-    db,
+    AssignedResource,
+    Challenge,
+    FragJob,
+    GanttJobsPrediction,
+    GanttJobsResource,
     Job,
-    MoldableJobDescription,
+    JobDependencie,
     JobResourceDescription,
     JobResourceGroup,
-    Resource,
-    GanttJobsPrediction,
-    JobDependencie,
-    GanttJobsResource,
-    JobType,
     JobStateLog,
-    AssignedResource,
-    FragJob,
-    get_logger,
-    config,
-    Challenge,
+    JobType,
+    MoldableJobDescription,
+    Resource,
     WalltimeChange,
+    config,
+    db,
+    get_logger,
 )
+from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
+from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.resource_handling import (
     get_current_resources_with_suspended_job,
     update_current_scheduler_priority,
 )
-from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
-
-from oar.lib.psycopg2 import pg_bulk_insert
-
 from oar.lib.tools import (
     TimeoutExpired,
     format_ssh_pub_key,
     get_private_ssh_key_file_name,
     limited_dict2hash_perl,
 )
-import oar.lib.tools as tools
-
-from oar.kao.helpers import extract_find_assign_args
 
 # from oar.lib.utils import render_query
 

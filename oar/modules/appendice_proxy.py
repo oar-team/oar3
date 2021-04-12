@@ -5,10 +5,11 @@ between version 2.x OAR's modules and version 3.x
 """
 
 import re
-import zmq
 import time
-from oar.lib import config, get_logger
 
+import zmq
+
+from oar.lib import config, get_logger
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {

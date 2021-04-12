@@ -1,8 +1,9 @@
 import os
+
 import click
 
-from oar.lib import config
 from oar.cli.oarsub import connect_job
+from oar.lib import config
 
 from .utils import CommandReturns
 

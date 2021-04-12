@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
-import pytest
-import time
 import datetime
-
-from io import StringIO
+import time
 from codecs import open
-
-from sqlalchemy import event, Table
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
-from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
-from sqlalchemy.orm.util import object_state
 from collections import OrderedDict
+from io import StringIO
+
+import pytest
+from sqlalchemy import Table, event
+from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.orm.util import object_state
 
 from oar.lib import fixture
-from oar.lib.database import Database, SessionProperty, QueryProperty
-
-from oar.lib.utils import to_json, to_unicode, json
+from oar.lib.database import Database, QueryProperty, SessionProperty
+from oar.lib.utils import json, to_json, to_unicode
 
 from .. import assert_raises
 

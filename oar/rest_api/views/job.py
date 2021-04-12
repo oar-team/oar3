@@ -2,17 +2,16 @@
 import os
 import re
 
-from flask import url_for, g
-
-from oar.lib import db, Job
-from oar.lib.submission import JobParameters, Submission, check_reservation
+from flask import g, url_for
 
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
+from oar.lib import Job, db
+from oar.lib.submission import JobParameters, Submission, check_reservation
 
-from . import Blueprint
 from ..utils import Arg
+from . import Blueprint
 
 # DEFAULT_VALUE = {
 #    'directory': os.getcwd()

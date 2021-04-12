@@ -1,15 +1,14 @@
 # coding: utf-8
-import re
 import os
-import pytest
+import re
 
+import pytest
 from click.testing import CliRunner
 
-from oar.lib import db, FragJob, Job, JobStateLog
-from oar.cli.oardel import cli
-from oar.lib.job_handling import insert_job
-
 import oar.lib.tools  # for monkeypatching
+from oar.cli.oardel import cli
+from oar.lib import FragJob, Job, JobStateLog, db
+from oar.lib.job_handling import insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

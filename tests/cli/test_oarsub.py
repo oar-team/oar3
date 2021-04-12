@@ -1,19 +1,19 @@
 # coding: utf-8
-import pytest
 import os
-import re
 import random
+import re
+import socket
+
+import pytest
 from click.testing import CliRunner
 
-from ..helpers import insert_running_jobs, insert_terminated_jobs
-
-from oar.lib import db, config, Job, Challenge
-from oar.lib.job_handling import get_job_types
-from oar.cli.utils import CommandReturns
-from oar.cli.oarsub import cli, connect_job
-
 import oar.lib.tools  # for monkeypatching
-import socket
+from oar.cli.oarsub import cli, connect_job
+from oar.cli.utils import CommandReturns
+from oar.lib import Challenge, Job, config, db
+from oar.lib.job_handling import get_job_types
+
+from ..helpers import insert_running_jobs, insert_terminated_jobs
 
 default_res = "/resource_id=1"
 nodes_res = "resource_id"

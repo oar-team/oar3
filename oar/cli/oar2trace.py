@@ -13,13 +13,15 @@
 # 4	This is the last partial execution, job failed
 # 5	Job was cancelled (either before starting or during run)
 
+import pickle
 import time
 import uuid
 from collections import OrderedDict
-from sqlalchemy.sql import func, or_, distinct
-from oar.lib import db, config, Job, Resource, MoldableJobDescription, AssignedResource
-import pickle
+
 import click
+from sqlalchemy.sql import distinct, func, or_
+
+from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, config, db
 
 click.disable_unicode_literals_warning = True
 

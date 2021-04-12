@@ -1,24 +1,24 @@
 # coding: utf-8
 
-from sqlalchemy import func, select, text, distinct, or_, and_
-from oar.lib import (
-    db,
-    Resource,
-    ResourceLog,
-    GanttJobsResource,
-    GanttJobsPrediction,
-    Job,
-    EventLog,
-    EventLogHostname,
-    MoldableJobDescription,
-    JobType,
-    AssignedResource,
-    get_logger,
-    config,
-)
-from oar.lib.resource_handling import get_resources_state
+from sqlalchemy import and_, distinct, func, or_, select, text
 
 import oar.lib.tools as tools
+from oar.lib import (
+    AssignedResource,
+    EventLog,
+    EventLogHostname,
+    GanttJobsPrediction,
+    GanttJobsResource,
+    Job,
+    JobType,
+    MoldableJobDescription,
+    Resource,
+    ResourceLog,
+    config,
+    db,
+    get_logger,
+)
+from oar.lib.resource_handling import get_resources_state
 
 STATE2NUM = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 

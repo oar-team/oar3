@@ -1,10 +1,10 @@
 # coding: utf-8
 from procset import ProcSet
-from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
-from oar.lib.job_handling import JobPseudo
 
+from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
+from oar.kao.slot import Slot, SlotSet
 from oar.lib import config
+from oar.lib.job_handling import JobPseudo
 
 config["LOG_FILE"] = ":stderr:"
 

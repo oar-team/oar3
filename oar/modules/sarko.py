@@ -2,34 +2,29 @@
 # coding: utf-8
 import sys
 
+import oar.lib.tools as tools
 from oar.lib import config, get_logger
-
+from oar.lib.event import add_new_event, add_new_event_with_host
 from oar.lib.job_handling import (
+    frag_job,
+    get_current_moldable_job,
+    get_frag_date,
+    get_job_current_hostnames,
+    get_job_suspended_sum_duration,
+    get_job_types,
+    get_jobs_in_state,
     get_timer_armed_job,
     job_fragged,
-    get_frag_date,
-    get_jobs_in_state,
-    job_refrag,
     job_leon_exterminate,
-    get_current_moldable_job,
-    get_job_suspended_sum_duration,
-    frag_job,
-    get_job_current_hostnames,
-    get_job_types,
+    job_refrag,
 )
-
 from oar.lib.resource_handling import (
-    get_expired_resources,
-    set_resource_nextState,
-    get_resource,
     get_absent_suspected_resources_for_a_timeout,
+    get_expired_resources,
+    get_resource,
+    set_resource_nextState,
     update_resource_nextFinaudDecision,
 )
-
-from oar.lib.event import add_new_event, add_new_event_with_host
-
-import oar.lib.tools as tools
-
 
 logger = get_logger("oar.modules.sarko", forward_stderr=True)
 logger.info("Start Sarko")

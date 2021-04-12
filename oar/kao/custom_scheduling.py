@@ -1,12 +1,12 @@
 # coding: utf-8
-from procset import ProcSet, ProcInt
-import oar.kao.scheduling
-
-from oar.lib import config
-from oar.lib.hierarchy import extract_n_scattered_block_itv
-
 import copy
 import pickle
+
+from procset import ProcInt, ProcSet
+
+import oar.kao.scheduling
+from oar.lib import config
+from oar.lib.hierarchy import extract_n_scattered_block_itv
 
 try:
     import zerorpc

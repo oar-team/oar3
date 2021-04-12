@@ -1,14 +1,13 @@
 # coding: utf-8
 import time
-import pytest
-
 from random import sample
 
-from oar.lib import db, config
+import pytest
 
-from oar.lib.job_handling import insert_job
-from oar.kao.platform import Platform
 from oar.kao.kamelot import schedule_cycle
+from oar.kao.platform import Platform
+from oar.lib import config, db
+from oar.lib.job_handling import insert_job
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

@@ -1,17 +1,18 @@
 # coding: utf-8
-import pytest
-from ..fakezmq import FakeZmq
-from click.testing import CliRunner
-
-import redis
-import zmq
+import json
+import os
 import struct
 import sys
-import os
-import json
-from oar.lib import config, db
+
+import pytest
+import redis
+import zmq
+from click.testing import CliRunner
 
 from oar.kao.bataar import bataar
+from oar.lib import config, db
+
+from ..fakezmq import FakeZmq
 
 
 def order_json_str_arrays(a):

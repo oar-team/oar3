@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+
 import pytest
 
-from oar.lib.fixture import load_fixtures
 from oar.lib import db
-
+from oar.lib.fixture import load_fixtures
 
 REFTIME = 1437050120
 

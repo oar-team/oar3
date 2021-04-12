@@ -1,11 +1,9 @@
 import pytest
-
-from oar.lib import config
-from oar.lib.job_handling import insert_job
+from flask import url_for
 
 import oar.lib.tools  # for monkeypatching
-
-from flask import url_for
+from oar.lib import config
+from oar.lib.job_handling import insert_job
 
 fake_call_retcodes = []
 fake_calls = []

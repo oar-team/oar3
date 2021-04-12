@@ -1,16 +1,16 @@
 # coding: utf-8
 import copy
+
 from procset import ProcSet
+
+from oar.kao.quotas import Quotas
+from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
+from oar.lib import config, get_logger
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
 
-from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
-
-from oar.lib import get_logger, config
-
 # for quotas
 from oar.lib.resource import ResourceSet
-from oar.kao.quotas import Quotas
 
 logger = get_logger("oar.kamelot")
 

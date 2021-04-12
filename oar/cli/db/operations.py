@@ -1,38 +1,31 @@
 # -*- coding: utf-8 -*-
-import sys
 import re
+import sys
 from copy import copy
 from functools import partial, reduce
 from itertools import chain
 
-from sqlalchemy import (
-    func,
-    MetaData,
-    Table,
-    and_,
-    not_,
-    asc as order_by_func,
-    create_engine,
-)
+from sqlalchemy import MetaData, Table, and_
+from sqlalchemy import asc as order_by_func
+from sqlalchemy import create_engine, func, not_
 from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy.types import Integer
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import select
+from sqlalchemy.types import Integer
 from sqlalchemy_utils.functions import (
-    database_exists,
     create_database,
+    database_exists,
     drop_database,
     render_statement,
 )
-from sqlalchemy.ext.declarative import declarative_base
-
-from oar.lib import models
-from oar.lib.utils import to_unicode, reraise
-from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
 
 import oar.lib.tools as tools
+from oar.lib import models
+from oar.lib.models import JOBS_TABLES, MOLDABLES_JOBS_TABLES, RESOURCES_TABLES
+from oar.lib.utils import reraise, to_unicode
 
-from .helpers import green, magenta, yellow, blue, red
 from .alembic import alembic_sync_schema
+from .helpers import blue, green, magenta, red, yellow
 
 
 def archive_db(ctx):

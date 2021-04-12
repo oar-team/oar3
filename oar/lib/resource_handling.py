@@ -2,26 +2,24 @@
 """ Functions to handle resource"""
 import os
 
-from sqlalchemy import distinct, text, or_, func
+from sqlalchemy import distinct, func, or_, text
+
+import oar.lib.tools as tools
 from oar.lib import (
-    db,
-    config,
-    Resource,
-    ResourceLog,
-    Job,
     AssignedResource,
     EventLog,
     FragJob,
+    Job,
     JobType,
     MoldableJobDescription,
+    Resource,
+    ResourceLog,
+    config,
+    db,
     get_logger,
 )
 from oar.lib.event import add_new_event, is_an_event_exists
-
 from oar.lib.psycopg2 import pg_bulk_insert
-
-import oar.lib.tools as tools
-
 
 State_to_num = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 

@@ -7,20 +7,20 @@ Define resources api interaction
 
 """
 
-from flask import url_for, g
-from oar.lib import db, Resource
-from oar.lib.resource_handling import (
-    set_resource_state,
-    remove_resource,
-    get_count_busy_resources,
-)
+import json
+
+from flask import g, url_for
 
 import oar.lib.tools as tools
+from oar.lib import Resource, db
+from oar.lib.resource_handling import (
+    get_count_busy_resources,
+    remove_resource,
+    set_resource_state,
+)
 
-from . import Blueprint
 from ..utils import Arg
-
-import json
+from . import Blueprint
 
 app = Blueprint("resources", __name__, url_prefix="/resources")
 

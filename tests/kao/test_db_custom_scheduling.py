@@ -1,11 +1,10 @@
 # coding: utf-8
 import pytest
 
+import oar.lib.tools  # for monkeypatching
+from oar.kao.meta_sched import meta_schedule
 from oar.lib import db
 from oar.lib.job_handling import insert_job
-from oar.kao.meta_sched import meta_schedule
-
-import oar.lib.tools  # for monkeypatching
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

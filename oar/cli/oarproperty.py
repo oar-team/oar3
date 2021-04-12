@@ -7,12 +7,14 @@
 #
 # To use the quiet mode, just do something like:
 #   echo -e "mysqlroot\nmysqlpassword\n" | oar_property.pl -q -l
-from oar import VERSION
-from oar.lib import db, config, Resource, ResourceLog, JobResourceDescription
-from oar.lib.tools import check_resource_property
-from sqlalchemy import VARCHAR
-from .utils import CommandReturns
 import click
+from sqlalchemy import VARCHAR
+
+from oar import VERSION
+from oar.lib import JobResourceDescription, Resource, ResourceLog, config, db
+from oar.lib.tools import check_resource_property
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 

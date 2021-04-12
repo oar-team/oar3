@@ -1,16 +1,16 @@
 # coding: utf-8
 
-import oar.lib.tools
-from oar.modules.bipbip_commander import BipbipCommander
-from oar.lib import config
-from ..fakezmq import FakeZmq
-from ..faketools import fake_call, fake_called_command, FakeProcess, fake_process
-
 import time
-import pytest
 
+import pytest
 import zmq
+
 import oar.lib.tools
+from oar.lib import config
+from oar.modules.bipbip_commander import BipbipCommander
+
+from ..faketools import FakeProcess, fake_call, fake_called_command, fake_process
+from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
 

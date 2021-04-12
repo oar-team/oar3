@@ -1,19 +1,20 @@
 # coding: utf-8
 import time
 
-from oar.lib.resource import ResourceSet
-from oar.lib.job_handling import (
-    get_waiting_jobs,
-    get_data_jobs,
-    get_scheduled_jobs,
-    save_assigns,
-)
+from procset import ProcSet
+
 from oar.kao.karma import (
-    get_sum_accounting_window,
     get_sum_accounting_by_project,
     get_sum_accounting_by_user,
+    get_sum_accounting_window,
 )
-from procset import ProcSet
+from oar.lib.job_handling import (
+    get_data_jobs,
+    get_scheduled_jobs,
+    get_waiting_jobs,
+    save_assigns,
+)
+from oar.lib.resource import ResourceSet
 
 
 class Platform(object):
