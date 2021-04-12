@@ -2,7 +2,7 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import AssignedResource, EventLog, FragJob, Job, Resource, config, db
+from oar.lib import AssignedResource, EventLog, FragJob, Job, Resource, db
 from oar.lib.job_handling import insert_job
 from oar.modules.leon import Leon
 
@@ -164,7 +164,7 @@ def test_leon_get_jobs_to_kill_running():
     leon = Leon()
     leon.run()
 
-    job = db.query(Job).filter(Job.id == job_id).first()
+    db.query(Job).filter(Job.id == job_id).first()
 
     print(leon.exit_code)
     assert leon.exit_code == 0
@@ -185,7 +185,7 @@ def test_leon_get_jobs_to_kill_running_deploy():
     leon = Leon()
     leon.run()
 
-    job = db.query(Job).filter(Job.id == job_id).first()
+    db.query(Job).filter(Job.id == job_id).first()
 
     print(leon.exit_code)
     assert leon.exit_code == 0

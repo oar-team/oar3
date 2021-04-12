@@ -1,7 +1,5 @@
 # coding: utf-8
 
-import time
-
 import pytest
 import zmq
 
@@ -9,7 +7,7 @@ import oar.lib.tools
 from oar.lib import config
 from oar.modules.bipbip_commander import BipbipCommander
 
-from ..faketools import FakeProcess, fake_call, fake_called_command, fake_process
+from ..faketools import FakeProcess, fake_call, fake_called_command
 from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
