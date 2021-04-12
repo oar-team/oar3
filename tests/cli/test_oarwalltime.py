@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarwalltime import cli
-from oar.lib import WalltimeChange, config, db
+from oar.lib import config, db
 from oar.lib.job_handling import insert_job
 
 from ..helpers import insert_running_jobs

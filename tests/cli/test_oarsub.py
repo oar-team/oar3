@@ -9,7 +9,6 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarsub import cli, connect_job
-from oar.cli.utils import CommandReturns
 from oar.lib import Challenge, Job, config, db
 from oar.lib.job_handling import get_job_types
 
@@ -348,7 +347,7 @@ def test_oarsub_connect_job_function(monkeypatch):
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1)[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
@@ -358,7 +357,7 @@ def test_oarsub_connect_job_function_bad_user(monkeypatch):
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1)[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     print(cmd_ret.exit_values[-1])
     assert cmd_ret.exit_values[-1] == 20
@@ -369,7 +368,7 @@ def test_oarsub_connect_job_function_noop(monkeypatch):
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1, types=["noop"])[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     print(cmd_ret.exit_values[-1])
     assert cmd_ret.exit_values[-1] == 17
@@ -380,7 +379,7 @@ def test_oarsub_connect_job_function_cosystem(monkeypatch):
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1, types=["cosystem"])[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
@@ -390,7 +389,7 @@ def test_oarsub_connect_job_function_deploy(monkeypatch):
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1, types=["deploy"])[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
@@ -403,7 +402,7 @@ def test_oarsub_connect_job_function_returncode(return_code, exit_values, monkey
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(1)[0]
     cmd_ret = FakeCommandReturns(None)
-    exit_value = connect_job(job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == exit_values
 

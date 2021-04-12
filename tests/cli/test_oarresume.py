@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarresume import cli
-from oar.lib import EventLog, Job, db
+from oar.lib import EventLog, db
 from oar.lib.job_handling import insert_job, set_job_state
 
 
@@ -82,7 +82,7 @@ def test_oarresume_array():
 
 def test_oarresume_array_nojob():
     os.environ["OARDO_USER"] = "oar"
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])])
+    insert_job(res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(cli, ["--array", "11"])
     print(result.output)
@@ -101,7 +101,7 @@ def test_oarresume_sql():
 
 
 def test_oarresume_sql_nojob():
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])])
+    insert_job(res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "array_id='11'"])
     print(result.output)

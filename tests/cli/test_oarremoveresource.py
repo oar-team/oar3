@@ -5,8 +5,7 @@ import pytest
 from click.testing import CliRunner
 
 from oar.cli.oarremoveresource import cli
-from oar.lib import Job, Resource, db
-from oar.lib.job_handling import insert_job
+from oar.lib import Resource, db
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

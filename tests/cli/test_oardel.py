@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oardel import cli
-from oar.lib import FragJob, Job, JobStateLog, db
+from oar.lib import FragJob, JobStateLog, db
 from oar.lib.job_handling import insert_job
 
 
@@ -97,7 +97,7 @@ def test_oardel_array():
 
 def test_oardel_array_nojob():
     os.environ["OARDO_USER"] = "oar"
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])])
+    insert_job(res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(cli, ["--array", "11"])
     print(result.output)
@@ -106,7 +106,7 @@ def test_oardel_array_nojob():
 
 
 def test_oardel_sql():
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])], array_id=11)
+    insert_job(res=[(60, [("resource_id=4", "")])], array_id=11)
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "array_id='11'"])
     assert result.exit_code == 0
@@ -114,7 +114,7 @@ def test_oardel_sql():
 
 
 def test_oardel_sql_nojob():
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])])
+    insert_job(res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "array_id='11'"])
     assert re.match(r".*job for this SQL WHERE.*", result.output)
