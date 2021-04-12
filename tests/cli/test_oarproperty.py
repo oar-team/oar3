@@ -90,11 +90,11 @@ def test_oarproperty_list():
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_delete():
-    column_name1 = [p.name for p in db["resources"].columns]
+    # column_name1 = [p.name for p in db["resources"].columns]
     runner = CliRunner()
     result = runner.invoke(cli, ["-d", "core"])
     print(result.output)
-    column_name2 = [p.name for p in db["resources"].columns]
+    # column_name2 = [p.name for p in db["resources"].columns]
     # assert 'core' in db['resources'].columns
     assert result.exit_code == 0
     # assert len(column_name1) == len(column_name2) + 1

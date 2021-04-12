@@ -6,9 +6,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oaraccounting import cli
-from oar.lib import Accounting, AssignedResource, Job, Resource, config, db
-from oar.lib.accounting import check_accounting_update
-from oar.lib.job_handling import insert_job
+from oar.lib import Accounting, db
 
 from ..helpers import insert_terminated_jobs
 
@@ -42,7 +40,7 @@ def test_version():
 def test_simple_oaraccounting():
     insert_terminated_jobs()
     runner = CliRunner()
-    result = runner.invoke(cli)
+    runner.invoke(cli)
     accounting = db.query(Accounting).all()
     for a in accounting:
         print(
@@ -63,7 +61,7 @@ def test_simple_oaraccounting():
 def test_oaraccounting_reinitialize():
     insert_terminated_jobs()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--reinitialize"])
+    runner.invoke(cli, ["--reinitialize"])
     accounting = db.query(Accounting).all()
     print(accounting)
     assert accounting == []
@@ -77,7 +75,7 @@ def test_oaraccounting_delete_before(monkeypatch):
     insert_terminated_jobs()
     accounting1 = db.query(Accounting).all()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--delete-before", "432000"])
+    runner.invoke(cli, ["--delete-before", "432000"])
     accounting2 = db.query(Accounting).all()
 
     assert len(accounting1) > len(accounting2)
