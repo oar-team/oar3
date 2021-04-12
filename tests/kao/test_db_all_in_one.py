@@ -429,7 +429,9 @@ def test_db_all_in_one_AR_6(monkeypatch):
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
 
-    # db.query(Resource).update({Resource.state: 'Suspected'}, synchronize_session=False)
+    # db.query(Resource).update(
+    #     {Resource.state: "Suspected"}, synchronize_session="loooool"
+    # )
 
     meta_schedule("internal")
 

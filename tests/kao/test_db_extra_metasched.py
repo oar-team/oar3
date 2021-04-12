@@ -5,7 +5,6 @@ import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
 from oar.lib import Job, config, db
 from oar.lib.job_handling import insert_job
-from oar.lib.tools import get_date
 
 
 @pytest.yield_fixture(scope="function", autouse=True)

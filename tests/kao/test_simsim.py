@@ -1,7 +1,6 @@
 # coding: utf-8
 import os
 
-import pytest
 from procset import ProcSet
 
 from oar.kao.simsim import JobSimu, ResourceSetSimu, SimSched, SWFWorkload
