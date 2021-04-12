@@ -2,7 +2,7 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import Resource, config, db
+from oar.lib import Resource, db
 from oar.modules.finaud import Finaud
 
 fake_bad_nodes = (1, [])

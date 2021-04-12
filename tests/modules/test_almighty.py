@@ -5,15 +5,9 @@ import zmq
 
 import oar.lib.tools
 from oar.lib import config
-from oar.modules.almighty import Almighty, finishTag, signal_handler
+from oar.modules.almighty import Almighty, signal_handler
 
-from ..faketools import (
-    fake_call,
-    fake_called_command,
-    fake_get_date,
-    fake_kill,
-    set_fake_date,
-)
+from ..faketools import fake_call, fake_called_command, fake_get_date, set_fake_date
 from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
