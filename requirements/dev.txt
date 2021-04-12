@@ -8,3 +8,4 @@ pexpect
 sphinx
 black
 isort
+flake8
