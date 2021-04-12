@@ -1,9 +1,8 @@
 # coding: utf-8
 import pytest
 
-from oar.lib import Accounting, AssignedResource, Job, Resource, config, db
+from oar.lib import Accounting, db
 from oar.lib.accounting import (
-    check_accounting_update,
     delete_accounting_windows_before,
     delete_all_from_accounting,
     get_accounting_summary,
@@ -92,7 +91,7 @@ def test_get_last_project_karma():
     project = "yopa"
     start_time = 10000
     karma = " Karma=0.345"
-    job_id = insert_job(
+    insert_job(
         res=[(60, [("resource_id=2", "")])],
         properties="",
         command="yop",

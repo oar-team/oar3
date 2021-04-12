@@ -3,16 +3,12 @@ import os
 import re
 
 import pytest
-from sqlalchemy import or_
 
-from oar.lib import AdmissionRule, Job, db
+from oar.lib import db
 from oar.lib.job_handling import insert_job
-from oar.lib.submission import (
-    JobParameters,
-    check_reservation,
-    estimate_job_nb_resources,
-)
-from oar.lib.tools import get_date, sql_to_duration, sql_to_local
+from oar.lib.submission import estimate_job_nb_resources  # noqa: F401
+from oar.lib.submission import JobParameters, check_reservation
+from oar.lib.tools import sql_to_duration  # noqa: F401
 
 
 @pytest.yield_fixture(scope="function", autouse=True)
@@ -77,10 +73,16 @@ def apply_admission_rules(job_parameters, rule=None):
                     rules += line
 
     # Apply rules
+    print("------{}-------\n".format(file_name), rules, "---------------\n")
     code = compile(rules, "<string>", "exec")
 
     # exec(code, job_parameters.__dict__)
-    exec(code, globals(), job_parameters.__dict__)
+    # exec(code, globals(), job_parameters.__dict__)
+    exec(
+        code,
+        globals(),
+        job_parameters.__dict__,
+    )
 
 
 def test_01_default_queue():
