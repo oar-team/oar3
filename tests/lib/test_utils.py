@@ -110,6 +110,7 @@ def test_render_query(db):
         import sqlparse  # noqa
 
         expected_sql = "\nSELECT model.id\nFROM model\nORDER BY model.id;"
+    # FIXME What kind of exception are we expecting here?
     except:
         expected_sql = "\nSELECT model.id\nFROM model ORDER BY model.id;"
 

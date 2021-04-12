@@ -132,7 +132,7 @@ def test_app_busy_resources(client, monkeypatch):
     """GET /resources/used"""
     job_id0 = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     job_id1 = insert_job(res=[(60, [("resource_id=2", "")])], properties="", user="bob")
-    job_id2 = insert_job(res=[(60, [("resource_id=2", "")])], properties="", user="bob")
+    insert_job(res=[(60, [("resource_id=2", "")])], properties="", user="bob")
     meta_schedule("internal")
     set_job_state(job_id0, "Running")
     set_job_state(job_id1, "Error")

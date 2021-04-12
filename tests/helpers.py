@@ -1,13 +1,5 @@
 import oar.lib.tools as tools
-from oar.lib import (
-    Accounting,
-    AssignedResource,
-    Job,
-    MoldableJobDescription,
-    Resource,
-    config,
-    db,
-)
+from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
 from oar.lib.accounting import check_accounting_update
 from oar.lib.job_handling import insert_job
 
