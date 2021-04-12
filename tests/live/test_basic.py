@@ -8,9 +8,8 @@ import re
 from subprocess import call
 
 import pexpect
-import pytest
 
-from . import live_testing, pytestmark
+from . import live_testing
 
 
 @live_testing
