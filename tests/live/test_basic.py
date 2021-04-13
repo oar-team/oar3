@@ -25,7 +25,7 @@ def test_oarsub_I():
     child = pexpect.spawn("oarsub -I")
     try:
         # FIXME is \d an error ?
-        child.expect("OAR_JOB_ID= (\d+)\r\n", timeout=30)
+        child.expect("OAR_JOB_ID= (\d+)\r\n", timeout=30)  # noqa: W605
         job_id = child.match.group(1).decode()
         call("oardel " + job_id, shell=True)
         child.expect(pexpect.EOF, timeout=30)

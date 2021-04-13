@@ -111,7 +111,7 @@ def test_render_query(db):
 
         expected_sql = "\nSELECT model.id\nFROM model\nORDER BY model.id;"
     # FIXME What kind of exception are we expecting here?
-    except:
+    except Exception:
         expected_sql = "\nSELECT model.id\nFROM model ORDER BY model.id;"
 
     def assert_sql_query(expected_sql, query):
