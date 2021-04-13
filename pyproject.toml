@@ -18,3 +18,4 @@ exclude = '''
 [tool.isort]
 profile = "black"
 src_paths = ["oar", "tests"]
+skip = ["tests/lib/etc", ".venv"]
