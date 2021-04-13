@@ -9,3 +9,4 @@ sphinx
 black
 isort
 flake8
+pre-commit
