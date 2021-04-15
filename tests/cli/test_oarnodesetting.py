@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarnodesetting import cli
-from oar.lib import Resource, db
+from oar.lib import db
 
 from ..helpers import insert_running_jobs
 
@@ -126,7 +126,6 @@ def test_oarnodesetting_sql_void():
     db["Resource"].create(network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "state='NotExist'", "--drain", "on"])
-    resource = db["Resource"].query.one()
     print(result.output)
     assert re.match(".*are no resource.*", result.output)
     assert result.exit_code == 0
@@ -138,7 +137,6 @@ def test_oarnodesetting_system_property_error():
     result = runner.invoke(
         cli, ["-h", "localhost", "-p", "state=Alive", "--drain", "on"]
     )
-    resource = db["Resource"].query.one()
     print(result.output)
     assert result.exit_code == 8
 
@@ -149,7 +147,6 @@ def test_oarnodesetting_malformed_property_error():
     result = runner.invoke(
         cli, ["-h", "localhost", "-p", "state=Ali=ve", "--drain", "on"]
     )
-    resource = db["Resource"].query.one()
     print(result.output)
     assert result.exit_code == 10
 
@@ -280,8 +277,6 @@ def test_oarnodesetting_maintenance_on_wait_timeout():
     for _ in range(10):
         db["Resource"].create(network_address="localhost")
     db.commit()
-    resources = db["Resource"].query.order_by(Resource.id).all()
-    last_available_upto = resources[0].last_available_upto
     insert_running_jobs()
     runner = CliRunner()
     result = runner.invoke(cli, ["-h", "localhost", "--maintenance", "on"])

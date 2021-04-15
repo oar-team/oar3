@@ -3,7 +3,7 @@ import pytest
 
 from oar.kao.platform import Platform
 from oar.kao.walltime_change import process_walltime_change_requests
-from oar.lib import EventLog, WalltimeChange, config, db, get_logger
+from oar.lib import EventLog, WalltimeChange, db, get_logger
 from oar.lib.job_handling import insert_job
 
 from ..helpers import insert_running_jobs

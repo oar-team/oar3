@@ -1,5 +1,18 @@
 [flake8]
 max-line-length = 88
 show-source = True
-ignore = E203, E501, W503
-exclude=.venv,.git,.tox,dist,docs,*egg,build,.oardocker,.venv
+ignore = E203, E231, E501, W503
+exclude=
+  # Don't check .git
+  .git,
+  # This is related to dev environment
+  .venv,
+  docs,
+  *egg,
+  # Hopefully we can include these folders when we are ready
+  oar
+  contrib
+  docs
+  etc
+  simu
+  bench

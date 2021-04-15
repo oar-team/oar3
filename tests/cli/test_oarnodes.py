@@ -5,7 +5,7 @@ import pytest
 from click.testing import CliRunner
 
 from oar.cli.oarnodes import cli
-from oar.lib import EventLog, EventLogHostname, Resource, db
+from oar.lib import Resource, db
 from oar.lib.event import add_new_event_with_host
 
 NB_NODES = 5
@@ -123,7 +123,6 @@ def test_oarnodes_simple():
 def test_oarnodes_simple_json():
     runner = CliRunner()
     result = runner.invoke(cli, ["--json"])
-    nb_lines = len(result.output.split("\n"))
     print(result.output)
     assert re.match(r".*localhost.*", result.output)
     assert result.exit_code == 0

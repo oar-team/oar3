@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from tempfile import mkstemp
 
-import pytest
 from flask import url_for
 
 from oar.lib import config
@@ -25,7 +24,7 @@ def test_app_frontend_whoami(client):
     res = client.get(url_for("frontend.whoami"))
     print(res.json)
     assert res.status_code == 200 and "api_timestamp" in res.json
-    assert res.json["authenticated_user"] == None
+    assert res.json["authenticated_user"] is None
 
 
 def test_app_frontend_timezone(client):

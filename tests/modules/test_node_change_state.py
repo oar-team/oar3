@@ -69,7 +69,7 @@ def test_node_change_state_void():
 def base_test_node_change(event_type, job_state, job_id=None, exit_code=0):
     if not job_id:
         job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
-    ev = EventLog.create(to_check="YES", job_id=job_id, type=event_type)
+    EventLog.create(to_check="YES", job_id=job_id, type=event_type)
     os.environ["OARDO_USER"] = "oar"
     node_change_state = NodeChangeState()
     node_change_state.run()

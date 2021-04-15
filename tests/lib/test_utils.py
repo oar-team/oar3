@@ -22,8 +22,6 @@ from oar.lib.utils import (
     try_convert_decimal,
 )
 
-from .. import assert_raises
-
 
 @pytest.fixture
 def db(request, monkeypatch):
@@ -112,7 +110,8 @@ def test_render_query(db):
         import sqlparse  # noqa
 
         expected_sql = "\nSELECT model.id\nFROM model\nORDER BY model.id;"
-    except:
+    # FIXME What kind of exception are we expecting here?
+    except Exception:
         expected_sql = "\nSELECT model.id\nFROM model ORDER BY model.id;"
 
     def assert_sql_query(expected_sql, query):
@@ -218,10 +217,10 @@ def test_to_json():
     else:
         expected_json = expected_json_2x
 
-    if sys.version_info == (3, 6, 3):
-        type_error_str = "Object of type SimpleObject is not JSON serializable"
-    else:
-        type_error_str = "<SimpleObject> is not JSON serializable"
+    # if sys.version_info == (3, 6, 3):
+    #     type_error_str = "Object of type SimpleObject is not JSON serializable"
+    # else:
+    #     type_error_str = "<SimpleObject> is not JSON serializable"
 
     assert to_json(a) == expected_json
     assert to_json(FakeDict()) == expected_json

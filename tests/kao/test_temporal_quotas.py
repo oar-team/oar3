@@ -249,7 +249,7 @@ def test_calendar_simple_slotSet_4():
 
     ss = SlotSet(Slot(1, 0, 0, res, t0, t1))
 
-    print("t0: {} t1: {} t1-t0".format(t0, t1, t1 - t0))
+    print("t0: {} t1: {} t1-t0: {}".format(t0, t1, t1 - t0))
     print(ss)
     v = []
     i = 1
@@ -282,7 +282,7 @@ def test_calendar_simple_slotSet_5():
 
     ss = SlotSet(Slot(1, 0, 0, res, t0, t1))
 
-    print("t0: {} t1: {} t1-t0".format(t0, t1, t1 - t0))
+    print("t0: {} t1: {} t1-t0: {}".format(t0, t1, t1 - t0))
     print(ss)
     v = []
     i = 1

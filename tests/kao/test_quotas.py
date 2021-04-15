@@ -1,6 +1,5 @@
 # coding: utf-8
 from codecs import open
-from copy import deepcopy
 from tempfile import mkstemp
 
 import pytest
