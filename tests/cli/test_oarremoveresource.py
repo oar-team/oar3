@@ -8,7 +8,7 @@ from oar.cli.oarremoveresource import cli
 from oar.lib import Resource, db
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

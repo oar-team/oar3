@@ -46,7 +46,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         db["Queue"].create(

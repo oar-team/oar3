@@ -24,7 +24,7 @@ def fake_exec_with_timeout(args, timeout):
     return fake_exec_with_timeout_return
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

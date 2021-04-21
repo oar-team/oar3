@@ -32,7 +32,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "Popen", FakePopen)
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     db.delete_all()
     with db.session(ephemeral=True):

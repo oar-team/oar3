@@ -31,7 +31,7 @@ def fake_signal_oarexec(host, job_id, signal_name, detach, openssh_cmd):
     return ""
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

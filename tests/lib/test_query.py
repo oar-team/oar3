@@ -10,7 +10,7 @@ from oar.lib.models import all_models, all_tables
 REFTIME = 1437050120
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         here = os.path.abspath(os.path.dirname(__file__))

@@ -11,7 +11,7 @@ from ..helpers import insert_running_jobs
 logger = get_logger("oar.kao.walltime_change")
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

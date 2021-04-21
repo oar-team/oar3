@@ -20,7 +20,7 @@ def fake_notify_almighty(notification):
     fake_notifications.append(notification)
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     global fake_notifications
     fake_notifications = []

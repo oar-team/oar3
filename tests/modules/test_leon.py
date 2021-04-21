@@ -7,7 +7,7 @@ from oar.lib.job_handling import insert_job
 from oar.modules.leon import Leon
 
 
-@pytest.yield_fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         yield

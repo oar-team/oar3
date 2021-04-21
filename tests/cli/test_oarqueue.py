@@ -9,7 +9,7 @@ from oar.lib import Queue, db
 from oar.lib.queue import create_queue
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         Queue.create(name="default", scheduler_policy="kao", state="unkown")

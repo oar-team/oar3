@@ -11,7 +11,7 @@ from oar.lib import EventLog, db
 from oar.lib.job_handling import insert_job
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

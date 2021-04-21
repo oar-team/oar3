@@ -112,7 +112,7 @@ def set_env(request):
     os.environ["OARDO_USER"] = "yop"
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

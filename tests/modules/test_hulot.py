@@ -67,7 +67,7 @@ def setup(request):
         called_command = ""
 
 
-@pytest.yield_fixture(scope="function")
+@pytest.fixture(scope="function")
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         # add some resources

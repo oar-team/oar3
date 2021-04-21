@@ -46,7 +46,7 @@ def setup(request):
         del config["WLOAD_BATSIM"]
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         db["Queue"].create(

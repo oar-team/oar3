@@ -12,7 +12,7 @@ from oar.lib import config, db
 from . import DEFAULT_CONFIG
 
 
-@pytest.yield_fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
 
     config.update(DEFAULT_CONFIG.copy())

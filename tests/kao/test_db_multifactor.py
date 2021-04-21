@@ -11,7 +11,7 @@ from oar.lib.job_handling import insert_job
 from .test_db_fairshare import generate_accountings
 
 
-@pytest.yield_fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         for i in range(5):
