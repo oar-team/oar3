@@ -100,7 +100,9 @@ energy_pid = 0
 finishTag = False
 
 
-def signal_handler():
+# The signal handler must take two arguments
+# https://docs.python.org/3.8/library/signal.html#signal.signal
+def signal_handler(sig, stack):
     global finishTag
     finishTag = True
 

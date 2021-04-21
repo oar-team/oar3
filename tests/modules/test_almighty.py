@@ -1,5 +1,7 @@
 # coding: utf-8
 
+import signal
+
 import pytest
 import zmq
 
@@ -17,6 +19,14 @@ FINAUD = "/usr/local/lib/oar/oar-finaud"
 SARKO = "/usr/local/lib/oar/oar-sarko"
 LEON = "/usr/local/lib/oar/oar-leon"
 NODE_CHANGE_STATE = "/usr/local/lib/oar/oar-node-change-state"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def preserve_signal_handlers():
+    yield
+    signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -150,7 +160,7 @@ def test_almighty_time_update():
 
 def test_almighty_finishTag():
     # TODO Side effect finishTag == True after this test
-    signal_handler()
+    signal_handler(15, [])
     almighty = Almighty()
     exit_code = almighty.run(False)
     assert exit_code == 10
