@@ -20,7 +20,7 @@
 Example of received message:
 {
  "cmd": "WAKEUP",
- "nodes": ["node1", "node2" ] 
+ "nodes": ["node1", "node2" ]
 }
 
 """
