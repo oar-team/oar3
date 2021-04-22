@@ -372,11 +372,14 @@ class NodeChangeState(object):
         if email:
             tools.send_log_by_email("Resource state modifications", email)
 
-        timeout = config["SUSPECTED_HEALING_TIMEOUT"]
+        # FIXME: Not tested.
+        timeout_cmd = config["SUSPECTED_HEALING_TIMEOUT"]
         healing_exec_file = config["SUSPECTED_HEALING_EXEC_FILE"]
-        if healing_exec_file and len(resources_to_heal) > 0:
+        if healing_exec_file and len(self.resources_to_heal) > 0:
             logger.warning("Running healing script for suspected resources.")
-            if tools.fork_and_feed_stdin(healing_exec_file, timeout, resources_to_heal):
+            if tools.fork_and_feed_stdin(
+                healing_exec_file, timeout_cmd, self.resources_to_heal
+            ):
                 logger.error(
                     " Try to launch the command $Healing_exec_file to heal resources, but the command timed out("
                     + " "
@@ -472,7 +475,7 @@ class NodeChangeState(object):
                             + str(bad)
                         )
                         logger.error(msg)
-                        add_new_event_with_(
+                        add_new_event_with_host(
                             "SUSPEND_ERROR", job.id, "[NodeChangeState] " + msg, bad
                         )
                         frag_job(job.id)
