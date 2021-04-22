@@ -61,7 +61,6 @@ class Sarko(object):
             cosystem_hostname = config["COSYSTEM_HOSTNAME"]
 
         openssh_cmd = config["OPENSSH_CMD"]
-        ssh_timeout = config["OAR_SSH_CONNECTION_TIMEOUT"]
 
         logger.debug(
             "JOBDEL_SOFTWALLTIME = "
@@ -167,7 +166,7 @@ class Sarko(object):
                 )
                 if comment:
                     logger.warning(comment)
-                    add_new_event("CHECKPOINT_ERROR", job_id, "[Sarko]" + comment)
+                    add_new_event("CHECKPOINT_ERROR", job.id, "[Sarko]" + comment)
                 else:
                     comment = (
                         "The job "

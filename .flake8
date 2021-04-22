@@ -14,7 +14,6 @@ exclude=
   oar/modules/appendice_proxy.py
   oar/modules/bipbip_commander.py
   oar/modules/bipbip.py
-  oar/modules/sarko.py
   oar/modules/node_change_state.py
   oar/lib
   oar/kao
