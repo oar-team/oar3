@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
-"""Proxy to help incremental transition toward ZMQ use 
+"""Proxy to help incremental transition toward ZMQ use
 between version 2.x OAR's modules and version 3.x
 """
 
 import re
-import time
 
 import zmq
 
