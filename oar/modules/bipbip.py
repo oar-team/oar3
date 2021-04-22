@@ -361,7 +361,6 @@ class BipBip(object):
                                 + ".",
                             )
                         else:
-                            host = tmp_hosts
                             exit_bipbip = 0
 
                 add_new_event_with_host(
@@ -465,8 +464,6 @@ class BipBip(object):
         data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
 
         error = 50
-        exit_script_value = "N"
-        init_done = 0
 
         # timeout = pro_epi_timeout + config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT'] + config['TIMEOUT_SSH']
         cmd = openssh_cmd
@@ -562,9 +559,9 @@ class BipBip(object):
                     return 1
 
             except OSError as e:
-                logger.error("Cannot run: " + str(cmd))
+                logger.error("Cannot run: {}. OsError: {}", str(cmd), e)
 
-            except TimeoutExpired as e:
+            except TimeoutExpired:
                 tools.kill_child_processes(child.pid)
                 msg = (
                     "[" + str(job.id) + "] Server prologue timeouted (cmd: " + str(cmd)
@@ -597,5 +594,5 @@ def main():  # pragma: no cover
 if __name__ == "__main__":  # pragma: no cover
     exit_code = main()
     if exit_code:
-        logger.error("Bipbip.run exit code is not null: ".format(exit_code))
+        logger.error("Bipbip.run exit code is not null: {}".format(exit_code))
     sys.exit(exit_code)
