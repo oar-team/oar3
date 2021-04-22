@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 """Process that launches and manages bipbip processes
    OAREXEC_REGEXP   'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
    OARRUNJOB_REGEXP  'OARRUNJOB_(\d+)'
@@ -11,7 +12,7 @@
      LEONEXTERMINATE
 
 
- TODO: jsonify ? 
+ TODO: jsonify ?
 
 
    Example
@@ -20,7 +21,7 @@
    "cmd": "LEONEXTERMINATE"
    "args": [5]
    }
-"""
+"""  # noqa: W605
 
 import os
 import socket
