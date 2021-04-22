@@ -10,7 +10,6 @@ exclude=
   docs,
   *egg,
   # Hopefully we can include these folders when we are ready
-  oar/modules/leon.py
   oar/modules/appendice_proxy.py
   oar/modules/bipbip_commander.py
   oar/modules/bipbip.py

@@ -44,8 +44,6 @@ class Leon(object):
             epilogue_script = config["SERVER_EPILOGUE_EXEC_FILE"]
 
         openssh_cmd = config["OPENSSH_CMD"]
-        ssh_timeout = config["OAR_SSH_CONNECTION_TIMEOUT"]
-        oarexec_directory = config["OAR_RUNTIME_DIRECTORY"]
 
         # Test if we must launch a finishing sequence on a specific job
         if len(self.args) >= 1:
