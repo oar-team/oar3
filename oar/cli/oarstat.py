@@ -349,7 +349,7 @@ def cli(
     json,
     version,
 ):
-    """Print job information"""
+    """Print job information."""
     job_ids = job
     array_id = array
 

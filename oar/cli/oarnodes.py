@@ -223,5 +223,6 @@ class EventsOption(click.Command):
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(nodes, resource, state, list, events, sql, json, version, cli=True):
+    """Display informations about nodes."""
     cmd_ret = oarnodes(nodes, resource, state, list, events, sql, json, version)
     cmd_ret.exit()

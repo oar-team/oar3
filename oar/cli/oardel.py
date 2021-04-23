@@ -305,7 +305,7 @@ def cli(
     force_terminate_finishing_job,
     version,
 ):
-
+    """Kill or remove a job from the waiting queue."""
     cmd_ret = oardel(
         job_id,
         checkpoint,

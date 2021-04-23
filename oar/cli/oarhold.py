@@ -20,7 +20,7 @@ click.disable_unicode_literals_warning = True
 
 
 def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
-
+    """Ask OAR to not schedule job_id until oarresume command will be executed."""
     cmd_ret = CommandReturns(cli)
 
     if version:

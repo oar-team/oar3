@@ -82,6 +82,8 @@ def oarresume(job_ids, array, sql, version, user=None, cli=True):
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(job_id, array, sql, version):
+    """Ask OAR to change job_ids states into Waiting
+    when it is Hold or in Running if it is Suspended."""
 
     cmd_ret = oarresume(job_id, array, sql, version, None)
     cmd_ret.exit()
