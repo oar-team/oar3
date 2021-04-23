@@ -21,7 +21,7 @@ from collections import OrderedDict
 import click
 from sqlalchemy.sql import distinct, func, or_
 
-from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, config, db
+from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
 
 click.disable_unicode_literals_warning = True
 

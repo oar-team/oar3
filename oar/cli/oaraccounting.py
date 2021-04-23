@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import click
 
-click.disable_unicode_literals_warning = True
-
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.lib import config
@@ -13,6 +11,8 @@ from oar.lib.accounting import (
 )
 
 from .utils import CommandReturns
+
+click.disable_unicode_literals_warning = True
 
 
 @click.command()
