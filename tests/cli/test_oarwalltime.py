@@ -62,7 +62,7 @@ def test_oardel_disabled():
     runner = CliRunner()
     result = runner.invoke(cli, ["666666"])
     print(result.output)
-    assert result.exit_code == 1
+    assert result.exit_code == 2
     assert re.match(r".*functionality is disabled.*", result.output)
 
 
@@ -71,7 +71,7 @@ def test_oardel_unexisting_job():
     runner = CliRunner()
     result = runner.invoke(cli, ["666666"])
     print(result.output)
-    assert result.exit_code == 1
+    assert result.exit_code == 2
     assert re.match(r".*unknown job.*", result.output)
 
 
@@ -81,7 +81,8 @@ def test_oardel_not_running_job1():
     runner = CliRunner()
     result = runner.invoke(cli, [str(job_id)])
     print(result.output)
-    assert result.exit_code == 1
+    # As in oar2 the exit code for this case is 0, Do we want to make it an error?
+    assert result.exit_code == 0
     assert re.match(r".*job is not running yet.*", result.output)
 
 

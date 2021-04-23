@@ -5,8 +5,6 @@ import click
 
 import oar.lib.walltime as walltime
 from oar import VERSION
-from oar.cli.oarsub import connect_job
-from oar.lib import config
 
 from .utils import CommandReturns
 
@@ -27,17 +25,18 @@ def oarwalltime(
 
     if (not new_walltime) and (delay_next_jobs or force):
         cmd_ret.error("New walltime argument is missing", 4, 1)
-        return cmt_ret
+        return cmd_ret
 
     if new_walltime and (not re.search(r"^[-+]?\d+(?::\d+(?::\d+)?)?$", new_walltime)):
         cmd_ret.error("New walltime is malformatted", 4, 1)
-        return cmt_ret
+        return cmd_ret
 
     if not new_walltime:
         (walltime_change, message, state) = walltime.get(job_id)
+        # Job doesn't exist, or the feature is disabled
         if not walltime_change:
             cmd_ret.error(message, 2, 2)
-            return cmt_ret
+            return cmd_ret
 
         if not walltime_change.walltime:
             cmd_ret.print_(
@@ -46,7 +45,8 @@ def oarwalltime(
                 )
             )
         else:
-            granted_with = [
+            # TODO
+            granted_with = [  # noqa: F841
                 s
                 for s in (
                     "forced: " + walltime_change.granted_with_force,
@@ -97,7 +97,7 @@ def oarwalltime(
                     "  Unsatisfied: {:>8}{}".format(walltime_change.pending, msg)
                 )
 
-        return cmt_ret
+        return cmd_ret
 
     # Request
     if not user:
