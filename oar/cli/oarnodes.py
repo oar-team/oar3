@@ -17,7 +17,7 @@ import click
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import Resource, config, db
+from oar.lib import Resource, db
 from oar.lib.event import get_events_for_hostname_from
 from oar.lib.node import (
     get_all_network_address,
