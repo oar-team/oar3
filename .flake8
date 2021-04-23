@@ -13,7 +13,8 @@ exclude=
   oar/modules/bipbip.py
   oar/lib
   oar/kao
-  oar/cli
+  oar/cli/db
+  oar/cli/oarsub.py
   oar/rest_api
   oar/tools
   contrib

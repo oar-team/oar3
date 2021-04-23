@@ -3,7 +3,6 @@ import os
 import click
 
 from oar import VERSION
-from oar.lib import config
 from oar.lib.queue import (
     change_queue,
     create_queue,

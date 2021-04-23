@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datetime
-import os
 import re
 import sys
 from json import dumps
@@ -9,7 +8,7 @@ import click
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import config, db
+from oar.lib import db
 from oar.lib.accounting import (
     get_accounting_summary,
     get_accounting_summary_byproject,
@@ -24,11 +23,9 @@ from oar.lib.job_handling import (
 from oar.lib.tools import (
     check_resource_system_property,
     get_duration,
-    get_username,
     local_to_sql,
     sql_to_local,
 )
-from oar.lib.utils import render_query
 
 from .utils import CommandReturns
 

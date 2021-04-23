@@ -40,7 +40,6 @@ def oardel(
     user=None,
     cli=True,
 ):
-
     if not user:
         if "OARDO_USER" in os.environ:
             user = os.environ["OARDO_USER"]

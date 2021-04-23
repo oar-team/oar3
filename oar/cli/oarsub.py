@@ -7,10 +7,6 @@ import sys
 
 import click
 
-from .utils import CommandReturns
-
-click.disable_unicode_literals_warning = True
-
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
@@ -25,6 +21,10 @@ from oar.lib.job_handling import (
 )
 from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
+
+from .utils import CommandReturns
+
+click.disable_unicode_literals_warning = True
 
 # Global variable needed for signal handler to trigger job deletion accordingly
 job_id_lst = []
@@ -473,10 +473,6 @@ def cli(
 
     openssh_cmd = config["OPENSSH_CMD"]
     ssh_timeout = int(config["OAR_SSH_CONNECTION_TIMEOUT"])
-
-    # if (is_conf("OAR_SSH_CONNECTION_TIMEOUT")){
-    #    OAR::Sub::set_ssh_timeout(get_conf("OAR_SSH_CONNECTION_TIMEOUT"));
-    # }
 
     # print OAR version
     if version:

@@ -5,7 +5,6 @@ import click
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import config
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_ids_with_given_properties,

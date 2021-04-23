@@ -11,7 +11,7 @@ import click
 from sqlalchemy import VARCHAR
 
 from oar import VERSION
-from oar.lib import JobResourceDescription, Resource, ResourceLog, config, db
+from oar.lib import JobResourceDescription, Resource, ResourceLog, db
 from oar.lib.tools import check_resource_property
 
 from .utils import CommandReturns
