@@ -1,7 +1,7 @@
 # coding: utf-8
 from collections import defaultdict
 from copy import deepcopy
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 import simplejson as json
 
@@ -68,7 +68,7 @@ class Calendar(object):
             self.ordered_periodical_ids = sorted(
                 range(self.nb_periodicals), key=lambda k: self.periodicals[k][0]
             )
-            if default != None:
+            if default is not None:
                 t = 0
                 i = 0
                 nb_per = self.nb_periodicals

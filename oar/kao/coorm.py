@@ -66,7 +66,7 @@ class CoormApplication(object):
         try:
             r = requests.get("%s/jobs" % self.api_host, auth=auth)
             assert r.status_code == 200
-        except:
+        except Exception:
             self.logger.error(
                 "Failed to establish connection to the API "
                 "Please check the http server address or your "

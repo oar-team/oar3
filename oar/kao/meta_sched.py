@@ -42,6 +42,7 @@ from oar.lib.job_handling import (
     frag_job,
     gantt_flush_tables,
     get_after_sched_no_AR_jobs,
+    get_cpuset_values,
     get_current_not_waiting_jobs,
     get_gantt_jobs_to_launch,
     get_gantt_waiting_interactive_prediction_date,
@@ -1034,19 +1035,21 @@ def meta_schedule(mode="internal", plt=Platform()):
                         cpuset_field, job.assigned_moldable_id
                     )
                     # TODO
-                    suspend_data_hash = {
+                    suspend_data_hash = {  # noqa: F841
                         "name": cpuset_name,
                         "job_id": job.id,
                         "oarexec_pid_file": tools.get_oar_pid_file_name(job.id),
                     }
                 if cpuset_nodes:
                     # TODO
-                    taktuk_cmd = config["TAKTUK_CMD"]
+                    taktuk_cmd = config["TAKTUK_CMD"]  # noqa: F841
                     if "SUSPEND_RESUME_FILE" in config:
                         suspend_file = config["SUSPEND_RESUME_FILE"]
                     else:
                         # TODO
-                        suspend_file = tools.get_default_suspend_resume_file()
+                        suspend_file = (  # noqa: F841
+                            tools.get_default_suspend_resume_file()
+                        )
 
     #
     # TODO: TOFINISH

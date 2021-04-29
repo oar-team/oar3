@@ -184,7 +184,7 @@ class BatSched(BatsimScheduler):
         self.platform = None
 
         if sys.version_info[0] == 2:
-            self.waiting_jids = Set()
+            self.waiting_jids = set()
         else:
             self.waiting_jids = set()
         self.jobs_completed = []
@@ -496,14 +496,11 @@ class BatSched(BatsimScheduler):
     help=' define a number of allocable tokens by jobs. Theses tokens are extra resources manage by OAR in intern.\
               Add a token parameter in job definition : {"id":"foo!1","subtime":10,"walltime":100,"res":4,"token": 4, "profile":"1"}. Note: only available with no-db mode (default)',
 )
-
 # @click.option('-r', '--redis_hostname', default='localhost', type=click.STRING, help="Set redis server hostname.")
 # @click.option('-P', '--redis_port', default=6379, type=click.INT, help="Set redis server port.")
 # @click.option('-k', '--redis_key_prefix', default='default', type=click.STRING, help="Set redis key prefix.")
 @click.option("-v", "--verbose", is_flag=True, help="Be more verbose.")
 # @click.option('--protect', is_flag=True, help="Activate jobs' test (like overlaping) .")
-
-
 def bataar(
     database_mode,
     socket_endpoint,
@@ -525,10 +522,6 @@ def bataar(
     print("Scheduler delay:", scheduler_delay)
 
     print("Bastim version: ", batsim_version)
-
-    verbose_level = 0
-    if verbose:
-        verbose_level = 2
 
     # if database_mode == 'no-db':
     scheduler = BatSched(

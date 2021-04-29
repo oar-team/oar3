@@ -28,12 +28,11 @@ def set_slots_with_prev_scheduled_jobs(
 
     for job in jobs:
         logger.debug("job.id:" + str(job.id))
-        # print("job.id:", str(job.id))
         if ((not filter_besteffort) and ("besteffort" in job.types)) or (
             (not only_besteffort) and (not ("besteffort" in job.types))
         ):
             if "container" in job.types:
-                t_e = job.start_time + job.walltime - job_security_time
+                # t_e = job.start_time + job.walltime - job_security_time
                 # t "job.res_set, job.start_time, t_e", job.res_set,
                 # job.start_time, t_e
 
@@ -170,7 +169,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             while (slot_e - slot_b + 1) < walltime:
                 if slot_e > time_limit:
                     logger.info(
-                        "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached".format(
+                        "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached {}".format(
                             job.id, walltime
                         )
                     )

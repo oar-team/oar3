@@ -4,7 +4,6 @@ import copy
 from procset import ProcSet
 
 from oar.kao.quotas import Quotas
-from oar.lib import config
 from oar.lib.job_handling import ALLOW, NO_PLACEHOLDER, PLACEHOLDER
 from oar.lib.utils import dict_ps_copy
 
@@ -132,7 +131,6 @@ class SlotSet:
         # import pdb; pdb.set_trace()
         if Quotas.calendar and (self.slots[1].quotas_rules_id == -1):
             i = 1
-            t = self.begin
             quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(self.begin)
             while (
                 i and remaining_duration

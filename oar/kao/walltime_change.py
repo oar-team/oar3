@@ -43,7 +43,7 @@ def process_walltime_change_requests(plt):
                 delay = job.start_time + job.walltime + suspended - apply_time - now
                 if apply_time > 0 and delay > 0:
                     logger.debug(
-                        "[$jobid] walltime change could apply in {}s".format(
+                        "[job_id:{}] walltime change could apply in {}s".format(
                             job_id, delay
                         )
                     )
@@ -117,7 +117,7 @@ def process_walltime_change_requests(plt):
         new_walltime = job.walltime + fit
         new_pending = job.pending - fit
 
-        message = "walltime changed: {} (granted: {}/pending: {}{})".format(
+        message = "walltime changed: {} (granted: {}/pending: {}{}{})".format(
             duration_to_sql(new_walltime),
             duration_to_sql_signed(fit),
             duration_to_sql_signed(new_pending),

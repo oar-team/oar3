@@ -71,7 +71,8 @@ def plot_slots_and_job(slots_set, jobs, nb_res, t_max):  # pragma: no cover
     try:
         mng.resize(*mng.window.maxsize())
         # mng.window.showMaximized()
-    except:
+    except Exception:
+        # TODO Handle execption
         pass
     plt.show()
     # mpld3.show()

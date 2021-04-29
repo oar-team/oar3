@@ -28,7 +28,7 @@
     - Wait for Bastim compatible scheduler's answer
     - Handle answer
      - EXECUTE_JOB: Save jobs' allocations in DS (ready to by executed)
-     - SET_RESOURCE_STATE: Save pstate to apply in resources_pstate_2_change_str[] 
+     - SET_RESOURCE_STATE: Save pstate to apply in resources_pstate_2_change_str[]
                           (retrieve by Metasched through retrieve_pstate_changes_to_apply
      - Nop
 
@@ -37,7 +37,7 @@
     - Trigger pstate changes through Hulot at node granularity
 
  2.1.4) Metascheduler others steps
-    - Resuming/Suspending jobs, 
+    - Resuming/Suspending jobs,
     - marking jobs to launch
     - ...
 
