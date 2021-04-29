@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-import click
-
-click.disable_unicode_literals_warning = True
-
 from functools import reduce
 
+import click
 from sqlalchemy import and_, func, not_
 from tabulate import tabulate
 
@@ -19,6 +16,9 @@ from ..helpers import (
     make_pass_decorator,
 )
 from ..operations import archive_db, inspect_db, purge_db
+
+click.disable_unicode_literals_warning = True
+
 
 CONTEXT_SETTINGS = dict(
     auto_envvar_prefix="oar_migrate", help_option_names=["-h", "--help"]

@@ -187,20 +187,20 @@ def drop_db(ctx):
 
 
 def upgrade_db(ctx):
-    engine = create_engine(ctx.current_db.engine.url)
+    # engine = create_engine(ctx.current_db.engine.url) # TODO
     ctx.log(red("NOT YET IMPLEMENTED"))
     sys.exit(1)
 
 
 def reset_db(ctx):
-    engine = create_engine(ctx.current_db.engine.url)
+    # engine = create_engine(ctx.current_db.engine.url) # TODO
     ctx.log(red("NOT YET IMPLEMENTED"))
     sys.exit(1)
 
 
 def check_db(ctx):
     try:
-        engine = create_engine(ctx.current_db.engine.url)
+        # engine = create_engine(ctx.current_db.engine.url) # TODO
         ctx.log(" %s ~> %s" % (green("check"), "Database connection is operational"))
         sys.exit(0)
     except Exception as ex:
@@ -473,7 +473,7 @@ def copy_table(ctx, table, from_conn, to_conn, pk=None):
                     pg_bulk_insert(
                         cursor, table, rows, columns, binary=ctx.pg_copy_binary
                     )
-            except:
+            except Exception:
                 exc_type, exc_value, tb = sys.exc_info()
                 reraise(exc_type, exc_value, tb.tb_next)
 

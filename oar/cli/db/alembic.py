@@ -35,10 +35,10 @@ def alembic_generate_diff(from_engine, to_engine):
             if op_name in supported_operations:
                 yield op_name, diff
 
-    key_sort = lambda x: supported_operations.index(x[0])
-    return sorted(all_diffs(), key=key_sort)
+    return sorted(all_diffs(), key=lambda x: supported_operations.index(x[0]))
 
 
+# flake8: noqa: E731 -> Using lamda instead of def seems legit in this case.
 def alembic_apply_diff(ctx, op, op_name, diff, tables=None):
     if tables is None:
         tables = []
@@ -91,7 +91,7 @@ def alembic_apply_diff(ctx, op, op_name, diff, tables=None):
             try:
                 op.alter_column(table_name, column_name, server_default=None)
                 op.alter_column(table_name, column_name, type_=type_, **kwargs)
-            except:
+            except Exception:
                 # Some types cannot be casted
                 if table_name in tables_dict:
                     table = tables_dict[table_name]

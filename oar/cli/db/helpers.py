@@ -12,12 +12,29 @@ from sqlalchemy.engine import Engine
 from oar.lib import config
 from oar.lib.utils import reraise
 
-magenta = lambda x, **kwargs: click.style("%s" % x, fg="magenta", **kwargs)
-yellow = lambda x, **kwargs: click.style("%s" % x, fg="yellow", **kwargs)
-green = lambda x, **kwargs: click.style("%s" % x, fg="green", **kwargs)
-cyan = lambda x, **kwargs: click.style("%s" % x, fg="cyan", **kwargs)
-blue = lambda x, **kwargs: click.style("%s" % x, fg="blue", **kwargs)
-red = lambda x, **kwargs: click.style("%s" % x, fg="red", **kwargs)
+
+def red(x, **kwargs):
+    return click.style("%s" % x, fg="red", **kwargs)
+
+
+def blue(x, **kwargs):
+    return click.style("%s" % x, fg="blue", **kwargs)
+
+
+def cyan(x, **kwargs):
+    return click.style("%s" % x, fg="cyan", **kwargs)
+
+
+def green(x, **kwargs):
+    return click.style("%s" % x, fg="green", **kwargs)
+
+
+def yellow(x, **kwargs):
+    return click.style("%s" % x, fg="yellow", **kwargs)
+
+
+def magenta(x, **kwargs):
+    return click.style("%s" % x, fg="magenta", **kwargs)
 
 
 DATABASE_URL_PROMPT = """Please enter the url for your database.
@@ -41,7 +58,7 @@ def load_configuration_file(ctx, param, value):
 def default_database_url():
     try:
         return config.get_sqlalchemy_uri()
-    except:
+    except Exception:
         pass
 
 
@@ -127,7 +144,7 @@ def make_pass_decorator(context_klass, ensure=True):
                 obj = ctx.find_object(context_klass)
             try:
                 return ctx.invoke(f, obj, *args[1:], **kwargs)
-            except:
+            except Exception:
                 obj.handle_error()
 
         return update_wrapper(new_func, f)

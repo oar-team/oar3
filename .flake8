@@ -12,7 +12,6 @@ exclude=
   # Hopefully we can include these folders when we are ready
   oar/modules/bipbip.py
   oar/lib
-  oar/cli/db
   oar/cli/oarsub.py
   oar/rest_api
   oar/tools
