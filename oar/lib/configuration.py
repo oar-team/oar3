@@ -47,7 +47,6 @@ class Configuration(dict):
         "PROLOGUE_EXEC_FILE": None,
         "EPILOGUE_EXEC_FILE": None,
         "SUSPEND_RESUME_SCRIPT_TIMEOUT": 60,
-        "SCHEDULER_JOB_SECURITY_TIME": "60",  # TODO should be int
         "SSH_RENDEZ_VOUS": "oarexec is initialized and ready to do the job",
         "JOB_RESOURCE_MANAGER_FILE": "/etc/oar/job_resource_manager_cgroups.pl",
         "MONITOR_FILE_SENSOR": "/etc/oar/oarmonitor_sensor.pl",
@@ -69,7 +68,7 @@ class Configuration(dict):
         "METASCHEDULER_MODE": "internal",
         "HIERARCHY_LABELS": "resource_id,network_address",
         "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
-        "SCHEDULER_JOB_SECURITY_TIME": "60",
+        "SCHEDULER_JOB_SECURITY_TIME": "60",  # TODO should be int
         "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
         "FAIRSHARING_ENABLED": "no",
         "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
