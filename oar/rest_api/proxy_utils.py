@@ -1,14 +1,10 @@
 import fcntl
 import os
-import time
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
 import escapism
 import toml
-
-from oar.lib import config
-from oar.lib.job_handling import get_jobs_state
 
 
 def frontend_backend_traefik(proxy_path):
@@ -63,7 +59,7 @@ def load_traefik_rules(filename):
     try:
         with open(filename, "r") as rules_fd:
             return toml.load(rules_fd)
-    except:
+    except Exception:
         raise
 
 

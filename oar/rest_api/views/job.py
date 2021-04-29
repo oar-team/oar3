@@ -71,7 +71,7 @@ def index(
         "workdir": Arg(str),
         "param_file": Arg(str),
         "array": Arg(int),
-        #'scanscript': Arg(str), TODO to remove ?
+        # 'scanscript': Arg(str), TODO to remove ?
         "queue": Arg(str),
         "property": Arg(
             str, dest="properties"
@@ -235,10 +235,10 @@ def submit(
         workdir = workdir.replace("$HOME", os.path.expanduser("~" + user))
 
     array_params = []
-    array_nb = 1
+    # array_nb = 1 # TODO
     if param_file:
         array_params = param_file.split("\n")
-        array_nb = len(array_params)
+        # array_nb = len(array_params)
     # if not isinstance(resource, list):
     #    resource = [resource]
 

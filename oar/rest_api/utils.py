@@ -146,12 +146,12 @@ class ArgParser(object):
         """ Try to convert ``value`` to an Integer."""
         try:
             value = float(value)
-        except:
+        except Exception:
             pass
         for _type in integer_types:
             try:
                 return _type(value)
-            except:
+            except Exception:
                 pass
         raise ValueError("Cannot convert '%s' to a Integer value" % value)
 

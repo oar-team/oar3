@@ -4,7 +4,6 @@ import os
 from flask import abort, g, url_for
 from passlib.apache import HtpasswdFile
 
-import oar.lib
 from oar import VERSION
 from oar.lib import config
 

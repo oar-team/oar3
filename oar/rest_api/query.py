@@ -13,13 +13,13 @@ class APIQuery(BaseQuery):
     def get_or_404(self, ident):
         try:
             return self.get_or_error(ident)
-        except:
+        except Exception:
             abort(404)
 
     def first_or_404(self):
         try:
             return self.first_or_error()
-        except:
+        except Exception:
             abort(404)
 
     def paginate(self, offset, limit, error_out=True):
