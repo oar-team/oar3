@@ -137,7 +137,8 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
     query = query.filter(
         or_(
             getattr(Resource, prop_name) != prop_value,
-            getattr(Resource, prop_name) == None,
+            # Because sqlalchemy relies on operator overloading which is not possible with is.
+            getattr(Resource, prop_name) == None,  # noqa: E711
         )
     )
     # query = query.filter(text("( {} != '{}' OR {} IS NULL )".format(prop_name, prop_value, prop_name)))
@@ -149,7 +150,7 @@ def set_resources_property(resources, hostnames, prop_name, prop_value):
     rids = tuple(r[0] for r in res)
     if nb_resources > 0:
         # TODO TOVERIFY nb_affected_row -> NO, nb of MATCHED ROW
-        nb_affected_row = (
+        nb_affected_row = (  # noqa: F841
             db.query(Resource)
             .filter(Resource.id.in_(rids))
             .update(
