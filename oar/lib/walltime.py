@@ -71,7 +71,7 @@ def get(job_id):
         walltime_change = WalltimeChange()
 
     if job.assigned_moldable_job != 0:
-        moldable = get_moldable_job(job.assigned_moldable_job)
+        moldable = get_current_moldable_job(job.assigned_moldable_job)
         walltime_change.walltime = moldable.moldable_walltime
     else:
         walltime_change.walltime = 0
@@ -101,12 +101,15 @@ def get(job_id):
     walltime_users_allowed_to_force = get_conf(
         config["WALLTIME_ALLOWED_USERS_TO_FORCE"], job.queue_name, None, ""
     )
-    walltime_users_allowed_to_delay_jobs = get_conf(
+
+    # TODO Unused
+    walltime_users_allowed_to_delay_jobs = get_conf(  # noqa
         config["WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS"], job.queue_name, None, ""
     )
     now = tools.get_date()
 
-    suspended = get_job_suspended_sum_duration(job_id, now)
+    # TODO Unused
+    suspended = get_job_suspended_sum_duration(job_id, now)  # noqa
 
     if job.state != "Running" or (walltime_change.walltime < walltime_min_for_change):
         walltime_change.possible = duration_to_sql_signed(0)
@@ -116,9 +119,9 @@ def get(job_id):
         walltime_change.possible = duration_to_sql_signed(walltime_max_increase)
 
     if walltime_users_allowed_to_force != "*":
-        l = re.compile(r"[,\s]+").split(walltime_users_allowed_to_force)
+        search = re.compile(r"[,\s]+").split(walltime_users_allowed_to_force)
         q = re.compile(r"^{}$".format(job.user))
-        if not any([re.search(q, s) for s in l]):
+        if not any([re.search(q, s) for s in search]):
             walltime_change.force = "FORBIDDEN"
     elif (not walltime_change.force) or (walltime_change.pending == 0):
         walltime_change.force = "NO"
@@ -196,7 +199,6 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
         sec = 0
 
     new_walltime_seconds = hms_to_duration(hours, mn, sec)
-
     if sign == "-":
         new_walltime_seconds = -new_walltime_seconds
     elif sign != "+":
@@ -212,8 +214,8 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
 
     # Can extra time delay next jobs ?
     if force and (walltime_users_allowed_to_force != "*"):
-        l = re.compile(r"[,\s]+").split(walltime_users_allowed_to_force)
-        if user not in (["root", "oar"] + l):
+        search = re.compile(r"[,\s]+").split(walltime_users_allowed_to_force)
+        if user not in (["root", "oar"] + search):
             return (
                 3,
                 403,
@@ -227,8 +229,8 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
 
     # Can extra time delay next jobs ?
     if delay_next_jobs and (walltime_users_allowed_to_delay_jobs != "*"):
-        l = re.compile(r"[,\s]+").split(walltime_users_allowed_to_delay_jobs)
-        if user not in (["root", "oar"] + l):
+        search = re.compile(r"[,\s]+").split(walltime_users_allowed_to_delay_jobs)
+        if user not in (["root", "oar"] + search):
             return (
                 3,
                 403,
@@ -253,9 +255,8 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
     suspended = get_job_suspended_sum_duration(job_id, now)
 
     job_types = get_job_types(job_id)
-
     # Arbitrary refuse to reduce container jobs, because we don't want to handle inner jobs which could possibly cross the new boundaries of their container, or should be reduced as well.
-    if ("container" in job_types) and (new_walltime_delta_seconds < 0):
+    if ("container" in job_types) and (new_walltime_seconds < 0):
         return (
             3,
             403,
@@ -315,7 +316,7 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
                 3,
                 403,
                 "forbidden",
-                "request cannot be accepted because the walltime cannot increase by more than ".format(
+                "request cannot be accepted because the walltime cannot increase by more than {}".format(
                     walltime_max_increase_hms
                 ),
             )

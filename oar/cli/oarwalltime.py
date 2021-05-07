@@ -28,7 +28,7 @@ def oarwalltime(
         return cmd_ret
 
     if new_walltime and (not re.search(r"^[-+]?\d+(?::\d+(?::\d+)?)?$", new_walltime)):
-        cmd_ret.error("New walltime is malformatted", 4, 1)
+        cmd_ret.error(f"New walltime is malformatted: {new_walltime}", 4, 1)
         return cmd_ret
 
     if not new_walltime:
@@ -144,7 +144,7 @@ def cli(job_id, new_walltime, force, delay_next_jobs, version):
     The value is a new walltime absolute value (like passed to oarsub). If prefixed
     by +, the request is an increase of the walltime by the passed value. If
     prefixed by -, it is a decrease request. In that case the arguments need
-    to be escaped with -- to avoid it to be parsed as a command-line option (e.g. oarwalltime -- 1234 -1:0:0).
+    to be escaped with -- to avoid it to be parsed as a command-line option (e.g. oarwalltime -- <job_id> -1:0:0).
 
     The job must be running to request a walltime change.
     """
