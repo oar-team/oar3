@@ -4,7 +4,6 @@ from sqlalchemy import desc, func
 
 import oar.lib.tools as tools
 from oar.lib import EventLog, EventLogHostname, db, get_logger
-from oar.lib.tools import sql_to_local
 
 logger = get_logger("oar.lib.event")
 
@@ -117,7 +116,7 @@ def get_events_for_hostname_from(host, date=None):
         .filter(EventLogHostname.hostname == host)
     )
     if date:
-        query = query.filter(EventLog.date >= sql_to_local(date)).order_by(
+        query = query.filter(EventLog.date >= tools.sql_to_local(date)).order_by(
             desc(EventLog.date)
         )
     else:

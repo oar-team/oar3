@@ -2679,7 +2679,7 @@ def get_possible_job_end_time_in_interval(
     req = """
 SELECT
   DISTINCT gp.start_time
-FROM 
+FROM
   jobs j, moldable_job_descriptions m, gantt_jobs_predictions gp, gantt_jobs_resources gr
 WHERE
   j.job_id = m.moldable_job_id AND

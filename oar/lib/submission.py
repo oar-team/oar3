@@ -7,7 +7,7 @@ import sys
 from socket import gethostname
 
 from procset import ProcSet
-from sqlalchemy import distinct, exc, func, or_, text
+from sqlalchemy import exc, text
 
 import oar.lib.tools as tools
 from oar.lib import (
@@ -29,10 +29,10 @@ from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.resource import ResourceSet
 from oar.lib.tools import (
     PIPE,
+    Popen,
     format_job_message_text,
     get_date,
     hms_str_to_duration,
-    sql_to_duration,
     sql_to_local,
 )
 
@@ -115,12 +115,13 @@ def job_key_management(
                     process = tools.Popen(
                         ["oardodo", "cat", import_job_key_file], stdout=PIPE
                     )
-                except:
+                except Exception:
                     error = (-14, "Unable to read: " + import_job_key_file)
-                    return (error, result)
+                    return (error, "", "")
 
                 stdout = process.communicate()[0]
-                import_job_key = stdout.decode()
+                # TODO never used import_job_key
+                import_job_key = stdout.decode()  # noqa
 
             # Write imported_job_key in tmp_job_key_file
             try:
@@ -241,7 +242,7 @@ def scan_script(submitted_filename, initial_request_str, user=None):
 
     try:
         process = tools.Popen(["oardodo", "cat", submitted_filename], stdout=PIPE)
-    except:
+    except Exception:
         error = (-70, "Unable to read: " + submitted_filename)
         return (error, result)
 
@@ -589,10 +590,13 @@ def add_micheline_subjob(
     if hasattr(job_parameters, "properties_applied_after_validation:"):
         if properties:
             properties = (
-                "(" + properties + ") AND " + properties_applied_after_validation
+                "("
+                + properties
+                + ") AND "
+                + job_parameters.properties_applied_after_validation
             )
         else:
-            properties = properties_applied_after_validation
+            properties = job_parameters.properties_applied_after_validation
     job_parameters.properties = properties
 
     name = job_parameters.name
@@ -1086,7 +1090,7 @@ def add_micheline_jobs(
 
     try:
         exec(code, globals(), job_parameters.__dict__)
-    except:
+    except Exception:
         err = sys.exc_info()
         error = (-2, err[1] + ", a failed admission rule prevented submitting the job.")
         return (error, [])
@@ -1163,7 +1167,8 @@ def add_micheline_jobs(
                 )
 
                 # Write the private job key with the user ownership
-                user = job_parameters.user
+                # TODO never used
+                user = job_parameters.user  # noqa
                 os.environ["OARDO_BECOME_USER"]
                 prev_umask = os.umask(0o117)
 
@@ -1171,7 +1176,9 @@ def add_micheline_jobs(
                     p = Popen(
                         ["oardodo", "dd", "of=" + export_job_key_file_tmp], stdin=PIPE
                     )
-                    p.stdin.write(ssh_priv_key.encode())
+                    p.stdin.write(
+                        ssh_priv_key.encode()  # noqa TODO variable doesn't exist + write corresponding test
+                    )
                     p.stdin.flush()
                     p.stdin.close()
                     while p.returncode is None:
@@ -1380,7 +1387,7 @@ class JobParameters:
             process = tools.Popen(
                 ["oardodo", "cat", self.array_param_file], stdout=PIPE
             )
-        except:
+        except Exception:
             return (12, "Cannot open the parameter file " + self.array_param_file)
 
         stdout = process.communicate()[0]

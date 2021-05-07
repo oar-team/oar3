@@ -4,14 +4,12 @@ import copy
 import datetime
 import decimal
 import os
-import pwd
 import re
 import sys
 from collections import Callable, OrderedDict
 from decimal import Decimal, InvalidOperation
 
 import simplejson as json
-from procset import ProcSet
 
 basestring = (str, bytes)
 integer_types = (int,)
@@ -22,7 +20,7 @@ try:  # pragma: no cover
     import __pypy__
 
     is_pypy = True
-except:  # pragma: no cover
+except Exception:  # pragma: no cover
     __pypy__ = None
     is_pypy = False
 
@@ -185,7 +183,7 @@ def try_convert_decimal(raw_value):
         for _type in numeric_types:
             try:
                 return _type(value)
-            except:
+            except Exception:
                 pass
     except InvalidOperation:
         return raw_value
@@ -249,7 +247,7 @@ def print_query_results(results, name=None):
         step = 8
         header = []
         for i in range(nb_lines):
-            h = [l[i] if len(l) > i else " " for l in colnames]
+            h = [colname[i] if len(colname) > i else " " for colname in colnames]
             header.append(" " * i + (" " * (step - 1)).join(h))
 
         for i in reversed(range(nb_lines)):

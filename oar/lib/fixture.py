@@ -25,7 +25,7 @@ class JsonSerializer(object):
     def convert_datetime(self, dct):
         for key, value in dct.items():
             try:
-                dct[key] = datetime(*map(int, re.split("[^\d]", value)[:-1]))
+                dct[key] = datetime(*map(int, re.split(r"[^\d]", value)[:-1]))
             except Exception:
                 pass
         return dct

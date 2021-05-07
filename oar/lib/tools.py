@@ -7,12 +7,12 @@ import signal
 import socket
 import string
 import time
-from multiprocessing import Process  # use via tools.getpass (simplify mocking)
-from pwd import getpwnam  # use via tools.getpass (simplify mocking)
+from multiprocessing import Process  # noqa use via tools.getpass (simplify mocking)
+from pwd import getpwnam  # noqa use via tools.getpass (simplify mocking)
 from socket import gethostname
 
 # run, call use via tools.run, tools.call (simplify mocking)
-from subprocess import (
+from subprocess import (  # noqa
     PIPE,
     STDOUT,
     CalledProcessError,
@@ -28,6 +28,7 @@ import zmq
 
 from oar.lib import config, db, get_logger
 from oar.lib import logger as log
+from oar.lib.event import add_new_event
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -95,7 +96,6 @@ def notify_user(job, state, msg):  # pragma: no cover
 
                     msg = "Launched user notification command : " + cmd
                     add_new_event("USER_EXEC_NOTIFICATION", job.id, msg)
-
     return True
 
 
@@ -302,7 +302,7 @@ def pingchecker_exec_command(
         return (0, [])
 
     output = out.decode()
-    error = err.decode()  # TODO: not used
+    error = err.decode()  # noqa TODO: not used
 
     for line in output.split("\n"):
         host = filter_output(*(line, ip2hostname))

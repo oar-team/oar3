@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from sqlalchemy import and_, distinct, func, or_, select, text
+from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
 from oar.lib import (
@@ -23,6 +23,7 @@ from oar.lib.resource_handling import get_resources_state
 STATE2NUM = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 
 logger = get_logger("oar.lib.node")
+
 
 # TODO change name
 def get_all_resources_on_node(hostname):
@@ -242,7 +243,7 @@ def set_node_state(hostname, state, finaud_tag):
         cur = db.session
         cur.execute(
             """UPDATE resource_logs SET date_stop = %s
-        WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '%s' 
+        WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '%s'
         AND resource_logs.resource_id = resources.resource_id)
         AND resource_logs.date_stop = 0
         AND resource_logs.attribute = '%s'"""

@@ -257,7 +257,7 @@ class Database(object):
                     for table in self.tables.values():
                         con.execute(table.delete())
                 trans.commit()
-            except:
+            except Exception:
                 trans.rollback()
                 raise
 
