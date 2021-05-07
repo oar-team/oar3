@@ -80,7 +80,7 @@ attribute_modules = frozenset(
     ]
 )
 
-
+# Reverse the all_by_module to have the name -> location direct access.
 object_origins = {}
 for module, items in all_by_module.items():
     for item in items:
@@ -90,13 +90,18 @@ for module, items in all_by_module.items():
 class Module(ModuleType):
     """Automatically import objects from the modules."""
 
+    # __getattr__ is only called when an attribute access fails with an AttributeError.
+    # This causes this function to be called only when the imported name is not found.
     def __getattr__(self, name):
         if name in object_origins:
             module = __import__(object_origins[name], None, None, [name])
             for extra_name in all_by_module[module.__name__]:
+                # Expose in self, all the attributes defined by the module that is currently loaded.
                 setattr(self, extra_name, getattr(module, extra_name))
             return getattr(module, name)
         elif name in attribute_modules:
+            # If name refers to an exposed module,
+            # load it so it can be accessed normally (using import utils from oar.lib.<name>)
             __import__("oar.lib." + name)
         return ModuleType.__getattribute__(self, name)
 
