@@ -2,8 +2,7 @@
 
 from sqlalchemy import desc, func
 
-import oar.lib.tools as tools
-from oar.lib import EventLog, EventLogHostname, db, get_logger
+from oar.lib import EventLog, EventLogHostname, db, get_logger, tools
 
 logger = get_logger("oar.lib.event")
 

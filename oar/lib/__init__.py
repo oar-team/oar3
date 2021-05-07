@@ -70,6 +70,7 @@ attribute_modules = frozenset(
     [
         "configuration",
         "database",
+        "tools",
         "exceptions",
         "logging",
         "models",

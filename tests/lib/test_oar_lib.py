@@ -69,6 +69,7 @@ def test_all_module_api():
         "render_query",
         "row2dict",
         "utils",
+        "tools",
     ]
 
     assert set(all_modules) == set(dir(oar.lib))
