@@ -6,10 +6,10 @@ from random import randint
 
 import click
 
-click.disable_unicode_literals_warning = True
-
 from oar.kao.coorm import CoormApplication
 from oar.lib import config
+
+click.disable_unicode_literals_warning = True
 
 
 class RandomNodes(CoormApplication):

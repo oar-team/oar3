@@ -49,10 +49,11 @@ def generate_jobs(nb_jobs, size_max, mode="same"):
 
 
 def update_gantt_visualization_redis():
-    # unfinished
-    r = redis.Redis()
-    buffer_id = r.get("buffer_id")
-    job_ids = r.keys("*:" + buffer_id)
+    # TODO
+    pass
+    # r = redis.Redis()
+    # buffer_id = r.get("buffer_id")
+    # job_ids = r.keys("*:" + buffer_id)
 
 
 def save_assigns_bulk_0(jobs, resource_set):

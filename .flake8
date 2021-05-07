@@ -9,13 +9,8 @@ exclude=
   .venv,
   docs,
   *egg,
-  # Hopefully we can include these folders when we are ready
+  # The sources in this folder are evaluated at runtime
+  etc/oar/admission_rules.d
+  # TODO: finish cleaning of oarsub and bipbip
   oar/modules/bipbip.py
   oar/cli/oarsub.py
-  oar/rest_api
-  oar/tools
-  contrib
-  docs
-  etc
-  simu
-  bench
