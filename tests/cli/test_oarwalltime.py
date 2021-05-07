@@ -137,3 +137,40 @@ def test_oardel_request(minimal_db_initialization):
     assert walltime_change.granted_with_delay_next_jobs == 0
     assert re.match(r".*Accepted:.*", result.output)
     assert fake_notifications == ["Walltime"]
+
+
+def test_walltime_container_job(minimal_db_initialization):
+    os.environ["OARDO_USER"] = "alice"
+    config["WALLTIME_CHANGE_ENABLED"] = "YES"
+    job_id = insert_running_jobs(1, user="alice", types=["container"])[0]
+
+    runner = CliRunner()
+    result = runner.invoke(cli, [str(job_id), "--", "-0:30:0"])
+    assert result.exit_code == 3
+    assert re.match(
+        r".*Forbidden: reducing the walltime of a container job is not allowed.*",
+        result.output,
+    )
+
+    # Passing an absolute walltime smaller should also trigger an error
+    result = runner.invoke(cli, [str(job_id), "0:0:15"])
+    assert result.exit_code == 3
+    assert re.match(
+        r".*Forbidden: reducing the walltime of a container job is not allowed.*",
+        result.output,
+    )
+
+    # Check a working case
+    result = runner.invoke(cli, [str(job_id), "1:0:0"])
+
+    walltime_change = db["WalltimeChange"].query.one()
+    assert result.exit_code == 0
+    assert walltime_change.job_id == job_id
+    assert walltime_change.pending == 3540
+    assert walltime_change.force == "NO"
+    assert walltime_change.delay_next_jobs == "NO"
+    assert walltime_change.granted == 0
+    assert walltime_change.granted_with_force == 0
+    assert walltime_change.granted_with_delay_next_jobs == 0
+    assert re.match(r".*Accepted:.*", result.output)
+    assert fake_notifications == ["Walltime"]
