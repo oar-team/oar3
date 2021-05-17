@@ -208,9 +208,7 @@ class EventsOption(click.Command):
     type=click.STRING,
     help="Display resources which matches the SQL where clause (ex: \"state = 'Suspected'\")",
 )
-@click.option(
-    "-s", "--state", is_flag=True, multiple=True, help="show the states of the nodes"
-)
+@click.option("-s", "--state", is_flag=True, help="show the states of the nodes")
 @click.option("-l", "--list", is_flag=True, help="show the nodes list")
 @click.option(
     "-e",
