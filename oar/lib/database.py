@@ -10,14 +10,11 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import (
-    DeclarativeMeta,
-    DeferredReflection,
-    declarative_base,
-)
-from sqlalchemy.orm import class_mapper, sessionmaker
+from sqlalchemy.ext.declarative import DeferredReflection
+from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
+from sqlalchemy.pool import StaticPool
 
 from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
 
@@ -351,6 +348,9 @@ class EngineConnector(object):
             self.apply_pool_defaults(options)
             self.apply_driver_hacks(info, options)
             options["echo"] = echo
+            if self._config["DB_TYPE"] == "sqlite":
+                options["connect_args"] = {"check_same_thread": False}
+                options["poolclass"] = StaticPool
             self._engine = engine = create_engine(info, **options)
             self._connected_for = (uri, echo)
             return engine
@@ -478,7 +478,11 @@ def read_only_session(scoped, **kwargs):
                 def creator():
                     return sqlite3.connect("file:%s?mode=ro" % sqlite_path)
 
-                kwargs["bind"] = create_engine("sqlite://", creator=creator)
+                kwargs["bind"] = create_engine(
+                    "sqlite://",
+                    creator=creator,
+                    connect_args={"check_same_thread": False},
+                )
                 scoped.remove()
                 session = scoped(**kwargs)
                 yield session

@@ -9,7 +9,7 @@ from sqlalchemy import MetaData, Table, and_
 from sqlalchemy import asc as order_by_func
 from sqlalchemy import create_engine, func, not_
 from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.expression import select
 from sqlalchemy.types import Integer
 from sqlalchemy_utils.functions import (

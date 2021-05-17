@@ -8,7 +8,7 @@ from io import StringIO
 import pytest
 from sqlalchemy import Table, event
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.util import object_state
 
 from oar.lib import fixture
