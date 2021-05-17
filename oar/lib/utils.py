@@ -6,7 +6,8 @@ import decimal
 import os
 import re
 import sys
-from collections import Callable, OrderedDict
+from collections import OrderedDict
+from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 
 import simplejson as json
