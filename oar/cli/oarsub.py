@@ -33,7 +33,7 @@ job_id_lst = []
 def init_tcp_server():
     """Intialize TCP server, to receive job's creation information"""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((socket.getfqdn(), 0))
+    sock.bind(("0.0.0.0", 0))
     sock.listen(5)
     return sock
 
@@ -574,7 +574,8 @@ def cli(
 
     if interactive or reservation:
         socket_server = init_tcp_server()
-        (server, server_port) = socket_server.getsockname()
+        (_, server_port) = socket_server.getsockname()
+        server = socket.gethostbyname_ex(socket.gethostname())[0]
         job_parameters.info_type = server + ":" + str(server_port)
 
     if not interactive and command:
