@@ -22,9 +22,9 @@ install:
   - pip install -r requirements/dev.txt
 
 before_script:
-  - ./scripts/ci/build-docker-env.sh
   # Connect to docker to have user-base dockerrate rate limit instead of by ip
   - echo $DOCKERTOKEN | docker login --username $DOCKERUSER --password-stdin
+  - ./scripts/ci/build-docker-env.sh
 
 script:
   # Check for black and isort formatting, stop travis on fail
