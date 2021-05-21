@@ -23,6 +23,8 @@ install:
 
 before_script:
   - ./scripts/ci/build-docker-env.sh
+  # Connect to docker to have user-base dockerrate rate limit instead of by ip
+  - echo $DOCKERTOKEN | docker login --username $DOCKERUSER
 
 script:
   # Check for black and isort formatting, stop travis on fail
