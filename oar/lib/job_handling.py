@@ -2235,7 +2235,7 @@ def check_end_of_job(
 def job_finishing_sequence(epilogue_script, job_id, events):
     if epilogue_script:
         # launch server epilogue
-        cmd = ["epilogue_script", str(job_id)]
+        cmd = [epilogue_script, str(job_id)]
         logger.debug("[JOB FINISHING SEQUENCE] Launching command : " + str(cmd))
         timeout = config["SERVER_PROLOGUE_EPILOGUE_TIMEOUT"]
 
