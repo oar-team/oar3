@@ -15,6 +15,7 @@ This documentation is organized into a few different sections below:
 * :ref:`ref-dev-changelog`
 * :ref:`Copyright and license <licensefile-anchor>`
 
+
 .. _ref-user-docs:
 .. toctree::
    :maxdepth: 1
@@ -53,3 +54,10 @@ This documentation is organized into a few different sections below:
    usage
    contributing
    changes
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API reference
+
+   api/oar.kao
+

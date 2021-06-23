@@ -1,4 +1,8 @@
 # coding: utf-8
+"""
+This module contains the base scheduling structures :class:`SlotSet` and :class:`Slot` used to represent the available resources through time.
+"""
+
 import copy
 
 from procset import ProcSet
@@ -11,7 +15,39 @@ MAX_TIME = 2147483648  # (* 2**31 *)
 
 
 class Slot(object):
+    """
+    Base scheduling class that holds information about available resources `itvs` for a time interval (between `b`  and `e`).
+    The Slots is a linked structure as it also holds references on its previous and next :class:`Slot`.
+    """
+
     def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None):
+        """
+        A :class:`Slot` is initialized with the ids of its previous and next Slots,
+        the :class:`ProcSet` of resources and the time interval (`b` and `e`).
+
+        :param int id: \
+            id of the :class:`Slot`.
+        :param int prev: \
+            id of the previous :class:`Slot`. `prev` equals to 0 means that it is the first slot.
+        :param int next: \
+            id of the previous :class:`Slot`. `next` equals to 0 means that it is the last slot.
+        :param Procset itvs: \
+            An interval set (using :class:`ProcSet`) of available resources.
+        :param int b: \
+            Beggining time of the :class:`Slot`.
+        :param int e: \
+            End time of the :class:`Slot`.
+        :param ts_itvs: \
+            Time sharing interval two-levels hierarchy. The first level is either the name of the user, or "*".
+            The second level is either the name of the job or "*". Using "*" means that the time sharing will have no restriction about jobs using this feature.
+            For instance, to restrict the time sharing to all the job of the user Alice use `dict { "alice", dict: { "*" } }`.
+            see :ref:`FAQ <can-i-perform-a-fix-scheduled-reservation-and-then-launch-several-jobs-in-it>` about how to use it.
+            (defaults to `None`).
+        :type ts_itvs: dict[str, dict[str, ProcSet]]
+        :param dict ph_itvs: \
+            Placeholder interval.
+            (defaults to `None`)
+        """
         self.id = id
         self.prev = prev
         self.next = next
@@ -36,9 +72,20 @@ class Slot(object):
             self.quotas_rules_id = -1
 
     def show(self):
+        """
+        Print a :class:`Slot` using the internal :func:`__str__` function.
+        """
         print("%s" % self)
 
     def __str__(self):
+        """
+        String representation of a :class:`Slot`.
+
+        Examples:
+
+            >>> print(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 20))
+            <Slot(id=1, prev=0, next=0, itvs=1-32, b=1, e=20, ts_itvs={}, ph_itvs={})>
+        """
         repr_string = (
             "id=%(id)s, prev=%(prev)s, next=%(next)s, itvs=%(itvs)s, "
             "b=%(b)s, e=%(e)s, ts_itvs=%(ts_itvs)s, ph_itvs=%(ph_itvs)s"
@@ -55,6 +102,26 @@ class Slot(object):
 
 
 def intersec_itvs_slots(slots, sid_left, sid_right):
+    """
+    Return the :class:`ProcSet` which is the intersection of all slots from `sid_left` to `sid_right`.
+
+    :param dict slots: \
+        Dict containing the :class:`Slot` indexed by id.
+    :param int sid_left: \
+        The id of the :class:`Slot` in `slots` from which to begin.
+    :param int sid_right: \
+        The id of the :class:`Slot` in `slots` from which to end.
+    :return: \
+        A :class:`ProcSet` containing the intersection of all slots from `sid_left` to `sid_right`.
+
+    Examples:
+        >>> s1 = Slot(1, 0, 2, ProcSet(*[(1, 32)]), 1, 10)
+        >>> s2 = Slot(2, 1, 3, ProcSet(*[(1, 16), (28, 32)]), 11, 20)
+        >>> s3 = Slot(3, 2, 0, ProcSet(*[(1, 8), (30, 32)]), 21, 30)
+        >>> slots = {1: s1, 2: s2, 3: s3}
+        >>> print(intersec_itvs_slots(slots, 1, 3))
+            1-8 30-32
+    """
     sid = sid_left
     itvs_acc = slots[sid].itvs
 
@@ -66,7 +133,10 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
 
 
 def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
-
+    """
+    Same as :func:`intersec_itvs_slots`, but depending on the `job` configuration enables to share resources between jobs.
+    More precisely, if `job.ts` is `True`, it gathers resources from slot `sid_left` to `sid_right` depending on the slot time sharing configuration (see :class:`Slot`).
+    """
     sid = sid_left
     itvs_acc = ProcSet()
     while True:
@@ -102,7 +172,36 @@ def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
 
 
 class SlotSet:
+    """
+    :class:`SlotSet` holds a linked list of slots and provides utilities for their manipulation.
+    """
+
     def __init__(self, slots):
+        """
+        :class:`SlotSet` is initialized with a linked list of `slots`.
+        :params slots: Either as python `dict`, a `tuple` or with a single :class:`Slot`.
+
+        Examples:
+            >>> sset = SlotSet( # Using dict
+            ...         {
+            ...             1: Slot(1, 0, 2, ProcSet(*[(1, 32)]), 1, 20),
+            ...             2: Slot(2, 1, 0, ProcSet(*[(1, 32)]), 21, 25)
+            ...         }
+            ...     )
+            >>> print(sset)
+                ---------------------------------- SlotSet ----------------------------------
+                [1] Slot(id=1, prev=0, next=2, itvs=1-32, b=1, e=20, ts_itvs={}, ph_itvs={})
+                [2] Slot(id=2, prev=1, next=0, itvs=1-32, b=21, e=25, ts_itvs={}, ph_itvs={})
+                -----------------------------------------------------------------------------
+            >>> print(SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 20))) # Using tuple
+                --------------------------------- SlotSet ----------------------------------
+                [1] Slot(id=1, prev=0, next=0, itvs=1-32, b=1, e=20, ts_itvs={}, ph_itvs={})
+                ----------------------------------------------------------------------------
+            >>> print(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 20)) # Using single slot
+                ------------------------------------- SlotSet -------------------------------------
+                [1] Slot(id=1, prev=0, next=0, itvs=1-2, b=0, e=2147483648, ts_itvs={}, ph_itvs={})
+                -----------------------------------------------------------------------------------
+        """
         self.last_id = 1
         # The first (earlier) slot has identifier one.
         if type(slots) == dict:
@@ -156,23 +255,15 @@ class SlotSet:
     def show_slots(self):
         print("%s" % self)
 
-    # Split slot accordingly with job resource assignment *)
-    # new slot A + B + C (A, B and C can be null)         *)
-    #   -------
-    #   |A|B|C|
-    #   |A|J|C|
-    #   |A|B|C|
-    #   -------
-
-    # Generate A slot - slot before job's begin
     def slot_before_job(self, slot, job):
         s_id = slot.id
         self.last_id += 1
-        n_id = self.last_id
+        next_id = self.last_id
+        print("next id:", next_id)
         a_slot = Slot(
             s_id,
             slot.prev,
-            n_id,
+            next_id,
             copy.copy(slot.itvs),
             slot.b,
             job.start_time - 1,
@@ -183,8 +274,8 @@ class SlotSet:
         self.slots[s_id] = a_slot
         # slot_id is changed so we have always the rightmost slot (min slot.b)
         # w/ sid = 1 r
-        slot.id = n_id
-        self.slots[n_id] = slot
+        slot.id = next_id
+        self.slots[next_id] = slot
 
         if hasattr(a_slot, "quotas"):
             a_slot.quotas.deepcopy_from(slot.quotas)
@@ -260,6 +351,20 @@ class SlotSet:
             c_slot.quotas.set_rules(slot.quotas_rules_id)
 
     def split_slots(self, sid_left, sid_right, job, sub=True):
+        """
+        Split slot accordingly to a job resource assignment.
+        New slot A + B + C (A, B and C can be null)
+
+        +---+---+---+
+        | A | B | C |
+        +---+---+---+
+        | A | J | C |
+        +---+---+---+
+        | A | B | C |
+        +---+---+---+
+
+        Generate A slot - slot before job's begin
+        """
         sid = sid_left
         we_will_break = False
         while True:
@@ -270,9 +375,10 @@ class SlotSet:
             else:
                 sid = slot.next
 
-            # print("split", slot.show())
+            # Found a slot in which the job should execute
             if job.start_time > slot.b:
                 # Generate AB | ABC
+                # The current slot alone cannot contains the job (i.e. the job walltime ends after the slot).
                 if (job.start_time + job.walltime) > slot.e:
                     # Generate AB
                     self.slot_before_job(slot, job)
@@ -282,9 +388,9 @@ class SlotSet:
                     else:
                         # add resources
                         self.add_slot_during_job(slot, job)
-
                 else:
                     # generate ABC
+                    # The job's duration is contained in the current slot.
                     self.slot_before_job(slot, job)
                     # generate C before modify slot / B
                     self.slot_after_job(slot, job)
@@ -294,7 +400,6 @@ class SlotSet:
                     else:
                         # add resources
                         self.add_slot_during_job(slot, job)
-
             else:
                 # Generate B | BC
                 if ((job.start_time + job.walltime) - 1) >= slot.e:

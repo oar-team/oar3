@@ -1,4 +1,9 @@
 # coding: utf-8
+"""
+This module defines the top level scheduler of OAR.
+It iteratively calls scheduling algorithms on the different queues based on their priorities.
+"""
+
 import os
 import re
 import sys
