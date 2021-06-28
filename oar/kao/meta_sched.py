@@ -101,14 +101,18 @@ to_launch_jobs_already_treated = {}
 batsim_sched_proxy = None
 
 
-##########################################################################
-# Initialize Gantt tables with scheduled reservation jobs, Running jobs,
-# toLaunch jobs and Launching jobs;
-##########################################################################
-
-
 def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
+    """
+    Initialize gantt tables with scheduled reservation jobs, Running jobs,
+    toLaunch jobs and Launching jobs.
 
+    :param oar.kao.platform.Platform plt: \
+        Scheduling Platform to schedule jobs.
+    :param int scheduled_jobs: \
+        Time from which to schedule.
+    :param int job_security_time: \
+        Job security time.
+    """
     #
     # Determine Global Resource Intervals and Initial Slot
     #
@@ -181,9 +185,10 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     return (all_slot_sets, scheduled_jobs, besteffort_rid2job)
 
 
-# Tell Almighty to run a job
 def notify_to_run_job(jid):
-
+    """
+    Tell Almighty to run a job
+    """
     if jid not in to_launch_jobs_already_treated:
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
@@ -203,8 +208,10 @@ def notify_to_run_job(jid):
                 )
 
 
-# Prepare a job to be run by bipbip
 def prepare_job_to_be_launched(job, current_time_sec):
+    """
+    Prepare a job to be run by bipbip
+    """
 
     # TODO ???
     # my $running_date = $current_time_sec;
@@ -432,7 +439,8 @@ def check_besteffort_jobs_to_kill(
     besteffort_rid2job,
     resource_set,
 ):
-    """Detect if there are besteffort jobs to kill
+    """
+    Detect if there are besteffort jobs to kill
     return 1 if there is at least 1 job to frag otherwise 0
     """
 
@@ -554,7 +562,9 @@ def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql
 
 
 def update_gantt_visualization():
-
+    """
+    Update the database with the new scheduling decisions for visualizations.
+    """
     db.query(GanttJobsPredictionsVisu).delete()
     db.query(GanttJobsResourcesVisu).delete()
     db.commit()
@@ -578,7 +588,26 @@ def call_external_scheduler(
     initial_time_sec,
     initial_time_sql,
 ):  # pragma: no cover
+    """
+    Call scheduler from command line.
 
+        :param int binpath: \
+            Base path of the schedulers folder.
+        :param List[Job] scheduled_jobs: \
+            TODO: Not used (or rather overridden).
+        :param SlotSet all_slot_sets: \
+            TODO:
+        :param List resource_set: \
+            TODO:
+        :param int job_security_time: \
+            Job security time (TODO: Link to conf documentation).
+        :param Queue queue: \
+            Queue to operate on.
+        :param int initial_time_sec: \
+            Time to from which to begin the scheduling (TODO: verify explanation).
+        :param int initial_time_sql: \
+            Minimun time at which jobs will be retrieved (TODO: verify explanation).
+    """
     cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy
 
     child_launched = True
@@ -682,6 +711,10 @@ def call_batsim_sched_proxy(
 def call_internal_scheduler(
     plt, scheduled_jobs, all_slot_sets, job_security_time, queues, now
 ):
+    """
+    Internal scheduling phase. The scheduler is not loaded from an external command,
+    so it can shares states with the metascheduler and between scheduling phases (on each queues).
+    """
 
     # Place running besteffort jobs if their queue is considered
     if (len(queues) == 1) and (queues[0].name == "besteffort"):
@@ -695,7 +728,14 @@ def call_internal_scheduler(
 
 
 def nodes_energy_saving(current_time_sec):
+    """
+    Energy saving mode.
 
+    :param int current_time_sec: \
+        Current time of the platform.
+    :return dict: \
+        Dict with two keys: `"halt"` and `"wakeup"` containing the list of node to, respectively, turn off and turn on.
+    """
     nodes_2_halt = []
     nodes_2_wakeup = []
 
@@ -742,7 +782,15 @@ def nodes_energy_saving(current_time_sec):
 
 
 def meta_schedule(mode="internal", plt=Platform()):
+    """
+    Meta scheduling phase.
+    Run the scheduler on each queue dependeding on their priority order.
+    It acts in several phases:
 
+    #. Loops through queues order by priority and call the scheduler
+    #. It is also responsible to detect best effort jobs that need to be killed
+    #. If the energy saving mode is enabled, it calls :class:`Hulot`.
+    """
     exit_code = 0
 
     job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
