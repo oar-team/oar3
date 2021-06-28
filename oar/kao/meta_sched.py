@@ -694,7 +694,7 @@ def call_internal_scheduler(
     )
 
 
-def nodes_energing_saving(current_time_sec):
+def nodes_energy_saving(current_time_sec):
 
     nodes_2_halt = []
     nodes_2_wakeup = []
@@ -904,7 +904,7 @@ def meta_schedule(mode="internal", plt=Platform()):
     #
     if ("ENERGY_SAVING_MODE" in config) and config["ENERGY_SAVING_MODE"] != "":
         if config["ENERGY_SAVING_MODE"] == "metascheduler_decision_making":
-            nodes_2_change = nodes_energing_saving(current_time_sec)
+            nodes_2_change = nodes_energy_saving(current_time_sec)
         elif config["ENERGY_SAVING_MODE"] == "batsim_scheduler_proxy_decision_making":
             nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
         else:
