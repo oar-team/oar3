@@ -1,0 +1,65 @@
+name: OAR3 - run tests
+on: [push]
+jobs:
+    Check-Code-Formatting:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Check out repository code
+          uses: actions/checkout@v2
+        - name: Install dev requirements
+          run: pip install -r requirements/dev.txt
+        - name: Check code formatting
+          run: ./scripts/ci/check-formatting.sh
+    Run-Tests-On-Docker:
+      runs-on: ubuntu-latest
+      strategy:
+          matrix:
+            images:
+              # - { PYTHON_IMAGE: "python:3.6", POSTGRES_IMAGE: "postgres:11" }
+              # - { PYTHON_IMAGE: "python:3.6", POSTGRES_IMAGE: "postgres:12" }
+              # - { PYTHON_IMAGE: "python:3.7", POSTGRES_IMAGE: "postgres:11" }
+              # - { PYTHON_IMAGE: "python:3.7", POSTGRES_IMAGE: "postgres:12" }
+              # - { PYTHON_IMAGE: "python:3.8", POSTGRES_IMAGE: "postgres:11" }
+              # - { PYTHON_IMAGE: "python:3.8", POSTGRES_IMAGE: "postgres:12" }
+              # Configuration for bullseye
+              - { PYTHON_IMAGE: "python:3.9", POSTGRES_IMAGE: "postgres:13" }
+      steps:
+        - name: Check out repository code
+          uses: actions/checkout@v2
+          # Connect to docker to have user-base docker rate limit instead of by ip
+        - name: Connect to dockerhub
+          run: echo $DOCKERTOKEN | docker login --username ${DOCKERUSER} --password-stdin
+          env:
+            DOCKERUSER: ${{ secrets.DOCKERUSER }}
+            DOCKERTOKEN: ${{ secrets.DOCKERTOKEN }}
+        - name: Build dockers
+          run: ./scripts/ci/build-docker-env.sh
+          env:
+            # Images configurations
+            PYTHON_IMAGE: ${{ matrix.images.PYTHON_IMAGE }}
+            POSTGRES_IMAGE: ${{ matrix.images.POSTGRES_IMAGE }}
+        - name: Run tests
+          run:  ./scripts/ci/run-tests-with-docker.sh
+          env:
+            PYTHON_IMAGE: ${{ matrix.images.PYTHON_IMAGE }}
+            POSTGRES_IMAGE: ${{ matrix.images.POSTGRES_IMAGE }}
+        - name: Upload coverage
+          uses: actions/upload-artifact@v2
+          with:
+            name: coverage-report
+            path: coverage.xml
+    Code-Coverage:
+      runs-on: ubuntu-latest
+      needs: Run-Tests-On-Docker
+      if: success()
+      steps:
+        # Check out repository so codecov isn't lost
+        - uses: actions/checkout@master
+        - name: Download artifacts
+          uses: actions/download-artifact@v2
+          with:
+            path: artifacts
+        - uses: codecov/codecov-action@v1
+          with:
+            files: ./artifacts/coverage-report/coverage.xml
+            fail_ci_if_error: true # optional (default = false)
