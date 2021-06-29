@@ -24,7 +24,7 @@ set -e
 docker_compose build
 docker_compose down -v --remove-orphans 2> /dev/null
 if [ $# -eq 0 ]; then
-    docker_compose run --rm app py.test --cov=oar tests
+    docker_compose run --rm app py.test --cov=oar tests --cov-report=xml
 else
     docker_compose run --rm app py.test --cov=oar "$@"
 fi
