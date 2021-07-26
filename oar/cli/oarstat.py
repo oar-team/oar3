@@ -238,14 +238,13 @@ def print_state(cmd_ret, job_ids, array_id, json):
     if job_ids:
         job_ids_state = get_jobs_state(job_ids)
         if json:
-            nb_lines = len(job_ids_state)
-            print("{")
+            json_dict = {}
             for i, job_id_state in enumerate(job_ids_state):
                 job_id, state = job_id_state
-                comma = "," if i < (nb_lines + 1) else ""
-                print('"{}" : "{}"{}'.format(job_id, state, comma))
-            print("}")
+                json_dict[str(job_id)] = state
+                # print('"{}" : "{}"{}'.format(job_id, state, comma))
             # import pdb; pdb.set_trace()
+            print(dumps(json_dict))
         else:
             for job_id_state in get_jobs_state(job_ids):
                 job_id, state = job_id_state

@@ -1,4 +1,5 @@
 # coding: utf-8
+import json
 import re
 
 import pytest
@@ -190,8 +191,12 @@ def test_oarstat_state_json():
         cli, ["--state", "--job", str(job_id), "--job", str(job_id1), "--json"]
     )
     str_result = result.output
-    print(str_result)
-    assert len(str_result.split("\n")) == 5
+    try:
+        parsed_json = json.loads(str_result)
+        assert len(parsed_json) == 2
+    except ValueError:
+        assert False
+    assert result.exit_code == 0
 
 
 def test_oarstat_simple_json():
@@ -200,9 +205,13 @@ def test_oarstat_simple_json():
     runner = CliRunner()
     result = runner.invoke(cli, ["--json"])
     str_result = result.output
-    nb_lines = len(str_result.split("\n"))
     print(str_result)
-    assert nb_lines == 2
+    try:
+        parsed_json = json.loads(str_result)
+        assert len(parsed_json) == NB_JOBS
+    except ValueError:
+        assert False
+
     assert result.exit_code == 0
 
 
