@@ -73,7 +73,7 @@ class Leon(object):
                     + str(job_id)
                     + '" but its frag_state is not LEON_EXTERMINATE'
                 )
-                return
+            return
 
         for job in get_jobs_to_kill():
             # TODO pass if the job is job_desktop_computing one
@@ -135,7 +135,7 @@ class Leon(object):
 
             job_arm_leon_timer(job.id)
 
-        # Treate jobs in state EXTERMINATED in the table fragJobs
+        # Treats jobs in state EXTERMINATED in the table fragJobs
         for job in get_to_exterminate_jobs():
             logger.debug("EXTERMINATE the job: " + str(job.id))
             set_job_state(job.id, "Finishing")

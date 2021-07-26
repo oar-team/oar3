@@ -274,7 +274,7 @@ def handle_waiting_reservation_jobs(
                 # Delay launching time
                 set_gantt_job_start_time(moldable_id, current_time_sec + 1)
             elif job.start_time < current_time_sec:
-
+                # TODO: not tested
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
                     if avail_res != job.res_set:
                         # The expected ressources are not all available,
@@ -283,7 +283,13 @@ def handle_waiting_reservation_jobs(
                             "["
                             + str(job.id)
                             + "] advance reservation is waiting because not all \
-                                       resources are available yet"
+                                       resources are available yet (timeout in "
+                            + (
+                                job.start_time
+                                + reservation_waiting_timeout
+                                - current_time_sec
+                            )
+                            + " seconds)"
                         )
                         set_gantt_job_start_time(moldable_id, current_time_sec + 1)
                 else:

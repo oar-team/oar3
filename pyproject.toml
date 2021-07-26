@@ -1,3 +1,89 @@
+[tool.poetry]
+name = "oar"
+version = "3.0.0.dev4"
+description = "OAR next generation"
+authors = ["Olivier Richard", "Salem Harrache"]
+license = "GPL-2.0-or-later"
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Clustering",
+]
+
+[tool.poetry.scripts]
+oar-database-migrate = 'oar.cli.db.commands.migrate:cli'
+oar-database-archive = 'oar.cli.db.commands.archive:cli'
+oar-database-manage = 'oar.cli.db.commands.manage:cli'
+oar-almighty = 'oar.modules.almighty:main'
+oar-bipbip-commander = 'oar.modules.bipbip_commander:main'
+oar-appendice-proxy = 'oar.modules.appendice_proxy:main'
+oar-hulot = 'oar.modules.hulot:main'
+'.oarsub' = 'oar.cli.oarsub:cli'
+'.oarstat' = 'oar.cli.oarstat:cli'
+'.oardel' = 'oar.cli.oardel:cli'
+'.oarhold' = 'oar.cli.oarhold:cli'
+'.oarresume' = 'oar.cli.oarresume:cli'
+'.oarnodes' = 'oar.cli.oarnodes:cli'
+'.oarnotify' = 'oar.cli.oarnotify:cli'
+'.oarqueue' = 'oar.cli.oarqueue:cli'
+'.oarconnect' = 'oar.cli.oarconnect:cli'
+'.oarremoveresource' = 'oar.cli.oarremoveresource:cli'
+'.oarnodesetting' = 'oar.cli.oarnodesetting:cli'
+'.oaraccounting' = 'oar.cli.oaraccounting:cli'
+'.oarproperty' = 'oar.cli.oarproperty:cli'
+'.oarwalltime' = 'oar.cli.oarwalltime:cli'
+oar2trace = 'oar.cli.oar2trace:cli'
+kao = 'oar.kao.kao:main'
+kamelot = 'oar.kao.kamelot:main'
+kamelot-fifo = 'oar.kao.kamelot_fifo:main'
+bataar = 'oar.kao.bataar:bataar'
+oar-batsim-sched-proxy = 'oar.kao.batsim_sched_proxy:cli'
+oar-sarko = 'oar.modules.sarko:main'
+oar-finaud = 'oar.modules.finaud:main'
+oar-leon = 'oar.modules.leon:main'
+oar-node-change-state = 'oar.modules.node_change_state:main'
+oar-bipbip = 'oar.modules.bipbip:main'
+oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
+
+[tool.poetry.dependencies]
+python = ">=3.7, <4"
+SQLAlchemy-Utils = "^0.37.3"
+SQLAlchemy = "<1.4"
+alembic = "^1.6.2"
+Flask = ">=0.10"
+tabulate = "^0.8.9"
+Click = "^8.0.1"
+pyzmq = "^22.0.3"
+requests = "^2.25.1"
+procset = "^1.0"
+simplejson = "^3.17.2"
+psutil = "^5.8.0"
+passlib = "^1.7.4"
+pyyaml = "^5.4.1"
+escapism = "^1.0.1"
+toml = "^0.10.2"
+pybatsim = "^3.2.0"
+
+[tool.poetry.dev-dependencies]
+zerorpc = "^0.6.3"
+pytest = "^6.2.4"
+pytest-flask = "^1.2.0"
+pytest-cov = "^2.12.0"
+pytest-console-scripts = "^1.2.0"
+pexpect = "^4.8.0"
+sphinx = "^4.0.2"
+black = "20.8b1"
+isort = "^5.8.0"
+flake8 = "^3.9.2"
+pre-commit = "^2.12.1"
+simpy = "^4.0.1"
+psycopg2 = "^2.8.6"
+redis = "^3.5.3"
+
 [tool.black]
 line-length = 88
 include = '\.pyi?$'
@@ -19,3 +105,7 @@ exclude = '''
 profile = "black"
 src_paths = ["oar", "tests"]
 skip = ["tests/lib/etc", ".venv"]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
