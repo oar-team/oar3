@@ -285,18 +285,18 @@ class UserOption(click.Command):
     "--job",
     type=click.INT,
     multiple=True,
-    help="show informations only for the specified job(s)",
+    help="show information only for the specified job(s)",
 )
-@click.option("-f", "--full", is_flag=True, help="show full informations")
+@click.option("-f", "--full", is_flag=True, help="show full information")
 @click.option("-s", "--state", is_flag=True, help="show only the state of a jobs.")
 @click.option(
-    "-u", "--user", type=click.STRING, help="show informations for this user only"
+    "-u", "--user", type=click.STRING, help="show information for this user only"
 )
 @click.option(
     "-a",
     "--array",
     type=int,
-    help="show informations for the specified array_job(s) and toggle array view in",
+    help="show information for the specified array_job(s) and toggle array view in",
 )
 @click.option(
     "-c", "--compact", is_flag=True, help="prints a single line for array jobs"
@@ -305,7 +305,7 @@ class UserOption(click.Command):
     "-g",
     "--gantt",
     type=click.STRING,
-    help='show job informations between two date-times "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"',
+    help='show job information between two date-times "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"',
 )
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
 @click.option("-p", "--properties", is_flag=True, help="show job properties")
@@ -313,7 +313,7 @@ class UserOption(click.Command):
     "-A",
     "--accounting",
     type=click.STRING,
-    help="show accounting informations between two dates",
+    help="show accounting information between two dates",
 )
 @click.option(
     "-S",
