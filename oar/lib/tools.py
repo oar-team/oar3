@@ -464,8 +464,17 @@ def get_default_suspend_resume_file():
 
 
 def launch_oarexec(cmd, data_str, oarexec_files):  # pragma: no cover
-    # Prepare string to transfer to perl interpreter on head node
+    """
+    Start oarexec
 
+    :param str cmd: \
+        oarexec command.
+    :param str data_str: \
+        data to send to oarexec formated as perl dict (see :mod:`oar.tools.limited_dict2hash_perl`).
+    :param str oarexec_files: \
+        perl to read and send the content to oarexec # TODO check if this is accurate
+    """
+    # Prepare string to transfer to perl interpreter on head node
     str_to_transfer = ""
     for oarexec_file in oarexec_files:
         with open(oarexec_file, "r") as mg_file:

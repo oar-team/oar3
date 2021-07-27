@@ -1,26 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Process that launches and manages bipbip processes
-   OAREXEC_REGEXP   'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
-   OARRUNJOB_REGEXP  'OARRUNJOB_(\d+)'
-   LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)'
+"""
+Process that launches and manages bipbip and leon processes.
 
-   Commands:
-     OAREXEC
-     OARRUNJOB
-     LEONEXTERMINATE
+..
+    OAREXEC_REGEXP   'OAREXEC_(\d+)_(\d+)_(\d+|N)_(\d+)'
+    OARRUNJOB_REGEXP  'OARRUNJOB_(\d+)'
+    LEONEXTERMINATE_REGEXP   'LEONEXTERMINATE_(\d+)'
+
+Commands:
+    - OAREXEC
+    - OARRUNJOB
+    - LEONEXTERMINATE
 
 
- TODO: jsonify ?
+TODO: jsonify ?
 
+Example:
 
-   Example
-   {
-   "job_id": 5,
-   "cmd": "LEONEXTERMINATE"
-   "args": [5]
-   }
+.. code-block:: JSON
+
+    {
+        "job_id": 5,
+        "cmd": "LEONEXTERMINATE"
+        "args": [5]
+    }
+
 """  # noqa: W605
 
 import os

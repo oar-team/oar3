@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+This module is in charge of changing resource states and checking if there are
+jobs on these.
 
+It also checks all pending events in the table :ref:`database-event-logs-anchor`.
+"""
 import os
 import re
 import sys

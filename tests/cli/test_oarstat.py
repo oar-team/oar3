@@ -211,7 +211,6 @@ def test_oarstat_simple_json():
         assert len(parsed_json) == NB_JOBS
     except ValueError:
         assert False
-
     assert result.exit_code == 0
 
 

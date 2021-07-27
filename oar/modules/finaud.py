@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Check Alive and Suspected nodes.
+"""
 import sys
 
 import oar.lib.tools as tools

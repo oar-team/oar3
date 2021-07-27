@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+This module is executed periodically by the Almighty (default is every
+30 seconds).
+
+The jobs of Sarko are:
+
+ - Look at running job walltimes and ask to frag them if they had expired.
+ - Detect if fragged jobs are really fragged otherwise asks to exterminate
+   them.
+ - In "Desktop Computing" mode, it detects if a node date has expired and asks to change its state into "Suspected".
+ - Can change "Suspected" resources into "Dead" after :ref:`DEAD_SWITCH_TIME <DEAD_SWITCH_TIME>` seconds.
+
+"""
 import sys
 
 import oar.lib.tools as tools

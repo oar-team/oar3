@@ -60,4 +60,5 @@ This documentation is organized into a few different sections below:
    :caption: API reference
 
    api/oar.kao
+   api/oar.modules
 

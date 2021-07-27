@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+This module is in charge to delete the jobs. Other OAR modules or commands
+can ask to kill a job and this is Leon which performs that.
 
+There are 2 frag types :
+
+ - *normal* : Leon tries to connect to the first node allocated for the job and
+   terminates the job.
+
+ - *exterminate* : after a timeout if the *normal* method did not succeed
+   then Leon notifies this case and clean up the database for these jobs. So
+   OAR doesn't know what occured on the node and Suspects it.
+"""
 import sys
 
 import oar.lib.tools as tools

@@ -4,31 +4,22 @@ Modules descriptions
 OAR can be decomposed into several modules which perform different tasks.
 
 .. _module-almighty-anchor:
+.. _almighty_reference:
 
 Almighty
 --------
 
-This module is the OAR server. It decides what actions must be performed. It
-is divided into 3 processes:
+.. automodule:: oar.modules.almighty
+  :noindex:
 
- - One listens to a TCP/IP socket. It waits informations or commands from OAR
-   user program or from the other modules.
 
- - Another one deals with commands thanks to an automaton and launch right
-   modules one after one.
-
- - The third one handles a pool of forked processes that are used to launch and
-   stop the jobs.
-
-It's behaviour is represented in these schemes.
-
-  - General schema:
+It's behaviour is represented in these schemes, general schema:
 
   .. image:: ../_static/almighty_automaton_general.png
 
 When the Almighty automaton starts it will first open a socket and creates a
 pipe for the process communication with it's forked son. Then, Almighty will
-fork itself in a process called "appendice" which role is to listen to incoming
+fork itself in a process called "appendice" (:mod:`oar.modules.appendice_proxy`) which role is to listen to incoming
 connections on the socket and catch clients messages. These messages will be
 thereafter piped to Almighty. Then, the automaton will change it's state
 according to what message has been received.
@@ -66,20 +57,27 @@ according to what message has been received.
 Sarko
 -----
 
-This module is executed periodically by the Almighty (default is every
-30 seconds).
+.. automodule:: oar.modules.sarko
+  :noindex:
 
-The jobs of Sarko are :
+Bipbip commander
+----------------
 
- - Look at running job walltimes and ask to frag them if they had expired.
+.. automodule:: oar.modules.bipbip_commander
+  :noindex:
 
- - Detect if fragged jobs are really fragged otherwise asks to exterminate
-   them.
+Bipbip
+------
 
- - In "Desktop Computing" mode, it detects if a node date has expired and
-   asks to change its state into "Suspected".
+.. automodule:: oar.modules.bipbip
+  :noindex:
 
- - Can change "Suspected" resources into "Dead" after :ref:`DEAD_SWITCH_TIME <DEAD_SWITCH_TIME>` seconds.
+
+Leon
+----
+
+.. automodule:: oar.modules.leon
+  :noindex:
 
 Judas
 -----
@@ -111,29 +109,11 @@ The main logging functions are the following:
 
 The three last functions are used to set the log level of the message.
 
-Leon
-----
-
-This module is in charge to delete the jobs. Other OAR modules or commands
-can ask to kill a job and this is Leon which performs that.
-
-There are 2 frag types :
-
- - *normal* : Leon tries to connect to the first node allocated for the job and
-   terminates the job.
-
- - *exterminate* : after a timeout if the *normal* method did not succeed
-   then Leon notifies this case and clean up the database for these jobs. So
-   OAR doesn't know what occured on the node and Suspects it.
-
-
 NodeChangeState
 ---------------
 
-This module is in charge of changing resource states and checking if there are
-jobs on these.
-
-It also checks all pending events in the table :ref:`database-event-logs-anchor`.
+.. automodule:: oar.modules.node_change_state
+  :noindex:
 
 Scheduler
 ---------
@@ -208,14 +188,8 @@ are configured in "/etc/oar/scheduler_quotas.conf".
 Hulot
 -----
 
-This module is responsible of the advanced management of the standby mode of the
-nodes. It's related to the energy saving features of OAR. It is an optional module
-activated with the ENERGY_SAVING_INTERNAL=yes configuration variable.
-
-It runs as a fourth "Almighty" daemon and opens a pipe on which it receives commands
-from the MetaScheduler. It also communicates with a library called "WindowForker"
-that is responsible of forking shut-down/wake-up commands in a way that not too much
-commands are started at a time.
+.. automodule:: oar.modules.hulot
+  :noindex:
 
 --------------------------------------------------------------------------------
 

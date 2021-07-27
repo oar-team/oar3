@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Bipbip is responsible for starting job when the scheduling decision has been taken.
+
+The job execution is handled by the program OAREXEC executed by bipbip.
+If a prologue script is defined, bipbib executes it before.
+"""
 import os
 import re
 import socket

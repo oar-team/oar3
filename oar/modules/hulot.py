@@ -1,28 +1,38 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
+This module is responsible of the advanced management of the standby mode of the
+nodes. It's related to the energy saving features of OAR. It is an optional module
+activated with the ENERGY_SAVING_INTERNAL=yes configuration variable.
 
- This module is responsible of waking up / shutting down nodes
- when the scheduler decides it (writes it on a named pipe)
+It runs as a fourth :mod:`oar.modules.almigthy` daemon and opens a pipe on which it receives commands
+from the MetaScheduler. It also communicates with a library called "WindowForker"
+that is responsible of forking shut-down/wake-up commands in a way that not too much
+commands are started at a time.
 
- CHECK command is sent on the zmq PULL socket to Hulot:
+-----------------------------------------------------------------------------------------------------
 
-  - by MetaScheduler if there is no node to wake up / shut down in order:
-      - to check timeout and check memorized nodes list <TODO>
-      - to check booting nodes status
+This module is responsible of waking up / shutting down nodes
+when the scheduler decides it (writes it on a named pipe)
 
-  TOFINISH: Hulot will integrate window guarded launching processes
-  - by windowForker module:
-      - to avoid zombie process
-      - to messages received in queue (IPC)
+`CHECK` command is sent on the zmq PULL socket to :mod:`oar.modules.hulot` from different modules:
 
+- By :mod:`oar.kao.meta_sched` if there is no node to wake up / shut down in order.
+    - to check timeout and check memorized nodes list <TODO>
+    - to check booting nodes status
+- TOFINISH: Hulot will integrate window guarded launching processes
+- By windowForker module:
+    - to avoid zombie process
+    - to messages received in queue (IPC)
 
 Example of received message:
-{
- "cmd": "WAKEUP",
- "nodes": ["node1", "node2" ]
-}
 
+.. code-block:: JSON
+
+    {
+        "cmd": "WAKEUP",
+        "nodes": ["node1", "node2" ]
+    }
 """
 
 import os

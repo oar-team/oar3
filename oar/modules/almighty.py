@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+This module is the OAR server. It decides what actions must be performed. It is divided into 3 processes:
+
+    - One listens to a TCP/IP socket. It waits information or commands from OAR
+      user program or from the other modules.
+    - Another one deals with commands thanks to an automaton and launch right
+      modules one after one.
+    - The third one handles a pool of forked processes that are used to launch and
+      stop the jobs.
+
+"""
 import os
 import re
 import signal
@@ -118,7 +129,7 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 
 def launch_command(command):
-    """launch the command line passed in parameter"""
+    """Launch the command line passed in parameter"""
 
     # TODO move to oar.lib.tools
     # global finishTag
@@ -134,11 +145,12 @@ def launch_command(command):
 
 
 def start_hulot():
+    """Start :mod:`oar.kao.hulot`"""
     return tools.Popen(hulot_command)
 
 
 def check_hulot(hulot):
-    """Check the prescence hulot process"""
+    """Check the presence hulot process"""
     return tools.check_process(hulot.pid)
 
 
@@ -148,22 +160,27 @@ def check_hulot(hulot):
 
 
 def meta_scheduler():
+    """Start :mod:`oar.kao.meta_sched`"""
     return launch_command(meta_sched_command)
 
 
 def check_for_villains():
+    """Start :mod:`oar.modules.sarko`"""
     return launch_command(check_for_villains_command)
 
 
 def check_nodes():
+    """Start :mod:`oar.modules.finaud`"""
     return launch_command(check_for_node_changes)
 
 
 def leon():
+    """Start :mod:`oar.modules.leon`"""
     return launch_command(leon_command)
 
 
 def nodeChangeState():
+    """Start :mod:`oar.modules.node_change_state`"""
     return launch_command(nodeChangeState_command)
 
 
@@ -204,7 +221,7 @@ class Almighty(object):
         self.start_companions()
 
     def start_companions(self):
-        """Start appendice proxy  and bipbip commander processes"""
+        """Start appendice :mod:`oar.modules.appendice_proxy` and :mod:`oar.modules.bipbip_commander` commander processes"""
 
         self.appendice_proxy = tools.Popen(proxy_appendice_command)
         self.bipbip_commander = tools.Popen(bipbip_commander)
@@ -295,7 +312,7 @@ class Almighty(object):
             )
 
     def run(self, loop=True):
-
+        """Start :mod:`oar.modules.almigthy` main loop."""
         global finishTag
         while True:
             logger.debug("Current state [" + self.state + "]")
