@@ -18,7 +18,7 @@ services:
       context: $ROOT_PROJECT
       dockerfile: $ROOT_PROJECT/scripts/ci/docker/Dockerfile
       args:
-        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.6}
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.7}
     depends_on:
       - postgres_db
     volumes:
