@@ -27,7 +27,9 @@ def minimal_db_initialization(request):
 
 
 def test_app_jobs_index(client):
-    assert client.get(url_for("jobs.index")).status_code == 200
+    res = client.get(url_for("jobs.index"))
+    print(res.json)
+    assert res.satus_code == 200
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")

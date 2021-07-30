@@ -51,7 +51,8 @@ def test_get_paginate():
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_get_one():
-    response = client.get("/resources/1")
+    id_to_get = 1
+    response = client.get("/resources/{}".format(id_to_get))
     assert response.status_code == 200
+    assert response.json()["id"] == id_to_get
     print(response.json())
-    assert len(response.json()) == 5
