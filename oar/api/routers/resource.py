@@ -1,9 +1,10 @@
-from fastapi import APIRouter  # , Depends
+from typing import List
+
+from fastapi import APIRouter, HTTPException
 
 from oar.lib import Resource, db
 
-yop = None
-
+from .. import schemas
 
 router = APIRouter(
     prefix="/resources",
@@ -22,7 +23,7 @@ def get_db():
         db.session.close()
 
 
-@router.get("/")
+@router.get("/", response_model=List[schemas.DynamicResourceSchema])
 def get_resources(offset: int = 0, limit: int = 100):
     # detailed = "full"
     # resources = db.queries.get_resources(None, detailed)
@@ -32,9 +33,9 @@ def get_resources(offset: int = 0, limit: int = 100):
     return resources
 
 
-@router.get("/{resource_id}")
+@router.get("/{resource_id}", response_model=schemas.DynamicResourceSchema)
 def get_resource(resource_id: int):
-    # resource = db.query(Resource).offset(offset).limit(limit).all()
-    resource = Resource.query.get_or_404(resource_id)
-    # print(resources)
+    resource = db.query(Resource).get(resource_id)
+    if resource is None:
+        raise HTTPException(status_code=404, detail="User not found")
     return resource
