@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
-from .routers import frontend, resource
+from oar.lib import db
+
+from .query import APIQuery, APIQueryCollection
+from .routers import frontend, job, resource
 
 # from oar import VERSION
 # from oar.lib import config
@@ -8,16 +11,16 @@ from .routers import frontend, resource
 # from oar.api import API_VERSION
 
 
-app = FastAPI()
+def create_app():
+    """Return the OAR API application instance."""
+    app = FastAPI()
+    db.query_class = APIQuery
+    db.query_collection_class = APIQueryCollection
+    app.include_router(frontend.router)
+    app.include_router(resource.router)
+    app.include_router(job.router)
 
-# @app.middleware("http")
-# async def add_user_if_any(request: Request, call_next):
-#     response = await call_next(request)
-#     return response
+    return app
 
-app.include_router(frontend.router)
-app.include_router(resource.router)
 
-# @app.get("/")
-# async def root():
-#    return {"api_version": API_VERSION, "oar_version": VERSION}
+app = create_app()
