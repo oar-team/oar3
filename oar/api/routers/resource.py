@@ -23,8 +23,28 @@ def get_db():
         db.session.close()
 
 
+def attach_links(resource):
+    rel_map = (
+        ("node", "member", "resource_index"),
+        # ("show", "self", "show"),
+        # ("jobs", "collection", "jobs"),
+    )
+    links = []
+    for title, rel, endpoint in rel_map:
+        if title == "node" and "network_address" in resource:
+            url = router.url_path_for(
+                endpoint,
+                network_address=resource["network_address"],
+            )
+            links.append({"rel": rel, "href": url, "title": title})
+        elif title != "node" and "id" in resource:
+            router.url_path_for(endpoint, resource_id=resource["id"])
+            links.append({"rel": rel, "href": url, "title": title})
+    resource["links"] = links
+
+
 @router.get("/", response_model=List[schemas.DynamicResourceSchema])
-def get_resources(offset: int = 0, limit: int = 100):
+def resource_index(offset: int = 0, limit: int = 100):
     # detailed = "full"
     # resources = db.queries.get_resources(None, detailed)
     # import pdb; pdb.set_trace()

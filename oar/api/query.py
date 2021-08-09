@@ -83,34 +83,34 @@ class PaginationQuery(object):
     def next_url(self):
         """Returns the next url for the current endpoint."""
         if self.has_next:
-            kwargs = dict(self.request.query_params)
-            # kwargs.update(request.view_args.copy())
-            kwargs["offset"] = self.offset + self.limit
-            kwargs["limit"] = self.limit
+            dict_params = dict(self.request.query_params)
+            # dict_params.update(request.view_args.copy())
+            dict_params["offset"] = self.offset + self.limit
+            dict_params["limit"] = self.limit
             endpoint_url = self.request.url.path
-            return replace_query_params(endpoint_url, kwargs)
+            return replace_query_params(endpoint_url, dict_params)
 
     @cached_property
     def previous_url(self):
         """Returns the next previous for the current endpoint."""
         if self.has_previous:
-            kwargs = dict(self.request.query_params)
-            # kwargs.update(request.view_args.copy())
-            kwargs["offset"] = self.offset - self.limit
-            kwargs["limit"] = self.limit
-            endpoint_url = self.request.app.url_path_for("index")
-            return replace_query_params(endpoint_url, kwargs)
+            dict_params = dict(self.request.query_params)
+            # dict_params.update(request.view_args.copy())
+            dict_params["offset"] = self.offset - self.limit
+            dict_params["limit"] = self.limit
+            endpoint_url = self.request.url.path
+            return replace_query_params(endpoint_url, dict_params)
 
     @cached_property
     def current_url(self):
         """Returns the url for the current endpoint."""
-        # kwargs = g.request_args.copy()
-        # kwargs.update(request.view_args.copy())
-        # kwargs["offset"] = self.offset
-        # if self.limit > 0:
-        #     kwargs["limit"] = self.limit
-        # return url_for(request.endpoint, **kwargs)
-        return "oops"
+        dict_params = dict(self.request.query_params)
+        # dict_params.update(request.view_args.copy())
+        dict_params["offset"] = self.offset
+        if self.limit > 0:
+            dict_params["limit"] = self.limit
+        endpoint_url = self.request.url.path
+        return replace_query_params(endpoint_url, dict_params)
 
     @cached_property
     def links(self):

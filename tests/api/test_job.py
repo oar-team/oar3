@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from conftest import ordered
 from oar.api.app import app
+from oar.api.url_utils import replace_query_params
 from oar.kao.meta_sched import meta_schedule
 from oar.lib import FragJob, Job, db
 from oar.lib.job_handling import insert_job, set_job_state
@@ -18,6 +19,7 @@ client = TestClient(app)
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_jobs_index():
     response = client.get("/jobs")
+    print("prout", response)
     assert response.status_code == 200
 
 
@@ -74,11 +76,11 @@ def test_app_jobs_get_all_paginate():
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_get_one_details():
-    """GET /jobs/show/<id>/details"""
+    """GET /jobs/<id>?details=true"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     meta_schedule("internal")
-    res = client.get("/jobs/{}/details".format(job_id))
-    print(res.json())
+    res = client.get("/jobs/{}?details=true".format(job_id))
+    print("json res:", res.json())
     assert len(res.json()["resources"]) == 4
 
 
@@ -95,17 +97,19 @@ def test_app_jobs_get_user():
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_jobs_get_state():
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="alice")
     set_job_state(job_id, "Hold")
-    res = client.get("/jobs", params={"state": ["Waiting", "Running"]})
 
-    # res = client.get(url_for("jobs.index", state=["Waiting", "Running"]))
-    print(res.json(), len(res.json()["items"]))
+    insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="alice")
+    url = replace_query_params("/jobs", {"states": ["Waiting", "Running"]})
+    print("url", url)
+    res = client.get(url)
+
+    print(res.json())
     assert len(res.json()["items"]) == 1
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_ids(client):
+def test_app_jobs_get_ids():
     job_id1 = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     job_id2 = insert_job(
         res=[(60, [("resource_id=4", "")])], properties="", user="alice"
@@ -126,7 +130,7 @@ def test_app_jobs_get_array():
         array_id=3,
     )
     insert_job(res=[(60, [("resource_id=4", "")])], properties="", array_id=3)
-    res = client.get("/jobs", params={"array": 3})
+    res = client.get(replace_query_params("/jobs", params={"array": 3}))
     print(res)
     print(res.json(), len(res.json()["items"]))
     assert len(res.json()["items"]) == 2
