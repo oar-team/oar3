@@ -170,15 +170,20 @@ def test_app_jobs_get_from_to_ar():
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_forbidden():
     data = {"resource": [], "command": 'sleep "1"'}
-    res = client.post("/jobs", json=data)
+    url = replace_query_params("/jobs/", params=data)
+    print("test: ", client.__dict__)
+    res = client.post(url)
+    print(res.__dict__)
     assert res.status_code == 403
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post():
     data = {"resource": [], "command": 'sleep "1"'}
-    res = client.post("/jobs", data=data, headers={"X_REMOTE_IDENT": "bob"})
-    print(res.json())
+    client.__dict__["headers"].update({"X_REMOTE_IDENT": "bob"})
+
+    res = client.post(replace_query_params("/jobs/", params=data))
+    print(res.__dict__)
 
     job_ids = db.query(Job.id).all()
     assert job_ids != []
@@ -194,12 +199,13 @@ def test_app_jobs_delete_1(monkeypatch):
     """POST /jobs/<id>/deletions/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
-        "/jobs{}/deletion/new".format(job_id), headers={"X_REMOTE_IDENT": "bob"}
+        "/jobs/{}/deletions/new".format(job_id), headers={"X_REMOTE_IDENT": "bob"}
     )
     print(res.json())
     assert res.status_code == 200
     fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
     assert fragjob_id[0] == job_id
+    print(res.json())
     assert res.json()["exit_status"] == 0
 
 

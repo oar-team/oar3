@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from oar.cli.oardel import oardel
 from oar.lib import Job, db
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
@@ -343,3 +344,27 @@ async def submit(
     return data
 
     # TODO cmd_output:
+
+
+# @app.route("/<int:job_id>", methods=["DELETE"])
+# @app.route("/<any(array):array>/<int:job_id>", methods=["DELETE"])
+# @app.route("/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
+# @app.route("/<any(array):array>/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
+@router.delete("/{job_id}")
+@router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
+def delete(job_id: int, array=None, user: dict = Depends(need_authentication)):
+    user = user
+
+    # TODO Get and return error codes ans messages
+    if array:
+        cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
+        print("ret", cmd_ret)
+    else:
+        cmd_ret = oardel(
+            [job_id], None, None, None, None, None, None, None, user, False
+        )
+    data = {}
+    data["id"] = job_id
+    data["cmd_output"] = cmd_ret.to_str()
+    data["exit_status"] = cmd_ret.get_exit_value()
+    return data
