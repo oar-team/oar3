@@ -2,9 +2,12 @@ import os
 import re
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 
 from oar.cli.oardel import oardel
+from oar.cli.oarhold import oarhold
+from oar.cli.oarresume import oarresume
 from oar.lib import Job, db
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
@@ -57,7 +60,7 @@ def attach_links(job):
 
 
 @router.get("/")
-def index(
+async def index(
     request: Request,
     user: str = None,
     start_time: int = 0,
@@ -92,7 +95,7 @@ def index(
 
 
 @router.get("/{job_id}")
-def show(job_id: int, details: Optional[bool] = None):
+async def show(job_id: int, details: Optional[bool] = None):
     job = db.query(Job).get_or_404(job_id)
     data = job.asdict()
     if details:
@@ -117,7 +120,7 @@ def nodes(
 
 
 @router.get("/{job_id}/resources")
-def get_resources(
+async def get_resources(
     request: Request,
     job_id: int,
     offset: int = 0,
@@ -137,36 +140,37 @@ def get_resources(
         data["items"].append(item)
 
 
-@router.post("/")
-async def submit(
-    command: str,
-    workdir: Optional[str] = None,
-    param_file: Optional[str] = None,
-    array: Optional[int] = None,
-    queue: Optional[str] = None,
-    reservation: Optional[str] = None,
-    signal: Optional[int] = None,
-    directory: Optional[str] = None,
-    project: Optional[str] = None,
-    name: Optional[str] = None,
-    notify: Optional[str] = None,
-    resubmit: Optional[int] = None,
-    stdout: Optional[str] = None,
-    stderr: Optional[str] = None,
-    hold: Optional[bool] = None,
-    checkpoint: int = 0,
-    resource: List[str] = Query([]),
-    user: dict = Depends(need_authentication),
-    types: Optional[List[str]] = Query(None, alias="type"),
-    dependencies: Optional[List[int]] = Query(None, alias="after"),
-    import_job_key_inline: Optional[str] = Query(None, alias="import-job-key-inline"),
-    export_job_key_to_file: Optional[str] = Query(None, alias="export-job-key-to-file"),
-    import_job_key_from_file: Optional[str] = Query(
+class SumbitParameters(BaseModel):
+    command: str
+    resource: List[str] = Body([])
+    workdir: Optional[str] = None
+    param_file: Optional[str] = None
+    array: Optional[int] = None
+    queue: Optional[str] = None
+    reservation: Optional[str] = None
+    signal: Optional[int] = None
+    directory: Optional[str] = None
+    project: Optional[str] = None
+    name: Optional[str] = None
+    notify: Optional[str] = None
+    resubmit: Optional[int] = None
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    hold: Optional[bool] = None
+    checkpoint: int = 0
+    types: Optional[List[str]] = Body(None, alias="type")
+    dependencies: Optional[List[int]] = Body(None, alias="after")
+    import_job_key_inline: Optional[str] = Body(None, alias="import-job-key-inline")
+    export_job_key_to_file: Optional[str] = Body(None, alias="export-job-key-to-file")
+    import_job_key_from_file: Optional[str] = Body(
         None, alias="import-job-key-from-file"
-    ),
-    properties: Optional[str] = Query(None, alias="property"),
-    use_job_key: bool = Query(False, alias="use-job-key"),
-):
+    )
+    properties: Optional[str] = Body(None, alias="property")
+    use_job_key: bool = Body(False, alias="use-job-key")
+
+
+@router.post("/")
+async def submit(sp: SumbitParameters, user: dict = Depends(need_authentication)):
     """Job submission
 
         resource (string): the resources description as required by oar (example: “/nodes=1/cpu=2”)
@@ -260,68 +264,66 @@ async def submit(
         Note: up to now yaml is no supported, only json and html form.
 
     """
-
     initial_request = ""  # TODO Json version ?
 
     reservation_date = 0
-    if reservation:
-        (error, reservation_date) = check_reservation(reservation)
+    if sp.reservation:
+        (error, reservation_date) = check_reservation(sp.reservation)
         if error[0] != 0:
             pass  # TODO
 
-    if command and re.match(r".*\$HOME.*", command):
-        command = command.replace("$HOME", os.path.expanduser("~" + user))
+    if sp.command and re.match(r".*\$HOME.*", sp.command):
+        sp.command = sp.command.replace("$HOME", os.path.expanduser("~" + user))
 
-    if directory and re.match(r".*\$HOME.*", directory):
-        directory = directory.replace("$HOME", os.path.expanduser("~" + user))
+    if sp.directory and re.match(r".*\$HOME.*", sp.directory):
+        sp.directory = sp.directory.replace("$HOME", os.path.expanduser("~" + user))
 
-    if workdir and re.match(r".*\$HOME.*", workdir):
-        workdir = workdir.replace("$HOME", os.path.expanduser("~" + user))
+    if sp.workdir and re.match(r".*\$HOME.*", sp.workdir):
+        sp.workdir = sp.workdir.replace("$HOME", os.path.expanduser("~" + user))
 
     array_params = []
     # array_nb = 1 # TODO
-    if param_file:
-        array_params = param_file.split("\n")
+    if sp.param_file:
+        array_params = sp.param_file.split("\n")
         # array_nb = len(array_params)
     # if not isinstance(resource, list):
     #    resource = [resource]
 
     job_parameters = JobParameters(
         job_type="PASSIVE",
-        command=command,
-        resource=resource,
-        workdir=workdir,  # TODO
+        command=sp.command,
+        resource=sp.resource,
+        workdir=sp.workdir,  # TODO
         array_params=array_params,
-        array=array,
+        array=sp.array,
         # scanscript=scanscript, TODO
-        queue=queue,
-        properties=properties,
+        queue=sp.queue,
+        properties=sp.properties,
         reservation=reservation_date,
-        checkpoint=checkpoint,
-        signal=signal,
-        types=types,
-        directory=directory,
-        project=project,
+        checkpoint=sp.checkpoint,
+        signal=sp.signal,
+        types=sp.types,
+        directory=sp.directory,
+        project=sp.project,
         initial_request=initial_request,
         user=user,
-        name=name,
-        dependencies=dependencies,
-        notify=notify,
-        resubmit=resubmit,
-        use_job_key=use_job_key,
-        import_job_key_from_file=import_job_key_from_file,
-        import_job_key_inline=import_job_key_inline,
-        export_job_key_to_file=export_job_key_to_file,
-        stdout=stdout,
-        stderr=stderr,
-        hold=hold,
+        name=sp.name,
+        dependencies=sp.dependencies,
+        notify=sp.notify,
+        resubmit=sp.resubmit,
+        use_job_key=sp.use_job_key,
+        import_job_key_from_file=sp.import_job_key_from_file,
+        import_job_key_inline=sp.import_job_key_inline,
+        export_job_key_to_file=sp.export_job_key_to_file,
+        stdout=sp.stdout,
+        stderr=sp.stderr,
+        hold=sp.hold,
     )
 
     # import pdb; pdb.set_trace()
 
     error = job_parameters.check_parameters()
     if error[0] != 0:
-        print("error")
         raise HTTPException(status_code=501)
         pass  # TODO
 
@@ -352,9 +354,9 @@ async def submit(
 # @app.route("/<any(array):array>/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
 @router.delete("/{job_id}")
 @router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
-def delete(job_id: int, array=None, user: dict = Depends(need_authentication)):
-    user = user
-
+async def delete(
+    job_id: int, array: bool = False, user: dict = Depends(need_authentication)
+):
     # TODO Get and return error codes ans messages
     if array:
         cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
@@ -363,6 +365,63 @@ def delete(job_id: int, array=None, user: dict = Depends(need_authentication)):
         cmd_ret = oardel(
             [job_id], None, None, None, None, None, None, None, user, False
         )
+    data = {}
+    data["id"] = job_id
+    data["cmd_output"] = cmd_ret.to_str()
+    data["exit_status"] = cmd_ret.get_exit_value()
+    return data
+
+
+@router.post("/{job_id}/signal/{signal}")
+@router.post("/{job_id}/checkpoints/new")
+async def signal(
+    job_id: int, signal: Optional[int] = None, user: dict = Depends(need_authentication)
+):
+
+    if signal:
+        checkpointing = False
+    else:
+        checkpointing = True
+
+    cmd_ret = oardel(
+        [job_id], checkpointing, signal, None, None, None, None, None, user, False
+    )
+
+    data = {}
+    data["id"] = job_id
+    data["cmd_output"] = cmd_ret.to_str()
+    data["exit_status"] = cmd_ret.get_exit_value()
+
+    return data
+
+
+@router.post("/{job_id}/resumptions/new")
+async def resume(job_id: int, user: dict = Depends(need_authentication)):
+    """Asks to resume a holded job"""
+
+    cmd_ret = oarresume([job_id], None, None, None, user, False)
+    data = {}
+    data["id"] = job_id
+    data["cmd_output"] = cmd_ret.to_str()
+    data["exit_status"] = cmd_ret.get_exit_value()
+
+    return data
+
+
+@router.post("/{job_id}/{hold}/new")
+async def hold(
+    request: Request,
+    job_id: int,
+    hold: str = "hold",
+    user: dict = Depends(need_authentication),
+):
+    print("user is", user)
+    running = False
+    if hold == "rhold":
+        running = True
+
+    cmd_ret = oarhold([job_id], running, None, None, None, user, False)
+
     data = {}
     data["id"] = job_id
     data["cmd_output"] = cmd_ret.to_str()

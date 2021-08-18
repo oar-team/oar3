@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from fastapi.testclient import TestClient
 
 import oar.lib.tools  # for monkeypatching
+from oar.api.query import APIQuery
 from oar.lib import db
+from oar.lib.basequery import BaseQuery
 
 
 def ordered(obj):
@@ -24,16 +27,24 @@ def assign_node_list(nodes):  # TODO TOREPLACE
     node_list = nodes
 
 
-@pytest.fixture(scope="function")
-def minimal_db_initialization():
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
-        )
-        # add some resources
-        for i in range(10):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
-        yield
+@pytest.fixture()
+def fastapi_app():
+    from oar.api.app import create_app
+
+    app = create_app()
+
+    # force to use APIQuery needed when all tests are launched and previous ones have set BaseQuery
+    db.sessionmaker.configure(query_cls=APIQuery)
+
+    yield app
+
+    db.sessionmaker.configure(query_cls=BaseQuery)
+
+
+@pytest.fixture()
+def client(fastapi_app):
+    with TestClient(fastapi_app) as app:
+        yield app
 
 
 @pytest.fixture(scope="function")
@@ -53,3 +64,16 @@ def monkeypatch_tools(request, monkeypatch):
         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes),
     )
     monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
+
+
+@pytest.fixture(scope="function")
+def minimal_db_initialization(client):
+    with db.session(ephemeral=True):
+        db["Queue"].create(
+            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+        )
+        # add some resources
+        for i in range(10):
+            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
+
+        yield

@@ -1,30 +1,22 @@
 # -*- coding: utf-8 -*-
-import json
-
 import pytest
 
-# from oar.api.routers.resource import get_db
-from fastapi.testclient import TestClient
-
 from conftest import ordered
-from oar.api.app import app
 from oar.api.url_utils import replace_query_params
 from oar.kao.meta_sched import meta_schedule
 from oar.lib import FragJob, Job, db
 from oar.lib.job_handling import insert_job, set_job_state
 
-client = TestClient(app)
-
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_jobs_index():
+def test_jobs_index(client):
     response = client.get("/jobs")
     print("prout", response)
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_jobs_get_all():
+def test_jobs_get_all(client):
     insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     response = client.get("/jobs")
     assert response.status_code == 200
@@ -33,7 +25,7 @@ def test_jobs_get_all():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_details():
+def test_app_jobs_details(client):
     insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     res = client.get("/jobs?details=details")
 
@@ -42,7 +34,7 @@ def test_app_jobs_details():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_table():
+def test_app_jobs_table(client):
     insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     res = client.get("/jobs?details=table")
     assert res.status_code == 200
@@ -51,7 +43,7 @@ def test_app_jobs_table():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_one():
+def test_app_jobs_get_one(client):
     """GET /jobs/<id>"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     res = client.get("/jobs/{}".format(job_id))
@@ -61,7 +53,7 @@ def test_app_jobs_get_one():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_all_paginate():
+def test_app_jobs_get_all_paginate(client):
     for i in range(10):
         insert_job(res=[(60, [("resource_id=4", "")])], properties="")
 
@@ -75,7 +67,7 @@ def test_app_jobs_get_all_paginate():
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_get_one_details():
+def test_app_jobs_get_one_details(client):
     """GET /jobs/<id>?details=true"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     meta_schedule("internal")
@@ -85,7 +77,7 @@ def test_app_jobs_get_one_details():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_user():
+def test_app_jobs_get_user(client):
     insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="alice")
 
@@ -95,7 +87,7 @@ def test_app_jobs_get_user():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_state():
+def test_app_jobs_get_state(client):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     set_job_state(job_id, "Hold")
 
@@ -109,7 +101,7 @@ def test_app_jobs_get_state():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_ids():
+def test_app_jobs_get_ids(client):
     job_id1 = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     job_id2 = insert_job(
         res=[(60, [("resource_id=4", "")])], properties="", user="alice"
@@ -122,7 +114,7 @@ def test_app_jobs_get_ids():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_jobs_get_array():
+def test_app_jobs_get_array(client):
     insert_job(
         res=[(60, [("resource_id=4", "")])],
         state="Terminated",
@@ -139,7 +131,7 @@ def test_app_jobs_get_array():
 @pytest.mark.skip(reason="debug pending")
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_get_from_to_ar():
+def test_app_jobs_get_from_to_ar(client):
     t0 = get_date()  # noqa
     insert_job(
         res=[(60, [("resource_id=2", "")])],
@@ -168,24 +160,22 @@ def test_app_jobs_get_from_to_ar():
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_job_post_forbidden():
+def test_app_job_post_forbidden(client):
     data = {"resource": [], "command": 'sleep "1"'}
     url = replace_query_params("/jobs/", params=data)
-    print("test: ", client.__dict__)
     res = client.post(url)
     print(res.__dict__)
     assert res.status_code == 403
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_app_job_post():
+def test_app_job_post(client):
     data = {"resource": [], "command": 'sleep "1"'}
-    client.__dict__["headers"].update({"X_REMOTE_IDENT": "bob"})
 
-    res = client.post(replace_query_params("/jobs/", params=data))
-    print(res.__dict__)
+    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
 
     job_ids = db.query(Job.id).all()
+    print(res.json())
     assert job_ids != []
     href = "/jobs/{}".format(job_ids[0][0])
 
@@ -195,12 +185,14 @@ def test_app_job_post():
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_delete_1(monkeypatch):
+def test_app_jobs_delete_1(client, monkeypatch):
     """POST /jobs/<id>/deletions/new"""
+
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{}/deletions/new".format(job_id), headers={"X_REMOTE_IDENT": "bob"}
     )
+
     print(res.json())
     assert res.status_code == 200
     fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
@@ -211,8 +203,9 @@ def test_app_jobs_delete_1(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_delete_2(monkeypatch):
+def test_app_jobs_delete_2(client, monkeypatch):
     """DELETE /jobs/<id>/deletions/new"""
+
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.delete("/jobs/{}".format(job_id), headers={"X_REMOTE_IDENT": "bob"})
     print(res.json())
@@ -223,8 +216,7 @@ def test_app_jobs_delete_2(monkeypatch):
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-@pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_array_delete_1(monkeypatch):
+def test_app_array_delete_1(client):
     """POST /jobs/array/<id>/deletions/new"""
     array_id = 1
     for _ in range(5):
@@ -234,11 +226,15 @@ def test_app_array_delete_1(monkeypatch):
             user="bob",
             array_id=array_id,
         )
+    url = replace_query_params(
+        "/jobs/{job_id}/deletions/new".format(job_id=1),
+        params={"array": True},
+    )
     res = client.post(
-        "/jobs/array/{array}/{job_id}/deletions/new".format(array=id, job_id=1)
+        url,
+        headers={"X_REMOTE_IDENT": "bob"},
     )
 
-    print(res.json())
     assert res.status_code == 200
     fragjob_id = db.query(FragJob.job_id).all()
     assert len(fragjob_id) == 5
@@ -247,7 +243,7 @@ def test_app_array_delete_1(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_array_delete_2(monkeypatch):
+def test_app_array_delete_2(client, monkeypatch):
     """DELETE /jobs/array/<id>/deletions/new"""
     array_id = 1
     for _ in range(5):
@@ -258,7 +254,9 @@ def test_app_array_delete_2(monkeypatch):
             array_id=array_id,
         )
     res = client.delete(
-        "jobs/array/{job_id}/delete".format(job_id=array_id),
+        replace_query_params(
+            "jobs/{job_id}".format(job_id=array_id), params={"array": True}
+        ),
         headers={"X_REMOTE_IDENT": "bob"},
     )
     print(res.json())
@@ -270,8 +268,7 @@ def test_app_array_delete_2(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_ckeckpoint_1(monkeypatch):
-    """POST /jobs/<id>/checkpoints/new"""
+def test_app_jobs_ckeckpoint_1(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/checkpoints/new".format(job_id=job_id),
@@ -285,22 +282,7 @@ def test_app_jobs_ckeckpoint_1(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_signal_1(monkeypatch):
-    """POST /jobs/<id>/signal/<signal>"""
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
-    res = client.post(
-        "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
-        headers={"X_REMOTE_IDENT": "bob"},
-    )
-    print(res.json())
-    assert res.status_code == 200
-    # Can not checkpoint job is not running
-    assert res.json()["exit_status"] == 5
-
-
-@pytest.mark.usefixtures("minimal_db_initialization")
-@pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_ckeckpoint_2(monkeypatch):
+def test_app_jobs_ckeckpoint_2(client, monkeypatch):
     """POST /jobs/<id>/checkpoints/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     meta_schedule("internal")
@@ -316,7 +298,22 @@ def test_app_jobs_ckeckpoint_2(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_signal_2(monkeypatch):
+def test_app_jobs_signal_1(client, monkeypatch):
+    """POST /jobs/<id>/signal/<signal>"""
+    job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
+    res = client.post(
+        "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
+        headers={"X_REMOTE_IDENT": "bob"},
+    )
+    print(res.json())
+    assert res.status_code == 200
+    # Can not checkpoint job is not running
+    assert res.json()["exit_status"] == 5
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_signal_2(client, monkeypatch):
     """POST /jobs/<id>/signal/<signal>"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     meta_schedule("internal")
@@ -332,7 +329,7 @@ def test_app_jobs_signal_2(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_hold_1(monkeypatch):
+def test_app_jobs_hold_1(client, monkeypatch):
     """POST /jobs/<id>/holds/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
@@ -346,7 +343,7 @@ def test_app_jobs_hold_1(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_hold_2(monkeypatch):
+def test_app_jobs_hold_2(client, monkeypatch):
     """POST /jobs/<id>/holds/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     meta_schedule("internal")
@@ -362,11 +359,11 @@ def test_app_jobs_hold_2(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_rhold_user_not_allowed_1(monkeypatch):
-    """POST /jobs/<id>/rholds/new"""
+def test_app_jobs_rhold_user_not_allowed_1(client, monkeypatch):
+    """POST /jobs/<id>/rhold/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
-        "/jobs/{job_id}/rholds/new".format(job_id=job_id),
+        "/jobs/{job_id}/rhold/new".format(job_id=job_id),
         headers={"X_REMOTE_IDENT": "bob"},
     )
     print(res.json())
@@ -376,11 +373,11 @@ def test_app_jobs_rhold_user_not_allowed_1(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_rhold_2(monkeypatch):
-    """POST /jobs/<id>/rholds/new"""
+def test_app_jobs_rhold_2(client, monkeypatch):
+    """POST /jobs/<id>/rhold/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
-        "/jobs/{job_id}/rholds/new".format(job_id=job_id),
+        "/jobs/{job_id}/rhold/new".format(job_id=job_id),
         headers={"X_REMOTE_IDENT": "oar"},
     )
     print(res.json())
@@ -390,7 +387,7 @@ def test_app_jobs_rhold_2(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_resume_bad_nohold(monkeypatch):
+def test_app_jobs_resume_bad_nohold(client, monkeypatch):
     """POST /jobs/<id>/resumptions/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
@@ -404,7 +401,7 @@ def test_app_jobs_resume_bad_nohold(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_resume_not_allowed(monkeypatch):
+def test_app_jobs_resume_not_allowed(client, monkeypatch):
     """POST /jobs/<id>/resumptions/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     set_job_state(job_id, "Suspended")
@@ -419,7 +416,7 @@ def test_app_jobs_resume_not_allowed(monkeypatch):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_resume(monkeypatch):
+def test_app_jobs_resume(client, monkeypatch):
     """POST /jobs/<id>/resumptions/new"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     set_job_state(job_id, "Suspended")
@@ -457,10 +454,10 @@ def test_app_jobs_resume(monkeypatch):
 def test_app_job_post_bug1(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
-    res = client.post("/jobs", json=data, headers={"X_REMOTE_IDENT": "bob"})
-    print(res.json())
+    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
+    print(res.json())
     assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
@@ -468,8 +465,8 @@ def test_app_job_post_bug1(client):
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_job_post_bug2(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
-    data = {"resource": "nodes=1,walltime=00:10:0", "command": 'sleep "1"'}
-    res = client.post("/jobs", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
+    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
     print(res.json())
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
@@ -484,7 +481,7 @@ def test_app_job_post_bug3(client):
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
         "command": 'sleep "1"',
     }
-    res = client.post("/jobs", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
     print(res.json())
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
@@ -497,12 +494,12 @@ def test_app_job_post_json(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
-        "command": 'sleep "1"',
+        "command": 'sleep "prout"',
     }
     res = client.post(
-        "/jobs",
-        json=json.dumps(data),
-        content_type="application/json",
+        "/jobs/",
+        json=data,
+        # content_type="application/json",
         headers={"X_REMOTE_IDENT": "bob"},
     )
     print(res.json())
@@ -519,7 +516,8 @@ def test_app_job_post_array(client):
         "command": 'sleep "1"',
         "param_file": "param9 9\nparam8 8\nparam7 7",
     }
-    res = client.post("/jobs", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    print(res.__dict__)
     print(res.json())
     job_array_ids = (
         db.query(Job.id, Job.array_id, Job.array_index, Job.command)
