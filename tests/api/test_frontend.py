@@ -20,6 +20,6 @@ def test_whoami_nouser():
 
 
 def test_whoami_user():
-    response = client.get("/whoami", headers={"X-REMOTE-IDENT": "bob"})
+    response = client.get("/whoami", headers={"X_REMOTE_IDENT": "bob"})
     assert response.status_code == 200
     assert response.json() == {"user": "bob"}

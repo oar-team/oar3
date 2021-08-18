@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends  # ,Request, Header, Depends
 from oar import VERSION
 
 from .. import API_VERSION
-from ..dependencies import need_authentication
+from ..dependencies import get_user
 
 # from oar.lib import config
 
@@ -25,5 +25,5 @@ async def root():
 @router.get(
     "/whoami",
 )
-async def whoami(user: Optional[str] = Depends(need_authentication)):
+async def whoami(user: Optional[str] = Depends(get_user)):
     return {"user": user}

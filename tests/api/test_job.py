@@ -11,7 +11,6 @@ from oar.lib.job_handling import insert_job, set_job_state
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_jobs_index(client):
     response = client.get("/jobs")
-    print("prout", response)
     assert response.status_code == 200
 
 

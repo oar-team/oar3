@@ -47,7 +47,7 @@ def client(fastapi_app):
         yield app
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
