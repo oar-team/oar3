@@ -21,7 +21,6 @@ def minimal_db_initialization(request):
         # add some resources
         for i in range(5):
             db["Resource"].create(network_address="localhost")
-
         db["Queue"].create(name="default")
         yield
 
@@ -29,7 +28,7 @@ def minimal_db_initialization(request):
 def test_app_jobs_index(client):
     res = client.get(url_for("jobs.index"))
     print(res.json)
-    assert res.satus_code == 200
+    assert res.status_code == 200
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
