@@ -44,7 +44,7 @@ def attach_links(resource):
 
 
 @router.get("/", response_model=List[schemas.DynamicResourceSchema])
-def resource_index(offset: int = 0, limit: int = 100):
+async def resource_index(offset: int = 0, limit: int = 100):
     # detailed = "full"
     # resources = db.queries.get_resources(None, detailed)
     # import pdb; pdb.set_trace()
@@ -54,8 +54,10 @@ def resource_index(offset: int = 0, limit: int = 100):
 
 
 @router.get("/{resource_id}", response_model=schemas.DynamicResourceSchema)
-def get_resource(resource_id: int):
+async def get_resource(resource_id: int):
+    print("get resources: ", resource_id)
+    print(db.query(Resource).all())
     resource = db.query(Resource).get(resource_id)
     if resource is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Resource not found")
     return resource
