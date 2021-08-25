@@ -74,7 +74,6 @@ def create_app():
 
     @app.on_event("shutdown")
     def shutdown_db_session():
-        # Calls next middleware
         db.session.remove()
 
     app.add_middleware(WSGIProxyFix)

@@ -6,12 +6,14 @@ from oar import VERSION
 
 from .. import API_VERSION
 from ..dependencies import get_user
+from . import TimestampRoute
 
 # from oar.lib import config
 
 
 router = APIRouter(
     # prefix="/",
+    route_class=TimestampRoute,
     tags=["frontend"],
     responses={404: {"description": "Not found"}},
 )

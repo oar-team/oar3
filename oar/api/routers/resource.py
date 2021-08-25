@@ -1,12 +1,12 @@
-from typing import List
-
 from fastapi import APIRouter, HTTPException
 
 from oar.lib import Resource, db
 
 from .. import schemas
+from . import TimestampRoute
 
 router = APIRouter(
+    route_class=TimestampRoute,
     prefix="/resources",
     tags=["resources"],
     responses={404: {"description": "Not found"}},
@@ -43,14 +43,13 @@ def attach_links(resource):
     resource["links"] = links
 
 
-@router.get("/", response_model=List[schemas.DynamicResourceSchema])
+@router.get("/")  # , response_model=List[schemas.DynamicResourceSchema])
 async def resource_index(offset: int = 0, limit: int = 100):
     # detailed = "full"
     # resources = db.queries.get_resources(None, detailed)
     # import pdb; pdb.set_trace()
     resources = db.query(Resource).offset(offset).limit(limit).all()
-    # print(resources)
-    return resources
+    return {"items": resources}
 
 
 @router.get("/{resource_id}", response_model=schemas.DynamicResourceSchema)

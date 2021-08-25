@@ -13,8 +13,10 @@ from oar.lib.submission import JobParameters, Submission, check_reservation
 
 from ..dependencies import need_authentication
 from ..url_utils import replace_query_params
+from . import TimestampRoute
 
 router = APIRouter(
+    route_class=TimestampRoute,
     prefix="/jobs",
     tags=["jobs"],
     responses={404: {"description": "Not found"}},
