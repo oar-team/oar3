@@ -1154,7 +1154,8 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
 
         job.res_set = ProcSet(*roids)
 
-        jids.append(job.id)
+        jids.append(moldable_id)
+
         jobs[job.id] = job
 
         get_jobs_types(jids, jobs)
@@ -1390,7 +1391,7 @@ def get_cpuset_values(cpuset_field, moldable_id):
 
 
 def get_array_job_ids(array_id):
-    """ Get all the job_ids of a given array of job identified by its id"""
+    """Get all the job_ids of a given array of job identified by its id"""
     results = db.query(Job.id).filter(Job.array_id == array_id).order_by(Job.id).all()
     job_ids = [r[0] for r in results]
     return job_ids
@@ -2490,7 +2491,7 @@ def set_running_date(job_id):
 
 
 def get_to_exterminate_jobs():
-    """"Return the list of jobs that have their frag state to LEON_EXTERMINATE"""
+    """ "Return the list of jobs that have their frag state to LEON_EXTERMINATE"""
     res = (
         db.query(Job)
         .filter(FragJob.state == "LEON_EXTERMINATE")

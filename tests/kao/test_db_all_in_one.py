@@ -12,7 +12,7 @@ import zmq
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
 from oar.kao.quotas import Quotas
-from oar.lib import GanttJobsPrediction, Resource, config, db
+from oar.lib import GanttJobsPrediction, Job, Resource, config, db
 from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
 from oar.lib.tools import get_date, local_to_sql
 
@@ -113,7 +113,7 @@ def insert_and_sched_ar(start_time, walltime=60):
 
     meta_schedule("internal")
 
-    return db["Job"].query.one()
+    return db["Job"].query.order_by(Job.id.desc()).first()
 
 
 def assign_node_list(nodes):
@@ -165,6 +165,36 @@ def test_db_all_in_one_simple_1(monkeypatch):
 
     job = db["Job"].query.one()
     print(job.state)
+    assert job.state == "toLaunch"
+
+
+def test_db_all_in_one_ar_different_moldable_id(monkeypatch):
+    # add one job
+    from oar.lib import Job, MoldableJobDescription
+
+    dummy_job_id = insert_job(res=[(60, [("resource_id=6", "")])], properties="")
+
+    # Insert another moldable configuration for the dummy_job, so the next will
+    # have its id shifted from the moldable id
+    dummy_mld = {"moldable_job_id": dummy_job_id, "moldable_walltime": 100}
+    db.session.execute(MoldableJobDescription.__table__.insert(), dummy_mld)
+
+    now = get_date()
+    job = insert_and_sched_ar(now + 10)
+
+    new_start_time = now - 20
+
+    db.query(GanttJobsPrediction).update(
+        {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
+    )
+    db.commit()
+
+    meta_schedule("internal")
+
+    job = db["Job"].query.order_by(Job.id.desc()).first()
+
+    print("\n", job.id, job.state, " ", job.reservation, job.start_time)
+
     assert job.state == "toLaunch"
 
 
