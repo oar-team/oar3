@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from conftest import ordered
 from oar.api.url_utils import replace_query_params
 from oar.kao.meta_sched import meta_schedule
 from oar.lib import FragJob, Job, db
 from oar.lib.job_handling import insert_job, set_job_state
+
+from .conftest import ordered
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")

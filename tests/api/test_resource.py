@@ -1,6 +1,6 @@
 import pytest
 
-from oar.lib import db
+from oar.lib import Resource, db
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -34,7 +34,8 @@ def test_get_paginate(client):
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_get_one(client):
-    id_to_get = 21
-    response = client.get("/resources/{}".format(id_to_get))
+    first_id = db.query(Resource).first().id
+
+    response = client.get("/resources/{}".format(first_id))
     assert response.status_code == 200
-    assert response.json()["id"] == id_to_get
+    assert response.json()["id"] == first_id
