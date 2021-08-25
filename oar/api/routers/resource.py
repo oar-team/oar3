@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from oar.lib import Resource, db
 
@@ -43,13 +45,48 @@ def attach_links(resource):
     resource["links"] = links
 
 
-@router.get("/")  # , response_model=List[schemas.DynamicResourceSchema])
-async def resource_index(offset: int = 0, limit: int = 100):
-    # detailed = "full"
-    # resources = db.queries.get_resources(None, detailed)
-    # import pdb; pdb.set_trace()
-    resources = db.query(Resource).offset(offset).limit(limit).all()
-    return {"items": resources}
+# @router.get("/")  # , response_model=List[schemas.DynamicResourceSchema])
+# async def resource_index(offset: int = 0, limit: int = 100):
+#     # detailed = "full"
+#     # resources = db.queries.get_resources(None, detailed)
+#     # import pdb; pdb.set_trace()
+#     resources = db.query(Resource).offset(offset).limit(limit).all()
+#     return {"items": resources}
+
+
+@router.get("/")
+def index(
+    request: Request,
+    offset: int = 0,
+    limit: int = 25,
+    detailed: bool = Query(False),
+    network_address: Optional[str] = Query(None),
+):
+    """Replie a comment to the post.
+
+    :param offset: post's unique id
+    :type offset: int
+
+    :form email: author email address
+    :form body: comment body
+    :reqheader Accept: the response content type depends on
+                      :mailheader:`Accept` header
+    :status 302: and then redirects to :http:get:`/resources/(int:resource_id)`
+    :status 400: when form parameters are missing
+    """
+    query = db.queries.get_resources(network_address, detailed)
+    page = query.paginate(request, offset, limit)
+
+    data = {}
+    data["total"] = page.total
+    data["links"] = page.links
+    data["offset"] = offset
+    data["items"] = []
+    for item in page:
+        # attach_links(item)
+        data["items"].append(item)
+
+    return data
 
 
 @router.get("/{resource_id}", response_model=schemas.DynamicResourceSchema)
