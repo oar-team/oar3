@@ -76,7 +76,7 @@ def attach_job(job):
 
 
 @router.get("/")
-def index(
+async def index(
     request: Request,
     offset: int = 0,
     limit: int = 25,
@@ -119,12 +119,12 @@ def index(
 
 
 @router.get("/busy")
-def busy():
+async def busy():
     return {"busy": get_count_busy_resources()}
 
 
 @router.get("/{resource_id}")
-def show(resource_id):
+async def show(resource_id):
     resource = Resource.query.get_or_404(resource_id)
     if resource is None:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -134,7 +134,9 @@ def show(resource_id):
 
 
 @router.get("/{resource_id}/jobs")
-def jobs(request: Request, limit: int = 50, offset: int = 0, resource_id: int = None):
+async def jobs(
+    request: Request, limit: int = 50, offset: int = 0, resource_id: int = None
+):
     query = db.queries.get_jobs_resource(resource_id)
     page = query.paginate(request, offset, limit)
     data = {}
@@ -153,7 +155,7 @@ class StateParameters(BaseModel):
 
 
 @router.post("/{resource_id}/state")
-def state(
+async def state(
     resource_id: int, params: StateParameters, user: str = Depends(need_authentication)
 ):
     """POST /resources/<id>/state
@@ -179,7 +181,9 @@ def state(
 
 
 @router.post("/")
-def create(hostname: str, properties: str, user: str = Depends(need_authentication)):
+async def create(
+    hostname: str, properties: str, user: str = Depends(need_authentication)
+):
     """POST /resources"""
     props = json.loads(properties)
     data = {}
@@ -200,7 +204,7 @@ def create(hostname: str, properties: str, user: str = Depends(need_authenticati
 
 
 @router.delete("/{resource_id}")
-def delete(resource_id: int, user: str = Depends(need_authentication)):
+async def delete(resource_id: int, user: str = Depends(need_authentication)):
     """DELETE /resources/<id>
     Delete the resource identified by *d)
     """
