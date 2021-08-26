@@ -31,7 +31,6 @@ class WSGIProxyFix(object):
             else:
                 if config.get("API_TRUST_IDENT", 0) == 1:
                     # Create a request object to facilitate access to headers
-                    print("type", scope["type"])
                     request = Request(scope, receive=receive)
 
                     user = request.headers.get("x_remote_ident", None)
