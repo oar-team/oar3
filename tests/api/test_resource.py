@@ -7,23 +7,13 @@ from oar.lib import Resource, db
 from oar.lib.job_handling import insert_job, set_job_state
 
 
-@pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization():
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
-        )
-        # add some resources
-        for i in range(10):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
-        yield
-
-
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_get_all(client):
+    print("hello!")
     response = client.get("/resources/")
-    assert response.status_code == 200
+    print(response)
     print(response.json())
+    assert response.status_code == 200
     assert len(response.json()["items"]) == 10
 
 
