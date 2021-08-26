@@ -172,7 +172,7 @@ class SumbitParameters(BaseModel):
 
 
 @router.post("/")
-async def submit(sp: SumbitParameters, user: dict = Depends(need_authentication)):
+async def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
     """Job submission
 
         resource (string): the resources description as required by oar (example: “/nodes=1/cpu=2”)
@@ -357,7 +357,7 @@ async def submit(sp: SumbitParameters, user: dict = Depends(need_authentication)
 @router.delete("/{job_id}")
 @router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
 async def delete(
-    job_id: int, array: bool = False, user: dict = Depends(need_authentication)
+    job_id: int, array: bool = False, user: str = Depends(need_authentication)
 ):
     # TODO Get and return error codes ans messages
     if array:
