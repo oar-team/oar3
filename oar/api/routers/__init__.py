@@ -17,7 +17,6 @@ class TimestampRoute(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             timestamp = time.time()
-
             response = await original_route_handler(request)
 
             if (
@@ -25,9 +24,12 @@ class TimestampRoute(APIRoute):
                 and response.headers["content-type"] == "application/json"
             ):
                 data = json.loads(response.body)
+                print(data)
                 data["api_timestamp"] = timestamp
                 data["api_timezone"] = "UTC"
                 response.body = json.dumps(data)
+                # Update the content-length
+                response.headers["content-length"] = str(len(response.body))
 
             return response
 
