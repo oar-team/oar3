@@ -362,7 +362,6 @@ async def delete(
     # TODO Get and return error codes ans messages
     if array:
         cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
-        print("ret", cmd_ret)
     else:
         cmd_ret = oardel(
             [job_id], None, None, None, None, None, None, None, user, False
@@ -417,7 +416,6 @@ async def hold(
     hold: str = "hold",
     user: dict = Depends(need_authentication),
 ):
-    print("user is", user)
     running = False
     if hold == "rhold":
         running = True

@@ -5,8 +5,6 @@ from typing import Callable
 from fastapi import Request, Response
 from fastapi.routing import APIRoute
 
-from oar.lib import logger
-
 
 class TimestampRoute(APIRoute):
     """Route implementation that waits for the handler to
@@ -22,14 +20,14 @@ class TimestampRoute(APIRoute):
 
             response = await original_route_handler(request)
 
-            try:
+            if (
+                "content-type" in response.headers
+                and response.headers["content-type"] == "application/json"
+            ):
                 data = json.loads(response.body)
                 data["api_timestamp"] = timestamp
                 data["api_timezone"] = "UTC"
                 response.body = json.dumps(data)
-            except Exception as e:
-                # The body is not valid json, we left it unchanged
-                logger.warning("Could not interpret response body as JSON", e)
 
             return response
 

@@ -162,7 +162,6 @@ async def state(
     Change the state
     """
     state = params.state
-    print("lalal", state)
     data = {}
     if (user == "oar") or (user == "root"):
 
