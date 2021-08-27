@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from oar.lib import config, db
 
 from .query import APIQuery, APIQueryCollection
-from .routers import frontend, job, media, proxy, resource
+from .routers import frontend, job, media, proxy, resource, stress_factor
 
 # from oar.api import API_VERSION
 
@@ -52,6 +52,7 @@ def create_app():
     app.include_router(job.router)
     app.include_router(proxy.router)
     app.include_router(media.router)
+    app.include_router(stress_factor.router)
 
     @app.middleware("http")
     async def reflect_database(request: Request, call_next):
