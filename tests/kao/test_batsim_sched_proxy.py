@@ -73,6 +73,9 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, "Context", FakeZmq)
 
 
+@pytest.mark.skip(
+    reason="Needs batsim which is currently disabled because of a pybatsim installation issue with poetry"
+)
 def test_simple_submission(monkeypatch):
 
     now = str(get_date())
