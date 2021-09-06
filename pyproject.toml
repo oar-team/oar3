@@ -69,6 +69,7 @@ toml = "^0.10.2"
 fastapi = "^0.68.0"
 uvicorn = "^0.14.0"
 python-multipart = "^0.0.5"
+pybatsim = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
