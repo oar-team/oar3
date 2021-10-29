@@ -1,10 +1,13 @@
 # coding: utf-8
+from os import environ
+
 import pytest
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
 from oar.lib import config, db
 from oar.lib.job_handling import insert_job
+from oar.lib.queue import get_all_queue_by_priority
 from oar.lib.tools import get_date
 
 
@@ -71,3 +74,18 @@ def test_db_metasched_ar_1(monkeypatch):
     print(job.state, " ", job.reservation)
 
     assert (job.state == "Waiting") and (job.reservation == "Scheduled")
+
+
+def test_call_external_scheduler_fails(monkeypatch):
+    # Ensure that we don't find an external scheduler
+    environ["OARDIR"] = "/dev/null"
+    meta_schedule(mode="external")
+
+    findQueue = False
+    for queue in get_all_queue_by_priority():
+        if queue.name == "default":
+            findQueue = True
+            assert queue.state == "notActive"
+
+    # Check that the default queue has been found an tested
+    assert findQueue

@@ -659,11 +659,9 @@ def call_external_scheduler(
 
     if (not child_launched) or (sched_signal_num != 0) or (sched_dumped_core != 0):
         logger.error(
-            "Execution of "
-            + queue.scheduler_policy
-            + " failed, inactivating queue "
-            + queue.name
-            + " (see `oarnotify')"
+            "Execution of {}".format(queue.scheduler_policy)
+            + f" failed (signal={sched_signal_num})"
+            + " Disabling queue {} (see `oarnotify')".format(queue.name)
         )
         # stop queue
         stop_queue(queue.name)
@@ -672,11 +670,10 @@ def call_external_scheduler(
         logger.error(
             "Scheduler "
             + queue.scheduler_policy
-            + " returned a bad value: "
-            + str(sched_exit_code)
-            + ". Inactivating queue "
-            + queue.scheduler_policy
-            + " (see `oarnotify')"
+            + f" returned a bad value: {sched_exit_code}"
+            + f", at time {initial_time_sec}"
+            + ". Disabling queue "
+            + "{} (see `oarnotify')".format(queue.name)
         )
         # stop queue
         stop_queue(queue.name)
