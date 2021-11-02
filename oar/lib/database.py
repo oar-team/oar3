@@ -10,12 +10,8 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import (
-    DeclarativeMeta,
-    DeferredReflection,
-    declarative_base,
-)
-from sqlalchemy.orm import class_mapper, sessionmaker
+from sqlalchemy.ext.declarative import DeferredReflection
+from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool
@@ -189,7 +185,7 @@ class Database(object):
 
     @property
     def engine(self):
-        """Gives access to the engine. """
+        """Gives access to the engine."""
         with self._engine_lock:
             if self.connector is None:
                 self.connector = EngineConnector(self)
@@ -236,13 +232,13 @@ class Database(object):
             self._reflected = True
 
     def create_all(self, bind=None, **kwargs):
-        """Creates all tables. """
+        """Creates all tables."""
         if bind is None:
             bind = self.engine
         self.metadata.create_all(bind=bind, **kwargs)
 
     def delete_all(self, bind=None, **kwargs):
-        """Drop all tables. """
+        """Drop all tables."""
         if bind is None:
             bind = self.engine
         with bind.connect() as con:
@@ -283,7 +279,7 @@ class Database(object):
                 self.connector = None
 
     def show(self):
-        """ Return small database content representation."""
+        """Return small database content representation."""
         for model_name in sorted(self.models.keys()):
             data = [inspect(i).identity for i in self.models[model_name].query.all()]
             print(model_name.ljust(25), data)
