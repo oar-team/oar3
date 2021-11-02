@@ -36,6 +36,7 @@
           })
             poetry
             postgresql
+            pre-commit
           ];
       };
     });
