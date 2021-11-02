@@ -11,8 +11,6 @@ import re
 import socket
 import sys
 
-import pkg_resources
-
 import oar.lib.tools as tools
 from oar.lib import config, get_logger
 from oar.lib.event import add_new_event, add_new_event_with_host
@@ -393,9 +391,11 @@ class BipBip(object):
         prologue_exec_file = config["PROLOGUE_EXEC_FILE"]
         epilogue_exec_file = config["EPILOGUE_EXEC_FILE"]
 
+        modules_dir, _ = os.path.split(__file__)
+
         oarexec_files = (
-            pkg_resources.resource_filename("oar", "tools/Tools.pm"),
-            pkg_resources.resource_filename("oar", "tools/oarexec"),
+            os.path.join(modules_dir, "../tools/Tools.pm"),
+            os.path.join(modules_dir, "../tools/oarexec"),
         )
 
         head_node = None
