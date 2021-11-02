@@ -4,13 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    poetry2nix.url = "github:nix-community/poetry2nix";
   };
 
-  outputs = { self, nixpkgs, flake-utils, poetry2nix}:
+  outputs = { self, nixpkgs, flake-utils }:
+
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs { inherit system; };
 
         #customOverrides = self: super: {
         # Overrides go here
@@ -29,15 +29,13 @@
 
         defaultPackage = self.packages.${system}.${packageName};
 
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          (pkgs.poetry2nix.mkPoetryEnv {
-            projectDir = self;
-          })
+        devShell = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            (poetry2nix.mkPoetryEnv { projectDir = self; })
             poetry
             postgresql
             pre-commit
           ];
-      };
+        };
     });
 }
