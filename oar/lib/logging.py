@@ -38,6 +38,7 @@ def create_logger():
         else:  # pragma: no cover
             touch(log_file)
             handler = FileHandler(log_file)
+            handler.setFormatter(Formatter(config["LOG_FORMAT"]))
 
         if handler not in logger.handlers:
             logger.addHandler(handler)
