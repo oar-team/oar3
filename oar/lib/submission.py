@@ -251,6 +251,7 @@ def scan_script(submitted_filename, initial_request_str, user=None):
 
     for line in output.split("\n"):
         if re.match(r"^#OAR\s+", line):
+            line = line.strip()
             m = re.match(r"^#OAR\s+(-l|--resource)\s*(.+)\s*$", line)
             if m:
                 if "resource" in result:
