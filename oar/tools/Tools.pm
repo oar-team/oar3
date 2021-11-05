@@ -70,7 +70,7 @@ sub fork_and_feed_stdin($$$);
 sub set_ssh_timeout($);
 sub get_default_monitor_sensor_file();
 sub get_default_suspend_resume_script_timeout();
-sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$@);
+sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$$@);
 sub get_oarexecuser_script_for_oarsub($$$$$$$$$$$$$);
 sub manage_remote_commands($$$$$$$);
 
@@ -449,7 +449,7 @@ sub launch_command($){
 
 # Create the perl script used to execute right command for the user
 # The resulting script can be launched with : perl -e 'script'
-sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$@){
+sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$$@){
     my ($node_file,
         $job_id,
         $array_id,
@@ -465,6 +465,7 @@ sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$@){
         $job_walltime,
         $job_walltime_sec,
         $job_env,
+        $types,
         @cmd) = @_;
 
 #    if ((defined($job_env)) and ($job_env !~ /^\s*$/)){
@@ -475,6 +476,14 @@ sub get_oarexecuser_perl_script_for_oarexec($$$$$$$$$$$$$$$@){
     $Data::Dumper::Terse = 1;
     $Data::Dumper::Indent = 0;
     $Data::Dumper::Deepcopy = 1;
+
+    # Unpack job types
+    my $job_types = "";
+    foreach my $key (keys %{$types}){
+      my $value = ${$types}{$key};
+      $job_types="$key=$value,$job_types";
+    }
+    $job_types =~ s/,$//;
 
     my $cmd_serial = Dumper(\@cmd);
 
@@ -495,6 +504,7 @@ $ENV{OAR_JOB_NAME} = \''.$job_name.'\';
 $ENV{OAR_PROJECT_NAME} = \''.$job_project.'\';
 $ENV{OAR_JOB_WALLTIME} = \''.$job_walltime.'\';
 $ENV{OAR_JOB_WALLTIME_SECONDS} = '.$job_walltime_sec.';
+$ENV{OAR_JOB_TYPES} = \''.$job_types.'\';
 
 $ENV{OAR_NODEFILE} = $ENV{OAR_FILE_NODES};
 $ENV{OAR_O_WORKDIR} = $ENV{OAR_WORKDIR};

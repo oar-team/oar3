@@ -392,6 +392,18 @@ if ($ARGV[0] eq "init"){
         if (open(ENVFILE, "> $Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env")){
             my $job_name = "";
             $job_name = $Cpuset->{job_name} if defined($Cpuset->{job_name});
+
+            my %types;
+            %types = %{$Cpuset->{types}};
+
+            # Unpack job types
+            my $job_types = "";
+            foreach my $key (keys %types){
+              my $value = $types{$key};
+              $job_types="$key=$value;$job_types";
+            }
+            $job_types =~ s/;$//;
+
             my $filecontent = <<"EOF";
 export OAR_JOBID='$Cpuset->{job_id}'
 export OAR_ARRAYID='$Cpuset->{array_id}'
@@ -399,6 +411,7 @@ export OAR_ARRAYINDEX='$Cpuset->{array_index}'
 export OAR_USER='$Cpuset->{user}'
 export OAR_WORKDIR='$Cpuset->{launching_directory}'
 export OAR_JOB_NAME='$job_name'
+export OAR_JOB_TYPES='$job_types'
 export OAR_PROJECT_NAME='$Cpuset->{project}'
 export OAR_STDOUT='$Cpuset->{stdout_file}'
 export OAR_STDERR='$Cpuset->{stderr_file}'
