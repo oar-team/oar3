@@ -187,25 +187,42 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
 
 def notify_to_run_job(jid):
     """
-    Tell Almighty to run a job
+    Tell bipbip commander to run a job. It can also notifies oar2 almighty if METASCHEDULER_OAR2_MODE configuration variable is set to yes.
     """
+
     if jid not in to_launch_jobs_already_treated:
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            completed = tools.notify_bipbip_commander(
-                {"job_id": int(jid), "cmd": "OARRUN", "args": []}
-            )
+            if config["METASCHEDULER_OAR2_MODE"] == "yes":
+                logger.debug("OAR2 MODE")
+                completed = tools.notify_oar2_almighty("OARRUNJOB_{}".format(jid))
 
-            if completed:
-                to_launch_jobs_already_treated[jid] = 1
-                logger.debug("Notify bipbip commander to launch the job " + str(jid))
+                if completed > 0:
+                    to_launch_jobs_already_treated[jid] = 1
+                    logger.debug("Notify oar2 almighty to launch the job " + str(jid))
+                else:
+                    logger.warning(
+                        "Not able to oar2 almighty to launch the job "
+                        + str(jid)
+                        + " (socket error)"
+                    )
             else:
-                logger.warning(
-                    "Not able to notify bipbip commander to launch the job "
-                    + str(jid)
-                    + " (socket error)"
+                completed = tools.notify_bipbip_commander(
+                    {"job_id": int(jid), "cmd": "OARRUN", "args": []}
                 )
+
+                if completed:
+                    to_launch_jobs_already_treated[jid] = 1
+                    logger.debug(
+                        "Notify bipbip commander to launch the job " + str(jid)
+                    )
+                else:
+                    logger.warning(
+                        "Not able to notify bipbip commander to launch the job "
+                        + str(jid)
+                        + " (socket error)"
+                    )
 
 
 def prepare_job_to_be_launched(job, current_time_sec):

@@ -35,6 +35,7 @@ tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 zmq_context = None
 almighty_socket = None
 bipbip_commander_socket = None
+oar2_almighty_socket = None
 
 
 def notify_user(job, state, msg):  # pragma: no cover
@@ -159,7 +160,7 @@ def create_bipbip_commander_socket():  # pragma: no cover
         "tcp://"
         + config["BIPBIP_COMMANDER_SERVER"]
         + ":"
-        + config["BIPBIP_COMMANDER_PORT"]
+        + str(config["BIPBIP_COMMANDER_PORT"])
     )
 
 
@@ -173,6 +174,12 @@ def notify_bipbip_commander(message):  # pragma: no cover
     except zmq.ZMQError:
         completed = False
     return completed
+
+
+def notify_oar2_almighty(message):  # pragma: no cover
+    return notify_tcp_socket(
+        config["SERVER_HOSTNAME"], str(config["SERVER_PORT"]), message
+    )
 
 
 def notify_interactif_user(job, message):  # pragma: no cover

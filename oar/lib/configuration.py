@@ -66,6 +66,8 @@ class Configuration(dict):
         "HULOT_PORT": 6672,
         # kao
         "METASCHEDULER_MODE": "internal",
+        # Tell the metascheduler that it runs into an oar2 installation.
+        "METASCHEDULER_OAR2_MODE": "no",
         "HIERARCHY_LABELS": "resource_id,network_address",
         "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
         "SCHEDULER_JOB_SECURITY_TIME": "60",  # TODO should be int
