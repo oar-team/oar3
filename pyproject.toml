@@ -69,6 +69,7 @@ fastapi = ">0.68.0"
 uvicorn = "^0.14.0"
 python-multipart = ">=0.0.5"
 PyYAML = "^6.0"
+psycopg2 = "^2.8.6"
 #pybatsim = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
@@ -84,7 +85,6 @@ isort = "^5.8.0"
 flake8 = "^3.9.2"
 pre-commit = "^2.12.1"
 simpy = "^4.0.1"
-psycopg2 = "^2.8.6"
 redis = "^3.5.3"
 
 [tool.black]
