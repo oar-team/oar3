@@ -258,16 +258,18 @@ def get_first_primary_key(table):
 
 
 def create_database_if_not_exists(ctx, engine):
-    if not database_exists(engine.url):
-        ctx.log(green(" create") + " ~> new database `%r`" % engine.url)
-        create_database(engine.url)
-        return True
-    return False
+    create_database(engine.url)
+    # if not database_exists(engine.url):
+    #     #NOTE: NOT USED (DB create before)
+    #     ctx.log(f"{green(' create')} ~> new database `{engine.url}`")
+    #     create_database(engine.url)
+    #     return True
+    # return False
 
 
 def drop_database_if_exists(ctx, engine):
     if database_exists(engine.url):
-        ctx.log(green(" drop") + " ~> drop database `%r`" % engine.url)
+        ctx.log(f"{green(' drop')} ~> drop database `{engine.url}`")
         drop_database(engine.url)
         return True
     return False
