@@ -1164,7 +1164,7 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
 
 
 # TODO MOVE TO GANTT_HANDLING
-def gantt_flush_tables(reservations_to_keep_mld_ids):
+def gantt_flush_tables(reservations_to_keep_mld_ids=[]):
     """Flush gantt tables but keep accepted advance reservations"""
 
     if reservations_to_keep_mld_ids != []:

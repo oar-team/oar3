@@ -192,7 +192,7 @@ def schedule_cycle(plt, now, queues=["default"]):
 # Main function
 #
 def main():
-    config["LOG_FILE"] = "/tmp/oar_kamelot.log"
+
     logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()
@@ -216,6 +216,4 @@ def main():
 
 
 if __name__ == "__main__":  # pragma: no cover
-    config["LOG_FILE"] = "/tmp/oar_kamelot.log"
-    logger = get_logger("oar.kamelot", forward_stderr=True)
     main()
