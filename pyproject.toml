@@ -72,7 +72,7 @@ python-multipart = ">=0.0.5"
 PyYAML = "^6.0"
 psycopg2 = "^2.8.6"
 #pybatsim = "^3.2.0"
-ptpython = ">=2.0.0"
+ptpython = "^3.0.20"
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
