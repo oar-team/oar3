@@ -424,6 +424,10 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
         min_start_time = -1
         to_skip = False
+
+        if "envelop" in job.types:
+            logger.info("Treat job envelop, starting it with no resources")
+
         # Dependencies
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
