@@ -61,11 +61,7 @@ logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
 logger.info("Start Bipbip Commander")
 
 if "OARDIR" in os.environ:
-    binpath = (
-        os.environ["OARDIR"]
-        if os.environ["OARDIR"][-1] == "/"
-        else os.environ["OARDIR"] + "/"
-    )
+    binpath = os.environ["OARDIR"]
 else:
     binpath = "/usr/local/lib/oar/"
     os.environ["OARDIR"] = binpath
@@ -73,8 +69,8 @@ else:
         "OARDIR env variable must be defined, " + binpath + " is used by default"
     )
 
-leon_command = binpath + "oar-leon"
-bipbip_command = binpath + "oar-bipbip"
+leon_command = os.path.join(binpath, "oar-leon")
+bipbip_command = os.path.join(binpath, "oar-bipbip")
 # leon_command = binpath + 'Leon'
 # bipbip_command = binpath + 'bipbip'
 # bipbip_command = 'true'
