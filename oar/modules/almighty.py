@@ -136,12 +136,17 @@ def launch_command(command):
 
     logger.debug("Launching command : [" + command + "]")
 
-    exit_value = tools.call(command)
+    p = tools.Popen(command, stdout=tools.PIPE, stderr=tools.PIPE, shell=True)
+    stdout, stderr = p.communicate()
+    return_code = p.wait()
 
     logger.debug(command + " terminated")
-    logger.debug("Exit value : " + str(exit_value))
+    logger.debug("Exit value : " + str(return_code))
 
-    return exit_value
+    if return_code != 0:
+        logger.debug("Command failed with error: {}".format(stderr.decode("utf-8")))
+
+    return return_code
 
 
 def start_hulot():
