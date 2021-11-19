@@ -19,7 +19,7 @@ fake_check_outputs = []
 fake_check_output_cmd = []
 
 
-def fake_check_output(cmd):
+def fake_check_output(cmd, **kwargs):
     fake_check_output_cmd.append(cmd)
     return fake_check_outputs.pop(0)
 

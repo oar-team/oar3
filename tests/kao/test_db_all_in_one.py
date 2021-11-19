@@ -68,6 +68,9 @@ def active_quotas(request):
 
 @pytest.fixture(scope="function")
 def active_energy_saving(request):
+    # Some tests modify this value. We register the initial value and reset it
+    # after the test so it doesn't break other tests.
+    initial_energy_saving_internal = config["ENERGY_SAVING_INTERNAL"]
     config["ENERGY_SAVING_MODE"] = "metascheduler_decision_making"
     config["SCHEDULER_NODE_MANAGER_SLEEP_CMD"] = "sleep_node_command"
     config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"] = "15"
@@ -85,6 +88,7 @@ def active_energy_saving(request):
         del config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"]
         del config["SCHEDULER_NODE_MANAGER_WAKE_UP_CMD"]
         del config["ENERGY_SAVING_MODE"]
+        config["ENERGY_SAVING_INTERNAL"] = initial_energy_saving_internal
 
     request.addfinalizer(teardown)
 

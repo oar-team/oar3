@@ -1,15 +1,17 @@
 # coding: utf-8
 from oar.lib.tools import TimeoutExpired
 
-fake_popen = {"wait_return_code": 0, "exception": None}
+fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
 
 
 class FakePopen(object):
-    def __init__(self, cmd):
+    def __init__(self, cmd, stdout=None, stderr=None, shell=True):
+        print("Command: {}".format(cmd))
+        fake_popen["cmd"] = cmd
         self.cmd = cmd
         self.pid = 111
 
-    def wait(self, timeout):
+    def wait(self, timeout=None):
         print(timeout)
         # import pdb; pdb.set_trace()
         if fake_popen["exception"]:
@@ -17,7 +19,16 @@ class FakePopen(object):
                 raise OSError
             elif fake_popen["exception"] == "TimeoutExpired":
                 raise TimeoutExpired(cmd=self.cmd, timeout=timeout)
-        return fake_popen["wait_return_code"]
+
+        if isinstance(fake_popen["wait_return_code"], list):
+            exit_value = fake_popen["wait_return_code"].pop()
+        else:
+            exit_value = fake_popen["wait_return_code"]
+
+        return exit_value
+
+    def communicate(self):
+        return (b"", b"")
 
 
 fake_process = {"is_alive": True}

@@ -9,7 +9,7 @@ import oar.lib.tools
 from oar.lib import config
 from oar.modules.almighty import Almighty, signal_handler
 
-from ..faketools import fake_call, fake_called_command, fake_get_date, set_fake_date
+from ..faketools import FakePopen, fake_call, fake_get_date, fake_popen, set_fake_date
 from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
@@ -34,7 +34,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, "Context", FakeZmq)
     monkeypatch.setattr(oar.lib.tools, "get_time", fake_get_date)
     monkeypatch.setattr(oar.lib.tools, "call", fake_call)
-    monkeypatch.setattr(oar.lib.tools, "Popen", lambda x: None)
+    monkeypatch.setattr(oar.lib.tools, "Popen", FakePopen)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -94,7 +94,7 @@ def test_almighty_state_called_command(state_in, state_out, called_cmd, monkeypa
     almighty = Almighty()
     almighty.state = state_in
     almighty.run(False)
-    assert fake_called_command["cmd"] == called_cmd
+    assert fake_popen["cmd"] == called_cmd
     assert almighty.state == state_out
     set_fake_date(0)
 
@@ -114,13 +114,14 @@ def test_almighty_state_called_command_with_exit_value(
 ):
     set_fake_date(1000)
     # global fake_called_command
-    fake_called_command["exit_value"] = exit_value
+    fake_popen["wait_return_code"] = exit_value
     almighty = Almighty()
     almighty.state = "Scheduler"
     almighty.run(False)
-    assert fake_called_command["cmd"] == called_cmd
+    assert fake_popen["cmd"] == called_cmd
     assert almighty.state == state_out
-    fake_called_command["exit_value"] = None
+    fake_popen["wait_return_code"] = 0
+    fake_popen["cmd"] = None
     set_fake_date(0)
 
 
