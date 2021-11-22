@@ -1349,6 +1349,8 @@ class JobParameters:
             and not self.interactive
             and not self.reservation_date
             and not self.connect
+            # Noop type doesn't need any command
+            and "noop" not in self.types
         ):
             return (
                 5,
