@@ -575,7 +575,7 @@ def add_micheline_subjob(
 ):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
-    # against avalaible resources
+    # against available resources
 
     date = get_date()
     properties = job_parameters.properties
