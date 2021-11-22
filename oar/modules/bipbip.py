@@ -491,6 +491,7 @@ class BipBip(object):
             cpuset_full_path
             and ("cosystem" not in job_types.keys())
             and ("deploy" not in job_types.keys())
+            and ("envelop" not in job_types.keys())
             and (len(hosts) > 0)
         ):
             # for oarsh_shell connection
