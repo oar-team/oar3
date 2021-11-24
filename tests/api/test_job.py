@@ -71,9 +71,8 @@ def test_app_jobs_get_one_details(client):
     """GET /jobs/<id>?details=true"""
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     meta_schedule("internal")
-    res = client.get("/jobs/{}?details=true".format(job_id))
-    print("json res:", res.json())
-    assert len(res.json()["resources"]) == 4
+    res = client.get("/jobs/{}/resources".format(job_id))
+    assert len(res.json()["items"]) == 4
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
