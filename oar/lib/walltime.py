@@ -366,8 +366,9 @@ def update_walltime_change_request(
     """Update a walltime change request after processing"""
     walltime_change_update = {
         WalltimeChange.pending: pending,
-        WalltimeChange.force: (force if force else ""),
-        WalltimeChange.delay_next_jobs: (delay_next_jobs if delay_next_jobs else ""),
+        # To respect the constaints, `force` and `delay_next_jobs` must be either "YES" or "NO"
+        WalltimeChange.force: (force if force else "NO"),
+        WalltimeChange.delay_next_jobs: (delay_next_jobs if delay_next_jobs else "NO"),
         WalltimeChange.granted: (granted if granted else 0),
         WalltimeChange.granted_with_force: (
             granted_with_force if granted_with_force else 0
