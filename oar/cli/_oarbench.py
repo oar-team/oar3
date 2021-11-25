@@ -7,6 +7,7 @@ import time
 
 import click
 import ptpython.repl
+import yaml
 
 import oar
 import oar.kao.kamelot as kamelot
@@ -236,10 +237,10 @@ def change_in_place_conf(var="LOG_LEVEL", value='"3"', confile="/etc/oar/oar.con
     with fileinput.FileInput(confile, inplace=True, backup=".bak") as f:
         for line in f:
             if var in line:
-                print(f"{var}={value}", end="\n")
+                print(f"{var}={value}", "", "\n")
                 n = n + 1
             else:
-                print(line, end="")
+                print(line, "", "")
     print(f"nb changes: {n}")
 
 
@@ -333,20 +334,59 @@ def simple_bench_scheduler(
             delete_gantt_tables()
             create_jobs(nb_jobs, job_resources)
             t = launch_scheduler(scheduler, "default", nb_jobs)
-            result = f"{nb_jobs} {job_nb_resources} {nb_resources} {t}"
-            print(result)
+            result = f"{scheduler} {nb_jobs} {job_nb_resources} {nb_resources} {t}\n"
             if file_res:
                 file_res.write(result)
+
     delete_resources()
     delete_jobs()
     delete_gantt_tables()
 
 
-def oarbench(bench_file, version):
+def oarbench(bench_file, version, result_file):
     cmd_ret = CommandReturns(cli)
     if version:
         cmd_ret.print_("OAR version : " + oar.VERSION)
         return cmd_ret
+
+    if bench_file is not None:
+
+        with open(bench_file, "r") as file:
+            config = yaml.full_load(file)
+
+        # Some default values
+        nb_node_list = [1, 10, 100]
+        nb_job_list = [100]
+        schedulers = ["kamelot"]
+
+        # Overide default values with values defined
+        # in the configuration
+        if "nb_node_list" in config:
+            nb_node_list = config["nb_node_list"]
+        if "nb_job_list" in config:
+            nb_job_list = config["nb_job_list"]
+        if "schedulers" in config:
+            schedulers = config["schedulers"]
+
+        if result_file is None:
+            result_file = "/dev/null"
+
+        with open(result_file, "w") as file:
+            # Write header
+            file.write("scheduler nb_job nb_resources_per_job nb_resources time\n")
+
+            # Run the simulations
+            for scheduler in schedulers:
+                simple_bench_scheduler(
+                    scheduler=scheduler,
+                    nb_job_list=nb_job_list,
+                    nb_node_list=nb_node_list,
+                    file_res=file,
+                )
+
+    else:
+        print("No conf file provided, opening repl")
+        ptpython.repl.embed(locals(), globals())
 
     # user = os.environ["USER"]
     # if "OARDO_USER" in os.environ:
@@ -357,17 +397,36 @@ def oarbench(bench_file, version):
     #     cmd_ret.error(comment, 1, 8)
     #     return cmd_ret
 
-    ptpython.repl.embed(locals(), globals())
-
     return cmd_ret
 
 
 @click.command()
 @click.option(
-    "-f ", "--bench-file", type=click.STRING, help="Benchmark configuration file."
+    "-f", "--bench-file", type=click.STRING, help="Benchmark configuration file."
+)
+@click.option(
+    "-r",
+    "--result-file",
+    type=click.STRING,
+    help="Result file that should contain the data.",
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
-def cli(bench_file, version):
-    """Send a message tag to OAR's Almighty"""
-    cmd_ret = oarbench(bench_file, version)
+def cli(bench_file, version, result_file):
+    """
+    Example of config file:
+    ```yaml
+    schedulers:
+    - /usr/local/lib/oar/schedulers/oar_sched_gantt_with_timesharing_and_fairsharing
+    - /usr/local/bin/kamelot
+    nb_node_list:
+        - 10
+        - 100
+        - 1000
+    nb_job_list:
+        - 10
+        - 100
+        - 1000
+    ```
+    """
+    cmd_ret = oarbench(bench_file, version, result_file)
     cmd_ret.exit()
