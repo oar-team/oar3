@@ -1,4 +1,5 @@
 import fileinput
+import itertools
 import os
 import shutil
 import sys
@@ -307,37 +308,53 @@ def minimal_bench_scheduler(
 
 
 def simple_bench_scheduler(
-    scheduler="kamelot",
+    schedulers=["kamelot"],
     nb_node_list=[1, 10, 100],
     nb_job_list=[100],
-    job_nb_resources=2,
+    job_nb_resources_list=[2],
     file_res=None,
 ):
 
     nb_cpus = 2
     nb_cores = 16
 
-    if job_nb_resources:
-        assert job_nb_resources < nb_cpus * nb_cores
-        job_resources = f"resource_id={job_nb_resources}"
-    else:
-        click.echo("not yet implemented")
-        raise click.Abort()
+    # Write header
+    if file_res:
+        file_res.write("scheduler nb_job nb_resources_per_job nb_resources time\n")
 
-    for nb_nodes in nb_node_list:
+    for instance in itertools.product(
+        schedulers, nb_node_list, nb_job_list, job_nb_resources_list
+    ):
+        (scheduler, nb_nodes, nb_jobs, job_nb_resources) = instance
+
+        if job_nb_resources:
+            assert job_nb_resources < nb_cpus * nb_cores
+            job_resources = f"resource_id={job_nb_resources}"
+        else:
+            click.echo("not yet implemented")
+            raise click.Abort()
+
+        # Clean previous state
         delete_resources()
+        delete_jobs()
+        delete_gantt_tables()
+
         # setup_config(db_type="Pg")
         create_resources(nb_nodes, nb_cpus, nb_cores)
-        nb_resources = nb_nodes * nb_cpus * nb_cores
-        for nb_jobs in nb_job_list:
-            delete_jobs()
-            delete_gantt_tables()
-            create_jobs(nb_jobs, job_resources)
-            t = launch_scheduler(scheduler, "default", nb_jobs)
-            result = f"{scheduler} {nb_jobs} {job_nb_resources} {nb_resources} {t}\n"
-            if file_res:
-                file_res.write(result)
+        create_jobs(nb_jobs, job_resources)
 
+        # Start the scheduler
+        t = launch_scheduler(scheduler, "default", nb_jobs)
+
+        # Write the result
+        nb_resources = nb_nodes * nb_cpus * nb_cores
+        result = f"{scheduler} {nb_jobs} {job_nb_resources} {nb_resources} {t}\n"
+        print(result)
+        if file_res:
+            file_res.write(result)
+            file_res.flush()
+
+    # Last clean
     delete_resources()
     delete_jobs()
     delete_gantt_tables()
@@ -358,6 +375,7 @@ def oarbench(bench_file, version, result_file):
         nb_node_list = [1, 10, 100]
         nb_job_list = [100]
         schedulers = ["kamelot"]
+        job_nb_resources_list = [2]
 
         # Overide default values with values defined
         # in the configuration
@@ -367,22 +385,21 @@ def oarbench(bench_file, version, result_file):
             nb_job_list = config["nb_job_list"]
         if "schedulers" in config:
             schedulers = config["schedulers"]
+        if "job_nb_resources" in config:
+            job_nb_resources_list = config["job_nb_resources"]
 
         if result_file is None:
             result_file = "/dev/null"
 
         with open(result_file, "w") as file:
-            # Write header
-            file.write("scheduler nb_job nb_resources_per_job nb_resources time\n")
-
             # Run the simulations
-            for scheduler in schedulers:
-                simple_bench_scheduler(
-                    scheduler=scheduler,
-                    nb_job_list=nb_job_list,
-                    nb_node_list=nb_node_list,
-                    file_res=file,
-                )
+            simple_bench_scheduler(
+                schedulers=schedulers,
+                nb_job_list=nb_job_list,
+                nb_node_list=nb_node_list,
+                job_nb_resources_list=job_nb_resources_list,
+                file_res=file,
+            )
 
     else:
         print("No conf file provided, opening repl")
