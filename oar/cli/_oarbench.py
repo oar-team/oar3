@@ -1,6 +1,7 @@
 import fileinput
 import itertools
 import os
+import random
 import shutil
 import sys
 import tempfile
@@ -43,8 +44,6 @@ from .utils import CommandReturns
 click.disable_unicode_literals_warning = True
 
 DEFAULT_CONFIG = {
-    "DB_BASE_FILE": ":memory:",
-    "DB_TYPE": "sqlite",
     "DETACH_JOB_FROM_SERVER": 1,
     "ENERGY_SAVING_INTERNAL": "no",
     "LOG_CATEGORIES": "all",
@@ -56,15 +55,12 @@ DEFAULT_CONFIG = {
     "OARSUB_NODES_RESOURCES": "network_address",
     "OAR_RUNTIME_DIRECTORY": "/var/lib/oar",
     "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
-    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": 30,
     "SCHEDULER_GANTT_HOLE_MINIMUM_TIME": 300,
     "SCHEDULER_JOB_SECURITY_TIME": 60,
     "SCHEDULER_NB_PROCESSES": 1,
     "SCHEDULER_PRIORITY_HIERARCHY_ORDER": "network_address/resource_id",
-    # "SCHEDULER_RESOURCE_ORDER':
-    #    'scheduler_priority ASC, state_num ASC, available_upto DESC, '
-    #    'suspended_jobs ASC, network_address ASC, resource_id ASC',
-    "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
+    "SCHEDULER_RESOURCE_ORDER": "scheduler_priority ASC, state_num ASC, available_upto DESC, suspended_jobs ASC, network_address ASC, resource_id ASC",
+    # SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
     "SCHEDULER_TIMEOUT": 30,
     "SERVER_HOSTNAME": "server",
     "SERVER_PORT": 6666,
@@ -77,15 +73,20 @@ DEFAULT_CONFIG = {
     "QUOTAS": "no",
     "QUOTAS_PERIOD": 1296000,  # 15 days in seconds
     "QUOTAS_WINDOW_TIME_LIMIT": 4 * 1296000,  # 2 months
-    "HIERARCHY_LABELS": "resource_id,network_address,cpu,core",
+    "HIERARCHY_LABELS": "resource_id,network_address",
+    # OAR2 scheduler
+    "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": 1000,
+    "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD": "cpuset",
 }
+
+CONFIGURATION_FILE = "/etc/oar/oar.conf"
 
 db = db
 FILE_RESULT = None
 oar2_path = None
 try:
     hash_oar2 = os.readlink(shutil.which("Almighty")).split("/")[3]
-    oar2_path = f"/nix/store/{hash_oar2}/oar"
+    oar2_path = "/nix/store/{hash_oar2}/oar".format(hash_oar2=hash_oar2)
 except Exception as err:
     print(f"Does not find oar2_path when considering Nix context: {err}")
 
@@ -107,21 +108,14 @@ def setup_config(db_type="memory"):
     print(f"Temporay directory for oar.log: {tempdir}")
     config["LOG_FILE"] = os.path.join(tempdir, "oar.log")
 
-    if db_type == "sqlite":
-        config["DB_BASE_FILE"] = os.path.join(tempdir, "db.sqlite")
-        config["DB_TYPE"] = "sqlite"
-    elif db_type == "memory":
-        config["DB_TYPE"] = "sqlite"
-        config["DB_BASE_FILE"] = ":memory:"
-    else:
-        config["DB_TYPE"] = "Pg"
-        config["DB_PORT"] = "5432"
-        config["DB_BASE_NAME"] = os.environ.get("POSTGRES_DB", "oar")
-        config["DB_BASE_PASSWD"] = os.environ.get("POSTGRES_PASSWORD", "oar")
-        config["DB_BASE_LOGIN"] = os.environ.get("POSTGRES_USER", "oar")
-        config["DB_BASE_PASSWD_RO"] = os.environ.get("POSTGRES_PASSWORD", "oar_ro")
-        config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
-        config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "localhost")
+    config["DB_TYPE"] = "Pg"
+    config["DB_PORT"] = "5432"
+    config["DB_BASE_NAME"] = os.environ.get("POSTGRES_DB", "oar")
+    config["DB_BASE_PASSWD"] = os.environ.get("POSTGRES_PASSWORD", "oar")
+    config["DB_BASE_LOGIN"] = os.environ.get("POSTGRES_USER", "oar")
+    config["DB_BASE_PASSWD_RO"] = os.environ.get("POSTGRES_PASSWORD", "oar_ro")
+    config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
+    config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "server")
 
     def dump_configuration(filename):
         folder = os.path.dirname(filename)
@@ -130,24 +124,24 @@ def setup_config(db_type="memory"):
         with open(filename, "w", encoding="utf-8") as fd:
             for key, value in config.items():
                 if not key.startswith("SQLALCHEMY_"):
-                    fd.write("%s=%s\n" % (key, str(value)))
+                    fd.write('%s="%s"\n' % (key, str(value)))
 
-    dump_configuration("/etc/oar/oar.conf")
+    dump_configuration(CONFIGURATION_FILE)
 
     # if db_type == "Pg":
     #     drop_db()
     #     create_db()
     # else:
     # dump_configuration("/tmp/oar.conf")
-    db.metadata.drop_all(bind=db.engine)
-    db.create_all(bind=db.engine)
+    # db.metadata.drop_all(bind=db.engine)
+    # db.create_all(bind=db.engine)
 
-    kw = {"nullable": True}
-    db.op.add_column("resources", db.Column("core", db.Integer, **kw))
-    db.op.add_column("resources", db.Column("cpu", db.Integer, **kw))
-    db.op.add_column("resources", db.Column("host", db.String(255), **kw))
-    db.op.add_column("resources", db.Column("mem", db.Integer, **kw))
-    db.reflect()
+    # kw = {"nullable": True}
+    # db.op.add_column("resources", db.Column("core", db.Integer, **kw))
+    # db.op.add_column("resources", db.Column("cpu", db.Integer, **kw))
+    # db.op.add_column("resources", db.Column("host", db.String(255), **kw))
+    # db.op.add_column("resources", db.Column("mem", db.Integer, **kw))
+    # db.reflect()
 
 
 def create_resources(nb_nodes=8, nb_cpus=2, nb_cores=16):
@@ -222,14 +216,15 @@ def init_db(mode="reuse"):
 
 
 def drop_db():
-    tools.call("oar-database-manage drop", shell=True)
-
+    tools.call("oar-database --drop --db-is-local -y", shell=True)
     for user in [config["DB_BASE_LOGIN"], config["DB_BASE_LOGIN_RO"]]:
-        tools.call(f"sudo -u postgres psql postgres -c 'drop user {user}'", shell=True)
+        print(f"Drop user: {user}")
+        tools.call(f"su postgres --command \"psql -c 'drop user {user}'\"", shell=True)
 
 
 def create_db():
-    tools.call("rm /var/lib/oar/db-created && systemctl start oardb-init", shell=True)
+    tools.call("oar-database --create --db-is-local", shell=True)
+    # tools.call("rm /var/lib/oar/db-created && systemctl start oardb-init", shell=True)
 
 
 def change_in_place_conf(var="LOG_LEVEL", value='"3"', confile="/etc/oar/oar.conf"):
@@ -269,12 +264,14 @@ def launch_scheduler(scheduler="kamelot", queue="default", nb_jobs=10, timeout=3
     initial_time_sec = now
     initial_time_sql = local_to_sql(initial_time_sec)
 
-    cmd = [scheduler, queue, str(initial_time_sec), initial_time_sql]
+    cmd = [scheduler, queue, str(int(initial_time_sec)), initial_time_sql]
     proc = Popen(
         cmd,
         stdin=PIPE,
         stdout=PIPE,
         stderr=PIPE,
+        # Needed for oar2 schedulers
+        env={"OARCONFFILE": CONFIGURATION_FILE},
     )
 
     try:
@@ -320,12 +317,18 @@ def simple_bench_scheduler(
 
     # Write header
     if file_res:
-        file_res.write("scheduler nb_job nb_resources_per_job nb_resources time\n")
+        file_res.write(
+            "scheduler nb_job nb_resources_per_job nb_resources time nb_job_scheduled\n"
+        )
 
-    for instance in itertools.product(
-        schedulers, nb_node_list, nb_job_list, job_nb_resources_list
-    ):
-        (scheduler, nb_nodes, nb_jobs, job_nb_resources) = instance
+    # Shuffling instances to avoid biases
+    instances = list(
+        itertools.product(nb_node_list, nb_job_list, job_nb_resources_list)
+    )
+    random.shuffle(instances)
+
+    for instance in instances:
+        (nb_nodes, nb_jobs, job_nb_resources) = instance
 
         if job_nb_resources:
             assert job_nb_resources < nb_cpus * nb_cores
@@ -339,20 +342,26 @@ def simple_bench_scheduler(
         delete_jobs()
         delete_gantt_tables()
 
-        # setup_config(db_type="Pg")
         create_resources(nb_nodes, nb_cpus, nb_cores)
         create_jobs(nb_jobs, job_resources)
 
-        # Start the scheduler
-        t = launch_scheduler(scheduler, "default", nb_jobs)
+        for scheduler in schedulers:
+            # Clear the gantt prediction before a scheduler run
+            delete_gantt_tables()
 
-        # Write the result
-        nb_resources = nb_nodes * nb_cpus * nb_cores
-        result = f"{scheduler} {nb_jobs} {job_nb_resources} {nb_resources} {t}\n"
-        print(result)
-        if file_res:
-            file_res.write(result)
-            file_res.flush()
+            # Start the scheduler
+            t = launch_scheduler(scheduler, "default", nb_jobs)
+
+            nb_job_scheduled = len(db.query(GanttJobsPrediction).all())
+
+            # Write the result
+            nb_resources = nb_nodes * nb_cpus * nb_cores
+            result = f"{scheduler} {nb_jobs} {job_nb_resources} {nb_resources} {t} {nb_job_scheduled}\n"
+            print(result)
+
+            if file_res:
+                file_res.write(result)
+                file_res.flush()
 
     # Last clean
     delete_resources()
@@ -392,6 +401,7 @@ def oarbench(bench_file, version, result_file):
             result_file = "/dev/null"
 
         with open(result_file, "w") as file:
+            # setup_config()
             # Run the simulations
             simple_bench_scheduler(
                 schedulers=schedulers,
@@ -433,8 +443,8 @@ def cli(bench_file, version, result_file):
     Example of config file:
     ```yaml
     schedulers:
-    - /usr/local/lib/oar/schedulers/oar_sched_gantt_with_timesharing_and_fairsharing
-    - /usr/local/bin/kamelot
+        - /usr/local/lib/oar/schedulers/oar_sched_gantt_with_timesharing_and_fairsharing
+        - /usr/local/bin/kamelot
     nb_node_list:
         - 10
         - 100
@@ -443,6 +453,11 @@ def cli(bench_file, version, result_file):
         - 10
         - 100
         - 1000
+    job_nb_resources:
+        - 2
+        - 4
+        - 8
+        - 16
     ```
     """
     cmd_ret = oarbench(bench_file, version, result_file)
