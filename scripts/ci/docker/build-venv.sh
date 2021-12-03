@@ -1,18 +1,14 @@
 #!/bin/bash
-set -e
+set -eux
 
 python3 -m venv /venv
-
-cd /app
 source /venv/bin/activate
 
 pip install -U pip
+pip install wheel
+pip --no-cache-dir install poetry
 
-for filename in `ls -1 /app/requirements/ | grep -v dev`; do
-    pip install -r /app/requirements/$filename
-done
+# Project initialization:
+cd app && POETRY_VIRTUALENVS_CREATE=false poetry install
 
-rm -rf /root/.cache
-
-find /app -name "*.pyc" -delete
 find /venv -name "*.pyc" -delete

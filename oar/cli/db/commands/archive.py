@@ -1,26 +1,31 @@
 # -*- coding: utf-8 -*-
-import click
-click.disable_unicode_literals_warning = True
-
 from functools import reduce
 
-from sqlalchemy import func, and_, not_
+import click
+from sqlalchemy import and_, func, not_
+from tabulate import tabulate
 
 from oar.lib import Database, config
 from oar.lib.utils import cached_property
-from tabulate import tabulate
 
-from ..helpers import (make_pass_decorator, Context, DATABASE_URL_PROMPT,
-                       default_database_url, load_configuration_file)
-from ..operations import archive_db, purge_db, inspect_db
+from ..helpers import (
+    DATABASE_URL_PROMPT,
+    Context,
+    default_database_url,
+    load_configuration_file,
+    make_pass_decorator,
+)
+from ..operations import archive_db, inspect_db, purge_db
+
+click.disable_unicode_literals_warning = True
 
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar_migrate',
-                        help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(
+    auto_envvar_prefix="oar_migrate", help_option_names=["-h", "--help"]
+)
 
 
 class ArchiveContext(Context):
-
     @cached_property
     def archive_db(self):
         return Database(uri=self.archive_db_url)
@@ -28,6 +33,7 @@ class ArchiveContext(Context):
     @cached_property
     def current_db(self):
         from oar.lib import db
+
         db._cache["uri"] = self.current_db_url
         return db
 
@@ -43,6 +49,7 @@ class ArchiveContext(Context):
     def current_models(self):
         """ Return a namespace with all mapping classes"""
         from oar.lib.models import all_models  # avoid a circular import
+
         return dict(all_models())
 
     @cached_property
@@ -65,11 +72,9 @@ class ArchiveContext(Context):
             else:
                 include.append(raw_state)
         if exclude:
-            criteria.append(self.current_models["Resource"].state
-                                                           .notin_(exclude))
+            criteria.append(self.current_models["Resource"].state.notin_(exclude))
         if include:
-            criteria.append(self.current_models["Resource"].state
-                                                           .in_(include))
+            criteria.append(self.current_models["Resource"].state.in_(include))
         return reduce(and_, criteria)
 
     @cached_property
@@ -94,9 +99,11 @@ class ArchiveContext(Context):
         model = self.current_models["Job"]
         acceptable_max_job_id = None
         if self.ignored_jobs_criteria is not None:
-            acceptable_max_job_id = self.current_db.query(func.min(model.id))\
-                                        .filter(self.ignored_jobs_criteria)\
-                                        .scalar()
+            acceptable_max_job_id = (
+                self.current_db.query(func.min(model.id))
+                .filter(self.ignored_jobs_criteria)
+                .scalar()
+            )
         if acceptable_max_job_id is None:
             if self.max_job_id is None:
                 # returns the real max job id
@@ -114,10 +121,11 @@ class ArchiveContext(Context):
         moldable_model = self.current_models["MoldableJobDescription"]
         criteria = moldable_model.job_id < self.max_job_to_sync
         job_model = self.current_models["Job"]
-        query = self.current_db.query(func.max(moldable_model.id))\
-                               .join(job_model,
-                                     moldable_model.job_id == job_model.id)\
-                               .filter(criteria)
+        query = (
+            self.current_db.query(func.max(moldable_model.id))
+            .join(job_model, moldable_model.job_id == job_model.id)
+            .filter(criteria)
+        )
         return query.scalar() or 0
 
     @cached_property
@@ -128,11 +136,13 @@ class ArchiveContext(Context):
         resource_model = self.current_models["Resource"]
         max_moldable = self.max_moldable_job_to_sync
         query = self.current_db.query(resource_model.id)
-        excludes = query.filter(not_(self.ignored_resources_criteria))\
-                        .join(assigned_model,
-                              resource_model.id == assigned_model.resource_id)\
-                        .filter(assigned_model.moldable_id >= max_moldable)\
-                        .group_by(resource_model.id).all()
+        excludes = (
+            query.filter(not_(self.ignored_resources_criteria))
+            .join(assigned_model, resource_model.id == assigned_model.resource_id)
+            .filter(assigned_model.moldable_id >= max_moldable)
+            .group_by(resource_model.id)
+            .all()
+        )
         excludes_set = set([resource_id for resource_id, in excludes])
         resources = query.filter(not_(self.ignored_resources_criteria)).all()
         resources_set = set([resource_id for resource_id, in resources])
@@ -148,22 +158,32 @@ def default_archive_database_url():
         return url + "_archive"
 
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='oar_archive',
-                        help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(
+    auto_envvar_prefix="oar_archive", help_option_names=["-h", "--help"]
+)
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, chain=False)
-@click.option('-c', '--conf', callback=load_configuration_file,
-              type=click.Path(writable=False, readable=False),
-              help="Use a different OAR configuration file.", required=False,
-              default=config.DEFAULT_CONFIG_FILE, show_default=True)
-@click.option('-y', '--force-yes', is_flag=True, default=False,
-              help="Never prompts for user intervention")
+@click.option(
+    "-c",
+    "--conf",
+    callback=load_configuration_file,
+    type=click.Path(writable=False, readable=False),
+    help="Use a different OAR configuration file.",
+    required=False,
+    default=config.DEFAULT_CONFIG_FILE,
+    show_default=True,
+)
+@click.option(
+    "-y",
+    "--force-yes",
+    is_flag=True,
+    default=False,
+    help="Never prompts for user intervention",
+)
 @click.version_option()
-@click.option('--verbose', is_flag=True, default=False,
-              help="Enables verbose output.")
-@click.option('--debug', is_flag=True, default=False,
-              help="Enables debug mode.")
+@click.option("--verbose", is_flag=True, default=False, help="Enables verbose output.")
+@click.option("--debug", is_flag=True, default=False, help="Enables debug mode.")
 @pass_context
 def cli(ctx, **kwargs):
     """Archive OAR database."""
@@ -171,60 +191,103 @@ def cli(ctx, **kwargs):
 
 
 @cli.command()
-@click.option('--chunk', type=int, default=100000, show_default=True,
-              help="Chunk size")
-@click.option('--ignore-jobs', default=["^Terminated", "^Error"],
-              show_default=True, multiple=True, help='Ignore job state')
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=default_archive_database_url,
-              help='The url for your current OAR database.')
-@click.option('--archive-db-url', prompt="OAR archive database URL",
-              default=default_archive_database_url,
-              help='The url for your archive OAR database.')
-@click.option('--pg-copy/--no-pg-copy', is_flag=True, default=True,
-              help='Use postgresql COPY clause to make batch inserts faster')
-@click.option('--pg-copy-binary/--pg-copy-csv', is_flag=True, default=True,
-              help='Use postgresql COPY with binary-format. '
-                   'It is somewhat faster than the text and CSV formats, but '
-                   'a binary-format file is less portable')
+@click.option("--chunk", type=int, default=100000, show_default=True, help="Chunk size")
+@click.option(
+    "--ignore-jobs",
+    default=["^Terminated", "^Error"],
+    show_default=True,
+    multiple=True,
+    help="Ignore job state",
+)
+@click.option(
+    "--current-db-url",
+    prompt=DATABASE_URL_PROMPT,
+    default=default_archive_database_url,
+    help="The url for your current OAR database.",
+)
+@click.option(
+    "--archive-db-url",
+    prompt="OAR archive database URL",
+    default=default_archive_database_url,
+    help="The url for your archive OAR database.",
+)
+@click.option(
+    "--pg-copy/--no-pg-copy",
+    is_flag=True,
+    default=True,
+    help="Use postgresql COPY clause to make batch inserts faster",
+)
+@click.option(
+    "--pg-copy-binary/--pg-copy-csv",
+    is_flag=True,
+    default=True,
+    help="Use postgresql COPY with binary-format. "
+    "It is somewhat faster than the text and CSV formats, but "
+    "a binary-format file is less portable",
+)
 @pass_context
 def sync(ctx, **kwargs):
     """ Send all resources and finished jobs to archive database."""
     ctx.update_options(**kwargs)
     ctx.configure_log()
-    ctx.confirm("Continue to copy old resources and jobs to the archive "
-                "database?", default=True)
+    ctx.confirm(
+        "Continue to copy old resources and jobs to the archive " "database?",
+        default=True,
+    )
     archive_db(ctx)
 
 
 @cli.command()
-@click.option('--ignore-jobs', default=["^Terminated", "^Error"],
-              show_default=True, multiple=True, help='Ignore job state')
-@click.option('--max-job-id', type=int, default=None, show_default=True,
-              help='Purge only jobs lower than this id')
-@click.option('--ignore-resources', default=["^Dead"], show_default=True,
-              help='Ignore resource state', multiple=True)
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=default_database_url,
-              help='The url for your current OAR database.')
+@click.option(
+    "--ignore-jobs",
+    default=["^Terminated", "^Error"],
+    show_default=True,
+    multiple=True,
+    help="Ignore job state",
+)
+@click.option(
+    "--max-job-id",
+    type=int,
+    default=None,
+    show_default=True,
+    help="Purge only jobs lower than this id",
+)
+@click.option(
+    "--ignore-resources",
+    default=["^Dead"],
+    show_default=True,
+    help="Ignore resource state",
+    multiple=True,
+)
+@click.option(
+    "--current-db-url",
+    prompt=DATABASE_URL_PROMPT,
+    default=default_database_url,
+    help="The url for your current OAR database.",
+)
 @pass_context
 def purge(ctx, **kwargs):
     """ Purge old resources and old jobs from your current database."""
     ctx.update_options(**kwargs)
-    msg = "Continue to purge old resources and jobs "\
-          "from your current database?"
+    msg = "Continue to purge old resources and jobs " "from your current database?"
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
     if purge_db(ctx) == 0:
         ctx.log("\nNothing to do.")
 
 
 @cli.command()
-@click.option('--current-db-url', prompt=DATABASE_URL_PROMPT,
-              default=default_database_url,
-              help='The url for your current OAR database.')
-@click.option('--archive-db-url', prompt="OAR archive database URL",
-              default=default_archive_database_url,
-              help='The url for your archive OAR database.')
+@click.option(
+    "--current-db-url",
+    prompt=DATABASE_URL_PROMPT,
+    default=default_database_url,
+    help="The url for your current OAR database.",
+)
+@click.option(
+    "--archive-db-url",
+    prompt="OAR archive database URL",
+    default=default_archive_database_url,
+    help="The url for your archive OAR database.",
+)
 @pass_context
 def inspect(ctx, **kwargs):
     """ Analyze all databases."""

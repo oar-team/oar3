@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
-
 import click
 
-from .utils import CommandReturns
 from oar.lib.resource_handling import remove_resource
+
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
+
 @click.command()
-@click.argument('resource', nargs=-1, required=True,  type=int)
+@click.argument("resource", nargs=-1, required=True, type=int)
 def cli(resource):
     """Usage: oarremoveresource resource_id(s)
     WARNING : this command removes all records in the database

@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
 ADD scripts/ci/docker/build-base.sh /tmp/
 RUN /bin/bash /tmp/build-base.sh
 
-ADD requirements /app/requirements
+ADD pyproject.toml poetry.lock /app/
 ADD scripts/ci/docker/build-venv.sh /tmp/
 RUN /bin/bash /tmp/build-venv.sh
 

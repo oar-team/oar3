@@ -1,9 +1,9 @@
 # coding: utf-8
 import time
 
-from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.job import JobPseudo, set_jobs_cache_keys
+from oar.kao.scheduling import schedule_id_jobs_ct
+from oar.kao.slot import Slot, SlotSet
 
 
 class Timer(object):
@@ -24,27 +24,30 @@ class Timer(object):
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
-            print('elapsed time: %f ms' % self.msecs)
+            print("elapsed time: %f ms" % self.msecs)
 
 
 def create_simple_job(i, res_rqt, ctnts_res):
-    return JobPseudo(id=i,
-                     state="Waiting",
-                     types={},
-                     mld_res_rqts=[
-                         (i, 60, [([("node", res_rqt)], list(ctnts_res))])],
-                     deps=[], key_cache={},
-                     ts=False, ph=0)
+    return JobPseudo(
+        id=i,
+        state="Waiting",
+        types={},
+        mld_res_rqts=[(i, 60, [([("node", res_rqt)], list(ctnts_res))])],
+        deps=[],
+        key_cache={},
+        ts=False,
+        ph=0,
+    )
 
 
 def init_data_structure(nb_res):
     res = [(1, nb_res + 1)]
     ss = SlotSet(Slot(1, 0, 0, list(res), 0, 2 ** 31))
-    all_ss = {'default': ss}
+    all_ss = {"default": ss}
 
     h0_res_itvs = [[(i, i)] for i in range(1, nb_res + 1)]
     # print h0_res_itvs
-    hy = {'node': h0_res_itvs}
+    hy = {"node": h0_res_itvs}
 
     return (res, hy, all_ss)
 
@@ -93,11 +96,12 @@ def simple_bench_1(job_key_cache=False):
 def simple_bench_0():
     nb_res = 10
     i = 1024
-    print ("nb_jobs", i)
+    print("nb_jobs", i)
     (res, hy, all_ss) = init_data_structure(nb_res)
     (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res)
 
     eva_sched_foo(all_ss, jobs, hy, j_ids)
+
 
 print("simple_bench_1 same job cache enable")
 simple_bench_1(True)

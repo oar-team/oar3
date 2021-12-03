@@ -1,5 +1,5 @@
 SQLAlchemy-Utils
-SQLAlchemy
+SQLAlchemy<1.4
 alembic
 Flask>=0.10
 tabulate
@@ -9,3 +9,7 @@ requests
 procset
 simplejson
 psutil
+passlib
+pyyaml
+escapism
+toml

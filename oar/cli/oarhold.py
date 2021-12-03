@@ -3,38 +3,35 @@
 """
 
 import click
-from oar import (VERSION)
-from .utils import CommandReturns
-
-from oar.lib import config
-
-from oar.lib.job_handling import (get_array_job_ids, get_job_ids_with_given_properties,
-                                  get_job_types, hold_job)
 
 import oar.lib.tools as tools
+from oar import VERSION
+from oar.lib import config
+from oar.lib.job_handling import (
+    get_array_job_ids,
+    get_job_ids_with_given_properties,
+    get_job_types,
+    hold_job,
+)
 
-DEFAULT_CONFIG = {
-    'COSYSTEM_HOSTNAME': '127.0.0.1',
-    'DEPLOY_HOSTNAME': '127.0.0.1',
-}
+from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
+
 def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
-
-    config.setdefault_config(DEFAULT_CONFIG)
-
+    """Ask OAR to not schedule job_id until oarresume command will be executed."""
     cmd_ret = CommandReturns(cli)
 
     if version:
-        cmd_ret.print_('OAR version : ' + VERSION)
+        cmd_ret.print_("OAR version : " + VERSION)
         return cmd_ret
-    
+
     if not job_ids and not sql and not array:
         cmd_ret.usage(1)
         return cmd_ret
 
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     if array:
         job_ids = get_array_job_ids(array)
         if not job_ids:
@@ -44,30 +41,40 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
     if sql:
         job_ids = get_job_ids_with_given_properties(sql)
         if not job_ids:
-            cmd_ret.warning("There are no job for this SQL WHERE clause ({})".format(sql), 4)
+            cmd_ret.warning(
+                "There are no job for this SQL WHERE clause ({})".format(sql), 4
+            )
             return cmd_ret
 
     for job_id in job_ids:
         if running:
             types = get_job_types(job_id)
-            if 'JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD' not in config:
-                cmd_ret.warning('CPUSET tag is not configured in the oar.conf', 2 ,2)
+            if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" not in config:
+                cmd_ret.warning("CPUSET tag is not configured in the oar.conf", 2, 2)
                 return cmd_ret
-            elif 'cosystem' in types:
-                cmd_ret.warning('This job is of the cosystem type. We cannot suspend this kind of jobs.', 3, 2)
+            elif "cosystem" in types:
+                cmd_ret.warning(
+                    "This job is of the cosystem type. We cannot suspend this kind of jobs.",
+                    3,
+                    2,
+                )
                 return cmd_ret
-            elif 'deploy' in types:
-                cmd_ret.warning('This job is of the deploy type. We cannot suspend this kind of jobs.', 4, 2)
+            elif "deploy" in types:
+                cmd_ret.warning(
+                    "This job is of the deploy type. We cannot suspend this kind of jobs.",
+                    4,
+                    2,
+                )
                 return cmd_ret
-        
+
         error = hold_job(job_id, running, user)
         if error:
             error_msg = "/!\\ Cannot hold {} : ".format(job_id)
             if error == -1:
-                error_msg += 'this job does not exist.'
+                error_msg += "this job does not exist."
                 cmd_ret.error(error_msg, -1, 1)
             elif error == -2:
-                error_msg += 'you are not the right user.'
+                error_msg += "you are not the right user."
                 cmd_ret.error(error_msg, -2, 1)
             elif error == -3:
                 error_msg += "the job is not in the right state (try '-r' option)."
@@ -76,25 +83,35 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
                 error_msg += "only oar or root users can use '-r' option."
                 cmd_ret.error(error_msg, -4, 1)
             else:
-                error_msg += 'unknown reason.'
+                error_msg += "unknown reason."
                 cmd_ret.error(error_msg, 0, 1)
             return cmd_ret
         else:
-            cmd_ret.print_('[{}] Hold request was sent to the OAR server.'.format(job_id))
+            cmd_ret.print_(
+                "[{}] Hold request was sent to the OAR server.".format(job_id)
+            )
 
     if job_ids:
-        tools.notify_almighty('ChState')
+        tools.notify_almighty("ChState")
 
     return cmd_ret
 
-    
+
 @click.command()
-@click.argument('job_id', nargs=-1)
-@click.option('-r', '--running', is_flag=True,
-              help='enable suspending running jobs (administrator only)')
-@click.option('--array', type=int, help='Handle array job ids, and their sub-jobs')
-@click.option('--sql', type=click.STRING, help='Select jobs using a SQL WHERE clause on table jobs (e.g. "project = \'p1\'")')
-@click.option('-V', '--version', is_flag=True, help='Print OAR version.')
+@click.argument("job_id", nargs=-1)
+@click.option(
+    "-r",
+    "--running",
+    is_flag=True,
+    help="enable suspending running jobs (administrator only)",
+)
+@click.option("--array", type=int, help="Handle array job ids, and their sub-jobs")
+@click.option(
+    "--sql",
+    type=click.STRING,
+    help="Select jobs using a SQL WHERE clause on table jobs (e.g. \"project = 'p1'\")",
+)
+@click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(job_id, running, array, sql, version):
 
     cmd_ret = oarhold(job_id, running, array, sql, version, None)

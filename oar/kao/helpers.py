@@ -1,14 +1,15 @@
 # coding: utf-8
-import random
 import colorsys
+import random
 
 NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
 RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
-# TODO remove useless code in profit to Evalys usage 
+# TODO remove useless code in profit to Evalys usage
 
-def dump(obj):  # pragma: no cover 
+
+def dump(obj):  # pragma: no cover
     for attr in dir(obj):
         print("obj.%s = %s" % (attr, getattr(obj, attr)))
 
@@ -18,89 +19,110 @@ def annotate(ax, rect, annot):  # pragma: no cover
     cx = rx + rect.get_width() / 2.0
     cy = ry + rect.get_height() / 2.0
 
-    ax.annotate(annot, (cx, cy), color='black',
-                fontsize=12, ha='center', va='center')
+    ax.annotate(annot, (cx, cy), color="black", fontsize=12, ha="center", va="center")
 
 
 def plot_slots_and_job(slots_set, jobs, nb_res, t_max):  # pragma: no cover
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatch
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots()
 
     if slots_set:
         for sid, slot in slots_set.slots.items():
             col = "blue"
-            if (sid % 2):
+            if sid % 2:
                 col = "red"
             for i, itv in enumerate(slot.itvs):
                 (y0, y1) = itv
                 # print i, y0,y1, slot.b, slot.e
                 # rect =  mpatch.Rectangle((2,2), 8, 2)
-                rect = mpatch.Rectangle((slot.b, y0 - 0.4), slot.e - slot.b,
-                                        y1 - y0 + 0.9, alpha=0.1, color=col)
-                if (i == 0):
-                    annotate(ax, rect, 's' + str(sid))
+                rect = mpatch.Rectangle(
+                    (slot.b, y0 - 0.4),
+                    slot.e - slot.b,
+                    y1 - y0 + 0.9,
+                    alpha=0.1,
+                    color=col,
+                )
+                if i == 0:
+                    annotate(ax, rect, "s" + str(sid))
                 ax.add_artist(rect)
 
     if jobs:
         for jid, job in jobs.items():
             col = RGB_tuples[random.randint(0, NB_COLORS - 1)]
             duration = job.walltime
-            if hasattr(job, 'run_time'):
+            if hasattr(job, "run_time"):
                 duration = job.run_time
             for i, itv in enumerate(job.res_set):
                 (y0, y1) = itv
-                rect = mpatch.Rectangle((job.start_time, y0 - 0.4), duration,
-                                        y1 - y0, alpha=0.2, color=col)
-                if (i == 0):
-                    annotate(ax, rect, 'j' + str(jid))
+                rect = mpatch.Rectangle(
+                    (job.start_time, y0 - 0.4), duration, y1 - y0, alpha=0.2, color=col
+                )
+                if i == 0:
+                    annotate(ax, rect, "j" + str(jid))
                 ax.add_artist(rect)
 
     ax.set_xlim((0, t_max))
     ax.set_ylim((0, nb_res))
-#    ax.set_aspect('equal')
+    #    ax.set_aspect('equal')
     ax.grid(True)
     mng = plt.get_current_fig_manager()
     try:
         mng.resize(*mng.window.maxsize())
         # mng.window.showMaximized()
-    except:
+    except Exception:
+        # TODO Handle execption
         pass
     plt.show()
     # mpld3.show()
 
 
 def slots_2_val_ref(slots):  # pragma: no cover
-    '''function used to generate reference value for unitest'''
+    """function used to generate reference value for unitest"""
     sid = 1
     while True:
         slot = slots[sid]
-        print('(', slot.b, ',', slot.e, ',', slot.itvs, '),')
+        print("(", slot.b, ",", slot.e, ",", slot.itvs, "),")
         sid = slot.next
-        if (sid == 0):
+        if sid == 0:
             break
 
 
 def slots_all_2_val_ref(slots):  # pragma: no cover
-    '''function used to generate reference value for unitest'''
+    """function used to generate reference value for unitest"""
     sid = 1
     while True:
         slot = slots[sid]
-        print('(', slot.id, ',', slot.prev, ',', slot.next, ',', slot.itvs, ',', slot.b, ',', slot.e, '),')
+        print(
+            "(",
+            slot.id,
+            ",",
+            slot.prev,
+            ",",
+            slot.next,
+            ",",
+            slot.itvs,
+            ",",
+            slot.b,
+            ",",
+            slot.e,
+            "),",
+        )
         sid = slot.next
-        if (sid == 0):
+        if sid == 0:
             break
 
 
 def extract_find_assign_args(raw_args):
-    funcname = raw_args.split(':')[0]
+    funcname = raw_args.split(":")[0]
     kwargs = {}
     args = []
-    for arg in raw_args.split(':')[1:]:
-        item = arg.split('=')
+    for arg in raw_args.split(":")[1:]:
+        item = arg.split("=")
         if len(item) >= 2:
             if item[0] != "":
-                kwargs[item[0]] = '='.join(item[1:])
+                kwargs[item[0]] = "=".join(item[1:])
             else:
                 args.append(arg)
         else:

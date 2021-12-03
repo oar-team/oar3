@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 88
+show-source = True
+ignore = E203, E231, E501, W503, W605
+exclude=
+  # Don't check .git
+  .git,
+  # This is related to dev environment
+  .venv,
+  docs,
+  *egg,
+  # The sources in this folder are evaluated at runtime
+  etc/oar/admission_rules.d
+  # TODO: finish cleaning of oarsub and bipbip
+  oar/modules/bipbip.py
+  oar/cli/oarsub.py

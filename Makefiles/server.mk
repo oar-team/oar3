@@ -51,53 +51,51 @@ include Makefiles/shared/shared.mk
 
 clean: clean_shared
 	$(MAKE) -f Makefiles/man.mk clean
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarproperty3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarremoveresource3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
-	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oaraccounting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)$(OARDIR)/oar-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarproperty CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
+	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/.oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
+	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
+	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarmonitor CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarmonitor
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oar_resources_init CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_init
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oar_resources_add CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_add
 	$(OARDO_CLEAN) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix
-	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
-	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
-	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
-	# $(OARDO_CLEAN) CMD_WRAPPER=$(OARDIR)/oarmonitor CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarmonitor
 
 build: build_shared
 	$(MAKE) -f Makefiles/man.mk build
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar3-almighty  CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
-	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar-almighty  CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarproperty CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/.oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
 	#$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarremoveresource3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oaraccounting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oarproperty3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar_resources_init CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_init
 	$(OARDO_BUILD) CMD_WRAPPER=$(OARDIR)/oar_resources_add CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_add
-	$(OARDO_BUILD) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	
+	$(OARDO_BUILD) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix
 
 install: build install_shared
 	install -d $(DESTDIR)$(OARCONFDIR)
 	install -m 0750 $(OARCONFDIR_BINFILES) $(DESTDIR)$(OARCONFDIR)
-	for file in oar3-almighty oar3-appendice-proxy oar3-bipbip-commander \
-		oar3-sarko oar3-finaud oar3-leon oar3-bipbip oar3-node-change-state \
-		oarproperty3 oar3-hulot kao kamelot kamelot-fifo \
-		oarremoveresource3 oaraccounting3 \
-		oarnodes3 oardel3 oarstat3 oarsub3 oarhold3 oarresume3;\
+	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
+		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
+		.oarproperty oar-hulot kao kamelot kamelot-fifo \
+		.oarremoveresource .oaraccounting .oarqueue .oarnotify .oarconnect \
+		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume .oarwalltime;\
 	do \
 		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then\
 			mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
 		fi \
 	done
 
-	$(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
-	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarproperty3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
-	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarremoveresource3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
-	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oaraccounting3 CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
-
-	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
-	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
-	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
-	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_INSTALL) CMD_WRAPPER=$(DESTDIR)$(OARDIR)/oar-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarproperty CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
+	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/.oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
 	# $(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oarmonitor CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarmonitor
 	$(OARDO_INSTALL) CMD_WRAPPER=$(OARDIR)/oar_resources_init CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_init
@@ -111,19 +109,15 @@ uninstall: uninstall_shared
 	# rm -f $(DESTDIR)$(OARDIR)/sarko
 	# rm -f $(DESTDIR)$(OARDIR)/finaud
 	# rm -f $(DESTDIR)$(OARDIR)/NodeChangeState
-
 	# rm -rf $(DESTDIR)$(EXAMPLEDIR)
-
-	$(OARDO_UNINSTALL) CMD_WRAPPER=$(DESTDIR)$(BINDIR)/oar3-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
-
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarproperty CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
-	# $(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarmonitor CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarmonitor
-
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(DESTDIR)$(BINDIR)/oar-almighty CMD_TARGET=$(DESTDIR)$(SBINDIR)/almighty
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarproperty CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarproperty
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarremoveresource CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarremoveresource
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oaraccounting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaraccounting
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarnotify CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnotify	
+	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarqueue CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarqueue
+	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oaradmissionrules CMD_TARGET=$(DESTDIR)$(SBINDIR)/oaradmissionrules
+	#$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarmonitor CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarmonitor
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oar_resources_init CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_init
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oar_resources_add CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_resources_add
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARCONFDIR)/oar_phoenix.pl CMD_TARGET=$(DESTDIR)$(SBINDIR)/oar_phoenix	

@@ -10,19 +10,26 @@ env:
   - PYTHON_IMAGE=python:3.7 POSTGRES_IMAGE=postgres:12
   - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
   - PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
-
-jobs:
-  allow_failures:
-    - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:11
-    - env: PYTHON_IMAGE=python:3.8 POSTGRES_IMAGE=postgres:12
+  # Configuration for bullseye
+  - PYTHON_IMAGE=python:3.9 POSTGRES_IMAGE=postgres:13
 
 before_install:
   - pip install codecov
 
+install:
+  # We install only dev requirements because we only check formatting in the travis environment.
+  # The test suit is tested within a docker environment.
+  - pip install -r requirements/dev.txt
+
 before_script:
+  # Connect to docker to have user-base dockerrate rate limit instead of by ip
+  - echo $DOCKERTOKEN | docker login --username $DOCKERUSER --password-stdin
   - ./scripts/ci/build-docker-env.sh
 
 script:
+  # Check for black and isort formatting, stop travis on fail
+  - ./scripts/ci/check-formatting.sh || travis_terminate 1;
+  # Run the test suit
   - ./scripts/ci/run-tests-with-docker.sh
 
 after_success:

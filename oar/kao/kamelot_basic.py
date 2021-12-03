@@ -1,32 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
-from oar.lib import config, get_logger
 from oar.kao.platform import Platform
-from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
-from oar.kao.slot import SlotSet, MAX_TIME
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
+from oar.kao.slot import MAX_TIME, SlotSet
+from oar.lib import config, get_logger
+from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
+
+logger = get_logger("oar.kamelot_basic")
 
 
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': 'resource_id ASC',
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-}
-
-
-logger = get_logger('oar.kamelot_basic')
-
-
-def schedule_cycle(plt, queue='default'):
+def schedule_cycle(plt, queues=["default"]):
     now = plt.get_time()
 
-    logger.info('Begin scheduling....', now)
+    logger.info("Begin scheduling....", now)
 
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
 
     logger.info(waiting_jobs, waiting_jids, nb_waiting_jobs)
 
@@ -78,11 +69,9 @@ def schedule_cycle(plt, queue='default'):
         #
         # Scheduled
         #
-        schedule_id_jobs_ct(all_slot_sets,
-                            waiting_jobs,
-                            resource_set.hierarchy,
-                            waiting_jids,
-                            0)
+        schedule_id_jobs_ct(
+            all_slot_sets, waiting_jobs, resource_set.hierarchy, waiting_jids, 0
+        )
 
         #
         # Save assignement
@@ -97,12 +86,11 @@ def schedule_cycle(plt, queue='default'):
 #
 def main():
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
-    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_cycle(plt)
     logger.info("That's all folks")
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     main()

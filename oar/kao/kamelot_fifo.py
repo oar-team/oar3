@@ -3,23 +3,14 @@
 
 import copy
 
-from oar.lib import config, get_logger
+from procset import ProcSet
+
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
+from oar.lib import config, get_logger
 
-from procset import ProcSet
 # Initialize some variables to default value or retrieve from oar.conf
 # configuration file *)
-
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    'HIERARCHY_LABELS': 'resource_id,network_address',
-    'SCHEDULER_RESOURCE_ORDER': "resource_id ASC",
-    'SCHEDULER_JOB_SECURITY_TIME': '60',
-    'SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE': 'default',
-    'FAIRSHARING_ENABLED': 'no',
-}
 
 
 logger = get_logger("oar.kamelot_fifo")
@@ -74,7 +65,9 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 
             if hierarchy_use:
                 # Assign resources which hierarchy support (uncomment)
-                itvs = find_resource_hierarchies_job(res_itvs, hy_res_rqts, resource_set.hierarchy)
+                itvs = find_resource_hierarchies_job(
+                    res_itvs, hy_res_rqts, resource_set.hierarchy
+                )
             else:
                 # OR assign resource by considering only resource_id (no hierarchy)
                 # and only one type of resource
@@ -94,7 +87,9 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
                 assigned_jobs[job.id] = job
                 res_itvs = res_itvs - itvs
             else:
-                logger.debug("Not enough available resources, it's a FIFO scheduler, we stop here.")
+                logger.debug(
+                    "Not enough available resources, it's a FIFO scheduler, we stop here."
+                )
                 break
 
         #
@@ -111,13 +106,12 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 # Main function
 #
 def main():
-    config['LOG_FILE'] = '/tmp/oar_kamelot.log'
+    config["LOG_FILE"] = "/tmp/oar_kamelot.log"
     logger = get_logger("oar.kamelot_fifo", forward_stderr=True)
-    config.setdefault_config(DEFAULT_CONFIG)
     plt = Platform()
     schedule_fifo_cycle(plt, "default")
     logger.info("That's all folks")
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

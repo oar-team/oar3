@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # OAR Script to check and automatically reboot Suspected nodes.
 # This script is intended to be started periodically from cron
 # for example:

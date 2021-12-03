@@ -2,46 +2,47 @@
 import sys
 import threading
 import time
-
 from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
-from sqlalchemy import create_engine, inspect, exc
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import (declarative_base, DeferredReflection,
-                                        DeclarativeMeta)
-from sqlalchemy.orm import sessionmaker, class_mapper
-from sqlalchemy.orm.state import InstanceState
-from sqlalchemy.orm.exc import UnmappedClassError
-
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
+from sqlalchemy import create_engine, inspect  # , exc
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.ext.declarative import DeferredReflection
+from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
+from sqlalchemy.orm.exc import UnmappedClassError
+from sqlalchemy.orm.state import InstanceState
+from sqlalchemy.pool import StaticPool
 
-from .utils import cached_property, merge_dicts, get_table_name, to_json, reraise
+from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
 
-__all__ = ['Database']
+__all__ = ["Database"]
 
-def wait_db_ready(f, args, attempt = 7):
+
+def wait_db_ready(f, args=None, attempt=7):
     delay = 0.2
     while attempt > 0:
         try:
-            f(*args)
-        except exc.OperationalError as error:
+            if args:
+                r = f(*args)
+            else:
+                r = f()
+        # except exc.OperationalError as error:
+        except Exception:
             time.sleep(delay)
-            delay = 2*delay
+            delay = 2 * delay
             attempt -= 1
             if not attempt:
                 raise
         else:
-            break
+            return r
+
 
 class BaseModel(object):
 
-    __default_table_args__ = {
-        'extend_existing': True,
-        'sqlite_autoincrement': True
-    }
+    __default_table_args__ = {"extend_existing": True, "sqlite_autoincrement": True}
     query = None
 
     @classmethod
@@ -53,7 +54,7 @@ class BaseModel(object):
             cls._db.session.add(record)
             cls._db.session.commit()
             return record
-        except:
+        except Exception:
             exc_type, exc_value, tb = sys.exc_info()
             cls._db.session.rollback()
             reraise(exc_type, exc_value, tb.tb_next)
@@ -69,8 +70,8 @@ class BaseModel(object):
 
     def to_json(self, **kwargs):
         """Dump `self` to json string."""
-        kwargs.setdefault('ignore_keys', ())
-        obj = self.to_dict(kwargs.pop('ignore_keys'))
+        kwargs.setdefault("ignore_keys", ())
+        obj = self.to_dict(kwargs.pop("ignore_keys"))
         return to_json(obj, **kwargs)
 
     def __iter__(self):
@@ -79,21 +80,21 @@ class BaseModel(object):
             yield (key, value)
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, inspect(self).identity)
+        return "<%s %s>" % (self.__class__.__name__, inspect(self).identity)
 
 
 class SessionProperty(object):
-
     def __init__(self):
         self._sessions = {}
 
     def _create_scoped_session(self, db):
         options = db._session_options
-        options.setdefault('bind', db.engine)
+        options.setdefault("bind", db.engine)
         if db.query_class is None:
             from .basequery import BaseQuery
+
             db.query_class = BaseQuery
-        options.setdefault('query_cls', db.query_class)
+        options.setdefault("query_cls", db.query_class)
         db.sessionmaker.configure(**options)
         scoped = ScopedSession(db.sessionmaker)
         scoped.db = db
@@ -110,7 +111,6 @@ class SessionProperty(object):
 
 
 class QueryProperty(object):
-
     def __init__(self, db):
         self._db = db
 
@@ -139,14 +139,15 @@ class Database(object):
         self._reflected = False
         self._cache = {"uri": uri, "uri_ro": uri_ro}
         self._session_options = dict(session_options or {})
-        self._session_options.setdefault('autoflush', True)
-        self._session_options.setdefault('autocommit', False)
+        self._session_options.setdefault("autoflush", True)
+        self._session_options.setdefault("autocommit", False)
         self.sessionmaker = sessionmaker(**self._session_options)
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
         _include_sqlalchemy(self)
-        self.Model = declarative_base(cls=BaseModel, name='Model',
-                                      metaclass=_BoundDeclarativeMeta)
+        self.Model = declarative_base(
+            cls=BaseModel, name="Model", metaclass=_BoundDeclarativeMeta
+        )
         self.Model.query = QueryProperty(self)
         self.Model._db = self
         self.models = {}
@@ -160,11 +161,13 @@ class Database(object):
     @cached_property
     def uri(self):
         from oar.lib import config
+
         return config.get_sqlalchemy_uri()
 
     @cached_property
     def uri_ro(self):
         from oar.lib import config
+
         return config.get_sqlalchemy_uri(read_only=True)
 
     @property
@@ -176,12 +179,13 @@ class Database(object):
     def queries(self):
         if self.query_collection_class is None:
             from .basequery import BaseQueryCollection
+
             self.query_collection_class = BaseQueryCollection
         return self.query_collection_class()
 
     @property
     def engine(self):
-        """Gives access to the engine. """
+        """Gives access to the engine."""
         with self._engine_lock:
             if self.connector is None:
                 self.connector = EngineConnector(self)
@@ -228,27 +232,29 @@ class Database(object):
             self._reflected = True
 
     def create_all(self, bind=None, **kwargs):
-        """Creates all tables. """
+        """Creates all tables."""
         if bind is None:
             bind = self.engine
         self.metadata.create_all(bind=bind, **kwargs)
 
     def delete_all(self, bind=None, **kwargs):
-        """Drop all tables. """
+        """Drop all tables."""
         if bind is None:
             bind = self.engine
         with bind.connect() as con:
             trans = con.begin()
             try:
                 if bind.dialect.name == "postgresql":
-                    con.execute('TRUNCATE {} RESTART IDENTITY CASCADE;'.format(
-                        ','.join(table.name
-                                 for table in self.tables.values())))
+                    con.execute(
+                        "TRUNCATE {} RESTART IDENTITY CASCADE;".format(
+                            ",".join(table.name for table in self.tables.values())
+                        )
+                    )
                 else:
                     for table in self.tables.values():
                         con.execute(table.delete())
                 trans.commit()
-            except:
+            except Exception:
                 trans.rollback()
                 raise
 
@@ -273,23 +279,22 @@ class Database(object):
                 self.connector = None
 
     def show(self):
-        """ Return small database content representation."""
+        """Return small database content representation."""
         for model_name in sorted(self.models.keys()):
-            data = [inspect(i).identity
-                    for i in self.models[model_name].query.all()]
+            data = [inspect(i).identity for i in self.models[model_name].query.all()]
             print(model_name.ljust(25), data)
 
     def __repr__(self):
         engine = None
         if self.connector is not None:
             engine = self.engine
-        return '<%s engine=%r>' % (self.__class__.__name__, engine)
+        return "<%s engine=%r>" % (self.__class__.__name__, engine)
 
 
 class EngineConnector(object):
-
     def __init__(self, db):
         from oar.lib import config
+
         self._config = config
         self._db = db
         self._engine = None
@@ -301,20 +306,20 @@ class EngineConnector(object):
             value = self._config.get(configkey, None)
             if value is not None:
                 options[optionkey] = value
-        _setdefault('pool_size', 'SQLALCHEMY_POOL_SIZE')
-        _setdefault('pool_timeout', 'SQLALCHEMY_POOL_TIMEOUT')
-        _setdefault('pool_recycle', 'SQLALCHEMY_POOL_RECYCLE')
-        _setdefault('max_overflow', 'SQLALCHEMY_MAX_OVERFLOW')
-        _setdefault('convert_unicode', 'SQLALCHEMY_CONVERT_UNICODE')
+
+        _setdefault("pool_size", "SQLALCHEMY_POOL_SIZE")
+        _setdefault("pool_timeout", "SQLALCHEMY_POOL_TIMEOUT")
+        _setdefault("pool_recycle", "SQLALCHEMY_POOL_RECYCLE")
+        _setdefault("max_overflow", "SQLALCHEMY_MAX_OVERFLOW")
 
     def apply_driver_hacks(self, info, options):
         """This method is called before engine creation and used to inject
         driver specific hacks into the options.
         """
-        if info.drivername == 'mysql':
-            info.query.setdefault('charset', 'utf8')
-            options.setdefault('pool_size', 10)
-            options.setdefault('pool_recycle', 3600)
+        if info.drivername == "mysql":
+            info.query.setdefault("charset", "utf8")
+            options.setdefault("pool_size", 10)
+            options.setdefault("pool_recycle", 3600)
             # TODO: More test
             # from MySQLdb.cursors import SSCursor as MySQLdb_SSCursor
             # if MySQLdb_SSCursor is not None:
@@ -322,27 +327,31 @@ class EngineConnector(object):
             #     connect_args.update({'cursorclass': MySQLdb_SSCursor})
             #     options['connect_args'] = connect_args
 
-        elif info.drivername == 'sqlite':
-            no_pool = options.get('pool_size') == 0
-            memory_based = info.database in (None, '', ':memory:')
+        elif info.drivername == "sqlite":
+            no_pool = options.get("pool_size") == 0
+            memory_based = info.database in (None, "", ":memory:")
             if memory_based and no_pool:
                 raise ValueError(
-                    'SQLite in-memory database with an empty queue'
-                    ' (pool_size = 0) is not possible due to data loss.'
+                    "SQLite in-memory database with an empty queue"
+                    " (pool_size = 0) is not possible due to data loss."
                 )
         return options
 
     def get_engine(self):
         with self._lock:
             uri = self._db.uri
-            echo = self._config.get('SQLALCHEMY_ECHO', False)
+            echo = self._config.get("SQLALCHEMY_ECHO", False)
             if (uri, echo) == self._connected_for:
                 return self._engine
             info = make_url(uri)
             options = {}
             self.apply_pool_defaults(options)
             self.apply_driver_hacks(info, options)
-            options['echo'] = echo
+            options["echo"] = echo
+            if self._config["DB_TYPE"] == "sqlite":
+                options["connect_args"] = {"check_same_thread": False}
+                options["poolclass"] = StaticPool
+
             self._engine = engine = create_engine(info, **options)
             self._connected_for = (uri, echo)
             return engine
@@ -362,13 +371,14 @@ def _include_sqlalchemy(db):
         def _make_table(*args, **kwargs):
             if len(args) > 1 and isinstance(args[1], db.Column):
                 args = (args[0], db.metadata) + args[1:]
-            kwargs.setdefault('extend_existing', True)
-            info = kwargs.pop('info', None) or {}
-            info.setdefault('autoreflect', False)
-            kwargs['info'] = info
+            kwargs.setdefault("extend_existing", True)
+            info = kwargs.pop("info", None) or {}
+            info.setdefault("autoreflect", False)
+            kwargs["info"] = info
             table = sqlalchemy.Table(*args, **kwargs)
             db.tables[table.name] = table
             return table
+
         return _make_table
 
     db.Table = _make_table(db)
@@ -382,29 +392,32 @@ def _include_sqlalchemy(db):
 
 
 class _BoundDeclarativeMeta(DeclarativeMeta):
-
     def __new__(cls, name, bases, d):
-        if '__tablename__' not in d and '__table__' not in d and '__abstract__' not in d:
-            d['__tablename__'] = get_table_name(name)
-        default_table_args = d.pop('__default_table_args__',
-                                   BaseModel.__default_table_args__)
-        table_args = d.pop('__table_args__', {})
+        if (
+            "__tablename__" not in d
+            and "__table__" not in d
+            and "__abstract__" not in d
+        ):
+            d["__tablename__"] = get_table_name(name)
+        default_table_args = d.pop(
+            "__default_table_args__", BaseModel.__default_table_args__
+        )
+        table_args = d.pop("__table_args__", {})
         if isinstance(table_args, dict):
             table_args = merge_dicts(default_table_args, table_args)
         elif isinstance(table_args, tuple):
             table_args = list(table_args)
             if isinstance(table_args[-1], dict):
-                table_args[-1] = merge_dicts(default_table_args,
-                                             table_args[-1])
+                table_args[-1] = merge_dicts(default_table_args, table_args[-1])
             else:
                 table_args.append(default_table_args)
             table_args = tuple(table_args)
-        d['__table_args__'] = table_args
+        d["__table_args__"] = table_args
         return DeclarativeMeta.__new__(cls, name, bases, d)
 
     def __init__(self, name, bases, d):
         DeclarativeMeta.__init__(self, name, bases, d)
-        if hasattr(bases[0], '_db'):
+        if hasattr(bases[0], "_db"):
             bases[0]._db.models[name] = self
             bases[0]._db.tables[self.__table__.name] = self.__table__
             self._db = bases[0]._db
@@ -440,9 +453,9 @@ def read_only_session(scoped, **kwargs):
     Will raise exception if we try to write in the database.
     """
     dialect = scoped.db.engine.dialect.name
-    if dialect == 'postgresql':
+    if dialect == "postgresql":
         try:
-            kwargs['bind'] = create_engine(scoped.db.uri_ro)
+            kwargs["bind"] = create_engine(scoped.db.uri_ro)
             session = scoped.session_factory(**kwargs)
             old_session = None
             if scoped.registry.has():
@@ -456,15 +469,22 @@ def read_only_session(scoped, **kwargs):
                 scoped.registry.set(old_session)
     elif dialect == "sqlite":
         import sqlite3
+
         sqlite_path = scoped.db.engine.url.database
         if not sqlite_path or sqlite_path == ":memory:":
             yield scoped(**kwargs)
         else:
             try:
-                def creator():
-                    return sqlite3.connect('file:%s?mode=ro' % sqlite_path)
 
-                kwargs['bind'] = create_engine('sqlite://', creator=creator)
+                def creator():
+                    return sqlite3.connect("file:%s?mode=ro" % sqlite_path)
+
+                kwargs["bind"] = create_engine(
+                    "sqlite://",
+                    creator=creator,
+                    connect_args={"check_same_thread": False},
+                )
+
                 scoped.remove()
                 session = scoped(**kwargs)
                 yield session
@@ -485,7 +505,7 @@ def ephemeral_session(scoped, **kwargs):
         connection = scoped.db.engine.connect()
         # begin a non-ORM transaction
         transaction = connection.begin()
-        kwargs['bind'] = connection
+        kwargs["bind"] = connection
         session = scoped(**kwargs)
         yield session
     finally:
@@ -501,9 +521,9 @@ def ephemeral_session(scoped, **kwargs):
 
 class ScopedSession(sqlalchemy.orm.scoped_session):
     def __call__(self, **kwargs):
-        if kwargs.pop('read_only', False):
+        if kwargs.pop("read_only", False):
             return read_only_session(self, **kwargs)
-        elif kwargs.pop('ephemeral', False):
+        elif kwargs.pop("ephemeral", False):
             return ephemeral_session(self, **kwargs)
         else:
             return super(ScopedSession, self).__call__(**kwargs)

@@ -1,23 +1,20 @@
 # coding: utf-8
-import pytest
+from codecs import open
+from tempfile import mkstemp
 
+import pytest
 from procset import ProcSet
 
-from codecs import open
-from copy import deepcopy
-from tempfile import mkstemp
-from oar.lib.job_handling import JobPseudo
+from oar.kao.quotas import Quotas
+from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import Slot, SlotSet
-from oar.kao.scheduling import (schedule_id_jobs_ct,
-                                set_slots_with_prev_scheduled_jobs)
-import oar.kao.quotas as qts
-import oar.lib.resource as rs
-
 from oar.lib import config, get_logger
+from oar.lib.job_handling import JobPseudo
+from oar.lib.resource import ResourceSet
 
 # import pdb
 
-config['LOG_FILE'] = ':stderr:'
+config["LOG_FILE"] = ":stderr:"
 logger = get_logger("oar.test")
 
 """
@@ -35,49 +32,75 @@ def compare_slots_val_ref(slots, v):
     while True:
         slot = slots[sid]
         (b, e, itvs) = v[i]
-        if ((slot.b != b) or (slot.e != e)
-                or not slot.itvs == itvs):
+        if (slot.b != b) or (slot.e != e) or not slot.itvs == itvs:
             return False
         sid = slot.next
-        if (sid == 0):
+        if sid == 0:
             break
         i += 1
     return True
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def oar_conf(request):
-    config['QUOTAS'] = 'yes'
+    config["QUOTAS"] = "yes"
 
     def remove_quotas():
-        config['QUOTAS'] = 'no'
+        config["QUOTAS"] = "no"
+        Quotas.enabled = False
+        Quotas.calendar = None
 
     request.addfinalizer(remove_quotas)
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def reset_quotas():
-    qts.quotas_rules = {}
-    qts.quotas_job_types = ['*']
+    Quotas.enabled = False
+    Quotas.default_rules = {}
+    Quotas.job_types = ["*"]
+
+
+def test_quotas_rules_fromJson():
+    quotas_rules_json = {
+        "*,*,*,john": [100, "ALL", "0.5*ALL"],
+        "*,projA,*,*": ["34.5", "ALL", "2*ALL"],
+    }
+
+    quotas_rules = Quotas.quotas_rules_fromJson(quotas_rules_json, 100)
+    print(quotas_rules)
+
+    assert ("*", "*", "*", "john") in quotas_rules and (
+        "*",
+        "projA",
+        "*",
+        "*",
+    ) in quotas_rules
+    assert quotas_rules[("*", "*", "*", "john")] == [100, 100, 180000]
+    assert quotas_rules[("*", "projA", "*", "*")] == [34, 100, 720000]
 
 
 def test_quotas_one_job_no_rules():
-    config['QUOTAS'] = 'yes'
+    Quotas.enabled = True
 
     v = [(0, 59, ProcSet(*[(17, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   queue='default', user='toto', project='',
-                   mld_res_rqts=[
-        (1, 60,
-         [([("node", 2)], res)]
-         )
-    ], ts=False, ph=0)
+    j1 = JobPseudo(
+        id=1,
+        types={},
+        deps=[],
+        key_cache={},
+        queue="default",
+        user="toto",
+        project="",
+        mld_res_rqts=[(1, 60, [([("node", 2)], res)])],
+        ts=False,
+        ph=0,
+    )
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
@@ -85,20 +108,18 @@ def test_quotas_one_job_no_rules():
 
 
 def test_quotas_one_job_rule_nb_res_1():
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [1, -1, -1]}
+    Quotas.enabled = True
+    Quotas.default_rules = {("*", "*", "*", "/"): [1, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=1, queue='default', user='toto', project='')
-    j1.simple_req(('node', 2), 60, res)
+    j1 = JobPseudo(id=1, queue="default", user="toto", project="")
+    j1.simple_req(("node", 2), 60, res)
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
@@ -107,26 +128,28 @@ def test_quotas_one_job_rule_nb_res_1():
 
 
 def test_quotas_one_job_rule_nb_res_2():
-
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1]}
+    Quotas.enabled = True
+    Quotas.default_rules = {("*", "*", "*", "/"): [16, -1, -1]}
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=2, types={}, deps=[], key_cache={},
-                   queue='default', user='toto', project='',
-                   mld_res_rqts=[
-        (1, 60,
-         [([("node", 2)], res)]
-         )
-    ], ts=False, ph=0)
+    j1 = JobPseudo(
+        id=2,
+        types={},
+        deps=[],
+        key_cache={},
+        queue="default",
+        user="toto",
+        project="",
+        mld_res_rqts=[(1, 60, [([("node", 2)], res)])],
+        ts=False,
+        ph=0,
+    )
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
@@ -135,31 +158,46 @@ def test_quotas_one_job_rule_nb_res_2():
 
 def test_quotas_four_jobs_rule_1():
 
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
-                        ('*', 'yop', '*', '*'): [-1, 1, -1]}
+    Quotas.enabled = True
+    Quotas.default_rules = {
+        ("*", "*", "*", "/"): [16, -1, -1],
+        ("*", "yop", "*", "*"): [-1, 1, -1],
+    }
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=1, start_time=0, walltime=20,
-                   queue='default', user='toto', project='',
-                   res_set=ProcSet(*[(9, 24)]), types={}, ts=False, ph=0)
-    j2 = JobPseudo(id=2, start_time=0, walltime=50,
-                   queue='default', user='lulu', project='yop',
-                   res_set=ProcSet(*[(1, 8)]))
+    j1 = JobPseudo(
+        id=1,
+        start_time=0,
+        walltime=20,
+        queue="default",
+        user="toto",
+        project="",
+        res_set=ProcSet(*[(9, 24)]),
+        types={},
+        ts=False,
+        ph=0,
+    )
+    j2 = JobPseudo(
+        id=2,
+        start_time=0,
+        walltime=50,
+        queue="default",
+        user="lulu",
+        project="yop",
+        res_set=ProcSet(*[(1, 8)]),
+    )
 
-    j3 = JobPseudo(id=3, queue='default', user='toto', project='')
-    j3.simple_req(('node', 1), 10, res)
+    j3 = JobPseudo(id=3, queue="default", user="toto", project="")
+    j3.simple_req(("node", 1), 10, res)
 
-    j4 = JobPseudo(id=4, queue='default', user='lulu', project='yop')
-    j4.simple_req(('node', 1), 60, res)
+    j4 = JobPseudo(id=4, queue="default", user="lulu", project="yop")
+    j4.simple_req(("node", 1), 60, res)
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 5)
 
@@ -177,28 +215,37 @@ def test_quotas_four_jobs_rule_1():
 
 def test_quotas_three_jobs_rule_1():
 
-    config['QUOTAS'] = 'yes'
-    # quotas.set_quotas_rules({('*', '*', '*', '/'): [1, -1, -1]})
-    # global quotas_rules
-    qts.quotas_rules = {('*', '*', '*', '/'): [16, -1, -1],
-                        ('default', '*', '*', '*'): [-1, -1, 2000]}
+    Quotas.enabled = True
+    Quotas.default_rules = {
+        ("*", "*", "*", "/"): [16, -1, -1],
+        ("default", "*", "*", "*"): [-1, -1, 2000],
+    }
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = ProcSet(*res)
+    ResourceSet.default_itvs = ProcSet(*res)
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), 0, 10000))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=1, start_time=50, walltime=100,
-                   queue='default', user='toto', project='',
-                   res_set=ProcSet(*[(17, 24)]), types={}, ts=False, ph=0)
+    j1 = JobPseudo(
+        id=1,
+        start_time=50,
+        walltime=100,
+        queue="default",
+        user="toto",
+        project="",
+        res_set=ProcSet(*[(17, 24)]),
+        types={},
+        ts=False,
+        ph=0,
+    )
 
-    j2 = JobPseudo(id=2, queue='default', user='toto', project='')
-    j2.simple_req(('node', 1), 200, res)
+    j2 = JobPseudo(id=2, queue="default", user="toto", project="")
+    j2.simple_req(("node", 1), 200, res)
 
-    j3 = JobPseudo(id=3, queue='default', user='lulu', project='yop')
-    j3.simple_req(('node', 1), 100, res)
+    j3 = JobPseudo(id=3, queue="default", user="lulu", project="yop")
+    j3.simple_req(("node", 1), 100, res)
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1], 5)
 
@@ -216,38 +263,49 @@ def test_quotas_three_jobs_rule_1():
 
 def test_quotas_two_job_rules_nb_res_quotas_file():
 
-    config['QUOTAS'] = 'yes'
     _, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
+    config["QUOTAS_CONF_FILE"] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
-    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
-        quotas_fd.write('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')
+    with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
+        quotas_fd.write(
+            '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}'
+        )
 
-    qts.load_quotas_rules()
+    Quotas.enable()
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
-    j1 = JobPseudo(id=1, types={}, deps=[], key_cache={},
-                   queue='default', user='toto', project='',
-                   mld_res_rqts=[
-        (1, 60,
-         [([("node", 2)], res)]
-         )
-    ], ts=False, ph=0)
+    j1 = JobPseudo(
+        id=1,
+        types={},
+        deps=[],
+        key_cache={},
+        queue="default",
+        user="toto",
+        project="",
+        mld_res_rqts=[(1, 60, [([("node", 2)], res)])],
+        ts=False,
+        ph=0,
+    )
 
-    j2 = JobPseudo(id=2, types={}, deps=[], key_cache={},
-                   queue='default', user='tutu', project='',
-                   mld_res_rqts=[
-        (1, 60,
-         [([("node", 2)], res)]
-         )
-    ], ts=False, ph=0)
+    j2 = JobPseudo(
+        id=2,
+        types={},
+        deps=[],
+        key_cache={},
+        queue="default",
+        user="tutu",
+        project="",
+        mld_res_rqts=[(1, 60, [([("node", 2)], res)])],
+        ts=False,
+        ph=0,
+    )
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
@@ -256,29 +314,29 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
 
 def test_quotas_two_jobs_job_type_proc():
-    config['QUOTAS'] = 'yes'
+
     _, quotas_file_name = mkstemp()
-    config['QUOTAS_FILE'] = quotas_file_name
+    config["QUOTAS_CONF_FILE"] = quotas_file_name
 
     # quotas_file = open(quotas_file_name, 'w')
-    with open(config['QUOTAS_FILE'], 'w', encoding="utf-8") as quotas_fd:
-        quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "quotas_job_types": ["yop"]}')
+    with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
+        quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "job_types": ["yop"]}')
 
-    qts.load_quotas_rules()
+    Quotas.enable()
 
-    print(qts.quotas_rules, qts.quotas_job_types)
+    print(Quotas.default_rules, Quotas.job_types)
 
     res = ProcSet(*[(1, 32)])
-    rs.default_resource_itvs = res
+    ResourceSet.default_itvs = res
 
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {'node': [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
-    
-    j1 = JobPseudo(id=1, queue='default', user='toto', project='', types={'yop'})
-    j1.simple_req(('node', 1), 50, res)
-    j2 = JobPseudo(id=2, queue='default', user='toto', project='', types={'yop'})
-    j2.simple_req(('node', 1), 50, res)
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(id=1, queue="default", user="toto", project="", types={"yop"})
+    j1.simple_req(("node", 1), 50, res)
+    j2 = JobPseudo(id=2, queue="default", user="toto", project="", types={"yop"})
+    j2.simple_req(("node", 1), 50, res)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 

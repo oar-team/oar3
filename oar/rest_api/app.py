@@ -8,13 +8,14 @@ OAR rest_api application package
 """
 from flask import Flask
 
-from oar.lib import db, config
-from .query import APIQuery, APIQueryCollection
-from .utils import WSGIProxyFix, PrefixMiddleware
-from .views import register_blueprints
+from oar.lib import config, db
+
 from .errors import register_error_handlers
 from .extensions import register_extensions
 from .hooks import register_hooks
+from .query import APIQuery, APIQueryCollection
+from .utils import PrefixMiddleware, WSGIProxyFix
+from .views import register_blueprints
 
 default_config = {
     "API_TRUST_IDENT": 1,
@@ -37,9 +38,9 @@ def create_app():
     register_hooks(app)
     register_extensions(app)
     register_blueprints(app)
-    
     return app
-    
+
+
 def wsgi_app(environ, start_response):
     # For use within WSGI context (for instance mod_wsgi for apache2)
     # cat /usr/local/lib/cgi-bin/oarapi/oarapi.wsgi
