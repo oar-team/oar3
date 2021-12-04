@@ -575,7 +575,7 @@ def add_micheline_subjob(
 ):
 
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
-    # against avalaible resources
+    # against available resources
 
     date = get_date()
     properties = job_parameters.properties
@@ -1349,6 +1349,8 @@ class JobParameters:
             and not self.interactive
             and not self.reservation_date
             and not self.connect
+            # Noop type doesn't need any command
+            and "noop" not in self.types
         ):
             return (
                 5,

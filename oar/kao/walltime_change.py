@@ -57,6 +57,7 @@ def process_walltime_change_requests(plt):
             from_ = job.start_time + job.walltime + suspended
             to = from_ + fit
             job_types = get_job_types(job_id)
+
             if "inner" in job_types:
                 container_job = get_running_job(int(job_types["inner"]))
                 if container_job:
@@ -64,7 +65,7 @@ def process_walltime_change_requests(plt):
                         container_job.start_time + container_job.moldable_walltime
                     ) < to:
                         to = (
-                            container_job.start_time + container_job._moldable_walltime
+                            container_job.start_time + container_job.moldable_walltime
                         )  # container should never be suspended, makes no sense
                         logger.debug(
                             "[{}] walltime change for inner job limited to the container's boundaries: {}s".format(
@@ -103,7 +104,7 @@ def process_walltime_change_requests(plt):
             )
             if fit <= 0:
                 logger.debug(
-                    "[{}] walltime cannot be changed for now (pending: {}".format(
+                    "[{}] walltime cannot be changed for now (pending: {})".format(
                         job_id, duration_to_sql_signed(job.pending)
                     )
                 )
@@ -138,7 +139,7 @@ def process_walltime_change_requests(plt):
             else None,
             (job.granted_with_delay_next_jobs + fit)
             if (job.delay_next_jobs == "YES" and fit > 0)
-            else None,
+            else 0,
         )
 
         change_walltime(job_id, new_walltime, message)

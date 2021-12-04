@@ -44,8 +44,8 @@ def insert_terminated_jobs(update_accounting=True, nb_jobs=5, window_size=86400)
     return job_ids
 
 
-def insert_running_jobs(nb_jobs=5, user="zozo", project="yopa", types=[]):
-    j_walltime = 60
+def insert_running_jobs(nb_jobs=5, user="zozo", project="yopa", types=[], walltime=60):
+    j_walltime = walltime
     job_ids = []
     resources = db.query(Resource).all()
     for i in range(nb_jobs):

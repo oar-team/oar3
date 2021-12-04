@@ -187,6 +187,22 @@ class BaseQueryCollection(object):
         )
         return self.groupby_jobs_resources(jobs, query)
 
+    def get_assigned_one_job_resources(self, job):
+        """Returns the list of assigned resources associated to the job passed
+        in parameter."""
+        columns = (
+            "id",
+            "network_address",
+        )
+        job_id_column = AssignedResource.moldable_id.label("id")
+        query = (
+            db.query(job_id_column, Resource)
+            .options(Load(Resource).load_only(*columns))
+            .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(job_id_column == job.id)
+        )
+        return query
+
     def get_gantt_visu_scheduled_jobs_resources(self, jobs):
         """Returns network_address allocated to a (waiting) reservation."""
         columns = ("id",)

@@ -45,7 +45,7 @@ logger.info("Start Almighty")
 # send_log_by_email("Start OAR server","[Almighty] Start Almighty");
 
 if "OARDIR" in os.environ:
-    binpath = os.environ["OARDIR"] + "/"
+    binpath = os.environ["OARDIR"]
 else:
     binpath = "/usr/local/lib/oar/"
     logger.warning(
@@ -56,12 +56,12 @@ else:
 meta_sched_command = config["META_SCHED_CMD"]
 m = re.match(r"^\/", meta_sched_command)
 if not m:
-    meta_sched_command = binpath + meta_sched_command
+    meta_sched_command = os.path.join(binpath, meta_sched_command)
 
-leon_command = binpath + "oar-leon"
-check_for_villains_command = binpath + "oar-sarko"
-check_for_node_changes = binpath + "oar-finaud"
-nodeChangeState_command = binpath + "oar-node-change-state"
+leon_command = os.path.join(binpath, "oar-leon")
+check_for_villains_command = os.path.join(binpath, "oar-sarko")
+check_for_node_changes = os.path.join(binpath, "oar-finaud")
+nodeChangeState_command = os.path.join(binpath, "oar-node-change-state")
 
 # Legacy OAR2
 # leon_command = binpath + 'Leon'
@@ -70,9 +70,9 @@ nodeChangeState_command = binpath + "oar-node-change-state"
 # nodeChangeState_command = binpath + 'NodeChangeState'
 # nodeChangeState_command = 'true'
 
-proxy_appendice_command = binpath + "oar-appendice-proxy"
-bipbip_commander = binpath + "oar-bipbip-commander"
-hulot_command = binpath + "oar-hulot"
+proxy_appendice_command = os.path.join(binpath, "oar-appendice-proxy")
+bipbip_commander = os.path.join(binpath, "oar-bipbip-commander")
+hulot_command = os.path.join(binpath, "oar-hulot")
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -136,12 +136,17 @@ def launch_command(command):
 
     logger.debug("Launching command : [" + command + "]")
 
-    exit_value = tools.call(command)
+    p = tools.Popen(command, stdout=tools.PIPE, stderr=tools.PIPE, shell=True)
+    stdout, stderr = p.communicate()
+    return_code = p.wait()
 
     logger.debug(command + " terminated")
-    logger.debug("Exit value : " + str(exit_value))
+    logger.debug("Exit value : " + str(return_code))
 
-    return exit_value
+    if return_code != 0:
+        logger.debug("Command failed with error: {}".format(stderr.decode("utf-8")))
+
+    return return_code
 
 
 def start_hulot():

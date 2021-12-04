@@ -35,7 +35,7 @@ As per configuration:
 
 =item * a walltime increase may happen incrementally, so that other scheduled jobs get more priority. That increment may be computed as a percentage of the walltime of the job
 
-=item * the functionnality may be configured differently from one queue to another.
+=item * the functionality may be configured differently from one queue to another.
 
 =back
 

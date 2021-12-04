@@ -130,16 +130,18 @@ async def get_resources(
 ):
     job = Job()
     job.id = job_id
-    query = db.queries.get_assigned_one_job_resources([job])
+    query = db.queries.get_assigned_one_job_resources(job)
     page = query.paginate(request, offset, limit)
     data = {}
     data["total"] = page.total
     data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
+
     for item in page:
-        attach_links(item)
         data["items"].append(item)
+
+    return data
 
 
 class SumbitParameters(BaseModel):

@@ -61,3 +61,38 @@ def test_process_walltime_change_requests():
     assert (
         event.description == "walltime changed: 1:2:3 (granted: +1:1:3/pending: 0:0:0)"
     )
+
+
+@pytest.mark.skipif(
+    "os.environ.get('DB_TYPE', '') != 'postgresql'",
+    reason="bug raises with sqlite database",
+)
+def test_process_walltime_change_requests_inner():
+    plt = Platform()
+
+    # Create container job
+    job_id = insert_running_jobs(1, types=["container"])[0]
+    # Create inner job
+    job_id = insert_running_jobs(1, types=[f"inner={job_id}"], walltime=25)[0]
+
+    db["WalltimeChange"].create(job_id=job_id, pending=3663)
+
+    process_walltime_change_requests(plt)
+    event = db.query(EventLog).filter(EventLog.job_id == job_id).one()
+
+    walltime_change = (
+        db.query(WalltimeChange).filter(WalltimeChange.job_id == job_id).one()
+    )
+
+    print(
+        "id: {}, pending: {}, granted: {}".format(
+            walltime_change.job_id, walltime_change.pending, walltime_change.granted
+        )
+    )
+
+    assert walltime_change.granted == 35
+    assert walltime_change.pending == 3628
+    assert (
+        event.description
+        == "walltime changed: 0:1:0 (granted: +0:0:35/pending: +1:0:28)"
+    )

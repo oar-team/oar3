@@ -77,6 +77,16 @@ def test_app_jobs_get_one_details(client):
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
+@pytest.mark.usefixtures("monkeypatch_tools")
+def test_app_jobs_get_resources(client):
+    """GET /jobs/<id>/resources"""
+    job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+    meta_schedule("internal")
+    res = client.get("/jobs/{}/resources".format(job_id))
+    assert len(res.json()["items"]) == 4
+
+
+@pytest.mark.usefixtures("minimal_db_initialization")
 def test_app_jobs_get_user(client):
     insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="alice")

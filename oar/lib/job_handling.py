@@ -1415,8 +1415,11 @@ def get_job(job_id):
 
 
 def get_running_job(job_id):
+
     res = (
-        db.query(Job.start_time, MoldableJobDescription.walltime)
+        db.query(
+            Job.start_time, MoldableJobDescription.walltime.label("moldable_walltime")
+        )
         .filter(Job.id == job_id)
         .filter(Job.state == "Running")
         .filter(Job.assigned_moldable_job == MoldableJobDescription.id)
