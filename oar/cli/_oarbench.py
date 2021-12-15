@@ -216,6 +216,8 @@ def create_jobs_from_csv(csv_file=None):
 
 def delete_resources():
     db.query(Resource).delete(synchronize_session=False)
+    # Should reset the generated resource_id
+    db.session.execute("ALTER SEQUENCE resources_resource_id_seq RESTART WITH 1")
     db.commit()
 
 
