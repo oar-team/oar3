@@ -202,11 +202,14 @@ def create_jobs_from_csv(csv_file=None):
                 # Get job information
                 job_nb_resources = splitted_line[headers["nb_res"]]
                 job_walltime = splitted_line[headers["walltime"]]
+                job_user = splitted_line[headers["job_user"]]
                 # Create the allocation
                 job_resources = f"resource_id={job_nb_resources}"
                 # Insert the job in the database
                 insert_job(
-                    res=[(int(job_walltime), [(job_resources, "")])], properties=""
+                    res=[(int(job_walltime), [(job_resources, "")])],
+                    properties="",
+                    user=job_user,
                 )
                 nb_jobs += 1
 
