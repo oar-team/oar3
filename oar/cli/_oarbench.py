@@ -464,9 +464,7 @@ def simple_bench_from_csv(
 
     # Write header
     if file_res:
-        file_res.write(
-            "scheduler nb_job nb_resources_per_job nb_resources time nb_job_scheduled\n"
-        )
+        file_res.write("scheduler nb_job nb_resources time nb_job_scheduled\n")
 
     nb_cpus = 2
     nb_cores = 16
