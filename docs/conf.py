@@ -19,6 +19,7 @@ import re
 
 YEAR = 2020
 HERE = os.path.dirname(__file__)
+
 AUTHORS = [
     "Bruno Bzeznik",
     "Nicolas Capit",
@@ -47,7 +48,6 @@ suppress_warnings = ["image.nonlocal_uri"]
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",
