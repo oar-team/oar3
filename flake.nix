@@ -32,9 +32,7 @@
 
           buildPhase = ''
             export PYTHONPATH=$PYTHONPATH:$PWD
-            cd docs
-            python -c "import oar.kao.meta_sched"
-            make html
+            cd docs && make html
           '';
 
           installPhase = ''
