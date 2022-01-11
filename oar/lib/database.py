@@ -10,8 +10,12 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import DeferredReflection
-from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
+from sqlalchemy.ext.declarative import (
+    DeclarativeMeta,
+    DeferredReflection,
+    declarative_base,
+)
+from sqlalchemy.orm import class_mapper, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool

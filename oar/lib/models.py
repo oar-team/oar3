@@ -3,7 +3,7 @@ import inspect
 import sys
 
 from sqlalchemy import Table
-from sqlalchemy.orm import DeclarativeMeta
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from .globals import db
 
