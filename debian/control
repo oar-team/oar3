@@ -19,7 +19,7 @@ Architecture: any
 Section: python
 Depends: ${misc:Depends},
          ${python3:Depends},
-         python-procset,
+         python3-procset,
          python3-psycopg2,        
          python3-sqlalchemy,
          python3-sqlalchemy-utils,
