@@ -187,7 +187,6 @@ First you have to make sure that you have a command to wake up your nodes.
 management boards of the computers.
 
 If you want to enable a node to be woke up the next 12 hours::
-
     ((DATE=$(date +%s)+3600*12))
     oarnodesetting -h host_name -p available_upto=$DATE
 
@@ -295,3 +294,96 @@ The the memory usage of the job is given by the the files::
  
 The first file tells the maximum amount of memory used by all the processes of the job.
 So if "max_usage_in_bytes > limit_in_bytes" then swap was used.
+
+
+What are the differences with OAR2 ?
+------------------------------------
+
+.. list-table:: OAR2 / OAR3 Features comparison
+    :widths: 25 25 25
+    :header-rows: 1
+
+    * - Feature
+      - OAR2
+      - OAR3
+    * - Programming langage
+      - Perl
+      - Python (and perl)
+    * - Batch and Interactive jobs
+      - ✅
+      - ✅
+    * - Advance Reservation
+      - ✅
+      - ✅
+    * - Admission rules
+      - | ✅
+        | (in perl)
+      - | ✅
+        | (in python)
+    * - Walltime (with oarwalltime)
+      - ✅
+      - ✅
+    * - Matching of resources (job/node properties)
+      - ✅
+      - ✅
+    * - Hold and resume jobs
+      - ✅
+      - ✅
+    * - | Multi-schedulers support
+        | (simple fifo and fifo with matching)
+      - ✅
+      - ?
+    * - Backfilling
+      - ✅
+      - ✅
+    * - First-Fit Scheduler with matching resource
+      - ✅
+      - ✅
+    * - Multi-queues with priority
+      - ✅
+      - ✅
+    * - Best-effort queues (for exploiting idle resources)
+      - ✅
+      - ✅
+    * - Check compute nodes before launching
+      - ✅
+      - ✅
+    * - Epilogue/Prologue scripts
+      - ✅
+      - ✅
+    * - | Jobs and resources
+        | visualization tools (Monika, Drawgantt)
+      - ✅
+      - ✅
+    * - No Daemon on compute nodes
+      - ✅
+      - ✅
+    * - | SSH based remote execution protocols
+        | (managed by TakTuk)
+      - ✅
+      - ✅
+    * - Dynamic insertion/deletion of compute node
+      - ✅
+      - ✅
+    * - Logging
+      - ✅
+      - ✅
+    * - | On demand OS deployment
+        | support with Kadeploy3 coupling
+      - ✅
+      - ✅
+    * - Grid computing support with Cigri
+      - ✅
+      - ✅
+    * - Unit test and coverage
+      - ❌
+      - | |build|
+        | |coverage|
+
+.. |coverage| image:: http://codecov.io/github/oar-team/oar3/coverage.svg?branch=master
+    :target: http://codecov.io/github/oar-team/oar3?branch=master
+    :alt: Coverage Status
+
+.. |build| image:: https://github.com/oar-team/oar3/actions/workflows/run-tests.yml/badge.svg
+    :target: https://github.com/oar-team/oar3/actions/workflows/run-tests.yml/badge.svg
+    :alt: Build Status

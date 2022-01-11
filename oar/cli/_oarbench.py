@@ -102,8 +102,11 @@ def print_res(msg, mode="all"):
         FILE_RESULT.write(msg)
 
 
-def setup_config(db_type="memory"):
+def setup_config(extra_config={}, db_type="memory"):
     config.update(DEFAULT_CONFIG.copy())
+    # Override with function parameters
+    config.update(extra_config)
+
     tempdir = tempfile.mkdtemp()
     print(f"Temporay directory for oar.log: {tempdir}")
     config["LOG_FILE"] = os.path.join(tempdir, "oar.log")
@@ -167,11 +170,57 @@ def create_jobs(nb_jobs=10, job_resources="resource_id=2", mode="same", mode_arg
     else:
         click.echo(f"Job's mode creation does not exist {mode}")
         raise click.Abort()
+
     db.commit()
+
+
+def create_jobs_from_csv(csv_file=None):
+    """
+    Insert jobs in the database based on a csv file passed in parameters.
+    The csv must be formatted as follow:
+    ```
+    nb_res,walltime
+    12,3600
+    ```
+    """
+
+    print_res("#Create jobs")
+    # This function might be slow, bet the easy alternative is
+    # to add a dependency to pandas. I am not sure it is worth it...
+    headers = None
+    nb_jobs = 0
+    with open(csv_file) as csv:
+        for line in csv:
+            splitted_line = line.strip().split(",")
+            # First get the headers to locate the needed information
+            if headers is None:
+                headers = {}
+                for header in range(len(splitted_line)):
+                    headers[splitted_line[header]] = header
+
+            else:
+                # Get job information
+                job_nb_resources = splitted_line[headers["nb_res"]]
+                job_walltime = splitted_line[headers["walltime"]]
+                job_user = splitted_line[headers["job_user"]]
+                # Create the allocation
+                job_resources = f"resource_id={job_nb_resources}"
+                # Insert the job in the database
+                insert_job(
+                    res=[(int(job_walltime), [(job_resources, "")])],
+                    properties="",
+                    user=job_user,
+                )
+                nb_jobs += 1
+
+        db.commit()
+    return nb_jobs
 
 
 def delete_resources():
     db.query(Resource).delete(synchronize_session=False)
+    # Should reset the generated resource_id
+    db.session.execute("ALTER SEQUENCE resources_resource_id_seq RESTART WITH 1")
     db.commit()
 
 
@@ -292,6 +341,44 @@ def launch_scheduler(scheduler="kamelot", queue="default", nb_jobs=10, timeout=3
     return time.time() - now
 
 
+def mock_tcp_socket(port, host):
+    pass
+
+
+def launch_meta_scheduler(scheduler="kao", timeout=300):
+
+    now = time.time()
+
+    # initial_time_sec = now
+    # initial_time_sql = local_to_sql(initial_time_sec)
+
+    cmd = [scheduler]
+    proc = Popen(
+        cmd,
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+        # Needed for oar2 schedulers
+        env={"OARCONFFILE": CONFIGURATION_FILE},
+    )
+
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except TimeoutExpired:
+        print("Scheduler TimeoutExpired")
+        proc.kill()
+
+    output = out.decode()
+    error = err.decode()
+
+    if output:
+        print(output)
+    if error:
+        print(error)
+
+    return time.time() - now
+
+
 def minimal_bench_scheduler(
     scheduler="kamelot", queue="default", nb_jobs=10, timeout=300
 ):
@@ -369,6 +456,60 @@ def simple_bench_scheduler(
     delete_gantt_tables()
 
 
+def simple_bench_from_csv(
+    schedulers=["kamelot"],
+    replays=[],
+    file_res=None,
+):
+
+    # Write header
+    if file_res:
+        file_res.write("scheduler nb_job nb_resources time nb_job_scheduled\n")
+
+    nb_cpus = 2
+    nb_cores = 16
+
+    # Shuffling instances to avoid biases
+    random.shuffle(replays)
+
+    for instance in replays:
+        (nb_resources, jobs_file) = (instance["nb_resources"], instance["jobs_file"])
+
+        # Clean previous state
+        delete_resources()
+        delete_jobs()
+        delete_gantt_tables()
+
+        nb_nodes = int(nb_resources / (nb_cpus * nb_cores)) + 1
+
+        # Fill up database
+        create_resources(nb_nodes, nb_cpus, nb_cores)
+        nb_jobs = create_jobs_from_csv(jobs_file)
+
+        for scheduler in schedulers:
+            # Clear the gantt prediction before a scheduler run
+            delete_gantt_tables()
+
+            # Start the scheduler
+            t = launch_scheduler(scheduler, "default", nb_jobs)
+
+            nb_job_scheduled = len(db.query(GanttJobsPrediction).all())
+
+            # Write the result
+            nb_resources = nb_nodes * nb_cpus * nb_cores
+            result = f"{scheduler} {nb_jobs} {nb_resources} {t} {nb_job_scheduled}\n"
+            print(result)
+
+            if file_res:
+                file_res.write(result)
+                file_res.flush()
+
+    # Last clean
+    delete_resources()
+    delete_jobs()
+    delete_gantt_tables()
+
+
 def oarbench(bench_file, version, result_file):
     cmd_ret = CommandReturns(cli)
     if version:
@@ -376,40 +517,52 @@ def oarbench(bench_file, version, result_file):
         return cmd_ret
 
     if bench_file is not None:
+        schedulers = ["kamelot"]
 
+        # Load configuration file
         with open(bench_file, "r") as file:
             config = yaml.full_load(file)
 
-        # Some default values
-        nb_node_list = [1, 10, 100]
-        nb_job_list = [100]
-        schedulers = ["kamelot"]
-        job_nb_resources_list = [2]
-
-        # Overide default values with values defined
-        # in the configuration
-        if "nb_node_list" in config:
-            nb_node_list = config["nb_node_list"]
-        if "nb_job_list" in config:
-            nb_job_list = config["nb_job_list"]
         if "schedulers" in config:
             schedulers = config["schedulers"]
-        if "job_nb_resources" in config:
-            job_nb_resources_list = config["job_nb_resources"]
 
         if result_file is None:
             result_file = "/dev/null"
 
-        with open(result_file, "w") as file:
-            # setup_config()
-            # Run the simulations
-            simple_bench_scheduler(
-                schedulers=schedulers,
-                nb_job_list=nb_job_list,
-                nb_node_list=nb_node_list,
-                job_nb_resources_list=job_nb_resources_list,
-                file_res=file,
-            )
+        if "replays" in config:
+            with open(result_file, "w") as file:
+                # setup_config()
+                # Run the simulations
+                simple_bench_from_csv(
+                    schedulers=schedulers,
+                    replays=config["replays"],
+                    file_res=file,
+                )
+        else:
+            # Some default values
+            nb_node_list = [1, 10, 100]
+            nb_job_list = [100]
+            job_nb_resources_list = [2]
+
+            # Override default values with values defined
+            # in the configuration
+            if "nb_node_list" in config:
+                nb_node_list = config["nb_node_list"]
+            if "nb_job_list" in config:
+                nb_job_list = config["nb_job_list"]
+            if "job_nb_resources" in config:
+                job_nb_resources_list = config["job_nb_resources"]
+
+            with open(result_file, "w") as file:
+                # setup_config()
+                # Run the simulations
+                simple_bench_scheduler(
+                    schedulers=schedulers,
+                    nb_job_list=nb_job_list,
+                    nb_node_list=nb_node_list,
+                    job_nb_resources_list=job_nb_resources_list,
+                    file_res=file,
+                )
 
     else:
         print("No conf file provided, opening repl")
@@ -445,19 +598,12 @@ def cli(bench_file, version, result_file):
     schedulers:
         - /usr/local/lib/oar/schedulers/oar_sched_gantt_with_timesharing_and_fairsharing
         - /usr/local/bin/kamelot
-    nb_node_list:
-        - 10
-        - 100
-        - 1000
-    nb_job_list:
-        - 10
-        - 100
-        - 1000
-    job_nb_resources:
-        - 2
-        - 4
-        - 8
-        - 16
+    extra_oar_configuration:
+        param1: value1
+        param2: value2
+    replays:
+        - { jobs_file: path1, nb_resources: 100 }
+        - { jobs_file: path2, nb_resources: 100 }
     ```
     """
     cmd_ret = oarbench(bench_file, version, result_file)

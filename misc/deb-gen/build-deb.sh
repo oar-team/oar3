@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 : ${GIT_CLONE:=1}
-: ${GIT_REMOTE_CLONE:=1}
+: ${GIT_REMOTE_CLONE:=0}
+: ${BRANCH_NAME:="debian/3.0"}
 
-DEBIAN_NAME=${1:-bullseye}
+DEBIAN_NAME=${1:-bookworm}
 #DEBIAN_NAME=${1:-sid}
 
 DEBIAN_IMAGE=debian:$DEBIAN_NAME
@@ -24,22 +25,24 @@ fi
 
 BUILD_DIR=$PWD/build
 
-if [ $GIT_CLONE == 1]; then 
-    if [ $GIT_REMOTE_CLONE == 1]; then 
-        git clone --depth=50 --branch=debian/3.0 https://github.com/oar-team/oar3.git $BUILD_DIR/oar3
+if [ $GIT_CLONE == 1 ]; then
+    if [ $GIT_REMOTE_CLONE == 1 ]; then
+        echo "Clone oar3"
+        git clone --depth=50 --branch=${BRANCH_NAME} https://github.com/oar-team/oar3.git $BUILD_DIR/oar3
     else
-        git clone --branch=debian/3.0 ../.. $BUILD_DIR/oar3
-        cp setup.py setup.cfg  $BUILD_DIR/oar3/
-    fi    
+        echo "Work locally"
+        git clone --branch=${BRANCH_NAME} ../.. $BUILD_DIR/oar3
+        cp setup.py setup.cfg  $BUILD_DIR/oar3
+    fi
 fi
-    
+
 echo "debian version: $DEBIAN_NAME"
 
 echo "build docker image"
 
 cd $DIR/docker/
 #echo docker build -t deb/$DEBIAN_NAME --build-arg DEBIAN_IMAGE=$DEBIAN_IMAGE .
-docker build -t deb/$DEBIAN_NAME --build-arg DEBIAN_IMAGE=$DEBIAN_IMAGE . 
+docker build -t deb/$DEBIAN_NAME --build-arg DEBIAN_IMAGE=$DEBIAN_IMAGE .
 
 cd $BUILD_DIR
 
