@@ -328,11 +328,11 @@ What are the differences with OAR2 ?
       - ✅
     * - Hold and resume jobs
       - ✅
-      - ✅
+      - ?
     * - | Multi-schedulers support
         | (simple fifo and fifo with matching)
       - ✅
-      - ?
+      - ✅
     * - Backfilling
       - ✅
       - ✅
