@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 use DBI();
+use OAR::IO;
+use OAR::Conf qw(init_conf dump_conf get_conf is_conf set_value);
 use File::Basename;
 use Getopt::Long;
 use Sort::Versions;
@@ -15,11 +17,17 @@ Getopt::Long::Configure ("gnu_getopt");
 # Default values used in this script.
 #
 my $DEFAULT_CONFFILE = "%%OARCONFDIR%%/oar.conf";
+my $DEFAULT_MYSQL_PORT = 3306;
 my $DEFAULT_PGSQL_PORT = 5432;
 my $DEFAULT_DB_NAME = "oar";
 my $DEFAULT_DB_HOST = "localhost";
 my $DEFAULT_DB_USER = "oar";
 my $DEFAULT_DB_RO_USER = "oar_ro";
+
+my $DEFAULT_MYSQL_STRUCTURE="%%OARDIR%%/database/mysql_structure.sql";
+my $DEFAULT_MYSQL_ADMISSION_RULES="%%OARDIR%%/database/mysql_default_admission_rules.sql";
+my $DEFAULT_MYSQL_DEFAULT_DATA="%%OARDIR%%/database/default_data.sql";
+my $DEFAULT_MYSQL_RESET="%%OARDIR%%/database/mysql_reset_structure.sql";
 
 my $DEFAULT_PGSQL_STRUCTURE="%%OARDIR%%/database/pg_structure.sql";
 my $DEFAULT_PGSQL_ADMISSION_RULES="%%OARDIR%%/database/pg_default_admission_rules.sql";
@@ -29,9 +37,13 @@ my $DEFAULT_PGSQL_RESET="%%OARDIR%%/database/pg_reset_structure.sql";
 my %DEFAULT_PGSQL_UPGRADES = ();
 my $DEFAULT_PGSQL_LAST_VERSION;
 
+my %DEFAULT_MYSQL_UPGRADES = ();
+my $DEFAULT_MYSQL_LAST_VERSION;
+
 #
 # meta functions/parameters defined during the execution (depending on the db type)
 #
+my $template_cmd = "cat";
 my $exec_sql;
 my $exec_sql_file;
 my %DEFAULT_UPGRADES;
@@ -48,6 +60,7 @@ my $usage;
 my $debug;
 my $force_sql;
 my $force_yes;
+my $db_type;
 my $db_host;
 my $db_port;
 my $db_name;
@@ -58,6 +71,7 @@ my $db_ro_pass;
 my $db_admin_user;
 my $db_admin_pass;
 my $db_is_local;
+my $no_admission_rules;
 my $action;
 my $conffile;
 
@@ -66,133 +80,37 @@ my $conffile;
 #
 my $dbh;
 
-#######################################################################
-#
-# Taken from oar2/sources/core/common/OAR/Conf.pm
-#
-#
-
-## the configuration file.
-my $file = undef;
-## parameters container...
-my %params;
-## configuration file regexp (one line).
-my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
-
-## Initialization of the configuration
-# param: configuration file pathname
-# Result: 0 if conf was already loaded
-#         1 if conf was actually loaded
-#         2 if conf was not found
-sub init_conf ($){
-  # If file already loaded, exit immediately
-  (defined $file) and return 0;
-  $file = shift;
-  (defined $file) or return 2;
-  unless ( -r $file ) {
-      if ( defined $ENV{OARDIR} and -r $ENV{OARDIR}."/".$file ) {
-          $file = $ENV{OARDIR}."/".$file;
-      } elsif ( -r "/etc/".$file ) {
-          $file = "/etc/".$file;
-      } else {
-          warn "Configuration file not found.";
-          $file = undef;
-          return 2;
-      }
-  }
-  open CONF, $file or die "Open configuration file";
-  %params = ();
-  foreach my $line (<CONF>) {
-    if ($line =~ $regex) {
-      my ($key,$val) = ($1,$2);
-      $val =~ /^([\"\']?)(.+)\1\s*$/;
-      $val = $2 if ($2 ne "");
-      $params{$key}=$val;
-    }
-  }
-  close CONF;
-  return 1;
-}
-
-## retrieve a parameter
-sub get_conf ( $ ) {
-    my $key = shift;
-    (defined $key) or die "missing a key!";
-    return $params{$key};
-}
-
-## check if a parameter is defined
-sub is_conf ( $ ) {
-    my $key = shift;
-    (defined $key) or die "missing a key!";
-    return exists $params{$key};
-}
-
-## debug: dump parameters
-sub dump_conf () {
-    print "Config file is: ".$file."\n";
-    while (my ($key,$val) = each %params) {
-        print " ".$key." = ".$val."\n";
-    }
-    return 1;
-}
-
-## set value to a parameter
-sub set_value ($$){
-	my $variable = shift;
-	my $value = shift;
-	my $new_file_content;
-
-    open CONF, $file or die "Open configuration file";
-    %params = ();
-    foreach my $line (<CONF>) {
-      if ($line =~ $regex) {
-        my ($key,$val) = ($1,$2);
-        if ($key eq $variable) {
-        	$new_file_content .= $key."="."\"$value\""."\n";
-        }
-        else {
-        	$new_file_content .= $key."=".$val;
-        }
-      }
-      else {
-      	if (!defined($new_file_content)) {
-      		$new_file_content = $line;
-      	}
-      	else {
-      		$new_file_content.= $line;
-      	}
-      }
-    }
-    close CONF;
-    
-    # writing data in the config file
-    write_config($new_file_content);
-
-    return 1;
-}
-
-#
-#######################################################################
-
-
 #
 # Gather the sql file information for upgrading the database
 #
-open LIST, "find %%OARDIR%%/database -name '*_structure_upgrade_*-*.sql' |" or die "Unable to list the upstructure upgrade sql file";
+open LIST, "find %%OARDIR%%/database -name '*_structure_upgrade_*-*.sql' |" or die "Unable to list the SQL file for structure upgrades";
 while (<LIST>) {
     my ($line) = $_;
     chomp($line);
-    if ($line =~ /.*\/(pg)_structure_upgrade_([\d\.]+)-([\d\.]+)\.sql$/) {
+    if ($line =~ /.*\/(mysql|pg)_structure_upgrade_([\d\.]+)-([\d\.]+)\.sql$/) {
         my ($type, $version_from, $version_to) = ($1,$2,$3);
-        $DEFAULT_PGSQL_UPGRADES{$version_from} = [$version_to,$line];
-        # process the last existing version
-        if ($DEFAULT_PGSQL_LAST_VERSION) {
-            if (versioncmp($version_to,$DEFAULT_PGSQL_LAST_VERSION) > 0) {
+        if ($type eq "mysql") {
+            $DEFAULT_MYSQL_UPGRADES{$version_from} = [$version_to,$line];
+            # process the last existing version
+            if ($DEFAULT_MYSQL_LAST_VERSION) {
+                if (versioncmp($version_to,$DEFAULT_MYSQL_LAST_VERSION) > 0) {
+                    $DEFAULT_MYSQL_LAST_VERSION = $version_to;
+                }
+
+            } else {
+                $DEFAULT_MYSQL_LAST_VERSION = $version_to;
+            }
+        } elsif ($type eq "pg") {
+            $DEFAULT_PGSQL_UPGRADES{$version_from} = [$version_to,$line];
+            # process the last existing version
+            if ($DEFAULT_PGSQL_LAST_VERSION) {
+                if (versioncmp($version_to,$DEFAULT_PGSQL_LAST_VERSION) > 0) {
+                    $DEFAULT_PGSQL_LAST_VERSION = $version_to;
+                }
+
+            } else {
                 $DEFAULT_PGSQL_LAST_VERSION = $version_to;
             }
-        } else {
-            $DEFAULT_PGSQL_LAST_VERSION = $version_to;
         }
     }
 }
@@ -216,6 +134,7 @@ Actions:
 
 Options:
      --conf=OAR_CONF_FILE           Use a different OAR configuration file. Default is '%%OARCONFDIR%%/oar.conf'
+     --db-type=DB_TYPE              Set the database type ('mysql' or 'Pg')
      --db-host=DB_HOST              Set the database hostname
      --db-port=DB_PORT              Set the database port
      --db-user=DB_USER              Set the database user
@@ -223,10 +142,10 @@ Options:
      --db-name=DB_NAME              Set the database name
      --db-ro-user=DB_RO_USER        Set the read-only database user 
      --db-ro-pass=DB_RO_PASS        Set the read-only database pass 
-
-     --db-is-local                  The database is local, the script can use the local admin account to execute command (for PostgreSQL)
+     --db-is-local                  The database is local, the script can use the local admin account to execute command (PostgreSQL) or the unix socket (MySQL)
      --db-admin-user=DB_ADMIN_USER  Set the database admin user to create the database. Only used with the --create action
      --db-admin-pass=DB_ADMIN_PASS  Set the database admin password to create the database. Only used with the --create action
+     --no-admission-rules           Do not populate the admission rules table with the default rules
  -y, --force-yes                    Force oar-database to continue without prompt even if it could be harmful
  -f, --force-sql                    Force the execution even if a SQL command fails
  -d, --debug                        Print debug information
@@ -237,7 +156,13 @@ EOS
 }
 
 sub get_current_schema_version() {
-    my $query="select version from schema limit 1;";
+    my $query;
+
+    if ($db_type eq "Pg") {
+        $query="select version from schema limit 1;";
+    } else {
+        $query="select version from `schema` limit 1;";
+    }
      
     my $sth = $dbh->prepare($query);
     $sth->execute();
@@ -251,14 +176,18 @@ sub get_current_schema_version() {
 sub init_database() {
     check_user_db_access($db_user,$db_pass);
     print "Initializing database '$db_name'...\n";
-    &$exec_sql_file($DEFAULT_STRUCTURE) == 0       or die "Fail to execute $DEFAULT_STRUCTURE.\n";
-    &$exec_sql_file($DEFAULT_DATA) == 0            or die "Fail to execute $DEFAULT_DATA.\n";
-    &$exec_sql_file($DEFAULT_ADMISSION_RULES) == 0 or die "Fail to execute $DEFAULT_ADMISSION_RULES.\n";
+    &$exec_sql_file($DEFAULT_STRUCTURE) == 0       or die "Failed to execute $DEFAULT_STRUCTURE.\n";
+    &$exec_sql_file($DEFAULT_DATA) == 0            or die "Failed to execute $DEFAULT_DATA.\n";
+    if (defined($no_admission_rules)) {
+        print "Skip admission rules.\n"
+    } else {
+        &$exec_sql_file($DEFAULT_ADMISSION_RULES) == 0 or die "Failed to execute $DEFAULT_ADMISSION_RULES.\n";
+    }
 }
 
 sub reset_database() {
     print "Resetting database '$db_name'...\n";
-    &$exec_sql_file($DEFAULT_RESET) == 0  or die "Fail to execute $DEFAULT_RESET\n.";
+    &$exec_sql_file($DEFAULT_RESET) == 0  or die "Failed to execute $DEFAULT_RESET\n.";
     init_database();
 }
 
@@ -274,86 +203,187 @@ sub upgrade_database() {
         print "The database is up to date (version $current_version).\n";
     } else {
         print "The current schema version is $current_version. Upgrading to $DEFAULT_LAST_VERSION.\n"; 
+        # DB_USER / DB_PASS are useless in upgrade files
+        print "Apply templates:\n  DB_NAME=$db_name\n  DB_RO_USER=$db_ro_user\n  DB_RO_PASS=$db_ro_pass\n";
+        $template_cmd = "perl -pe 's/%%DB_NAME%%/$db_name/g;s/%%DB_RO_USER%%/$db_ro_user/g;s/%%DB_RO_PASS%%/$db_ro_pass/g;'";
         while($current_version ne $DEFAULT_LAST_VERSION) {
             if ($DEFAULT_UPGRADES{$current_version}) {
                 my ($to_version, $to_file) = @{$DEFAULT_UPGRADES{$current_version}};
                 print "Uprgading from '$current_version' to '$to_version'...\n";
-	    	    &$exec_sql_file($to_file) == 0 or die "Fail to upgrade the database from $current_version to $to_file with $to_file\n.";
+                &$exec_sql_file($to_file) == 0 or die "Failed to upgrade the database from $current_version to $to_file with $to_file\n.";
             } else {
-               	die "Unable to upgrade from the version '$current_version'\n";
+                die "Unable to upgrade from the version '$current_version'\n";
             }
             $current_version = get_current_schema_version();
         }
     }
 }
 
+sub mysql_ro_user_privileges() {
+    # All except the challenge table (localhost)
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.schema TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.accounting TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.admission_rules TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.assigned_resources TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.event_log_hostnames TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.event_logs TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.files TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.frag_jobs TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_predictions TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_predictions_visu TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_resources TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_resources_visu TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_dependencies TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_resource_descriptions TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_resource_groups TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_state_logs TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_types TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.jobs TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.moldable_job_descriptions TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.queues TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.resource_logs TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.resources TO '$db_ro_user'".'@'."'localhost' IDENTIFIED BY '$db_ro_pass'") ;
+    # All except the challenge table (other hosts)
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.schema TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.accounting TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.admission_rules TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.assigned_resources TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.event_log_hostnames TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.event_logs TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.files TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.frag_jobs TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_predictions TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_predictions_visu TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_resources TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.gantt_jobs_resources_visu TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_dependencies TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_resource_descriptions TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_resource_groups TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_state_logs TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.job_types TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.jobs TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.moldable_job_descriptions TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.queues TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.resource_logs TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.resources TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+    mysql_admin_exec_sql("GRANT SELECT ON $db_name.walltime_change TO '$db_ro_user'".'@'."'%' IDENTIFIED BY '$db_ro_pass'") ;
+}
+
 sub fix_ro_user_privileges() {
+    if ($db_type eq "mysql") {
+    # This revokes the wildcard select privilege that was made by previous
+    # versions of this script and set up the correct privileges for the ro user
+    # (the bug affected only mysql databases)
+      print "Fixing the ro user privileges in MySQL...\n";
+      mysql_admin_exec_sql("REVOKE SELECT ON $db_name.* FROM '$db_ro_user'".'@'."'localhost'") ;
+      mysql_admin_exec_sql("REVOKE SELECT ON $db_name.* FROM '$db_ro_user'".'@'."'%'") ;
+      mysql_ro_user_privileges();
+    } elsif ($db_type eq "Pg") {
     # This revokes the create privilege which is given to anyone by default: oar_ro once connected could create tables.
     # See: https://www.postgresql.org/docs/8.3/static/ddl-schemas.html#DDL-SCHEMAS-PRIV
-    print "Fixing the ro user privileges in PostgreSQL...\n";
-    pgsql_admin_exec_sql("REVOKE CREATE ON SCHEMA public FROM PUBLIC", $db_name);
-    pgsql_admin_exec_sql("GRANT CREATE ON SCHEMA public TO $db_user", $db_name);
+      print "Fixing the ro user privileges in PostgreSQL...\n";
+      pgsql_admin_exec_sql("REVOKE CREATE ON SCHEMA public FROM PUBLIC", $db_name);
+      pgsql_admin_exec_sql("GRANT CREATE ON SCHEMA public TO $db_user", $db_name);
+    }
 }
 
 sub create_database() {
-    print "Creating the database user...\n";
-    pgsql_admin_exec_sql("CREATE ROLE $db_user LOGIN PASSWORD '$db_pass';");
-    if ($db_ro_user and $db_ro_pass) {
-        print "Creating the database read-only user...\n";
-        pgsql_admin_exec_sql("CREATE ROLE $db_ro_user LOGIN PASSWORD '$db_ro_pass';");
+
+    if ($db_type eq "mysql") {
+        print "Creating the database...\n";
+        mysql_admin_exec_sql("CREATE DATABASE $db_name CHARACTER SET latin1") ;
+
+        print "Creating the database user...\n";
+        mysql_admin_exec_sql("GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'" . '@' . "'localhost' IDENTIFIED BY '$db_pass'") ;
+        mysql_admin_exec_sql("GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'" . '@' ."'%' IDENTIFIED BY '$db_pass'");
+    } elsif ($db_type eq "Pg") {
+        print "Creating the database user...\n";
+        pgsql_admin_exec_sql("CREATE ROLE $db_user LOGIN PASSWORD '$db_pass';");
+        if ($db_ro_user and $db_ro_pass) {
+            print "Creating the database read-only user...\n";
+            pgsql_admin_exec_sql("CREATE ROLE $db_ro_user LOGIN PASSWORD '$db_ro_pass';");
+        }
+        print "Creating the database...\n";
+        pgsql_admin_exec_sql("CREATE DATABASE $db_name OWNER $db_user");
+        pgsql_admin_exec_sql("REVOKE CREATE ON SCHEMA public FROM PUBLIC", $db_name);
+        pgsql_admin_exec_sql("GRANT CREATE ON SCHEMA public TO $db_user", $db_name);
+        pgsql_admin_exec_sql("GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user");
     }
-    print "Creating the database...\n";
-    pgsql_admin_exec_sql("CREATE DATABASE $db_name OWNER $db_user");
-    pgsql_admin_exec_sql("REVOKE CREATE ON SCHEMA public FROM PUBLIC", $db_name);
-    pgsql_admin_exec_sql("GRANT CREATE ON SCHEMA public TO $db_user", $db_name);
-    pgsql_admin_exec_sql("GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user");
+
 
     init_database();
 
     if ($db_ro_user and $db_ro_pass) {
-        pgsql_admin_exec_sql("GRANT SELECT ON schema,
-                                              accounting,
-                                              admission_rules,
-                                              assigned_resources,
-                                              event_log_hostnames,
-                                              event_logs,
-                                              files,
-                                              frag_jobs,
-                                              gantt_jobs_predictions,
-                                              gantt_jobs_predictions_visu,
-                                              gantt_jobs_resources,
-                                              gantt_jobs_resources_visu,
-                                              job_dependencies,
-                                              job_resource_descriptions,
-                                              job_resource_groups,
-                                              job_state_logs,
-                                              job_types,
-                                              jobs,
-                                              moldable_job_descriptions,
-                                              queues,
-                                              resource_logs,
-                                              resources,
-                                              walltime_change,
-                                              admission_rules_id_seq,
-                                              event_logs_event_id_seq,
-                                              files_file_id_seq,
-                                              job_resource_groups_res_group_id_seq,
-                                              job_state_logs_job_state_log_id_seq,
-                                              job_types_job_type_id_seq,
-                                              moldable_job_descriptions_moldable_id_seq,
-                                              resource_logs_resource_log_id_seq,
-                                              resources_resource_id_seq,
-                                              jobs_job_id_seq
-                              TO $db_ro_user", $db_name);
+        if ($db_type eq "Pg")  {
+            pgsql_admin_exec_sql("GRANT SELECT ON schema,
+                                                  accounting,
+                                                  admission_rules,
+                                                  assigned_resources,
+                                                  event_log_hostnames,
+                                                  event_logs,
+                                                  files,
+                                                  frag_jobs,
+                                                  gantt_jobs_predictions,
+                                                  gantt_jobs_predictions_visu,
+                                                  gantt_jobs_resources,
+                                                  gantt_jobs_resources_visu,
+                                                  job_dependencies,
+                                                  job_resource_descriptions,
+                                                  job_resource_groups,
+                                                  job_state_logs,
+                                                  job_types,
+                                                  jobs,
+                                                  moldable_job_descriptions,
+                                                  queues,
+                                                  resource_logs,
+                                                  resources,
+                                                  walltime_change,
+                                                  admission_rules_id_seq,
+                                                  event_logs_event_id_seq,
+                                                  files_file_id_seq,
+                                                  job_resource_groups_res_group_id_seq,
+                                                  job_state_logs_job_state_log_id_seq,
+                                                  job_types_job_type_id_seq,
+                                                  moldable_job_descriptions_moldable_id_seq,
+                                                  resource_logs_resource_log_id_seq,
+                                                  resources_resource_id_seq,
+                                                  jobs_job_id_seq
+                                  TO $db_ro_user", $db_name);
+        } elsif ($db_type eq "mysql") {
+            print "Creating the database read-only user...\n";
+            mysql_ro_user_privileges();
+        }
     }
 }
 
 sub drop_database() {
     print "Removing the database...\n";
-    pgsql_admin_exec_sql("DROP DATABASE $db_name");
-        pgsql_admin_exec_sql("DROP USER $db_user");
-    if ($db_ro_user) {
-        pgsql_admin_exec_sql("DROP USER $db_ro_user");
+    if ($db_type eq "mysql") {
+        mysql_admin_exec_sql("DROP DATABASE $db_name");
+        mysql_admin_exec_sql("DROP USER $db_user". '@' . "'%'");
+        mysql_admin_exec_sql("DROP USER $db_user" . '@localhost');
+        if ($db_ro_user) {
+            mysql_admin_exec_sql("DROP USER $db_ro_user" .'@'. "'%'");
+            mysql_admin_exec_sql("DROP USER $db_ro_user" . '@localhost');
+        }
+    } elsif ($db_type eq "Pg") {
+        pgsql_admin_exec_sql("DROP DATABASE $db_name");
+            pgsql_admin_exec_sql("DROP USER $db_user");
+        if ($db_ro_user) {
+            pgsql_admin_exec_sql("DROP USER $db_ro_user");
+        }
+    }
+}
+
+sub mysql_exec_sql_file {
+    my ($file) = @_;
+    if ($debug) { 
+        print "executing '$file'\n";
+    }
+    if ($force_sql) {
+        return system("$template_cmd $file | mysql --force --user='$db_user' --password='$db_pass' --host='$db_host' --port='$db_port' $db_name");
+    } else {
+        return system("$template_cmd $file | mysql --user='$db_user' --password='$db_pass' --host='$db_host' --port='$db_port' $db_name");
     }
 }
 
@@ -362,10 +392,33 @@ sub pgsql_exec_sql_file {
     if ($debug) { 
         print "executing '$file'\n";
     }
-    return system("PGUSER='$db_user' PGPASSWORD='$db_pass' PGHOST='$db_host' PGPORT='$db_port' psql -q $db_name < $file");
+    return system("$template_cmd $file | PGUSER='$db_user' PGPASSWORD='$db_pass' PGHOST='$db_host' PGPORT='$db_port' psql -q $db_name");
     
 }
 
+sub mysql_exec_sql {
+    my ($query) = @_;
+    if ($debug) {
+        print "executing '$query'\n";
+    }
+    if ($force_sql) {
+        return system("mysql --force --user='$db_user' --password='$db_pass' --host='$db_host' --port='$db_port' $db_name -e \"$query\"");
+    } else {
+        return system("mysql --user='$db_user' --password='$db_pass' --host='$db_host' --port='$db_port' $db_name -e \"$query\"");
+    }
+}
+
+sub mysql_admin_exec_sql {
+    my ($query) = @_;
+    if ($debug) {
+        print "executing '$query'\n";
+    }
+    if ($db_is_local) {
+        return system("mysql -e \"$query\"");
+    } else {
+        return system("mysql --user='$db_admin_user' --password='$db_admin_pass' --host='$db_host' --port='$db_port' -e \"$query\"");
+    }
+}
 sub pgsql_exec_sql {
     my ($query) = @_;
     if ($debug) {
@@ -404,6 +457,7 @@ GetOptions ("help|h"                => \$usage,
             "fix-ro-user-priv"      => sub { $action = 'fix-ro-user-priv' },
             "conf=s"                => \$conffile,
 #            "update-conf"           => sub { $action = 'update-conf' },
+            "db-type=s"             => \$db_type,
             "db-host=s"             => \$db_host,
             "db-port=i"             => \$db_port,
             "db-user=s"             => \$db_user,
@@ -413,7 +467,8 @@ GetOptions ("help|h"                => \$usage,
             "db-name=s"             => \$db_name,
             "db-admin-user=s"       => \$db_admin_user,
             "db-admin-pass=s"       => \$db_admin_pass,
-            "db-is-local"           => \$db_is_local
+            "db-is-local"           => \$db_is_local,
+            "no-admission-rules"    => \$no_admission_rules,
 );
 
 
@@ -450,25 +505,40 @@ unless ( -r $conffile ) {
 #
 # Set the parameters to use
 #
-init_conf($conffile);
+OAR::Conf::init_conf($conffile);
 
-if (! $db_port) {
-    if (is_conf("DB_PORT")) {
-        $db_port = get_conf("DB_PORT");
-    }else{
-        $db_port = $DEFAULT_PGSQL_PORT;
+if (! $db_type) {
+    if (OAR::Conf::is_conf("DB_TYPE")) {
+        $db_type = OAR::Conf::get_conf("DB_TYPE");
+
+        if (OAR::Conf::is_conf("DB_PORT")) {
+            $db_port = OAR::Conf::get_conf("DB_PORT");
+        }
+    } else {
+        print "Error: The database type is not set.\n\n";
+        print_usage();
+        exit(1);
     }
+} elsif ( $db_type ne "Pg" && $db_type ne "mysql") {
+    print "Error: The database type must be either 'Pg' or 'mysql'.\n\n";
+    print_usage();
+    exit(1);
+}
+
+if (! $db_port ) {
+    if ($db_type eq "mysql") { $db_port = $DEFAULT_MYSQL_PORT; }
+    if ($db_type eq "Pg") { $db_port = $DEFAULT_PGSQL_PORT; }
 }
 
 unless ($db_host) {
-    $db_host = (is_conf("DB_HOSTNAME") ? get_conf("DB_HOSTNAME") : $DEFAULT_DB_HOST);
+    $db_host = (OAR::Conf::is_conf("DB_HOSTNAME") ? OAR::Conf::get_conf("DB_HOSTNAME") : $DEFAULT_DB_HOST);
 }
 
 unless ($db_user) {
-    $db_user = (is_conf("DB_BASE_LOGIN") ? get_conf("DB_BASE_LOGIN") : $DEFAULT_DB_USER);
+    $db_user = (OAR::Conf::is_conf("DB_BASE_LOGIN") ? OAR::Conf::get_conf("DB_BASE_LOGIN") : $DEFAULT_DB_USER);
 }
 unless ($db_pass) {
-    $db_pass = (is_conf("DB_BASE_PASSWD") ? get_conf("DB_BASE_PASSWD") : "");
+    $db_pass = (OAR::Conf::is_conf("DB_BASE_PASSWD") ? OAR::Conf::get_conf("DB_BASE_PASSWD") : "");
 
     if (($db_pass eq "") or ($db_pass eq '""')) {
         print "Error: DB_BASE_PASSWD is not set in the config file.\n";
@@ -477,14 +547,14 @@ unless ($db_pass) {
 }
 
 unless ($db_ro_user) {
-    if (is_conf("DB_BASE_LOGIN_RO")) {
-        $db_ro_user = get_conf("DB_BASE_LOGIN_RO");
+    if (OAR::Conf::is_conf("DB_BASE_LOGIN_RO")) {
+        $db_ro_user = OAR::Conf::get_conf("DB_BASE_LOGIN_RO");
     }
 }
 
 unless ($db_ro_pass) {
-    if (is_conf("DB_BASE_PASSWD_RO")) {
-        $db_ro_pass = get_conf("DB_BASE_PASSWD_RO");
+    if (OAR::Conf::is_conf("DB_BASE_PASSWD_RO")) {
+        $db_ro_pass = OAR::Conf::get_conf("DB_BASE_PASSWD_RO");
     }
     if (($db_ro_pass eq "") or ($db_ro_pass eq '""')) {
         print "Error: DB_BASE_PASSWD_RO is not set in the config file.\n";
@@ -493,13 +563,13 @@ unless ($db_ro_pass) {
 }
 
 unless ($db_name) {
-    $db_name = (is_conf("DB_BASE_NAME") ? get_conf("DB_BASE_NAME") : $DEFAULT_DB_NAME);
+    $db_name = (OAR::Conf::is_conf("DB_BASE_NAME") ? OAR::Conf::get_conf("DB_BASE_NAME") : $DEFAULT_DB_NAME);
 }
 
 if ($action eq "create" or $action eq "drop" or $action eq "fix-ro-user-priv") {
     unless ($db_is_local) {
         unless ($db_admin_user) {
-            print "Error: Please provide the database administrator credentials, e.g. with --db-admin-user and --db-admin-pass options or with --db-is-local (PostgreSQL only).\n";
+            print "Error: Please provide the database administrator credentials (with --db-admin-user and --db-admin-pass) or use --db-is-local.\n";
             exit(1);
         }
         unless ($db_admin_pass) {
@@ -514,14 +584,27 @@ if ($action eq "create" or $action eq "drop" or $action eq "fix-ro-user-priv") {
 #
 # Set the meta function depending on the db type
 #
-$exec_sql                = \&pgsql_exec_sql;
-$exec_sql_file           = \&pgsql_exec_sql_file;
-$DEFAULT_LAST_VERSION    = $DEFAULT_PGSQL_LAST_VERSION;
-%DEFAULT_UPGRADES        = %DEFAULT_PGSQL_UPGRADES;
-$DEFAULT_RESET           = $DEFAULT_PGSQL_RESET;
-$DEFAULT_STRUCTURE       = $DEFAULT_PGSQL_STRUCTURE;
-$DEFAULT_ADMISSION_RULES = $DEFAULT_PGSQL_ADMISSION_RULES;
-$DEFAULT_DATA            = $DEFAULT_PGSQL_DEFAULT_DATA;
+if ($db_type eq "mysql") {
+    $exec_sql                = \&mysql_exec_sql;
+    $exec_sql_file           = \&mysql_exec_sql_file;
+    $DEFAULT_LAST_VERSION    = $DEFAULT_MYSQL_LAST_VERSION;
+    %DEFAULT_UPGRADES        = %DEFAULT_MYSQL_UPGRADES;
+    $DEFAULT_RESET           = $DEFAULT_MYSQL_RESET;
+    $DEFAULT_STRUCTURE       = $DEFAULT_MYSQL_STRUCTURE;
+    $DEFAULT_ADMISSION_RULES = $DEFAULT_MYSQL_ADMISSION_RULES;
+    $DEFAULT_DATA            = $DEFAULT_MYSQL_DEFAULT_DATA;
+} elsif ($db_type eq "Pg") {
+    $exec_sql                = \&pgsql_exec_sql;
+    $exec_sql_file           = \&pgsql_exec_sql_file;
+    $DEFAULT_LAST_VERSION    = $DEFAULT_PGSQL_LAST_VERSION;
+    %DEFAULT_UPGRADES        = %DEFAULT_PGSQL_UPGRADES;
+    $DEFAULT_RESET           = $DEFAULT_PGSQL_RESET;
+    $DEFAULT_STRUCTURE       = $DEFAULT_PGSQL_STRUCTURE;
+    $DEFAULT_ADMISSION_RULES = $DEFAULT_PGSQL_ADMISSION_RULES;
+    $DEFAULT_DATA            = $DEFAULT_PGSQL_DEFAULT_DATA;
+} else {
+    die "You shouldn't execute this part of the code. Contact the developper\n";
+}
 
 
 #
@@ -530,7 +613,7 @@ $DEFAULT_DATA            = $DEFAULT_PGSQL_DEFAULT_DATA;
 sub check_user_db_access {
     my ($user,$pass) = @_;
 
-    my $dbc = "DBI:Pg:database=$db_name;host=$db_host;port=$db_port";
+    my $dbc = "DBI:$db_type:database=$db_name;host=$db_host;port=$db_port";
     $dbh = DBI->connect($dbc, $user,$pass, {'InactiveDestroy' => 1, 'PrintError' => 1});
     if (!defined($dbh)) {
         print "Error: The connection to the database failed (user=$user,host=$db_host,port=$db_port,database=$db_name). Please check if the database server is up and ready.\n";
@@ -544,13 +627,14 @@ sub check_user_db_access {
 #
 if ($action eq "update-conf") {
     print "Updating $conffile with the given parameters.\n";
-    set_value("DB_HOSTNAME",$db_host);
-    set_value("DB_PORT",$db_port);
-    set_value("DB_BASE_NAME",$db_name);
-    set_value("DB_BASE_LOGIN",$db_user);
-    set_value("DB_BASE_PASSWD",$db_pass);
-    set_value("DB_BASE_LOGIN_RO",$db_ro_user);
-    set_value("DB_BASE_PASSWD_RO",$db_ro_pass);
+    OAR::Conf::set_value("DB_HOSTNAME",$db_host);
+    OAR::Conf::set_value("DB_PORT",$db_port);
+    OAR::Conf::set_value("DB_BASE_NAME",$db_name);
+    OAR::Conf::set_value("DB_BASE_LOGIN",$db_user);
+    OAR::Conf::set_value("DB_BASE_PASSWD",$db_pass);
+    OAR::Conf::set_value("DB_BASE_LOGIN_RO",$db_ro_user);
+    OAR::Conf::set_value("DB_BASE_PASSWD_RO",$db_ro_pass);
+    OAR::Conf::set_value("DB_TYPE",$db_type);
 }
 
 
