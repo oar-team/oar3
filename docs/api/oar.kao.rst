@@ -44,3 +44,13 @@ Platform
    :special-members:
    :inherited-members:
    :show-inheritance:
+
+Resources Hierarchy
+-------------------
+
+.. automodule:: oar.lib.hierarchy
+   :members:
+   :undoc-members:
+   :special-members:
+   :inherited-members:
+   :show-inheritance:
