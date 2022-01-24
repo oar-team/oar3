@@ -3,7 +3,7 @@
 
    **THIS DOCUMENTATION IS OUTDATED AND CORESPONDS TO OAR 2.5.X NOT 3.0.0**
 
-Installation 
+Installation
 ============
 
 .. image:: https://img.shields.io/badge/docs-outdated-yellow
