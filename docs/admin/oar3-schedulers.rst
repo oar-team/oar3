@@ -117,7 +117,7 @@ Activating the kao for OAR2 requires to edit oar configuration (`/etc/oar/oar.co
   # Change the metascheduler command
   META_SCHED_CMD="kao"
   # Configuration variable that tells kao to enable compatibility with OAR2
-  METASCHEDULER_OAR2_MODE="yes"
+  METASCHEDULER_OAR3_WITH_OAR2="yes"
 
 
 If the changes are applied to a running server, it might be necessary to restart OAR2.
