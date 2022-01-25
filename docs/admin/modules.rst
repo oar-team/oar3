@@ -1,3 +1,5 @@
+.. _modules_reference:
+
 Modules descriptions
 ====================
 

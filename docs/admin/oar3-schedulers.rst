@@ -1,24 +1,48 @@
-Install OAR3 schedulers for OAR2
-================================
+Mixing OAR3 and OAR2
+====================
 
-Prerequisites
--------------
+OAR2 and OAR3 are divided in different modules (see :ref:`modules_reference`).
+Using the modularity, one can mix modules from OAR3 with modules from OAR2.
+This can be useful, for instance, to do the migration from OAR2 to OAR3.
 
-This documentation describe how to install OAR3 schedulers on a standard OAR2 installation.
+**This page explain how to install and use OAR3 scheduler and metascheduler on a working OAR2 server.**
+
+.. note::
+
+  Whereas section :ref:`target_metaschedulers_oar3_with_oar2` and section :ref:`target_schedulers_oar3_with_oar2`
+  can be setup independently, it is also possible to use them together in the same OAR2 server.
 
 Installation
 ------------
 
-The only package needed for the scheduler is python3-oar.
+There is no official package for OAR3 yet, but it can be generated from sources.
+The only required tool to generate the package is docker.
+
+dependencies
+^^^^^^^^^^^^
+
+First install oar3's dependencies.
+
+.. code-block:: bash
+
+  apt-get update && \
+  apt-get install -y python3 \
+  python3-sqlalchemy python3-alembic \
+  python3-click python3-flask \
+  python3-passlib python3-psutil python3-requests \
+  python3-simplejson python3-sqlalchemy-utils  \
+  python3-tabulate python3-toml python3-yaml \
+  python3-zmq python3-psycopg2 python3-fastapi
+
 
 Install from pre-generated .deb
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The packages can be downloaded at : TODO.
 Also download the debian package for `ProcSet <https://gitlab.inria.fr/bleuse/procset.py>`_ (which is an OAR3 dependency).
 
 Generate the debian packages from sources
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 *Generate .deb*::
 
@@ -41,11 +65,15 @@ Generate the debian packages from sources
   For debian bullseye change the variable `BRANCHE_NAME`
   in oar3/mis/deb-gen/build-deb.sh for `bullseye/3.0`.
 
-Configuration
--------------
+.. _target_schedulers_oar3_with_oar2:
+
+Using OAR3 schedulers with OAR2
+-------------------------------
+
+This documentation describe how to install OAR3 scheduler (named kamelot) on a standard OAR2 installation.
 
 Active scheduler for the default queue
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once installed the schedulers can be activated with the following manipulations.
 
@@ -62,7 +90,7 @@ Once installed the schedulers can be activated with the following manipulations.
 
 
 Kamelot configuration
-~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^
 
 In order for kamelot to work, the resources hierarchy of the
 cluster must be provided in order to be used in resource request.
@@ -74,3 +102,26 @@ Labels' order does not matter here.
     # Default value is "resource_id,network_address,cpu,core"
     HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 
+.. _target_metaschedulers_oar3_with_oar2:
+
+Using OAR3 metascheduler with OAR2
+----------------------------------
+
+This section explain how to setup kao in OAR2.
+
+The metascheduler should be available at `/usr/lib/oar/kao`.
+Activating the kao for OAR2 requires to edit oar configuration (`/etc/oar/oar.conf`).
+
+.. code-block:: bash
+
+  # Change the metascheduler command
+  META_SCHED_CMD="kao"
+  # Configuration variable that tells kao to enable compatibility with OAR2
+  METASCHEDULER_OAR2_MODE="yes"
+
+
+If the changes are applied to a running server, it might be necessary to restart OAR2.
+
+.. code-block:: bash
+
+  systemctl restart oar-server
