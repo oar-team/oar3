@@ -30,8 +30,16 @@ class Hierarchy(object):
 
 def keep_no_empty_scat_bks(itvs, itvss_ref):
     """
-    Keep no empty scattered blocks where their intersection with itvs is not
-    empty
+    Filter :class:`ProcSet` from itvss_ref that has no element in `itvs`
+
+    :param ProcSet itvs: ProcSet of resources
+    :param [ProcSet] itvs_ref: Array of procsets
+    :return: \
+         [:class:`ProcSet`]; Elements in `itvss_ref` that have non-null intersection with `itvs`
+
+    Examples:
+        >>> keep_no_empty_scat_bks(ProcSet((1, 32)), [ProcSet((1, 8)), ProcSet(30, 33), ProcSet(34, 38)])
+            [ProcSet((1, 8)), ProcSet(30, 33)]
     """
     lr = len(itvss_ref)
     i = 0
@@ -103,8 +111,8 @@ def find_resource_hierarchies_scattered(itvs, hy, rqts):
     """
     According to a resources set `itvs`, find a resources set compatible with the request in `rqts`.
 
-    :param itvs: A :class:`ProcSet` of available resources
-    :param hy: The specified hierarchy levels
+    :param ProcSet itvs: A :class:`ProcSet` of available resources
+    :param [ProcSet] hy: The specified hierarchy levels
     :param [Integer] rqts: \
         Array containing the number of resources needed by level of hierarchy
     :return:
