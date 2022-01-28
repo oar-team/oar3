@@ -71,7 +71,7 @@ def test_find_resource_hierarchies_scattere4():
         for y in [
             [(1, 4)],
             [(5, 8)],
-            [(8, 12)],
+            [(9, 12)],
             [(13, 16)],
             [(17, 20)],
             [(21, 24)],
@@ -84,3 +84,86 @@ def test_find_resource_hierarchies_scattere4():
         ProcSet(*[(1, 32)]), [h0, h1, h2], [2, 1, 1]
     )
     assert x == ProcSet(*[(1, 4), (17, 20)])
+
+
+# TODO: 4 level hierarchy
+def test_find_resource_hierarchies_scattered5():
+    h0 = [ProcSet(*y) for y in [[(1, 32)], [(33, 64)]]]
+    h1 = [ProcSet(*y) for y in [[(1, 16)], [(17, 32)], [(33, 49)], [(50, 64)]]]
+    h2 = [
+        ProcSet(*y)
+        for y in [
+            [(1, 8)],
+            [(9, 16)],
+            [(17, 24)],
+            [(25, 32)],
+            [(33, 41)],
+            [(42, 49)],
+            [(50, 58)],
+            [(51, 64)],
+        ]
+    ]
+    h3 = [
+        ProcSet(*y)
+        for y in [
+            [(1, 2)],
+            [(3, 4)],
+            [(5, 8)],
+            [(9, 16)],
+            [(10, 12)],
+            [(12, 16)],
+            [(17, 19)],
+            [(20, 22)],
+            [(22, 24)],
+            [(25, 27)],
+            [(28, 30)],
+            [(31, 32)],
+            [(33, 34)],
+            [(35, 37)],
+            [(38, 41)],
+            [(42, 45)],
+            [(46, 47)],
+            [(48, 49)],
+            [(50, 52)],
+            [(53, 54)],
+            [(55, 58)],
+            [(59, 61)],
+            [(62, 63)],
+            [(64, 64)],
+        ]
+    ]
+
+    x = find_resource_hierarchies_scattered(
+        ProcSet(*[(1, 64)]), [h0, h1, h2, h3], [2, 2, 1, 1]
+    )
+    assert x == ProcSet(*[(1, 8), (17, 24), (33, 34), (50, 52)])
+
+
+# TODO: Tests should pass
+def test_find_resource_hierarchies_scattere6_fail():
+    h0 = [ProcSet(*y) for y in [[(1, 16)], [(17, 32)]]]
+    h1 = [ProcSet(*y) for y in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    h2 = [
+        ProcSet(*y)
+        for y in [
+            [(1, 4)],
+            [(5, 8)],
+            [(9, 12)],
+            [(13, 16)],
+            [(17, 20)],
+            [(21, 24)],
+            [(25, 28)],
+            [(29, 32)],
+        ]
+    ]
+
+    x = find_resource_hierarchies_scattered(
+        ProcSet(*[(1, 32)]), [h0, h1, h2], [2, 2, 1]
+    )
+
+    assert x == ProcSet(*[(1, 4), (9, 12), (17, 20), (25, 28)])
+
+    x = find_resource_hierarchies_scattered(
+        ProcSet(*[(1, 32)]), [h0, h1, h2], [1, 2, 1]
+    )
+    assert x == ProcSet(*[(1, 4), (9, 12)])
