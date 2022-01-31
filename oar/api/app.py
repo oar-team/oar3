@@ -33,7 +33,7 @@ class WSGIProxyFix(object):
                     # Create a request object to facilitate access to headers
                     request = Request(scope, receive=receive)
 
-                    user = request.headers.get("x_remote_ident", None)
+                    user = request.headers.get("x-remote-ident", None)
                     if user not in ("", "unknown", "(null)"):
                         scope["USER"] = user
 
