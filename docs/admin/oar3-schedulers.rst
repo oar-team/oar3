@@ -102,6 +102,17 @@ Labels' order does not matter here.
     # Default value is "resource_id,network_address,cpu,core"
     HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 
+
+.. note::
+
+  In case of issue with kamelot, It is possible to restore OAR2 scheduler with oarnotify.
+
+  .. code-block:: bash
+
+    oarnotify --remove-queue default
+    oarnotify --add-queue default,3,<you-scheduler>
+
+
 .. _target_metaschedulers_oar3_with_oar2:
 
 Using OAR3 metascheduler with OAR2
@@ -125,3 +136,9 @@ If the changes are applied to a running server, it might be necessary to restart
 .. code-block:: bash
 
   systemctl restart oar-server
+
+
+.. note::
+
+  To restore OAR2's metascheduler, set back the `META_SCHED_CMD` to "oar_meta_sched".
+  and restart oar-server service `systemctl restart oar-server`.
