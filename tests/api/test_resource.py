@@ -68,7 +68,7 @@ def test_app_create_resource(client):
     res = client.post(
         "/resources/",
         params={"hostname": "akira", "properties": props},
-        headers={"X_REMOTE_IDENT": "oar"},
+        headers={"x-remote-ident": "oar"},
     )
 
     r = (
@@ -94,7 +94,7 @@ def test_app_resource_state(client):
     res = client.post(
         "/resources/{resource_id}/state".format(resource_id=r_id),
         json={"state": "Dead"},
-        headers={"X_REMOTE_IDENT": "oar"},
+        headers={"x-remote-ident": "oar"},
     )
     print(res)
 
@@ -113,7 +113,7 @@ def test_app_resource_delete(client):
     first_id = db.query(Resource).first().id
     res = client.delete(
         "/resources/{}".format(first_id + nb_res1 - 1),
-        headers={"X_REMOTE_IDENT": "oar"},
+        headers={"x-remote-ident": "oar"},
     )
     nb_res2 = len(db.query(Resource).all())
     assert nb_res1 == 11
