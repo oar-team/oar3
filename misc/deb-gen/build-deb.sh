@@ -6,7 +6,7 @@ set -eux
 : ${GIT_REMOTE_CLONE:=1}
 : ${BRANCH_NAME:="debian/3.0"}
 
-DEBIAN_NAME=${1:-bookworm}
+: ${DEBIAN_NAME:="bookworm"}
 #DEBIAN_NAME=${1:-sid}
 
 DEBIAN_IMAGE=debian:$DEBIAN_NAME
