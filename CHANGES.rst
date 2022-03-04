@@ -5,6 +5,22 @@
 Changelog
 =========
 
+Version 3.0.0.dev5
+------------------
+
+Released on Mar 4, 2022
+
+- Fix and cleaning
+- Add oarbench for scheduling evaluation
+- Add metasched config to communicate with OAR2
+- Add back ported commit from OAR2
+- Add poetry packaging
+- Add new API version with FastAPI
+- Add job_resources_manager_cgroups_nixos
+- Add temporal quotas
+- Add oarwalltime
+
+
 Version 3.0.0.dev4
 ------------------
 
