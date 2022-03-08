@@ -38,7 +38,7 @@ First install oar3's dependencies.
 Install from pre-generated .deb
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The packages can be downloaded at : TODO.
+The packages can be downloaded at : https://github.com/oar-team/oar3/releases/latest.
 Also download the debian package for `ProcSet <https://gitlab.inria.fr/bleuse/procset.py>`_ (which is an OAR3 dependency).
 
 Generate the debian packages from sources
