@@ -41,22 +41,20 @@ else:
     )
     os.environ["OARDIR"] = binpath
 
-meta_sched_command = "/bin/true"
+meta_sched_command = config["META_SCHED_CMD"]
 m = re.match(r"^\/", meta_sched_command)
 if not m:
     meta_sched_command = os.path.join(binpath, meta_sched_command)
 
-leon_command = os.path.join(binpath, "oar-leon")
-check_for_villains_command = "/bin/true"
-check_for_node_changes = "/bin/true"
-nodeChangeState_command = "/bin/true"
+if "LEON_COMMAND" in config:
+    leon_command = config["LEON_COMMAND"]
+else:
+    leon_command = os.path.join(binpath, "oar-leon")
 
-# Legacy OAR2
-# leon_command = binpath + 'Leon'
-# check_for_villains_command = binpath + 'sarko'
-# check_for_node_changes = binpath + 'finaud'
-# nodeChangeState_command = binpath + 'NodeChangeState'
-# nodeChangeState_command = 'true'
+if "CHECK_FOR_VILLAINS_COMMAND" in config:
+    check_for_villains_command = config["CHECK_FOR_VILLAINS_COMMAND"]
+else:
+    check_for_villains_command = os.path.join(binpath, "oar-sarko")
 
 proxy_appendice_command = os.path.join(binpath, "oar-appendice-proxy")
 bipbip_commander = os.path.join(binpath, "oar-bipbip-commander")
