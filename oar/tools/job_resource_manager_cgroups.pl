@@ -496,8 +496,8 @@ EOF
         }
     }
 
-    # Finally steal processes if needed
-    if(!($Cpuset->{evolving_migrate_processes_from_cpusetpath} eq "undef")) {
+    # Finally steal processes if needed.
+    if(!($Cpuset->{evolving_migrate_processes_from_cpusetpath} eq "undef") and (-d $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/'.$Cpuset->{evolving_migrate_processes_from_cpusetpath} )) {
         my $Cpuset_migrate_from;
         my $Previous_oarexec_pid_file;
         my $Previous_oarexec_pid;
@@ -505,7 +505,15 @@ EOF
         $Previous_oarexec_pid_file = $Cpuset->{evolving_migrate_processes_from_oarexec_pid_file};
         $Cpuset_migrate_from = $Cpuset->{cpuset_path}.'/'.$Cpuset->{evolving_migrate_processes_from_cpusetpath};
 
-        $Previous_oarexec_pid=`cat $Previous_oarexec_pid_file`;
+        # If this file exists, we are on the head node of the previous job
+        if(-e $Previous_oarexec_pid_file) {
+            $Previous_oarexec_pid_file = $Cpuset->{evolving_migrate_processes_from_oarexec_pid_file};
+            # Thus, we get the pid of the oarexec because we do not want to migrate it
+            $Previous_oarexec_pid=`cat $Previous_oarexec_pid_file`;
+        } else {
+            # If we are not on a head node, we set pid to -1 which should be impossible
+            $Previous_oarexec_pid = "-1";
+        }
 
         print_log(3, "Migrate processes from " . $Cpuset_migrate_from . " to ours. Old oarexec pid was: $Previous_oarexec_pid.");
 
@@ -514,13 +522,15 @@ EOF
             for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'; do
                 if [ -d $d ]; then
                     echo "migration ! yaouh: $d"
-                    PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
+                    PROCESSES=$(cat $d/tasks | grep -v -E "\b+'.$Previous_oarexec_pid.'\b+" | head -n 1)
                     while [ "$PROCESSES" != "" ]; do
                         oardodo echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/tasks
                         PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
                     done
                 fi
             done');
+    } else {
+        print_log(3, "No processes to steal, maybe " . $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/'.$Cpuset->{evolving_migrate_processes_from_cpusetpath} . " is empty ?");
     }
 }elsif ($ARGV[0] eq "clean"){
     # delete ssh key files
