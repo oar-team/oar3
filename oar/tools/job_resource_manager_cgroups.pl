@@ -517,17 +517,22 @@ EOF
 
         print_log(3, "Migrate processes from " . $Cpuset_migrate_from . " to ours. Old oarexec pid was: $Previous_oarexec_pid.");
 
-        system('echo THAWED > '.$Cgroup_directory_collection_links.'/freezer/'.$Cpuset_path_job.'/freezer.state
-            set -eux
-            for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'; do
-                if [ -d $d ]; then
-                    echo "migration ! yaouh: $d"
-                    PROCESSES=$(cat $d/tasks | grep -v -E "\b+'.$Previous_oarexec_pid.'\b+" | head -n 1)
-                    while [ "$PROCESSES" != "" ]; do
-                        oardodo echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/tasks
-                        PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
-                    done
-                fi
+        system('set -eux
+            echo "all cgroups: '.join(' ',@cgroup_list).'"
+            for cg_path in '.$Cgroup_directory_collection_links.'/* ; do
+                cg=$(basename $cg_path)
+                echo "Treat cgroup: $cg"
+                for d in '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_migrate_from.'; do
+                    if [ -f "$d/tasks" ]; then
+                        echo "migration ! yaouh: $d"
+                        PROCESSES=$(cat $d/tasks | grep -v -E "\b+'.$Previous_oarexec_pid.'\b+" | head -n 1)
+                        while [ "$PROCESSES" != "" ]; do
+                            echo "write into: '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks"
+                            oardodo echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks
+                            PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
+                        done
+                    fi
+                done
             done');
     } else {
         print_log(3, "No processes to steal, maybe " . $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/'.$Cpuset->{evolving_migrate_processes_from_cpusetpath} . " is empty ?");
