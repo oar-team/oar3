@@ -47,7 +47,7 @@ def test_proxy_no_auth(client):
 def test_proxy_no_jobid(client):
     res = client.get(
         "/proxy/{job_id}".format(job_id=11111111111111111),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
 
     assert res.status_code == 404
@@ -59,7 +59,7 @@ def test_proxy_no_proxy_file(client):
 
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.get(
-        "/proxy/{job_id}".format(job_id=job_id), headers={"X_REMOTE_IDENT": "bob"}
+        "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
     )
 
     assert res.status_code == 404
@@ -83,7 +83,7 @@ def test_proxy(client):
     ]
 
     res = client.get(
-        "/proxy/{job_id}".format(job_id=job_id), headers={"X_REMOTE_IDENT": "bob"}
+        "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
     )
 
     print(res)

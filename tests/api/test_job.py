@@ -182,7 +182,7 @@ def test_app_job_post_forbidden(client):
 def test_app_job_post(client):
     data = {"resource": [], "command": 'sleep "1"'}
 
-    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
 
     job_ids = db.query(Job.id).all()
     print(res.json())
@@ -200,7 +200,7 @@ def test_app_jobs_delete_1(client, monkeypatch):
 
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
-        "/jobs/{}/deletions/new".format(job_id), headers={"X_REMOTE_IDENT": "bob"}
+        "/jobs/{}/deletions/new".format(job_id), headers={"x-remote-ident": "bob"}
     )
 
     print(res.json())
@@ -217,7 +217,7 @@ def test_app_jobs_delete_2(client, monkeypatch):
     """DELETE /jobs/<id>/deletions/new"""
 
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
-    res = client.delete("/jobs/{}".format(job_id), headers={"X_REMOTE_IDENT": "bob"})
+    res = client.delete("/jobs/{}".format(job_id), headers={"x-remote-ident": "bob"})
     print(res.json())
     assert res.status_code == 200
     fragjob_id = db.query(FragJob.job_id).filter(FragJob.job_id == job_id).one()
@@ -242,7 +242,7 @@ def test_app_array_delete_1(client):
     )
     res = client.post(
         url,
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
 
     assert res.status_code == 200
@@ -267,7 +267,7 @@ def test_app_array_delete_2(client, monkeypatch):
         replace_query_params(
             "jobs/{job_id}".format(job_id=array_id), params={"array": True}
         ),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -282,7 +282,7 @@ def test_app_jobs_ckeckpoint_1(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/checkpoints/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -299,7 +299,7 @@ def test_app_jobs_ckeckpoint_2(client, monkeypatch):
     set_job_state(job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/checkpoints/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -313,7 +313,7 @@ def test_app_jobs_signal_1(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -330,7 +330,7 @@ def test_app_jobs_signal_2(client, monkeypatch):
     set_job_state(job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -344,7 +344,7 @@ def test_app_jobs_hold_1(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/holds/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -360,7 +360,7 @@ def test_app_jobs_hold_2(client, monkeypatch):
     set_job_state(job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/holds/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -374,7 +374,7 @@ def test_app_jobs_rhold_user_not_allowed_1(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/rhold/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -388,7 +388,7 @@ def test_app_jobs_rhold_2(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/rhold/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "oar"},
+        headers={"x-remote-ident": "oar"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -402,7 +402,7 @@ def test_app_jobs_resume_bad_nohold(client, monkeypatch):
     job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -417,7 +417,7 @@ def test_app_jobs_resume_not_allowed(client, monkeypatch):
     set_job_state(job_id, "Suspended")
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -432,7 +432,7 @@ def test_app_jobs_resume(client, monkeypatch):
     set_job_state(job_id, "Suspended")
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"X_REMOTE_IDENT": "oar"},
+        headers={"x-remote-ident": "oar"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -464,7 +464,7 @@ def test_app_jobs_resume(client, monkeypatch):
 def test_app_job_post_bug1(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
-    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
     print(res.json())
@@ -476,7 +476,7 @@ def test_app_job_post_bug1(client):
 def test_app_job_post_bug2(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
-    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     print(res.json())
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
@@ -491,7 +491,7 @@ def test_app_job_post_bug3(client):
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
         "command": 'sleep "1"',
     }
-    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     print(res.json())
     job_ids = db.query(Job.id).all()
     href = "/jobs/{}".format(job_ids[0][0])
@@ -510,7 +510,7 @@ def test_app_job_post_json(client):
         "/jobs/",
         json=data,
         # content_type="application/json",
-        headers={"X_REMOTE_IDENT": "bob"},
+        headers={"x-remote-ident": "bob"},
     )
     print(res.json())
     job_ids = db.query(Job.id).all()
@@ -526,7 +526,7 @@ def test_app_job_post_array(client):
         "command": 'sleep "1"',
         "param_file": "param9 9\nparam8 8\nparam7 7",
     }
-    res = client.post("/jobs/", json=data, headers={"X_REMOTE_IDENT": "bob"})
+    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     print(res.__dict__)
     print(res.json())
     job_array_ids = (

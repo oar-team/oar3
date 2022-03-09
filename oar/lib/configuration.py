@@ -67,7 +67,7 @@ class Configuration(dict):
         # kao
         "METASCHEDULER_MODE": "internal",
         # Tell the metascheduler that it runs into an oar2 installation.
-        "METASCHEDULER_OAR2_MODE": "no",
+        "METASCHEDULER_OAR3_WITH_OAR2": "no",
         "HIERARCHY_LABELS": "resource_id,network_address",
         "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
         "SCHEDULER_JOB_SECURITY_TIME": "60",  # TODO should be int

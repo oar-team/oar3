@@ -1,5 +1,15 @@
 name: OAR3 - run tests
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
+  workflow_call:
+    secrets:
+      DOCKERTOKEN:
+        required: true
+      DOCKERUSER:
+        required: true
+
 jobs:
     Check-Code-Formatting:
       runs-on: ubuntu-latest

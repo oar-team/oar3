@@ -187,14 +187,14 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
 
 def notify_to_run_job(jid):
     """
-    Tell bipbip commander to run a job. It can also notifies oar2 almighty if METASCHEDULER_OAR2_MODE configuration variable is set to yes.
+    Tell bipbip commander to run a job. It can also notifies oar2 almighty if METASCHEDULER_OAR3_WITH_OAR2 configuration variable is set to yes.
     """
 
     if jid not in to_launch_jobs_already_treated:
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
-            if config["METASCHEDULER_OAR2_MODE"] == "yes":
+            if config["METASCHEDULER_OAR3_WITH_OAR2"] == "yes":
                 logger.debug("OAR2 MODE")
                 completed = tools.notify_oar2_almighty("OARRUNJOB_{}".format(jid))
 

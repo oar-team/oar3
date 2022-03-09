@@ -221,6 +221,9 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         if exit_value == 2:
             cmd_ret.error("cannot enter working directory: " + job.launching_directory)
             cmd_ret.exit(exit_value)
+        elif exit_value == 255:
+            cmd_ret.error("Job was terminated.")
+            cmd_ret.exit(exit_value)
         elif exit_value != 0:
             cmd_ret.error("an unexpected error: " + str(return_code))
             cmd_ret.exit(exit_value)

@@ -1093,7 +1093,10 @@ def add_micheline_jobs(
         exec(code, globals(), job_parameters.__dict__)
     except Exception:
         err = sys.exc_info()
-        error = (-2, err[1] + ", a failed admission rule prevented submitting the job.")
+        error = (
+            -2,
+            str(err[1]) + ", a failed admission rule prevented submitting the job.",
+        )
         return (error, [])
 
     # Test if the queue exists
