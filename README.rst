@@ -1,9 +1,6 @@
-===============================
-OAR next generation
-===============================
-
-.. image:: https://img.shields.io/pypi/v/oar3.svg
-    :target: https://pypi.python.org/pypi/oar3
+=======================================
+OAR: Versatile Resource and Job Manager
+=======================================
 
 .. image:: https://travis-ci.org/oar-team/oar3.svg?branch=master
     :target: https://travis-ci.org/oar-team/oar3
@@ -17,8 +14,8 @@ OAR next generation
     :target: https://readthedocs.org/projects/oar-3/?badge=latest
     :alt: Documentation Status
 
-OAR next generation
+OAR is a versatile resource and job manager (also called a batch scheduler or job scheduler) for HPC clusters and other computing infrastructures (like distributed computing experimental testbeds where versatility is a key). This is the third generation.
 
-* Free software: BSD license.
-* General Information: http://oar.imag.fr/oar_3.  
+* Free software: GPL-2.1 license.
 * Documentation: https://oar-3.readthedocs.org.
+* General Information: http://oar.imag.fr/oar_3.
