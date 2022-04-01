@@ -9,6 +9,7 @@ from procset import ProcSet
 from sqlalchemy import distinct, func, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.session import make_transient
+from sqlalchemy.sql import case
 from sqlalchemy.sql.expression import select
 
 import oar.lib.tools as tools
@@ -597,12 +598,49 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
     return (jobs, jobs_lst, rid2jid)
 
 
+def job_message(job, nb_resources=None):
+    """
+    Gather information about a job, and return it as a string.
+    Part of this information is set during the scheduling phase, and gathered in this function as side effects (walltime and res_set).
+
+    As computing the number of resources for a job can be costly, it can be done out of this function and passed as a parameter,
+    otherwise it is computed from job.res_set.
+
+    The karma is a job value present when the fairsharing is enabled (JOB_PRIORITY=FAIRSHARE).
+    """
+    message_list = []
+    if nb_resources:
+        message_list.append("R={}".format(nb_resources))
+    elif hasattr(job, "res_set"):
+        message_list.append("R={}".format(len(job.res_set)))
+
+    if hasattr(job, "walltime"):
+        message_list.append("W={}".format(job.walltime))
+
+    if job.type == "PASSIVE":
+        message_list.append("J=P")
+    else:
+        message_list.append("J=I")
+
+    message_list.append("Q={}".format(job.queue_name))
+
+    logger.info("save assignements")
+
+    message = ",".join(message_list)
+    if hasattr(job, "karma"):
+        message += " " + "(Karma={})".format(job.karma)
+
+    return message
+
+
 def save_assigns(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
         mld_id_rid_s = []
+        message_updates = {}
+
         for j in jobs.values() if isinstance(jobs, dict) else jobs:
             if j.start_time > -1:
                 logger.debug("job_id to save: " + str(j.id))
@@ -619,9 +657,21 @@ def save_assigns(jobs, resource_set):
                         for rid in riods
                     ]
                 )
+                msg = job_message(j, nb_resources=len(riods))
+                message_updates[j.id] = msg
+
+        if message_updates:
+            logger.info("save job messages")
+            db.session.query(Job).filter(Job.id.in_(message_updates)).update(
+                {
+                    Job.message: case(
+                        message_updates,
+                        value=Job.id,
+                    )
+                }
+            )
 
         logger.info("save assignements")
-
         db.session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
         db.commit()

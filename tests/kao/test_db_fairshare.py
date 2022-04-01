@@ -1,4 +1,5 @@
 # coding: utf-8
+import re
 import time
 from random import sample
 
@@ -6,7 +7,7 @@ import pytest
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import config, db
+from oar.lib import Job, config, db
 from oar.lib.job_handling import insert_job
 
 
@@ -129,3 +130,10 @@ def test_db_fairsharing():
             break
 
     assert flag
+
+    # Check if messages are updated and valid
+    r = re.compile("R=\d+,W=\d+,J=(P|I),Q=\w+ \(Karma=\d+.\d+\)$")
+    req = db.query(Job).all()
+
+    for j in req:
+        assert r.match(j.message) is not None
