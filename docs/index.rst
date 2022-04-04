@@ -55,6 +55,7 @@ This documentation is organized into a few different sections below:
    usage
    contributing
    changes
+   release
 
 .. toctree::
    :maxdepth: 1

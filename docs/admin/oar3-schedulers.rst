@@ -38,34 +38,11 @@ First install oar3's dependencies.
 Install from pre-generated .deb
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The packages can be downloaded at : TODO.
+The packages can be downloaded at : https://github.com/oar-team/oar3/releases/latest.
 Also download the debian package for `ProcSet <https://gitlab.inria.fr/bleuse/procset.py>`_ (which is an OAR3 dependency).
 
-Generate the debian packages from sources
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*Generate .deb*::
-
-    # Clone oar3
-    git clone git@github.com:oar-team/oar3.git
-
-    # Generate packages
-    cd misc/deb-gen && ./build-deb.sh
-
-    # Get the python package python3-oar*.deb to your OAR server and install with
-    dpkg -i python3-oar*.deb
-
-
-.. warning::
-  The procedure to generate the procset's debian package is similar to OAR3.
-  The repository containing the package generation scripts is
-  `here (branch debian) <https://gitlab.inria.fr/adfaure/procset.py/-/tree/debian>`_.
-
-.. warning::
-  For debian bullseye change the variable `BRANCHE_NAME`
-  in oar3/mis/deb-gen/build-deb.sh for `bullseye/3.0`.
-
-.. _target_schedulers_oar3_with_oar2:
+.. note::
+  The steps to generate the package from sources are described in this :ref:`section <Debian package generation>`.
 
 Using OAR3 schedulers with OAR2
 -------------------------------

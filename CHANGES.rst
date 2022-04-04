@@ -5,6 +5,15 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+Version 3.0.0.dev6
+------------------
+
+- Fix karma_proj_targets needed to be cast as float
+- Add each scheduling loop update the message field of jobs to add information about project, number of resources, walltime, karma etc
+
 Version 3.0.0.dev5
 ------------------
 
