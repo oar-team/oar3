@@ -168,7 +168,7 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
             karma_user_asked_j = 0.0
 
         if job.project in karma_proj_targets:
-            karma_proj_target = karma_proj_targets[job.project]
+            karma_proj_target = float(karma_proj_targets[job.project])
         else:
             karma_proj_target = 0.0
 
