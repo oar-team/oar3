@@ -668,7 +668,8 @@ def save_assigns(jobs, resource_set):
                         message_updates,
                         value=Job.id,
                     )
-                }
+                },
+                synchronize_session=False,
             )
 
         logger.info("save assignements")
