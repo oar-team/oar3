@@ -5,8 +5,14 @@
 Changelog
 =========
 
+
 Unreleased
 ----------
+
+Version 3.0.0.dev7
+------------------
+
+- Fix save_assigns failed because of bad sqlalchemy function use
 
 Version 3.0.0.dev6
 ------------------
