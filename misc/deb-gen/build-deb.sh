@@ -34,7 +34,7 @@ if [ $GIT_CLONE == 1 ]; then
     else
         echo "Work locally"
         git clone --branch=${BRANCH_NAME} ../.. $BUILD_DIR/oar3
-        cp setup.py setup.cfg  $BUILD_DIR/oar3
+        cp ../../setup.py ../../setup.cfg  $BUILD_DIR/oar3
     fi
 fi
 
