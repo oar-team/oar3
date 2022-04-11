@@ -47,12 +47,19 @@ def minimal_db_initialization(request):
         yield
 
 
+def fake_notify_interactif_user(job, y):
+    job.info_type = "test:0000"
+    return None
+
+
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(oar.lib.tools, "pingchecker", fake_pingchecker)
-    monkeypatch.setattr(oar.lib.tools, "notify_interactif_user", lambda x, y: None)
+    monkeypatch.setattr(
+        oar.lib.tools, "notify_interactif_user", fake_notify_interactif_user
+    )
     monkeypatch.setattr(oar.lib.tools, "launch_oarexec", fake_launch_oarexec)
     monkeypatch.setattr(
         oar.lib.tools, "manage_remote_commands", fake_manage_remote_commands

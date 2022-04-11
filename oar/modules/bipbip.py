@@ -501,10 +501,13 @@ class BipBip(object):
                     + "] Interactive request ;Answer to the client Qsub -I"
                 )
                 if not tools.notify_interactif_user(job, "GOOD JOB"):
+                    addr, port = job.info_type.split(":")
                     logger.error(
                         "["
                         + str(job.id)
-                        + "] Frag job because oarsub cannot be notified by the frontend. Check your network and firewall configuration\n"
+                        + "] Frag job because oarsub cannot be notified by the frontend on host {addr}:{port}. Check your network and firewall configuration\n".format(
+                            addr=addr, port=port
+                        )
                     )
                     tools.notify_almighty("Qdel")
                     return
