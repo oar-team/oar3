@@ -196,7 +196,7 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
 def karma_jobs_sorting(queues, now, jids, jobs, plt):
     evaluate_jobs_karma(queues, now, jids, jobs, plt)
     #
-    # Sort jobs accordingly to karma value (fairsharing)  *)
+    # Sort jobs accordingly to karma value (fairsharing)
     #
     karma_ordered_jids = sorted(jids, key=lambda jid: jobs[jid].karma)
     # print karma_ordered_jids
