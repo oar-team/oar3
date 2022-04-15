@@ -353,7 +353,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
             if j_properties == "" and (
                 jrg_grp_property == "" or jrg_grp_property == "type = 'default'"
             ):
-                res_constraints = copy.copy(resource_set.roid_itvs)
+                res_constraints = copy.copy(resource_set.default_itvs)
             else:
                 and_sql = ""
                 if j_properties and jrg_grp_property:
