@@ -136,7 +136,7 @@ def test_find_resource_hierarchies_scattered5():
     x = find_resource_hierarchies_scattered(
         ProcSet(*[(1, 64)]), [h0, h1, h2, h3], [2, 2, 1, 1]
     )
-    assert x == ProcSet(*[(1, 8), (17, 24), (33, 34), (50, 52)])
+    assert x == ProcSet(*[(1, 2), (17, 19), (33, 34), (50, 52)])
 
 
 # TODO: Tests should pass
