@@ -214,6 +214,44 @@ def test_oarstat_simple_json():
     assert result.exit_code == 0
 
 
+def test_oarstat_full_json():
+    for _ in range(NB_JOBS):
+        insert_job(res=[(60, [("resource_id=4", "")])], user="toto", properties="")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--json", "--full"])
+    str_result = result.output
+    print(str_result)
+    try:
+        parsed_json = json.loads(str_result)
+        assert len(parsed_json) == NB_JOBS
+        for job in parsed_json:
+            assert "cpuset_name" in job
+
+    except ValueError:
+        assert False
+    assert result.exit_code == 0
+
+
+def test_oarstat_json_only_one_job():
+    for _ in range(NB_JOBS):
+        jid = insert_job(
+            res=[(60, [("resource_id=4", "")])], user="toto", properties=""
+        )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--json", "--full", "-j", str(jid)])
+    str_result = result.output
+    print(str_result)
+    try:
+        parsed_json = json.loads(str_result)
+        assert len(parsed_json) == 1
+        assert parsed_json[0]["id"] == jid
+    except ValueError:
+        assert False
+    assert result.exit_code == 0
+
+
 def test_oarstat_job_id_array_error():
     runner = CliRunner()
     result = runner.invoke(cli, ["-j", "1", "--array", "1"])

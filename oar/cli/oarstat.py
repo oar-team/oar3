@@ -17,6 +17,7 @@ from oar.lib.accounting import (
 from oar.lib.event import get_jobs_events
 from oar.lib.job_handling import (
     get_array_job_ids,
+    get_job_cpuset_name,
     get_job_resources_properties,
     get_jobs_state,
 )
@@ -82,7 +83,8 @@ def print_jobs(legacy, jobs, json=False):
             )
     elif json:
         # TODO to enhance
-        print(dumps([j.to_dict() for j in jobs]))
+        # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
+        print(dumps([j.to_dict() | {"cpuset_name": j.cpuset_name} for j in jobs]))
     else:
         print(jobs)
 
@@ -383,6 +385,9 @@ def cli(
         jobs = db.queries.get_jobs_for_user(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
+
+        for job in jobs:
+            job.cpuset_name = get_job_cpuset_name(job.id, job=job)
 
     if accounting:
         print_accounting(cmd_ret, accounting, user, sql)
