@@ -84,7 +84,7 @@ def print_jobs(legacy, jobs, json=False):
     elif json:
         # TODO to enhance
         # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
-        print(dumps([j.to_dict() | {"cpuset_name": j.cpuset_name} for j in jobs]))
+        print(dumps([{**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs]))
     else:
         print(jobs)
 
