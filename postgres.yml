@@ -1,0 +1,21 @@
+version: '3.7'
+
+x-default-service: &defaults
+  restart: unless-stopped
+  environment:
+    POSTGRES_HOST: postgres_db
+    POSTGRES_PASSWORD: oar
+    POSTGRES_DB: oar
+    POSTGRES_USER: oar
+    POSTGRES_USER_RO: oar_ro
+    DB_TYPE: postgresql
+
+services:
+
+  postgres_db:
+    <<: *defaults
+    ports:
+      - 5432:5432
+    volumes:
+      - $ROOT_PROJECT/scripts/ci/docker/postgresql/01-create-oar-ro.sh:/docker-entrypoint-initdb.d/01-create-oar-ro.sh
+    image: ${POSTGRES_IMAGE:-postgres:9.5}
