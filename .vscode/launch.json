@@ -1,0 +1,23 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "args": [
+        "--folder", "/tmp/1651047643_OAR",
+      ],
+      "env": {
+        "OARCONFFILE" : "/tmp/1651047643_OAR/oar.conf",
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
+}

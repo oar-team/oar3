@@ -28,7 +28,7 @@ sed -i -e "s/Error/Waiting/g" -e "s/Terminated/Waiting/g" "${FOLDER}/queued_jobs
 psql --host $HOST --port $PORT --user $USER --command "\COPY (SELECT m.* FROM MOLDABLE_JOB_DESCRIPTIONS as m JOIN JOBS as j ON j.job_id = m.moldable_job_id WHERE j.submission_time <= $TIMESTAMP AND j.stop_time > $TIMESTAMP) to ${FOLDER}/moldable_descriptions.csv CSV HEADER" $DATABASENAME
 sed -i -e "s/LOG/CURRENT/g" "${FOLDER}/moldable_descriptions.csv"
 
-# Get resources group 
+# Get resources group
 psql --host $HOST --port $PORT --user $USER $DATABASENAME << SQL
 \COPY ( \
 	SELECT g.* FROM JOB_RESOURCE_GROUPS as g \

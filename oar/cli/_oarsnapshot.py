@@ -1,7 +1,9 @@
 import os
 import sys
+import tarfile
 import tempfile
 import time
+from os.path import exists
 
 import click
 
@@ -122,7 +124,7 @@ def setup_config(extra_config={}, db_type="memory"):
     config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "server")
 
 
-def import_table_from_scv(tablename, csv):
+def import_table_from_csv(tablename, csv):
     with open(csv, "r") as f:
         conn = db.engine.raw_connection()
         cursor = conn.cursor()
@@ -134,7 +136,7 @@ def import_table_from_scv(tablename, csv):
 
 def launch_kamelot_intern(queue="default"):
     now = time.time()
-    sys.argv = ["test_kamelot", "default", now]
+    sys.argv = ["test_kamelot", queue, now]
     kamelot.main()
     return time.time() - now
 
@@ -180,40 +182,80 @@ def create_jobs_from_csv(csv_file=None):
     return nb_jobs
 
 
+def import_roar(path, tmpfile=None):
+    with tempfile.TemporaryDirectory() as tmpdirname:
+
+        # Extract the archive to the tempdir
+        tf = tarfile.open(path)
+        tf.extractall(path=tmpdirname)
+
+        topdir_name = [name for name in tf.getnames() if "/" not in name][0]
+        data_dir = f"{tmpdirname}/{topdir_name}"
+
+        import_folder(data_dir)
+
+
+def import_folder(path):
+
+    # Import resources
+    resources = f"{path}/resources.csv"
+    if exists(resources):
+        import_table_from_csv("resources", resources)
+
+    # Import job information
+    import_table_from_csv(
+        "moldable_job_descriptions", f"{path}/moldable_descriptions.csv"
+    )
+    import_table_from_csv("job_resource_groups", f"{path}/job_resource_groups.csv")
+    import_table_from_csv(
+        "job_resource_descriptions", f"{path}/job_resource_descriptions.csv"
+    )
+
+    running_jobs = f"{path}/running_jobs.csv"
+    if exists(running_jobs):
+        import_table_from_csv("jobs", running_jobs)
+
+    queued_jobs = f"{path}/queued_jobs.csv"
+    if exists(queued_jobs):
+        import_table_from_csv("jobs", queued_jobs)
+
+
 @click.command()
 @click.option(
     "-f", "--folder", type=click.STRING, help="Folder containing the snapshot data."
 )
 @click.option(
-    "-r",
-    "--result-file",
+    "-j",
+    "--extra-jobs",
     type=click.STRING,
-    help="Result file that should contain the data.",
+    help="Some extra jobs to schedule.",
+)
+@click.option(
+    "-q", "--queue", type=click.STRING, help="Queue to schedule.", default="default"
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
-def cli(folder, version, result_file):
+def cli(folder, version, extra_jobs, queue):
     """"""
     setup_config()
-    setup_database(f"{folder}/resources.csv")
 
-    # Import resources
-    import_table_from_scv("resources", f"{folder}/resources.csv")
+    with tempfile.TemporaryDirectory() as tmpdirname:
 
-    # Import job information
-    import_table_from_scv(
-        "moldable_job_descriptions", f"{folder}/moldable_descriptions.csv"
-    )
-    import_table_from_scv("job_resource_groups", f"{folder}/job_resource_groups.csv")
-    import_table_from_scv(
-        "job_resource_descriptions", f"{folder}/job_resource_descriptions.csv"
-    )
+        # Extract the archive to the tempdir
+        tf = tarfile.open(folder)
+        tf.extractall(path=tmpdirname)
 
-    import_table_from_scv("jobs", f"{folder}/running_jobs.csv")
-    import_table_from_scv("jobs", f"{folder}/queued_jobs.csv")
+        topdir_name = [name for name in tf.getnames() if "/" not in name][0]
+        data_dir = f"{tmpdirname}/{topdir_name}"
 
-    launch_kamelot_intern()
+        setup_database(f"{data_dir}/resources.csv")
+
+        import_folder(data_dir)
+
+    if extra_jobs:
+        import_roar(extra_jobs)
+
+    launch_kamelot_intern(queue=queue)
 
 
 if __name__ == "__main__":
-    print("prout")
     cli()
