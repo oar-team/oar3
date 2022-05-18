@@ -19,7 +19,7 @@ psql --host $HOST --port $PORT --user $USER $DATABASENAME << SQL
 	SELECT * FROM JOBS WHERE job_id = ${JOB_ID} \
 ) to ${FOLDER}/queued_jobs.csv CSV HEADER
 SQL
-sed -i -e "s/Error/Waiting/g" -e "s/Terminated/Waiting/g" "${FOLDER}/jobs.csv"
+sed -i -e "s/Error/Waiting/g" -e "s/Terminated/Waiting/g" "${FOLDER}/queued_jobs.csv"
 
 # Get moldable descriptions
 psql --host $HOST --port $PORT --user $USER --command "\COPY (SELECT m.* FROM MOLDABLE_JOB_DESCRIPTIONS as m JOIN JOBS as j ON j.job_id = m.moldable_job_id WHERE j.job_id = ${JOB_ID}) to ${FOLDER}/moldable_descriptions.csv CSV HEADER" $DATABASENAME

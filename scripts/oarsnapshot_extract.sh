@@ -58,6 +58,6 @@ sed -i -e "s/LOG/CURRENT/g" "${FOLDER}/assigned_resource.csv"
 # Get resources information.
 # We need the resource table, and the resource_logs_table to reconstruct the state of the resource at a given time
 psql --host $HOST --port $PORT --user $USER --command "\COPY (SELECT * FROM RESOURCES) to ${FOLDER}/resources.csv CSV HEADER" $DATABASENAME
-psql --host $HOST --port $PORT --user $USER --command "\COPY (SELECT * FROM RESOURCE_LOGS) to ${FOLDER}/resource_log.csv CSV HEADER" $DATABASENAME
+psql --host $HOST --port $PORT --user $USER --command "\COPY (SELECT * FROM RESOURCE_LOGS WHERE date_start <= ${TIMESTAMP} AND date_stop > ${TIMESTAMP}) to ${FOLDER}/resource_log.csv CSV HEADER" $DATABASENAME
 
 tar cvfz ${FOLDER}.roar ${FOLDER}

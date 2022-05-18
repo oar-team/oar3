@@ -220,6 +220,33 @@ def import_folder(path):
         import_table_from_csv("jobs", queued_jobs)
 
 
+def set_resources_state(folder):
+    """
+    Restore resource state to the state it should have been at the time of the snapshot.
+    This is done by looping through the table resource_logs, that contains the resources updates.
+    """
+    csv_file = f"{folder}/resource_log.csv"
+    with open(csv_file) as csv:
+        headers = None
+        for line in csv:
+            splitted_line = line.strip().split(",")
+            # First get the headers to locate the needed information
+            if headers is None:
+                headers = {}
+                for header in range(len(splitted_line)):
+                    headers[splitted_line[header]] = header
+            else:
+                # Get job information
+                attribute = splitted_line[headers["attribute"]]
+                resource_id = splitted_line[headers["resource_id"]]
+                if attribute == "state":
+                    value = splitted_line[headers["value"]]
+                    db.query(Resource).filter(Resource.id == resource_id).update(
+                        {Resource.state: value}, synchronize_session=False
+                    )
+    db.commit()
+
+
 @click.command()
 @click.option(
     "-f", "--folder", type=click.STRING, help="Folder containing the snapshot data."
@@ -235,7 +262,13 @@ def import_folder(path):
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(folder, version, extra_jobs, queue):
-    """"""
+    """
+    oarsnap aims at recreating an oardb offline to replay the scheduling.
+
+    - The script `scripts/oarsnapshot_extract.sh` can be used to extract the date from a database oar.
+    - The script `scripts/oarsnapshot_extract_job.sh` can be used to extract a specific job.
+      It is relevant when the job has not be scheduled at all (start_time = 0) for instance.
+    """
     setup_config()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -250,10 +283,13 @@ def cli(folder, version, extra_jobs, queue):
         setup_database(f"{data_dir}/resources.csv")
 
         import_folder(data_dir)
+        set_resources_state(data_dir)
 
     if extra_jobs:
+        print("import extra jobs")
         import_roar(extra_jobs)
 
+    print("starting scheduling")
     launch_kamelot_intern(queue=queue)
 
 
