@@ -5,7 +5,15 @@ import pytest
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
-from oar.lib import AssignedResource, FragJob, Job, Resource, config, db
+from oar.lib import (
+    AssignedResource,
+    FragJob,
+    Job,
+    MoldableJobDescription,
+    Resource,
+    config,
+    db,
+)
 from oar.lib.job_handling import insert_job
 from oar.lib.queue import get_all_queue_by_priority
 from oar.lib.tools import get_date
@@ -92,17 +100,23 @@ def schedule_some_ar(request, monkeypatch):
         info_type="localhost:4242",
     )
     meta_schedule()
+
     monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
 
 
 def assign_resources(job_id):
-    print(f"assign for {job_id}")
+    moldable = (
+        db.query(MoldableJobDescription)
+        .filter(MoldableJobDescription.job_id == job_id)
+        .first()
+    )
+
     db.query(Job).filter(Job.id == job_id).update(
-        {Job.assigned_moldable_job: job_id}, synchronize_session=False
+        {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
     )
     resources = db.query(Resource).all()
     for r in resources[:4]:
-        AssignedResource.create(moldable_id=job_id, resource_id=r.id)
+        AssignedResource.create(moldable_id=moldable.id, resource_id=r.id)
 
 
 def test_db_metasched_ar_check_kill_be(monkeypatch, schedule_some_ar):
