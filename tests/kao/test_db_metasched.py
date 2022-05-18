@@ -5,7 +5,7 @@ import pytest
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
-from oar.lib import config, db
+from oar.lib import AssignedResource, FragJob, Job, Resource, config, db
 from oar.lib.job_handling import insert_job
 from oar.lib.queue import get_all_queue_by_priority
 from oar.lib.tools import get_date
@@ -55,7 +55,6 @@ def test_db_metasched_simple_1(monkeypatch):
 
 
 def test_db_metasched_ar_1(monkeypatch):
-
     # add one job
     now = get_date()
     # sql_now = local_to_sql(now)
@@ -72,8 +71,59 @@ def test_db_metasched_ar_1(monkeypatch):
 
     job = db["Job"].query.one()
     print(job.state, " ", job.reservation)
-
+    print(job.__dict__)
     assert (job.state == "Waiting") and (job.reservation == "Scheduled")
+
+
+@pytest.fixture(scope="function", autouse=False)
+def schedule_some_ar(request, monkeypatch):
+    """
+    Go back in the past thanks to monkeypatching time, and create an advanced reservation
+    """
+    in_the_future = get_date()
+    monkeypatch.setattr(oar.lib.tools, "get_date", lambda: 100)
+
+    insert_job(
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=in_the_future,
+        info_type="localhost:4242",
+    )
+    meta_schedule()
+    monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
+
+
+def assign_resources(job_id):
+    print(f"assign for {job_id}")
+    db.query(Job).filter(Job.id == job_id).update(
+        {Job.assigned_moldable_job: job_id}, synchronize_session=False
+    )
+    resources = db.query(Resource).all()
+    for r in resources[:4]:
+        AssignedResource.create(moldable_id=job_id, resource_id=r.id)
+
+
+def test_db_metasched_ar_check_kill_be(monkeypatch, schedule_some_ar):
+    environ["USER"] = "root"  # Allow to frag jobs
+    now = get_date()
+
+    # Insert a running best effort jobs with some assigned resources
+    job_id = insert_job(
+        res=[(500, [("resource_id=5", "")])],
+        start_time=now,
+        state="Running",
+        types=["besteffort"],
+        queue_name="besteffort",
+    )
+    assign_resources(job_id)
+
+    # Meta scheduler should frag the best effort job
+    meta_schedule()
+
+    fragjob = db.query(FragJob).first()
+    assert fragjob.job_id == job_id
 
 
 def test_call_external_scheduler_fails(monkeypatch):
