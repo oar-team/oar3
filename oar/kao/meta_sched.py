@@ -53,7 +53,7 @@ from oar.lib.job_handling import (
     get_gantt_waiting_interactive_prediction_date,
     get_jobs_in_multiple_states,
     get_jobs_on_resuming_job_resources,
-    get_waiting_reservations_already_scheduled,
+    get_waiting_moldable_of_reservations_already_scheduled,
     get_waiting_scheduled_AR_jobs,
     is_timesharing_for_two_jobs,
     remove_gantt_resource_job,
@@ -120,10 +120,8 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     initial_slot_set = SlotSet((resource_set.roid_itvs, initial_time_sec))
 
     logger.debug("Processing of processing of already handled reservations")
-    accepted_ar_jids, accepted_ar_jobs = get_waiting_reservations_already_scheduled(
-        resource_set, job_security_time
-    )
-    gantt_flush_tables(accepted_ar_jids)
+    moldable_ids = get_waiting_moldable_of_reservations_already_scheduled()
+    gantt_flush_tables(moldable_ids)
 
     # TODO Can we remove this step, below ???
     #  why don't use: assigned_resources and job start_time ??? in get_scheduled_jobs ???

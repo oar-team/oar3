@@ -1155,14 +1155,12 @@ def update_scheduler_last_job_date(date, moldable_id):
 # Get all waiting reservation jobs
 # parameter : database ref
 # return an array of moldable job informations
-def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
-
+def get_waiting_moldable_of_reservations_already_scheduled():
+    """
+    return the moldable jobs assigned to already scheduled reservations.
+    """
     result = (
         db.query(
-            Job,
-            GanttJobsPrediction.start_time,
-            GanttJobsResource.resource_id,
-            MoldableJobDescription.walltime,
             MoldableJobDescription.id,
         )
         .filter((Job.state == "Waiting") | (Job.state == "toAckReservation"))
@@ -1171,47 +1169,11 @@ def get_waiting_reservations_already_scheduled(resource_set, job_security_time):
         .filter(GanttJobsPrediction.moldable_id == MoldableJobDescription.id)
         .filter(GanttJobsResource.moldable_id == MoldableJobDescription.id)
         .order_by(Job.id)
+        .distinct()
         .all()
     )
 
-    first_job = True
-    jobs = {}
-    jids = []
-
-    prev_jid = 0
-    roids = []
-
-    job = None  # global job
-
-    if result:
-        for x in result:
-            j, start_time, resource_id, walltime, moldable_id = x
-
-            if j.id != prev_jid:
-                if first_job:
-                    first_job = False
-                else:
-                    job.res_set = ProcSet(*roids)
-                    jids.append(job.id)
-                    jobs[job.id] = job
-                    roids = []
-
-                prev_jid = j.id
-                job = j
-                job.start_time = start_time
-                job.walltime = walltime + job_security_time
-
-            roids.append(resource_set.rid_i2o[resource_id])
-
-        job.res_set = ProcSet(*roids)
-
-        jids.append(moldable_id)
-
-        jobs[job.id] = job
-
-        get_jobs_types(jids, jobs)
-
-    return (jids, jobs)
+    return [x[0] for x in result]
 
 
 # TODO MOVE TO GANTT_HANDLING
