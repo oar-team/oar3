@@ -153,3 +153,44 @@ def test_call_external_scheduler_fails(monkeypatch):
 
     # Check that the default queue has been found an tested
     assert findQueue
+
+
+def test_db_metasched_ar_2(monkeypatch):
+    """
+    Test multiple AR reservation in the same metaschedule.
+    The first and third job should be scheduled, wheres
+    """
+    in_the_future = get_date()
+
+    # Mock so the first metaschedule is in the "past"
+    monkeypatch.setattr(oar.lib.tools, "get_date", lambda: 100)
+    insert_job(
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=in_the_future,
+        info_type="localhost:4242",
+    )
+    insert_job(
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=in_the_future,
+        info_type="localhost:4243",
+    )
+    insert_job(
+        res=[(60, [("resource_id=1", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=in_the_future,
+        info_type="localhost:4243",
+    )
+
+    meta_schedule()
+    assert len(db["GanttJobsPrediction"].query.all()) == 2
+
+    # Restore the get date function
+    monkeypatch.setattr(oar.lib.tools, "get_date", get_date)

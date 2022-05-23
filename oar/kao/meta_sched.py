@@ -435,13 +435,15 @@ def check_reservation_jobs(
                 logger.debug("[" + str(job.id) + "] advance reservation is validated")
                 job.moldable_id = moldable_id
                 job.res_set = itvs
+                job.walltime = walltime
                 ar_jobs_scheduled[job.id] = job
                 # if 'container' in job.types
                 #    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
                 #                job.start_time + job.walltime - job_security_time)
                 # slot.show()
                 #    slots_sets[job.id] = SlotSet(slot)
-
+                # Update the slotsets for the next AR to be scheduled within this loop
+                all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
                 set_job_state(job.id, "toAckReservation")
 
             set_job_resa_state(job.id, "Scheduled")
