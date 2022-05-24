@@ -815,6 +815,16 @@ def meta_schedule(mode="internal", plt=Platform()):
 
     job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
+    # Kill duration before starting jobs
+    # So we kill best effort job in advance to give the time to occupied resources
+    # to be in a good state
+    if "SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION" in config:
+        kill_duration_before_reservation = int(
+            config["SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION"]
+        )
+    else:
+        kill_duration_before_reservation = 0
+
     if ("QUOTAS" in config) and (config["QUOTAS"] == "yes"):
         Quotas.enable(plt.resource_set())
 
@@ -941,13 +951,27 @@ def meta_schedule(mode="internal", plt=Platform()):
                     queue.name, resource_set, job_security_time, current_time_sec
                 )
 
-    jobs_to_launch, jobs_to_launch_lst, rid2jid_to_launch = get_gantt_jobs_to_launch(
-        resource_set, job_security_time, current_time_sec
+    (
+        jobs_to_launch_with_security_time,
+        jobs_to_launch_with_security_time_lst,
+        rid2jid_to_launch,
+    ) = get_gantt_jobs_to_launch(
+        resource_set,
+        job_security_time,
+        current_time_sec,
+        kill_duration_before_reservation=kill_duration_before_reservation,
+    )
+
+    # Filter jobs that are not yet ready to be scheduled, but present because of the
+    # kill_duration_before_reservation=kill_duration_before_reservation parameter
+    jobs_to_launch_lst = filter(
+        lambda j: j.start_time <= current_time_sec,
+        jobs_to_launch_with_security_time_lst,
     )
 
     if (
         check_besteffort_jobs_to_kill(
-            jobs_to_launch,
+            jobs_to_launch_with_security_time,  # Jobs to launch or about to be launched
             rid2jid_to_launch,
             current_time_sec,
             besteffort_rid2jid,

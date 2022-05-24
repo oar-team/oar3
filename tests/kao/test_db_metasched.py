@@ -140,6 +140,76 @@ def test_db_metasched_ar_check_kill_be(monkeypatch, schedule_some_ar):
     assert fragjob.job_id == job_id
 
 
+def test_db_metasched_ar_check_kill_be_security_time(monkeypatch):
+    environ["USER"] = "root"  # Allow to frag jobs
+    config["SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION"] = 120
+
+    now = get_date()
+    monkeypatch.setattr(oar.lib.tools, "get_date", lambda: 100)
+
+    insert_job(
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=now + 60,
+        info_type="localhost:4242",
+    )
+    meta_schedule()
+    monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
+
+    # Insert a running best effort jobs with some assigned resources
+    job_id = insert_job(
+        res=[(500, [("resource_id=5", "")])],
+        start_time=now - 250,
+        state="Running",
+        types=["besteffort"],
+        queue_name="besteffort",
+    )
+    assign_resources(job_id)
+
+    # Meta scheduler should frag the best effort job
+    meta_schedule()
+
+    fragjob = db.query(FragJob).first()
+    assert fragjob is not None and fragjob.job_id == job_id
+
+
+def test_db_metasched_ar_check_no_be_security_time(monkeypatch):
+    environ["USER"] = "root"  # Allow to frag jobs
+    config["SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION"] = 60
+
+    now = get_date()
+    monkeypatch.setattr(oar.lib.tools, "get_date", lambda: 100)
+
+    insert_job(
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Waiting",
+        reservation="toSchedule",
+        start_time=now + 120,
+        info_type="localhost:4242",
+    )
+    meta_schedule()
+    monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
+
+    # Insert a running best effort jobs with some assigned resources
+    job_id = insert_job(
+        res=[(500, [("resource_id=5", "")])],
+        start_time=now - 250,
+        state="Running",
+        types=["besteffort"],
+        queue_name="besteffort",
+    )
+    assign_resources(job_id)
+
+    # Meta scheduler should frag the best effort job
+    meta_schedule()
+
+    fragjob = db.query(FragJob).first()
+    assert fragjob is None
+
+
 def test_call_external_scheduler_fails(monkeypatch):
     # Ensure that we don't find an external scheduler
     environ["OARDIR"] = "/dev/null"

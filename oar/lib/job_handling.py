@@ -557,7 +557,9 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
 
 
 # TODO MOVE TO GANTT_HANDLING ???
-def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
+def get_gantt_jobs_to_launch(
+    resource_set, job_security_time, now, kill_duration_before_reservation=0
+):
 
     # get unlaunchable jobs
     # NOT USED launcher will manage these cases ??? (MUST BE CONFIRMED)
@@ -572,6 +574,7 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
     #                   OR resources.next_state IN (\'Dead\',\'Suspected\',\'Absent\'))
     #
     #           .all()
+    date = now + kill_duration_before_reservation
 
     result = (
         db.query(
@@ -581,7 +584,7 @@ def get_gantt_jobs_to_launch(resource_set, job_security_time, now):
             MoldableJobDescription.walltime,
             GanttJobsResource.resource_id,
         )
-        .filter(GanttJobsPrediction.start_time <= now)
+        .filter(GanttJobsPrediction.start_time <= date)
         .filter(Job.state == "Waiting")
         .filter(Job.id == MoldableJobDescription.job_id)
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
