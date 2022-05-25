@@ -343,7 +343,7 @@ def get_node_job_to_frag(hostname):
     # same as get_node_job but excepts cosystem jobs
     subq = (
         db.query(JobType.job_id)
-        .filter(JobType.type == "cosystem")
+        .filter(or_(JobType.type == "cosystem", JobType.type == "noop"))
         .filter(JobType.types_index == "CURRENT")
         .subquery()
     )

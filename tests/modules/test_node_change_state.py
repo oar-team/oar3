@@ -4,7 +4,16 @@ import os
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import AssignedResource, Challenge, EventLog, Job, Resource, config, db
+from oar.lib import (
+    AssignedResource,
+    Challenge,
+    EventLog,
+    FragJob,
+    Job,
+    Resource,
+    config,
+    db,
+)
 from oar.lib.job_handling import insert_job
 from oar.modules.node_change_state import NodeChangeState, main
 
@@ -69,6 +78,7 @@ def test_node_change_state_void():
 def base_test_node_change(event_type, job_state, job_id=None, exit_code=0):
     if not job_id:
         job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+
     EventLog.create(to_check="YES", job_id=job_id, type=event_type)
     os.environ["OARDO_USER"] = "oar"
     node_change_state = NodeChangeState()
@@ -254,3 +264,68 @@ def test_node_change_state_resource_dead_assigned():
     node_change_state = NodeChangeState()
     node_change_state.run()
     assert node_change_state.exit_code == 2
+
+
+def assign_resources_with_range(job_id, from_, to_):
+    from oar.lib import MoldableJobDescription
+
+    moldable = (
+        db.query(MoldableJobDescription)
+        .filter(MoldableJobDescription.job_id == job_id)
+        .first()
+    )
+
+    db.query(Job).filter(Job.id == job_id).update(
+        {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
+    )
+    resources = db.query(Resource).all()
+
+    for r in resources[from_:to_]:
+        AssignedResource.create(moldable_id=moldable.id, resource_id=r.id)
+
+
+def test_node_change_state_job_cosystem():
+    """
+    Check that noop, and cosystem jobs are not killed. But other jobs are.
+    """
+    cosystem_id = insert_job(
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        state="Running",
+        types=["cosystem"],
+        info_type="123.123.123.123:1234",
+    )
+    assign_resources_with_range(cosystem_id, 0, 2)
+
+    noop_id = insert_job(
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        state="Running",
+        types=["noop"],
+        info_type="123.123.123.123:1234",
+    )
+    assign_resources_with_range(noop_id, 2, 4)
+
+    # Third job that should be killed
+    job_id = insert_job(
+        res=[(60, [("resource_id=1", "")])],
+        properties="",
+        state="Running",
+        types=[],
+        info_type="123.123.123.123:1234",
+    )
+    assign_resources_with_range(job_id, 4, 5)
+
+    resources = db.query(Resource).all()
+    for r in resources:
+        db.query(Resource).filter(Resource.network_address == r.network_address).update(
+            {Resource.next_state: "Dead"}, synchronize_session=False
+        )
+
+    os.environ["OARDO_USER"] = "oar"
+
+    node_change_state = NodeChangeState()
+    node_change_state.run()
+
+    fragjob = db.query(FragJob).first()
+    assert fragjob is not None and fragjob.job_id == job_id

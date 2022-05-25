@@ -407,7 +407,7 @@ def get_resource_job_to_frag(r_id):
     # same as get_resource_job but excepts the cosystem jobs
     subq = (
         db.query(JobType.job_id)
-        .filter(JobType.type == "cosystem")
+        .filter(or_(JobType.type == "cosystem", JobType.type == "noop"))
         .filter(JobType.types_index == "CURRENT")
         .subquery()
     )
