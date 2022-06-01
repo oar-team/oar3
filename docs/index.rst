@@ -51,11 +51,11 @@ This documentation is organized into a few different sections below:
    :maxdepth: 1
    :caption: Developer Documentation
 
-   installation
-   usage
-   contributing
-   changes
-   release
+   developer/installation
+   developer/usage
+   developer/contributing
+   developer/changes
+   developer/release
 
 .. toctree::
    :maxdepth: 1

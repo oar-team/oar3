@@ -43,7 +43,7 @@ _____________________________________
 
 *For the Debian like systems*::
 
-For now, only OAR's serie 2 versions is shipped as part of Debian official distributions. Version 3 is (will be) available at  http://oar.imag.fr/download#debian
+  For now, only OAR's serie 2 versions is shipped as part of Debian official distributions. Version 3 is (will be) available at  http://oar.imag.fr/download#debian
 
 .. code:: bash
 
