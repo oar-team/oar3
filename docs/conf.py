@@ -253,7 +253,7 @@ latex_documents = [
 # latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-latex_appendices = ["changes"]
+latex_appendices = ["developer/changes"]
 
 # If false, no module index is generated.
 # latex_domain_indices = True
