@@ -53,7 +53,7 @@ Install from source with nix
 
 *Dependencies*
     - `nix <https://nixos.org/download.html>`_
-    - The sources of `OAR <https://github.com/oar-team/oar3>`
+    - The sources of `OAR <https://github.com/oar-team/oar3>`_
 
 Once you have all the requirements installed, you can run the commands:
 1. Use the nix command ``nix develop`` to simultaneously install all the dependencies and enter a new shell to use them.
