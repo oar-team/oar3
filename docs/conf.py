@@ -28,6 +28,7 @@ AUTHORS = [
     "Michael Mercier",
     "Pierre Neyron",
     "Olivier Richard",
+    "Adrien Faure",
 ]
 suppress_warnings = ["image.nonlocal_uri"]
 
@@ -52,7 +53,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",
     "sphinx.ext.autodoc",
-    "sphinx.ext.todo"
+    "sphinx.ext.todo",
 ]
 autodoc_member_order = "bysource"
 

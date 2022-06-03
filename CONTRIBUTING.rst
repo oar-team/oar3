@@ -21,17 +21,16 @@ If you are reporting a bug, please include:
 * Any details about your local setup that might be helpful in troubleshooting.
 * Detailed steps to reproduce the bug.
 
-Fix Bugs
 ~~~~~~~~
 
 Look through the GitHub issues for bugs. Anything tagged with "bug"
 is open to whoever wants to implement it.
 
-Implement Features
-~~~~~~~~~~~~~~~~~~
+Implement Features or fix a bug
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Look through the GitHub issues for features. Anything tagged with "feature"
-is open to whoever wants to implement it.
+Look through the GitHub issues for features. Anything tagged with "feature" or bug is open to whoever wants to implement or fix it.
+To get started follow :ref:`the developer installation guide<dev-install>`.
 
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
@@ -105,10 +104,3 @@ Before you submit a pull request, check that it meets these guidelines:
 3. The pull request should work for Python 3.5 and 3.6, and for PyPy. Check
    https://travis-ci.org/oar-team/oar3/pull_requests
    and make sure that the tests pass for all supported Python versions.
-
-Tips
-----
-
-To run a subset of tests::
-
-    $ py.test tests/test_oar

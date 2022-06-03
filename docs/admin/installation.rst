@@ -1,3 +1,4 @@
+.. _admin-install:
 
 .. warning::
 
