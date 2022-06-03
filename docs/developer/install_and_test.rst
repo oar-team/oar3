@@ -15,7 +15,7 @@ This guide explain different strategy to develop a new feature or fix a bug in O
 The distributed nature of OAR makes it difficult to execute it a single computer. Therefore, testing ongoing development is not always easy.
 There is (at least) two ways of developing with OAR locally.
 
-- The first method is to run the OAR tests locally. It is the recommended way but not always sufficient. Once the tests (successfully) run on your machine, you can start developing in OAR by first adding a new test corresponding to your feature (or bug). The section :ref:`Write a test (TBD) <write-tests>` explains how to write new tests for OAR.
+- The first method is to run the OAR tests locally. It is the recommended way but not always sufficient. Once the tests (successfully) run on your machine, you can start developing in OAR by first adding a new test corresponding to your feature (or bug).
 - Sometimes, it is required to test OAR directly, it is possible to run a small containerized cluster on your computer with `oar-docker-compose` (which is based on `docker-compose`). To start with `oar-docker-compose`, you can directly follow the `oar-docker-compose readme <https://github.com/oar-team/oar-docker-compose>`_.
 
 **The Continuous Integration (CI) will check that every tests pass, we will not accept a merge request with a failing CI, so make sure to run the tests before asking to merge your changes**.
