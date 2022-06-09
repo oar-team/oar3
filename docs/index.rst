@@ -53,6 +53,7 @@ This documentation is organized into a few different sections below:
 
    developer/install_and_test
    developer/usage
+   developer/internal
    developer/contributing
    developer/changes
    developer/release

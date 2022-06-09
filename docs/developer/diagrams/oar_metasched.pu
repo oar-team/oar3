@@ -1,0 +1,19 @@
+@startuml
+participant ExternalErnergyComponent as ear
+participant Almighty as alm
+participant MetaScheduler as kao
+
+alm -> kao++: meta_schedule()
+
+loop queues in queues_by_priority
+  kao -> kao: external_metasched(queue, jobs, resources)
+  loop queue in queus
+    kao -> kao: scheduler(jobs, scheduled_jobs, resources)
+  end
+end
+
+kao -> kao: get_jobs_to_launch(current_time)
+
+kao--
+
+@endumlgo
