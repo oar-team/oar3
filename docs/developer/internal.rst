@@ -36,3 +36,13 @@ This diagram illustrate how oar launches a job. The module (:ref:`Bipbip<api-mod
 
    Sequence diagram of the mechanisms used by oar to launch a job. Click on the image to see a bigger version.
 
+
+Metascheduler communication with external module
+------------------------------------------------
+
+
+.. figure:: ./../_static/oar_metasched.png
+   :target: ./../_static/oar_metasched.svg
+   :alt: Sequence diagram about oar's Metascheduler ans interactions with potential external module.
+
+   Click on the image to see a bigger version.
