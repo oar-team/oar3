@@ -1,6 +1,4 @@
 @startuml
-title Job lifetime
-
 actor User as user
 
 box "Server" #Azure

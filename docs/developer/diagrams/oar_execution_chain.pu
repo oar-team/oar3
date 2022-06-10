@@ -1,5 +1,4 @@
 @startuml
-title Job's execution chain
 box "Server" #LightBlue
   participant Leon as leon
   participant Bipbip as bipbip
@@ -27,7 +26,6 @@ end note
 
 bipbip++
 sshd++
-leon++
 
 bipbip -> sprologue : server prologue
 sprologue++
@@ -35,10 +33,7 @@ bipbip <- sprologue
 sprologue--
 
 sshd --> oar : oarsh_shell
-note over oar
-  execute the
-  server prologue
-end note
+
 bipbip -> sshd : job_resource_manager_cgroups "init"
 sshd --> oar : oarsh_shell
 note over oar
@@ -47,6 +42,7 @@ note over oar
 end note
 
 bipbip -> sshd : launch_oarexec
+
 sshd --> oar : oarsh_shell
 note over oar, user
   with the environment
@@ -78,6 +74,8 @@ group Inside cpuset
   OAREXEC--
 end
 
+
+activate leon
 leon -> sshd : job_resource_manager_cgroups "clean"
 sshd --> oar : oarsh_shell
 
@@ -85,5 +83,6 @@ leon -> sepilogue : server epilogue
 sepilogue++
 leon <- sepilogue
 sepilogue--
+leon--
 
 @endumlgo

@@ -1,6 +1,8 @@
 oar.modules
 ===========
 
+.. _api-module-almighty:
+
 oar.modules.almighty
 --------------------
 
@@ -17,6 +19,8 @@ oar.modules.appendice\_proxy
    :undoc-members:
    :show-inheritance:
 
+.. _api-module-bipbip:
+
 oar.modules.bipbip
 -------------------------
 
@@ -24,6 +28,8 @@ oar.modules.bipbip
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _api-module-bipbip_commander:
 
 oar.modules.bipbip\_commander
 ------------------------------------
