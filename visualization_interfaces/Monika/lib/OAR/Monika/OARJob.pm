@@ -9,6 +9,7 @@ use strict;
 use OAR::Monika::monikaCGI;
 use File::Basename;
 use Data::Dumper;
+use Sort::Naturally;
 
 my $bestEffortColor = "#dddddd";
 
@@ -155,7 +156,7 @@ sub htmlStatusTable {
   $output .= $cgi->th({-align => "left"}, $self->jobId());
   $output .= $cgi->end_Tr();
   my @keylist = keys %{$self};
-  foreach my $key (sort @keylist) {
+  foreach my $key (sort {$a <=> $b or Sort::Naturally::ncmp($a,$b)} @keylist) {
     if(($key eq "job_id")){
     #if(($key eq "job_id") or ($key eq "initial_request")){
       next;

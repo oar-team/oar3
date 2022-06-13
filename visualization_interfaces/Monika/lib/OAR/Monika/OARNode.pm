@@ -10,6 +10,7 @@ use OAR::Monika::monikaCGI;
 use OAR::Monika::Conf;
 use Data::Dumper;
 use Time::Local;
+use Sort::Naturally;
 use POSIX qw(strftime);
 
 ## class constructor
@@ -162,7 +163,7 @@ sub htmlTable {
   my $cgiName = File::Basename::basename($cgi->self_url(-query=>0));
   my $max_cores_per_line = OAR::Monika::Conf::myself()->max_cores_per_line();
   my $nb_cells = 0;
-  foreach my $currentRessource (sort keys %{$self->{Ressources}}){
+  foreach my $currentRessource (sort {$a <=> $b or Sort::Naturally::ncmp($a,$b)} keys %{$self->{Ressources}}){
     if (($nb_cells++ % $max_cores_per_line) == 0){
         $output .= $cgi->end_Tr();
         $output .= $cgi->start_Tr({-align => "center"});
@@ -258,15 +259,15 @@ sub htmlStatusTable {
   my @properties= keys %{$self->{Ressources}->{$keylist[0]}->{infos}};
   $output .= $cgi->start_Tr();
   $output .= $cgi->th({-align => "left", bgcolor => "^c0c0c0"}, $cgi->i("Ressource no."));
-  foreach my $key (sort @keylist) {
+  foreach my $key (sort {$a <=> $b or Sort::Naturally::ncmp($a,$b)} @keylist) {
     $output .= $cgi->th({-align => "left", bgcolor => "^c0c0c0"}, $cgi->i($key));
   }
   $output .= $cgi->end_Tr();
 
-  foreach my $prop (@properties) {
+  foreach my $prop (sort {$a <=> $b or Sort::Naturally::ncmp($a,$b)} @properties) {
     $output .= $cgi->start_Tr();
     $output .= $cgi->th({-align => "left", bgcolor => "^c0c0c0"}, $cgi->i($prop));
-    foreach my $key (sort @keylist) {
+    foreach my $key (sort {$a <=> $b or Sort::Naturally::ncmp($a,$b)} @keylist) {
       my $value= $self->{Ressources}->{$key}->{infos}->{$prop};
       if($prop eq $nodes_synonym){
         $value= $self->displayHTMLname();
