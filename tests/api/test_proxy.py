@@ -24,7 +24,7 @@ def fake_check_output(cmd, env=None):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def monkeypatch_tools(request, monkeypatch):
+def monkeypatch_tools(request, monkeypatch, monkeypatch_scoped_session):
     monkeypatch.setattr(oar.lib.tools, "call", fake_call)
     monkeypatch.setattr(oar.lib.tools, "check_output", fake_check_output)
 
