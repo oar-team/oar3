@@ -12,8 +12,8 @@ def test_parse_resource_descriptions_1():
         (
             [
                 {
-                    u"property": u"",
-                    u"resources": [{u"resource": u"resource_id", u"value": "1"}],
+                    "property": "",
+                    "resources": [{"resource": "resource_id", "value": "1"}],
                 }
             ],
             None,
@@ -28,8 +28,8 @@ def test_parse_resource_descriptions_2():
         (
             [
                 {
-                    u"property": u"",
-                    u"resources": [{u"resource": u"resource_id", u"value": "1"}],
+                    "property": "",
+                    "resources": [{"resource": "resource_id", "value": "1"}],
                 }
             ],
             None,
@@ -44,10 +44,10 @@ def test_parse_resource_descriptions_3():
         (
             [
                 {
-                    u"property": u"",
-                    u"resources": [
-                        {u"resource": u"switch", u"value": "2"},
-                        {u"resource": "resource_id", u"value": "10"},
+                    "property": "",
+                    "resources": [
+                        {"resource": "switch", "value": "2"},
+                        {"resource": "resource_id", "value": "10"},
                     ],
                 }
             ],
@@ -63,12 +63,12 @@ def test_parse_resource_descriptions_4():
         (
             [
                 {
-                    u"property": u"gpu='YES'",
-                    u"resources": [{u"resource": "resource_id", u"value": -1}],
+                    "property": "gpu='YES'",
+                    "resources": [{"resource": "resource_id", "value": -1}],
                 },
                 {
-                    u"property": u"gpu='NO'",
-                    u"resources": [{u"resource": u"core", u"value": "20"}],
+                    "property": "gpu='NO'",
+                    "resources": [{"resource": "core", "value": "20"}],
                 },
             ],
             None,
@@ -83,8 +83,8 @@ def test_parse_resource_descriptions_5():
         (
             [
                 {
-                    u"property": u"gpu='YES'",
-                    u"resources": [{u"resource": "resource_id", u"value": -1}],
+                    "property": "gpu='YES'",
+                    "resources": [{"resource": "resource_id", "value": -1}],
                 }
             ],
             None,
@@ -92,8 +92,8 @@ def test_parse_resource_descriptions_5():
         (
             [
                 {
-                    u"property": u"gpu='NO'",
-                    u"resources": [{u"resource": u"core", u"value": "20"}],
+                    "property": "gpu='NO'",
+                    "resources": [{"resource": "core", "value": "20"}],
                 }
             ],
             None,

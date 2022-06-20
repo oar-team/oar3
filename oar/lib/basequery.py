@@ -129,7 +129,7 @@ class BaseQuery(Query):
 
 
 class BaseQueryCollection(object):
-    """ Queries collection. """
+    """Queries collection."""
 
     def get_jobs_for_user(
         self,
@@ -143,7 +143,7 @@ class BaseQueryCollection(object):
         detailed=True,
     ):
         # import pdb; pdb.set_trace()
-        """ Get all distinct jobs for a user query. """
+        """Get all distinct jobs for a user query."""
         if detailed:
             query = db.query(Job)
         else:

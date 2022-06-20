@@ -46,6 +46,7 @@ def client(fastapi_app):
     with TestClient(fastapi_app) as app:
         yield app
 
+
 @pytest.fixture(scope="function", autouse=False)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
@@ -68,7 +69,13 @@ def monkeypatch_tools(request, monkeypatch):
 @pytest.fixture(scope="function", autouse=False)
 def monkeypatch_scoped_session(request, monkeypatch):
     from sqlalchemy.util import ScopedRegistry
-    monkeypatch.setattr(db.session, "registry", ScopedRegistry(db.session.session_factory, lambda: request.node.name))
+
+    monkeypatch.setattr(
+        db.session,
+        "registry",
+        ScopedRegistry(db.session.session_factory, lambda: request.node.name),
+    )
+
 
 @pytest.fixture(scope="function")
 def minimal_db_initialization(client, monkeypatch_tools, monkeypatch_scoped_session):

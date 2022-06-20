@@ -262,7 +262,7 @@ def test_schedule_container_error1():
 
 
 def test_schedule_container_error2():
-    """ inner exceeds container's capacity"""
+    """inner exceeds container's capacity"""
 
     res = ProcSet(*[(1, 32)])
 
@@ -296,7 +296,7 @@ def test_schedule_container_error2():
 
 
 def test_schedule_container_error3():
-    """ inner exceeds time container's capacity"""
+    """inner exceeds time container's capacity"""
 
     res = ProcSet(*[(1, 32)])
 

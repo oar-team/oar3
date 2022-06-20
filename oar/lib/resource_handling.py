@@ -237,7 +237,7 @@ def remove_resource(resource_id, user=None):
 
 
 def get_current_resources_with_suspended_job():
-    """ Return the list of resources where there are Suspended jobs"""
+    """Return the list of resources where there are Suspended jobs"""
     res = (
         db.query(AssignedResource.resource_id)
         .filter(AssignedResource.index == "CURRENT")
@@ -249,7 +249,7 @@ def get_current_resources_with_suspended_job():
 
 
 def get_current_assigned_job_resources(moldable_id):
-    """ Returns the current resources ref for a job"""
+    """Returns the current resources ref for a job"""
     res = (
         db.query(Resource)
         .filter(AssignedResource.index == "CURRENT")

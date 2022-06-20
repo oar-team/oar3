@@ -31,7 +31,7 @@ class RandomNodes(CoormApplication):
         return job.mld_res_rqts
 
     def submit(self):
-        """ Submit a new OAR job from the Rest API"""
+        """Submit a new OAR job from the Rest API"""
         self.walltime = self.ref_walltime * randint(1, 10)
         self.command = "sleep %s" % (randint(1, self.walltime))
         super(RandomNodes, self).submit()

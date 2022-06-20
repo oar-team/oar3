@@ -135,7 +135,7 @@ class ArgParser(object):
         return self.MISSING
 
     def convert_bool(self, value):
-        """ Try to convert ``value`` to a Boolean."""
+        """Try to convert ``value`` to a Boolean."""
         if value.lower() in ("True", "yes", "1"):
             return True
         if value.lower() in ("false", "no", "0"):
@@ -143,7 +143,7 @@ class ArgParser(object):
         raise ValueError("Cannot convert '%s' to a Boolean value" % value)
 
     def convert_int(self, value):
-        """ Try to convert ``value`` to an Integer."""
+        """Try to convert ``value`` to an Integer."""
         try:
             value = float(value)
         except Exception:

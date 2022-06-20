@@ -122,7 +122,7 @@ def find_resource_hierarchies_scattered_local(itvs, hy, rqts):
 
 
 def find_local(itvs_slots, hy_res_rqts, hy, beginning):
-    """ 2 Level of Hierarchy supported with sorting by increasing blocks' size"""
+    """2 Level of Hierarchy supported with sorting by increasing blocks' size"""
     result = ProcSet()
 
     for hy_res_rqt in hy_res_rqts:
@@ -152,7 +152,7 @@ def assign_one_time_find_mld(slots_set, job, hy, min_start_time):
     # NOT FOR PRODUCTION USE
 
     flag_find = True
-    prev_t_finish = 2 ** 32 - 1  # large enough
+    prev_t_finish = 2**32 - 1  # large enough
     prev_res_set = ProcSet()
     prev_res_rqt = ProcSet()
 
@@ -210,7 +210,7 @@ def assign_one_time_find(slots_set, job, hy, min_start_time):
     # NOT FOR PRODUCTION USE
 
     flag_find = True
-    prev_t_finish = 2 ** 32 - 1  # large enough
+    prev_t_finish = 2**32 - 1  # large enough
     prev_res_set = ProcSet()
     prev_res_rqt = ProcSet()
 

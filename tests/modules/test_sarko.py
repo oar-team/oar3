@@ -68,7 +68,7 @@ def test_sarko_void():
 
 
 def test_sarko_job_walltime_reached():
-    """ date > (start_time + max_time): """
+    """date > (start_time + max_time):"""
     job_id = insert_job(
         res=[(60, [("resource_id=4", "")])], properties="", state="Running"
     )
