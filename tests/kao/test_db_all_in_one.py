@@ -622,7 +622,7 @@ def test_db_all_in_one_wakeup_node_1(monkeypatch):
     print(job.state)
     print(node_list)
     assert job.state == "Waiting"
-    assert node_list == [u"localhost0", u"localhost1"]
+    assert node_list == ["localhost0", "localhost1"]
 
 
 @pytest.mark.usefixtures("active_energy_saving")
@@ -644,9 +644,9 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
     print(job.state)
     print(node_list)
     assert job.state == "toLaunch"
-    assert node_list == [u"localhost2", u"localhost1"] or node_list == [
-        u"localhost1",
-        u"localhost2",
+    assert node_list == ["localhost2", "localhost1"] or node_list == [
+        "localhost1",
+        "localhost2",
     ]
 
 

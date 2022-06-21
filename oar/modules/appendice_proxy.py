@@ -58,7 +58,7 @@ class AppendiceProxy(object):
             client_id, message = self.socket_proxy.recv_multipart()
             msg = message.decode("utf8")
 
-            if msg == u"":
+            if msg == "":
                 logger.info("(de)connexion from from id: %r" % client_id)
             else:
                 msg = msg.rstrip()

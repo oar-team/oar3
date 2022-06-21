@@ -73,10 +73,41 @@ On the other hand, it makes the test longer and it is difficult to debug the pyt
 The command to execute the tests is `./scripts/ci/run-tests-with-docker.sh`.
 It is also possible to select tests in the same way it is done with `pytest`: `./scripts/ci/run-tests-with-docker.sh tests/lib`.
 
-
-pre-commit hook
+Code formatting
 ---------------
 
-We use pre-commit to check that the staged changes are well formatted.
+The OAR code base is checked with static code checker and formatter tools.
+
+- `Black <https://black.readthedocs.io/en/stable/index.html>`_ for code formatting.
+- `Isort <https://pycqa.github.io/isort/>`_ complete black to sort the imports.
+- `Flake8 <https://flake8.pycqa.org/en/latest/>`_ for common mistakes ans coding style.
+
+pre-commit hook
+~~~~~~~~~~~~~~~
+
+We use ``pre-commit`` to check that the staged changes are well formatted.
+Pre-commit handles its own environment for the defined hooks (outside of poetry or pip).
+
+To configure ``pre-commit`` for oar3, first install `pre-commit <https://pre-commit.com/>`_.
 Don't forget to install the pre-commit dependencies with ``pre-commit install``.
+
+Using the CI-scripts
+~~~~~~~~~~~~~~~~~~~~
+
+The CI checks the formatting of the OAR code base.
+The entry script is `scripts/ci/check-formatting.sh`.
+
+.. warning::
+  For the moment, ``pre-commit`` and the CI script get their dependencies from separate sources.
+  - ``pre-commit`` directly uses the version of the tools from ``.pre-commit-config.yaml``.
+  - ``scripts/ci/check-formatting.sh`` use the (unpinned) dependencies form `dev/requirements.txt`
+
+
+Better git blame
+~~~~~~~~~~~~~~~~
+
+The rules applied by the code formatter ``black`` can change overtime.
+So it become necessary to apply it to march the new formatting rule, leading to sometimes big commit with no code logic involved.
+These commits render the ``git blame`` command less informative. To overcome this drawback, when it is needed to refactor the code, it is better to do it in a single commit.
+The file `.git-blame-ignore-revs` lists all the formatting commit, and can be given to ``git blame`` with the command: ``git blame <files> --ignore-revs-file .git-blame-ignore-revs``.
 

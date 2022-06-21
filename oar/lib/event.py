@@ -75,7 +75,7 @@ def get_jobs_events(job_ids):
 
 
 def get_to_check_events():
-    """"Get all events with toCheck field on YES"""
+    """ "Get all events with toCheck field on YES"""
     result = (
         db.query(EventLog)
         .filter(EventLog.to_check == "YES")

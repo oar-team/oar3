@@ -42,7 +42,7 @@ def create_simple_job(i, res_rqt, ctnts_res):
 
 def init_data_structure(nb_res):
     res = [(1, nb_res + 1)]
-    ss = SlotSet(Slot(1, 0, 0, list(res), 0, 2 ** 31))
+    ss = SlotSet(Slot(1, 0, 0, list(res), 0, 2**31))
     all_ss = {"default": ss}
 
     h0_res_itvs = [[(i, i)] for i in range(1, nb_res + 1)]
@@ -71,7 +71,7 @@ def simple_bench_1(job_key_cache=False):
     x = []
     y = []
     for k in range(1, 12):
-        i = 2 ** k
+        i = 2**k
         print("nb_jobs", i)
         (res, hy, all_ss) = init_data_structure(nb_res)
         (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res)

@@ -99,7 +99,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 def to_json(obj, **kwargs):
-    """Dumps object to json string. """
+    """Dumps object to json string."""
     kwargs.setdefault("ensure_ascii", False)
     kwargs.setdefault("cls", JSONEncoder)
     kwargs.setdefault("indent", 4)

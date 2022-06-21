@@ -965,7 +965,7 @@ def get_oarexecuser_script_for_oarsub(
 
 
 def check_process(pid):
-    """ Check for the existence process. """
+    """Check for the existence process."""
     try:
         os.kill(pid, 0)
     except OSError:

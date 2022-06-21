@@ -14,7 +14,7 @@ def get_all_queue_by_priority():
 
 
 def get_queues_groupby_priority():
-    """ Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
+    """Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
     queues_ordered = db.query(Queue).order_by(Queue.priority.asc()).all()
     res = []
 
@@ -27,7 +27,7 @@ def get_queues_groupby_priority():
 
 
 def stop_queue(name):
-    """ Stop a queue"""
+    """Stop a queue"""
     db.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "notActive"}, synchronize_session=False
     )
@@ -35,7 +35,7 @@ def stop_queue(name):
 
 
 def start_queue(name):
-    """ Start a queue"""
+    """Start a queue"""
     db.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "Active"}, synchronize_session=False
     )
@@ -43,13 +43,13 @@ def start_queue(name):
 
 
 def stop_all_queues():
-    """ Stop all queues"""
+    """Stop all queues"""
     db.query(Queue).update({Queue.state: "notActive"}, synchronize_session=False)
     db.commit()
 
 
 def start_all_queues():
-    """ Start all queues"""
+    """Start all queues"""
     db.query(Queue).update({Queue.state: "Active"}, synchronize_session=False)
     db.commit()
 

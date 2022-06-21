@@ -44,14 +44,14 @@ def del_traefik_rule(rules, proxy_path):
 
 
 def acquire_lock():
-    """ acquire exclusive lock file access """
+    """acquire exclusive lock file access"""
     locked_file_descriptor = open("/tmp/rules_oar_proxy.lock", "w+")
     fcntl.lockf(locked_file_descriptor, fcntl.LOCK_EX)
     return locked_file_descriptor
 
 
 def release_lock(locked_file_descriptor):
-    """ release exclusive lock file access """
+    """release exclusive lock file access"""
     locked_file_descriptor.close()
 
 

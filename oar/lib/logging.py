@@ -51,7 +51,7 @@ def create_logger():
 
 
 def get_logger(*args, **kwargs):
-    """ Returns sub logger once the root logger is configured."""
+    """Returns sub logger once the root logger is configured."""
     global STREAM_HANDLER
     forward_stderr = kwargs.pop("forward_stderr", False)
     # Make sure that the root logger is configured

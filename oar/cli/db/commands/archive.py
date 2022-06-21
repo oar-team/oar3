@@ -47,14 +47,14 @@ class ArchiveContext(Context):
 
     @cached_property
     def current_models(self):
-        """ Return a namespace with all mapping classes"""
+        """Return a namespace with all mapping classes"""
         from oar.lib.models import all_models  # avoid a circular import
 
         return dict(all_models())
 
     @cached_property
     def current_tables(self):
-        """ Return a namespace with all tables classes"""
+        """Return a namespace with all tables classes"""
         self.current_db.reflect()
         sorted_tables = self.current_db.metadata.sorted_tables
         return dict((t.name, t) for t in sorted_tables)
@@ -227,7 +227,7 @@ def cli(ctx, **kwargs):
 )
 @pass_context
 def sync(ctx, **kwargs):
-    """ Send all resources and finished jobs to archive database."""
+    """Send all resources and finished jobs to archive database."""
     ctx.update_options(**kwargs)
     ctx.configure_log()
     ctx.confirm(
@@ -267,7 +267,7 @@ def sync(ctx, **kwargs):
 )
 @pass_context
 def purge(ctx, **kwargs):
-    """ Purge old resources and old jobs from your current database."""
+    """Purge old resources and old jobs from your current database."""
     ctx.update_options(**kwargs)
     msg = "Continue to purge old resources and jobs " "from your current database?"
     ctx.confirm(click.style(msg.upper(), underline=True, bold=True))
@@ -290,7 +290,7 @@ def purge(ctx, **kwargs):
 )
 @pass_context
 def inspect(ctx, **kwargs):
-    """ Analyze all databases."""
+    """Analyze all databases."""
     ctx.update_options(**kwargs)
     rows, headers = inspect_db(ctx)
     click.echo(tabulate(rows, headers=headers))

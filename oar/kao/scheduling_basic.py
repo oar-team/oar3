@@ -29,7 +29,7 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
 
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
-    """find first_suitable_contiguous_slot """
+    """find first_suitable_contiguous_slot"""
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = ProcSet()
 
@@ -86,7 +86,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     Assign resources to a job and update by spliting the concerned slots -
     moldable version
     """
-    prev_t_finish = 2 ** 32 - 1  # large enough
+    prev_t_finish = 2**32 - 1  # large enough
     prev_res_set = ProcSet()
     prev_res_rqt = ProcSet()
 

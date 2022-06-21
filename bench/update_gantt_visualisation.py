@@ -129,7 +129,7 @@ def bench_job_same(nb_job_exp=10, job_size=100, save_assign="default"):
     print("# bench: ", save_assign)
     print("# nb_j, job_size, time")
     for j in range(nb_job_exp):
-        nb_j = 2 ** j
+        nb_j = 2**j
         jobs = generate_jobs(nb_j, job_size)
         start = time.time()
         # getattr(oar.kao.job, "save_assigns_bulk")(jobs, rs)

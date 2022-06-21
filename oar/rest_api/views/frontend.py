@@ -16,7 +16,7 @@ app = Blueprint("frontend", __name__)
 
 @app.route("/")
 def index():
-    """ Get all main url section pages. """
+    """Get all main url section pages."""
     g.data["api_version"] = API_VERSION
     g.data["apilib_version"] = API_VERSION
     g.data["oar_version"] = VERSION

@@ -47,7 +47,7 @@ def client(fastapi_app):
         yield app
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
@@ -66,8 +66,19 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
 
 
+@pytest.fixture(scope="function", autouse=False)
+def monkeypatch_scoped_session(request, monkeypatch):
+    from sqlalchemy.util import ScopedRegistry
+
+    monkeypatch.setattr(
+        db.session,
+        "registry",
+        ScopedRegistry(db.session.session_factory, lambda: request.node.name),
+    )
+
+
 @pytest.fixture(scope="function")
-def minimal_db_initialization(client):
+def minimal_db_initialization(client, monkeypatch_tools, monkeypatch_scoped_session):
     with db.session(ephemeral=True):
         db["Queue"].create(
             name="default", priority=3, scheduler_policy="kamelot", state="Active"

@@ -74,8 +74,8 @@ todo_include_todos = True
 master_doc = "index"
 
 # General information about the project.
-project = u"OAR next generation"
-copyright = u"{}, OAR Team".format(YEAR)
+project = "OAR next generation"
+copyright = "{}, OAR Team".format(YEAR)
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -232,7 +232,7 @@ latex_documents = [
     (
         "index",
         "oar.tex",
-        u"OAR next generation Documentation",
+        "OAR next generation Documentation",
         ", ".join(AUTHORS),
         "manual",
     ),
@@ -263,7 +263,7 @@ latex_appendices = ["developer/changes"]
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "oar", u"OAR next generation Documentation", AUTHORS, 1)]
+man_pages = [("index", "oar", "OAR next generation Documentation", AUTHORS, 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -278,7 +278,7 @@ texinfo_documents = [
     (
         "index",
         "oar",
-        u"OAR next generation Documentation",
+        "OAR next generation Documentation",
         "oar3",
         ", ".join(AUTHORS),
         "One line description of project.",
