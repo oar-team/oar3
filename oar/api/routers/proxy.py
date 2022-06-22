@@ -36,7 +36,7 @@ if "OARDODO" in config:
 
 
 @router.get("/{job_id}")
-async def proxy(job_id: int, user=Depends(need_authentication)):
+def proxy(job_id: int, user=Depends(need_authentication)):
     if config["PROXY"] != "traefik":
         raise HTTPException(status_code=404, detail="Proxy is not configured")
 

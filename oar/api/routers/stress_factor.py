@@ -32,7 +32,7 @@ if "OARDODO" in config:
 
 
 @router.get("/")
-async def index():
+def index():
     stress_factor_script = "/etc/oar/stress_factor.sh"
     if "API_STRESS_FACTOR_SCRIPT" in config:
         stress_factor_script = config["API_STRESS_FACTOR_SCRIPT"]

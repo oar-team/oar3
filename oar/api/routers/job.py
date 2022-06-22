@@ -62,7 +62,7 @@ def attach_links(job):
 
 
 @router.get("/")
-async def index(
+def index(
     request: Request,
     user: str = None,
     start_time: int = 0,
@@ -97,7 +97,7 @@ async def index(
 
 
 @router.get("/{job_id}")
-async def show(job_id: int, details: Optional[bool] = None):
+def show(job_id: int, details: Optional[bool] = None):
     job = db.query(Job).get_or_404(job_id)
     data = job.asdict()
     if details:
@@ -122,7 +122,7 @@ def nodes(
 
 
 @router.get("/{job_id}/resources")
-async def get_resources(
+def get_resources(
     request: Request,
     job_id: int,
     offset: int = 0,
@@ -174,7 +174,7 @@ class SumbitParameters(BaseModel):
 
 
 @router.post("/")
-async def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
+def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
     """Job submission
 
         resource (string): the resources description as required by oar (example: “/nodes=1/cpu=2”)
@@ -358,9 +358,7 @@ async def submit(sp: SumbitParameters, user: str = Depends(need_authentication))
 # @app.route("/<any(array):array>/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
 @router.delete("/{job_id}")
 @router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
-async def delete(
-    job_id: int, array: bool = False, user: str = Depends(need_authentication)
-):
+def delete(job_id: int, array: bool = False, user: str = Depends(need_authentication)):
     # TODO Get and return error codes ans messages
     if array:
         cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
@@ -377,7 +375,7 @@ async def delete(
 
 @router.post("/{job_id}/signal/{signal}")
 @router.post("/{job_id}/checkpoints/new")
-async def signal(
+def signal(
     job_id: int, signal: Optional[int] = None, user: dict = Depends(need_authentication)
 ):
 
@@ -399,7 +397,7 @@ async def signal(
 
 
 @router.post("/{job_id}/resumptions/new")
-async def resume(job_id: int, user: dict = Depends(need_authentication)):
+def resume(job_id: int, user: dict = Depends(need_authentication)):
     """Asks to resume a holded job"""
 
     cmd_ret = oarresume([job_id], None, None, None, user, False)
@@ -412,7 +410,7 @@ async def resume(job_id: int, user: dict = Depends(need_authentication)):
 
 
 @router.post("/{job_id}/{hold}/new")
-async def hold(
+def hold(
     request: Request,
     job_id: int,
     hold: str = "hold",

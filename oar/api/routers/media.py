@@ -64,7 +64,7 @@ def user_and_filename_setup(user, path_filename):
 # @app.route("/ls/<path:path>", methods=["GET"])
 # @app.args({"offset": Arg(int, default=0), "limit": Arg(int)})
 @router.get("/ls/{path}")
-async def ls(
+def ls(
     limit: int = 25,
     offset: int = 0,
     path: str = "~",
@@ -124,7 +124,7 @@ async def ls(
 
 
 @router.get("/")
-async def get_file(
+def get_file(
     path_filename: str,
     tail: Optional[int] = None,
     user: str = Depends(need_authentication),
@@ -158,9 +158,7 @@ async def get_file(
 
 
 @router.post("/chmod")
-async def chmod(
-    path_filename: str, mode: str, user: str = Depends(need_authentication)
-):
+def chmod(path_filename: str, mode: str, user: str = Depends(need_authentication)):
     path_filename, env = user_and_filename_setup(user, path_filename)
     # Check file's existence
     retcode = tools.call([OARDODO_CMD, "test", "-e", path_filename], env=env)
@@ -189,7 +187,7 @@ async def chmod(
 
 
 @router.api_route("/", methods=["POST", "PUT"])
-async def post_file(
+def post_file(
     request: Request,
     file: UploadFile = File(...),
     force: Optional[bool] = False,
@@ -242,7 +240,7 @@ async def post_file(
 
 
 @router.delete("/")
-async def delete(path_filename: str, user: str = Depends(need_authentication)):
+def delete(path_filename: str, user: str = Depends(need_authentication)):
     path_filename, env = user_and_filename_setup(user, path_filename)
 
     # Check file's existence

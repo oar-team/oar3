@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 @router.get("/")
-async def index():
+def index():
     """Get all main url section pages."""
     data = {}
     data["api_version"] = API_VERSION
@@ -43,7 +43,7 @@ async def index():
 
 
 @router.get("/version")
-async def version():
+def version():
     """Give OAR and OAR API version.
     Also gives the timezone of the API server.
     """
@@ -58,7 +58,7 @@ async def version():
 
 
 @router.get("/whoami")
-async def whoami(user: str = Depends(get_user)):
+def whoami(user: str = Depends(get_user)):
     """Give the name of the authenticated user seen by OAR API.
 
     The name for a not authenticated user is the null string.
@@ -67,7 +67,7 @@ async def whoami(user: str = Depends(get_user)):
 
 
 @router.get("/timezone")
-async def timezone():
+def timezone():
     """
     Gives the timezone of the OAR API server.
     The api_timestamp given in each query is an UTC timestamp (epoch unix time).
@@ -78,7 +78,7 @@ async def timezone():
 
 
 @router.get("/authentication")
-async def authentication(basic_user: str, basic_password: str):
+def authentication(basic_user: str, basic_password: str):
     """allow to test is user/password math htpasswd, can be use as workaround
     to avoid popup open on browser, usefull for integrated dashboard"""
 
