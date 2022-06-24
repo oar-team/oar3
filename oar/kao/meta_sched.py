@@ -159,7 +159,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
         resource_set, job_security_time, initial_time_sec
     )
 
-    # retrieve ressources used by besteffort jobs
+    # retrieve resources used by besteffort jobs
     besteffort_rid2job = {}
 
     for job in scheduled_jobs:
@@ -276,7 +276,7 @@ def handle_waiting_reservation_jobs(
             set_job_message(job.id, "Reservation expired and couldn't be started.")
         else:
 
-            # Determine current available ressources
+            # Determine current available resources
             avail_res = resource_set.roid_itvs & job.res_set
 
             # Test if the AR job is waiting to be launched due to nodes' unavailabilities
@@ -292,7 +292,7 @@ def handle_waiting_reservation_jobs(
                 # TODO: not tested
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
                     if avail_res != job.res_set:
-                        # The expected ressources are not all available,
+                        # The expected resources are not all available,
                         # wait the specified timeout
                         logger.warning(
                             "["
@@ -308,7 +308,7 @@ def handle_waiting_reservation_jobs(
                         )
                         set_gantt_job_start_time(moldable_id, current_time_sec + 1)
                 else:
-                    # It's time to launch the AR job, remove missing ressources
+                    # It's time to launch the AR job, remove missing resources
                     missing_resources_itvs = job.res_set - avail_res
                     remove_gantt_resource_job(
                         moldable_id, missing_resources_itvs, resource_set
