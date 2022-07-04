@@ -321,7 +321,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 
             if moldable_id != prev_mld_id:
                 if jrg != []:
-                    jrg.append((jr_descriptions, res_constraints))
                     mld_res_rqts.append((prev_mld_id, prev_mld_id_walltime, jrg))
 
                 prev_mld_id = moldable_id
@@ -331,14 +330,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
                     prev_mld_id_walltime = besteffort_duration
                 else:
                     prev_mld_id_walltime = mld_id_walltime + job_security_time
-        #
-        # new job resources groupe_id
-        #
-        if jrg_id != prev_jrg_id:
-            prev_jrg_id = jrg_id
-            if jr_descriptions != []:
-                jrg.append((jr_descriptions, res_constraints))
-                jr_descriptions = []
 
         #
         # new set job descriptions
@@ -379,8 +370,15 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
             # add next res_type , res_value
             jr_descriptions.append((res_type, res_value))
 
+        #
+        # new job resources groupe_id
+        #
+        if jrg_id != prev_jrg_id:
+            prev_jrg_id = jrg_id
+            if jr_descriptions != []:
+                jrg.append((jr_descriptions, res_constraints))
+
     # complete the last job
-    jrg.append((jr_descriptions, res_constraints))
     mld_res_rqts.append((prev_mld_id, prev_mld_id_walltime, jrg))
 
     job.mld_res_rqts = mld_res_rqts

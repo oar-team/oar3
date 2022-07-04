@@ -2,8 +2,9 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
+from oar.kao.platform import Platform
 from oar.lib import EventLog, config, db
-from oar.lib.job_handling import check_end_of_job, insert_job
+from oar.lib.job_handling import check_end_of_job, get_data_jobs, insert_job
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -54,4 +55,40 @@ def test_check_end_of_job(error, event_type):
     assert event.type == event_type
 
 
-# def job_finishing_sequence
+def test_get_data_jobs_moldable(monkeypatch):
+    # Create a moldable job
+    test_jobs = []
+    job_id = insert_job(
+        res=[
+            (20, [("resource_id=4/cpu=2", "")]),
+            (20, [("resource_id=4/cpu=2", "")]),
+        ],
+    )
+    test_jobs.append((job_id, 2))
+
+    job_id = insert_job(
+        res=[
+            (20, [("resource_id=4/cpu=2", "")]),
+        ],
+    )
+    test_jobs.append((job_id, 1))
+
+    job_id = insert_job(
+        res=[
+            (20, [("resource_id=4/cpu=2", "")]),
+            (70, [("resource_id=1/cpu=3", "")]),
+            (120, [("resource_id=1/cpu=1", "")]),
+        ],
+    )
+    test_jobs.append((job_id, 3))
+
+    plt = Platform()
+    jobs = plt.get_waiting_jobs("default")
+    # Get the data
+    get_data_jobs(jobs[0], jobs[1], plt.resource_set(), 5)
+
+    for job_and_nb_moldable in test_jobs:
+        test_job_id = job_and_nb_moldable[0]
+        test_nb_mold = job_and_nb_moldable[1]
+        # Assert that the jobs has two moldable
+        assert len(jobs[0][test_job_id].mld_res_rqts) == test_nb_mold
