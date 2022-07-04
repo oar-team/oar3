@@ -56,3 +56,23 @@ def test_db_kao_simple_1(monkeypatch):
     print(job.state)
 
     assert job.state == "toLaunch"
+
+
+def test_db_kao_moldable(monkeypatch):
+    # First moldable job should never pass because there is not enough resources.
+    insert_job(
+        res=[(5, [("resource_id=6", "")]), (2, [("resource_id=2", "")])], properties=""
+    )
+    job = db["Job"].query.one()
+
+    print("job state:", job.state)
+
+    main()
+
+    for i in db["GanttJobsPrediction"].query.all():
+        print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
+
+    job = db["Job"].query.one()
+    print(job.state)
+
+    assert job.state == "toLaunch"
