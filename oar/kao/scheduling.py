@@ -289,10 +289,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
     slots = slots_set.slots
     prev_start_time = slots[1].b
 
-    res_set_nfound=0
-    job.res_set = ProcSet()
-    job.start_time = -1
-    job.moldable_id = -1
+    res_set_nfound = 0
 
     for res_rqt in job.mld_res_rqts:
         mld_id, walltime, hy_res_rqts = res_rqt
@@ -300,7 +297,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
             slots_set, job, res_rqt, hy, min_start_time
         )
         if len(res_set) == 0:  # no suitable time*resources found
-            res_set_nfound+=1
+            res_set_nfound += 1
             continue
 
         # print("after find fisrt suitable")
@@ -315,6 +312,9 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 
     # no suitable time*resources found for all res_rqt
     if res_set_nfound == len(job.mld_res_rqts):
+        job.res_set = ProcSet()
+        job.start_time = -1
+        job.moldable_id = -1
         return
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
