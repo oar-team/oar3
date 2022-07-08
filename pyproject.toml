@@ -50,6 +50,11 @@ oar-node-change-state = 'oar.modules.node_change_state:main'
 oar-bipbip = 'oar.modules.bipbip:main'
 oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
 
+[tool.poetry.plugins."oar.extra_metasched_func"]
+default = "oar.kao.extra_metasched:extra_metasched_default"
+# The function used in oar automatic tests
+foo = "oar.kao.extra_metasched:extra_metasched_foo"
+
 [tool.poetry.dependencies]
 python = ">=3.7, <4"
 SQLAlchemy-Utils = ">=0.37.3"

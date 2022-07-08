@@ -6,6 +6,19 @@ from oar.lib import Resource, db, get_logger
 logger = get_logger("oar.extra_metasched")
 
 
+def extra_metasched_default(
+    prev_queue,
+    plt,
+    scheduled_jobs,
+    all_slot_sets,
+    job_security_time,
+    queue,
+    initial_time_sec,
+    extra_metasched_config,
+):
+    pass
+
+
 def extra_metasched_foo(
     prev_queue,
     plt,

@@ -70,6 +70,7 @@ def test_all_module_api():
         "row2dict",
         "utils",
         "tools",
+        "find_plugin_for_entry_point",
     ]
 
     assert set(all_modules) == set(dir(oar.lib))
