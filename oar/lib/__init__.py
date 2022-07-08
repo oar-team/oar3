@@ -61,6 +61,7 @@ all_by_module = {
         "ResultProxyIter",
         "row2dict",
     ],
+    "oar.lib.plugins": ["find_plugin_for_entry_point"],
     "oar.lib.globals": ["config"],
     "oar.lib.fixture": ["load_fixtures", "dump_fixtures"],
 }

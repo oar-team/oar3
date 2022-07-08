@@ -15,6 +15,9 @@
         app = pkgs.poetry2nix.mkPoetryApplication {
           projectDir = ./.;
           propagatedBuildInputs = [ ];
+          editablePackageSources = {
+             oar = ./.;
+          };
         };
 
         packageName = "oar";
@@ -46,6 +49,8 @@
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             (poetry2nix.mkPoetryEnv { projectDir = self; })
+            # Install the entry point and the plugins
+            (poetry2nix.mkPoetryApplication { projectDir = self; })
             python3Packages.sphinx_rtd_theme
             poetry
             postgresql
