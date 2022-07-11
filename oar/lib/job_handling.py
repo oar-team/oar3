@@ -34,6 +34,7 @@ from oar.lib import (
     get_logger,
 )
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
+from oar.lib.plugins import find_plugin_function
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.resource_handling import (
     get_current_resources_with_suspended_job,
@@ -139,7 +140,6 @@ def get_waiting_jobs(queues, reservation="None"):
 
 
 def get_jobs_types(jids, jobs):
-    import oar.kao.custom_scheduling
 
     jobs_types = {}
     for j_type in db.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
@@ -162,14 +162,14 @@ def get_jobs_types(jids, jobs):
             funcname, job.assign_args, job.assign_kwargs = extract_find_assign_args(
                 raw_args
             )
-            job.assign_func = getattr(oar.kao.custom_scheduling, "assign_%s" % funcname)
+            job.assign_func = find_plugin_function("oar.assign_func", funcname)
         elif t == "find":
             job.find = True
             raw_args = "=".join(t_v[1:])
             funcname, job.find_args, job.find_kwargs = extract_find_assign_args(
                 raw_args
             )
-            job.find_func = getattr(oar.kao.custom_scheduling, "find_%s" % funcname)
+            job.find_func = find_plugin_function("oar.find_func", funcname)
         elif t == "no_quotas":
             job.no_quotas = True
         else:

@@ -71,7 +71,7 @@ from oar.lib.node import (
     get_next_job_date_on_node,
     search_idle_nodes,
 )
-from oar.lib.plugins import find_plugin_for_entry_point
+from oar.lib.plugins import find_plugin_function
 from oar.lib.queue import get_queues_groupby_priority, stop_queue
 from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.hulot import HulotClient
@@ -803,15 +803,6 @@ def nodes_energy_saving(current_time_sec):
     return {"halt": nodes_2_halt, "wakeup": nodes_2_wakeup}
 
 
-def find_extra_metasched_func(name):
-    for found_name, func in find_plugin_for_entry_point(
-        EXTRA_METASCHED_FUNC_ENTRY_POINT
-    ):
-        if name == found_name:
-            return func
-    return None
-
-
 def meta_schedule(mode="internal", plt=Platform()):
     """
     Meta scheduling phase.
@@ -875,7 +866,9 @@ def meta_schedule(mode="internal", plt=Platform()):
         )
 
     if ("EXTRA_METASCHED" in config) and (config["EXTRA_METASCHED"] != "default"):
-        extra_metasched_func = find_extra_metasched_func(config["EXTRA_METASCHED"])
+        extra_metasched_func = find_plugin_function(
+            EXTRA_METASCHED_FUNC_ENTRY_POINT, config["EXTRA_METASCHED"]
+        )
         if "EXTRA_METASCHED_CONFIG" in config:
             extra_metasched_config = config["EXTRA_METASCHED_CONFIG"]
         else:
