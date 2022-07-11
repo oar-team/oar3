@@ -5,22 +5,24 @@ from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_schedule
 from oar.kao.slot import Slot, SlotSet
 from oar.lib import config
 from oar.lib.job_handling import JobPseudo
+from oar.lib.plugins import find_plugin_function
 
 config["LOG_FILE"] = ":stderr:"
 
+ASSIGN_ENTRY_POINTS = "oar.assign_func"
+FIND_ENTRY_POINTS = "oar.find_func"
+
 
 def set_assign_func(job, name):
-    import oar.kao.custom_scheduling
 
     job.assign = True
-    job.assign_func = getattr(oar.kao.custom_scheduling, "assign_" + name)
+    job.assign_func = find_plugin_function(ASSIGN_ENTRY_POINTS, name)
 
 
 def set_find_func(job, name):
-    import oar.kao.custom_scheduling
 
     job.find = True
-    job.find_func = getattr(oar.kao.custom_scheduling, "find_" + name)
+    job.find_func = find_plugin_function(FIND_ENTRY_POINTS, name)
 
 
 def compare_slots_val_ref(slots, v):

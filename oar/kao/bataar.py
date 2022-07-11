@@ -19,6 +19,7 @@ from oar.kao.platform import Platform
 from oar.kao.simsim import JobSimu, ResourceSetSimu
 from oar.lib import Job, Queue, Resource, config, db, get_logger
 from oar.lib.job_handling import insert_job, set_job_state
+from oar.lib.plugins import find_plugin_function
 from oar.lib.resource import ResourceSet
 
 plt = None
@@ -120,13 +121,13 @@ class SchedPolicyParams(object):
         elif sp == "BEST_EFFORT_CONTIGUOUS" or sp == "1":
             print("BEST_EFFORT_CONTIGUOUS scheduler_policy selected")
             find = True
-            find_func = getattr(oar.kao.custom_scheduling, "find_contiguous_1h")
+            find_func = find_plugin_function("oar.find_func", "contiguous_1h")
             assign = True
-            assign_func = getattr(oar.kao.custom_scheduling, "assign_one_time_find")
+            assign_func = find_plugin_function("oar.assign_func", "one_time_find")
         elif sp == "CONTIGUOUS" or sp == "2":
             print("CONTIGUOUS scheduler_policy selected")
             find = True
-            find_func = getattr(oar.kao.custom_scheduling, "find_contiguous_1h")
+            find_func = getattr("oar.find_func", "contiguous_1h")
         elif sp == "BEST_EFFORT_LOCAL" or sp == "3":
             print("BEST_EFFORT_LOCAL scheduler_policy selected")
             add_1h = True
@@ -142,11 +143,11 @@ class SchedPolicyParams(object):
                 if t == "assign":
                     print("type assign with function: ", v)
                     assign = True
-                    assign_func = getattr(oar.kao.custom_scheduling, "assign_" + v)
+                    assign_func = find_plugin_function("oar.assign_func", v)
                 if t == "find":
                     print("type find with function: ", v)
                     find = True
-                    find_func = getattr(oar.kao.custom_scheduling, "find_" + v)
+                    find_func = find_plugin_function("oar.find_func", v)
         self.assign = assign
         self.assign_func = assign_func
         self.find = find
