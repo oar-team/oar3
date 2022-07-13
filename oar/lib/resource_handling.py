@@ -230,7 +230,8 @@ def remove_resource(resource_id, user=None):
             synchronize_session=False
         )
 
-        db.session.expire_all()  # TODO / TOFIX / TOCOMMENT???
+        db.commit()
+        # db.session.expire_all()  # TODO / TOFIX / TOCOMMENT???
         return (0, None)
     else:
         return (3, "Resource must be in DEAD state.")
