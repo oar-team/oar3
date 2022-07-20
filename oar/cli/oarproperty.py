@@ -48,6 +48,10 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 
     resources = Resource.__tablename__
     # get properties from tables
+
+    # Reflect to load all the colums from the database
+    # (including the columns not in the class Resource)
+    db.reflect()
     columns = db[resources].columns
     properties = [column.name for column in columns]
 
