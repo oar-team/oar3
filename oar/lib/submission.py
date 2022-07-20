@@ -545,10 +545,8 @@ def estimate_job_nb_resources(resource_request, j_properties):
                 cts_resources_itvs, hy_levels, hy_nbs
             )
             if res_itvs:
-                estimated_nb_res = len(res_itvs)
-            else:
-                estimated_nb_res = 0
-            break
+                estimated_nb_res += len(res_itvs)
+                # break
 
         if estimated_nb_res > 0:
             is_resource_available = True
