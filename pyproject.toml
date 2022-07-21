@@ -50,29 +50,6 @@ oar-node-change-state = 'oar.modules.node_change_state:main'
 oar-bipbip = 'oar.modules.bipbip:main'
 oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
 
-[tool.poetry.plugins."oar.extra_metasched_func"]
-default = "oar.kao.extra_metasched:extra_metasched_default"
-# The function used in oar automatic tests
-foo = "oar.kao.extra_metasched:extra_metasched_foo"
-
-[tool.poetry.plugins."oar.assign_func"]
-default = "oar.kao.custom_scheduling:assign_default"
-coorm = "oar.kao.custom_scheduling:assign_coorm"
-one_time_find_mld = "oar.kao.custom_scheduling:assign_one_time_find_mld"
-one_time_find = "oar.kao.custom_scheduling:assign_one_time_find"
-
-[tool.poetry.plugins."oar.find_func"]
-default = "oar.kao.custom_scheduling:find_default"
-coorm = "oar.kao.custom_scheduling:find_coorm"
-begin = "oar.kao.custom_scheduling:find_begin"
-contiguous_1h = "oar.kao.custom_scheduling:find_contiguous_1h"
-contiguous_sorted_1h = "oar.kao.custom_scheduling:find_contiguous_sorted_1h"
-resource_n_h_local = "oar.kao.custom_scheduling:find_resource_n_h_local"
-resource_hierarchies_scattered_local = "oar.kao.custom_scheduling:resource_hierarchies_scattered_local"
-local = "oar.kao.custom_scheduling:find_local"
-
-[tool.poetry.plugins."oar.jobs_sorting_func"]
-simple_priority = "oar.kao.custom_jobs_sorting:jobs_sorting_simple_priority"
 
 [tool.poetry.dependencies]
 python = ">=3.7, <4"
@@ -112,6 +89,7 @@ flake8 = "^3.9.2"
 pre-commit = "^2.12.1"
 simpy = "^4.0.1"
 redis = "^3.5.3"
+
 
 [tool.black]
 line-length = 88
