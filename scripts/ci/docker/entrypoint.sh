@@ -16,4 +16,8 @@ chown $CONTAINER_UID:$CONTAINER_GID /etc/oar
 
 wait-for-it -t 120 ${POSTGRES_HOST}:5432
 
+#TODO: Idk why, but without repeating this, the entry_points
+# are not loaded, causing plugin tests tot fail
+POETRY_VIRTUALENVS_CREATE=false poetry install
+
 setpriv --reuid=$CONTAINER_UID --regid=$CONTAINER_GID --init-groups "$@"

@@ -44,6 +44,7 @@ This documentation is organized into a few different sections below:
    admin/internal-mechanisms
    admin/database-scheme
    admin/oar3-schedulers
+   admin/extensions
    admin/faq
 
 .. _ref-dev-docs:

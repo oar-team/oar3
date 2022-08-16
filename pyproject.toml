@@ -50,6 +50,7 @@ oar-node-change-state = 'oar.modules.node_change_state:main'
 oar-bipbip = 'oar.modules.bipbip:main'
 oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
 
+
 [tool.poetry.dependencies]
 python = ">=3.7, <4"
 SQLAlchemy-Utils = ">=0.37.3"
@@ -88,6 +89,7 @@ flake8 = "^3.9.2"
 pre-commit = "^2.12.1"
 simpy = "^4.0.1"
 redis = "^3.5.3"
+
 
 [tool.black]
 line-length = 88

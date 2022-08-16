@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 
-import oar.kao.custom_jobs_sorting
 from oar.kao.karma import karma_jobs_sorting
 from oar.kao.multifactor_priority import multifactor_jobs_sorting
 from oar.kao.platform import Platform
@@ -10,6 +9,7 @@ from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_schedule
 from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib import config, get_logger
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
+from oar.lib.plugins import find_plugin_function
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -35,9 +35,9 @@ def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
             )
 
         elif config["JOB_PRIORITY"] == "CUSTOM":
-            custom_jobs_sorting_func = getattr(
-                oar.kao.custom_jobs_sorting,
-                "jobs_sorting_%s" % config["CUSTOM_JOB_SORTING"],
+            custom_jobs_sorting_func = find_plugin_function(
+                "oar.jobs_sorting_func",
+                config["CUSTOM_JOB_SORTING"],
             )
             if "CUSTOM_JOB_SORTING_CONFIG" not in config:
                 config["CUSTOM_JOB_SORTING_CONFIG"] = "{}"
