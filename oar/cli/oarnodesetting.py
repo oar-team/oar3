@@ -218,7 +218,7 @@ def oarnodesetting(
         for host in hostnames:
             # wait_db_ready to manage DB taking time to be up during boot
             try:
-                wait_db_ready(add_resource, (host, state))
+                new_resource_id = wait_db_ready(add_resource, (host, state))
             except Exception as e:
                 cmd_ret.error(f"Failed to contact database: {e}", 1, 1)
                 cmd_ret.exit()
@@ -227,6 +227,10 @@ def oarnodesetting(
         notify_server_tag_list.append("ChState")
         notify_server_tag_list.append("Term")
 
+        # In case of adding a new resources we fill the field `resources` in order
+        # to call `set_resources_properties` (at the end of the function) with the resource id instead
+        # of the whole hostname causing an unwanted update to all host resources.
+        resources = (new_resource_id,)
     else:
         if resources:
             if state:
