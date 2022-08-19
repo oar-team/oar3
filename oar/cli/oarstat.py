@@ -120,7 +120,11 @@ def gather_all_user_accounting(items) -> List[str]:
         ]
 
 
-def print_table(objects: List[any], gather_prop: Generator[List[str], None, None]):
+def print_table(
+    objects: List[any],
+    gather_prop: Generator[List[str], None, None],
+    min_column_size: int = 7,
+):
     """
     Simple algorithm to print a list of list given by a generator. Used to print the table of jobs in the terminal.
     It doesn't take into account the size of the terminal.
@@ -138,7 +142,7 @@ def print_table(objects: List[any], gather_prop: Generator[List[str], None, None
     lines = [next(lines_generator)]
 
     # List for the max size of each columns
-    sizes = [len(i) for i in lines[0]]
+    sizes = [len(i) if len(i) > min_column_size else min_column_size for i in lines[0]]
 
     # Loop through the job lines
     for line in lines_generator:
@@ -156,7 +160,7 @@ def print_table(objects: List[any], gather_prop: Generator[List[str], None, None
     for line in lines:
         for col_idx in range(len(line)):
             col_size = sizes[col_idx]
-            print(f"{{:{col_size}}} ".format(line[col_idx]), end="")
+            print(f"{{:^{col_size}s}} ".format(line[col_idx]), end="")
         print()
 
 
