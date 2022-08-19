@@ -87,7 +87,40 @@ def get_table_lines(jobs) -> List[str]:
         yield job_line
 
 
-def print_job_table(jobs: List[any], gather_prop: Generator[List[str], None, None]):
+def gather_all_user_accounting(items) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "User",
+        "First window starts",
+        "Last window ends",
+        "Asked (seconds)",
+        "Used (seconds)",
+    ]
+    # First yield the headers
+    yield headers
+
+    for user, consumption_user in items:
+
+        asked = 0
+        if "ASKED" in consumption_user:
+            asked = consumption_user["ASKED"]
+        used = 0
+        if "USED" in consumption_user:
+            used = consumption_user["USED"]
+
+        begin = local_to_sql(consumption_user["begin"])
+        end = local_to_sql(consumption_user["end"])
+
+        yield [
+            user,
+            str(begin),
+            str(end),
+            str(asked),
+            str(used),
+        ]
+
+
+def print_table(objects: List[any], gather_prop: Generator[List[str], None, None]):
     """
     Simple algorithm to print a list of list given by a generator. Used to print the table of jobs in the terminal.
     It doesn't take into account the size of the terminal.
@@ -99,7 +132,7 @@ def print_job_table(jobs: List[any], gather_prop: Generator[List[str], None, Non
     - Print every lines knowing the size of each columns
     """
 
-    lines_generator = gather_prop(jobs)
+    lines_generator = gather_prop(objects)
 
     # The first yielded value should be the header list
     lines = [next(lines_generator)]
@@ -129,7 +162,7 @@ def print_job_table(jobs: List[any], gather_prop: Generator[List[str], None, Non
 
 def print_jobs(legacy, jobs, json=False):
     if legacy and not json:
-        print_job_table(jobs, get_table_lines)
+        print_table(jobs, get_table_lines)
     elif json:
         # TODO to enhance
         # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
@@ -216,28 +249,7 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
                         print("{:>28}: {}".format("Last Karma", m.group(1)))
         # All users array output
         else:
-            print(
-                "User       First window starts  Last window ends     Asked (seconds)  Used (seconds)"
-            )
-            print(
-                "---------- -------------------- -------------------- ---------------- ----------------"
-            )
-            for user, consumption_user in consumptions.items():
-                asked = 0
-                if "ASKED" in consumption_user:
-                    asked = consumption_user["ASKED"]
-                used = 0
-                if "USED" in consumption_user:
-                    used = consumption_user["USED"]
-
-                begin = local_to_sql(consumption_user["begin"])
-                end = local_to_sql(consumption_user["end"])
-
-                print(
-                    "{:>10} {:>20} {:>20} {:>16} {:>16}".format(
-                        user, begin, end, asked, used
-                    )
-                )
+            print_table(consumptions.items(), gather_all_user_accounting)
     else:
         cmd_ret.error("Bad syntax for --accounting", 1, 1)
         cmd_ret.exit()
