@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-CONTAINER_UID=$(stat -c '%u' /app)
-CONTAINER_GID=$(stat -c '%g' /app)
+CONTAINER_UID=1021
+CONTAINER_GID=121
 
 groupadd -g $CONTAINER_GID oar || true
 useradd -u $CONTAINER_UID -r -g oar -s /bin/bash -c "OAR User" -m oar || true

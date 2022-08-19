@@ -3,6 +3,7 @@ import datetime
 import re
 import sys
 from json import dumps
+from typing import Generator, List
 
 import click
 
@@ -49,38 +50,86 @@ STATE2CHAR = {
 }
 
 
-def print_jobs(legacy, jobs, json=False):
+def get_table_lines(jobs) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "Job id",
+        "State",
+        "User",
+        "Duration",
+        "System message",
+    ]
+    # First yield the headers
+    yield headers
 
     now = tools.get_date()
+    for job in jobs:
+        # Compute job duration
+        duration = 0
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
 
+        # !! It must be consistent wih `header_columns`
+        job_line = [
+            str(job.id),
+            STATE2CHAR[job.state],
+            str(job.user),
+            str(datetime.timedelta(seconds=duration)),
+            str(job.message),
+        ]
+
+        yield job_line
+
+
+def print_job_table(jobs: List[any], gather_prop: Generator[List[str], None, None]):
+    """
+    Simple algorithm to print a list of list given by a generator. Used to print the table of jobs in the terminal.
+    It doesn't take into account the size of the terminal.
+
+    Steps:
+    - Construct a list of all lines List[List[str]] (where a list is a list of strings)
+    - Gather all information about the jobs
+    - For each column of each line find the longest string (that should be the size of the column)
+    - Print every lines knowing the size of each columns
+    """
+
+    lines_generator = gather_prop(jobs)
+
+    # The first yielded value should be the header list
+    lines = [next(lines_generator)]
+
+    # List for the max size of each columns
+    sizes = [len(i) for i in lines[0]]
+
+    # Loop through the job lines
+    for line in lines_generator:
+        for i in range(len(line)):
+            if sizes[i] < len(line[i]):
+                sizes[i] = len(line[i])
+
+        lines.append(line)
+
+    # Add a line of separators
+    separators: List[str] = list(map(lambda size: "{}".format(size * "-"), sizes))
+    # Insert it just after the headers
+    lines.insert(1, separators)
+
+    for line in lines:
+        for col_idx in range(len(line)):
+            col_size = sizes[col_idx]
+            print(f"{{:{col_size}}} ".format(line[col_idx]), end="")
+        print()
+
+
+def print_jobs(legacy, jobs, json=False):
     if legacy and not json:
-        print(
-            "Job id    S User     Duration          System message\n"
-            + "--------- - -------- ----------------- ------------------------------------------------"
-        )
-        now = tools.get_date()
-        for job in jobs:
-            duration = 0
-            if job.start_time:
-                if now > job.start_time:
-                    if job.state in ["Running", "Launching", "Finishing"]:
-                        duration = now - job.start_time
-                    elif job.stop_time != 0:
-                        duration = job.stop_time - job.start_time
-                    else:
-                        duration = -1
-
-            print(
-                "{:9}".format(str(job.id))
-                + " "
-                + STATE2CHAR[job.state]
-                + " "
-                + "{:8}".format(str(job.user))
-                + " "
-                + "{:>10}".format(str(datetime.timedelta(seconds=duration)))
-                + " "
-                + "{:48}".format(job.message)
-            )
+        print_job_table(jobs, get_table_lines)
     elif json:
         # TODO to enhance
         # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging

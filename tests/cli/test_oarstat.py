@@ -42,11 +42,17 @@ def test_version():
 
 def test_oarstat_simple():
     for _ in range(NB_JOBS):
-        insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+        insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+
     runner = CliRunner()
-    result = runner.invoke(cli)
+    result = runner.invoke(cli, catch_exceptions=False)
     nb_lines = len(result.output.split("\n"))
-    print(result.output)
+    print("\n" + result.output)
     assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
@@ -55,9 +61,12 @@ def test_oarstat_sql_property():
     for i in range(NB_JOBS):
         insert_job(res=[(60, [("resource_id=4", "")])], properties="", user=str(i))
     runner = CliRunner()
-    result = runner.invoke(cli, ["--sql", "(job_user='2' OR job_user='3')"])
-    print(result.output)
+    result = runner.invoke(
+        cli, ["--sql", "(job_user='2' OR job_user='3')"], catch_exceptions=False
+    )
+    print("\n" + result.output)
     nb_lines = len(result.output.split("\n"))
+
     assert nb_lines == 5
     assert result.exit_code == 0
 
