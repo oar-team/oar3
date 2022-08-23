@@ -13,19 +13,21 @@ The extensions registers functions in the namespace `oar`, so that oar can retri
 
 Internally, OAR adds some function invocations at defined place, or override existing scheduling functions.
 The different functions that can be override using the extension mechanism are:
+
 - Add an extra function at the beginning of the meta-scheduler loop processing each queues.
 - Customize the allocation of the resources to jobs (assign, and find functions).
 - Customize the job order used by the scheduler.
 
+
 How to use oar extension
 ------------------------
 
-Install
-~~~~~~~
+Install an extension
+~~~~~~~~~~~~~~~~~~~~
 
-Installation of a plugin works by installing the plugin in the same python installation as OAR.
+Installation of an extension works by installing the extension in the same python installation as OAR.
 
-Write and test your extension (with poetry)
+Create your extension (with poetry)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 OAR has an official extension `repository <https://github.com/oar-team/oar3-plugins>`_; if you want to check out how it works, or start your own extension repository you can start forking the OAR plugins repository.
@@ -33,13 +35,43 @@ It contains examples for each customizable functions, and non-regression tests.
 
 The oar version your extensions depends on can be specified in the `pyproject.toml` file, with the following line::
 
-        oar = { git = "https://github.com/oar-team/oar3", branch = "plugins" }
+        oar = { git = "https://github.com/oar-team/oar3", branch = "master" }
 
 
 Or with the command line::
 
         poetry add git+https://github.com/oar-team/oar3.git#master
 
+
+Create the entry points
+~~~~~~~~~~~~~~~~~~~~~~~
+
+OAR uses four different entry points that can be used to expose customized functions. Each entry point is associated with a different purpose.
+With poetry, the entry point is specified in the file `pyproject.toml` as is:
+
+
+.. code-block:: toml
+        :caption: pyproject.toml entry point example. Mutliple functions can be exposed under the same group name (in the example case, the group name is "oar.extra_metasched_func").
+
+        [tool.poetry.plugins."oar.extra_metasched_func"]
+        # Define a function named default
+        default = "src.extra_metasched:extra_metasched_default"
+        # And another funcdtion named foo
+        foo = "src.extra_metasched:extra_metasched_foo"
+
+The function named ``extra_metasched_default`` located in ``src/extra_metasched.py`` of your plugin repository can be accessed by OAR under the name ``default`` of the ``oar.extra_metasched_func`` entry point group name.
+
+OAR defines four entry points:
+
+- ``oar.extra_metasched_func``
+- ``oar.assign_func``
+- ``oar.find_func``
+- ``oar.jobs_sorting_func``
+
+Run the tests
+~~~~~~~~~~~~~
+
+Once you have your repository extension up and working, you can write and run tests (with the database).
 
 The easiest way to run the tests is using directly pytest. Keep it mind that to speed up the tests, it uses an sqlite database, which is not suitable for production.
 
