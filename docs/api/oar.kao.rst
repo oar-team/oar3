@@ -55,3 +55,14 @@ Resources Hierarchy
    :special-members:
    :inherited-members:
    :show-inheritance:
+
+
+Scheduling logic
+----------------
+
+.. automodule:: oar.kao.scheduling
+   :members:
+   :undoc-members:
+   :special-members:
+   :inherited-members:
+   :show-inheritance:

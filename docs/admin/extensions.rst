@@ -93,9 +93,23 @@ Features
 Functions assign and find
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Both function are executed *per* jobs during a scheduling loop. These functions can be used to tune the scheduling and modify how resources are allocated.
+
+The assign function (``oar.assign_func``) is supposed to, according to a job request and a :class:`oar.kao.slot.SlotSet`, find the time slot for the job.
+That is to say, find a suitable time slot for which all necessary resources for the job are fulfilled.
+Without extension, the default behavior of OAR, is to call the function :func:`oar.kao.scheduling.assign_resources_mld_job_split_slots`.
+
+The find function (``oar.find_func``) is supposed to, given a resources hierarchy and a job request, allocates the resources need by the job.
+Under the hood, the ``assign_func`` calls the ``find_func`` on every slot of the slot set.
+Without extension, the default behavior of OAR, is to call the function :func:`oar.kao.scheduling.find_resource_hierarchies_job`.
+
 Job sorting
 ~~~~~~~~~~~
+
+This function can be used to customize the jobs priority by tuning the order by which the jobs are precessed by the scheduler.
 
 Extra meta_metasched
 ~~~~~~~~~~~~~~~~~~~~
 
+This function is called by the meta scheduler (:func:`oar.kao.meta_sched.meta_schedule`) at each scheduling loop.
+Note, that it is called once for each different priority level of queues (i.e if two queues have the same priority it will be called once for both queue).
