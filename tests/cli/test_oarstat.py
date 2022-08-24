@@ -145,9 +145,9 @@ def test_oarstat_events():
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "--job", str(job_id)])
 
-    str_result = result.output
-    print(str_result)
-    assert re.match(".*EXECUTE_JOB.*", str_result)
+    str_result = result.output.splitlines()
+    print("\n" + result.output)
+    assert re.match(".*EXECUTE_JOB.*", str_result[2])
 
 
 def test_oarstat_events_array():
@@ -160,8 +160,10 @@ def test_oarstat_events_array():
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "--array", str(10)])
 
-    str_result = result.output
-    print(str_result)
+    print("\n" + result.output)
+    # Remove the headers
+    str_result = "\n".join(result.output.splitlines()[2:])
+
     assert re.match(".*EXECUTE_JOB.*", str_result)
 
 
@@ -177,10 +179,25 @@ def test_oarstat_properties():
     insert_terminated_jobs(update_accounting=False)
     job_id = db.query(Job.id).first()[0]
     runner = CliRunner()
-    result = runner.invoke(cli, ["--properties", "--job", str(job_id)])
+    result = runner.invoke(
+        cli, ["--properties", "--job", str(job_id)], catch_exceptions=False
+    )
     str_result = result.output
-    print(str_result)
+    print("res:\n" + str_result)
     assert re.match(".*network_address.*", str_result)
+
+
+def test_oarstat_properties_json():
+    insert_terminated_jobs(update_accounting=False)
+    job_id = db.query(Job.id).first()[0]
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["--properties", "--job", str(job_id), "-J"], catch_exceptions=False
+    )
+    parsed_json = json.loads(result.output)
+    print(parsed_json)
+    assert str(job_id) in parsed_json
+    assert len(parsed_json[str(job_id)]) == 2
 
 
 def test_oarstat_state():

@@ -175,7 +175,7 @@ def print_jobs(legacy, jobs, json=False):
         print(jobs)
 
 
-def print_accounting(cmd_ret, accounting, user, sql_property):
+def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
@@ -262,38 +262,72 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
 def print_events(cmd_ret, job_ids, array_id):
     if array_id:
         job_ids = get_array_job_ids(array_id)
+
     if job_ids:
         events = get_jobs_events(job_ids)
-        for ev in events:
-            print(
-                "{}> [{}] {}: {}".format(
-                    local_to_sql(ev.date), ev.job_id, ev.type, ev.description
-                )
-            )
+
+        def gather_events(events):
+            yield ["Date", "job id", "Type", "Description"]
+            for event in events:
+                yield [
+                    str(local_to_sql(event.date)),
+                    str(event.job_id),
+                    str(event.type),
+                    str(event.description),
+                ]
+
+        print_table(events, gather_events)
+
     else:
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(cmd_ret, job_ids, array_id):
+def print_properties(cmd_ret, job_ids, array_id, json=False):
     if array_id:
         job_ids = get_array_job_ids(array_id)
-    if job_ids:
 
+    if job_ids:
+        # Gather a list of [(Resource, job_id), ...]
         resources_properties = [
-            p for job_id in job_ids for p in get_job_resources_properties(job_id)
+            (p, job_id)
+            for job_id in job_ids
+            for p in get_job_resources_properties(job_id)
         ]
-        for resource_properties in resources_properties:
-            print_comma = False
-            for prop, value in resource_properties.to_dict().items():
-                if print_comma:
-                    print(" , ", end="")
-                else:
-                    print_comma = True
-                if not check_resource_system_property(prop):
-                    print("{} = '{}'".format(prop, value), end="")
-                else:
-                    print_comma = False
-            print()
+
+        # For each job, construct the list of its resources properties
+        properties_for_job = dict()
+        for resource_properties, job_id in resources_properties:
+            if job_id not in properties_for_job:
+                properties_for_job[job_id] = []
+
+            properties_for_job[job_id].append(
+                {
+                    prop: value
+                    for prop, value in resource_properties.to_dict().items()
+                    if not check_resource_system_property(prop)
+                }
+            )
+
+        # If json, the `properties_for_job` is ready to be dumped
+        if json:
+            print(dumps(properties_for_job))
+        else:
+            # For normal print, all resources are printed in a new line regardless of their jobs
+            # First flatten the properties into an array
+            all_jobs = [
+                properties
+                for job_id, resources_properties in properties_for_job.items()  # Higher loop
+                for properties in resources_properties  # Sublist
+            ]
+            for properties in all_jobs:
+                property_line = ", ".join(
+                    map(
+                        lambda item: "{} = '{}'".format(item[0], item[1]),
+                        properties.items(),
+                    )
+                )
+                print(property_line)
+
     else:
         cmd_ret.warning("No job ids specified")
 
@@ -459,7 +493,7 @@ def cli(
     elif events:
         print_events(cmd_ret, job_ids, array_id)
     elif properties:
-        print_properties(cmd_ret, job_ids, array_id)
+        print_properties(cmd_ret, job_ids, array_id, json=json)
     elif state:
         print_state(cmd_ret, job_ids, array_id, json)
     else:
