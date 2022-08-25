@@ -259,24 +259,38 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
         cmd_ret.exit()
 
 
-def print_events(cmd_ret, job_ids, array_id):
+def print_events(cmd_ret, job_ids, array_id, json=False):
     if array_id:
         job_ids = get_array_job_ids(array_id)
 
     if job_ids:
         events = get_jobs_events(job_ids)
 
-        def gather_events(events):
-            yield ["Date", "job id", "Type", "Description"]
-            for event in events:
-                yield [
-                    str(local_to_sql(event.date)),
-                    str(event.job_id),
-                    str(event.type),
-                    str(event.description),
-                ]
+        if not json:
 
-        print_table(events, gather_events)
+            def gather_events(events):
+                yield ["Date", "job id", "Type", "Description"]
+                for event in events:
+                    yield [
+                        str(local_to_sql(event.date)),
+                        str(event.job_id),
+                        str(event.type),
+                        str(event.description),
+                    ]
+
+            print_table(events, gather_events)
+        else:
+            events_per_jobs = dict()
+            for event in events:
+                if str(event.job_id) not in events_per_jobs:
+                    events_per_jobs[str(event.job_id)] = []
+                event_dict = {
+                    "date": str(local_to_sql(event.date)),
+                    "type": str(event.type),
+                    "description": str(event.description),
+                }
+                events_per_jobs[str(event.job_id)].append(event_dict)
+            print(dumps(events_per_jobs))
 
     else:
         cmd_ret.warning("No job ids specified")
@@ -491,7 +505,7 @@ def cli(
     if accounting:
         print_accounting(cmd_ret, accounting, user, sql)
     elif events:
-        print_events(cmd_ret, job_ids, array_id)
+        print_events(cmd_ret, job_ids, array_id, json=json)
     elif properties:
         print_properties(cmd_ret, job_ids, array_id, json=json)
     elif state:
