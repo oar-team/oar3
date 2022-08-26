@@ -629,13 +629,13 @@ def cli(
 
     # Print job_id list
     if len(job_id_lst) == 1:
-        print("OAR_JOB_ID=", job_id_lst[0])
+        print("OAR_JOB_ID=" + str(job_id_lst[0]))
     else:
         job = db["Job"].query.filter(Job.id == job_id_lst[0]).one()
         oar_array_id = job.array_id
         for job_id in job_id_lst:
-            print("OAR_JOB_ID=", job_id)
-        print("OAR_ARRAY_ID=", oar_array_id)
+            print("OAR_JOB_ID=" + str(job_id))
+        print("OAR_ARRAY_ID=" + str(oar_array_id))
     result = (job_id_lst, oar_array_id)
 
     # Notify Almigthy
