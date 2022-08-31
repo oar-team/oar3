@@ -168,15 +168,7 @@ class BipBip(object):
 
         mold_job_description = get_current_moldable_job(job.assigned_moldable_job)
 
-        # NOOP jobs
         job_types = get_job_types(job.id)
-        if "noop" in job_types:
-            set_job_state(job_id, "Running")
-            logger.debug(
-                "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
-            )
-            self.call_server_prologue(job)
-            return
 
         # HERE we must launch oarexec on the first node
         logger.debug(
@@ -490,6 +482,17 @@ class BipBip(object):
         logger.debug(cmd)
         logger.debug(oarexec_files)
 
+        # NOOP jobs
+        if "noop" in job_types:
+            set_job_state(job_id, "Running")
+            logger.debug(
+                "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
+            )
+            self.call_server_prologue(job, env=data_to_transfer)
+            return
+
+        self.call_server_prologue(job, env=data_to_transfer)
+
         # ssh-oarexec exist error
         if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
             set_job_state(job_id, "Running")
@@ -534,7 +537,7 @@ class BipBip(object):
             )
         return
 
-    def call_server_prologue(self, job):
+    def call_server_prologue(self, job, env={}):
         # PROLOGUE EXECUTED ON OAR SERVER #
         # Script is executing with job id in arguments
         if self.server_prologue:
@@ -542,7 +545,7 @@ class BipBip(object):
             cmd = [self.server_prologue, str(job.id)]
 
             try:
-                child = tools.Popen(cmd)
+                child = tools.Popen(cmd, env=env)
                 return_code = child.wait(timeout)
 
                 if return_code:

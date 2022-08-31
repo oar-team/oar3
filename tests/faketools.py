@@ -5,8 +5,9 @@ fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
 
 
 class FakePopen(object):
-    def __init__(self, cmd, stdout=None, stderr=None, shell=True):
+    def __init__(self, cmd, env={}, stdout=None, stderr=None, shell=True):
         print("Command: {}".format(cmd))
+        print("Env: {}".format(env))
         fake_popen["cmd"] = cmd
         self.cmd = cmd
         self.pid = 111
