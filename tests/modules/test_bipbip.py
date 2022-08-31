@@ -88,9 +88,8 @@ def test_bipbip_simple():
     assert bipbip.exit_code == 1
 
 
-def _test_bipbip_toLaunch(noop=False, job_id=None, state="toLaunch", args=[]):
+def _test_bipbip_toLaunch(types=[], job_id=None, state="toLaunch", args=[]):
 
-    types = ["noop"] if noop else []
     if not job_id:
         job_id = insert_job(
             res=[(60, [("resource_id=4", "")])],
@@ -138,7 +137,7 @@ def test_bipbip_toLaunch():
 
 
 def test_bipbip_toLaunch_noop():
-    _, bipbip = _test_bipbip_toLaunch(noop=True)
+    _, bipbip = _test_bipbip_toLaunch(types=["noop"])
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0
 
@@ -179,6 +178,20 @@ def test_bipbip_toLaunch_server_prologue():
     config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
     _, bipbip = _test_bipbip_toLaunch()
     print(bipbip.exit_code)
+    assert bipbip.exit_code == 0
+
+
+def test_bipbip_toLaunch_server_prologue_env():
+    config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
+    _, bipbip = _test_bipbip_toLaunch(types=["test=lol", "yop"])
+    print(bipbip.exit_code)
+
+    # Doing this because depending on the db types the order is different
+    assert set(["yop=1", "test=lol"]) == set(
+        fake_popen["env"]["OAR_JOB_TYPES"].split(";")
+    )
+
+    fake_popen["env"] = {}
     assert bipbip.exit_code == 0
 
 
