@@ -8,7 +8,10 @@ class FakePopen(object):
     def __init__(self, cmd, env={}, stdout=None, stderr=None, shell=True):
         print("Command: {}".format(cmd))
         print("Env: {}".format(env))
+
         fake_popen["cmd"] = cmd
+        fake_popen["env"] = env
+
         self.cmd = cmd
         self.pid = 111
 

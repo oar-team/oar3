@@ -482,16 +482,36 @@ class BipBip(object):
         logger.debug(cmd)
         logger.debug(oarexec_files)
 
+        def data_to_oar_env(data: dict[str, any]) -> dict[str, str]:
+            """
+            Simply transform the data supposed to be transferred to oarexec into a more OARish format for the server prologue environment.
+            """
+            new_env = dict()
+            new_env["OAR_JOB_ID"] = str(data["job_id"])
+            new_env["OAR_JOB_ARRAY_ID"] = str(data["array_id"])
+            new_env["OAR_ARRAY_INDEX"] = str(data["array_index"])
+            new_env["OAR_USER"] = str(data["user"])
+            new_env["OAR_JOB_NAME"] = str(data["name"])
+            new_env["OAR_JOB_WALLTIME_SECONDS"] = str(data["walltime_seconds"])
+            new_env["OAR_JOB_COMMAND"] = str(data["command"])
+
+            new_env["OAR_JOB_TYPES"] = ";".join(
+                [
+                    f"{k}=1" if v == True else f"{k}={v}"
+                    for k, v in data["types"].items()
+                ]
+            )
+            return new_env
+
+        self.call_server_prologue(job, env=data_to_oar_env(data_to_transfer))
+
         # NOOP jobs
         if "noop" in job_types:
             set_job_state(job_id, "Running")
             logger.debug(
                 "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
             )
-            self.call_server_prologue(job, env=data_to_transfer)
             return
-
-        self.call_server_prologue(job, env=data_to_transfer)
 
         # ssh-oarexec exist error
         if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
@@ -597,7 +617,14 @@ def main():  # pragma: no cover
         try:
             bipbip.run()
         except Exception as ex:
-            logger.error("Bipbip.run trouble on job {}: {}".format(sys.argv[1], ex))
+            import traceback
+
+            logger.error(
+                "Bipbip.run trouble on job {}: {}\n{}".format(
+                    sys.argv[1], ex, traceback.format_exc()
+                )
+            )
+
         return bipbip.exit_code
     else:
         return 1
