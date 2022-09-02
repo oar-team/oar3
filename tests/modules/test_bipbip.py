@@ -185,7 +185,12 @@ def test_bipbip_toLaunch_server_prologue_env():
     config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
     _, bipbip = _test_bipbip_toLaunch(types=["test=lol", "yop"])
     print(bipbip.exit_code)
-    assert fake_popen["env"]["OAR_JOB_TYPES"] == "test=lol;yop=1"
+
+    # Doing this because depending on the db types the order is different
+    assert set(["yop=1", "test=lol"]) == set(
+        fake_popen["env"]["OAR_JOB_TYPES"].split(";")
+    )
+
     fake_popen["env"] = {}
     assert bipbip.exit_code == 0
 
