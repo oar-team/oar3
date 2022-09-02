@@ -4,7 +4,7 @@ export ROOT_PROJECT="$(git rev-parse --show-toplevel)"
 export COMPOSE_FILE=$ROOT_PROJECT/scripts/ci/docker/docker-compose.test.yml
 export COMPOSE_PROJECT_NAME="$(basename "$ROOT_PROJECT")_ci"
 
-export PYTHON_IMAGE=${PYTHON_IMAGE:-python:3.7}
+export PYTHON_IMAGE=${PYTHON_IMAGE:-python:3.9}
 export POSTGRES_IMAGE=${POSTGRES_IMAGE:-postgres:11}
 
 echo "-------------------------------------------------------------------------------"
