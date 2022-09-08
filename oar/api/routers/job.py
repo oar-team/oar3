@@ -12,7 +12,6 @@ from oar.lib import Job, db
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
 from ..dependencies import need_authentication
-from ..url_utils import replace_query_params
 from . import TimestampRoute
 
 router = APIRouter(
@@ -25,40 +24,20 @@ router = APIRouter(
 
 def attach_resources(job, jobs_resources):
     job["resources"] = []
-    from .resource import attach_links
-
     for resource in jobs_resources[job["id"]]:
         resource = resource.asdict(ignore_keys=("network_address",))
-        attach_links(resource)
         job["resources"].append(resource)
 
 
 def attach_nodes(job, jobs_resources):
     job["nodes"] = []
     network_addresses = []
-    from .resource import attach_links
 
     for node in jobs_resources[job["id"]]:
         node = node.asdict(ignore_keys=("id",))
         if node["network_address"] not in network_addresses:
-            attach_links(node)
             job["nodes"].append(node)
             network_addresses.append(node["network_address"])
-
-
-def attach_links(job):
-    rel_map = (
-        ("show", "self", "show"),
-        ("nodes", "collection", "nodes"),
-        ("resources", "collection", "get_resources"),
-    )
-    job["links"] = []
-    for title, rel, endpoint in rel_map:
-        url = replace_query_params(
-            router.url_path_for(endpoint, job_id=job["id"]), params={}
-        )
-        # url = url_for("%s.%s" % (app.name, endpoint), job_id=job["id"])
-        job["links"].append({"rel": rel, "title": title, "href": url})
 
 
 @router.get("/")
@@ -81,14 +60,12 @@ def index(
     data = {}
     page = query.paginate(request, offset, limit)
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
     if details:
         jobs_resources = db.queries.get_assigned_jobs_resources(page.items)
         pass
     for item in page:
-        attach_links(item)
         if details:
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
@@ -107,7 +84,6 @@ def show(job_id: int, details: Optional[bool] = None):
         attach_resources(data, job_resources)
         # attach_nodes(data, job_resources)
 
-    attach_links(data)
     return data
 
 
@@ -134,7 +110,6 @@ def get_resources(
     page = query.paginate(request, offset, limit)
     data = {}
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
 
@@ -261,9 +236,6 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
           [ADMISSION RULE] Modify resource description with type constraints
           OAR_JOB_ID=4
         id: 4
-        links:
-          - href: /oarapi-priv/jobs/4
-            rel: self
 
         Note: up to now yaml is no supported, only json and html form.
 
@@ -342,8 +314,6 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
             job_id_lst
         )  # the minimum ids is also the array_id when array of jobs is submitted
         data["id"] = job_id
-        url = router.url_path_for("show", job_id=job_id)
-        data["links"] = [{"rel": "rel", "href": url}]
     else:  # TODO
         pass
 

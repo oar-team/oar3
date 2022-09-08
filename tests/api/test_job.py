@@ -6,8 +6,6 @@ from oar.kao.meta_sched import meta_schedule
 from oar.lib import FragJob, Job, db
 from oar.lib.job_handling import insert_job, set_job_state
 
-from .conftest import ordered
-
 
 @pytest.mark.usefixtures("minimal_db_initialization")
 def test_jobs_index(client):
@@ -187,9 +185,6 @@ def test_app_job_post(client):
     job_ids = db.query(Job.id).all()
     print(res.json())
     assert job_ids != []
-    href = "/jobs/{}".format(job_ids[0][0])
-
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
 
@@ -465,10 +460,7 @@ def test_app_job_post_bug1(client):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
     res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
-    job_ids = db.query(Job.id).all()
-    href = "/jobs/{}".format(job_ids[0][0])
     print(res.json())
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
 
@@ -478,9 +470,6 @@ def test_app_job_post_bug2(client):
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
     res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     print(res.json())
-    job_ids = db.query(Job.id).all()
-    href = "/jobs/{}".format(job_ids[0][0])
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
 
@@ -493,9 +482,6 @@ def test_app_job_post_bug3(client):
     }
     res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
     print(res.json())
-    job_ids = db.query(Job.id).all()
-    href = "/jobs/{}".format(job_ids[0][0])
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
 
@@ -513,9 +499,6 @@ def test_app_job_post_json(client):
         headers={"x-remote-ident": "bob"},
     )
     print(res.json())
-    job_ids = db.query(Job.id).all()
-    href = "/jobs/{}".format(job_ids[0][0])
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
 
 
@@ -535,6 +518,4 @@ def test_app_job_post_array(client):
         .all()
     )
     print(job_array_ids)
-    href = "/jobs/{}".format(job_array_ids[0][0])
-    assert ordered(res.json()["links"]) == ordered([{"rel": "rel", "href": href}])
     assert res.status_code == 200
