@@ -28,17 +28,6 @@ def index():
     data["api_version"] = API_VERSION
     data["apilib_version"] = API_VERSION
     data["oar_version"] = VERSION
-    data["links"] = []
-    # endpoints = ('resources', 'jobs', 'config', 'admission_rules')
-    endpoints = ("/resources", "/jobs")
-    for endpoint in endpoints:
-        data["links"].append(
-            {
-                "rel": "collection",
-                "href": endpoint,
-                "title": endpoint,
-            }
-        )
     return data
 
 
