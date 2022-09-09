@@ -2,7 +2,7 @@ import os
 import re
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from oar.cli.oardel import oardel
@@ -42,7 +42,6 @@ def attach_nodes(job, jobs_resources):
 
 @router.get("/")
 def index(
-    request: Request,
     user: str = None,
     start_time: int = None,
     stop_time: int = None,
@@ -58,7 +57,7 @@ def index(
         user, start_time, stop_time, states, job_ids, array, None, details
     )
     data = {}
-    page = query.paginate(request, offset, limit)
+    page = query.paginate(offset, limit)
     data["total"] = page.total
     data["offset"] = offset
     data["items"] = []
@@ -71,6 +70,7 @@ def index(
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
         data["items"].append(item)
+
     return data
 
 
@@ -100,7 +100,6 @@ def nodes(
 
 @router.get("/{job_id}/resources")
 def get_resources(
-    request: Request,
     job_id: int,
     offset: int = 0,
     limit: int = 500,
@@ -108,7 +107,7 @@ def get_resources(
     job = Job()
     job.id = job_id
     query = db.queries.get_assigned_one_job_resources(job)
-    page = query.paginate(request, offset, limit)
+    page = query.paginate(offset, limit)
     data = {}
     data["total"] = page.total
     data["offset"] = offset
@@ -382,7 +381,6 @@ def resume(job_id: int, user: dict = Depends(need_authentication)):
 
 @router.post("/{job_id}/{hold}/new")
 def hold(
-    request: Request,
     job_id: int,
     hold: str = "hold",
     user: dict = Depends(need_authentication),

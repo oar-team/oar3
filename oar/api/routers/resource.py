@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 import oar.lib.tools as tools
@@ -45,7 +45,6 @@ def get_db():
 
 @router.get("/")
 def index(
-    request: Request,
     offset: int = 0,
     limit: int = 25,
     detailed: bool = Query(False),
@@ -64,7 +63,7 @@ def index(
     :status 400: when form parameters are missing
     """
     query = db.queries.get_resources(network_address, detailed)
-    page = query.paginate(request, offset, limit)
+    page = query.paginate(offset, limit)
 
     data = {}
     data["total"] = page.total
@@ -99,9 +98,9 @@ def show(resource_id):
 
 
 @router.get("/{resource_id}/jobs")
-def jobs(request: Request, limit: int = 50, offset: int = 0, resource_id: int = None):
+def jobs(limit: int = 50, offset: int = 0, resource_id: int = None):
     query = db.queries.get_jobs_resource(resource_id)
-    page = query.paginate(request, offset, limit)
+    page = query.paginate(offset, limit)
     data = {}
     data["total"] = page.total
     data["offset"] = offset
