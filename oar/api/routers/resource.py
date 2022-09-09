@@ -34,38 +34,6 @@ def get_db():
         db.session.close()
 
 
-def attach_links(resource):
-    rel_map = (
-        ("node", "member", "resource_index"),
-        # ("show", "self", "show"),
-        # ("jobs", "collection", "jobs"),
-    )
-    links = []
-    for title, rel, endpoint in rel_map:
-        if title == "node" and "network_address" in resource:
-            url = router.url_path_for(
-                endpoint,
-                network_address=resource["network_address"],
-            )
-            links.append({"rel": rel, "href": url, "title": title})
-        elif title != "node" and "id" in resource:
-            router.url_path_for(endpoint, resource_id=resource["id"])
-            links.append({"rel": rel, "href": url, "title": title})
-    resource["links"] = links
-
-
-def attach_job(job):
-    rel_map = (
-        ("show", "self", "show"),
-        ("nodes", "collection", "nodes"),
-        ("resources", "collection", "resources"),
-    )
-    job["links"] = []
-    for title, rel, endpoint in rel_map:
-        url = "/jobs/{job_id}".format(job_id=job["id"])
-        job["links"].append({"rel": rel, "href": url, "title": title})
-
-
 # @router.get("/")  # , response_model=List[schemas.DynamicResourceSchema])
 # def resource_index(offset: int = 0, limit: int = 100):
 #     # detailed = "full"
@@ -100,11 +68,9 @@ def index(
 
     data = {}
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
     for item in page:
-        # attach_links(item)
         data["items"].append(item)
 
     return data
@@ -130,7 +96,6 @@ def show(resource_id):
         raise HTTPException(status_code=404, detail="Resource not found")
     data = {}
     data.update(resource.asdict())
-    attach_links(data)
 
 
 @router.get("/{resource_id}/jobs")
@@ -139,11 +104,9 @@ def jobs(request: Request, limit: int = 50, offset: int = 0, resource_id: int = 
     page = query.paginate(request, offset, limit)
     data = {}
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
     for item in page:
-        attach_job(item)
         data["items"].append(item)
     return data
 

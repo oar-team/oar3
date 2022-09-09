@@ -51,8 +51,6 @@ def index():
             stress_factor_value = sf[1]
     if global_stress:
         data[global_stress] = stress_factor_value
-        url = router.prefix
-        data["links"] = [{"rel": "rel", "href": url}]
 
     else:
         raise HTTPException(status_code=404, detail="Unable to retrieve STRESS_FACTOR")

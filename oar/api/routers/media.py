@@ -116,7 +116,6 @@ def ls(
 
     data = {}
     data["total"] = len(list_paginated)
-    data["links"] = [{"rel": "rel", "href": "/media/ls/{path}".format(path=path)}]
     data["offset"] = offset
     data["items"] = list_paginated
 
@@ -232,7 +231,6 @@ def post_file(
             )
 
     data = {}
-    data["links"] = [{"rel": "rel", "href": "/media/" + path_filename}]
     data["status"] = "created"
     data["success"] = "true"
 

@@ -62,6 +62,7 @@ def index(
     data["total"] = page.total
     data["offset"] = offset
     data["items"] = []
+
     if details:
         jobs_resources = db.queries.get_assigned_jobs_resources(page.items)
         pass
