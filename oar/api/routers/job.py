@@ -44,8 +44,8 @@ def attach_nodes(job, jobs_resources):
 def index(
     request: Request,
     user: str = None,
-    start_time: int = 0,
-    stop_time: int = 0,
+    start_time: int = None,
+    stop_time: int = None,
     states: List[str] = Query([]),
     array: int = None,
     job_ids: List[int] = [],
