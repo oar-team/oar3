@@ -9,7 +9,7 @@ logger = get_logger("oar.kao")
 
 def main():
     logger.info("Starting Kao Meta Scheduler")
-    meta_schedule(config["METASCHEDULER_MODE"])
+    return meta_schedule(config["METASCHEDULER_MODE"])
 
 
 if __name__ == "__main__":  # pragma: no cover
