@@ -36,10 +36,10 @@ quotas_simple_temporal_rules = {
 def minimal_db_initialization(request):
     with db.session(ephemeral=True):
         db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+            name="default", priority=0, scheduler_policy="kamelot", state="Active"
         )
         db["Queue"].create(
-            name="admin", priority=0, scheduler_policy="kamelot", state="Active"
+            name="admin", priority=100, scheduler_policy="kamelot", state="Active"
         )
         # add some resources
         for i in range(5):
@@ -495,7 +495,7 @@ def test_db_all_in_one_AR_7(monkeypatch):
 def test_db_all_in_one_BE(monkeypatch):
 
     db["Queue"].create(
-        name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
+        name="besteffort", priority=0, scheduler_policy="kamelot", state="Active"
     )
 
     insert_job(

@@ -15,7 +15,7 @@ def get_all_queue_by_priority():
 
 def get_queues_groupby_priority():
     """Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
-    queues_ordered = db.query(Queue).order_by(Queue.priority.asc()).all()
+    queues_ordered = db.query(Queue).order_by(Queue.priority.desc()).all()
     res = []
 
     for key, queues_group in groupby(queues_ordered, lambda q: q.priority):
