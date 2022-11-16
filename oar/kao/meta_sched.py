@@ -516,10 +516,10 @@ def check_besteffort_jobs_to_kill(
                         logger.debug(
                             "Resource "
                             + str(rid)
-                            + "need to be freed for job "
-                            + str(be_job.id)
-                            + ": killing besteffort job "
+                            + " need(s) to be freed for job "
                             + str(job_to_launch.id)
+                            + ": killing besteffort job "
+                            + str(be_job.id)
                         )
 
                         add_new_event(
