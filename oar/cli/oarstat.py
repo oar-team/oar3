@@ -169,8 +169,14 @@ def print_jobs(legacy, jobs, json=False):
         print_table(jobs, get_table_lines)
     elif json:
         # TODO to enhance
+        to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
-        print(dumps([{**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs]))
+        jobs_properties = [
+            {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
+        ]
+        for job in jobs_properties:
+            to_dump[job["id"]] = job
+        print(dumps(to_dump))
     else:
         print(jobs)
 
