@@ -273,7 +273,7 @@ def test_oarstat_full_json():
         parsed_json = json.loads(str_result)
         assert len(parsed_json) == NB_JOBS
         for job in parsed_json:
-            assert "cpuset_name" in job
+            assert "cpuset_name" in parsed_json[job]
 
     except ValueError:
         assert False
@@ -287,13 +287,16 @@ def test_oarstat_json_only_one_job():
         )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["--json", "--full", "-j", str(jid)])
+    result = runner.invoke(
+        cli, ["--json", "--full", "-j", str(jid), "-j", str(jid - 1)]
+    )
     str_result = result.output
-    print(str_result)
+
     try:
         parsed_json = json.loads(str_result)
-        assert len(parsed_json) == 1
-        assert parsed_json[0]["id"] == jid
+        print(parsed_json)
+        assert len(parsed_json) == 2
+        assert parsed_json[str(jid)]["id"] == jid
     except ValueError:
         assert False
     assert result.exit_code == 0
