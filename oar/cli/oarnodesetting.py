@@ -12,6 +12,7 @@ import click
 
 import oar.lib.tools as tools
 from oar import VERSION
+from oar.lib import db
 from oar.lib.database import wait_db_ready
 from oar.lib.job_handling import get_job
 from oar.lib.node import (
@@ -69,6 +70,9 @@ def wait_end_of_running_jobs(cmd_ret, jobs):
         count = 0
         while True:
             job = get_job(job_id)
+            # Without this commit get_job keeps polling old data even
+            # if the job state is changing. Maybe there is a better way...
+            db.commit()
             if (
                 job.state == "Terminated"
                 or job.state == "Error"
