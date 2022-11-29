@@ -351,17 +351,17 @@ class NodeChangeState(object):
                             frag_job(job_id)
                             self.exit_code = 2
 
-                        else:
-                            logger.debug(
-                                "("
-                                + resource.network_address
-                                + ") "
-                                + str(r_id)
-                                + "is already in the "
-                                + next_state
-                                + " state"
-                            )
-                            set_resource_nextState(r_id, "UnChanged")
+                    else:
+                        logger.debug(
+                            "("
+                            + resource.network_address
+                            + ") "
+                            + str(r_id)
+                            + "is already in the "
+                            + next_state
+                            + " state"
+                        )
+                        set_resource_nextState(r_id, "UnChanged")
 
         email = None
         for network_address, rid_next_state in debug_info.items():
