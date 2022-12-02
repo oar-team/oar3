@@ -316,7 +316,8 @@ def test_oarstat_job_id_error():
     )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-j", "1", "-J"])
+    result = runner.invoke(cli, ["-j", str(jid), "-J"])
+
     print(result.output)
     str_result = result.output
 
