@@ -47,7 +47,7 @@ class BaseQuery(Query):
     def filter_jobs_for_user(
         self, user, from_time, to_time, states, job_ids, array_id, sql_property
     ):
-        if not states and (not job_ids or not array_id):
+        if not states and not (job_ids or array_id):
             states = [
                 "Finishing",
                 "Running",

@@ -307,3 +307,25 @@ def test_oarstat_job_id_array_error():
     result = runner.invoke(cli, ["-j", "1", "--array", "1"])
     print(result.output)
     assert result.exit_code == 1
+
+
+def test_oarstat_job_id_error():
+    # Error jobs
+    jid = insert_job(
+        res=[(60, [("resource_id=4", "")])], user="toto", properties="", state="Error"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-j", "1", "-J"])
+    print(result.output)
+    str_result = result.output
+
+    try:
+        parsed_json = json.loads(str_result)
+        print(parsed_json)
+        assert len(parsed_json) == 1
+        assert parsed_json[str(jid)]["id"] == jid
+
+    except ValueError:
+        assert False
+    assert result.exit_code == 0
