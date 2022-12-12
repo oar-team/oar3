@@ -85,6 +85,7 @@ dependencies:
         - `poetry <https://python-poetry.org/docs/#installation>`_
         - pip3
         - libpq package
+        - taktuk
 
 **On Debian you can use the following command**::
 
@@ -228,7 +229,8 @@ server has the address <OAR_SERVER>, you can add the following lines in the
 Using Taktuk
 ~~~~~~~~~~~~
 
-If you want to use taktuk to manage remote administration commands, you have to
+
+OAR3 uses taktuk for remote administration operations; you have to
 install it. You can find information about taktuk from its website:
 http://taktuk.gforge.inria.fr.
 

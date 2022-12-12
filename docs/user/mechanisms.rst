@@ -35,9 +35,7 @@ OAR system steps:
 
  1. Before each job, the Runner initialize the CPUSET (see `CPUSET
     definition`) with OPENSSH_CMD and an efficient launching tool :
-    `Taktuk <http://taktuk.gforge.inria.fr/>`_. If it is not
-    installed and configured (TAKTUK_CMD) then OAR uses an internal
-    launching tool less optimized.
+    `Taktuk <http://taktuk.gforge.inria.fr/>`_.
     The processors assigned to this cpuset are taken from the defined database
     field by JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD in the table resources.
 
