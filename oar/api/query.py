@@ -8,8 +8,6 @@ from oar.lib.basequery import BaseQuery, BaseQueryCollection
 # from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property, row2dict
 
-from .url_utils import replace_query_params
-
 
 class APIQuery(BaseQuery):
     def get_or_404(self, ident):
@@ -24,19 +22,18 @@ class APIQuery(BaseQuery):
         except Exception:
             abort(404)
 
-    def paginate(self, request, offset, limit, error_out=True):
+    def paginate(self, offset, limit, error_out=True):
         if limit is None:
             limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
         if error_out and offset < 0:
             abort(404)
-        return PaginationQuery(self, request, offset, limit, error_out)
+        return PaginationQuery(self, offset, limit, error_out)
 
 
 class PaginationQuery(object):
     """Internal helper class returned by :meth:`APIBaseQuery.paginate`."""
 
-    def __init__(self, query, request, offset, limit, error_out):
-        self.request = request
+    def __init__(self, query, offset, limit, error_out):
         self.query = query.limit(limit).offset(offset)
         self.items = self.query.all()
         self.offset = offset
@@ -78,49 +75,6 @@ class PaginationQuery(object):
     def has_previous(self):
         """True if a previous page exists."""
         return self.current_page > 1
-
-    @cached_property
-    def next_url(self):
-        """Returns the next url for the current endpoint."""
-        if self.has_next:
-            dict_params = dict(self.request.query_params)
-            # dict_params.update(request.view_args.copy())
-            dict_params["offset"] = self.offset + self.limit
-            dict_params["limit"] = self.limit
-            endpoint_url = self.request.url.path
-            return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def previous_url(self):
-        """Returns the next previous for the current endpoint."""
-        if self.has_previous:
-            dict_params = dict(self.request.query_params)
-            # dict_params.update(request.view_args.copy())
-            dict_params["offset"] = self.offset - self.limit
-            dict_params["limit"] = self.limit
-            endpoint_url = self.request.url.path
-            return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def current_url(self):
-        """Returns the url for the current endpoint."""
-        dict_params = dict(self.request.query_params)
-        # dict_params.update(request.view_args.copy())
-        dict_params["offset"] = self.offset
-        if self.limit > 0:
-            dict_params["limit"] = self.limit
-        endpoint_url = self.request.url.path
-        return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def links(self):
-        links = []
-        if self.has_previous:
-            links.append({"rel": "previous", "href": self.previous_url})
-        links.append({"rel": "self", "href": self.current_url})
-        if self.has_next:
-            links.append({"rel": "next", "href": self.next_url})
-        return links
 
     def __iter__(self):
         for item in self.items:

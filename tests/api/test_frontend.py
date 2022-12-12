@@ -10,7 +10,6 @@ def test_app_frontend_index(client):
     res = client.get("/")
     print(res.json)
     assert res.status_code == 200 and "api_timestamp" in res.json()
-    assert "links" in res.json()
 
 
 def test_app_frontend_version(client):
