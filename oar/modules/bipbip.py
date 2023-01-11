@@ -64,6 +64,8 @@ class BipBip(object):
 
     def run(self):
         job_id = self.job_id
+        logger.info(f"Bipbip up for job {job_id}")
+
         if not job_id:
             self.exit_code = 1
             return
@@ -612,6 +614,7 @@ class BipBip(object):
 
 
 def main():  # pragma: no cover
+    logger.info("Starting [{}]".format(os.path.basename(sys.argv[0])))
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:])
         try:
@@ -625,6 +628,7 @@ def main():  # pragma: no cover
                 )
             )
 
+        logger.info("Return from [{}]".format(os.path.basename(sys.argv[0])))
         return bipbip.exit_code
     else:
         return 1

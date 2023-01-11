@@ -134,7 +134,7 @@ def launch_command(command):
     # TODO move to oar.lib.tools
     # global finishTag
 
-    logger.debug("Launching command : [" + command + "]")
+    logger.info("Launching command : [" + os.path.basename(command) + "]")
 
     p = tools.Popen(command, stdout=tools.PIPE, stderr=tools.PIPE, shell=True)
     stdout, stderr = p.communicate()
@@ -145,7 +145,7 @@ def launch_command(command):
 
     if return_code != 0:
         logger.debug("Command failed with error: {}".format(stderr.decode("utf-8")))
-
+    logger.info("Command : [" + os.path.basename(command) + "] returned")
     return return_code
 
 
@@ -424,7 +424,7 @@ class Almighty(object):
                 else:
                     self.scheduler_wanted = 1
                     self.state = "Time update"
-                    logger.debug(
+                    logger.info(
                         "Scheduler call too early, waiting... ("
                         + str(current_time)
                         + ">= ("

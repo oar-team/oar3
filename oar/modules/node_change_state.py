@@ -43,7 +43,7 @@ from oar.lib.resource_handling import (
 )
 
 logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
-logger.info("Start Node Change State")
+logger.info("Starting [{}]".format(os.path.basename(sys.argv[0])))
 
 
 class NodeChangeState(object):
@@ -492,6 +492,7 @@ class NodeChangeState(object):
 def main():
     node_change_state = NodeChangeState()
     node_change_state.run()
+    logger.info("Returning from [{}]".format(os.path.basename(sys.argv[0])))
     return node_change_state.exit_code
 
 

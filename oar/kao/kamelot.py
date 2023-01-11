@@ -55,8 +55,12 @@ def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
 
 
 def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
-
     resource_set = plt.resource_set()
+    logger.info(
+        "Begin internal scheduling....now: {}, queue(s): {}".format(
+            now, " ".join([q for q in queues])
+        )
+    )
 
     #
     # Retrieve waiting jobs
@@ -91,9 +95,10 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
         #
         # Save assignement
         #
-        logger.info("save assignement")
-
+        logger.info("saving assignement")
         plt.save_assigns(waiting_jobs, resource_set)
+        logger.info("assignement saved")
+
     else:
         logger.info("no waiting jobs")
 

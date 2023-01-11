@@ -194,6 +194,7 @@ def notify_to_run_job(jid):
         if 0:  # TODO OAR::IO::is_job_desktop_computing
             logger.debug(str(jid) + ": Desktop computing job, I don't handle it!")
         else:
+            logger.info(f"Notify job to run: {jid}")
             if config["METASCHEDULER_OAR3_WITH_OAR2"] == "yes":
                 logger.debug("OAR2 MODE")
                 completed = tools.notify_oar2_almighty("OARRUNJOB_{}".format(jid))

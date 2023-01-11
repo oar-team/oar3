@@ -10,7 +10,7 @@ import click
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
-from oar.lib import Job, config, db
+from oar.lib import Job, config, db, get_logger
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
@@ -23,6 +23,8 @@ from oar.lib.submission import JobParameters, Submission, check_reservation, lst
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
 
 from .utils import CommandReturns
+
+logger = get_logger("oar.cli.oarsub", forward_stderr=False)
 
 click.disable_unicode_literals_warning = True
 
@@ -215,6 +217,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             + " via the node "
             + host_to_connect_via_ssh
         )
+
         return_code = tools.run(cmd, shell=True).returncode
 
         exit_value = return_code >> 8
@@ -435,7 +438,12 @@ def cli(
 
     global job_id_lst
 
-    cmd_ret = CommandReturns()
+    user = os.environ["OARDO_USER"]
+    oarsub_pid = os.getpid()
+
+    logger.info(f"oarsub from {name} with pid {oarsub_pid}: enters")
+
+    cmd_ret = CommandReturns(logger=logger)
 
     log_warning = ""  # TODO
     log_error = ""
@@ -685,6 +693,7 @@ def cli(
                 break
 
         if answer == "GOOD JOB":
+            logger.info(f"oarsub with pid {oarsub_pid} can now connect to job")
             connect_job(job_id_lst[0], 1, openssh_cmd, cmd_ret)
         else:
             cmd_ret.exit(11)

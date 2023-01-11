@@ -11,12 +11,13 @@ class CommandReturns(object):
     ERROR = 3
     TAG2STR = {PRINT: "", INFO: "", WARNING: "#WARNING: ", ERROR: "#ERROR: "}
 
-    def __init__(self, cli=True):
+    def __init__(self, cli=True, logger=None):
         self.cli = cli
         self.buffering = not cli
         self.buffer = []
         self.exit_values = []
         self.final_exit = 0
+        self.logger = logger
 
     def _print(self, msg_typed_value):
         tag, objs, error = msg_typed_value
@@ -77,6 +78,11 @@ class CommandReturns(object):
         self.final_exit = exit_value
 
     def exit(self, error=None):
+        import os
+
+        pid = os.getpid()
+        if self.logger:
+            self.logger.info(f"oarsub with pid {pid}: exit with code {error}")
         if error:
             exit(error)
         else:

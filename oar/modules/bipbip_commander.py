@@ -125,7 +125,7 @@ class BipbipCommander(object):
             # add_timeout if bipbip_leon_commands_to_run is not empty
             try:
                 command = self.notification.recv_json()
-                logger.debug("bipbip commander received notification:" + str(command))
+                logger.info("bipbip commander received notification: " + str(command))
                 self.bipbip_leon_commands_to_run.append(command)
 
             except zmq.error.Again as e:
@@ -144,6 +144,7 @@ class BipbipCommander(object):
 
                 command = self.bipbip_leon_commands_to_run.pop(0)
                 job_id = command["job_id"]
+                logger.info(f"Handling {job_id}")
                 flag_exec = True
 
                 if job_id in self.bipbip_leon_executors:
@@ -162,6 +163,7 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
+                    logger.info(f"Start command [{command}]")
                     executor = tools.Process(
                         target=bipbip_leon_executor, args=(), kwargs=command
                     )
