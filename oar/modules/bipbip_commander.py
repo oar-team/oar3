@@ -29,6 +29,7 @@ Example:
 
 """  # noqa: W605
 
+import multiprocessing
 import os
 import socket
 
@@ -91,6 +92,26 @@ def bipbip_leon_executor(*args, **command):
     tools.call(cmd_arg)
 
 
+def prepare_bipbip(queue):
+    cmd_arg = [bipbip_command, "--wait"]
+    process = tools.Popen(cmd_arg, stdin=tools.PIPE, stdout=tools.PIPE)
+
+    logger.info("Got one bipbip up and running waiting for my start")
+    command = queue.get()
+    logger.info(f" Got data from queue: {command}")
+
+    job_id = command["job_id"]
+    cmd_arg = " ".join(command["args"])
+    input = f"{job_id} {cmd_arg}\n"
+
+    logger.info(f"sending: {input}")
+
+    out = process.communicate(input=input.encode())
+    queue.task_done()
+
+    logger.debug(str(out))
+
+
 class BipbipCommander(object):
     def __init__(self):
         # Initialize zeromq context
@@ -115,6 +136,9 @@ class BipbipCommander(object):
         self.bipbip_leon_commands_to_requeue = []
         self.bipbip_leon_executors = {}
 
+        self.bipbip_pool_max = 0
+        self.bipbip_pool = []
+
     def set_notification_timeout(self, timeout):
         """Set timeout for zmq notification socket"""
         self.notification.RCVTIMEO = timeout
@@ -122,6 +146,15 @@ class BipbipCommander(object):
     def run(self, loop=True):
         # TODO: add a shutdown procedure
         while True:
+            while len(self.bipbip_pool) < self.bipbip_pool_max:
+                logger.debug("Preparing a bipbip to fasten next job execution")
+                q = multiprocessing.Queue()
+
+                executor = tools.Process(target=prepare_bipbip, args=(q,))
+                executor.start()
+
+                self.bipbip_pool.append((executor, q))
+
             # add_timeout if bipbip_leon_commands_to_run is not empty
             try:
                 command = self.notification.recv_json()
@@ -162,13 +195,18 @@ class BipbipCommander(object):
                         self.bipbip_leon_commands_to_requeue.append(command)
 
                 if flag_exec:
-                    # exec
-                    logger.info(f"Start command [{command}]")
-                    executor = tools.Process(
-                        target=bipbip_leon_executor, args=(), kwargs=command
-                    )
-                    executor.start()
-                    self.bipbip_leon_executors[job_id] = executor
+                    if self.bipbip_pool and command["cmd"] != "LEONEXTERMINATE":
+                        bipbip_thread, q = self.bipbip_pool.pop()
+                        q.put(command)
+                        self.bipbip_leon_executors[job_id] = bipbip_thread
+                    else:
+                        # exec
+                        logger.info(f"Start command [{command}]")
+                        executor = tools.Process(
+                            target=bipbip_leon_executor, args=(), kwargs=command
+                        )
+                        executor.start()
+                        self.bipbip_leon_executors[job_id] = executor
 
             # append commands to requeue
             self.bipbip_leon_commands_to_run += self.bipbip_leon_commands_to_requeue

@@ -1,11 +1,13 @@
 # coding: utf-8
+from multiprocessing import Process
+
 from oar.lib.tools import TimeoutExpired
 
 fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
 
 
 class FakePopen(object):
-    def __init__(self, cmd, env={}, stdout=None, stderr=None, shell=True):
+    def __init__(self, cmd, env={}, stdin=None, stdout=None, stderr=None, shell=True):
         print("Command: {}".format(cmd))
         print("Env: {}".format(env))
 
@@ -31,7 +33,8 @@ class FakePopen(object):
 
         return exit_value
 
-    def communicate(self):
+    def communicate(self, input=b""):
+        fake_popen["input"] = input
         return (b"", b"")
 
 
@@ -41,10 +44,42 @@ fake_process = {"is_alive": True}
 class FakeProcess(object):
     def __init__(self, **kargs):
         self.target = kargs["target"]
-        self.kwargs = kargs["kwargs"]
+        if "args" in kargs:
+            self.args = kargs["args"]
+        else:
+            self.args = ()
+
+        if "kwargs" in kargs:
+            self.kwargs = kargs["kwargs"]
+        else:
+            self.kwargs = {}
 
     def start(self):
-        self.target(**self.kwargs)
+        self.target(*self.args, **self.kwargs)
+
+    def join(self):
+        pass
+
+    def is_alive(self):
+        return fake_process["is_alive"]
+
+
+class FakeProcessThreaded(object):
+    def __init__(self, **kargs):
+        self.target = kargs["target"]
+        if "args" in kargs:
+            self.args = kargs["args"]
+        else:
+            self.args = ()
+
+        if "kwargs" in kargs:
+            self.kwargs = kargs["kwargs"]
+        else:
+            self.kwargs = {}
+
+    def start(self):
+        Process(target=self.target, args=self.args, kwargs=self.kwargs)
+        # self.target(*self.args, **self.kwargs)
 
     def join(self):
         pass

@@ -616,7 +616,18 @@ class BipBip(object):
 def main():  # pragma: no cover
     logger.info("Starting [{}]".format(os.path.basename(sys.argv[0])))
     if len(sys.argv) > 1:
-        bipbip = BipBip(sys.argv[1:])
+
+        args = sys.argv[1:]
+
+        if sys.argv[1] == "--wait":
+            logger.info("Bipbip waiting")
+
+            line = sys.stdin.readline()
+            args = line.split(" ")
+
+            logger.info(f"Bipbip has command: {args} {line}")
+
+        bipbip = BipBip(args)
         try:
             bipbip.run()
         except Exception as ex:

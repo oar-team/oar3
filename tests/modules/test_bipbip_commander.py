@@ -7,7 +7,7 @@ import oar.lib.tools
 from oar.lib import config
 from oar.modules.bipbip_commander import BipbipCommander
 
-from ..faketools import FakeProcess, fake_call, fake_called_command
+from ..faketools import FakePopen, FakeProcess, fake_call, fake_called_command
 from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
@@ -18,6 +18,7 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, "Context", FakeZmq)
     monkeypatch.setattr(oar.lib.tools, "call", fake_call)  # TO DEBUG, doesn't work
     monkeypatch.setattr(oar.lib.tools, "Process", FakeProcess)
+    monkeypatch.setattr(oar.lib.tools, "Popen", FakePopen)
 
 
 @pytest.fixture(scope="function", autouse=True)
