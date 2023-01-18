@@ -108,8 +108,26 @@ Job sorting
 
 This function can be used to customize the jobs priority by tuning the order by which the jobs are precessed by the scheduler.
 
+To use this function, one needs to use the following options on the oar configuration file:
+
+.. code-block:: bash
+        :caption: Example of configuration to change the jog sorting function
+
+        JOB_PRIORITY="CUSTOM" # Mandatory
+        # Should be the name of the function registered by your plugin under the namespace `oar.jobs_sorting_func` 
+        CUSTOM_JOB_SORTING="simple_priority"
+        # It is also possible to pass data to the algorithm. Any string is valid as long your function knows how to parse it.
+        CUSTOM_JOB_SORTING_CONFIG="{ data: 'fifo' }"
+
 Extra meta_metasched
 ~~~~~~~~~~~~~~~~~~~~
 
 This function is called by the meta scheduler (:func:`oar.kao.meta_sched.meta_schedule`) at each scheduling loop.
 Note, that it is called once for each different priority level of queues (i.e if two queues have the same priority it will be called once for both queue).
+
+Use the following configuration option to change the meta scheduler function:
+
+.. code-block:: bash
+        :caption: Example of configuration to change the metasched function `foo`.
+
+        EXTRA_METASCHED_CONFIG="foo"
