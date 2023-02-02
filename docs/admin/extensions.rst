@@ -103,6 +103,24 @@ The find function (``oar.find_func``) is supposed to, given a resources hierarch
 Under the hood, the ``assign_func`` calls the ``find_func`` on every slot of the slot set.
 Without extension, the default behavior of OAR, is to call the function :func:`oar.kao.scheduling.find_resource_hierarchies_job`.
 
+
+The functions can used by assigning a type corresponding to the name of the function declared in the pyproject as a job type.
+
+
+.. code-block:: bash
+        :caption: Example of configuration to add assing and find to a job
+
+        # For the assign function
+        oarsub -t assign=default:param1:param2:named_param=value "sleep 1h"
+
+        # For the find function
+        oarsub -t find=default:param1:param2:named_param=value "sleep 1h"
+
+        # Note that both can be used at the same time
+        oarsub -t assign=default:param1:param2:named_param=value -t find=default:param1:param2:named_param=value "sleep 1h"
+
+
+
 Job sorting
 ~~~~~~~~~~~
 
