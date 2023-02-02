@@ -392,7 +392,6 @@ def delete(job_id, array=None):
 @app.route("/<int:job_id>/signal/<int:signal>", methods=["POST"])
 @app.need_authentication()
 def signal(job_id, signal=None):
-
     user = g.current_user
 
     if signal:
@@ -412,7 +411,6 @@ def signal(job_id, signal=None):
 @app.route("/<int:job_id>/<any(hold, rhold):hold>", methods=["POST"])
 @app.need_authentication()
 def hold(job_id, hold):
-
     user = g.current_user
 
     running = False
@@ -442,7 +440,6 @@ def resume(job_id):
 @app.route("/<int:job_id>/walltime-change/<int:new_walltime>", methods=["POST"])
 @app.need_authentication()
 def walltime_change(job_id, signal=None):
-
     user = g.current_user
 
     if signal:

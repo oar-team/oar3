@@ -157,7 +157,6 @@ def test_quotas_one_job_rule_nb_res_2():
 
 
 def test_quotas_four_jobs_rule_1():
-
     Quotas.enabled = True
     Quotas.default_rules = {
         ("*", "*", "*", "/"): [16, -1, -1],
@@ -214,7 +213,6 @@ def test_quotas_four_jobs_rule_1():
 
 
 def test_quotas_three_jobs_rule_1():
-
     Quotas.enabled = True
     Quotas.default_rules = {
         ("*", "*", "*", "/"): [16, -1, -1],
@@ -262,7 +260,6 @@ def test_quotas_three_jobs_rule_1():
 
 
 def test_quotas_two_job_rules_nb_res_quotas_file():
-
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
 
@@ -314,7 +311,6 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
 
 def test_quotas_two_jobs_job_type_proc():
-
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
 

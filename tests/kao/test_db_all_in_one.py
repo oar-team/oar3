@@ -107,7 +107,6 @@ def create_quotas_rules_file(quotas_rules):
 
 
 def insert_and_sched_ar(start_time, walltime=60):
-
     insert_job(
         res=[(walltime, [("resource_id=4", "")])],
         reservation="toSchedule",
@@ -279,7 +278,6 @@ def test_db_all_in_one_quotas_2(monkeypatch):
 
 @pytest.mark.usefixtures("active_quotas")
 def test_db_all_in_one_quotas_AR(monkeypatch):
-
     create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
 
     job = insert_and_sched_ar(get_date() + 10)
@@ -384,14 +382,12 @@ def test_db_all_in_one_temporal_quotas_AR_2(monkeypatch):
 
 
 def test_db_all_in_one_AR_2(monkeypatch):
-
     job = insert_and_sched_ar(get_date() - 1000)
     print(job.state, " ", job.reservation)
     assert job.state == "Error"
 
 
 def test_db_all_in_one_AR_3(monkeypatch):
-
     now = get_date()
     job = insert_and_sched_ar(now + 1000)
     new_start_time = now - 2000
@@ -411,7 +407,6 @@ def test_db_all_in_one_AR_3(monkeypatch):
 
 
 def test_db_all_in_one_AR_4(monkeypatch):
-
     now = get_date()
     job = insert_and_sched_ar(now + 10)
     new_start_time = now - 20
@@ -430,7 +425,6 @@ def test_db_all_in_one_AR_4(monkeypatch):
 
 
 def test_db_all_in_one_AR_5(monkeypatch):
-
     now = get_date()
     job = insert_and_sched_ar(now + 10)
     new_start_time = now - 20
@@ -453,7 +447,6 @@ def test_db_all_in_one_AR_5(monkeypatch):
 
 
 def test_db_all_in_one_AR_6(monkeypatch):
-
     now = get_date()
     job = insert_and_sched_ar(now + 10, 600)
     new_start_time = now - 350
@@ -476,7 +469,6 @@ def test_db_all_in_one_AR_6(monkeypatch):
 
 
 def test_db_all_in_one_AR_7(monkeypatch):
-
     now = get_date()
     insert_job(
         res=[(60, [("resource_id=4", "")])],
@@ -493,7 +485,6 @@ def test_db_all_in_one_AR_7(monkeypatch):
 
 
 def test_db_all_in_one_BE(monkeypatch):
-
     db["Queue"].create(
         name="besteffort", priority=0, scheduler_policy="kamelot", state="Active"
     )
@@ -513,7 +504,6 @@ def test_db_all_in_one_BE(monkeypatch):
 
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
 def test_db_all_in_one_BE_to_kill(monkeypatch):
-
     os.environ["USER"] = "root"  # to allow fragging
     db["Queue"].create(
         name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
@@ -546,7 +536,6 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
 
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
 def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
-
     os.environ["USER"] = "root"  # to allow fragging
     db["Queue"].create(
         name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
@@ -606,7 +595,6 @@ def test_db_all_in_one_BE_2(monkeypatch):
 
 @pytest.mark.usefixtures("active_energy_saving")
 def test_db_all_in_one_wakeup_node_1(monkeypatch):
-
     insert_job(res=[(60, [("resource_id=4", "")])], properties="")
 
     now = get_date()
@@ -627,7 +615,6 @@ def test_db_all_in_one_wakeup_node_1(monkeypatch):
 
 @pytest.mark.usefixtures("active_energy_saving")
 def test_db_all_in_one_sleep_node_1(monkeypatch):
-
     now = get_date()
 
     insert_job(res=[(60, [("resource_id=1", "")])], properties="")

@@ -113,6 +113,5 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(job_id, running, array, sql, version):
-
     cmd_ret = oarhold(job_id, running, array, sql, version, None)
     cmd_ret.exit()

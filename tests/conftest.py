@@ -14,7 +14,6 @@ from . import DEFAULT_CONFIG
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
-
     config.update(DEFAULT_CONFIG.copy())
     tempdir = tempfile.mkdtemp()
     config["LOG_FILE"] = os.path.join(tempdir, "oar.log")

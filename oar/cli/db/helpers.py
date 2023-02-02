@@ -156,7 +156,6 @@ re_color_codes = re.compile(r"\033\[(\d;)?\d+m")
 
 
 class AnsiColorFormatter(logging.Formatter):
-
     LEVELS = {
         "WARNING": red(" WARN"),
         "INFO": blue(" INFO"),

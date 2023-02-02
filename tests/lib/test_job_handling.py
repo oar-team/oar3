@@ -45,7 +45,6 @@ def monkeypatch_tools(request, monkeypatch):
     ],
 )
 def test_check_end_of_job(error, event_type):
-
     config["OAREXEC_DIRECTORY"] = "/tmp/foo"
     job_id = insert_job(
         res=[(60, [("resource_id=4", "")])], properties="", state="Launching"

@@ -165,7 +165,6 @@ def test_node_change_state_job_suspend_resume():
 
 
 def test_node_change_state_job_suspend_resume_error():
-
     global fake_exec_with_timeout_return
     fake_exec_with_timeout_return = "foo_msg_error"
 

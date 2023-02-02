@@ -21,7 +21,6 @@ def add_new_event(ev_type, job_id, description, to_check="YES"):
 
 
 def add_new_event_with_host(ev_type, job_id, description, hostnames):
-
     ins = EventLog.__table__.insert().values(
         {
             "type": ev_type,

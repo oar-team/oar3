@@ -33,7 +33,6 @@ def setup(request):
 
 
 def test_appendice_proxy_simple(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["yop"]
 
     appendice_proxy = AppendiceProxy()
@@ -43,7 +42,6 @@ def test_appendice_proxy_simple(monkeypatch):
 
 
 def test_appendice_proxy_OAREXEC(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["OAREXEC_10_2_N_34"]
 
     appendice_proxy = AppendiceProxy()
@@ -57,7 +55,6 @@ def test_appendice_proxy_OAREXEC(monkeypatch):
 
 
 def test_appendice_proxy_OARRUNJOB(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["OARRUNJOB_42"]
 
     appendice_proxy = AppendiceProxy()
@@ -67,7 +64,6 @@ def test_appendice_proxy_OARRUNJOB(monkeypatch):
 
 
 def test_appendice_proxy_LEONEXTERMINATE(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["LEONEXTERMINATE_42"]
 
     appendice_proxy = AppendiceProxy()

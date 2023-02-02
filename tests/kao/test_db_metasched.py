@@ -49,7 +49,6 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_db_metasched_simple_1(monkeypatch):
-
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
     insert_job(res=[(60, [("resource_id=4", "")])], properties="")
     job = db["Job"].query.one()

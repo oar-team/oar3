@@ -301,7 +301,6 @@ def exec_gene_tokens(options):
 
 @pytest.mark.skip(reason="Bug pending........................")
 def test_bataar_tokens_no_db():
-
     result, sent_msgs = exec_gene_tokens(["-dno-db", "--tokens=4"])
     print("Messages sent:", sent_msgs)
     assert order_json_str_arrays(sent_msgs[0]) == SENT_MSGS_2

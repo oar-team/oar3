@@ -21,7 +21,6 @@ def minimal_db_initialization(request):
 
 
 def test_db_kamelot_1(minimal_db_initialization):
-
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default", time.time()]
     main()
@@ -31,7 +30,6 @@ def test_db_kamelot_1(minimal_db_initialization):
 
 
 def test_db_kamelot_2(minimal_db_initialization):
-
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default"]
     main()
@@ -41,7 +39,6 @@ def test_db_kamelot_2(minimal_db_initialization):
 
 
 def test_db_kamelot_3(minimal_db_initialization):
-
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot"]
     main()
@@ -53,7 +50,6 @@ def test_db_kamelot_3(minimal_db_initialization):
 @pytest.fixture(scope="function", autouse=False)
 def properties_init(request):
     with db.session(ephemeral=True):
-
         for i in range(4):
             db["Resource"].create(network_address="localhost")
 

@@ -77,7 +77,6 @@ bipbip_command = os.path.join(binpath, "oar-bipbip")
 
 
 def bipbip_leon_executor(*args, **command):
-
     job_id = command["job_id"]
 
     if command["cmd"] == "LEONEXTERMINATE":
@@ -141,7 +140,6 @@ class BipbipCommander(object):
                 len(self.bipbip_leon_commands_to_run) > 0
                 and len(self.bipbip_leon_executors.keys()) <= Max_bipbip_processes
             ):
-
                 command = self.bipbip_leon_commands_to_run.pop(0)
                 job_id = command["job_id"]
                 flag_exec = True

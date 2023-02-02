@@ -66,7 +66,6 @@ class Platform(object):
         return self.env.now
 
     def get_waiting_jobs_simu(self, queue):
-
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []
@@ -147,7 +146,6 @@ class SimuPlatform(Platform):
         print("get_sum_accounting_by_user NOT IMPLEMENTED")
 
     def get_waiting_jobs(self, queue):
-
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []

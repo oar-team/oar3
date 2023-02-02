@@ -77,7 +77,6 @@ def monkeypatch_tools(request, monkeypatch):
     reason="Needs batsim which is currently disabled because of a pybatsim installation issue with poetry"
 )
 def test_simple_submission(monkeypatch):
-
     now = str(get_date())
 
     # 2:1484687842.0|1484687842.0:S:1

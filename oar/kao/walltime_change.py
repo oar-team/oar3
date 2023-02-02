@@ -14,7 +14,6 @@ logger = get_logger("oar.kao.walltime_change")
 
 
 def process_walltime_change_requests(plt):
-
     now = plt.get_time()
     walltime_change_apply_time = config["WALLTIME_CHANGE_APPLY_TIME"]
     walltime_increment = config["WALLTIME_INCREMENT"]
@@ -22,7 +21,6 @@ def process_walltime_change_requests(plt):
     job_wtcs = get_jobs_with_walltime_change()
 
     for job_id, job in job_wtcs.items():
-
         suspended = get_job_suspended_sum_duration(job_id, now)
         fit = job.pending
         if fit > 0:

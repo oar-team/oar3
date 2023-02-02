@@ -39,7 +39,6 @@ oar2_almighty_socket = None
 
 
 def notify_user(job, state, msg):  # pragma: no cover
-
     if job.notify:
         tags = ["RUNNING", "END", "ERROR", "INFO", "SUSPENDED", "RESUMING"]
         m = re.match(r"^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$", job.notify)
@@ -131,7 +130,6 @@ def create_almighty_socket():  # pragma: no cover
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
-
     if not almighty_socket:
         create_almighty_socket()
 

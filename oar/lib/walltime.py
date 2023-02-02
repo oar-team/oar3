@@ -54,7 +54,6 @@ def get_walltime_change_for_job(job_id):
 
 
 def get(job_id):
-
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"
@@ -148,7 +147,6 @@ def get(job_id):
 
 
 def request(job_id, user, new_walltime, force, delay_next_jobs):
-
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"

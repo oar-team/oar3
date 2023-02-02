@@ -82,7 +82,6 @@ class NodeChangeState(object):
                         and (is_an_event_exists(job_id, "SEND_KILL_JOB") == 0)
                         and ((job.stop_time - job.start_time) > 60)
                     ):
-
                         new_job_id = resubmit_job(job_id)
                         logger.warning(
                             "Resubmiting job "
@@ -278,7 +277,6 @@ class NodeChangeState(object):
 
             # Check Suspend/Resume job feature
             if event.type in ["HOLD_WAITING_JOB", "HOLD_RUNNING_JOB", "RESUME_JOB"]:
-
                 if event.type != "RESUME_JOB" and job.state == "Waiting":
                     set_job_state(job_id, "Hold")
                     if job.type == "INTERACTIVE":

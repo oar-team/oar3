@@ -128,7 +128,6 @@ def get_file(
     tail: Optional[int] = None,
     user: str = Depends(need_authentication),
 ):
-
     path_filename, env = user_and_filename_setup(user, path_filename)
 
     # Check file's existence
@@ -192,7 +191,6 @@ def post_file(
     force: Optional[bool] = False,
     user: str = Depends(need_authentication),
 ):
-
     path_filename, env = user_and_filename_setup(user, file.filename)
     # Check file's existence
     if not force:

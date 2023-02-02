@@ -163,7 +163,6 @@ def add_accounting_row(
             {Accounting.consumption: consumption}, synchronize_session=False
         )
     else:
-
         # Create the window
         print(
             "[ACCOUNTING] Create new window "

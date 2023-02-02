@@ -17,7 +17,6 @@ click.disable_unicode_literals_warning = True
 
 
 def oarresume(job_ids, array, sql, version, user=None, cli=True):
-
     cmd_ret = CommandReturns(cli)
 
     if version:

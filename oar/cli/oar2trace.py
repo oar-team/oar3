@@ -245,9 +245,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
 
 
 def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
-
     for _, job_metrics in jobs_metrics.items():
-
         if display:
             print(
                 "id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} "
@@ -423,7 +421,6 @@ def header_values(first_jobid, last_jobid):
 
 
 def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
-
     filehandle = open(trace_file, "w")
 
     if mode == "swf":

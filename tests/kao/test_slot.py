@@ -110,7 +110,6 @@ def test_split_slots_bc():
 
 
 def test_bug_split_slots():
-
     v = [
         (20, 69, ProcSet(*[(31, 32)])),
         (70, 79, ProcSet(*[(1, 15), (31, 32)])),
@@ -135,7 +134,6 @@ def test_bug_split_slots():
 
 
 def test_add_split_slots_jobs_one_job():
-
     v = [(10, 14, ProcSet(*[(10, 50)])), (15, MAX_TIME, ProcSet())]
 
     ss = SlotSet((ProcSet(*[]), 10))

@@ -124,7 +124,6 @@ def default_job_parameters(resource_request):
 
 
 def test_add_micheline_jobs_1():
-
     job_parameters = default_job_parameters(None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -140,7 +139,6 @@ def test_add_micheline_jobs_1():
 
 
 def test_add_micheline_jobs_2():
-
     job_parameters = default_job_parameters(None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -161,7 +159,6 @@ def test_add_micheline_jobs_2():
 
 @pytest.mark.usefixtures("active_quotas")
 def test_add_micheline_jobs_no_quotas_1():
-
     job_parameters = default_job_parameters(None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -184,7 +181,6 @@ def test_add_micheline_jobs_no_quotas_1():
 
 @pytest.mark.usefixtures("active_quotas")
 def test_add_micheline_jobs_quotas_admin():
-
     job_parameters = default_job_parameters(None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -208,7 +204,6 @@ def test_add_micheline_jobs_quotas_admin():
 
 
 def test_add_micheline_simple_array_job():
-
     prev_conf0 = config["OARSUB_DEFAULT_RESOURCES"]
     prev_conf1 = config["OARSUB_NODES_RESOURCES"]
 

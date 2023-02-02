@@ -57,7 +57,6 @@ def update_gantt_visualization_redis():
 
 
 def save_assigns_bulk_0(jobs, resource_set):
-
     if len(jobs) > 0:
         mld_id_start_time_s = []
         mld_id_rid_s = []

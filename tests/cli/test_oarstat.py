@@ -138,7 +138,6 @@ def test_oarstat_gantt():
 
 
 def test_oarstat_events():
-
     job_id = insert_job(res=[(60, [("resource_id=4", "")])])
     add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
 

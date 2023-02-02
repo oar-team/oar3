@@ -52,7 +52,6 @@ def test_finaud_one_bad_node():
 
 
 def test_finaud_one_suspected_node_is_not_bad():
-
     # resources = db.query(Resource).all()
     # import pdb; pdb.set_trace()
     db.query(Resource).filter(Resource.network_address == "localhost0").update(

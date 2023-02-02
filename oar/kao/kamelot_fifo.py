@@ -17,7 +17,6 @@ logger = get_logger("oar.kamelot_fifo")
 
 
 def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
-
     assigned_jobs = {}
 
     now = plt.get_time()

@@ -12,7 +12,6 @@ MAX_NB_RESOURCES = 100000
 
 
 class ResourceSet(object):
-
     default_itvs = ProcSet()
 
     def __init__(self):

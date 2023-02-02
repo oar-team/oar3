@@ -273,7 +273,8 @@ def get_resources_change_state():
 
 def get_expired_resources():
     """Get the list of resources whose expiry_date is in the past and which are not dead yet.
-    0000-00-00 00:00:00 is always considered as in the future. Used for desktop computing schema."""
+    0000-00-00 00:00:00 is always considered as in the future. Used for desktop computing schema.
+    """
     # TODO: UNUSED (Desktop computing)
     date = tools.get_date()
 
@@ -352,7 +353,6 @@ def update_current_scheduler_priority(job, value, state):
                 and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0
             )
         ):
-
             coeff = 1
             if ("besteffort" in job_types.keys()) and (
                 "timesharing" not in job_types.keys()

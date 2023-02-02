@@ -27,7 +27,6 @@ def test_oar2trace_void():
 
 @pytest.mark.skip(reason="wip (not working)")
 def test_oar2trace_simple():
-
     insert_job(res=[(100, [("resource_id=3", "")])])
 
     meta_schedule("internal")

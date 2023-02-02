@@ -112,7 +112,6 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
 
 
 def multifactor_jobs_sorting(queues, now, jids, jobs, plt):
-
     evaluate_jobs_priority(queues, now, jids, jobs, plt)
 
     ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)

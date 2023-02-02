@@ -22,7 +22,6 @@ def perl_hash_2_dict(str):
 
 
 def get_sum_accounting_window(queues, window_start, window_stop):
-
     req = (
         db.query(Accounting.consumption_type, func.sum(Accounting.consumption))
         .filter(Accounting.queue_name.in_(tuple(queues)))
@@ -35,7 +34,7 @@ def get_sum_accounting_window(queues, window_start, window_stop):
     karma_sum_time_asked = 1
     karma_sum_time_used = 1
 
-    for (consumption_type, total_consumption) in req:
+    for consumption_type, total_consumption in req:
         if consumption_type == "ASKED":
             karma_sum_time_asked = float(total_consumption)
         elif consumption_type == "USED":
@@ -50,7 +49,6 @@ def get_sum_accounting_window(queues, window_start, window_stop):
 
 
 def get_sum_accounting_by_project(queues, window_start, window_stop):
-
     req = (
         db.query(
             Accounting.project,
@@ -67,7 +65,7 @@ def get_sum_accounting_by_project(queues, window_start, window_stop):
     karma_used = {}
     karma_asked = {}
 
-    for (project, consumption_type, total_consumption) in req:
+    for project, consumption_type, total_consumption in req:
         # print "project, consumption_type, total_consumption: ", project,
         # consumption_type, total_consumption
         if consumption_type == "ASKED":
@@ -79,7 +77,6 @@ def get_sum_accounting_by_project(queues, window_start, window_stop):
 
 
 def get_sum_accounting_by_user(queues, window_start, window_stop):
-
     # print " window_start, window_stop", window_start, window_stop
     req = (
         db.query(
@@ -97,7 +94,7 @@ def get_sum_accounting_by_user(queues, window_start, window_stop):
     karma_used = {}
     karma_asked = {}
 
-    for (user, consumption_type, total_consumption) in req:
+    for user, consumption_type, total_consumption in req:
         # print "user, consumption_type, total_consumption:", user,
         # consumption_type, total_consumption
         if consumption_type == "ASKED":
@@ -112,7 +109,6 @@ def get_sum_accounting_by_user(queues, window_start, window_stop):
 # Evaluate Karma value for each job
 #
 def evaluate_jobs_karma(queues, now, jids, jobs, plt):
-
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
     # TODO NOT UDSED

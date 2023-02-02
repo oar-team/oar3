@@ -63,7 +63,6 @@ def show(resource_id):
 @app.route("/<int:resource_id>/jobs", methods=["GET"])
 @app.args({"offset": Arg(int, default=0), "limit": Arg(int)})
 def jobs(offset, limit, resource_id=None):
-
     query = db.queries.get_jobs_resource(resource_id)
     page = query.paginate(offset, limit)
     g.data["total"] = page.total
@@ -136,7 +135,6 @@ def state(resource_id, state):
     """
     user = g.current_user
     if (user == "oar") or (user == "root"):
-
         set_resource_state(resource_id, state, "NO")
 
         tools.notify_almighty("ChState")

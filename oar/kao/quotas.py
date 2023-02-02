@@ -273,7 +273,6 @@ class Calendar(object):
         return (rules_id, remaining_duration)
 
     def rules_at(self, t_epoch):
-
         (rules_id, remaining_duration) = self.periodical_rules_at(t_epoch)
 
         # test if an overshot apply ? If so set remaining duration and rules_id accordingly
@@ -308,7 +307,6 @@ class Calendar(object):
         return (rules_id, remaining_duration)
 
     def show(self, t=None, begin=None, end=None, check=True, json=False):
-
         t_epoch = None
         if t:
             try:
@@ -542,7 +540,6 @@ class Quotas(object):
             print(k, " = ", v)
 
     def update(self, job, prev_nb_res=0, prev_duration=0):
-
         queue = job.queue_name
         project = job.project
         user = job.user

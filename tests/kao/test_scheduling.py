@@ -67,7 +67,6 @@ def test_set_slots_with_prev_scheduled_jobs_1():
 
 
 def test_assign_resources_mld_job_split_slots_1():
-
     v = [(0, 59, ProcSet(*[(17, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -92,7 +91,6 @@ def test_assign_resources_mld_job_split_slots_1():
 
 
 def test_assign_resources_mld_job_split_slots_2():
-
     v = [(0, 59, ProcSet(*[(17, 21)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -115,7 +113,6 @@ def test_assign_resources_mld_job_split_slots_2():
 
 
 def test_assign_resources_mld_job_split_slots_3():
-
     v = [(0, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -197,7 +194,6 @@ def test_schedule_error_1():
 
 
 def test_schedule_container1():
-
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
@@ -229,7 +225,6 @@ def test_schedule_container1():
 
 
 def test_schedule_container_error1():
-
     res = ProcSet(*[(1, 32)])
     res2 = ProcSet(*[(17, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
@@ -330,7 +325,6 @@ def test_schedule_container_error3():
 
 
 def test_schedule_container_prev_sched():
-
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}
@@ -381,7 +375,6 @@ def test_schedule_container_prev_sched():
 
 
 def test_schedule_container_recursif():
-
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
@@ -423,7 +416,6 @@ def test_schedule_container_recursif():
 
 
 def test_schedule_container_prev_sched_recursif():
-
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}
@@ -695,7 +687,6 @@ def test_schedule_placeholder2():
 
 
 def test_schedule_placeholder_prev_sched():
-
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
     all_ss = {"default": ss}

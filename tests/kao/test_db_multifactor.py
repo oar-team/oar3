@@ -33,7 +33,6 @@ def oar_conf(request):
 
 
 def test_db_multifactor_fairshare():
-
     _, priority_file_name = mkstemp()
     config["PRIORITY_CONF_FILE"] = priority_file_name
 

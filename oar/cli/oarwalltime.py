@@ -12,7 +12,6 @@ from .utils import CommandReturns
 def oarwalltime(
     job_id, new_walltime, force, delay_next_jobs, version, user=None, cli=True
 ):
-
     cmd_ret = CommandReturns(cli)
 
     if version:

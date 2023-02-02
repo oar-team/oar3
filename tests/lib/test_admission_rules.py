@@ -55,7 +55,6 @@ def default_job_parameters(**kwargs):
 
 
 def apply_admission_rules(job_parameters, rule=None):
-
     if rule:
         regex = rule
     else:

@@ -89,7 +89,6 @@ def test_bipbip_simple():
 
 
 def _test_bipbip_toLaunch(types=[], job_id=None, state="toLaunch", args=[]):
-
     if not job_id:
         job_id = insert_job(
             res=[(60, [("resource_id=4", "")])],

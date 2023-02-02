@@ -22,7 +22,6 @@ def schedule_cycle(plt, queues=["default"]):
     logger.info(waiting_jobs, waiting_jids, nb_waiting_jobs)
 
     if nb_waiting_jobs > 0:
-
         #
         # Determine Global Resource Intervals and Initial Slot
         #

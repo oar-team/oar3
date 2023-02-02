@@ -348,7 +348,6 @@ def delete(job_id: int, array: bool = False, user: str = Depends(need_authentica
 def signal(
     job_id: int, signal: Optional[int] = None, user: dict = Depends(need_authentication)
 ):
-
     if signal:
         checkpointing = False
     else:

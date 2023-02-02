@@ -5,7 +5,6 @@ from .. import assert_raises
 
 
 def test_all_module_api():
-
     all_modules = [
         "Accounting",
         "AdmissionRule",

@@ -140,7 +140,6 @@ def get_waiting_jobs(queues, reservation="None"):
 
 
 def get_jobs_types(jids, jobs):
-
     jobs_types = {}
     for j_type in db.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
         jid = j_type.job_id
@@ -396,7 +395,6 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 
 
 def get_job_suspended_sum_duration(jid, now):
-
     suspended_duration = 0
     for j_state_log in (
         db.query(JobStateLog)
@@ -406,7 +404,6 @@ def get_job_suspended_sum_duration(jid, now):
             | (JobStateLog.job_state == "Resuming")
         )
     ):
-
         date_stop = j_state_log.date_stop
         date_start = j_state_log.date_start
 
@@ -423,7 +420,6 @@ def get_job_suspended_sum_duration(jid, now):
 
 # TODO available_suspended_res_itvs, now
 def extract_scheduled_jobs(result, resource_set, job_security_time, now):
-
     jids = []
     jobs_lst = []
     jobs = {}
@@ -558,7 +554,6 @@ def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, n
 def get_gantt_jobs_to_launch(
     resource_set, job_security_time, now, kill_duration_before_reservation=0
 ):
-
     # get unlaunchable jobs
     # NOT USED launcher will manage these cases ??? (MUST BE CONFIRMED)
     #
@@ -680,7 +675,6 @@ def save_assigns(jobs, resource_set):
 
 
 def save_assigns_bulk(jobs, resource_set):
-
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
@@ -759,7 +753,6 @@ def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
 
 
 def set_jobs_start_time(tuple_jids, start_time):
-
     db.query(Job).filter(Job.id.in_(tuple_jids)).update(
         {Job.start_time: start_time}, synchronize_session=False
     )
@@ -1199,7 +1192,6 @@ def gantt_flush_tables(reservations_to_keep_mld_ids=[]):
 
 
 def get_jobs_in_multiple_states(states, resource_set):
-
     result = (
         db.query(Job, AssignedResource.moldable_id, AssignedResource.resource_id)
         .filter(Job.state.in_(tuple(states)))
@@ -1241,7 +1233,6 @@ def get_jobs_in_multiple_states(states, resource_set):
 
 
 def get_jobs_ids_in_multiple_states(states):
-
     result = (
         db.query(Job.id, Job.state)
         .filter(Job.state.in_(tuple(states)))
@@ -1429,7 +1420,6 @@ def get_job(job_id):
 
 
 def get_running_job(job_id):
-
     res = (
         db.query(
             Job.start_time, MoldableJobDescription.walltime.label("moldable_walltime")
@@ -1470,7 +1460,6 @@ def frag_job(job_id, user=None):
         res = db.query(FragJob).filter(FragJob.job_id == job_id).all()
 
         if len(res) == 0:
-
             date = tools.get_date()
             frajob = FragJob(job_id=job_id, date=date)
             db.add(frajob)
@@ -1627,7 +1616,6 @@ def log_job(job):  # pragma: no cover
 
 
 def set_job_state(jid, state):
-
     result = (
         db.query(Job)
         .filter(Job.id == jid)

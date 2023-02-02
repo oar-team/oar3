@@ -8,7 +8,6 @@ from oar.lib import config
 
 
 def _test_simsim_1():
-
     # Set undefined config value to default one
     DEFAULT_CONFIG = {
         "HIERARCHY_LABELS": "resource_id,network_address",

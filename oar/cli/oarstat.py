@@ -100,7 +100,6 @@ def gather_all_user_accounting(items) -> List[str]:
     yield headers
 
     for user, consumption_user in items:
-
         asked = 0
         if "ASKED" in consumption_user:
             asked = consumption_user["ASKED"]

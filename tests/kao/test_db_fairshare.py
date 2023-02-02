@@ -81,7 +81,6 @@ def generate_accountings(
 
 
 def test_db_fairsharing():
-
     print("Test_db_fairsharing")
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])

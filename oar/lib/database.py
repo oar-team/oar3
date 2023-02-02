@@ -41,7 +41,6 @@ def wait_db_ready(f, args=None, attempt=7):
 
 
 class BaseModel(object):
-
     __default_table_args__ = {"extend_existing": True, "sqlite_autoincrement": True}
     query = None
 
@@ -76,7 +75,7 @@ class BaseModel(object):
 
     def __iter__(self):
         """Return an iterable that supports .next()"""
-        for (key, value) in (self.asdict()).items():
+        for key, value in (self.asdict()).items():
             yield (key, value)
 
     def __repr__(self):
@@ -384,7 +383,6 @@ def _include_sqlalchemy(db):
     db.Table = _make_table(db)
 
     class Column(sqlalchemy.Column):
-
         # Since SQLAlchemy 1.4, Column needs the attribute `inherit_cache`. Otherwise a warning is displayed.
         # https://docs.sqlalchemy.org/en/14/core/compiler.html#synopsis
         inherit_cache = True

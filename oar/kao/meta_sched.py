@@ -253,7 +253,6 @@ def prepare_job_to_be_launched(job, current_time_sec):
 def handle_waiting_reservation_jobs(
     queue_name, resource_set, job_security_time, current_time_sec
 ):
-
     logger.debug(
         "Queue " + queue_name + ": begin processing accepted Advance Reservations"
     )
@@ -263,7 +262,6 @@ def handle_waiting_reservation_jobs(
     )
 
     for job in ar_jobs:
-
         moldable_id = job.moldable_id
         walltime = job.walltime
 
@@ -277,7 +275,6 @@ def handle_waiting_reservation_jobs(
             set_job_state(job.id, "Error")
             set_job_message(job.id, "Reservation expired and couldn't be started.")
         else:
-
             # Determine current available resources
             avail_res = resource_set.roid_itvs & job.res_set
 
@@ -720,7 +717,6 @@ def call_external_scheduler(
 def call_batsim_sched_proxy(
     plt, scheduled_jobs, all_slot_sets, job_security_time, queue, now
 ):
-
     from oar.kao.batsim_sched_proxy import BatsimSchedProxy
 
     global batsim_sched_proxy
@@ -771,7 +767,6 @@ def nodes_energy_saving(current_time_sec):
         ("SCHEDULER_NODE_MANAGER_SLEEP_TIME" in config)
         and ("SCHEDULER_NODE_MANAGER_IDLE_TIME" in config)
     ):
-
         # Look at nodes that are unused for a duration
         idle_duration = int(config["SCHEDULER_NODE_MANAGER_IDLE_TIME"])
         sleep_duration = int(config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"])
@@ -883,7 +878,6 @@ def meta_schedule(mode="internal", plt=Platform()):
     prev_queues = None
 
     for queues in get_queues_groupby_priority():
-
         extra_metasched_func(
             prev_queues,
             plt,

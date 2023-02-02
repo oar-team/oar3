@@ -482,7 +482,6 @@ def estimate_job_nb_resources(resource_request, j_properties):
     resources_itvs = resource_set.roid_itvs
 
     for mld_idx, mld_resource_request in enumerate(resource_request):
-
         resource_desc, walltime = mld_resource_request
 
         if not walltime:
@@ -571,7 +570,6 @@ def estimate_job_nb_resources(resource_request, j_properties):
 def add_micheline_subjob(
     job_parameters, ssh_private_key, ssh_public_key, array_id, array_index, command
 ):
-
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against available resources
 
@@ -789,7 +787,6 @@ def add_micheline_simple_array_job(
     array_index,
     array_commands,
 ):
-
     job_id_list = []
     date = get_date()
 
@@ -1037,7 +1034,6 @@ def add_micheline_jobs(
     if job_parameters.notify and not re.match(
         r"^\s*(\[\s*(.+)\s*\]\s*)?(mail|exec)\s*:.+$", job_parameters.notify
     ):
-
         error = (-6, "bad syntax for the notify option.")
         return (error, [])
 
@@ -1223,7 +1219,6 @@ def check_reservation(reservation_date_str):
 
 class JobParameters:
     def __init__(self, **kwargs):
-
         self.error = (0, "")
         self.array_params = []
 
@@ -1276,7 +1271,6 @@ class JobParameters:
             "import_job_key_file",
             "export_job_key_file",
         ]:
-
             if key in kwargs:
                 setattr(self, key, kwargs[key])
             else:
@@ -1426,7 +1420,6 @@ class JobParameters:
             "initial_request",
             "array_id",
         ]:
-
             kwargs[key] = getattr(self, key)
 
         kwargs["job_user"] = self.user

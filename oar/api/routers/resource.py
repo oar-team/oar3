@@ -124,7 +124,6 @@ def state(
     state = params.state
     data = {}
     if (user == "oar") or (user == "root"):
-
         set_resource_state(resource_id, state, "NO")
 
         tools.notify_almighty("ChState")

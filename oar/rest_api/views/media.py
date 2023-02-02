@@ -104,7 +104,6 @@ def ls(offset, limit, path="~"):
 @app.args({"tail": Arg(int)})
 @app.need_authentication()
 def get_file(path_filename, tail):
-
     path_filename, env = user_and_filename_setup(path_filename)
 
     # Check file's existence

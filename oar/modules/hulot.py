@@ -115,7 +115,6 @@ def fill_timeouts(str_timeouts):
 
 # Choose a timeout based on the number of nodes to wake up
 def get_timeout(timeouts, nb_nodes):
-
     timeout = timeouts[1]
     # Search for the timeout of the corresponding interval
     for nb in sorted(timeouts.keys()):
@@ -259,7 +258,6 @@ class Hulot(object):
             return 1
 
         while True:
-
             self.window_forker.check_executors(nodes_list_running)
 
             message = self.socket.recv_json()

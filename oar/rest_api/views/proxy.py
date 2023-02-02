@@ -31,7 +31,6 @@ if "OARDODO" in config:
 @app.route("/<int:job_id>/<path:path>")
 @app.need_authentication()
 def proxy(job_id, path):
-
     if config["PROXY"] != "traefik":
         abort(404, "Proxy is not configured")
 

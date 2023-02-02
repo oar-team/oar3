@@ -128,7 +128,6 @@ def print_resources_nodes_infos(cmd_ret, resources, nodes, json):
 def oarnodes(
     nodes, resource_ids, state, list_nodes, events, sql, json, version, detailed=False
 ):
-
     cmd_ret = CommandReturns(cli)
 
     if version:

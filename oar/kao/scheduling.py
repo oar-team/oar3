@@ -23,7 +23,6 @@ def set_slots_with_prev_scheduled_jobs(
     filter_besteffort=True,
     only_besteffort=False,
 ):
-
     jobs_slotsets = {"default": []}
 
     for job in jobs:
@@ -101,7 +100,6 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
 
 def get_encompassing_slots(slots, t_begin, t_end):
-
     sid_left = 1
 
     while slots[sid_left].e < t_begin:

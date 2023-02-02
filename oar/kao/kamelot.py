@@ -18,7 +18,6 @@ logger = get_logger("oar.kamelot")
 
 
 def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
-
     waiting_ordered_jids = waiting_jids
 
     if "JOB_PRIORITY" in config:
@@ -55,7 +54,6 @@ def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
 
 
 def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
-
     resource_set = plt.resource_set()
 
     #
@@ -99,7 +97,6 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
 
 
 def schedule_cycle(plt, now, queues=["default"]):
-
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
             now, " ".join([q for q in queues])
@@ -192,7 +189,6 @@ def schedule_cycle(plt, now, queues=["default"]):
 # Main function
 #
 def main():
-
     logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()

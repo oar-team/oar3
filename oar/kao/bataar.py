@@ -81,7 +81,6 @@ def restore_oar_lib_tools():
 
 
 def db_initialization(nb_res, node_size=None):
-
     print("Set default queue")
     db.add(
         Queue(name="default", priority=3, scheduler_policy="kamelot", state="Active")
