@@ -75,11 +75,32 @@ Once you have your repository extension up and working, you can write and run te
 
 The easiest way to run the tests is using directly pytest. Keep it mind that to speed up the tests, it uses an sqlite database, which is not suitable for production.
 
+
+*On debian systems install the following dependencies*::
+
+        sudo apt install postgresql libpq-dev python3-dev
+
 *Run the tests with sqlite (faster)*::
 
         poetry install
         poetry shell
         pytest tests
+        # On oar system (on g5k for instance) remove the ``OARCONFFILE`` variable
+        env -u OARCONFFILE pytest tests
+
+
+.. warning::
+
+        If ``poetry install`` fails with  the following error on debian, use ``sudo apt autoremove virutalenv``.
+
+        .. code-block:: bash
+
+                ModuleNotFoundError
+
+                No module named 'virtualenv.activation.xonsh'
+
+                at <frozen importlib._bootstrap>:984 in _find_and_load_unlocked
+
 
 Docker files are available to run the tests with postgres to use it run the command::
 
