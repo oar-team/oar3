@@ -9,6 +9,7 @@ Scheduling (:mod:`oar.kao`)
    :inherited-members:
    :show-inheritance:
 
+
 .. _api-kao-meta_sched:
 
 **************
@@ -21,6 +22,19 @@ Meta scheduler
    :special-members:
    :inherited-members:
    :show-inheritance:
+
+
+**********
+Scheduling
+**********
+
+.. automodule:: oar.kao.scheduling_basic
+   :members:
+   :undoc-members:
+   :special-members:
+   :inherited-members:
+   :show-inheritance:
+
 
 ***************************
 Data structures and helpers
