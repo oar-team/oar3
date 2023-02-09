@@ -1,6 +1,6 @@
+.. _Extentions:
 Extensions
 ==========
-
 Overview
 --------
 

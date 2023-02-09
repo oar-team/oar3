@@ -1,4 +1,7 @@
 # coding: utf-8
+"""
+Scheduling functions used by :py:mod:`oar.kao.kamelot`.
+"""
 import copy
 
 from procset import ProcSet
@@ -77,8 +80,19 @@ def set_slots_with_prev_scheduled_jobs(
 
 
 def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
-    """find resources in interval for all resource subrequests of a moldable
-    instance of a job"""
+    """
+    Given a job resource request and a set of resources this function tries to find a matching allocation.
+
+    .. note::
+        This` can be override with the oar `extension <../admin/extensions.html#functions-assign-and-find>`_ mechanism.
+
+    :param itvs_slots: A procset of the resources available for the allocation
+    :type itvs_slots: :class:`procset.ProcSet`
+    :param hy_res_rqts: The job's request
+    :param hy: The definition of the resources hierarchy
+    :return [ProcSet]: \
+            The allocation if found, otherwise an empty :class:`procset.ProcSet`
+    """
     result = ProcSet()
     for hy_res_rqt in hy_res_rqts:
         (hy_level_nbs, constraints) = hy_res_rqt
@@ -114,7 +128,17 @@ def get_encompassing_slots(slots, t_begin, t_end):
 
 
 def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time):
-    """find first_suitable_contiguous_slot"""
+    """
+    Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
+    For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
+    to find compatible resources allocation for the job, if such allocation is found the function ends.
+
+    :param SlotSet slots_set: Slot set of the current platform
+    :param Job job: The job to schedule
+    :param res_rqt: The job resource request
+    :param hy: The definition of the resources hierarchy
+    :param min_start_time: The earliest date at which the job can start
+    """
 
     (mld_id, walltime, hy_res_rqts) = res_rqt
 
@@ -279,7 +303,23 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
 
 def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
-    """Assign resources to a job and update by splitting the concerned slots - moldable version"""
+    """
+    According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
+    This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
+    it selects the first to finish.
+
+    This function has two side effects.
+        - Assign the results directly to the ``job`` (such as start_time, resources etc)
+        - Split the slot_set to reflect the new allocation
+
+    .. note::
+        This function can be override with the oar `extension <../admin/extensions.html#functions-assign-and-find>`_ mechanism.
+
+    :param SlotSet slots_set: A :class:`SlotSet` of the current platform
+    :param Job job: The job to schedule
+    :param hy: \
+        The description of the resources hierarchy
+    """
     prev_t_finish = 2**32 - 1  # large enough
     prev_res_set = ProcSet()
     prev_res_rqt = ProcSet()
@@ -327,11 +367,22 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
 
     slots_set.split_slots(prev_sid_left, prev_sid_right, job)
     # returns value other than None value to indicate successful assign
+    # FIXME: return value not used by kamelot
     return prev_sid_left, prev_sid_right, job
 
 
 def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
-    """Schedule loop with support for jobs container - can be recursive (recursion has not be tested)"""
+    """
+    Main scheduling loop with support for jobs container - can be recursive (recursion has not been tested)
+    Find an allocation for each waiting jobs.
+
+    :param SlotSet slots_sets: A :class:`SlotSet` of the current platform
+    :param [Job] jobs: The list of the waiting jobs to schedule
+    :param hy: \
+        The description of the resources hierarchy
+    :param list jobs: the list of job ids
+    :param Int job_security_time: The job security time (see `oar.conf <../admin/configuration.html>`_ ``SCHEDULER_JOB_SECURITY_TIME`` variable)
+    """
 
     #    for k,job in jobs.items():
     # print("*********j_id:", k, job.mld_res_rqts[0])

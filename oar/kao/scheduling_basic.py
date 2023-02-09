@@ -87,12 +87,12 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
     it selects the first to finish.
 
-    The function is expected to have two side effects:
-        - On job assign the results directly to the job (such as start_time, resources etc)
+    This function has two side effects.
+        - Assign the results directly to the ``job`` (such as start_time, resources etc)
         - Split the slot_set to reflect the new allocation
 
-    It is possible to override this function using a plugins.
-    
+    One can replace this function using an extension of OAR.
+
     :param ProcSet slots_set: A :class:`SlotSet` of the current platform
     :param [Job] job: The job to schedule
     :param hy: \
