@@ -1,6 +1,8 @@
 .. _Extentions:
+
 Extensions
 ==========
+
 Overview
 --------
 
@@ -116,16 +118,20 @@ Functions assign and find
 
 Both function are executed *per* jobs during a scheduling loop. These functions can be used to tune the scheduling and modify how resources are allocated.
 
-The assign function (``oar.assign_func``) is supposed to, according to a job request and a :class:`oar.kao.slot.SlotSet`, find the time slot for the job.
-That is to say, find a suitable time slot for which all necessary resources for the job are fulfilled.
+The **assign**  (``oar.assign_func``) function is the most generic scheduling function that can be changed.
+Given a job and the  :class:`oar.kao.slot.SlotSet` of the platform role is twofold:
+
+- Assigns the resources and a start date to a job.
+- Splits the corresponding :class:`oar.kao.slot.SlotSet` to reflect the new allocation.
+
 Without extension, the default behavior of OAR, is to call the function :func:`oar.kao.scheduling.assign_resources_mld_job_split_slots`.
 
-The find function (``oar.find_func``) is supposed to, given a resources hierarchy and a job request, allocates the resources need by the job.
-Under the hood, the ``assign_func`` calls the ``find_func`` on every slot of the slot set.
+
+The **find** function (``oar.find_func``) is simple but less generic than the assign function: 
+according to a set of resources it lets the function decides which resources will be allocated to the job.
 Without extension, the default behavior of OAR, is to call the function :func:`oar.kao.scheduling.find_resource_hierarchies_job`.
 
-
-The functions can used by assigning a type corresponding to the name of the function declared in the pyproject as a job type.
+The functions can used by creating a type corresponding to the name of the function declared in the pyproject as a job type.
 
 
 .. code-block:: bash
