@@ -268,16 +268,6 @@ function date2px($date) {
 
 // class to compute colors for jobs
 class Shuffle {
-    protected static $singleton;
-    function init($shuffle_instance) {
-        self::$singleton = $shuffle_instance;
-    }
-    function get_int($job) {
-        if (self::$singleton === null) {
-            self::init(new Shuffle());
-        }
-        return self::$singleton->job2int($job);
-    }
     function job2int($job) {
         // compute a suffled number for job_id, so that colors are not too close
         $magic_number = (1+sqrt(5))/2;
@@ -397,7 +387,7 @@ class State {
 class Job {
   public $job_id,$job_name,$project,$job_type,$state,$job_user,$command,$queue_name,$moldable_walltime,$properties,$launching_directory,$submission_time,$start_time,$stop_time,$resource_ids,$network_addresses,$types;
   protected $color, $colorHL;
-  function __construct($job_id,$job_name,$project,$job_type,$state,$job_user,$command,$queue_name,$moldable_walltime,$properties,$launching_directory,$submission_time,$start_time,$stop_time) {
+  function __construct($job_id,$job_name,$project,$job_type,$state,$job_user,$command,$queue_name,$moldable_walltime,$properties,$launching_directory,$submission_time,$start_time,$stop_time,$shuffle) {
     $this->job_id = $job_id;
     $this->job_name = $job_name;
     $this->project = $project;
@@ -417,6 +407,7 @@ class Job {
     $this->types = array();
     $this->color = NULL;
     $this->colorHL = NULL;
+    $this->shuffle = $shuffle;
   }
 
   function add_resource_id($resource_id) {
@@ -479,7 +470,8 @@ class Job {
   function color($hl) {
     global $CONF;
     if ($this->color == NULL or $this->colorHL == NULL) {
-      $hue = Shuffle::get_int($this);
+      # https://php.watch/versions/8.0/non-static-static-call-fatal-error
+      $hue = $this->shuffle->job2int($this); # (new Shuffle())->get_int($this);
       $this->color = "hsl(".$hue.",{$CONF['job_color_saturation_lightness']})";
       $this->colorHL = "hsl(".$hue.",{$CONF['job_color_saturation_lightness_highlight']})";
     }
@@ -603,7 +595,9 @@ class Resource {
       if ($this->type == $CONF['resource_group_level']) {
         $first_resource_base = true;
       }
-      usort($this->children, create_function('$a,$b','return $b->cmp($a);'));
+      usort($this->children, function($a, $b) {
+        return $b->cmp($a);
+      }); # create_function('$a,$b',''));
       foreach ($this->children as $child) {
         $h += $child->svg_hierarchy($x+$CONF['hierarchy_resource_width'], $y+$h, $labels);
       }
@@ -650,7 +644,11 @@ class Resource {
       }
     }
     foreach ($states as $value => $date_weight_array) {
-      usort($date_weight_array, create_function('$a,$b','list($d1,$w1)=$a; list($d2,$w2)=$b; return ($d1 != $d2)?(($d1 < $d2)?-1:1):(($w1 != $w2)?(($w1 < $w2)?1:-1):0);'));
+      usort($date_weight_array,
+        function($a, $b) {
+          list($d1,$w1)=$a; list($d2,$w2)=$b; return ($d1 != $d2)?(($d1 < $d2)?-1:1):(($w1 != $w2)?(($w1 < $w2)?1:-1):0);
+        });
+
       $weight = 0;
       foreach ($date_weight_array as $dwr) {
         list ($d,$w,$r) = $dwr;
@@ -906,8 +904,12 @@ $resource_ids = array();
 
 $aborted = false;
 
+
 // common function used both for past and current jobs and predicted jobs
 function parse_jobs_from_db($query) {
+  # Init a shuffle instance
+  $shuffle = new Shuffle();
+
   global $CONF, $db, $jobs, $resource_ids, $aborted;
   $t0 = microtime(true);
   $l = 0;
@@ -926,7 +928,7 @@ function parse_jobs_from_db($query) {
   while ($line = $db->fetch_array()) {
     if (! array_key_exists($line['job_id'], $jobs)) {
       debug(3, "got new job: ".$line['job_id']);
-      $jobs[$line['job_id']] = new Job($line['job_id'], $line['job_name'], $line['project'], $line['job_type'], $line['state'], $line['job_user'], $line['command'], $line['queue_name'], $line['moldable_walltime'], $line['properties'], $line['launching_directory'], $line['submission_time'], $line['start_time'], $line['stop_time']);
+      $jobs[$line['job_id']] = new Job($line['job_id'], $line['job_name'], $line['project'], $line['job_type'], $line['state'], $line['job_user'], $line['command'], $line['queue_name'], $line['moldable_walltime'], $line['properties'], $line['launching_directory'], $line['submission_time'], $line['start_time'], $line['stop_time'], $shuffle);
       $j++;
     } else {
       debug(4, "got an additional line for job: ".$line['job_id']);
