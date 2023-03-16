@@ -40,6 +40,7 @@ def attach_nodes(job, jobs_resources):
             network_addresses.append(node["network_address"])
 
 
+@router.get("")
 @router.get("/")
 def index(
     user: str = None,
@@ -148,6 +149,7 @@ class SumbitParameters(BaseModel):
     use_job_key: bool = Body(False, alias="use-job-key")
 
 
+@router.post("")
 @router.post("/")
 def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
     """Job submission

@@ -31,6 +31,7 @@ if "OARDODO" in config:
     OARDODO_CMD = config["OARDODO"]
 
 
+@router.get("")
 @router.get("/")
 def index():
     stress_factor_script = "/etc/oar/stress_factor.sh"
