@@ -4,8 +4,13 @@ import re
 import sys
 from json import dumps
 from typing import Generator, List
-
 import click
+
+from rich.console import Console
+from rich.table import Table
+from rich import box
+from rich.padding import Padding
+import rich
 
 import oar.lib.tools as tools
 from oar import VERSION
@@ -31,6 +36,8 @@ from oar.lib.tools import (
 
 from .utils import CommandReturns
 
+console = Console()
+
 click.disable_unicode_literals_warning = True
 
 STATE2CHAR = {
@@ -50,7 +57,7 @@ STATE2CHAR = {
 }
 
 
-def get_table_lines(jobs) -> List[str]:
+def get_job_full(jobs) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
@@ -82,6 +89,47 @@ def get_table_lines(jobs) -> List[str]:
             str(job.user),
             str(datetime.timedelta(seconds=duration)),
             str(job.message),
+        ]
+
+        yield job_line
+
+
+def get_table_lines(jobs) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "Job id",
+        "State",
+        "User",
+        "Duration",
+        "System message",
+        "Queue",
+    ]
+
+    # First yield the headers
+    yield headers
+
+    now = tools.get_date()
+    for job in jobs:
+        rich.pretty.pprint(vars(job))
+        # Compute job duration
+        duration = 0
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
+
+        # !! It must be consistent wih `header_columns`
+        job_line = [
+            str(job.id),
+            job.state,
+            str(job.user),
+            str(datetime.timedelta(seconds=duration)),
+            str(job.message),
+            str(job.queue_name),
         ]
 
         yield job_line
@@ -125,48 +173,28 @@ def print_table(
     min_column_size: int = 7,
 ):
     """
-    Simple algorithm to print a list of list given by a generator. Used to print the table of jobs in the terminal.
-    It doesn't take into account the size of the terminal.
-
-    Steps:
-    - Construct a list of all lines List[List[str]] (where a list is a list of strings)
-    - Gather all information about the jobs
-    - For each column of each line find the longest string (that should be the size of the column)
-    - Print every lines knowing the size of each columns
+    Use Rich to print a table in the terminal
     """
-
+    table = Table(title="")
     lines_generator = gather_prop(objects)
 
     # The first yielded value should be the header list
     lines = [next(lines_generator)]
-
-    # List for the max size of each columns
-    sizes = [len(i) if len(i) > min_column_size else min_column_size for i in lines[0]]
+    for line in lines[0]:
+        table.add_column(line)
 
     # Loop through the job lines
     for line in lines_generator:
-        for i in range(len(line)):
-            if sizes[i] < len(line[i]):
-                sizes[i] = len(line[i])
+        table.add_row(*line)
 
-        lines.append(line)
-
-    # Add a line of separators
-    separators: List[str] = list(map(lambda size: "{}".format(size * "-"), sizes))
-    # Insert it just after the headers
-    lines.insert(1, separators)
-
-    for line in lines:
-        for col_idx in range(len(line)):
-            col_size = sizes[col_idx]
-            print(f"{{:^{col_size}s}} ".format(line[col_idx]), end="")
-        print()
+    table.box = box.SIMPLE_HEAD
+    table.row_styles = ["none", "dim"]
+    console.print(table)
 
 
-def print_jobs(legacy, jobs, json=False):
-    if legacy and not json:
-        print_table(jobs, get_table_lines)
-    elif json:
+def print_jobs(legacy, jobs, json=False, full=False):
+    console = Console()
+    if json:
         # TODO to enhance
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
@@ -175,7 +203,16 @@ def print_jobs(legacy, jobs, json=False):
         ]
         for job in jobs_properties:
             to_dump[job["id"]] = job
-        print(dumps(to_dump))
+        console.print_json(dumps(to_dump))
+    elif legacy and full:
+        for job in jobs:
+            console.print(f"id: {job.id}")
+            attributes = [key for key in vars(job) if not key.startswith("_") and key != "id" and job.__dict__[key]]
+            for attribute in attributes:
+                console.print(Padding("{} = {}".format(attribute, str(job.__dict__[attribute])), (0, 4)))
+            console.print()
+    elif legacy:
+        print_table(jobs, get_table_lines)
     else:
         print(jobs)
 
@@ -504,6 +541,9 @@ def cli(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
+        if full:
+            res = db.queries.get_assigned_jobs_resources(jobs)
+
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(job.id, job=job)
 
@@ -517,6 +557,6 @@ def cli(
         print_state(cmd_ret, job_ids, array_id, json)
     else:
         if jobs:
-            print_jobs(True, jobs, json)
+            print_jobs(True, jobs, json, full)
 
     cmd_ret.exit()

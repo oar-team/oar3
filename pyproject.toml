@@ -74,6 +74,7 @@ PyYAML = ">=5.0"
 psycopg2 = "^2.8.6"
 #pybatsim = "^3.2.0"
 ptpython = "^3.0.20"
+rich = "^13.3.2"
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
