@@ -43,6 +43,7 @@ def get_db():
 #     return {"items": resources}
 
 
+@router.get("")
 @router.get("/")
 def index(
     offset: int = 0,
@@ -138,6 +139,7 @@ def state(
     return data
 
 
+@router.post("")
 @router.post("/")
 def create(hostname: str, properties: str, user: str = Depends(need_authentication)):
     """POST /resources"""

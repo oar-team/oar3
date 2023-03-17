@@ -122,6 +122,7 @@ def ls(
     return data
 
 
+@router.get("")
 @router.get("/")
 def get_file(
     path_filename: str,
@@ -184,6 +185,7 @@ def chmod(path_filename: str, mode: str, user: str = Depends(need_authentication
     return Response(None, status_code=202)
 
 
+@router.api_route("", methods=["POST", "PUT"])
 @router.api_route("/", methods=["POST", "PUT"])
 def post_file(
     request: Request,
@@ -235,6 +237,7 @@ def post_file(
     return data
 
 
+@router.delete("")
 @router.delete("/")
 def delete(path_filename: str, user: str = Depends(need_authentication)):
     path_filename, env = user_and_filename_setup(user, path_filename)
