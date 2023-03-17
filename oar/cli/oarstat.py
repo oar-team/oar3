@@ -3,6 +3,7 @@ import datetime
 import re
 import sys
 from json import dumps
+from procset import ProcSet
 from typing import Generator, List
 import click
 
@@ -94,7 +95,7 @@ def get_job_full(jobs) -> List[str]:
         yield job_line
 
 
-def get_table_lines(jobs) -> List[str]:
+def get_table_lines_jobs(jobs, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
@@ -105,12 +106,15 @@ def get_table_lines(jobs) -> List[str]:
         "Queue",
     ]
 
+    if "resources" in arg and arg["resources"]:
+        headers.append("Resources")
+        headers.append("network_addresses")
+
     # First yield the headers
     yield headers
 
     now = tools.get_date()
     for job in jobs:
-        rich.pretty.pprint(vars(job))
         # Compute job duration
         duration = 0
         if job.start_time:
@@ -129,8 +133,12 @@ def get_table_lines(jobs) -> List[str]:
             str(job.user),
             str(datetime.timedelta(seconds=duration)),
             str(job.message),
-            str(job.queue_name),
+            str(job.queue_name)
         ]
+
+        if "resources" in arg and hasattr(job, "resources"):
+            job_line.append(str(job.resources))
+            job_line.append(str(job.network_adresses))
 
         yield job_line
 
@@ -171,12 +179,13 @@ def print_table(
     objects: List[any],
     gather_prop: Generator[List[str], None, None],
     min_column_size: int = 7,
+    extra_arg={}
 ):
     """
     Use Rich to print a table in the terminal
     """
     table = Table(title="")
-    lines_generator = gather_prop(objects)
+    lines_generator = gather_prop(objects, extra_arg)
 
     # The first yielded value should be the header list
     lines = [next(lines_generator)]
@@ -192,18 +201,29 @@ def print_table(
     console.print(table)
 
 
-def print_jobs(legacy, jobs, json=False, full=False):
+def print_jobs(legacy, jobs, json, show_resources=False, full=False):
     console = Console()
-    if json:
-        # TODO to enhance
+
+    if full or show_resources:
+        res = db.queries.get_assigned_jobs_resources(jobs)
+        for job in jobs:
+            if job.id in res:
+                job.resources = ",".join([str(res.id) for res in res[job.id]])
+                job.network_adresses = ",".join([str(res.network_address) for res in res[job.id]])
+
+    if json: 
         to_dump = {}
-        # to_dict() doesn't incorporate attributes not defined in the , thus the dict merging
+        # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
         jobs_properties = [
             {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
         ]
-        for job in jobs_properties:
-            to_dump[job["id"]] = job
-        console.print_json(dumps(to_dump))
+
+        if json:
+            for job in jobs_properties:
+                to_dump[job["id"]] = job
+
+            console.print_json(dumps(to_dump))
+
     elif legacy and full:
         for job in jobs:
             console.print(f"id: {job.id}")
@@ -212,7 +232,7 @@ def print_jobs(legacy, jobs, json=False, full=False):
                 console.print(Padding("{} = {}".format(attribute, str(job.__dict__[attribute])), (0, 4)))
             console.print()
     elif legacy:
-        print_table(jobs, get_table_lines)
+        print_table(jobs, get_table_lines_jobs, extra_arg={"resources": show_resources})
     else:
         print(jobs)
 
@@ -301,16 +321,15 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
         cmd_ret.exit()
 
 
-def print_events(cmd_ret, job_ids, array_id, json=False):
+def print_events(cmd_ret, job_ids, array_id, json):
     if array_id:
         job_ids = get_array_job_ids(array_id)
 
     if job_ids:
         events = get_jobs_events(job_ids)
-
         if not json:
 
-            def gather_events(events):
+            def gather_events(events, extra_args={}):
                 yield ["Date", "job id", "Type", "Description"]
                 for event in events:
                     yield [
@@ -338,7 +357,7 @@ def print_events(cmd_ret, job_ids, array_id, json=False):
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(cmd_ret, job_ids, array_id, json=False):
+def print_properties(cmd_ret, job_ids, array_id, json):
     if array_id:
         job_ids = get_array_job_ids(array_id)
 
@@ -450,6 +469,9 @@ class UserOption(click.Command):
     "-u", "--user", type=click.STRING, help="show information for this user only"
 )
 @click.option(
+    "-r", "--show-resources", is_flag=True, help="show allocated resources (if any)"
+)
+@click.option(
     "-a",
     "--array",
     type=int,
@@ -465,7 +487,7 @@ class UserOption(click.Command):
     help='show job information between two date-times "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"',
 )
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
-@click.option("-p", "--properties", is_flag=True, help="show job properties")
+@click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
 @click.option(
     "-A",
     "--accounting",
@@ -478,12 +500,6 @@ class UserOption(click.Command):
     type=click.STRING,
     help="restricts display by applying the SQL where clause on the table jobs (ex: \"project = 'p1'\")",
 )
-@click.option(
-    "-F",
-    "--format",
-    type=int,
-    help="select the text output format. Available values 1 an 2",
-)
 @click.option("-J", "--json", is_flag=True, help="print result in JSON format")
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
 def cli(
@@ -491,6 +507,7 @@ def cli(
     full,
     state,
     user,
+    show_resources,
     array,
     compact,
     gantt,
@@ -498,27 +515,11 @@ def cli(
     properties,
     accounting,
     sql,
-    format,
     json,
     version,
 ):
-    """Print job information."""
-    job_ids = job
-    array_id = array
-
-    start_time = None
-    stop_time = None
-    if gantt:  # --gantt "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"
-        m = re.match(
-            r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*",
-            gantt,
-        )
-        date1 = m.group(1) + " " + m.group(2)
-        date2 = m.group(3) + " " + m.group(4)
-        start_time = sql_to_local(date1)
-        stop_time = sql_to_local(date2)
-
     cmd_ret = CommandReturns(cli)
+
     # Print OAR version and exit
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
@@ -527,6 +528,13 @@ def cli(
     if user == "_this_user_":
         user = tools.get_username()
 
+    # if accounting print it and exit
+    if accounting:
+        print_accounting(cmd_ret, accounting, user, sql)
+        cmd_ret.exit()
+
+    job_ids = job
+    array_id = array
     if job_ids and array_id:
         cmd_ret.error(
             "Conflicting Job IDs and Array IDs (--array and -j cannot be used together)",
@@ -535,28 +543,32 @@ def cli(
         )
         cmd_ret.exit()
 
-    jobs = None
-    if not accounting and not events and not state:
+    if events:
+        print_events(cmd_ret, job_ids, array_id, json)
+    elif properties:
+        print_properties(cmd_ret, job_ids, array_id, json)
+    elif state:
+        print_state(cmd_ret, job_ids, array_id, json)
+    else:
+        start_time = None
+        stop_time = None
+        if gantt:  # --gantt "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"
+            m = re.match(
+                r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*",
+                gantt,
+            )
+            date1 = m.group(1) + " " + m.group(2)
+            date2 = m.group(3) + " " + m.group(4)
+            start_time = sql_to_local(date1)
+            stop_time = sql_to_local(date2)
+
         jobs = db.queries.get_jobs_for_user(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
-        if full:
-            res = db.queries.get_assigned_jobs_resources(jobs)
-
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(job.id, job=job)
 
-    if accounting:
-        print_accounting(cmd_ret, accounting, user, sql)
-    elif events:
-        print_events(cmd_ret, job_ids, array_id, json=json)
-    elif properties:
-        print_properties(cmd_ret, job_ids, array_id, json=json)
-    elif state:
-        print_state(cmd_ret, job_ids, array_id, json)
-    else:
-        if jobs:
-            print_jobs(True, jobs, json, full)
+        print_jobs(True, jobs, json, show_resources, full)
 
     cmd_ret.exit()

@@ -48,6 +48,15 @@ def test_version():
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
 
+def test_oarstat_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"],catch_exceptions=False)
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+
 def test_oarstat_simple():
     for _ in range(NB_JOBS):
         insert_job(
@@ -59,6 +68,51 @@ def test_oarstat_simple():
 
     runner = CliRunner()
     result = runner.invoke(cli, catch_exceptions=False)
+    nb_lines = len(result.output.split("\n"))
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+def test_oarstat():
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            state="Running",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+        assign_resources(id)
+
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-f"], catch_exceptions=False)
+    nb_lines = len(result.output.split("\n"))
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+def test_oarstat_simple_with_resources():
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+        assign_resources(id)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
     nb_lines = len(result.output.split("\n"))
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
@@ -93,7 +147,7 @@ def test_oarstat_full():
         assign_resources(id)
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-f", "-J"],catch_exceptions=False)
+    result = runner.invoke(cli, ["-f"],catch_exceptions=False)
     nb_lines = len(result.output.split("\n"))
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
@@ -110,7 +164,7 @@ def test_oarstat_sql_property():
     print("\n" + result.output)
     nb_lines = len(result.output.split("\n"))
 
-    assert nb_lines == 5
+    assert nb_lines == 7
     assert result.exit_code == 0
 
 
@@ -184,13 +238,12 @@ def test_oarstat_gantt():
 def test_oarstat_events():
     job_id = insert_job(res=[(60, [("resource_id=4", "")])])
     add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
-
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "--job", str(job_id)])
 
     str_result = result.output.splitlines()
     print("\n" + result.output)
-    assert re.match(".*EXECUTE_JOB.*", str_result[2])
+    assert re.match(".*EXECUTE_JOB.*", str_result[3])
 
 
 def test_oarstat_events_array():
@@ -205,7 +258,7 @@ def test_oarstat_events_array():
 
     print("\n" + result.output)
     # Remove the headers
-    str_result = "\n".join(result.output.splitlines()[2:])
+    str_result = "\n".join(result.output.splitlines()[3:])
 
     assert re.match(".*EXECUTE_JOB.*", str_result)
 
