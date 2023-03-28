@@ -1,22 +1,18 @@
 # -*- coding: utf-8 -*-
-from ClusterShell.NodeSet import NodeSet
-
 import itertools
 
 import click
-
 import rich
-from rich.progress import Progress, BarColumn, TextColumn
+from ClusterShell.NodeSet import NodeSet
 from rich.columns import Columns
-from rich.table import Column
-from rich.panel import Panel
 from rich.console import Console
-from rich.table import Table
 from rich.padding import Padding
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, TextColumn
+from rich.table import Column, Table
 
 from oar import VERSION
-from oar.kao.platform import Platform
-from oar.lib import db, Resource, Job, AssignedResource
+from oar.lib import AssignedResource, Job, Resource, db
 
 from .utils import CommandReturns
 
@@ -39,12 +35,10 @@ def get_resources_for_job():
 
 def get_resources_grouped_by_network_address():
     """Return the current resources on node whose hostname is passed in parameter"""
-    result = (
-        db.query(Resource)
-        .order_by(Resource.network_address, Resource.id)
-        .all()
-    )
-    grouped = {k: list(g) for k, g in itertools.groupby(result, lambda t: t.network_address)}
+    result = db.query(Resource).order_by(Resource.network_address, Resource.id).all()
+    grouped = {
+        k: list(g) for k, g in itertools.groupby(result, lambda t: t.network_address)
+    }
     return grouped
 
 
@@ -83,7 +77,9 @@ def cluster_details(node_list, res_to_jobs):
             else:
                 resource_representation += f"[red]{r.state}[/red]"
 
-            table.add_row(f"{r.id}", Padding(f"{resource_representation}", (0, 0 ,0, 4)))
+            table.add_row(
+                f"{r.id}", Padding(f"{resource_representation}", (0, 0, 0, 4))
+            )
             tablecontent.append(f"{resource_representation}")
 
         p = Panel(table, title=f"[{node_color}]{net}", title_align="left")
@@ -129,23 +125,42 @@ def cluster_summary(nodes_list, res_to_jobs):
             if r.id in res_to_jobs:
                 running_jobs.extend(res_to_jobs[r.id])
                 number_of_busy_resources += 1
+                node_color = "cyan"
             elif r.state != "Alive":
                 number_of_absent_resources += 1
 
-        number_of_free_resources = number_of_resources - number_of_busy_resources - number_of_absent_resources
+        number_of_free_resources = (
+            number_of_resources - number_of_busy_resources - number_of_absent_resources
+        )
 
         if number_of_free_resources == 0 and node_state == "Alive":
             node_color = "white"
 
-        text_column = TextColumn("[progress.description]{task.description}", table_column=Column(ratio=1))
-        bar_column = BarColumn(style=bar_style, complete_style="cyan",finished_style="blue", bar_width=None, table_column=Column(ratio=9))
+        text_column = TextColumn(
+            "[progress.description]{task.description}", table_column=Column(ratio=1)
+        )
+        bar_column = BarColumn(
+            style=bar_style,
+            complete_style="cyan",
+            finished_style="blue",
+            bar_width=None,
+            table_column=Column(ratio=9),
+        )
         # progress = Progress(text_column, bar_column, *Progress.get_default_columns(), expand=True)
         progress = Progress(text_column, bar_column, expand=True)
 
-        progress.add_task("{0:3d} /{1:3d}".format(number_of_free_resources, number_of_resources), total=number_of_resources)
+        progress.add_task(
+            "{0:3d} /{1:3d}".format(number_of_free_resources, number_of_resources),
+            total=number_of_resources,
+        )
         progress.advance(0, number_of_free_resources)
 
-        sum_table.add_row(f"[{node_color}]{net}", f"{node_state}", ", ".join(set([str(res_and_job[1].id) for res_and_job in running_jobs])), progress)
+        sum_table.add_row(
+            f"[{node_color}]{net}",
+            f"{node_state}",
+            ", ".join(set([str(res_and_job[1].id) for res_and_job in running_jobs])),
+            progress,
+        )
 
         # Extended
         table = Table.grid(expand=True)
@@ -172,10 +187,7 @@ def cluster_summary(nodes_list, res_to_jobs):
 @click.command(cls=click.Command)
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
 @click.option("-f", "--details", is_flag=True, help="Print details for every nodes")
-def cli(
-    version,
-    details
-):
+def cli(version, details):
     cmd_ret = CommandReturns(cli)
     # Print OAR version and exit
     if version:

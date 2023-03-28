@@ -5,8 +5,8 @@ import sys
 from json import dumps
 from typing import Generator, List
 
-from ClusterShell.NodeSet import NodeSet
 import click
+from ClusterShell.NodeSet import NodeSet
 from rich import box
 from rich.console import Console
 from rich.padding import Padding
@@ -205,7 +205,9 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
         res = db.queries.get_assigned_jobs_resources(jobs)
         for job in jobs:
             if job.id in res:
-                nodes = NodeSet.fromlist([str(res.network_address) for res in res[job.id]])
+                nodes = NodeSet.fromlist(
+                    [str(res.network_address) for res in res[job.id]]
+                )
                 job.network_adresses = nodes
 
     if json:

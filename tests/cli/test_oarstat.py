@@ -7,13 +7,7 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarstat import cli
-from oar.lib import (
-    AssignedResource,
-    Job,
-    MoldableJobDescription,
-    Resource,
-    db,
-)
+from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
 from oar.lib.event import add_new_event
 from oar.lib.job_handling import insert_job
 
