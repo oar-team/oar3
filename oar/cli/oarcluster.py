@@ -41,7 +41,7 @@ def get_resources_grouped_by_network_address():
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
         db.query(Resource)
-        .order_by(Resource.network_address)
+        .order_by(Resource.network_address, Resource.id)
         .all()
     )
     grouped = {k: list(g) for k, g in itertools.groupby(result, lambda t: t.network_address)}

@@ -5,9 +5,8 @@ import sys
 from json import dumps
 from typing import Generator, List
 
+from ClusterShell.NodeSet import NodeSet
 import click
-import rich
-from procset import ProcSet
 from rich import box
 from rich.console import Console
 from rich.padding import Padding
@@ -107,8 +106,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
     ]
 
     if "resources" in arg and arg["resources"]:
-        headers.append("Resources")
-        headers.append("network_addresses")
+        headers.append("Network addresses")
 
     # First yield the headers
     yield headers
@@ -136,8 +134,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
             str(job.queue_name),
         ]
 
-        if "resources" in arg and hasattr(job, "resources"):
-            job_line.append(str(job.resources))
+        if "resources" in arg and hasattr(job, "network_adresses"):
             job_line.append(str(job.network_adresses))
 
         yield job_line
@@ -208,10 +205,8 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
         res = db.queries.get_assigned_jobs_resources(jobs)
         for job in jobs:
             if job.id in res:
-                job.resources = ",".join([str(res.id) for res in res[job.id]])
-                job.network_adresses = ",".join(
-                    [str(res.network_address) for res in res[job.id]]
-                )
+                nodes = NodeSet.fromlist([str(res.network_address) for res in res[job.id]])
+                job.network_adresses = nodes
 
     if json:
         to_dump = {}
