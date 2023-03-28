@@ -3,15 +3,15 @@ import datetime
 import re
 import sys
 from json import dumps
-from procset import ProcSet
 from typing import Generator, List
-import click
 
-from rich.console import Console
-from rich.table import Table
-from rich import box
-from rich.padding import Padding
+import click
 import rich
+from procset import ProcSet
+from rich import box
+from rich.console import Console
+from rich.padding import Padding
+from rich.table import Table
 
 import oar.lib.tools as tools
 from oar import VERSION
@@ -133,7 +133,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
             str(job.user),
             str(datetime.timedelta(seconds=duration)),
             str(job.message),
-            str(job.queue_name)
+            str(job.queue_name),
         ]
 
         if "resources" in arg and hasattr(job, "resources"):
@@ -179,7 +179,7 @@ def print_table(
     objects: List[any],
     gather_prop: Generator[List[str], None, None],
     min_column_size: int = 7,
-    extra_arg={}
+    extra_arg={},
 ):
     """
     Use Rich to print a table in the terminal
@@ -209,9 +209,11 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
         for job in jobs:
             if job.id in res:
                 job.resources = ",".join([str(res.id) for res in res[job.id]])
-                job.network_adresses = ",".join([str(res.network_address) for res in res[job.id]])
+                job.network_adresses = ",".join(
+                    [str(res.network_address) for res in res[job.id]]
+                )
 
-    if json: 
+    if json:
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
         jobs_properties = [
@@ -227,9 +229,18 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
     elif legacy and full:
         for job in jobs:
             console.print(f"id: {job.id}")
-            attributes = [key for key in vars(job) if not key.startswith("_") and key != "id" and job.__dict__[key]]
+            attributes = [
+                key
+                for key in vars(job)
+                if not key.startswith("_") and key != "id" and job.__dict__[key]
+            ]
             for attribute in attributes:
-                console.print(Padding("{} = {}".format(attribute, str(job.__dict__[attribute])), (0, 4)))
+                console.print(
+                    Padding(
+                        "{} = {}".format(attribute, str(job.__dict__[attribute])),
+                        (0, 4),
+                    )
+                )
             console.print()
     elif legacy:
         print_table(jobs, get_table_lines_jobs, extra_arg={"resources": show_resources})

@@ -151,6 +151,17 @@ python-versions = ">=3.7"
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
+name = "clustershell"
+version = "1.9.1"
+description = "ClusterShell library and tools"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+PyYAML = "*"
+
+[[package]]
 name = "colorama"
 version = "0.4.5"
 description = "Cross-platform colored terminal text."
@@ -1227,7 +1238,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "27ac2ff885c6223c0ae2532dd14f4fe07ebab29aa59dacd6589f16061c0edca9"
+content-hash = "6d91a88f03c057d3359676f42026cc39375c78a6d8f0017edc6cf9e201a37ac6"
 
 [metadata.files]
 alabaster = [
@@ -1363,6 +1374,9 @@ charset-normalizer = [
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
     {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
+]
+clustershell = [
+    {file = "ClusterShell-1.9.1.tar.gz", hash = "sha256:6f0ab3ca141b508da03ce19bd52f1e5e8d29773fc3062d7bf36450a82207ec1b"},
 ]
 colorama = [
     {file = "colorama-0.4.5-py2.py3-none-any.whl", hash = "sha256:854bf444933e37f5824ae7bfc1e98d5bce2ebe4160d46b5edf346a89358e99da"},

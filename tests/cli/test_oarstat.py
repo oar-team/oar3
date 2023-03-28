@@ -7,19 +7,16 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarstat import cli
-from oar.lib import Job, db
-from oar.lib.event import add_new_event
-from oar.lib.job_handling import insert_job
-from oar.lib.utils import print_query_results
 from oar.lib import (
     AssignedResource,
-    FragJob,
     Job,
     MoldableJobDescription,
     Resource,
-    config,
     db,
 )
+from oar.lib.event import add_new_event
+from oar.lib.job_handling import insert_job
+
 from ..helpers import insert_terminated_jobs
 
 NB_JOBS = 5
@@ -50,11 +47,10 @@ def test_version():
 
 def test_oarstat_help():
     runner = CliRunner()
-    result = runner.invoke(cli, ["--help"],catch_exceptions=False)
+    result = runner.invoke(cli, ["--help"], catch_exceptions=False)
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
-
 
 
 def test_oarstat_simple():
@@ -68,7 +64,6 @@ def test_oarstat_simple():
 
     runner = CliRunner()
     result = runner.invoke(cli, catch_exceptions=False)
-    nb_lines = len(result.output.split("\n"))
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
@@ -94,8 +89,7 @@ def test_oarstat():
         )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-f"], catch_exceptions=False)
-    nb_lines = len(result.output.split("\n"))
+    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
@@ -113,7 +107,6 @@ def test_oarstat_simple_with_resources():
 
     runner = CliRunner()
     result = runner.invoke(cli, ["-r"], catch_exceptions=False)
-    nb_lines = len(result.output.split("\n"))
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
@@ -147,8 +140,7 @@ def test_oarstat_full():
         assign_resources(id)
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-f"],catch_exceptions=False)
-    nb_lines = len(result.output.split("\n"))
+    result = runner.invoke(cli, ["-f"], catch_exceptions=False)
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
