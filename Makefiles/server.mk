@@ -83,7 +83,7 @@ install: build install_shared
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
 		.oarproperty oar-hulot kao kamelot kamelot-fifo \
 		.oarremoveresource .oaraccounting .oarqueue .oarnotify .oarconnect \
-		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume .oarwalltime;\
+		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume .oarwalltime .oarcluster;\
 	do \
 		if [ -f  $(DESTDIR)$(BINDIR)/$$file ]; then\
 			mv $(DESTDIR)$(BINDIR)/$$file $(DESTDIR)$(OARDIR)/$$file; \
