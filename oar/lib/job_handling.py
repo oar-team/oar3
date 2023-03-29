@@ -2390,7 +2390,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
                             + str(job.id)
                             + " : "
                             + str(bad),
-                            str(bad),
+                            bad,
                         )
                     )
         ####################
