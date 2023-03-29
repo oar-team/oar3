@@ -270,6 +270,17 @@ def test_oarsub_sleep_property_error(monkeypatch):
     assert result.exception.code[0] == -5
 
 
+def test_oarsub_property_does_not_exist(monkeypatch):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-q default", "-l nothere=4", '"sleep 1"'])
+    print(result)
+    print(result.output)
+    assert result.exception.code == (
+        -3,
+        "Bad resources name: nothere is not a valid resources name.Valid resource names are: network_address, cpu, core, resource_id",
+    )
+
+
 def test_oarsub_sleep_queue_error(monkeypatch):
     runner = CliRunner()
     result = runner.invoke(cli, ["-q queue_doesnot_exist", '"sleep 1"'])

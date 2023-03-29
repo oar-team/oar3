@@ -535,6 +535,16 @@ def estimate_job_nb_resources(resource_request, j_properties):
             hy_nbs = []
             for resource_value in resource_value_lst:
                 res_name = resource_value["resource"]
+                if res_name not in resource_set.hierarchy:
+                    possible_options = ", ".join(resource_set.hierarchy.keys())
+                    error_code = -3
+                    error_msg = (
+                        f"Bad resources name: {res_name} is not a valid resources name."
+                        f"Valid resource names are: {possible_options}"
+                    )
+                    error = (error_code, error_msg)
+                    return (error, None, None)
+
                 value = resource_value["value"]
                 hy_levels.append(resource_set.hierarchy[res_name])
                 hy_nbs.append(int(value))
