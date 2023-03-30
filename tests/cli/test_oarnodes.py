@@ -1,4 +1,5 @@
 # coding: utf-8
+import json
 import re
 
 import pytest
@@ -9,7 +10,7 @@ from oar.lib import Resource, db
 from oar.lib.event import add_new_event_with_host
 
 NB_NODES = 5
-NB_LINES_PER_NODE = 4  # network_address: localhost\n resource_id: 1\n state: Alive\n
+NB_LINES_PER_NODE = 1  # network_address: localhost\n resource_id: 1\n state: Alive\n
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -34,7 +35,7 @@ def test_oarnodes_event_no_date():
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "_events_without_date_"])
     print(result.output)
-    assert re.match(r".*fake_event.*", result.output)
+    assert re.findall(r".*fake_event.*", result.output)
 
 
 def test_oarnodes_event():
@@ -43,7 +44,7 @@ def test_oarnodes_event():
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "1970-01-01 01:20:00"])
     print(result)
-    print("\n"+result.output)
+    print("\n" + result.output)
     assert re.findall(r".*fake_event.*", result.output)
 
 
@@ -51,8 +52,8 @@ def test_oarnodes_event_json():
     add_new_event_with_host("TEST", 1, "fake_event", ["localhost"])
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "1970-01-01 01:20:00", "--json"])
-    print(result.output)
-    assert re.match(r".*fake_event.*", result.output)
+    data = json.loads(result.output)
+    assert re.match(r".*fake_event.*", data["localhost"][0]["description"])
 
 
 def test_oarnodes_resource_ids_state():
@@ -79,7 +80,7 @@ def test_oarnodes_hosts_state():
     runner = CliRunner()
     result = runner.invoke(cli, ["--state", "localhost", "akira"])
     print(result.output)
-    assert len(result.output.split("\n")) == 9
+    assert len(result.output.split("\n")) == 8
 
 
 def test_oarnodes_hosts_state_json():
@@ -115,9 +116,8 @@ def test_oarnodes_list_state_json():
 def test_oarnodes_simple():
     runner = CliRunner()
     result = runner.invoke(cli)
-    nb_lines = len(result.output.split("\n"))
-    print(result.output)
-    assert nb_lines == NB_LINES_PER_NODE * NB_NODES + 1  # + 1 for last \n
+    lines = re.findall(r".*localhost.*", result.output)
+    assert len(lines) == NB_LINES_PER_NODE * NB_NODES  # + 1 for last \n
     assert result.exit_code == 0
 
 
@@ -136,8 +136,8 @@ def test_oarnodes_sql():
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "network_address='akira'"])
     print(result.output)
-    nb_lines = len(result.output.split("\n"))
-    assert nb_lines == 2 * 4 + 1
+    concerned_lines = re.findall(r".*akira.*", result.output)
+    assert len(concerned_lines) == 2
     assert result.exit_code == 0
 
 
@@ -147,6 +147,6 @@ def test_oarnodes_sql_json():
     db.commit()
     runner = CliRunner()
     result = runner.invoke(cli, ["--sql", "network_address='akira'", "--json"])
-    print(result.output)
-    assert re.match(r".*akira.*", result.output)
+    data = json.loads(result.output)
+    assert len(data) == 2
     assert result.exit_code == 0

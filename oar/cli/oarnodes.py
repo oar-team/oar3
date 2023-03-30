@@ -86,13 +86,19 @@ def print_events(date, hostnames, json):
         table.add_column("Job id")
         table.add_column("Type")
         table.add_column("Description")
-    
+
         for hostname in hostnames:
             events = get_events_for_hostname_from(hostname, date)
             for ev in events:
-                table.add_row(str(local_to_sql(ev.date)), str(hostname), str(ev.job_id), str(ev.type), str(ev.description))
+                table.add_row(
+                    str(local_to_sql(ev.date)),
+                    str(hostname),
+                    str(ev.job_id),
+                    str(ev.type),
+                    str(ev.description),
+                )
             table.add_section()
-        console.print(table) 
+        console.print(table)
     else:
         hosts_events = {
             hostname: [
