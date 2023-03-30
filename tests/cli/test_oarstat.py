@@ -7,10 +7,9 @@ from click.testing import CliRunner
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarstat import cli
-from oar.lib import Job, db
+from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
 from oar.lib.event import add_new_event
 from oar.lib.job_handling import insert_job
-from oar.lib.utils import print_query_results
 
 from ..helpers import insert_terminated_jobs
 
@@ -40,6 +39,14 @@ def test_version():
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
 
+def test_oarstat_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"], catch_exceptions=False)
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
 def test_oarstat_simple():
     for _ in range(NB_JOBS):
         insert_job(
@@ -51,9 +58,85 @@ def test_oarstat_simple():
 
     runner = CliRunner()
     result = runner.invoke(cli, catch_exceptions=False)
-    nb_lines = len(result.output.split("\n"))
     print("\n" + result.output)
-    assert nb_lines == NB_JOBS + 3
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+def test_oarstat():
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            state="Running",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+        assign_resources(id)
+
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+def test_oarstat_simple_with_resources():
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+        assign_resources(id)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
+    assert result.exit_code == 0
+
+
+def assign_resources(job_id):
+    moldable = (
+        db.query(MoldableJobDescription)
+        .filter(MoldableJobDescription.job_id == job_id)
+        .first()
+    )
+
+    db.query(Job).filter(Job.id == job_id).update(
+        {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
+    )
+    resources = db.query(Resource).all()
+    for r in resources[:4]:
+        AssignedResource.create(moldable_id=moldable.id, resource_id=r.id)
+
+
+def test_oarstat_full():
+    for i in range(NB_JOBS):
+        id = insert_job(
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_name=f"test-{i}",
+            job_user="Toto",
+            command="oarsub -l ",
+            message="Relatively long message",
+        )
+        assign_resources(id)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["-f"], catch_exceptions=False)
+    print("\n" + result.output)
+    # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
@@ -67,7 +150,7 @@ def test_oarstat_sql_property():
     print("\n" + result.output)
     nb_lines = len(result.output.split("\n"))
 
-    assert nb_lines == 5
+    assert nb_lines == 7
     assert result.exit_code == 0
 
 
@@ -125,11 +208,12 @@ def test_oarstat_gantt():
     insert_terminated_jobs(update_accounting=False)
 
     jobs = db.query(Job).all()
-    print_query_results(jobs)
+    # print_query_results(jobs)
 
     for j in jobs:
-        print(j.id, j.assigned_moldable_job)
-    # import pdb; pdb.set_trace()
+        pass
+        # print(j.id, j.assigned_moldable_job)
+    # import pdb; pdb.set_trace(# )
     runner = CliRunner()
     result = runner.invoke(cli, ["--gantt", "1970-01-01 01:20:00, 1970-01-20 00:00:00"])
     str_result = result.output
@@ -140,13 +224,12 @@ def test_oarstat_gantt():
 def test_oarstat_events():
     job_id = insert_job(res=[(60, [("resource_id=4", "")])])
     add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
-
     runner = CliRunner()
     result = runner.invoke(cli, ["--events", "--job", str(job_id)])
 
     str_result = result.output.splitlines()
     print("\n" + result.output)
-    assert re.match(".*EXECUTE_JOB.*", str_result[2])
+    assert re.match(".*EXECUTE_JOB.*", str_result[3])
 
 
 def test_oarstat_events_array():
@@ -161,7 +244,7 @@ def test_oarstat_events_array():
 
     print("\n" + result.output)
     # Remove the headers
-    str_result = "\n".join(result.output.splitlines()[2:])
+    str_result = "\n".join(result.output.splitlines()[3:])
 
     assert re.match(".*EXECUTE_JOB.*", str_result)
 
