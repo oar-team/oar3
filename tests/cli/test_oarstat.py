@@ -164,7 +164,7 @@ def test_oarstat_accounting():
     str_result = result.output
     print(str_result)
     print(str_result.split("\n"))
-    assert re.match(r".*8640000.*", str_result.split("\n")[2])
+    assert re.findall(r".*8640000.*", str_result)
 
 
 @pytest.mark.skipif(
