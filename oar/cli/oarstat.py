@@ -140,7 +140,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
         yield job_line
 
 
-def gather_all_user_accounting(items) -> List[str]:
+def gather_all_user_accounting(items, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "User",
