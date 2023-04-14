@@ -66,7 +66,7 @@ def index(
 @app.route("/", methods=["POST"])
 @app.args(
     {
-        "resource": Arg([str]),
+        "resource": Arg(str),
         "command": Arg(str),
         "workdir": Arg(str),
         "param_file": Arg(str),
@@ -239,9 +239,9 @@ def submit(
     if param_file:
         array_params = param_file.split("\n")
         # array_nb = len(array_params)
-    # if not isinstance(resource, list):
-    #    resource = [resource]
-
+    if not isinstance(resource, list):
+       resource = [resource]
+    
     job_parameters = JobParameters(
         job_type="PASSIVE",
         command=command,
