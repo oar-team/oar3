@@ -79,7 +79,7 @@ def index(
         "reservation": Arg(str),
         "checkpoint": Arg(int, default=0),
         "signal": Arg(int),
-        "type": Arg([str], dest="types"),
+        "type": Arg([str], dest="types", locations=("json",)),
         "directory": Arg(str),
         "project": Arg(str),
         "name": Arg(str),

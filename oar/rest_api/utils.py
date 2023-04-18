@@ -7,7 +7,6 @@ from flask import abort, current_app, request
 from oar.lib import config
 from oar.lib.utils import integer_types, reraise, to_unicode
 
-
 class WSGIProxyFix(object):
     def __init__(self, app):
         self.app = app
@@ -69,7 +68,7 @@ class Arg(object):
         self.required = required
         self.dest = dest
         self.error = error
-        self.locations = locations or self.DEFAULT_LOCATIONS
+        self.locations = locations if locations else self.DEFAULT_LOCATIONS
 
     def raw_value(self, value):
         if value is not None:
@@ -111,7 +110,7 @@ class ArgParser(object):
         self.argmap = argmap
 
     def get_value(self, data, name, argobj):
-        if isinstance(argobj.type, ListArg) and not argobj.type.sep:
+        if isinstance(argobj.type, ListArg) and not argobj.type.sep and not isinstance(data, dict):
             return data.getlist(name)
         else:
             return data.get(name, self.MISSING)
@@ -119,6 +118,7 @@ class ArgParser(object):
     def parse_arg(self, argname, argobj):
         """Pull a form value from the request."""
         for location in argobj.locations:
+
             value = self.MISSING
             if location == "querystring" and request.args:
                 value = self.get_value(request.args, argname, argobj)
@@ -136,7 +136,7 @@ class ArgParser(object):
 
     def convert_bool(self, value):
         """Try to convert ``value`` to a Boolean."""
-        if value.lower() in ("True", "yes", "1"):
+        if value.lower() in ("true", "yes", "1"):
             return True
         if value.lower() in ("false", "no", "0"):
             return False
