@@ -9,6 +9,7 @@ from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
 from oar.lib import Job, db
 from oar.lib.submission import JobParameters, Submission, check_reservation
+from oar.lib.event import get_job_events
 
 from ..utils import Arg
 from . import Blueprint
@@ -324,6 +325,7 @@ def show(job_id, detailed=None):
         job_resources = db.queries.get_assigned_jobs_resources([job])
         attach_resources(g.data, job_resources)
         attach_nodes(g.data, job_resources)
+    g.data["events"] = get_job_events(job_id)
     attach_links(g.data)
 
 
