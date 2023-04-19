@@ -20,9 +20,9 @@ LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 STREAM_HANDLER = {"stdout": None, "stderr": None}
 
 
-def create_logger():
+def create_logger(config):
     """Creates a new logger object."""
-    from . import config
+    # from . import config
 
     logger = getLogger("oar")
     del logger.handlers[:]
@@ -32,9 +32,9 @@ def create_logger():
     log_file = config.get("LOG_FILE", None)
     if log_file is not None:
         if log_file == ":stdout:":  # pragma: no cover
-            handler = get_global_stream_handler("stdout")
+            handler = get_global_stream_handler(config, "stdout")
         if log_file == ":stderr:":
-            handler = get_global_stream_handler("stderr")
+            handler = get_global_stream_handler(config, "stderr")
         else:  # pragma: no cover
             touch(log_file)
             handler = FileHandler(log_file)
@@ -50,7 +50,7 @@ def create_logger():
     return logger
 
 
-def get_logger(*args, **kwargs):
+def get_logger(logger, *args, **kwargs):
     """Returns sub logger once the root logger is configured."""
     global STREAM_HANDLER
     forward_stderr = kwargs.pop("forward_stderr", False)
@@ -64,8 +64,8 @@ def get_logger(*args, **kwargs):
     return sublogger
 
 
-def get_global_stream_handler(output="stderr"):
-    from . import config
+def get_global_stream_handler(config, output="stderr"):
+    # from . import config
 
     global STREAM_HANDLER
     if STREAM_HANDLER[output] is None:
@@ -73,6 +73,3 @@ def get_global_stream_handler(output="stderr"):
         STREAM_HANDLER[output].setLevel(LEVELS[config["LOG_LEVEL"]])
         STREAM_HANDLER[output].setFormatter(Formatter(config["LOG_FORMAT"]))
     return STREAM_HANDLER[output]
-
-
-logger = create_logger()

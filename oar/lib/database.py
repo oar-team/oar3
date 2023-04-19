@@ -143,25 +143,23 @@ class Database(object):
         self.sessionmaker = sessionmaker(**self._session_options)
         self._engine_lock = threading.Lock()
         # Include some sqlalchemy orm functions
-        _include_sqlalchemy(self)
-        self.Model = declarative_base(
-            cls=BaseModel, name="Model", metaclass=_BoundDeclarativeMeta
-        )
-        self.Model.query = QueryProperty(self)
-        self.Model._db = self
+        # _include_sqlalchemy(self)
+
+        # self.Model.query = QueryProperty(self)
+        # self.Model._db = self
         self.models = {}
         self.tables = {}
 
-        class DeferredReflectionModel(DeferredReflection, self.Model):
-            __abstract__ = True
+        # class DeferredReflectionModel(DeferredReflection, self.Model):
+        #     __abstract__ = True
 
-        self.DeferredReflectionModel = DeferredReflectionModel
+        # self.DeferredReflectionModel = DeferredReflectionModel
 
     @cached_property
     def uri(self):
-        from oar.lib import config
+        # from oar.lib import config
 
-        return config.get_sqlalchemy_uri()
+        return self.config.get_sqlalchemy_uri()
 
     @cached_property
     def uri_ro(self):
@@ -220,21 +218,22 @@ class Database(object):
         """Proxy for session.rollback"""
         return self.session.rollback()
 
-    def reflect(self, bind=None):
+    def reflect(self, metadata, bind=None):
         """Proxy for Model.prepare"""
+        from oar.lib.models import DeferredReflectionModel
         if not self._reflected:
             if bind is None:
                 bind = self.engine
-            self.create_all(bind=bind)
+            self.create_all(metadata, bind=bind)
             # autoload all tables marked for autoreflect
-            self.DeferredReflectionModel.prepare(bind)
+            DeferredReflectionModel.prepare(bind)
             self._reflected = True
 
-    def create_all(self, bind=None, **kwargs):
+    def create_all(self, metadata, bind=None, **kwargs):
         """Creates all tables."""
         if bind is None:
             bind = self.engine
-        self.metadata.create_all(bind=bind, **kwargs)
+        metadata.create_all(bind=bind, **kwargs)
 
     def delete_all(self, bind=None, **kwargs):
         """Drop all tables."""
@@ -292,9 +291,9 @@ class Database(object):
 
 class EngineConnector(object):
     def __init__(self, db):
-        from oar.lib import config
+        # from oar.lib import config
 
-        self._config = config
+        self._config = db.config
         self._db = db
         self._engine = None
         self._connected_for = None
@@ -392,61 +391,6 @@ def _include_sqlalchemy(db):
             super(Column, self).__init__(*args, **kwargs)
 
     db.Column = Column
-
-
-class _BoundDeclarativeMeta(DeclarativeMeta):
-    def __new__(cls, name, bases, d):
-        if (
-            "__tablename__" not in d
-            and "__table__" not in d
-            and "__abstract__" not in d
-        ):
-            d["__tablename__"] = get_table_name(name)
-        default_table_args = d.pop(
-            "__default_table_args__", BaseModel.__default_table_args__
-        )
-        table_args = d.pop("__table_args__", {})
-        if isinstance(table_args, dict):
-            table_args = merge_dicts(default_table_args, table_args)
-        elif isinstance(table_args, tuple):
-            table_args = list(table_args)
-            if isinstance(table_args[-1], dict):
-                table_args[-1] = merge_dicts(default_table_args, table_args[-1])
-            else:
-                table_args.append(default_table_args)
-            table_args = tuple(table_args)
-        d["__table_args__"] = table_args
-        return DeclarativeMeta.__new__(cls, name, bases, d)
-
-    def __init__(self, name, bases, d):
-        DeclarativeMeta.__init__(self, name, bases, d)
-        if hasattr(bases[0], "_db"):
-            bases[0]._db.models[name] = self
-            bases[0]._db.tables[self.__table__.name] = self.__table__
-            self._db = bases[0]._db
-
-
-def get_entity_loaded_propnames(entity):
-    """Get entity property names that are loaded (e.g. won't produce new
-    queries)
-
-    :param entity: SQLAlchemy entity
-    :returns: List of entity property names
-    """
-    ins = entity if isinstance(entity, InstanceState) else inspect(entity)
-    columns = ins.mapper.column_attrs.keys() + ins.mapper.relationships.keys()
-    keynames = set(columns)
-    # If the entity is not transient -- exclude unloaded keys
-    # Transient entities won't load these anyway, so it's safe to include
-    # all columns and get defaults
-    if not ins.transient:
-        keynames -= ins.unloaded
-
-    # If the entity is expired -- reload expired attributes as well
-    # Expired attributes are usually unloaded as well!
-    if ins.expired:
-        keynames |= ins.expired_attributes
-    return sorted(keynames, key=lambda x: columns.index(x))
 
 
 @contextmanager

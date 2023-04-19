@@ -4,12 +4,22 @@ import os
 
 from .configuration import Configuration
 from .database import Database
+from .models import setup_db
+from .logging import create_logger
 
-db = Database()
-config = Configuration()
 
+def init_oar():
+    config = Configuration()
+    db = Database()
+    db.config = config
 
-if "OARCONFFILE" in os.environ:  # pragma: no cover
-    config.load_file(os.environ["OARCONFFILE"])
-else:
-    config.load_default_config(silent=True)
+    setup_db(db)
+
+    if "OARCONFFILE" in os.environ:  # pragma: no cover
+        config.load_file(os.environ["OARCONFFILE"])
+    else:
+        config.load_default_config(silent=True)
+
+    logger = create_logger(config)
+
+    return config, db, logger

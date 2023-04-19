@@ -2,9 +2,13 @@
 
 from sqlalchemy import desc, func
 
-from oar.lib import EventLog, EventLogHostname, db, get_logger, tools
+from oar.lib.models import EventLog, EventLogHostname # , db, get_logger, tools
+from oar.lib import tools
 
-logger = get_logger("oar.lib.event")
+# logger = get_logger("oar.lib.event")
+from oar.lib.globals import init_oar
+
+config, db, logger = init_oar()
 
 
 def add_new_event(ev_type, job_id, description, to_check="YES"):

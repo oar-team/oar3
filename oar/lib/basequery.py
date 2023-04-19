@@ -2,7 +2,7 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Load, Query
 
-from . import db
+# from . import db
 from .exceptions import DoesNotExist
 from .models import (
     AssignedResource,

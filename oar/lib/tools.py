@@ -26,11 +26,16 @@ from subprocess import (  # noqa
 import psutil
 import zmq
 
-from oar.lib import config, db, get_logger
-from oar.lib import logger as log
+from oar.lib import get_logger
+# from oar.lib import logger as log
+
 from oar.lib.event import add_new_event
 
-tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
+# from oar.lib import config, db
+from oar.lib.globals import init_oar
+config, db, logger = init_oar()
+
+tools_logger = get_logger(logger, "oar.lib.tools", forward_stderr=True)
 
 zmq_context = None
 almighty_socket = None
@@ -284,7 +289,7 @@ def pingchecker(hosts):  # pragma: no cover
 
 
 def pingchecker_exec_command(
-    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log
+    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=tools_logger
 ):  # pragma: no cover
     log.debug("[PingChecker] command to run : {}".format(cmd))
 

@@ -7,9 +7,14 @@ from codecs import open
 
 import pytest
 
-from oar.lib import config, db
-
 from . import DEFAULT_CONFIG
+# from oar.lib import config, db
+from oar.lib.globals import init_oar
+from oar.lib.models import Model
+from sqlalchemy import Table, Column, Integer, String, CheckConstraint, BigInteger, Text, Index, text
+
+
+config, db, logger = init_oar()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -50,14 +55,15 @@ def setup_config(request):
                     fd.write("%s=%s\n" % (key, str(value)))
 
     dump_configuration("/tmp/oar.conf")
-    db.metadata.drop_all(bind=db.engine)
-    db.create_all(bind=db.engine)
+    Model.metadata.drop_all(bind=db.engine)
+
+    db.create_all(Model.metadata,bind=db.engine)
     kw = {"nullable": True}
-    db.op.add_column("resources", db.Column("core", db.Integer, **kw))
-    db.op.add_column("resources", db.Column("cpu", db.Integer, **kw))
-    db.op.add_column("resources", db.Column("host", db.String(255), **kw))
-    db.op.add_column("resources", db.Column("mem", db.Integer, **kw))
-    db.reflect()
+    db.op.add_column("resources", Column("core", Integer, **kw))
+    db.op.add_column("resources", Column("cpu", Integer, **kw))
+    db.op.add_column("resources", Column("host", String(255), **kw))
+    db.op.add_column("resources", Column("mem", Integer, **kw))
+    db.reflect(Model.metadata)
     yield
     db.close()
     shutil.rmtree(tempdir)
