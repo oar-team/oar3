@@ -10,8 +10,7 @@ from .logging import create_logger
 
 def init_oar():
     config = Configuration()
-    db = Database()
-    db.config = config
+    db = Database(config)
 
     setup_db(db)
 

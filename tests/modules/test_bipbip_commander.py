@@ -4,11 +4,12 @@ import pytest
 import zmq
 
 import oar.lib.tools
-from oar.lib import config
+from oar.lib.globals import init_oar
 from oar.modules.bipbip_commander import BipbipCommander
 
 from ..faketools import FakeProcess, fake_call, fake_called_command
 from ..fakezmq import FakeZmq
+
 
 fakezmq = FakeZmq()
 
@@ -21,19 +22,19 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup(request):
-    config["SERVER_HOSTNAME"] = "localhost"
-    config["APPENDICE_SERVER_PORT"] = "6670"
-    config["BIPBIP_COMMANDER_SERVER"] = "localhost"
-    config["BIPBIP_COMMANDER_PORT"] = "6671"
+def setup(request, setup_config):
+    setup_config["SERVER_HOSTNAME"] = "localhost"
+    setup_config["APPENDICE_SERVER_PORT"] = "6670"
+    setup_config["BIPBIP_COMMANDER_SERVER"] = "localhost"
+    setup_config["BIPBIP_COMMANDER_PORT"] = "6671"
     fakezmq.reset()
 
     @request.addfinalizer
     def teardown():
-        del config["SERVER_HOSTNAME"]
-        del config["APPENDICE_SERVER_PORT"]
-        del config["BIPBIP_COMMANDER_SERVER"]
-        del config["BIPBIP_COMMANDER_PORT"]
+        del setup_config["SERVER_HOSTNAME"]
+        del setup_config["APPENDICE_SERVER_PORT"]
+        del setup_config["BIPBIP_COMMANDER_SERVER"]
+        del setup_config["BIPBIP_COMMANDER_PORT"]
 
 
 def test_bipbip_commander_OAREXEC():

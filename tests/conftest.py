@@ -10,6 +10,7 @@ import pytest
 from . import DEFAULT_CONFIG
 # from oar.lib import config, db
 from oar.lib.globals import init_oar
+from oar.lib.database import EngineConnector
 from oar.lib.models import Model
 from sqlalchemy import Table, Column, Integer, String, CheckConstraint, BigInteger, Text, Index, text
 
@@ -55,15 +56,22 @@ def setup_config(request):
                     fd.write("%s=%s\n" % (key, str(value)))
 
     dump_configuration("/tmp/oar.conf")
-    Model.metadata.drop_all(bind=db.engine)
 
-    db.create_all(Model.metadata,bind=db.engine)
+    engine = EngineConnector(db).get_engine()
+
+    Model.metadata.drop_all(bind=engine)
+    db.create_all(Model.metadata, bind=engine)
+
     kw = {"nullable": True}
-    db.op.add_column("resources", Column("core", Integer, **kw))
-    db.op.add_column("resources", Column("cpu", Integer, **kw))
-    db.op.add_column("resources", Column("host", String(255), **kw))
-    db.op.add_column("resources", Column("mem", Integer, **kw))
-    db.reflect(Model.metadata)
-    yield
+
+    db.op(engine).add_column("resources", Column("core", Integer, **kw))
+    db.op(engine).add_column("resources", Column("cpu", Integer, **kw))
+    db.op(engine).add_column("resources", Column("host", String(255), **kw))
+    db.op(engine).add_column("resources", Column("mem", Integer, **kw))
+
+    db.reflect(Model.metadata, bind=engine)
+
+    yield config
+
     db.close()
     shutil.rmtree(tempdir)

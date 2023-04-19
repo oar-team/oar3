@@ -133,8 +133,11 @@ class Database(object):
     query_class = None
     query_collection_class = None
 
-    def __init__(self, uri=None, uri_ro=None, session_options=None):
+    def __init__(self, config, uri=None, uri_ro=None, session_options=None):
         self.connector = None
+        self._config = config
+        self.config = config
+
         self._reflected = False
         self._cache = {"uri": uri, "uri_ro": uri_ro}
         self._session_options = dict(session_options or {})
@@ -156,20 +159,13 @@ class Database(object):
         # self.DeferredReflectionModel = DeferredReflectionModel
 
     @cached_property
-    def uri(self):
-        # from oar.lib import config
-
-        return self.config.get_sqlalchemy_uri()
-
-    @cached_property
     def uri_ro(self):
         from oar.lib import config
 
         return config.get_sqlalchemy_uri(read_only=True)
 
-    @property
-    def op(self):
-        ctx = MigrationContext.configure(self.engine.connect())
+    def op(self, engine):
+        ctx = MigrationContext.configure(engine.connect())
         return Operations(ctx)
 
     @cached_property
@@ -183,10 +179,10 @@ class Database(object):
     @property
     def engine(self):
         """Gives access to the engine."""
-        with self._engine_lock:
-            if self.connector is None:
-                self.connector = EngineConnector(self)
-            return self.connector.get_engine()
+        # with self._engine_lock:
+        if self.connector is None:
+            self.connector = EngineConnector(self)
+        return self.connector.get_engine()
 
     @cached_property
     def dialect(self):
@@ -293,8 +289,8 @@ class EngineConnector(object):
     def __init__(self, db):
         # from oar.lib import config
 
-        self._config = db.config
         self._db = db
+        self._config = db.config
         self._engine = None
         self._connected_for = None
         self._lock = threading.Lock()
@@ -336,23 +332,23 @@ class EngineConnector(object):
         return options
 
     def get_engine(self):
-        with self._lock:
-            uri = self._db.uri
-            echo = self._config.get("SQLALCHEMY_ECHO", False)
-            if (uri, echo) == self._connected_for:
-                return self._engine
-            info = make_url(uri)
-            options = {}
-            self.apply_pool_defaults(options)
-            self.apply_driver_hacks(info, options)
-            options["echo"] = echo
-            if self._config["DB_TYPE"] == "sqlite":
-                options["connect_args"] = {"check_same_thread": False}
-                options["poolclass"] = StaticPool
+        uri = self._config.get_sqlalchemy_uri()
+        echo = self._config.get("SQLALCHEMY_ECHO", False)
 
-            self._engine = engine = create_engine(info, **options)
-            self._connected_for = (uri, echo)
-            return engine
+        if (uri, echo) == self._connected_for:
+            return self._engine
+        info = make_url(uri)
+        options = {}
+        self.apply_pool_defaults(options)
+        self.apply_driver_hacks(info, options)
+        options["echo"] = echo
+        if self._config["DB_TYPE"] == "sqlite":
+            options["connect_args"] = {"check_same_thread": False}
+            options["poolclass"] = StaticPool
+
+        self._engine = engine = create_engine(info, **options)
+        self._connected_for = (uri, echo)
+        return engine
 
 
 def _include_sqlalchemy(db):

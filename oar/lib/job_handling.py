@@ -14,7 +14,7 @@ from sqlalchemy.sql.expression import select
 
 import oar.lib.tools as tools
 from oar.kao.helpers import extract_find_assign_args
-from oar.lib import (
+from oar.lib.models import (
     AssignedResource,
     Challenge,
     FragJob,
@@ -29,9 +29,6 @@ from oar.lib import (
     MoldableJobDescription,
     Resource,
     WalltimeChange,
-    config,
-    db,
-    get_logger,
 )
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 from oar.lib.plugins import find_plugin_function
@@ -48,8 +45,12 @@ from oar.lib.tools import (
 )
 
 # from oar.lib.utils import render_query
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
-logger = get_logger("oar.lib.job_handling")
+config, db, logger = init_oar()
+
+logger = get_logger(logger, "oar.lib.job_handling")
 
 
 """ Use

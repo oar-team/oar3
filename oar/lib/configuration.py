@@ -2,6 +2,7 @@
 import pprint
 import sys
 from io import open
+from rich import print
 
 from .exceptions import InvalidConfiguration
 from .utils import reraise, try_convert_decimal
@@ -177,6 +178,7 @@ class Configuration(dict):
         return True
 
     def get_sqlalchemy_uri(self, read_only=False):
+        # print(self)
         if read_only:
             login = "base_login_ro"
             passwd = "base_passwd_ro"
@@ -245,4 +247,4 @@ class Configuration(dict):
         return rv
 
     def __str__(self):
-        return pprint.pprint(self)
+        return f"{dict(self)}"

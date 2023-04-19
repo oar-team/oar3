@@ -2,12 +2,14 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import AssignedResource, Challenge, EventLog, Job, Resource, config, db
+from oar.lib.models import AssignedResource, Challenge, EventLog, Job, Resource
 from oar.lib.job_handling import insert_job
+from oar.lib.globals import init_oar
 from oar.modules.bipbip import BipBip
 
 from ..faketools import FakePopen, fake_popen
 
+config, db, logger = init_oar()
 fake_bad_nodes = {"pingchecker": (1, []), "init": [], "clean": []}
 fake_tag = 1
 

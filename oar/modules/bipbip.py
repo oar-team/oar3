@@ -12,7 +12,6 @@ import socket
 import sys
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
 from oar.lib.event import add_new_event, add_new_event_with_host
 from oar.lib.job_handling import (
     archive_some_moldable_job_nodes,
@@ -35,8 +34,12 @@ from oar.lib.tools import (
     limited_dict2hash_perl,
     resources2dump_perl,
 )
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
-logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+config, db, logger = init_oar()
+
+logger = get_logger(logger, "oar.modules.bipbip", forward_stderr=True)
 
 
 class BipBip(object):

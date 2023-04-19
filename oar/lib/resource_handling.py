@@ -5,7 +5,8 @@ import os
 from sqlalchemy import distinct, func, or_, text
 
 import oar.lib.tools as tools
-from oar.lib import (
+from oar.lib.logging import get_logger
+from oar.lib.models import (
     AssignedResource,
     EventLog,
     FragJob,
@@ -14,14 +15,14 @@ from oar.lib import (
     MoldableJobDescription,
     Resource,
     ResourceLog,
-    config,
-    db,
-    get_logger,
 )
 from oar.lib.event import add_new_event, is_an_event_exists
 from oar.lib.psycopg2 import pg_bulk_insert
+from oar.lib.globals import init_oar
 
 State_to_num = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
+
+config, db, logger = init_oar()
 
 logger = get_logger("oar.lib.resource_handling")
 
