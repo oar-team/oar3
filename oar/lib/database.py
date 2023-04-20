@@ -40,48 +40,6 @@ def wait_db_ready(f, args=None, attempt=7):
             return r
 
 
-class BaseModel(object):
-    __default_table_args__ = {"extend_existing": True, "sqlite_autoincrement": True}
-    query = None
-
-    @classmethod
-    def create(cls, **kwargs):
-        record = cls()
-        for key, value in kwargs.items():
-            setattr(record, key, value)
-        try:
-            cls._db.session.add(record)
-            cls._db.session.commit()
-            return record
-        except Exception:
-            exc_type, exc_value, tb = sys.exc_info()
-            cls._db.session.rollback()
-            reraise(exc_type, exc_value, tb.tb_next)
-
-    def to_dict(self, ignore_keys=()):
-        data = OrderedDict()
-        for key in get_entity_loaded_propnames(self):
-            if key not in ignore_keys:
-                data[key] = getattr(self, key)
-        return data
-
-    asdict = to_dict
-
-    def to_json(self, **kwargs):
-        """Dump `self` to json string."""
-        kwargs.setdefault("ignore_keys", ())
-        obj = self.to_dict(kwargs.pop("ignore_keys"))
-        return to_json(obj, **kwargs)
-
-    def __iter__(self):
-        """Return an iterable that supports .next()"""
-        for key, value in (self.asdict()).items():
-            yield (key, value)
-
-    def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, inspect(self).identity)
-
-
 class SessionProperty(object):
     def __init__(self):
         self._sessions = {}
@@ -217,6 +175,7 @@ class Database(object):
     def reflect(self, metadata, bind=None):
         """Proxy for Model.prepare"""
         from oar.lib.models import DeferredReflectionModel
+
         if not self._reflected:
             if bind is None:
                 bind = self.engine

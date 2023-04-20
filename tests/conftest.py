@@ -8,11 +8,22 @@ from codecs import open
 import pytest
 
 from . import DEFAULT_CONFIG
+
 # from oar.lib import config, db
 from oar.lib.globals import init_oar
 from oar.lib.database import EngineConnector
 from oar.lib.models import Model
-from sqlalchemy import Table, Column, Integer, String, CheckConstraint, BigInteger, Text, Index, text
+from sqlalchemy import (
+    Table,
+    Column,
+    Integer,
+    String,
+    CheckConstraint,
+    BigInteger,
+    Text,
+    Index,
+    text,
+)
 
 
 config, db, logger = init_oar()
@@ -71,7 +82,7 @@ def setup_config(request):
 
     db.reflect(Model.metadata, bind=engine)
 
-    yield config
+    yield config, db, engine
 
     db.close()
     shutil.rmtree(tempdir)

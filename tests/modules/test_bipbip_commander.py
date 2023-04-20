@@ -23,6 +23,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request, setup_config):
+    setup_config, _, engine = setup_config
     setup_config["SERVER_HOSTNAME"] = "localhost"
     setup_config["APPENDICE_SERVER_PORT"] = "6670"
     setup_config["BIPBIP_COMMANDER_SERVER"] = "localhost"

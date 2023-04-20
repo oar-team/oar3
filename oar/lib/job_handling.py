@@ -813,7 +813,7 @@ def get_gantt_waiting_interactive_prediction_date():
     return req
 
 
-def insert_job(**kwargs):
+def insert_job(session, **kwargs):
     """Insert job in database
 
     #   "{ sql1 }/prop1=1/prop2=3+{sql2}/prop3=2/prop4=1/prop5=1+...,walltime=60"
@@ -856,7 +856,7 @@ def insert_job(**kwargs):
         kwargs["job_user"] = kwargs.pop("user")
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.session.execute(ins)
+    result = session.execute(ins)
     job_id = result.inserted_primary_key[0]
 
     mld_jid_walltimes = []
@@ -867,7 +867,7 @@ def insert_job(**kwargs):
         mld_jid_walltimes.append({"moldable_job_id": job_id, "moldable_walltime": w})
         res_grps.append(res_grp)
 
-    result = db.session.execute(
+    result = session.execute(
         MoldableJobDescription.__table__.insert(), mld_jid_walltimes
     )
 
@@ -875,7 +875,7 @@ def insert_job(**kwargs):
         mld_ids = [result.inserted_primary_key[0]]
     else:
         r = (
-            db.query(MoldableJobDescription.id)
+            session.query(MoldableJobDescription.id)
             .filter(MoldableJobDescription.job_id == job_id)
             .all()
         )
@@ -895,15 +895,13 @@ def insert_job(**kwargs):
             )
             res_hys.append(res_hy)
 
-        result = db.session.execute(
-            JobResourceGroup.__table__.insert(), mld_id_property
-        )
+        result = session.execute(JobResourceGroup.__table__.insert(), mld_id_property)
 
         if len(mld_id_property) == 1:
             grp_ids = [result.inserted_primary_key[0]]
         else:
             r = (
-                db.query(JobResourceGroup.id)
+                session.query(JobResourceGroup.id)
                 .filter(JobResourceGroup.moldable_id == moldable_id)
                 .all()
             )
@@ -923,14 +921,12 @@ def insert_job(**kwargs):
                     }
                 )
 
-            db.session.execute(
-                JobResourceDescription.__table__.insert(), res_description
-            )
+            session.execute(JobResourceDescription.__table__.insert(), res_description)
 
     if types:
         for typ in types:
             ins = [{"job_id": job_id, "type": typ} for typ in types]
-        db.session.execute(JobType.__table__.insert(), ins)
+        session.execute(JobType.__table__.insert(), ins)
 
     return job_id
 
@@ -1104,11 +1100,11 @@ def set_job_resa_state(job_id, state):
     db.commit()
 
 
-def set_job_message(job_id, message):
-    db.query(Job).filter(Job.id == job_id).update(
+def set_job_message(session, job_id, message):
+    session.query(Job).filter(Job.id == job_id).update(
         {Job.message: message}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 def get_waiting_reservation_jobs_specific_queue(queue_name):
@@ -1356,7 +1352,7 @@ def resume_job_action(job_id):
     db.commit()
 
 
-def get_cpuset_values(cpuset_field, moldable_id):
+def get_cpuset_values(session, cpuset_field, moldable_id):
     """get cpuset values for each nodes of a moldable_id
     Note: this function is called get_cpuset_values_for_a_moldable_job in OAR2.x
     """
@@ -1375,7 +1371,7 @@ def get_cpuset_values(cpuset_field, moldable_id):
         )
 
     results = (
-        db.query(Resource.network_address, getattr(Resource, cpuset_field))
+        session.query(Resource.network_address, getattr(Resource, cpuset_field))
         .filter(AssignedResource.moldable_id == moldable_id)
         .filter(AssignedResource.resource_id == Resource.id)
         .filter(Resource.network_address != "")
@@ -1410,9 +1406,9 @@ def get_job_ids_with_given_properties(sql_property):
     return job_ids
 
 
-def get_job(job_id):
+def get_job(session, job_id):
     try:
-        job = db.query(Job).filter(Job.id == job_id).one()
+        job = session.query(Job).filter(Job.id == job_id).one()
     except Exception as e:
         logger.warning("get_job(" + str(job_id) + ") raises exception: " + str(e))
         return None
@@ -1433,10 +1429,10 @@ def get_running_job(job_id):
     return res
 
 
-def get_current_moldable_job(moldable_id):
+def get_current_moldable_job(session, moldable_id):
     """Return the moldable job of id passed in"""
     res = (
-        db.query(MoldableJobDescription)
+        session.query(MoldableJobDescription)
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(MoldableJobDescription.id == moldable_id)
         .one()
@@ -1523,11 +1519,11 @@ def ask_checkpoint_signal_job(job_id, signal=None, user=None):
         return (1, error_msg + "You are not the right user.")
 
 
-def get_job_current_hostnames(job_id):
+def get_job_current_hostnames(session, job_id):
     """Returns the list of hosts associated to the job passed in parameter"""
 
     results = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(AssignedResource.index == "CURRENT")
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(AssignedResource.resource_id == Resource.id)
@@ -1542,10 +1538,10 @@ def get_job_current_hostnames(job_id):
     return [r[0] for r in results]
 
 
-def get_job_types(job_id):
+def get_job_types(session, job_id):
     """Returns a hash table with all types for the given job ID."""
 
-    results = db.query(JobType.type).filter(JobType.job_id == job_id).all()
+    results = session.query(JobType.type).filter(JobType.job_id == job_id).all()
     res = {}
     for t in results:
         typ = t[0]
@@ -1616,33 +1612,34 @@ def log_job(job):  # pragma: no cover
     db.commit()
 
 
-def set_job_state(jid, state):
+def set_job_state(session, jid, state):
     result = (
-        db.query(Job)
+        session.query(Job)
         .filter(Job.id == jid)
         .filter(Job.state != "Error")
         .filter(Job.state != "Terminated")
         .filter(Job.state != state)
         .update({Job.state: state}, synchronize_session=False)
     )
-    db.commit()
+    session.commit()
 
     if result == 1:  # OK for sqlite
         logger.debug(
             "Job state updated, job_id: " + str(jid) + ", wanted state: " + state
         )
 
-        date = tools.get_date()
+        date = tools.get_date(session)
 
         # TODO: optimize job log
-        db.query(JobStateLog).filter(JobStateLog.date_stop == 0).filter(
+        session.query(JobStateLog).filter(JobStateLog.date_stop == 0).filter(
             JobStateLog.job_id == jid
         ).update({JobStateLog.date_stop: date}, synchronize_session=False)
-        db.commit()
-        req = db.insert(JobStateLog).values(
+        session.commit()
+        from sqlalchemy import insert
+        req = insert(JobStateLog).values(
             {"job_id": jid, "job_state": state, "date_start": date}
         )
-        db.session.execute(req)
+        session.execute(req)
 
         if (
             state == "Terminated"
@@ -1652,7 +1649,7 @@ def set_job_state(jid, state):
             or state == "Suspended"
             or state == "Resuming"
         ):
-            job = db.query(Job).filter(Job.id == jid).one()
+            job = session.query(Job).filter(Job.id == jid).one()
             if state == "Suspend":
                 tools.notify_user(job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
@@ -1663,10 +1660,10 @@ def set_job_state(jid, state):
                 update_current_scheduler_priority(job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
-                    db.query(Job).filter(Job.id == jid).update(
+                    session.query(Job).filter(Job.id == jid).update(
                         {Job.stop_time: job.start_time}, synchronize_session=False
                     )
-                    db.commit()
+                    session.commit()
 
                 if job.assigned_moldable_job != "0":
                     # Update last_job_date field for resources used
@@ -1681,16 +1678,16 @@ def set_job_state(jid, state):
                         r = get_current_resources_with_suspended_job()
 
                         if r != ():
-                            db.query(Resource).filter(~Resource.id.in_(r)).update(
+                            session.query(Resource).filter(~Resource.id.in_(r)).update(
                                 {Resource.suspended_jobs: "NO"},
                                 synchronize_session=False,
                             )
                         else:
-                            db.query(Resource).update(
+                            session.query(Resource).update(
                                 {Resource.suspended_jobs: "NO"},
                                 synchronize_session=False,
                             )
-                        db.commit()
+                        session.commit()
 
                     tools.notify_user(
                         job, "ERROR", "Job stopped abnormally or an OAR error occured."
@@ -1843,11 +1840,11 @@ def resume_job(job_id, user=None):
         return -1
 
 
-def get_job_challenge(job_id):
+def get_job_challenge(session, job_id):
     """gets the challenge string of a OAR Job
     parameters : base, jobid
     return value : challenge, ssh_private_key, ssh_public_key"""
-    res = db.query(Challenge).filter(Challenge.job_id == job_id).one()
+    res = session.query(Challenge).filter(Challenge.job_id == job_id).one()
     return (res.challenge, res.ssh_private_key, res.ssh_public_key)
 
 
@@ -1915,11 +1912,11 @@ def suspend_job_action(job_id, moldable_id):
     db.commit()
 
 
-def get_job_cpuset_name(job_id, job=None):
+def get_job_cpuset_name(session, job_id, job=None):
     """Get the cpuset name for the given job"""
     user = None
     if job is None:
-        user_tuple = db.query(Job.user).filter(Job.id == job_id).one()
+        user_tuple = session.query(Job.user).filter(Job.id == job_id).one()
         user = user_tuple[0]
     else:
         user = job.user
@@ -1965,33 +1962,33 @@ def get_frag_date(job_id):
     return res[0]
 
 
-def set_job_exit_code(job_id, exit_code):
+def set_job_exit_code(session, job_id, exit_code):
     """Set exit code to just finished job"""
-    db.query(Job).filter(Job.id == job_id).update(
+    session.query(Job).filter(Job.id == job_id).update(
         {Job.exit_code: exit_code}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 def check_end_of_job(
-    job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script
+    session, job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script
 ):
     """check end of job"""
     log_jid = "[" + str(job_id) + "] "
     # TODO: do we really need to get refresh job data by reget it ? (see bipbip usage)
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     do_finishing_sequence = True
     notify_almighty_term = False
     events = []
     if job.state in ["Running", "Launching", "Suspended", "Resuming"]:
         logger.debug(log_jid + "Job is ended")
-        set_finish_date(job)
-        set_job_state(job_id, "Finishing")
+        set_finish_date(session, job)
+        set_job_state(session, job_id, "Finishing")
 
         if exit_script_value:
             try:
-                set_job_exit_code(job_id, int(exit_script_value))
+                set_job_exit_code(session, job_id, int(exit_script_value))
             except ValueError:
                 # TODO log a warning
                 # exit_script_value is not an int ( equal to 'N'),
@@ -2232,14 +2229,14 @@ def check_end_of_job(
         )
 
     if do_finishing_sequence:
-        job_finishing_sequence(epilogue_script, job_id, events)
+        job_finishing_sequence(session, epilogue_script, job_id, events)
     if notify_almighty_term:
         tools.notify_almighty("Term")
 
     tools.notify_almighty("BipBip")
 
 
-def job_finishing_sequence(epilogue_script, job_id, events):
+def job_finishing_sequence(session, epilogue_script, job_id, events):
     if epilogue_script:
         # launch server epilogue
         cmd = [epilogue_script, str(job_id)]
@@ -2273,7 +2270,7 @@ def job_finishing_sequence(epilogue_script, job_id, events):
             logger.error(msg)
             events.append(("SERVER_EPILOGUE_TIMEOUT", msg, None))
 
-    job_types = get_job_types(job_id)
+    job_types = get_job_types(session, job_id)
     if (
         ("deploy" not in job_types.keys())
         and ("cosystem" not in job_types.keys())
@@ -2438,13 +2435,13 @@ def job_finishing_sequence(epilogue_script, job_id, events):
     for event in events:
         if len(event) == 2:
             ev_type, msg = event
-            add_new_event(ev_type, job_id, msg)
+            add_new_event(session, ev_type, job_id, msg)
         else:
             ev_type, msg, hosts = event
             add_new_event_with_host(ev_type, job_id, msg, hosts)
 
     # Just to force commit (from OAR2, useful for OAR3 ?)
-    db.commit()
+    session.commit()
 
     if len(events) > 0:
         tools.notify_almighty("ChState")
@@ -2471,16 +2468,16 @@ def get_jobs_to_kill():
     return res
 
 
-def set_finish_date(job):
+def set_finish_date(session, job):
     """Set the stop time of the job passed in parameter to the current time
     (will be greater or equal to start time)"""
-    date = tools.get_date()
+    date = tools.get_date(session)
     if date < job.start_time:
         date = job.start_time
-    db.query(Job).filter(Job.id == job.id).update(
+    session.query(Job).filter(Job.id == job.id).update(
         {Job.stop_time: date}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 def set_running_date(job_id):
@@ -2518,24 +2515,24 @@ def get_timer_armed_job():
     return res
 
 
-def archive_some_moldable_job_nodes(moldable_id, hosts):
+def archive_some_moldable_job_nodes(session, config, moldable_id, hosts):
     """Sets the index fields to LOG in the table assigned_resources"""
     # import pdb; pdb.set_trace()
     if config["DB_TYPE"] == "Pg":
-        db.query(AssignedResource).filter(
+        session.query(AssignedResource).filter(
             AssignedResource.moldable_id == moldable_id
         ).filter(Resource.id == AssignedResource.resource_id).filter(
             Resource.network_address.in_(tuple(hosts))
         ).update(
             {AssignedResource.index: "LOG"}, synchronize_session=False
         )
-        db.commit()
+        session.commit()
 
 
-def get_job_resources_properties(job_id):
+def get_job_resources_properties(session, job_id):
     """Returns the list of resources properties associated to the job passed in parameter"""
     results = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(Job.id == job_id)
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
         .filter(AssignedResource.resource_id == Resource.id)

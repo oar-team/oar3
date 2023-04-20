@@ -250,10 +250,10 @@ def get_current_resources_with_suspended_job():
     return tuple(r[0] for r in res)
 
 
-def get_current_assigned_job_resources(moldable_id):
+def get_current_assigned_job_resources(session, moldable_id):
     """Returns the current resources ref for a job"""
     res = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(AssignedResource.index == "CURRENT")
         .filter(AssignedResource.moldable_id == moldable_id)
         .filter(Resource.id == AssignedResource.resource_id)

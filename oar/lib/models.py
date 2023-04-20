@@ -13,9 +13,20 @@ from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sess
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import Table, Column, Integer, String, CheckConstraint, BigInteger, Text, Index, text
+from sqlalchemy import (
+    Table,
+    Column,
+    Integer,
+    String,
+    CheckConstraint,
+    BigInteger,
+    Text,
+    Index,
+    text,
+)
 from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
 from collections import OrderedDict
+
 # from .globals import db
 from contextlib import contextmanager
 
@@ -67,7 +78,6 @@ def setup_db(db):
         "stop_time",
         "date",
     ]
-
 
     # schema = Table(
     #     "schema", Column("version", String(255)), Column("name", String(255))
@@ -134,17 +144,17 @@ class BaseModel(object):
     query = None
 
     @classmethod
-    def create(cls, **kwargs):
+    def create(cls, session, **kwargs):
         record = cls()
         for key, value in kwargs.items():
             setattr(record, key, value)
         try:
-            cls._db.session.add(record)
-            cls._db.session.commit()
+            session.add(record)
+            session.commit()
             return record
         except Exception:
             exc_type, exc_value, tb = sys.exc_info()
-            cls._db.session.rollback()
+            session.rollback()
             reraise(exc_type, exc_value, tb.tb_next)
 
     def to_dict(self, ignore_keys=()):
@@ -199,9 +209,7 @@ class Accounting(Model):
         index=True,
         server_default="",
     )
-    queue_name = Column(
-        String(100), primary_key=True, index=True, server_default=""
-    )
+    queue_name = Column(String(100), primary_key=True, index=True, server_default="")
     consumption_type = Column(
         String(5), primary_key=True, index=True, server_default="ASKED"
     )
@@ -255,9 +263,7 @@ class EventLogHostname(Model):
     event_id = Column(
         Integer, primary_key=True, autoincrement=False, server_default="0"
     )
-    hostname = Column(
-        String(255), primary_key=True, index=True, server_default=""
-    )
+    hostname = Column(String(255), primary_key=True, index=True, server_default="")
 
 
 class EventLog(Model):
@@ -275,14 +281,10 @@ class File(Model):
     __tablename__ = "files"
 
     id = Column("file_id", Integer, primary_key=True)
-    md5sum = Column(
-        String(255), index=True, nullable=True, server_default=text("NULL")
-    )
+    md5sum = Column(String(255), index=True, nullable=True, server_default=text("NULL"))
     location = Column(String(255), nullable=True, server_default=text("NULL"))
     method = Column(String(255), nullable=True, server_default=text("NULL"))
-    compression = Column(
-        String(255), nullable=True, server_default=text("NULL")
-    )
+    compression = Column(String(255), nullable=True, server_default=text("NULL"))
     size = Column(Integer, server_default="0")
 
 
@@ -402,9 +404,7 @@ class JobResourceDescription(Model):
     )
     value = Column("res_job_value", Integer, server_default="0")
     order = Column("res_job_order", Integer, primary_key=True, server_default="0")
-    index = Column(
-        "res_job_index", String(7), index=True, server_default="CURRENT"
-    )
+    index = Column("res_job_index", String(7), index=True, server_default="CURRENT")
 
 
 class JobResourceGroup(Model):
@@ -415,9 +415,7 @@ class JobResourceGroup(Model):
         "res_group_moldable_id", Integer, index=True, server_default="0"
     )
     property = Column("res_group_property", Text, nullable=True)
-    index = Column(
-        "res_group_index", String(7), index=True, server_default="CURRENT"
-    )
+    index = Column("res_group_index", String(7), index=True, server_default="CURRENT")
 
 
 class JobStateLog(Model):
@@ -485,9 +483,7 @@ class MoldableJobDescription(Model):
     id = Column("moldable_id", Integer, primary_key=True)
     job_id = Column("moldable_job_id", Integer, index=True, server_default="0")
     walltime = Column("moldable_walltime", Integer, server_default="0")
-    index = Column(
-        "moldable_index", String(7), index=True, server_default="CURRENT"
-    )
+    index = Column("moldable_index", String(7), index=True, server_default="CURRENT")
 
 
 class Queue(Model):

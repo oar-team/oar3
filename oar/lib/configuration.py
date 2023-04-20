@@ -178,7 +178,7 @@ class Configuration(dict):
         return True
 
     def get_sqlalchemy_uri(self, read_only=False):
-        # print(self)
+        print(self)
         if read_only:
             login = "base_login_ro"
             passwd = "base_passwd_ro"

@@ -2,7 +2,7 @@
 
 from sqlalchemy import desc, func
 
-from oar.lib.models import EventLog, EventLogHostname # , db, get_logger, tools
+from oar.lib.models import EventLog, EventLogHostname  # , db, get_logger, tools
 from oar.lib import tools
 
 # logger = get_logger("oar.lib.event")
@@ -11,29 +11,29 @@ from oar.lib.globals import init_oar
 config, db, logger = init_oar()
 
 
-def add_new_event(ev_type, job_id, description, to_check="YES"):
+def add_new_event(session, ev_type, job_id, description, to_check="YES"):
     """Add a new entry in event_log table"""
     event_data = EventLog(
         type=ev_type,
         job_id=job_id,
-        date=tools.get_date(),
+        date=tools.get_date(session),
         description=description[:255],
         to_check="YES",
     )
-    db.add(event_data)
-    db.commit()
+    session.add(event_data)
+    session.commit()
 
 
-def add_new_event_with_host(ev_type, job_id, description, hostnames):
+def add_new_event_with_host(session, ev_type, job_id, description, hostnames):
     ins = EventLog.__table__.insert().values(
         {
             "type": ev_type,
             "job_id": job_id,
-            "date": tools.get_date(),
+            "date": tools.get_date(session),
             "description": description[:255],
         }
     )
-    result = db.session.execute(ins)
+    result = session.execute(ins)
     event_id = result.inserted_primary_key[0]
 
     # Forces unique values in hostnames by using set and
@@ -41,8 +41,8 @@ def add_new_event_with_host(ev_type, job_id, description, hostnames):
     if not isinstance(hostnames, list):
         raise TypeError("hostnames must be a list")
     for hostname in set(hostnames):
-        db.add(EventLogHostname(event_id=event_id, hostname=hostname))
-    db.commit()
+        session.add(EventLogHostname(event_id=event_id, hostname=hostname))
+    session.commit()
 
 
 def is_an_event_exists(job_id, event):

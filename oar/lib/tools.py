@@ -27,12 +27,14 @@ import psutil
 import zmq
 
 from oar.lib import get_logger
+
 # from oar.lib import logger as log
 
 from oar.lib.event import add_new_event
 
 # from oar.lib import config, db
 from oar.lib.globals import init_oar
+
 config, db, logger = init_oar()
 
 tools_logger = get_logger(logger, "oar.lib.tools", forward_stderr=True)
@@ -608,13 +610,14 @@ def manage_remote_commands(
     return (0, [])
 
 
-def get_date():  # pragma: no cover
-    if db.engine.dialect.name == "sqlite":
+def get_date(session):  # pragma: no cover
+    dialect = session.bind.dialect.name
+    if dialect == "sqlite":
         req = "SELECT strftime('%s','now')"
     else:
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
-    result = db.session.execute(req).scalar()
+    result = session.execute(req).scalar()
     return int(result)
 
 
