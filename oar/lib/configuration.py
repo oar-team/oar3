@@ -2,6 +2,7 @@
 import pprint
 import sys
 from io import open
+
 from rich import print
 
 from .exceptions import InvalidConfiguration

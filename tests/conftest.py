@@ -6,25 +6,25 @@ import tempfile
 from codecs import open
 
 import pytest
-
-from . import DEFAULT_CONFIG
-
-# from oar.lib import config, db
-from oar.lib.globals import init_oar
-from oar.lib.database import EngineConnector
-from oar.lib.models import Model
 from sqlalchemy import (
-    Table,
+    BigInteger,
+    CheckConstraint,
     Column,
+    Index,
     Integer,
     String,
-    CheckConstraint,
-    BigInteger,
+    Table,
     Text,
-    Index,
     text,
 )
 
+from oar.lib.database import EngineConnector
+
+# from oar.lib import config, db
+from oar.lib.globals import init_oar
+from oar.lib.models import Model
+
+from . import DEFAULT_CONFIG
 
 config, db, logger = init_oar()
 

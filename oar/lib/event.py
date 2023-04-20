@@ -2,11 +2,11 @@
 
 from sqlalchemy import desc, func
 
-from oar.lib.models import EventLog, EventLogHostname  # , db, get_logger, tools
 from oar.lib import tools
 
 # logger = get_logger("oar.lib.event")
 from oar.lib.globals import init_oar
+from oar.lib.models import EventLog, EventLogHostname  # , db, get_logger, tools
 
 config, db, logger = init_oar()
 
@@ -77,10 +77,10 @@ def get_jobs_events(job_ids):
     return result
 
 
-def get_to_check_events():
+def get_to_check_events(session):
     """ "Get all events with toCheck field on YES"""
     result = (
-        db.query(EventLog)
+        session.query(EventLog)
         .filter(EventLog.to_check == "YES")
         .order_by(EventLog.id)
         .all()

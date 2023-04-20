@@ -14,6 +14,11 @@ from sqlalchemy.sql.expression import select
 
 import oar.lib.tools as tools
 from oar.kao.helpers import extract_find_assign_args
+from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
+
+# from oar.lib.utils import render_query
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 from oar.lib.models import (
     AssignedResource,
     Challenge,
@@ -30,7 +35,6 @@ from oar.lib.models import (
     Resource,
     WalltimeChange,
 )
-from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 from oar.lib.plugins import find_plugin_function
 from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.resource_handling import (
@@ -43,10 +47,6 @@ from oar.lib.tools import (
     get_private_ssh_key_file_name,
     limited_dict2hash_perl,
 )
-
-# from oar.lib.utils import render_query
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
 
 config, db, logger = init_oar()
 
@@ -117,13 +117,13 @@ class JobPseudo(object):
         self.mld_res_rqts = [(1, walltime, [(res_req, ProcSet(*resources_constraint))])]
 
 
-def get_waiting_jobs(queues, reservation="None"):
+def get_waiting_jobs(session, queues, reservation="None"):
     # TODO fairsharing_nb_job_limit
     waiting_jobs = {}
     waiting_jids = []
     nb_waiting_jobs = 0
 
-    query = db.query(Job).filter(Job.state == "Waiting")
+    query = session.query(Job).filter(Job.state == "Waiting")
     if isinstance(queues, str):
         query = query.filter(Job.queue_name == queues)
     else:
@@ -140,9 +140,9 @@ def get_waiting_jobs(queues, reservation="None"):
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
 
 
-def get_jobs_types(jids, jobs):
+def get_jobs_types(session, jids, jobs):
     jobs_types = {}
-    for j_type in db.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
+    for j_type in session.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
         jid = j_type.job_id
         job = jobs[jid]
         t_v = j_type.type.split("=")
@@ -189,7 +189,7 @@ def get_jobs_types(jids, jobs):
             job.types = {}
 
 
-def set_jobs_cache_keys(jobs):
+def set_jobs_cache_keys(session, jobs):
     """
     Set keys for job use by slot_set cache to speed up the search of suitable
     slots.
@@ -208,7 +208,9 @@ def set_jobs_cache_keys(jobs):
                 job.key_cache[int(moldable_id)] = str(walltime) + str(hy_res_rqts)
 
 
-def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_duration=0):
+def get_data_jobs(
+    session, jobs, jids, resource_set, job_security_time, besteffort_duration=0
+):
     """
     oarsub -q test \
         -l "nodes=1+{network_address='node3'}/nodes=1/resource_id=1" \
@@ -230,7 +232,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
     """
 
     result = (
-        db.query(
+        session.query(
             Job.id,
             Job.properties,
             MoldableJobDescription.id,
@@ -359,7 +361,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
                     res_constraints = cache_constraints[sql_constraints]
                 else:
                     request_constraints = (
-                        db.query(Resource.id).filter(text(sql_constraints)).all()
+                        session.query(Resource.id).filter(text(sql_constraints)).all()
                     )
                     roids = [
                         resource_set.rid_i2o[int(y[0])] for y in request_constraints
@@ -398,7 +400,7 @@ def get_data_jobs(jobs, jids, resource_set, job_security_time, besteffort_durati
 def get_job_suspended_sum_duration(jid, now):
     suspended_duration = 0
     for j_state_log in (
-        db.query(JobStateLog)
+        session.query(JobStateLog)
         .filter(JobStateLog.job_id == jid)
         .filter(
             (JobStateLog.job_state == "Suspended")
@@ -420,7 +422,7 @@ def get_job_suspended_sum_duration(jid, now):
 
 
 # TODO available_suspended_res_itvs, now
-def extract_scheduled_jobs(result, resource_set, job_security_time, now):
+def extract_scheduled_jobs(session, result, resource_set, job_security_time, now):
     jids = []
     jobs_lst = []
     jobs = {}
@@ -472,9 +474,9 @@ def extract_scheduled_jobs(result, resource_set, job_security_time, now):
 
 
 # TODO available_suspended_res_itvs, now
-def get_scheduled_jobs(resource_set, job_security_time, now):
+def get_scheduled_jobs(session, resource_set, job_security_time, now):
     result = (
-        db.query(
+        session.query(
             Job,
             GanttJobsPrediction.moldable_id,
             GanttJobsPrediction.start_time,
@@ -496,10 +498,12 @@ def get_scheduled_jobs(resource_set, job_security_time, now):
     return jobs_lst
 
 
-def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now):
+def get_after_sched_no_AR_jobs(
+    session, queue_name, resource_set, job_security_time, now
+):
     """Get waiting jobs which are not AR and after scheduler round"""
     result = (
-        db.query(
+        session.query(
             Job,
             GanttJobsPrediction.moldable_id,
             GanttJobsPrediction.start_time,
@@ -524,9 +528,11 @@ def get_after_sched_no_AR_jobs(queue_name, resource_set, job_security_time, now)
     return jobs_lst
 
 
-def get_waiting_scheduled_AR_jobs(queue_name, resource_set, job_security_time, now):
+def get_waiting_scheduled_AR_jobs(
+    session, queue_name, resource_set, job_security_time, now
+):
     result = (
-        db.query(
+        session.query(
             Job,
             GanttJobsPrediction.moldable_id,
             GanttJobsPrediction.start_time,
@@ -558,7 +564,7 @@ def get_gantt_jobs_to_launch(
     # get unlaunchable jobs
     # NOT USED launcher will manage these cases ??? (MUST BE CONFIRMED)
     #
-    # result = db.query(distinct(Job.id))\
+    # result = session.query(distinct(Job.id))\
     #           .filter(GanttJobsPrediction.start_time <= now)\
     #           .filter(Job.state == "Waiting")\
     #           .filter(Job.id == MoldableJobDescription.job_id)\
@@ -571,7 +577,7 @@ def get_gantt_jobs_to_launch(
     date = now + kill_duration_before_reservation
 
     result = (
-        db.query(
+        session.query(
             Job,
             GanttJobsPrediction.moldable_id,
             GanttJobsPrediction.start_time,
@@ -595,7 +601,7 @@ def get_gantt_jobs_to_launch(
     return (jobs, jobs_lst, rid2jid)
 
 
-def job_message(job, nb_resources=None):
+def job_message(session, job, nb_resources=None):
     """
     Gather information about a job, and return it as a string.
     Part of this information is set during the scheduling phase, and gathered in this function as side effects (walltime and res_set).
@@ -630,7 +636,7 @@ def job_message(job, nb_resources=None):
     return message
 
 
-def save_assigns(jobs, resource_set):
+def save_assigns(session, jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
@@ -659,7 +665,7 @@ def save_assigns(jobs, resource_set):
 
         if message_updates:
             logger.info("save job messages")
-            db.session.query(Job).filter(Job.id.in_(message_updates)).update(
+            session.session.query(Job).filter(Job.id.in_(message_updates)).update(
                 {
                     Job.message: case(
                         message_updates,
@@ -670,12 +676,14 @@ def save_assigns(jobs, resource_set):
             )
 
         logger.info("save assignements")
-        db.session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
-        db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
-        db.commit()
+        session.session.execute(
+            GanttJobsPrediction.__table__.insert(), mld_id_start_time_s
+        )
+        session.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        session.commit()
 
 
-def save_assigns_bulk(jobs, resource_set):
+def save_assigns_bulk(session, jobs, resource_set):
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
@@ -691,7 +699,7 @@ def save_assigns_bulk(jobs, resource_set):
 
         logger.info("save assignements")
 
-        with db.engine.connect() as to_conn:
+        with session.engine.connect() as to_conn:
             cursor = to_conn.connection.cursor()
             pg_bulk_insert(
                 cursor,
@@ -709,12 +717,12 @@ def save_assigns_bulk(jobs, resource_set):
             )
 
 
-def get_current_jobs_dependencies(jobs):
+def get_current_jobs_dependencies(session, jobs):
     # retrieve jobs dependencies *)
     # return an hashtable, key = job_id, value = list of required jobs *)
 
     req = (
-        db.query(JobDependencie, Job.state, Job.exit_code)
+        session.query(JobDependencie, Job.state, Job.exit_code)
         .filter(JobDependencie.index == "CURRENT")
         .filter(Job.id == JobDependencie.job_id_required)
         .all()
@@ -732,8 +740,10 @@ def get_current_jobs_dependencies(jobs):
             jobs[j_dep.job_id].deps.append((j_dep.job_id_required, state, exit_code))
 
 
-def get_current_not_waiting_jobs():
-    jobs = db.query(Job).filter(Job.state != "Waiting").all()
+def get_current_not_waiting_jobs(
+    session,
+):
+    jobs = session.query(Job).filter(Job.state != "Waiting").all()
     jobs_by_state = {}
     for job in jobs:
         if job.state not in jobs_by_state:
@@ -742,28 +752,28 @@ def get_current_not_waiting_jobs():
     return jobs_by_state
 
 
-def set_job_start_time_assigned_moldable_id(jid, start_time, moldable_id):
-    # db.query(Job).update({Job.start_time:
+def set_job_start_time_assigned_moldable_id(session, jid, start_time, moldable_id):
+    # session.query(Job).update({Job.start_time:
     # start_time,Job.assigned_moldable_job: moldable_id}).filter(Job.id ==
     # jid)
-    db.query(Job).filter(Job.id == jid).update(
+    session.query(Job).filter(Job.id == jid).update(
         {Job.start_time: start_time, Job.assigned_moldable_job: moldable_id},
         synchronize_session=False,
     )
-    db.commit()
+    session.commit()
 
 
-def set_jobs_start_time(tuple_jids, start_time):
-    db.query(Job).filter(Job.id.in_(tuple_jids)).update(
+def set_jobs_start_time(session, tuple_jids, start_time):
+    session.query(Job).filter(Job.id.in_(tuple_jids)).update(
         {Job.start_time: start_time}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 # NO USED
-def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
+def add_resource_jobs_pairs(session, tuple_mld_ids):  # pragma: no cover
     resources_mld_ids = (
-        db.query(GanttJobsResource)
+        session.query(GanttJobsResource)
         .filter(GanttJobsResource.job_id.in_(tuple_mld_ids))
         .all()
     )
@@ -776,13 +786,13 @@ def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
         for res_mld_id in resources_mld_ids
     ]
 
-    db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
-    db.commit()
+    session.session.execute(AssignedResource.__table__.insert(), assigned_resources)
+    session.commit()
 
 
-def add_resource_job_pairs(moldable_id):
+def add_resource_job_pairs(session, moldable_id):
     resources_mld_ids = (
-        db.query(GanttJobsResource)
+        session.query(GanttJobsResource)
         .filter(GanttJobsResource.moldable_id == moldable_id)
         .all()
     )
@@ -795,14 +805,18 @@ def add_resource_job_pairs(moldable_id):
         for res_mld_id in resources_mld_ids
     ]
 
-    db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
-    db.commit()
+    session.session.execute(AssignedResource.__table__.insert(), assigned_resources)
+    session.commit()
 
 
 # TODO MOVE TO gantt_handling
-def get_gantt_waiting_interactive_prediction_date():
+def get_gantt_waiting_interactive_prediction_date(
+    session,
+):
     req = (
-        db.query(Job.id, Job.info_type, GanttJobsPrediction.start_time, Job.message)
+        session.query(
+            Job.id, Job.info_type, GanttJobsPrediction.start_time, Job.message
+        )
         .filter(Job.state == "Waiting")
         .filter(Job.type == "INTERACTIVE")
         .filter(Job.reservation == "None")
@@ -931,7 +945,7 @@ def insert_job(session, **kwargs):
     return job_id
 
 
-def resubmit_job(job_id):
+def resubmit_job(session, job_id):
     """Resubmit a job and give the new job_id"""
 
     if "OARDO_USER" in os.environ:
@@ -972,7 +986,7 @@ def resubmit_job(job_id):
 
     date = tools.get_date()
     # Detach and prepare old job to be reinserted
-    db.session.expunge(job)
+    session.session.expunge(job)
     make_transient(job)
     job.id = None
     job.state = "Hold"
@@ -984,8 +998,8 @@ def resubmit_job(job_id):
     job.exit_code = None
     job.assigned_moldable_job = 0
 
-    db.session.add(job)
-    db.session.flush()
+    session.session.add(job)
+    session.session.flush()
 
     new_job_id = job.id
 
@@ -999,18 +1013,18 @@ def resubmit_job(job_id):
             "ssh_public_key": ssh_public_key,
         }
     )
-    db.session.execute(ins)
+    session.session.execute(ins)
 
     # Duplicate job resource description requirements
     # Retrieve modable_job_description
     modable_job_descriptions = (
-        db.query(MoldableJobDescription)
+        session.query(MoldableJobDescription)
         .filter(MoldableJobDescription.job_id == job_id)
         .all()
     )
 
     for mdl_job_descr in modable_job_descriptions:
-        res = db.session.execute(
+        res = session.session.execute(
             MoldableJobDescription.__table__.insert(),
             {
                 "moldable_job_id": new_job_id,
@@ -1020,13 +1034,13 @@ def resubmit_job(job_id):
         moldable_id = res.inserted_primary_key[0]
 
         job_resource_groups = (
-            db.query(JobResourceGroup)
+            session.query(JobResourceGroup)
             .filter(JobResourceGroup.moldable_id == mdl_job_descr.id)
             .all()
         )
 
         for job_res_grp in job_resource_groups:
-            res = db.session.execute(
+            res = session.session.execute(
                 JobResourceGroup.__table__.insert(),
                 {
                     "res_group_moldable_id": moldable_id,
@@ -1036,13 +1050,13 @@ def resubmit_job(job_id):
             res_group_id = res.inserted_primary_key[0]
 
             job_resource_descriptions = (
-                db.query(JobResourceDescription)
+                session.query(JobResourceDescription)
                 .filter(JobResourceDescription.group_id == job_res_grp.id)
                 .all()
             )
 
             for job_res_descr in job_resource_descriptions:
-                db.session.execute(
+                session.session.execute(
                     JobResourceDescription.__table__.insert(),
                     {
                         "res_job_group_id": res_group_id,
@@ -1053,51 +1067,51 @@ def resubmit_job(job_id):
                 )
 
     # Duplicate job types
-    job_types = db.query(JobType).filter(JobType.job_id == job_id).all()
+    job_types = session.query(JobType).filter(JobType.job_id == job_id).all()
     new_job_types = [{"job_id": new_job_id, "type": jt.type} for jt in job_types]
 
-    db.session.execute(JobType.__table__.insert(), new_job_types)
+    session.session.execute(JobType.__table__.insert(), new_job_types)
 
     # Update job dependencies
-    db.query(JobDependencie).filter(JobDependencie.job_id_required == job_id).update(
-        {JobDependencie.job_id_required: new_job_id}, synchronize_session=False
-    )
+    session.query(JobDependencie).filter(
+        JobDependencie.job_id_required == job_id
+    ).update({JobDependencie.job_id_required: new_job_id}, synchronize_session=False)
 
     # Update job state to waintg
-    db.query(Job).filter(Job.id == new_job_id).update(
+    session.query(Job).filter(Job.id == new_job_id).update(
         {"state": "Waiting"}, synchronize_session=False
     )
 
     # Emit job state log
-    db.session.execute(
+    session.session.execute(
         JobStateLog.__table__.insert(),
         {"job_id": new_job_id, "job_state": "Waiting", "date_start": date},
     )
-    db.commit()
+    session.commit()
 
     return ((0, ""), new_job_id)
 
 
-def is_job_already_resubmitted(job_id):
+def is_job_already_resubmitted(session, job_id):
     """Check if the job was already resubmitted
     args : db ref, job id"""
 
     count_query = (
         select([func.count()]).select_from(Job).where(Job.resubmit_job_id == job_id)
     )
-    return db.session.execute(count_query).scalar()
+    return session.session.execute(count_query).scalar()
 
 
-def set_job_resa_state(job_id, state):
+def set_job_resa_state(session, job_id, state):
     """sets the reservation field of the job of id passed in parameter
     parameters : base, jobid, state
     return value : None
     side effects : changes the field state of the job in the table Jobs
     """
-    db.query(Job).filter(Job.id == job_id).update(
+    session.query(Job).filter(Job.id == job_id).update(
         {Job.reservation: state}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 def set_job_message(session, job_id, message):
@@ -1107,13 +1121,13 @@ def set_job_message(session, job_id, message):
     session.commit()
 
 
-def get_waiting_reservation_jobs_specific_queue(queue_name):
+def get_waiting_reservation_jobs_specific_queue(session, queue_name):
     """Get all waiting reservation jobs in the specified queue
     parameter : database ref, queuename
     return an array of job informations
     """
     waiting_scheduled_ar_jobs = (
-        db.query(Job)
+        session.query(Job)
         .filter((Job.state == "Waiting") | (Job.state == "toAckReservation"))
         .filter(Job.reservation == "Scheduled")
         .filter(Job.queue_name == queue_name)
@@ -1123,35 +1137,40 @@ def get_waiting_reservation_jobs_specific_queue(queue_name):
     return waiting_scheduled_ar_jobs
 
 
-def update_scheduler_last_job_date(date, moldable_id):
+def update_scheduler_last_job_date(session, date, moldable_id):
     """used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)"""
+    dialect = session.bind.dialect.name
 
-    if db.dialect == "sqlite":
+    if dialect == "sqlite":
         subquery = (
-            db.query(AssignedResource.resource_id)
+            session.query(AssignedResource.resource_id)
             .filter_by(moldable_id=moldable_id)
             .subquery()
         )
-        db.query(Resource).filter(Resource.id.in_(subquery)).update(
+        session.query(Resource).filter(Resource.id.in_(subquery)).update(
             {Resource.last_job_date: date}, synchronize_session=False
         )
 
     else:
-        db.query(Resource).filter(AssignedResource.moldable_id == moldable_id).filter(
-            Resource.id == AssignedResource.resource_id
-        ).update({Resource.last_job_date: date}, synchronize_session=False)
-    db.commit()
+        session.query(Resource).filter(
+            AssignedResource.moldable_id == moldable_id
+        ).filter(Resource.id == AssignedResource.resource_id).update(
+            {Resource.last_job_date: date}, synchronize_session=False
+        )
+    session.commit()
 
 
 # Get all waiting reservation jobs
 # parameter : database ref
 # return an array of moldable job informations
-def get_waiting_moldable_of_reservations_already_scheduled():
+def get_waiting_moldable_of_reservations_already_scheduled(
+    session,
+):
     """
     return the moldable jobs assigned to already scheduled reservations.
     """
     result = (
-        db.query(
+        session.query(
             MoldableJobDescription.id,
         )
         .filter((Job.state == "Waiting") | (Job.state == "toAckReservation"))
@@ -1168,29 +1187,29 @@ def get_waiting_moldable_of_reservations_already_scheduled():
 
 
 # TODO MOVE TO GANTT_HANDLING
-def gantt_flush_tables(reservations_to_keep_mld_ids=[]):
+def gantt_flush_tables(session, reservations_to_keep_mld_ids=[]):
     """Flush gantt tables but keep accepted advance reservations"""
 
     if reservations_to_keep_mld_ids != []:
         logger.debug(
             "reservations_to_keep_mld_ids[0]: " + str(reservations_to_keep_mld_ids[0])
         )
-        db.query(GanttJobsPrediction).filter(
+        session.query(GanttJobsPrediction).filter(
             ~GanttJobsPrediction.moldable_id.in_(tuple(reservations_to_keep_mld_ids))
         ).delete(synchronize_session=False)
-        db.query(GanttJobsResource).filter(
+        session.query(GanttJobsResource).filter(
             ~GanttJobsResource.moldable_id.in_(tuple(reservations_to_keep_mld_ids))
         ).delete(synchronize_session=False)
     else:
-        db.query(GanttJobsPrediction).delete(synchronize_session=False)
-        db.query(GanttJobsResource).delete(synchronize_session=False)
+        session.query(GanttJobsPrediction).delete(synchronize_session=False)
+        session.query(GanttJobsResource).delete(synchronize_session=False)
 
-    db.commit()
+    session.commit()
 
 
-def get_jobs_in_multiple_states(states, resource_set):
+def get_jobs_in_multiple_states(session, states, resource_set):
     result = (
-        db.query(Job, AssignedResource.moldable_id, AssignedResource.resource_id)
+        session.query(Job, AssignedResource.moldable_id, AssignedResource.resource_id)
         .filter(Job.state.in_(tuple(states)))
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
         .order_by(Job.id)
@@ -1229,9 +1248,9 @@ def get_jobs_in_multiple_states(states, resource_set):
     return jobs
 
 
-def get_jobs_ids_in_multiple_states(states):
+def get_jobs_ids_in_multiple_states(session, states):
     result = (
-        db.query(Job.id, Job.state)
+        session.query(Job.id, Job.state)
         .filter(Job.state.in_(tuple(states)))
         .order_by(Job.id)
         .all()
@@ -1246,42 +1265,42 @@ def get_jobs_ids_in_multiple_states(states):
     return jids_states
 
 
-def set_moldable_job_max_time(moldable_id, walltime):
+def set_moldable_job_max_time(session, moldable_id, walltime):
     """Set walltime for a moldable job"""
-    db.query(MoldableJobDescription).filter(
+    session.query(MoldableJobDescription).filter(
         MoldableJobDescription.id == moldable_id
     ).update({MoldableJobDescription.walltime: walltime}, synchronize_session=False)
 
-    db.commit()
+    session.commit()
 
 
 # TODO MOVE TO GANTT_HANDLING
-def set_gantt_job_start_time(moldable_id, current_time_sec):
+def set_gantt_job_start_time(session, moldable_id, current_time_sec):
     """Update start_time in gantt for a specified job"""
-    db.query(GanttJobsPrediction).filter(
+    session.query(GanttJobsPrediction).filter(
         GanttJobsPrediction.moldable_id == moldable_id
     ).update(
         {GanttJobsPrediction.start_time: current_time_sec}, synchronize_session=False
     )
 
-    db.commit()
+    session.commit()
 
 
 # TODO MOVE TO GANTT_HANDLING
-def remove_gantt_resource_job(moldable_id, job_res_set, resource_set):
+def remove_gantt_resource_job(session, moldable_id, job_res_set, resource_set):
     if len(job_res_set) != 0:
         resource_ids = [resource_set.rid_o2i[rid] for rid in job_res_set]
 
-        db.query(GanttJobsResource).filter(
+        session.query(GanttJobsResource).filter(
             GanttJobsResource.moldable_id == moldable_id
         ).filter(~GanttJobsResource.resource_id.in_(tuple(resource_ids))).delete(
             synchronize_session=False
         )
 
-        db.commit()
+        session.commit()
 
 
-def is_timesharing_for_two_jobs(j1, j2):
+def is_timesharing_for_two_jobs(session, j1, j2):
     if ("timesharing" in j1.types) and ("timesharing" in j2.types):
         t1 = j1.types["timesharing"]
         t2 = j2.types["timesharing"]
@@ -1302,7 +1321,7 @@ def is_timesharing_for_two_jobs(j1, j2):
 
 
 # TODO MOVE TO resource_handling
-def get_jobs_on_resuming_job_resources(job_id):
+def get_jobs_on_resuming_job_resources(session, job_id):
     """Return the list of jobs running on resources allocated to another given job"""
     j1 = aliased(Job)
     j2 = aliased(Job)
@@ -1319,7 +1338,7 @@ def get_jobs_on_resuming_job_resources(job_id):
     )
 
     result = (
-        db.query(distinct(j2.id))
+        session.query(distinct(j2.id))
         .filter(a1.index == "CURRENT")
         .filter(a2.index == "CURRENT")
         .filter(j1.id == job_id)
@@ -1333,23 +1352,23 @@ def get_jobs_on_resuming_job_resources(job_id):
     return result
 
 
-def resume_job_action(job_id):
+def resume_job_action(session, job_id):
     """resume_job_action performs all action when a job is suspended"""
 
     set_job_state(job_id, "Running")
 
     resources = get_current_resources_with_suspended_job()
     if resources != ():
-        db.query(Resource).filter(~Resource.id.in_(resources)).update(
+        session.query(Resource).filter(~Resource.id.in_(resources)).update(
             {Resource.suspended_jobs: "NO"}, synchronize_session=False
         )
 
     else:
-        db.query(Resource).update(
+        session.query(Resource).update(
             {Resource.suspended_jobs: "NO"}, synchronize_session=False
         )
 
-    db.commit()
+    session.commit()
 
 
 def get_cpuset_values(session, cpuset_field, moldable_id):
@@ -1392,16 +1411,18 @@ def get_cpuset_values(session, cpuset_field, moldable_id):
     return hostnames_cpuset_fields
 
 
-def get_array_job_ids(array_id):
+def get_array_job_ids(session, array_id):
     """Get all the job_ids of a given array of job identified by its id"""
-    results = db.query(Job.id).filter(Job.array_id == array_id).order_by(Job.id).all()
+    results = (
+        session.query(Job.id).filter(Job.array_id == array_id).order_by(Job.id).all()
+    )
     job_ids = [r[0] for r in results]
     return job_ids
 
 
-def get_job_ids_with_given_properties(sql_property):
+def get_job_ids_with_given_properties(session, sql_property):
     """Returns the job_ids with specified properties parameters : base, where SQL constraints."""
-    results = db.query(Job.id).filter(text(sql_property)).order_by(Job.id).all()
+    results = session.query(Job.id).filter(text(sql_property)).order_by(Job.id).all()
     job_ids = [r[0] for r in results]
     return job_ids
 
@@ -1416,9 +1437,9 @@ def get_job(session, job_id):
         return job
 
 
-def get_running_job(job_id):
+def get_running_job(session, job_id):
     res = (
-        db.query(
+        session.query(
             Job.start_time, MoldableJobDescription.walltime.label("moldable_walltime")
         )
         .filter(Job.id == job_id)
@@ -1440,7 +1461,7 @@ def get_current_moldable_job(session, moldable_id):
     return res
 
 
-def frag_job(job_id, user=None):
+def frag_job(session, job_id, user=None):
     """Set the flag 'ToFrag' of a job to 'Yes' which will threshold job deletion"""
     if not user:
         if "OARDO_USER" in os.environ:
@@ -1448,20 +1469,23 @@ def frag_job(job_id, user=None):
         else:
             user = os.environ["USER"]
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if not job:
         return -3
 
     if (user == job.user) or (user == "oar") or (user == "root"):
-        res = db.query(FragJob).filter(FragJob.job_id == job_id).all()
+        res = session.query(FragJob).filter(FragJob.job_id == job_id).all()
 
         if len(res) == 0:
-            date = tools.get_date()
+            date = tools.get_date(
+                session,
+            )
             frajob = FragJob(job_id=job_id, date=date)
-            db.add(frajob)
-            db.commit()
+            session.add(frajob)
+            session.commit()
             add_new_event(
+                session,
                 "FRAG_JOB_REQUEST",
                 job_id,
                 "User %s requested to frag the job %s" % (user, str(job_id)),
@@ -1474,7 +1498,7 @@ def frag_job(job_id, user=None):
         return -1
 
 
-def ask_checkpoint_signal_job(job_id, signal=None, user=None):
+def ask_checkpoint_signal_job(session, job_id, signal=None, user=None):
     """Verify if the user is able to checkpoint the job
     returns : 0 if all is good, 1 if the user cannot do this,
     2 if the job is not running,
@@ -1557,31 +1581,33 @@ def get_job_types(session, job_id):
     return res
 
 
-def add_current_job_types(job_id, j_type):
-    req = db.insert(JobType).values({"job_id": job_id, "type": j_type})
-    db.session.execute(req)
+def add_current_job_types(session, job_id, j_type):
+    req = session.insert(JobType).values({"job_id": job_id, "type": j_type})
+    session.session.execute(req)
 
 
-def remove_current_job_types(job_id, j_type):
-    db.query(JobType).filter(JobType.job_id == job_id).filter(
+def remove_current_job_types(session, job_id, j_type):
+    session.query(JobType).filter(JobType.job_id == job_id).filter(
         JobType.type == j_type
     ).filter(JobType.types_index == "CURRENT").delete(synchronize_session=False)
-    db.commit()
+    session.commit()
 
 
-def log_job(job):  # pragma: no cover
+def log_job(session, job):  # pragma: no cover
     """sets the index fields to LOG on several tables
     this will speed up future queries
     """
-    if db.dialect == "sqlite":
+
+    dialect = session.bind.dialect.name
+    if dialect == "sqlite":
         return
-    db.query(MoldableJobDescription).filter(
+    session.query(MoldableJobDescription).filter(
         MoldableJobDescription.index == "CURRENT"
     ).filter(MoldableJobDescription.job_id == job.id).update(
         {MoldableJobDescription.index: "LOG"}, synchronize_session=False
     )
 
-    db.query(JobResourceDescription).filter(
+    session.query(JobResourceDescription).filter(
         MoldableJobDescription.job_id == job.id
     ).filter(JobResourceGroup.moldable_id == MoldableJobDescription.id).filter(
         JobResourceDescription.group_id == JobResourceGroup.id
@@ -1589,7 +1615,7 @@ def log_job(job):  # pragma: no cover
         {JobResourceDescription.index: "LOG"}, synchronize_session=False
     )
 
-    db.query(JobResourceGroup).filter(JobResourceGroup.index == "CURRENT").filter(
+    session.query(JobResourceGroup).filter(JobResourceGroup.index == "CURRENT").filter(
         MoldableJobDescription.index == "LOG"
     ).filter(MoldableJobDescription.job_id == job.id).filter(
         JobResourceGroup.moldable_id == MoldableJobDescription.id
@@ -1597,19 +1623,21 @@ def log_job(job):  # pragma: no cover
         {JobResourceGroup.index: "LOG"}, synchronize_session=False
     )
 
-    db.query(JobType).filter(JobType.types_index == "CURRENT").filter(
+    session.query(JobType).filter(JobType.types_index == "CURRENT").filter(
         JobType.job_id == job.id
     ).update({JobType.types_index: "LOG"}, synchronize_session=False)
 
-    db.query(JobDependencie).filter(JobDependencie.index == "CURRENT").filter(
+    session.query(JobDependencie).filter(JobDependencie.index == "CURRENT").filter(
         JobDependencie.job_id == job.id
     ).update({JobDependencie.index: "LOG"}, synchronize_session=False)
 
     if job.assigned_moldable_job != 0:
-        db.query(AssignedResource).filter(AssignedResource.index == "CURRENT").filter(
-            AssignedResource.moldable_id == int(job.assigned_moldable_job)
-        ).update({AssignedResource.index: "LOG"}, synchronize_session=False)
-    db.commit()
+        session.query(AssignedResource).filter(
+            AssignedResource.index == "CURRENT"
+        ).filter(AssignedResource.moldable_id == int(job.assigned_moldable_job)).update(
+            {AssignedResource.index: "LOG"}, synchronize_session=False
+        )
+    session.commit()
 
 
 def set_job_state(session, jid, state):
@@ -1636,6 +1664,7 @@ def set_job_state(session, jid, state):
         ).update({JobStateLog.date_stop: date}, synchronize_session=False)
         session.commit()
         from sqlalchemy import insert
+
         req = insert(JobStateLog).values(
             {"job_id": jid, "job_state": state, "date_start": date}
         )
@@ -1667,7 +1696,7 @@ def set_job_state(session, jid, state):
 
                 if job.assigned_moldable_job != "0":
                     # Update last_job_date field for resources used
-                    update_scheduler_last_job_date(date, int(job.assigned_moldable_job))
+                    update_scheduler_last_job_date(session, date, int(job.assigned_moldable_job))
 
                 if state == "Terminated":
                     tools.notify_user(job, "END", "Job stopped normally.")
@@ -1693,10 +1722,10 @@ def set_job_state(session, jid, state):
                         job, "ERROR", "Job stopped abnormally or an OAR error occured."
                     )
 
-                update_current_scheduler_priority(job, "-2", "STOP")
+                update_current_scheduler_priority(session, job, "-2", "STOP")
 
                 # Here we must not be asynchronously with the scheduler
-                log_job(job)
+                log_job(session, job)
                 # $dbh is valid so these 2 variables must be defined
                 completed = tools.notify_almighty("ChState")
                 if not completed:
@@ -1715,11 +1744,11 @@ def set_job_state(session, jid, state):
         )
 
 
-def get_job_duration_in_state(jid, state):
+def get_job_duration_in_state(session, jid, state):
     """Get the amount of time in the defined state for a job"""
     date = tools.get_date()
     result = (
-        db.query(JobStateLog.date_start, JobStateLog.date_stop)
+        session.query(JobStateLog.date_start, JobStateLog.date_stop)
         .filter(JobStateLog.job_id == jid)
         .filter(JobStateLog.job_state == state)
         .all()
@@ -1732,7 +1761,7 @@ def get_job_duration_in_state(jid, state):
     return duration
 
 
-def hold_job(job_id, running, user=None):
+def hold_job(session, job_id, running, user=None):
     """sets the state field of a job to 'Hold'
     equivalent to set_job_state(base,jobid,"Hold") except for permissions on user
     parameters : jobid, running, user
@@ -1793,7 +1822,7 @@ def hold_job(job_id, running, user=None):
     return 0
 
 
-def resume_job(job_id, user=None):
+def resume_job(session, job_id, user=None):
     """Returns the state of the job from 'Hold' to 'Waiting'
     equivalent to set_job_state(base,jobid,"Waiting") except for permissions on
     user and the fact the job must already be in 'Hold' state
@@ -1848,7 +1877,9 @@ def get_job_challenge(session, job_id):
     return (res.challenge, res.ssh_private_key, res.ssh_public_key)
 
 
-def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
+def get_count_same_ssh_keys_current_jobs(
+    session, user, ssh_private_key, ssh_public_key
+):
     """return the number of current jobs with the same ssh keys"""
     count_query = (
         select([func.count(Challenge.job_id)])
@@ -1874,21 +1905,21 @@ def get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key):
         .where(Job.user != user)
         .where(Challenge.ssh_private_key != "")
     )
-    return db.session.execute(count_query).scalar()
+    return session.session.execute(count_query).scalar()
 
 
-def get_jobs_in_state(state):
+def get_jobs_in_state(session, state):
     """Return the jobs in the specified state"""
-    return db.query(Job).filter(Job.state == state).all()
+    return session.query(Job).filter(Job.state == state).all()
 
 
-def get_job_host_log(moldable_id):
+def get_job_host_log(session, moldable_id):
     """Returns the list of hosts associated to the moldable job passed in parameter
     parameters : base, moldable_id
     return value : list of distinct hostnames"""
 
     res = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(AssignedResource.moldable_id == moldable_id)
         .filter(Resource.id == AssignedResource.resource_id)
         .filter(Resource.network_address != "")
@@ -1898,18 +1929,18 @@ def get_job_host_log(moldable_id):
     return [h[0] for h in res]
 
 
-def suspend_job_action(job_id, moldable_id):
+def suspend_job_action(session, job_id, moldable_id):
     """perform all action when a job is suspended"""
     set_job_state(job_id, "Suspended")
-    db.query(Job).filter(Job.id == job_id).update(
+    session.query(Job).filter(Job.id == job_id).update(
         {"suspended": "YES"}, synchronize_session=False
     )
     resource_ids = get_current_resources_with_suspended_job()
 
-    db.query(Resource).filter(Resource.id.in_(resource_ids)).update(
+    session.query(Resource).filter(Resource.id.in_(resource_ids)).update(
         {"suspended_jobs": "YES"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
 def get_job_cpuset_name(session, job_id, job=None):
@@ -1924,41 +1955,41 @@ def get_job_cpuset_name(session, job_id, job=None):
     return user + "_" + str(job_id)
 
 
-def job_fragged(job_id):
+def job_fragged(session, job_id):
     """Set the flag 'ToFrag' of a job to 'No'"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update(
+    session.query(FragJob).filter(FragJob.job_id == job_id).update(
         {FragJob.state: "FRAGGED"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def job_arm_leon_timer(job_id):
+def job_arm_leon_timer(session, job_id):
     """Set the state to TIMER_ARMED of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update(
+    session.query(FragJob).filter(FragJob.job_id == job_id).update(
         {FragJob.state: "TIMER_ARMED"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def job_refrag(job_id):
+def job_refrag(session, job_id):
     """Set the state to LEON of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update(
+    session.query(FragJob).filter(FragJob.job_id == job_id).update(
         {FragJob.state: "LEON"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def job_leon_exterminate(job_id):
+def job_leon_exterminate(session, job_id):
     """Set the state LEON_EXTERMINATE of job"""
-    db.query(FragJob).filter(FragJob.job_id == job_id).update(
+    session.query(FragJob).filter(FragJob.job_id == job_id).update(
         {FragJob.state: "LEON_EXTERMINATE"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def get_frag_date(job_id):
+def get_frag_date(session, job_id):
     """Get the date of the frag of a job"""
-    res = db.query(FragJob.date).filter(FragJob.job_id == job_id).one()
+    res = session.query(FragJob.date).filter(FragJob.job_id == job_id).one()
     return res[0]
 
 
@@ -1971,7 +2002,14 @@ def set_job_exit_code(session, job_id, exit_code):
 
 
 def check_end_of_job(
-    session, job_id, exit_script_value, error, hosts, user, launchingDirectory, epilogue_script
+    session,
+    job_id,
+    exit_script_value,
+    error,
+    hosts,
+    user,
+    launchingDirectory,
+    epilogue_script,
 ):
     """check end of job"""
     log_jid = "[" + str(job_id) + "] "
@@ -2447,19 +2485,21 @@ def job_finishing_sequence(session, epilogue_script, job_id, events):
         tools.notify_almighty("ChState")
 
 
-def get_job_frag_state(job_id):
+def get_job_frag_state(session, job_id):
     """Get the frag_state value for a specific job"""
-    res = db.query(FragJob.state).filter(FragJob.job_id == job_id).one_or_none()
+    res = session.query(FragJob.state).filter(FragJob.job_id == job_id).one_or_none()
     if res:
         return res[0]
     else:
         return None
 
 
-def get_jobs_to_kill():
+def get_jobs_to_kill(
+    session,
+):
     """Return the list of jobs that have their frag state to LEON"""
     res = (
-        db.query(Job)
+        session.query(Job)
         .filter(FragJob.state == "LEON")
         .filter(Job.id == FragJob.job_id)
         .filter(~Job.state.in_(("Error", "Terminated", "Finishing")))
@@ -2480,23 +2520,25 @@ def set_finish_date(session, job):
     session.commit()
 
 
-def set_running_date(job_id):
+def set_running_date(session, job_id):
     """Set the starting time of the job passed in parameter to the current time"""
     date = tools.get_date()
     # In OAR2 gantt  moldable_id=0 is used to indicate time gantt orign, not in OAR3
     # gantt_date = get_gantt_date()
     # if gantt_date < date:
     #     date = gantt_date
-    db.query(Job).filter(Job.id == job_id).update(
+    session.query(Job).filter(Job.id == job_id).update(
         {Job.start_time: date}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def get_to_exterminate_jobs():
+def get_to_exterminate_jobs(
+    session,
+):
     """ "Return the list of jobs that have their frag state to LEON_EXTERMINATE"""
     res = (
-        db.query(Job)
+        session.query(Job)
         .filter(FragJob.state == "LEON_EXTERMINATE")
         .filter(Job.id == FragJob.job_id)
         .all()
@@ -2504,10 +2546,12 @@ def get_to_exterminate_jobs():
     return res
 
 
-def get_timer_armed_job():
+def get_timer_armed_job(
+    session,
+):
     """Return the list of jobs that have their frag state to TIMER_ARMED"""
     res = (
-        db.query(Job)
+        session.query(Job)
         .filter(FragJob.state == "TIMER_ARMED")
         .filter(Job.id == FragJob.job_id)
         .all()
@@ -2517,7 +2561,7 @@ def get_timer_armed_job():
 
 def archive_some_moldable_job_nodes(session, config, moldable_id, hosts):
     """Sets the index fields to LOG in the table assigned_resources"""
-    # import pdb; pdb.set_trace()
+    # import pdb; psession.set_trace()
     if config["DB_TYPE"] == "Pg":
         session.query(AssignedResource).filter(
             AssignedResource.moldable_id == moldable_id
@@ -2542,10 +2586,10 @@ def get_job_resources_properties(session, job_id):
     return results
 
 
-def get_jobs_state(job_ids):
+def get_jobs_state(session, job_ids):
     """Returns state for each given jobs designated by their id"""
     results = (
-        db.query(Job.id, Job.state)
+        session.query(Job.id, Job.state)
         .filter(Job.id.in_(tuple(job_ids)))
         .order_by(Job.id)
         .all()
@@ -2553,9 +2597,9 @@ def get_jobs_state(job_ids):
     return results
 
 
-def get_job_state(job_id):
+def get_job_state(session, job_id):
     """Returns state for each given job designated by its id"""
-    return db.query(Job.state).filter(Job.id == job_id).one()[0]
+    return session.query(Job.state).filter(Job.id == job_id).one()[0]
 
 
 # WALLTIME CHANGE interaction between related Job tables and WalltimeChange one,
@@ -2567,10 +2611,12 @@ class JobWalltimeChange(object):
             setattr(self, key, value)
 
 
-def get_jobs_with_walltime_change():
+def get_jobs_with_walltime_change(
+    session,
+):
     """Get all jobs with extra time requests to process"""
     results = (
-        db.query(
+        session.query(
             Job.id,
             Job.queue_name,
             Job.start_time,
@@ -2634,6 +2680,7 @@ def get_jobs_with_walltime_change():
 
 
 def get_possible_job_end_time_in_interval(
+    session,
     from_,
     to,
     resources,
@@ -2706,7 +2753,7 @@ WHERE
     """.format(
         only_adv_reservations, from_, to, exclude, resources_str
     )
-    raw_start_times = db.engine.execute(text(req))
+    raw_start_times = session.engine.execute(text(req))
 
     for start_time in raw_start_times.fetchall():
         if (not first) or (first > (start_time[0] - scheduler_job_security_time)):
@@ -2715,11 +2762,11 @@ WHERE
     return first
 
 
-def change_walltime(job_id, new_walltime, message):
+def change_walltime(session, job_id, new_walltime, message):
     """Change the walltime of a job and add an event"""
-    db.query(MoldableJobDescription).filter(
+    session.query(MoldableJobDescription).filter(
         MoldableJobDescription.job_id == job_id
     ).update({MoldableJobDescription.walltime: new_walltime}, synchronize_session=False)
-    db.commit()
+    session.commit()
     add_new_event("WALLTIME", job_id, message, to_check="NO")
-    db.commit()
+    session.commit()

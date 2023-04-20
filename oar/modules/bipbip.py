@@ -13,6 +13,7 @@ import sys
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, add_new_event_with_host
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     archive_some_moldable_job_nodes,
     check_end_of_job,
@@ -26,6 +27,7 @@ from oar.lib.job_handling import (
     set_job_message,
     set_job_state,
 )
+from oar.lib.logging import get_logger
 from oar.lib.resource_handling import get_current_assigned_job_resources
 from oar.lib.tools import (
     TimeoutExpired,
@@ -34,8 +36,6 @@ from oar.lib.tools import (
     limited_dict2hash_perl,
     resources2dump_perl,
 )
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
 
 _, db, logger = init_oar()
 
@@ -135,7 +135,7 @@ class BipBip(object):
                 return
 
             if self.oarexec_challenge == job_challenge:
-                check_end_of_job( 
+                check_end_of_job(
                     session,
                     job_id,
                     self.oarexec_reattach_script_exit_value,
@@ -170,10 +170,14 @@ class BipBip(object):
             self.exit_code = 1
             return
 
-        resources = get_current_assigned_job_resources(session, job.assigned_moldable_job)
+        resources = get_current_assigned_job_resources(
+            session, job.assigned_moldable_job
+        )
         resources_data_str = ", 'resources' => " + resources2dump_perl(resources) + "}"
 
-        mold_job_description = get_current_moldable_job(session, job.assigned_moldable_job)
+        mold_job_description = get_current_moldable_job(
+            session, job.assigned_moldable_job
+        )
 
         job_types = get_job_types(session, job.id)
 
@@ -204,8 +208,8 @@ class BipBip(object):
             ###############
             nodes_cpuset_fields = None
             if cpuset_field:
-                nodes_cpuset_fields = get_cpuset_values(session,
-                    cpuset_field, job.assigned_moldable_job
+                nodes_cpuset_fields = get_cpuset_values(
+                    session, cpuset_field, job.assigned_moldable_job
                 )
 
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
@@ -292,9 +296,7 @@ class BipBip(object):
                                 bad,
                             )
                             archive_some_moldable_job_nodes(
-                                session,
-                                config,
-                                job.assigned_moldable_job, bad
+                                session, config, job.assigned_moldable_job, bad
                             )
                             tools.notify_almighty("ChState")
                             hosts = tmp_hosts
@@ -337,8 +339,8 @@ class BipBip(object):
                     reason = "OAR suspects nodes"
 
             if len(bad) > 0:
-                set_job_message(session,
-                    job_id, "One or several nodes are not responding correctly"
+                set_job_message(
+                    session, job_id, "One or several nodes are not responding correctly"
                 )
                 logger.error(
                     "["
@@ -369,7 +371,8 @@ class BipBip(object):
                         else:
                             exit_bipbip = 0
 
-                add_new_event_with_host(session,
+                add_new_event_with_host(
+                    session,
                     event_type,
                     job_id,
                     "[bipbip] "
@@ -513,7 +516,9 @@ class BipBip(object):
             )
             return new_env
 
-        self.call_server_prologue(session, job, config, env=data_to_oar_env(data_to_transfer))
+        self.call_server_prologue(
+            session, job, config, env=data_to_oar_env(data_to_transfer)
+        )
 
         # NOOP jobs
         if "noop" in job_types:
@@ -526,7 +531,7 @@ class BipBip(object):
         # ssh-oarexec exist error
         if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
             set_job_state(session, job_id, "Running")
-            
+
             # Notify interactive oarsub
             if (job.type == "INTERACTIVE") and (job.reservation == "None"):
                 logger.debug(
@@ -593,7 +598,9 @@ class BipBip(object):
                     logger.error(msg)
                     add_new_event(
                         session,
-                        "SERVER_PROLOGUE_EXIT_CODE_ERROR", job.id, "[bipbip] " + msg
+                        "SERVER_PROLOGUE_EXIT_CODE_ERROR",
+                        job.id,
+                        "[bipbip] " + msg,
                     )
                     tools.notify_almighty("ChState")
                     if (job.type == "INTERACTIVE") and (job.reservation == "None"):
@@ -612,7 +619,9 @@ class BipBip(object):
                     "[" + str(job.id) + "] Server prologue timeouted (cmd: " + str(cmd)
                 )
                 logger.error(msg)
-                add_new_event(session, "SERVER_PROLOGUE_TIMEOUT", job.id, "[bipbip] " + msg)
+                add_new_event(
+                    session, "SERVER_PROLOGUE_TIMEOUT", job.id, "[bipbip] " + msg
+                )
                 tools.notify_almighty("ChState")
                 if (job.type == "INTERACTIVE") and (job.reservation == "None"):
                     tools.notify_interactif_user(

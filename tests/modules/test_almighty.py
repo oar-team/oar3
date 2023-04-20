@@ -6,10 +6,10 @@ import pytest
 import zmq
 
 import oar.lib.tools
+from oar.lib.globals import init_oar
 
 # from oar.lib import config
 from oar.modules.almighty import Almighty, signal_handler
-from oar.lib.globals import init_oar
 
 from ..faketools import FakePopen, fake_call, fake_get_date, fake_popen, set_fake_date
 from ..fakezmq import FakeZmq

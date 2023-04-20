@@ -10,7 +10,6 @@ from oar.modules.bipbip_commander import BipbipCommander
 from ..faketools import FakeProcess, fake_call, fake_called_command
 from ..fakezmq import FakeZmq
 
-
 fakezmq = FakeZmq()
 
 

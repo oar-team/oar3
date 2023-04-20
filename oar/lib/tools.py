@@ -27,13 +27,13 @@ import psutil
 import zmq
 
 from oar.lib import get_logger
-
-# from oar.lib import logger as log
-
 from oar.lib.event import add_new_event
 
 # from oar.lib import config, db
 from oar.lib.globals import init_oar
+
+# from oar.lib import logger as log
+
 
 config, db, logger = init_oar()
 

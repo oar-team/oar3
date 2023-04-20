@@ -4,8 +4,8 @@ import os
 
 from .configuration import Configuration
 from .database import Database
-from .models import setup_db
 from .logging import create_logger
+from .models import setup_db
 
 
 def init_oar():

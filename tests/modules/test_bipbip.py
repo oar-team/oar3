@@ -1,13 +1,16 @@
 # coding: utf-8
 from contextlib import contextmanager
+
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.models import AssignedResource, Challenge, EventLog, Job, Resource
-from oar.lib.job_handling import insert_job
+from oar.lib.database import ephemeral_session
 from oar.lib.globals import init_oar
-from sqlalchemy.orm import scoped_session, sessionmaker
+from oar.lib.job_handling import insert_job
+from oar.lib.models import AssignedResource, Challenge, EventLog, Job, Resource
 from oar.modules.bipbip import BipBip
+
 from ..faketools import FakePopen, fake_popen
 
 _, db, logger = init_oar()
@@ -43,30 +46,6 @@ def builtin_config(request, setup_config):
     )
 
     yield config
-
-
-@contextmanager
-def ephemeral_session(scoped, engine, **kwargs):
-    """Ephemeral session context manager.
-    Will rollback the transaction at the end.
-    """
-    try:
-        scoped.remove()
-        connection = engine.connect()
-        # begin a non-ORM transaction
-        transaction = connection.begin()
-        kwargs["bind"] = connection
-        session = scoped(**kwargs)
-        yield session
-    finally:
-        session.close()
-        # rollback - everything that happened with the
-        # Session above (including calls to commit())
-        # is rolled back.
-        transaction.rollback()
-        # return connection to the Engine
-        connection.close()
-        scoped.remove()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -131,7 +110,9 @@ def test_bipbip_simple(setup_config, minimal_db_initialization):
     assert bipbip.exit_code == 1
 
 
-def _test_bipbip_toLaunch(session, config, types=[], job_id=None, state="toLaunch", args=[]):
+def _test_bipbip_toLaunch(
+    session, config, types=[], job_id=None, state="toLaunch", args=[]
+):
     if not job_id:
         job_id = insert_job(
             session,
@@ -172,7 +153,6 @@ def _test_bipbip_toLaunch(session, config, types=[], job_id=None, state="toLaunc
     config["SERVER_HOSTNAME"] = "localhost"
     config["DETACH_JOB_FROM_SERVER"] = "localhost"
 
-    print(config)
     # Bipbip needs a job id
     bipbip = BipBip([job_id] + args, config=config)
     bipbip.run(session, config)
@@ -187,7 +167,9 @@ def test_bipbip_toLaunch(minimal_db_initialization, builtin_config):
 
 
 def test_bipbip_toLaunch_noop(minimal_db_initialization, builtin_config):
-    _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config, types=["noop"])
+    _, bipbip = _test_bipbip_toLaunch(
+        minimal_db_initialization, builtin_config, types=["noop"]
+    )
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0
 
@@ -197,7 +179,11 @@ def test_bipbip_toLaunch_cpuset_error(minimal_db_initialization, builtin_config)
     fake_bad_nodes["init"] = ["localhost0"]
     job_id, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config)
     fake_bad_nodes["init"] = []
-    event = minimal_db_initialization.query(EventLog).filter(EventLog.job_id == job_id).first()
+    event = (
+        minimal_db_initialization.query(EventLog)
+        .filter(EventLog.job_id == job_id)
+        .first()
+    )
 
     print(bipbip.exit_code)
     assert event.type == "CPUSET_ERROR"
@@ -207,7 +193,8 @@ def test_bipbip_toLaunch_cpuset_error(minimal_db_initialization, builtin_config)
 def test_bipbip_toLaunch_cpuset_error_advance_reservation(
     monkeypatch, minimal_db_initialization, builtin_config
 ):
-    job_id = insert_job(minimal_db_initialization,
+    job_id = insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
         command="yop",
@@ -217,9 +204,15 @@ def test_bipbip_toLaunch_cpuset_error_advance_reservation(
         reservation="Scheduled",
     )
     fake_bad_nodes["init"] = ["localhost0"]
-    _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config, job_id=job_id)
+    _, bipbip = _test_bipbip_toLaunch(
+        minimal_db_initialization, builtin_config, job_id=job_id
+    )
     fake_bad_nodes["init"] = []
-    event = minimal_db_initialization.query(EventLog).filter(EventLog.job_id == job_id).first()
+    event = (
+        minimal_db_initialization.query(EventLog)
+        .filter(EventLog.job_id == job_id)
+        .first()
+    )
 
     print(bipbip.exit_code)
     assert event.type == "CPUSET_ERROR"
@@ -249,7 +242,9 @@ def test_bipbip_toLaunch_server_prologue_env(minimal_db_initialization, builtin_
     assert bipbip.exit_code == 0
 
 
-def test_bipbip_toLaunch_server_prologue_return_code(minimal_db_initialization, builtin_config):
+def test_bipbip_toLaunch_server_prologue_return_code(
+    minimal_db_initialization, builtin_config
+):
     fake_popen["wait_return_code"] = 1
     builtin_config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
     _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config)
@@ -273,13 +268,17 @@ def test_bipbip_toLaunch_server_prologue_return_code_interactive(
     )
     fake_popen["wait_return_code"] = 1
     builtin_config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
-    _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config, job_id=job_id)
+    _, bipbip = _test_bipbip_toLaunch(
+        minimal_db_initialization, builtin_config, job_id=job_id
+    )
     fake_popen["wait_return_code"] = 0
     print(bipbip.exit_code)
     assert bipbip.exit_code == 2
 
 
-def test_bipbip_toLaunch_server_prologue_OSError(minimal_db_initialization, builtin_config):
+def test_bipbip_toLaunch_server_prologue_OSError(
+    minimal_db_initialization, builtin_config
+):
     fake_popen["exception"] = "OSError"
     builtin_config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
     _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config)
@@ -287,7 +286,9 @@ def test_bipbip_toLaunch_server_prologue_OSError(minimal_db_initialization, buil
     assert bipbip.exit_code == 0
 
 
-def test_bipbip_toLaunch_server_prologue_TimeoutExpired(minimal_db_initialization, builtin_config):
+def test_bipbip_toLaunch_server_prologue_TimeoutExpired(
+    minimal_db_initialization, builtin_config
+):
     fake_popen["exception"] = "TimeoutExpired"
     builtin_config["SERVER_PROLOGUE_EXEC_FILE"] = "foo_script"
     _, bipbip = _test_bipbip_toLaunch(minimal_db_initialization, builtin_config)
@@ -295,20 +296,33 @@ def test_bipbip_toLaunch_server_prologue_TimeoutExpired(minimal_db_initializatio
     assert bipbip.exit_code == 2
 
 
-def test_bipbip_running_oarexec_reattachexit_value(minimal_db_initialization, builtin_config):
+def test_bipbip_running_oarexec_reattachexit_value(
+    minimal_db_initialization, builtin_config
+):
     job_id, bipbip = _test_bipbip_toLaunch(
-        minimal_db_initialization, builtin_config, state="Running", args=["1", "2", "foo1"]
+        minimal_db_initialization,
+        builtin_config,
+        state="Running",
+        args=["1", "2", "foo1"],
     )
     assert bipbip.exit_code == 0
 
 
 def test_bipbip_running_oarexec_reattachexit_value_bad_challenge(
-    minimal_db_initialization, builtin_config,
+    minimal_db_initialization,
+    builtin_config,
 ):
     job_id, bipbip = _test_bipbip_toLaunch(
-        minimal_db_initialization, builtin_config, state="Running", args=["1", "2", "bad_challenge"]
+        minimal_db_initialization,
+        builtin_config,
+        state="Running",
+        args=["1", "2", "bad_challenge"],
     )
-    event = minimal_db_initialization.query(EventLog).filter(EventLog.job_id == job_id).first()
+    event = (
+        minimal_db_initialization.query(EventLog)
+        .filter(EventLog.job_id == job_id)
+        .first()
+    )
     assert event.type == "BIPBIP_CHALLENGE"
     assert bipbip.exit_code == 2
 
@@ -317,6 +331,9 @@ def test_bipbip_running_oarexec_reattachexit_bad_value(
     setup_config, minimal_db_initialization, builtin_config
 ):
     job_id, bipbip = _test_bipbip_toLaunch(
-        minimal_db_initialization, builtin_config, state="Running", args=["bug", "2", "foo1"]
+        minimal_db_initialization,
+        builtin_config,
+        state="Running",
+        args=["bug", "2", "foo1"],
     )
     assert bipbip.exit_code == 2

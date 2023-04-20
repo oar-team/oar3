@@ -35,8 +35,8 @@ import socket
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib.logging import get_logger
 from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
 config, db, logger = init_oar()
 

@@ -11,7 +11,6 @@ import re
 import sys
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
 from oar.lib.event import (
     add_new_event,
     add_new_event_with_host,
@@ -20,6 +19,7 @@ from oar.lib.event import (
     get_to_check_events,
     is_an_event_exists,
 )
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     frag_job,
     get_cpuset_values,
@@ -32,6 +32,7 @@ from oar.lib.job_handling import (
     set_job_state,
     suspend_job_action,
 )
+from oar.lib.logging import get_logger
 from oar.lib.node import get_all_resources_on_node, set_node_state
 from oar.lib.queue import stop_all_queues
 from oar.lib.resource_handling import (
@@ -42,12 +43,15 @@ from oar.lib.resource_handling import (
     set_resource_state,
 )
 
-logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
+_, _, logger = init_oar()
+
+logger = get_logger(logger, "oar.modules.node_change_state", forward_stderr=True)
 logger.info("Start Node Change State")
 
 
 class NodeChangeState(object):
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.exit_code = 0
         self.resources_to_heal = []
         self.cpuset_field = None
@@ -57,13 +61,14 @@ class NodeChangeState(object):
         if "SUSPECTED_HEALING_EXEC_FILE" in config:
             self.healing_exec_file = config["SUSPECTED_HEALING_EXEC_FILE"]
 
-    def run(self):
-        for event in get_to_check_events():
+    def run(self, session):
+        config = self.config
+        for event in get_to_check_events(session):
             job_id = event.job_id
             logger.debug(
                 "Check events for the job " + str(job_id) + " with type " + event.type
             )
-            job = get_job(job_id)
+            job = get_job(session, job_id)
 
             # Check if we must resubmit the idempotent jobs
             # User must specify that his job is idempotent and exit from hos script with the exit code 99.
@@ -73,16 +78,16 @@ class NodeChangeState(object):
                 (event.type == "SWITCH_INTO_TERMINATE_STATE")
                 or (event.type == "SWITCH_INTO_ERROR_STATE")
             ) and (job.exit_code and (job.exit_code >> 8) == 99):
-                job_types = get_job_types(job_id)
+                job_types = get_job_types(session, job_id)
                 if "idempotent" in job_types.keys():
                     if (
                         job.reservation == "None"
                         and job.type == "PASSIVE"
-                        and (not is_job_already_resubmitted(job_id))
+                        and (not is_job_already_resubmitted(session, job_id))
                         and (is_an_event_exists(job_id, "SEND_KILL_JOB") == 0)
                         and ((job.stop_time - job.start_time) > 60)
                     ):
-                        new_job_id = resubmit_job(job_id)
+                        new_job_id = resubmit_job(session, job_id)
                         logger.warning(
                             "Resubmiting job "
                             + str(job_id)
@@ -93,12 +98,12 @@ class NodeChangeState(object):
 
             #  Check if we must expressely change the job state
             if event.type == "SWITCH_INTO_TERMINATE_STATE":
-                set_job_state(job_id, "Terminated")
+                set_job_state(session, job_id, "Terminated")
 
             elif (event.type == "SWITCH_INTO_ERROR_STATE") or (
                 event.type == "FORCE_TERMINATE_FINISHING_JOB"
             ):
-                set_job_state(job_id, "Error")
+                set_job_state(session, job_id, "Error")
 
             # Check if we must change the job state #
             type_to_check = [
@@ -123,19 +128,19 @@ class NodeChangeState(object):
                     or (event.type == "RESERVATION_NO_NODE")
                     or (job.assigned_moldable_job == 0)
                 ):
-                    set_job_state(job_id, "Error")
+                    set_job_state(session, job_id, "Error")
                 elif (
                     (job.reservation != "None")
                     and (event.type != "PING_CHECKER_NODE_SUSPECTED")
                     and (event.type != "CPUSET_ERROR")
                 ):
-                    set_job_state(job_id, "Error")
+                    set_job_state(session, job_id, "Error")
 
             if (event.type == "CPUSET_CLEAN_ERROR") or (event.type == "EPILOGUE_ERROR"):
                 # At this point the job was executed normally
                 # The state is changed here to avoid to schedule other jobs
                 # on nodes that will be Suspected
-                set_job_state(job_id, "Terminated")
+                set_job_state(session, job_id, "Terminated")
 
             # Check if we must suspect some nodes
             type_to_check = [
@@ -197,7 +202,7 @@ class NodeChangeState(object):
                             event.type == "EXTERMINATE_JOB"
                         ):
                             hosts = []
-                    add_new_event_with_host(
+                    add_new_event_with_host(session, 
                         "LOG_SUSPECTED", 0, event.description, hosts
                     )
 
@@ -318,16 +323,18 @@ class NodeChangeState(object):
             check_event(event.type, job_id)
 
         # Treate nextState field
-        resources_to_change = get_resources_change_state()
+        resources_to_change = get_resources_change_state(session)
         # A Term command must be added in the Almighty
         debug_info = {}
         if resources_to_change:
             self.exit_code = 1
             for r_id, next_state in resources_to_change.items():
-                resource = get_resource(r_id)
+                resource = get_resource(session, r_id)
                 if resource.state != next_state:
-                    set_resource_state(r_id, next_state, resource.next_finaud_decision)
-                    set_resource_nextState(r_id, "UnChanged")
+                    set_resource_state(
+                        session, r_id, next_state, resource.next_finaud_decision
+                    )
+                    set_resource_nextState(session, r_id, "UnChanged")
 
                     if resource.network_address not in debug_info:
                         debug_info[resource.network_address] = {}
@@ -339,14 +346,14 @@ class NodeChangeState(object):
                         )
 
                     if (next_state == "Dead") or (next_state == "Absent"):
-                        job_ids = get_resource_job_to_frag(r_id)
+                        job_ids = get_resource_job_to_frag(session, r_id)
                         for job_id in job_ids:
                             logger.debug(
                                 resource.network_address
                                 + ": must kill job "
                                 + str(job_id)
                             )
-                            frag_job(job_id)
+                            frag_job(session, job_id)
                             self.exit_code = 2
 
                 else:
@@ -359,7 +366,7 @@ class NodeChangeState(object):
                         + next_state
                         + " state"
                     )
-                    set_resource_nextState(r_id, "UnChanged")
+                    set_resource_nextState(session, r_id, "UnChanged")
 
         email = None
         for network_address, rid_next_state in debug_info.items():
@@ -391,10 +398,11 @@ class NodeChangeState(object):
                 )
 
     def suspend_job(self, job, event):
+        config = self.config
         # SUSPEND PART
 
         if self.cpuset_field:
-            cpuset_name = get_job_cpuset_name(job.id, job)
+            cpuset_name = get_job_cpuset_name(session, job.id, job)
             nodes_cpuset_fields = get_cpuset_values(
                 self.cpuset_field, job.assigned_moldable_job
             )
@@ -442,13 +450,14 @@ class NodeChangeState(object):
                     )
                     logger.error(msg)
                     add_new_event(
+                        session,
                         "SUSPEND_RESUME_MANAGER_FILE",
                         job.id,
                         "[NodeChangeState] " + msg,
                     )
                 else:
                     if len(bad) == 0:
-                        suspend_job_action(job.id, job.assigned_moldable_job)
+                        suspend_job_action(session, job.id, job.assigned_moldable_job)
                         suspend_script = None
                         if "JUST_AFTER_SUSPEND_EXEC_FILE" in config:
                             suspend_script = config["JUST_AFTER_SUSPEND_EXEC_FILE"]
@@ -467,8 +476,10 @@ class NodeChangeState(object):
                                     + error_msg
                                 )
                                 tools.send_log_by_email("Suspend script error", msg)
-                                add_new_event("SUSPEND_SCRIPT_ERROR", job.id, msg)
-                                set_job_state(job.id, "Resuming")
+                                add_new_event(
+                                    session, "SUSPEND_SCRIPT_ERROR", job.id, msg
+                                )
+                                set_job_state(session, job.id, "Resuming")
                                 tools.notify_almighty("Qresume")
                     else:
                         msg = (
@@ -479,9 +490,13 @@ class NodeChangeState(object):
                         )
                         logger.error(msg)
                         add_new_event_with_host(
-                            "SUSPEND_ERROR", job.id, "[NodeChangeState] " + msg, bad
+                            session,
+                            "SUSPEND_ERROR",
+                            job.id,
+                            "[NodeChangeState] " + msg,
+                            bad,
                         )
-                        frag_job(job.id)
+                        frag_job(session, job.id)
                         # A Leon must be run
                         self.exit_code = 2
             tools.notify_almighty("Term")

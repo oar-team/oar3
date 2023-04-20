@@ -1,34 +1,32 @@
 # -*- coding: utf-8 -*-
 import inspect
 import sys
+from collections import OrderedDict
 
-from sqlalchemy import Table
-from sqlalchemy.orm import DeclarativeMeta
+# from .globals import db
+from contextlib import contextmanager
 
-from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
-from sqlalchemy import create_engine, inspect  # , exc
+from sqlalchemy import (  # , exc
+    BigInteger,
+    CheckConstraint,
+    Column,
+    Index,
+    Integer,
+    String,
+    Table,
+    Text,
+    create_engine,
+    inspect,
+    text,
+)
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import DeferredReflection
 from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool
-from sqlalchemy import (
-    Table,
-    Column,
-    Integer,
-    String,
-    CheckConstraint,
-    BigInteger,
-    Text,
-    Index,
-    text,
-)
-from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
-from collections import OrderedDict
 
-# from .globals import db
-from contextlib import contextmanager
+from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
 
 
 def setup_db(db):

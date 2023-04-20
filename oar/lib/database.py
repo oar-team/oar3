@@ -398,13 +398,13 @@ def read_only_session(scoped, **kwargs):
 
 
 @contextmanager
-def ephemeral_session(scoped, **kwargs):
+def ephemeral_session(scoped, engine, **kwargs):
     """Ephemeral session context manager.
     Will rollback the transaction at the end.
     """
     try:
         scoped.remove()
-        connection = scoped.db.engine.connect()
+        connection = engine.connect()
         # begin a non-ORM transaction
         transaction = connection.begin()
         kwargs["bind"] = connection
