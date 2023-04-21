@@ -38,7 +38,7 @@ def add_resource(session, name, state):
             Resource.state_num: State_to_num[state],
         }
     )
-    result = session.session.execute(ins)
+    result = session.execute(ins)
     r_id = result.inserted_primary_key[0]
 
     date = tools.get_date()
@@ -51,8 +51,8 @@ def add_resource(session, name, state):
             ResourceLog.date_start: date,
         }
     )
-    session.session.execute(ins)
-    session.session.commit()
+    session.execute(ins)
+    session.commit()
 
     return r_id
 
@@ -178,7 +178,7 @@ def set_resources_property(session, resources, hostnames, prop_name, prop_value)
                         ResourceLog.date_start.name: date,
                     }
                 )
-            session.session.execute(ResourceLog.__table__.insert(), resource_logs)
+            session.execute(ResourceLog.__table__.insert(), resource_logs)
             session.commit()
         else:
             logger.warning("Failed to update resources")
@@ -232,7 +232,7 @@ def remove_resource(session, resource_id, user=None):
         )
 
         session.commit()
-        # session.session.expire_all()  # TODO / TOFIX / TOCOMMENT???
+        # session.expire_all()  # TODO / TOFIX / TOCOMMENT???
         return (0, None)
     else:
         return (3, "Resource must be in DEAD state.")
@@ -461,7 +461,7 @@ def log_resource_maintenance_event(session, resource_id, maintenance, date):
                 ResourceLog.date_start: date,
             }
         )
-        session.session.execute(ins)
+        session.execute(ins)
     else:
         session.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
             ResourceLog.attribute == "maintenance"

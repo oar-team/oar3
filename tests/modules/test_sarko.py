@@ -9,8 +9,6 @@ from oar.lib import (
     Job,
     Resource,
     ResourceLog,
-    config,
-    db,
 )
 from oar.lib.job_handling import insert_job
 from oar.modules.sarko import Sarko

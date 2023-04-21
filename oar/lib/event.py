@@ -45,9 +45,9 @@ def add_new_event_with_host(session, ev_type, job_id, description, hostnames):
     session.commit()
 
 
-def is_an_event_exists(job_id, event):
+def is_an_event_exists(session, job_id, event):
     res = (
-        db.query(func.count(EventLog.id))
+        session.query(func.count(EventLog.id))
         .filter(EventLog.job_id == job_id)
         .filter(EventLog.type == event)
         .scalar()
@@ -55,10 +55,10 @@ def is_an_event_exists(job_id, event):
     return res
 
 
-def get_job_events(job_id):
+def get_job_events(session, job_id):
     """Get events for the specified job"""
     result = (
-        db.query(EventLog)
+        session.query(EventLog)
         .filter(EventLog.job_id == job_id)
         .order_by(EventLog.date)
         .all()
@@ -66,10 +66,10 @@ def get_job_events(job_id):
     return result
 
 
-def get_jobs_events(job_ids):
+def get_jobs_events(session, job_ids):
     """Get events for the specified jobs"""
     result = (
-        db.query(EventLog)
+        session.query(EventLog)
         .filter(EventLog.job_id.in_(tuple(job_ids)))
         .order_by(EventLog.job_id, EventLog.date)
         .all()
@@ -88,32 +88,32 @@ def get_to_check_events(session):
     return result
 
 
-def check_event(event_type, job_id):
+def check_event(session, event_type, job_id):
     """Turn the field toCheck into NO"""
-    db.query(EventLog).filter(EventLog.job_id == job_id).filter(
+    session.query(EventLog).filter(EventLog.job_id == job_id).filter(
         EventLog.type == event_type
     ).filter(EventLog.to_check == "YES").update(
         {"to_check": "NO"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def get_hostname_event(event_id):
+def get_hostname_event(session, event_id):
     """Get hostnames corresponding to an event Id"""
     res = (
-        db.query(EventLogHostname.hostname)
+        session.query(EventLogHostname.hostname)
         .filter(EventLogHostname.event_id == event_id)
         .all()
     )
     return [h[0] for h in res]
 
 
-def get_events_for_hostname_from(host, date=None):
+def get_events_for_hostname_from(session, host, date=None):
     """Get events for the hostname given as parameter
     If date is given, returns events since that date, else return the 30 last events.
     """
     query = (
-        db.query(EventLog)
+        session.query(EventLog)
         .filter(EventLogHostname.event_id == EventLog.id)
         .filter(EventLogHostname.hostname == host)
     )

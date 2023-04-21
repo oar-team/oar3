@@ -84,7 +84,7 @@ class NodeChangeState(object):
                         job.reservation == "None"
                         and job.type == "PASSIVE"
                         and (not is_job_already_resubmitted(session, job_id))
-                        and (is_an_event_exists(job_id, "SEND_KILL_JOB") == 0)
+                        and (is_an_event_exists(session, job_id, "SEND_KILL_JOB") == 0)
                         and ((job.stop_time - job.start_time) > 60)
                     ):
                         new_job_id = resubmit_job(session, job_id)
@@ -187,12 +187,12 @@ class NodeChangeState(object):
                     event.type == "PING_CHECKER_NODE_SUSPECTED"
                     or event.type == "PING_CHECKER_NODE_SUSPECTED_END_JOB"
                 ):
-                    hosts = get_hostname_event(event.id)
+                    hosts = get_hostname_event(session, event.id)
                     finaud_tag = "YES"
                 elif event.type in type_to_check_cpuset_SR_error:
-                    hosts = get_hostname_event(event.id)
+                    hosts = get_hostname_event(session, event.id)
                 else:
-                    hosts = get_job_host_log(job.assigned_moldable_job)
+                    hosts = get_job_host_log(session, job.assigned_moldable_job)
                     if event.type not in type_to_check_cpuset_LT_error:
                         hosts = [hosts[0]]
                     else:
@@ -202,8 +202,8 @@ class NodeChangeState(object):
                             event.type == "EXTERMINATE_JOB"
                         ):
                             hosts = []
-                    add_new_event_with_host(session, 
-                        "LOG_SUSPECTED", 0, event.description, hosts
+                    add_new_event_with_host(
+                        session, "LOG_SUSPECTED", 0, event.description, hosts
                     )
 
                 if len(hosts) > 0:
@@ -211,8 +211,10 @@ class NodeChangeState(object):
                     for host in hosts:
                         if not ((host in already_treated_hosts) or (host == "")):
                             already_treated_hosts[host] = True
-                            set_node_state(host, "Suspected", finaud_tag)
-                            for resource_id in get_all_resources_on_node(host):
+                            set_node_state(
+                                session, host, "Suspected", finaud_tag, config
+                            )
+                            for resource_id in get_all_resources_on_node(session, host):
                                 self.resources_to_heal.append(
                                     str(resource_id) + " " + host
                                 )
@@ -244,8 +246,10 @@ class NodeChangeState(object):
                     + event.type
                     + ". Fix errors and run `oarnotify -E' to re-enable them.",
                 )
-                stop_all_queues()
-                set_job_state(job_id, "Error")
+                stop_all_queues(
+                    session,
+                )
+                set_job_state(session, job_id, "Error")
 
             # Check if we must resubmit the job
             type_to_check = [
@@ -265,9 +269,9 @@ class NodeChangeState(object):
                 if (
                     job.reservation == "None"
                     and job.type == "PASSIVE"
-                    and (is_job_already_resubmitted(job_id) == 0)
+                    and (is_job_already_resubmitted(session, job_id) == 0)
                 ):
-                    new_job_id = resubmit_job(job_id)
+                    new_job_id = resubmit_job(session, job_id)
                     msg = (
                         "Resubmiting job "
                         + str(job_id)
@@ -278,12 +282,12 @@ class NodeChangeState(object):
                         + " & job is neither a reservation nor an interactive job)"
                     )
                     logger.warning(msg)
-                    add_new_event("RESUBMIT_JOB_AUTOMATICALLY", job_id, msg)
+                    add_new_event(session, "RESUBMIT_JOB_AUTOMATICALLY", job_id, msg)
 
             # Check Suspend/Resume job feature
             if event.type in ["HOLD_WAITING_JOB", "HOLD_RUNNING_JOB", "RESUME_JOB"]:
                 if event.type != "RESUME_JOB" and job.state == "Waiting":
-                    set_job_state(job_id, "Hold")
+                    set_job_state(session, job_id, "Hold")
                     if job.type == "INTERACTIVE":
                         addr, port = job.info_type.split(":")
                         tools.notify_tcp_socket(
@@ -291,25 +295,25 @@ class NodeChangeState(object):
                         )
 
                 elif event.type != "RESUME_JOB" and job.state == "Resuming":
-                    set_job_state(job_id, "Suspended")
+                    set_job_state(session, job_id, "Suspended")
                     tools.notify_almighty("Term")
 
                 elif event.type == "HOLD_WAITING_JOB" and job.state == "Running":
-                    job_types = get_job_types(job_id)
+                    job_types = get_job_types(session, job_id)
                     if "noop" in job_types.keys():
-                        suspend_job_action(job_id, job.assigned_moldable_job)
+                        suspend_job_action(session, job_id, job.assigned_moldable_job)
                         logger.debug(str(job_id) + " suspend job of type noop")
                         tools.notify_almighty("Term")
                     else:
                         # Launch suspend command on all nodes
-                        self.suspend_job(job, event)
+                        self.suspend_job(session, job, event)
 
                 elif event.type == "RESUME_JOB" and job.state == "Suspend":
-                    set_job_state(job_id, "Resuming")
+                    set_job_state(session, job_id, "Resuming")
                     tools.notify_almighty("Qresume")
 
                 elif event.type == "RESUME_JOB" and job.state == "Hold":
-                    set_job_state(job_id, "Waiting")
+                    set_job_state(session, job_id, "Waiting")
                     tools.notify_almighty("Qresume")
 
             # Check if we must notify the user
@@ -320,7 +324,7 @@ class NodeChangeState(object):
                     "Your job was asked to be deleted - " + event.description,
                 )
 
-            check_event(event.type, job_id)
+            check_event(session, event.type, job_id)
 
         # Treate nextState field
         resources_to_change = get_resources_change_state(session)
@@ -397,14 +401,14 @@ class NodeChangeState(object):
                     + " s)."
                 )
 
-    def suspend_job(self, job, event):
+    def suspend_job(self, session, job, event):
         config = self.config
         # SUSPEND PART
 
         if self.cpuset_field:
             cpuset_name = get_job_cpuset_name(session, job.id, job)
             nodes_cpuset_fields = get_cpuset_values(
-                self.cpuset_field, job.assigned_moldable_job
+                session, self.cpuset_field, job.assigned_moldable_job
             )
 
             suspend_data = {

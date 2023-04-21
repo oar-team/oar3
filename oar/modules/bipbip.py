@@ -66,7 +66,6 @@ class BipBip(object):
             self.oarexec_challenge = args[3]
 
     def run(self, session, config):
-        print(config)
         job_id = self.job_id
         if not job_id:
             self.exit_code = 1

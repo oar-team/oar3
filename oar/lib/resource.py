@@ -14,7 +14,7 @@ MAX_NB_RESOURCES = 100000
 class ResourceSet(object):
     default_itvs = ProcSet()
 
-    def __init__(self):
+    def __init__(self, session):
         self.nb_resources_all = 0
         self.nb_resources_not_dead = 0
         self.nb_resources_default_not_dead = 0
@@ -61,7 +61,9 @@ class ResourceSet(object):
         self.roid_2_network_address = {}
 
         # retrieve resource in order from DB
-        self.resources_db = db.query(Resource).order_by(text(order_by_clause)).all()
+        self.resources_db = (
+            session.query(Resource).order_by(text(order_by_clause)).all()
+        )
 
         # fill the different structures
         for roid, r in enumerate(self.resources_db):

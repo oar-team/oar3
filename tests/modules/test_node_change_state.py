@@ -73,9 +73,10 @@ def test_node_change_state_main():
     assert exit_code == 0
 
 
-def test_node_change_state_void(minimal_db_initialization):
-    node_change_state = NodeChangeState()
-    node_change_state.run()
+def test_node_change_state_void(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    node_change_state = NodeChangeState(config)
+    node_change_state.run(minimal_db_initialization)
     print(node_change_state.exit_code)
     assert node_change_state.exit_code == 0
 
@@ -224,10 +225,10 @@ def test_node_change_state_job_suspend_resume(minimal_db_initialization, setup_c
         state="Running",
     )
 
-    setup_config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"] = "core"
-    setup_config["SUSPEND_RESUME_FILE"] = "/tmp/fake_suspend_resume"
-    setup_config["JUST_AFTER_SUSPEND_EXEC_FILE"] = "/tmp/fake_admin_script"
-    setup_config["SUSPEND_RESUME_SCRIPT_TIMEOUT"] = 60
+    config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"] = "core"
+    config["SUSPEND_RESUME_FILE"] = "/tmp/fake_suspend_resume"
+    config["JUST_AFTER_SUSPEND_EXEC_FILE"] = "/tmp/fake_admin_script"
+    config["SUSPEND_RESUME_SCRIPT_TIMEOUT"] = 60
 
     assign_resources(minimal_db_initialization, job_id)
     base_test_node_change(
@@ -236,7 +237,6 @@ def test_node_change_state_job_suspend_resume(minimal_db_initialization, setup_c
         "HOLD_WAITING_JOB",
         "Suspended",
         job_id,
-        config=setup_config,
     )
 
 
@@ -309,6 +309,7 @@ def test_node_change_state_job_suspend_resume_waiting_interactive(
 ):
     config, _, _ = setup_config
     job_id = insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
         state="Waiting",
@@ -325,7 +326,10 @@ def test_node_change_state_job_suspend_resume_resuming(
 ):
     config, _, _ = setup_config
     job_id = insert_job(
-        res=[(60, [("resource_id=4", "")])], properties="", state="Resuming"
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Resuming",
     )
     base_test_node_change(
         minimal_db_initialization, config, "HOLD_WAITING_JOB", "Suspended", job_id
@@ -337,7 +341,10 @@ def test_node_change_state_job_suspend_resume_suspend(
 ):
     config, _, _ = setup_config
     job_id = insert_job(
-        res=[(60, [("resource_id=4", "")])], properties="", state="Suspend"
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Suspend",
     )
     base_test_node_change(
         minimal_db_initialization, config, "RESUME_JOB", "Resuming", job_id
@@ -349,7 +356,10 @@ def test_node_change_state_job_suspend_resume_hold(
 ):
     config, _, _ = setup_config
     job_id = insert_job(
-        res=[(60, [("resource_id=4", "")])], properties="", state="Hold"
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Hold",
     )
     base_test_node_change(
         minimal_db_initialization, config, "RESUME_JOB", "Waiting", job_id

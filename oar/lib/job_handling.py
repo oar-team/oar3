@@ -665,7 +665,7 @@ def save_assigns(session, jobs, resource_set):
 
         if message_updates:
             logger.info("save job messages")
-            session.session.query(Job).filter(Job.id.in_(message_updates)).update(
+            session.query(Job).filter(Job.id.in_(message_updates)).update(
                 {
                     Job.message: case(
                         message_updates,
@@ -676,10 +676,8 @@ def save_assigns(session, jobs, resource_set):
             )
 
         logger.info("save assignements")
-        session.session.execute(
-            GanttJobsPrediction.__table__.insert(), mld_id_start_time_s
-        )
-        session.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
+        session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
         session.commit()
 
 
@@ -786,7 +784,7 @@ def add_resource_jobs_pairs(session, tuple_mld_ids):  # pragma: no cover
         for res_mld_id in resources_mld_ids
     ]
 
-    session.session.execute(AssignedResource.__table__.insert(), assigned_resources)
+    session.execute(AssignedResource.__table__.insert(), assigned_resources)
     session.commit()
 
 
@@ -805,7 +803,7 @@ def add_resource_job_pairs(session, moldable_id):
         for res_mld_id in resources_mld_ids
     ]
 
-    session.session.execute(AssignedResource.__table__.insert(), assigned_resources)
+    session.execute(AssignedResource.__table__.insert(), assigned_resources)
     session.commit()
 
 
@@ -953,7 +951,7 @@ def resubmit_job(session, job_id):
     else:
         user = "oar"
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if job is None:
         return ((-5, "Unable to retrieve initial job:" + str(job_id)), 0)
@@ -975,18 +973,20 @@ def resubmit_job(session, job_id):
         return ((-3, "Resubmitted job user mismatch."), 0)
 
     # Verify the content of the ssh keys
-    job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(job_id)
+    job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(session, job_id)
     if (ssh_public_key != "") or (ssh_private_key != ""):
         # Check if the keys are used by other jobs
         if (
-            get_count_same_ssh_keys_current_jobs(user, ssh_private_key, ssh_public_key)
+            get_count_same_ssh_keys_current_jobs(
+                session, user, ssh_private_key, ssh_public_key
+            )
             > 0
         ):
             return ((-4, "Another active job is using the same job key."), 0)
 
-    date = tools.get_date()
+    date = tools.get_date(session)
     # Detach and prepare old job to be reinserted
-    session.session.expunge(job)
+    session.expunge(job)
     make_transient(job)
     job.id = None
     job.state = "Hold"
@@ -998,8 +998,8 @@ def resubmit_job(session, job_id):
     job.exit_code = None
     job.assigned_moldable_job = 0
 
-    session.session.add(job)
-    session.session.flush()
+    session.add(job)
+    session.flush()
 
     new_job_id = job.id
 
@@ -1013,7 +1013,7 @@ def resubmit_job(session, job_id):
             "ssh_public_key": ssh_public_key,
         }
     )
-    session.session.execute(ins)
+    session.execute(ins)
 
     # Duplicate job resource description requirements
     # Retrieve modable_job_description
@@ -1024,7 +1024,7 @@ def resubmit_job(session, job_id):
     )
 
     for mdl_job_descr in modable_job_descriptions:
-        res = session.session.execute(
+        res = session.execute(
             MoldableJobDescription.__table__.insert(),
             {
                 "moldable_job_id": new_job_id,
@@ -1040,7 +1040,7 @@ def resubmit_job(session, job_id):
         )
 
         for job_res_grp in job_resource_groups:
-            res = session.session.execute(
+            res = session.execute(
                 JobResourceGroup.__table__.insert(),
                 {
                     "res_group_moldable_id": moldable_id,
@@ -1056,7 +1056,7 @@ def resubmit_job(session, job_id):
             )
 
             for job_res_descr in job_resource_descriptions:
-                session.session.execute(
+                session.execute(
                     JobResourceDescription.__table__.insert(),
                     {
                         "res_job_group_id": res_group_id,
@@ -1070,7 +1070,7 @@ def resubmit_job(session, job_id):
     job_types = session.query(JobType).filter(JobType.job_id == job_id).all()
     new_job_types = [{"job_id": new_job_id, "type": jt.type} for jt in job_types]
 
-    session.session.execute(JobType.__table__.insert(), new_job_types)
+    session.execute(JobType.__table__.insert(), new_job_types)
 
     # Update job dependencies
     session.query(JobDependencie).filter(
@@ -1083,7 +1083,7 @@ def resubmit_job(session, job_id):
     )
 
     # Emit job state log
-    session.session.execute(
+    session.execute(
         JobStateLog.__table__.insert(),
         {"job_id": new_job_id, "job_state": "Waiting", "date_start": date},
     )
@@ -1099,7 +1099,7 @@ def is_job_already_resubmitted(session, job_id):
     count_query = (
         select([func.count()]).select_from(Job).where(Job.resubmit_job_id == job_id)
     )
-    return session.session.execute(count_query).scalar()
+    return session.execute(count_query).scalar()
 
 
 def set_job_resa_state(session, job_id, state):
@@ -1583,7 +1583,7 @@ def get_job_types(session, job_id):
 
 def add_current_job_types(session, job_id, j_type):
     req = session.insert(JobType).values({"job_id": job_id, "type": j_type})
-    session.session.execute(req)
+    session.execute(req)
 
 
 def remove_current_job_types(session, job_id, j_type):
@@ -1696,7 +1696,9 @@ def set_job_state(session, jid, state):
 
                 if job.assigned_moldable_job != "0":
                     # Update last_job_date field for resources used
-                    update_scheduler_last_job_date(session, date, int(job.assigned_moldable_job))
+                    update_scheduler_last_job_date(
+                        session, date, int(job.assigned_moldable_job)
+                    )
 
                 if state == "Terminated":
                     tools.notify_user(job, "END", "Job stopped normally.")
@@ -1905,7 +1907,7 @@ def get_count_same_ssh_keys_current_jobs(
         .where(Job.user != user)
         .where(Challenge.ssh_private_key != "")
     )
-    return session.session.execute(count_query).scalar()
+    return session.execute(count_query).scalar()
 
 
 def get_jobs_in_state(session, state):
@@ -1931,11 +1933,11 @@ def get_job_host_log(session, moldable_id):
 
 def suspend_job_action(session, job_id, moldable_id):
     """perform all action when a job is suspended"""
-    set_job_state(job_id, "Suspended")
+    set_job_state(session, job_id, "Suspended")
     session.query(Job).filter(Job.id == job_id).update(
         {"suspended": "YES"}, synchronize_session=False
     )
-    resource_ids = get_current_resources_with_suspended_job()
+    resource_ids = get_current_resources_with_suspended_job(session)
 
     session.query(Resource).filter(Resource.id.in_(resource_ids)).update(
         {"suspended_jobs": "YES"}, synchronize_session=False

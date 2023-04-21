@@ -60,7 +60,7 @@ def job_key_management(
     Read job key file if import from file and generate a job key if no import.
     This function returns with job_key_priv and job_key_pub set if use_job_key is set.
     """
-    # import pdb; pdb.set_trace()
+    # import pdb; psession.set_trace()
     error = (0, "")
 
     job_key_priv = ""
@@ -514,7 +514,7 @@ def estimate_job_nb_resources(resource_request, j_properties):
 
                 try:
                     request_constraints = (
-                        db.query(Resource.id).filter(text(sql_constraints)).all()
+                        session.query(Resource.id).filter(text(sql_constraints)).all()
                     )
                 except exc.SQLAlchemyError:
                     error_code = -5
@@ -653,14 +653,14 @@ def add_micheline_subjob(
         kwargs["array_id"] = array_id
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.session.execute(ins)
+    result = session.execute(ins)
     job_id = result.inserted_primary_key[0]
 
     if array_id <= 0:
-        db.query(Job).filter(Job.id == job_id).update(
+        session.query(Job).filter(Job.id == job_id).update(
             {Job.array_id: job_id}, synchronize_session=False
         )
-        db.commit()
+        session.commit()
 
     random_number = random.randint(1, 1000000000000)
     ins = Challenge.__table__.insert().values(
@@ -671,7 +671,7 @@ def add_micheline_subjob(
             "ssh_public_key": ssh_public_key,
         }
     )
-    db.session.execute(ins)
+    session.execute(ins)
 
     # print(resource_request)
 
@@ -689,7 +689,7 @@ def add_micheline_subjob(
 
     # Insert MoldableJobDescription job_id and walltime
     # print('mld_jid_walltimes)
-    result = db.session.execute(
+    result = session.execute(
         MoldableJobDescription.__table__.insert(), mld_jid_walltimes
     )
 
@@ -698,7 +698,7 @@ def add_micheline_subjob(
         mld_ids = [result.inserted_primary_key[0]]
     else:
         res = (
-            db.query(MoldableJobDescription.id)
+            session.query(MoldableJobDescription.id)
             .filter(MoldableJobDescription.job_id == job_id)
             .all()
         )
@@ -724,15 +724,13 @@ def add_micheline_subjob(
 
         # print(mld_id_property)
         # Insert property for moldable
-        result = db.session.execute(
-            JobResourceGroup.__table__.insert(), mld_id_property
-        )
+        result = session.execute(JobResourceGroup.__table__.insert(), mld_id_property)
 
         if len(mld_id_property) == 1:
             grp_ids = [result.inserted_primary_key[0]]
         else:
             res = (
-                db.query(JobResourceGroup.id)
+                session.query(JobResourceGroup.id)
                 .filter(JobResourceGroup.moldable_id == moldable_id)
                 .all()
             )
@@ -752,39 +750,37 @@ def add_micheline_subjob(
                     }
                 )
             # print(res_description)
-            db.session.execute(
-                JobResourceDescription.__table__.insert(), res_description
-            )
+            session.execute(JobResourceDescription.__table__.insert(), res_description)
 
     # types of job
     types = job_parameters.types
     if types:
         ins = [{"job_id": job_id, "type": typ} for typ in types]
-        db.session.execute(JobType.__table__.insert(), ins)
+        session.execute(JobType.__table__.insert(), ins)
 
     # Set insert job dependencies
     dependencies = job_parameters.dependencies
     if dependencies:
         ins = [{"job_id": job_id, "job_id_required": dep} for dep in dependencies]
-        db.session.execute(JobDependencie.__table__.insert(), ins)
+        session.execute(JobDependencie.__table__.insert(), ins)
 
     if not job_parameters.hold:
-        req = db.insert(JobStateLog).values(
+        req = session.insert(JobStateLog).values(
             {"job_id": job_id, "job_state": "Waiting", "date_start": date}
         )
-        db.session.execute(req)
-        db.commit()
+        session.execute(req)
+        session.commit()
 
-        db.query(Job).filter(Job.id == job_id).update(
+        session.query(Job).filter(Job.id == job_id).update(
             {Job.state: "Waiting"}, synchronize_session=False
         )
-        db.commit()
+        session.commit()
     else:
-        req = db.insert(JobStateLog).values(
+        req = session.insert(JobStateLog).values(
             {"job_id": job_id, "job_state": "Hold", "date_start": date}
         )
-        db.session.execute(req)
-        db.commit()
+        session.execute(req)
+        session.commit()
 
     return ((0, ""), job_id)
 
@@ -866,15 +862,15 @@ def add_micheline_simple_array_job(
     # print(kwargs)
 
     ins = Job.__table__.insert().values(**kwargs)
-    result = db.session.execute(ins)
+    result = session.execute(ins)
     first_job_id = result.inserted_primary_key[0]
 
     # Update array_id
     array_id = first_job_id
-    db.query(Job).filter(Job.id == first_job_id).update(
+    session.query(Job).filter(Job.id == first_job_id).update(
         {Job.array_id: array_id}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
     # Insert remaining array jobs with array_id
     jobs_data = []
@@ -885,11 +881,11 @@ def add_micheline_simple_array_job(
         job_data["command"] = command
         jobs_data.append(job_data)
 
-    db.session.execute(Job.__table__.insert(), jobs_data)
-    db.commit()
+    session.execute(Job.__table__.insert(), jobs_data)
+    session.commit()
 
     # Retrieve job_ids thanks to array_id value
-    result = db.query(Job.id).filter(Job.array_id == array_id).all()
+    result = session.query(Job.id).filter(Job.array_id == array_id).all()
     job_id_list = [r[0] for r in result]
 
     # TODO Populate challenges and moldable_job_descriptions tables (DONE?)
@@ -907,15 +903,15 @@ def add_micheline_simple_array_job(
             {"moldable_job_id": job_id, "moldable_walltime": walltime}
         )
 
-    db.session.execute(Challenge.__table__.insert(), challenges)
-    db.session.execute(
+    session.execute(Challenge.__table__.insert(), challenges)
+    session.execute(
         MoldableJobDescription.__table__.insert(), moldable_job_descriptions
     )
-    db.commit()
+    session.commit()
 
     # Retrieve moldable_ids thanks to job_ids
     result = (
-        db.query(MoldableJobDescription.id)
+        session.query(MoldableJobDescription.id)
         .filter(MoldableJobDescription.job_id.in_(tuple(job_id_list)))
         .order_by(MoldableJobDescription.id)
         .all()
@@ -933,12 +929,12 @@ def add_micheline_simple_array_job(
                 {"res_group_moldable_id": moldable_id, "res_group_property": prop}
             )
 
-    db.session.execute(JobResourceGroup.__table__.insert(), job_resource_groups)
-    db.commit()
+    session.execute(JobResourceGroup.__table__.insert(), job_resource_groups)
+    session.commit()
 
     # Retrieve res_group_ids thanks to moldable_ids
     result = (
-        db.query(JobResourceGroup.id)
+        session.query(JobResourceGroup.id)
         .filter(JobResourceGroup.moldable_id.in_(tuple(moldable_ids)))
         .order_by(JobResourceGroup.id)
         .all()
@@ -963,10 +959,10 @@ def add_micheline_simple_array_job(
                 order += 1
             k += 1
 
-    db.session.execute(
+    session.execute(
         JobResourceDescription.__table__.insert(), job_resource_descriptions
     )
-    db.commit()
+    session.commit()
 
     # Populate job_types table
     types = job_parameters.types
@@ -975,8 +971,8 @@ def add_micheline_simple_array_job(
         for job_id in job_id_list:
             for typ in types:
                 jobs_types.append({"job_id": job_id, "type": typ})
-        db.session.execute(JobType.__table__.insert(), jobs_types)
-        db.commit()
+        session.execute(JobType.__table__.insert(), jobs_types)
+        session.commit()
 
     # Set insert job dependencies
     dependencies = job_parameters.dependencies
@@ -985,26 +981,26 @@ def add_micheline_simple_array_job(
         for job_id in job_id_list:
             for dep in dependencies:
                 jobs_dependencies.append({"job_id": job_id, "job_id_required": dep})
-        db.session.execute(JobDependencie.__table__.insert(), jobs_dependencies)
-        db.commit()
+        session.execute(JobDependencie.__table__.insert(), jobs_dependencies)
+        session.commit()
 
     # Hold/Waiting management, job_state_log setting
     # Job is inserted with hold state first
     state_log = "Hold"
     if not job_parameters.hold:
         state_log = "Waiting"
-        db.query(Job).filter(Job.array_id == array_id).update(
+        session.query(Job).filter(Job.array_id == array_id).update(
             {Job.state: state_log}, synchronize_session=False
         )
-        db.commit()
+        session.commit()
 
     # Update array_id field and set job to state if waiting and insert job_state_log
     job_state_logs = [
         {"job_id": job_id, "job_state": state_log, "date_start": date}
         for job_id in job_id_list
     ]
-    db.session.execute(JobStateLog.__table__.insert(), job_state_logs)
-    db.commit()
+    session.execute(JobStateLog.__table__.insert(), job_state_logs)
+    session.commit()
 
     return ((0, ""), job_id_list)
 
@@ -1083,7 +1079,7 @@ def add_micheline_jobs(
     else:
         # Retrieve Micheline's rules from database
         rules = (
-            db.query(AdmissionRule.rule)
+            session.query(AdmissionRule.rule)
             .filter(AdmissionRule.enabled == "YES")
             .order_by(AdmissionRule.priority, AdmissionRule.id)
             .all()
@@ -1104,7 +1100,7 @@ def add_micheline_jobs(
         return (error, [])
 
     # Test if the queue exists
-    if not db.query(Queue).filter(Queue.name == job_parameters.queue).all():
+    if not session.query(Queue).filter(Queue.name == job_parameters.queue).all():
         error = (-8, "queue " + job_parameters.queue + " does not exist")
         return (error, [])
 

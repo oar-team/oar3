@@ -73,7 +73,7 @@ def monkeypatch_scoped_session(request, monkeypatch):
     monkeypatch.setattr(
         db.session,
         "registry",
-        ScopedRegistry(db.session.session_factory, lambda: request.node.name),
+        ScopedRegistry(db.session_factory, lambda: request.node.name),
     )
 
 
