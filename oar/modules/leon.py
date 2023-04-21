@@ -16,8 +16,8 @@ There are 2 frag types :
 import sys
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
 from oar.lib.event import add_new_event
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_job_current_hostnames,
     get_job_frag_state,
@@ -31,17 +31,27 @@ from oar.lib.job_handling import (
     set_job_state,
     set_running_date,
 )
+from oar.lib.logging import get_logger
+from oar.lib.globals import init_oar
 
-logger = get_logger("oar.modules.leon", forward_stderr=True)
+_,_,logger = init_oar()
+
+logger = get_logger(logger, "oar.modules.leon", forward_stderr=True)
+
 logger.info("Start Leon")
 
 
 class Leon(object):
-    def __init__(self, args=None):
+    def __init__(self, config, logger, args=None):
         self.args = args if args else []
         self.exit_code = 0
+        self.logger = logger
+        self.config = config
 
-    def run(self):
+    def run(self, session):
+        config = self.config
+        logger = self.logger
+
         deploy_hostname = None
         if "DEPLOY_HOSTNAME" in config:
             deploy_hostname = config["DEPLOY_HOSTNAME"]
@@ -66,7 +76,7 @@ class Leon(object):
                 self.exit_code = 1
                 return
 
-            frag_state = get_job_frag_state(job_id)
+            frag_state = get_job_frag_state(session, job_id)
 
             if frag_state == "LEON_EXTERMINATE":
                 # TODO: from leon.pl, do we need to ignore some signals
@@ -75,9 +85,9 @@ class Leon(object):
                 # $SIG{INT}  = 'IGNORE';
                 # $SIG{TERM} = 'IGNORE';
                 logger.debug('Leon was called to exterminate job "' + str(job_id) + '"')
-                job_arm_leon_timer(job_id)
+                job_arm_leon_timer(session, job_id)
                 events = [("EXTERMINATE_JOB", "I exterminate the job " + str(job_id))]
-                job_finishing_sequence(epilogue_script, job_id, events)
+                job_finishing_sequence(session, epilogue_script, job_id, events)
                 tools.notify_almighty("ChState")
             else:
                 logger.error(
@@ -87,13 +97,15 @@ class Leon(object):
                 )
             return
 
-        for job in get_jobs_to_kill():
+        for job in get_jobs_to_kill(
+            session,
+        ):
             # TODO pass if the job is job_desktop_computing one
             logger.debug("Normal kill: treates job " + str(job.id))
             if (job.state == "Waiting") or (job.state == "Hold"):
                 logger.debug("Job is not launched")
-                set_job_state(job.id, "Error")
-                set_job_message(job.id, "Job killed by Leon directly")
+                set_job_state(session, job.id, "Error")
+                set_job_message(session, job.id, "Job killed by Leon directly")
                 if job.type == "INTERACTIVE":
                     logger.debug("I notify oarsub in waiting mode")
                     addr, port = job.info_type.split(":")
@@ -113,15 +125,15 @@ class Leon(object):
             ):
                 logger.debug("Job is terminated or is terminating nothing to do")
             else:
-                job_types = get_job_types(job.id)
+                job_types = get_job_types(session, job.id)
                 if "noop" in job_types.keys():
                     logger.debug("Kill the NOOP job: " + str(job.id))
-                    set_finish_date(job)
-                    set_job_state(job.id, "Terminated")
-                    job_finishing_sequence(epilogue_script, job.id, [])
+                    set_finish_date(session, job)
+                    set_job_state(session, job.id, "Terminated")
+                    job_finishing_sequence(session, epilogue_script, job.id, [])
                     self.exit_code = 1
                 else:
-                    hosts = get_job_current_hostnames(job.id)
+                    hosts = get_job_current_hostnames(session, job.id)
                     head_host = None
                     # deploy, cosystem and no host part
                     if ("cosystem" in job_types.keys()) or (len(hosts) == 0):
@@ -133,6 +145,7 @@ class Leon(object):
 
                     if head_host:
                         add_new_event(
+                            session,
                             "SEND_KILL_JOB",
                             job.id,
                             "Send the kill signal to oarexec on "
@@ -145,23 +158,30 @@ class Leon(object):
                         )
                         logger.warning(comment)
 
-            job_arm_leon_timer(job.id)
+            job_arm_leon_timer(session, job.id)
 
         # Treats jobs in state EXTERMINATED in the table fragJobs
-        for job in get_to_exterminate_jobs():
+        for job in get_to_exterminate_jobs(
+            session,
+        ):
             logger.debug("EXTERMINATE the job: " + str(job.id))
-            set_job_state(job.id, "Finishing")
+            set_job_state(session, job.id, "Finishing")
             if job.start_time == 0:
-                set_running_date(job.id)
-            set_finish_date(job)
-            set_job_message(job.id, "Job exterminated by Leon")
+                set_running_date(session, job.id)
+            set_finish_date(session, job)
+            set_job_message(session, job.id, "Job exterminated by Leon")
             tools.notify_bipbip_commander(
                 {"job_id": job.id, "cmd": "LEONEXTERMINATE", "args": []}
             )
 
 
 def main():  # pragma: no cover
-    leon = Leon(sys.argv[1:])
+    config, _, logger = init_oar()
+
+    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger.info("Start Sarko")
+
+    leon = Leon(config, logger, sys.argv[1:])
     leon.run()
     return leon.exit_code
 

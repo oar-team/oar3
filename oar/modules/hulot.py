@@ -46,7 +46,6 @@ from multiprocessing import Pool, TimeoutError
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
 from oar.lib.node import (
@@ -55,8 +54,11 @@ from oar.lib.node import (
     get_nodes_that_can_be_waked_up,
     get_nodes_with_given_sql,
 )
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
-logger = get_logger("oar.modules.hulot", forward_stderr=True)
+_,_,logger = init_oar()
+logger = get_logger(logger, "oar.modules.hulot", forward_stderr=True)
 
 
 def check_reminded_list(
@@ -127,7 +129,9 @@ def get_timeout(timeouts, nb_nodes):
 class HulotClient(object):
     """Hulot client part used by metascheduler to interact with Hulot server"""
 
-    def __init__(self):
+    def __init__(self, config, logger):
+        self.logger = logger
+        self.config = config
         # Initialize zeromq context
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUSH)
@@ -153,8 +157,10 @@ class HulotClient(object):
 
 
 class Hulot(object):
-    def __init__(self):
+    def __init__(self,config, logger):
         logger.info("Initiating Hulot, the energy saving module")
+        self.logger = logger
+        self.config = config
 
         self.exit_code = 0
         # Intialize zeromq context
@@ -237,12 +243,16 @@ class Hulot(object):
         self.window_forker = WindowForker(
             config["ENERGY_SAVING_WINDOW_FORKER_SIZE"],
             config["ENERGY_SAVING_WINDOW_TIMEOUT"],
+            config
         )
         # TODO
         # my $count_cycles;
         #
 
-    def run(self, loop=True):
+    def run(self, session, loop=True):
+        logger = self.logger
+        config = self.config
+
         logger.info("Starting Hulot's main loop")
         nodes_list_to_process = {}
         nodes_list_to_remind = self.nodes_list_to_remind
@@ -252,13 +262,13 @@ class Hulot(object):
 
         # wait db at launch
         try:
-            wait_db_ready(get_alive_nodes_with_jobs)
+            wait_db_ready(get_alive_nodes_with_jobs, args=[session])
         except Exception as e:
             logger.error(f"Failed to contact database: {e}")
             return 1
 
         while True:
-            self.window_forker.check_executors(nodes_list_running)
+            self.window_forker.check_executors(session, config, nodes_list_running)
 
             message = self.socket.recv_json()
 
@@ -273,19 +283,20 @@ class Hulot(object):
                 logger.debug("Got request: " + command + " for nodes: " + str(nodes))
 
             # Identify idle and occupied nodes
-            all_occupied_nodes = get_alive_nodes_with_jobs()
+            all_occupied_nodes = get_alive_nodes_with_jobs(session)
             nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(
-                tools.get_date()
+                session, 
+                tools.get_date(session)
             )
 
             for properties in keepalive.keys():
                 occupied_nodes = []
                 idle_nodes = []
                 keepalive[properties]["nodes"] = [
-                    p for p in get_nodes_with_given_sql(properties)
+                    p for p in get_nodes_with_given_sql(session, properties)
                 ]
                 keepalive[properties]["current_idle"] = 0
-                alive_nodes = get_nodes_with_given_sql(
+                alive_nodes = get_nodes_with_given_sql(session, 
                     properties + "and (state='Alive' or next_state='Alive')"
                 )
                 for alive_node in alive_nodes:
@@ -351,7 +362,7 @@ class Hulot(object):
                                 )
 
             # Retrieve list of nodes having at least one resource Alive
-            nodes_alive = get_nodes_with_given_sql("state='Alive'")
+            nodes_alive = get_nodes_with_given_sql(session, "state='Alive'")
 
             # Checks if some booting nodes need to be suspected
             nodes_toRemove = []
@@ -365,14 +376,14 @@ class Hulot(object):
                         )
                         # Remove node from the list running nodes
                         nodes_toRemove.append(node)
-                    elif tools.get_date() > cmd_info["timeout"]:
-                        change_node_state(node, "Suspected", config)
+                    elif tools.get_date(session) > cmd_info["timeout"]:
+                        change_node_state(session, node, "Suspected", config)
                         info = (
                             "Node "
                             + node
                             + "was suspected because it did not wake up before the end of the timeout"
                         )
-                        add_new_event_with_host("LOG_SUSPECTED", 0, info, [node])
+                        add_new_event_with_host(session, "LOG_SUSPECTED", 0, info, [node])
                         # Remove suspected node from the list running nodes
                         nodes_toRemove.append(node)
                         # Remove this node from received list (if node is present) because it was suspected
@@ -445,7 +456,7 @@ class Hulot(object):
                 cmd = cmd_info["command"]
                 if cmd == "WAKEUP":
                     # Save the timeout for the nodes to be processed.
-                    cmd_info["timeout"] = tools.get_date() + timeout
+                    cmd_info["timeout"] = tools.get_date(session) + timeout
                     command_toLaunch.append(("WAKEUP", node))
                 elif cmd == "HALT":
                     # Don't halt nodes that needs to be kept alive
@@ -477,7 +488,7 @@ class Hulot(object):
                                 prop_info["current_idle"] -= 1
 
                         # Change state node to "Absent" and halt it
-                        change_node_state(node, "Absent", config)
+                        change_node_state(session, node, "Absent", config)
                         logger.debug(
                             "Hulot module puts node '"
                             + node
@@ -500,7 +511,7 @@ class Hulot(object):
             # Launching commands
             if command_toLaunch:
                 logger.debug("Launching commands to nodes")
-                self.window_forker.add_commands_toLaunch(command_toLaunch)
+                self.window_forker.add_commands_toLaunch(session, command_toLaunch)
 
             # Adds to running list last new launched commands
             for node, cmd_info in nodes_list_to_process.items():
@@ -531,7 +542,7 @@ class Hulot(object):
         return 0
 
 
-def command_executor(cmd_node):
+def command_executor(cmd_node, config):
     command, node = cmd_node
     command_to_exec = 'echo "' + node + '" | '
     if command == "HALT":
@@ -548,12 +559,13 @@ def command_executor(cmd_node):
 
 
 class WindowForker(object):
-    def __init__(self, window_size, timeout):
+    def __init__(self, window_size, timeout, config):
+        self.config = config
         self.timeout = timeout
         self.pool = Pool(processes=window_size)
         self.executors = {}
 
-    def add_commands_toLaunch(self, commands):
+    def add_commands_toLaunch(self, session, commands):
         # Build strings to pass to wakeup and shutdown commands
         halt_nodes = []
         wakeup_nodes = []
@@ -565,25 +577,26 @@ class WindowForker(object):
                 wakeup_nodes.append(node)
 
         if halt_nodes:
-            add_new_event_with_host(
+            add_new_event_with_host(session,
                 "HALT_NODE", 0, "Node " + node + " halt request", halt_nodes
             )
         if wakeup_nodes:
-            add_new_event_with_host(
+            add_new_event_with_host(session,
                 "WAKEUP_NODE", 0, "Node " + node + " wake-up request", wakeup_nodes
             )
 
         for cmd_node in commands:
             cmd, node = cmd_node
-            self.executors[self.pool.apply_async(command_executor, (cmd_node,))] = (
+            #FIXME: Async code here ?!
+            self.executors[self.pool.apply_async(command_executor, (cmd_node,self.config))] = (
                 node,
                 cmd,
-                tools.get_date(),
+                tools.get_date(session),
             )
 
-    def check_executors(self, nodes_list_running):
+    def check_executors(self, session, config, nodes_list_running):
         executors_toRemove = []
-        now = tools.get_date()
+        now = tools.get_date(session, )
         for executor, data in self.executors.items():
             node, cmd, launching_date = data
             if executor.ready():  # TODO executor.successful()
@@ -591,13 +604,13 @@ class WindowForker(object):
                 exit_status = executor.get()
                 if exit_status != 0:
                     # Suspect node if error
-                    change_node_state(node, "Suspected", config)
+                    change_node_state(session, node, "Suspected", config)
                     message = (
                         "Node "
                         + node
                         + " was suspected because an error occurred with a command launched by Hulot"
                     )
-                    add_new_event_with_host("LOG_SUSPECTED", 0, message, [node])
+                    add_new_event_with_host(session, "LOG_SUSPECTED", 0, message, [node])
                 else:
                     if cmd == "HALT":  # WAKEUP case is addressed in main run loop
                         del nodes_list_running[node]
@@ -610,13 +623,13 @@ class WindowForker(object):
                 except TimeoutError:
                     if cmd == "HALT":  # WAKEUP case is addressed in main run loop
                         # Suspect node if error
-                        change_node_state(node, "Suspected", config)
+                        change_node_state(session, node, "Suspected", config)
                         message = (
                             "Node "
                             + node
                             + " was suspected because shutdown command launched by Hulot timeouted"
                         )
-                        add_new_event_with_host("LOG_SUSPECTED", 0, message, [node])
+                        add_new_event_with_host(session, "LOG_SUSPECTED", 0, message, [node])
                         del nodes_list_running[node]
 
         for executor in executors_toRemove:

@@ -2524,7 +2524,7 @@ def set_finish_date(session, job):
 
 def set_running_date(session, job_id):
     """Set the starting time of the job passed in parameter to the current time"""
-    date = tools.get_date()
+    date = tools.get_date(session)
     # In OAR2 gantt  moldable_id=0 is used to indicate time gantt orign, not in OAR3
     # gantt_date = get_gantt_date()
     # if gantt_date < date:

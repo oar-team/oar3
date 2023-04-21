@@ -302,7 +302,7 @@ def set_node_nextState(session, hostname, next_state):
 
 def change_node_state(session, node, state, config):
     """Changes node state and notify central automaton"""
-    set_node_nextState(node, state)
+    set_node_nextState(session, node, state)
     tools.notify_almighty("ChState")
 
 
