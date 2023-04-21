@@ -1,7 +1,7 @@
 # coding: utf-8
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib import Accounting, db
 from oar.lib.accounting import (
     delete_accounting_windows_before,
     delete_all_from_accounting,
@@ -9,28 +9,34 @@ from oar.lib.accounting import (
     get_accounting_summary_byproject,
     get_last_project_karma,
 )
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
+from oar.lib.models import Accounting, Queue, Resource
 
 from ..helpers import insert_terminated_jobs
 
 
-@pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
+@pytest.fixture(scope="module", autouse=True)
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
         # add some resources
         for i in range(10):
-            db["Resource"].create(network_address="localhost")
+            Resource.create(session, network_address="localhost")
+        Queue.create(session, name="default")
 
-        db["Queue"].create(name="default")
-        yield
+        yield session
 
 
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_check_accounting_update_one():
+def test_check_accounting_update_one(minimal_db_initialization):
     insert_terminated_jobs(nb_jobs=1)
-    accounting = db.query(Accounting).all()
+    accounting = minimal_db_initialization.query(Accounting).all()
 
     for a in accounting:
         print(
@@ -48,9 +54,9 @@ def test_check_accounting_update_one():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_check_accounting_update():
+def test_check_accounting_update(minimal_db_initialization):
     insert_terminated_jobs()
-    accounting = db.query(Accounting).all()
+    accounting = minimal_db_initialization.query(Accounting).all()
     for a in accounting:
         print(
             a.user,
@@ -68,30 +74,31 @@ def test_check_accounting_update():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_delete_all_from_accounting():
+def test_delete_all_from_accounting(minimal_db_initialization):
     insert_terminated_jobs()
     delete_all_from_accounting()
-    accounting = db.query(Accounting).all()
+    accounting = minimal_db_initialization.query(Accounting).all()
     assert accounting == []
 
 
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_delete_accounting_windows_before():
+def test_delete_accounting_windows_before(minimal_db_initialization):
     insert_terminated_jobs()
-    accounting1 = db.query(Accounting).all()
+    accounting1 = minimal_db_initialization.query(Accounting).all()
     delete_accounting_windows_before(5 * 86400)
-    accounting2 = db.query(Accounting).all()
+    accounting2 = minimal_db_initialization.query(Accounting).all()
     assert len(accounting1) > len(accounting2)
 
 
-def test_get_last_project_karma():
+def test_get_last_project_karma(minimal_db_initialization):
     user = "toto"
     project = "yopa"
     start_time = 10000
     karma = " Karma=0.345"
     insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=2", "")])],
         properties="",
         command="yop",
@@ -100,8 +107,8 @@ def test_get_last_project_karma():
         start_time=start_time,
         message=karma,
     )
-    msg1 = get_last_project_karma("toto", "yopa", 50000)
-    msg2 = get_last_project_karma("titi", "", 50000)
+    msg1 = get_last_project_karma(minimal_db_initialization, "toto", "yopa", 50000)
+    msg2 = get_last_project_karma(minimal_db_initialization, "titi", "", 50000)
     assert karma == msg1
     assert "" == msg2
 
@@ -109,7 +116,7 @@ def test_get_last_project_karma():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_get_accounting_summary():
+def test_get_accounting_summary(minimal_db_initialization):
     insert_terminated_jobs()
     result1 = get_accounting_summary(0, 100 * 86400)
     result2 = get_accounting_summary(0, 100 * 86400, "toto")
@@ -123,7 +130,7 @@ def test_get_accounting_summary():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_get_accounting_summary_byproject():
+def test_get_accounting_summary_byproject(minimal_db_initialization):
     insert_terminated_jobs()
     result1 = get_accounting_summary_byproject(0, 100 * 86400)
     result2 = get_accounting_summary_byproject(0, 100 * 86400, "toto")

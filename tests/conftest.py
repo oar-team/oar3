@@ -6,12 +6,7 @@ import tempfile
 from codecs import open
 
 import pytest
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    text,
-)
+from sqlalchemy import Column, Integer, String, text
 
 from oar.lib.database import EngineConnector
 

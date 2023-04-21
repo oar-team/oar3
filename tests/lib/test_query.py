@@ -2,21 +2,27 @@
 import os
 
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib import db
+from oar.lib.database import ephemeral_session
 from oar.lib.fixture import load_fixtures
 from oar.lib.models import all_models, all_tables
 
 REFTIME = 1437050120
 
 
-@pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
+@pytest.fixture(scope="module", autouse=True)
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+
         here = os.path.abspath(os.path.dirname(__file__))
         filename = os.path.join(here, "data", "dataset_1.json")
-        load_fixtures(db, filename, ref_time=REFTIME, clear=True)
-        yield
+        load_fixtures(session, filename, ref_time=REFTIME, clear=True)
+        yield session
 
 
 def test_simple_models():

@@ -67,19 +67,19 @@ def get_defined_tables(db):
     return tables
 
 
-def load_fixtures(db, filename, ref_time=None, clear=False, time_columns=()):
-    time_columns = time_columns or getattr(db, "__time_columns__", [])
+def load_fixtures(session, filename, ref_time=None, clear=False, time_columns=()):
+    time_columns = time_columns or getattr(session, "__time_columns__", [])
     data = JsonSerializer(filename, ref_time).load(time_columns)
     if clear:
-        db.delete_all()
+        session.delete_all()
     for fixture in data:
         if "table" in fixture:
-            table = db[fixture["table"]]
-            db.session.execute(table.insert(), fixture["records"])
+            table = session[fixture["table"]]
+            session.execute(table.insert(), fixture["records"])
         else:
-            model = db[fixture["model"]]
-            db.session.bulk_insert_mappings(model, fixture["records"])
-        db.commit()
+            model = session[fixture["model"]]
+            session.bulk_insert_mappings(model, fixture["records"])
+        session.commit()
 
 
 def dump_fixtures(db, filename, ref_time=None):

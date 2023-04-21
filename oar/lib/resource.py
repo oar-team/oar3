@@ -5,8 +5,8 @@ from collections import OrderedDict
 from procset import ProcSet
 from sqlalchemy import text
 
-from oar.lib import Resource, config, db
 from oar.lib.hierarchy import Hierarchy
+from oar.lib.models import Resource
 
 MAX_NB_RESOURCES = 100000
 
@@ -14,7 +14,7 @@ MAX_NB_RESOURCES = 100000
 class ResourceSet(object):
     default_itvs = ProcSet()
 
-    def __init__(self, session):
+    def __init__(self, session, config):
         self.nb_resources_all = 0
         self.nb_resources_not_dead = 0
         self.nb_resources_default_not_dead = 0

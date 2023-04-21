@@ -392,12 +392,12 @@ def get_data_jobs(
     job.find = False
     job.no_quotas = False
 
-    get_jobs_types(jids, jobs)
-    get_current_jobs_dependencies(jobs)
-    set_jobs_cache_keys(jobs)
+    get_jobs_types(session, jids, jobs)
+    get_current_jobs_dependencies(session, jobs)
+    set_jobs_cache_keys(session, jobs)
 
 
-def get_job_suspended_sum_duration(jid, now):
+def get_job_suspended_sum_duration(session, jid, now):
     suspended_duration = 0
     for j_state_log in (
         session.query(JobStateLog)
@@ -2013,10 +2013,12 @@ def check_end_of_job(
     launchingDirectory,
     epilogue_script,
 ):
+    print("dsmqjfdsmfjdsmljf", error)
     """check end of job"""
     log_jid = "[" + str(job_id) + "] "
     # TODO: do we really need to get refresh job data by reget it ? (see bipbip usage)
     job = get_job(session, job_id)
+    print(job)
 
     do_finishing_sequence = True
     notify_almighty_term = False
@@ -2053,12 +2055,12 @@ def check_end_of_job(
                 ("SWITCH_INTO_ERROR_STATE", log_jid + "Ask to change the job state")
             )
             logger.debug(log_jid + "The job was killed by Leon.")
-            job_types = get_job_types(job_id)
+            job_types = get_job_types(session, job_id)
             if ("besteffort" in job_types.keys()) and (
                 "idempotent" in job_types.keys()
             ):
                 if is_an_event_exists(job_id, "BESTEFFORT_KILL"):
-                    new_job_id = resubmit_job(job_id)
+                    new_job_id = resubmit_job(session, job_id)
                     logger.warning(
                         "We resubmit the job "
                         + str(job_id)

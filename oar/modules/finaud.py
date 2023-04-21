@@ -6,9 +6,9 @@ Check Alive and Suspected nodes.
 import sys
 
 import oar.lib.tools as tools
+from oar.lib.event import add_new_event_with_host
 from oar.lib.globals import init_oar
 from oar.lib.logging import get_logger
-from oar.lib.event import add_new_event_with_host
 from oar.lib.node import (
     get_current_assigned_nodes,
     get_finaud_nodes,
@@ -16,8 +16,7 @@ from oar.lib.node import (
     update_node_nextFinaudDecision,
 )
 
-
-_,_,log = init_oar()
+_, _, log = init_oar()
 logger = get_logger(log, "oar.modules.finaud", forward_stderr=True)
 logger.debug("Start Finaud")
 
@@ -65,7 +64,8 @@ class Finaud(object):
             if (node.network_address in bad_nodes) and (node.state == "Alive"):
                 set_node_nextState(session, node.network_address, "Suspected")
                 update_node_nextFinaudDecision(session, node.network_address, "YES")
-                add_new_event_with_host(session,
+                add_new_event_with_host(
+                    session,
                     "FINAUD_ERROR",
                     0,
                     "Finaud has detected an error on the node",
@@ -81,7 +81,8 @@ class Finaud(object):
             ):
                 set_node_nextState(session, node.network_address, "Alive")
                 update_node_nextFinaudDecision(session, node.network_address, "YES")
-                add_new_event_with_host(session,
+                add_new_event_with_host(
+                    session,
                     "FINAUD_RECOVER",
                     0,
                     "Finaud has detected that the node comes back",

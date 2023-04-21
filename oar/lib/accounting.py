@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import func, or_
 
-from oar.lib import (
+from oar.lib.models import (
     Accounting,
     AssignedResource,
     Job,
     MoldableJobDescription,
     Resource,
-    db,
 )
 
 # ACCOUNTING functions
@@ -15,17 +14,19 @@ from oar.lib import (
 # get_sum_accounting_window() -> see Karma.py
 
 
-def get_accounting_summary(start_time, stop_time, user="", sql_property=""):
+def get_accounting_summary(session, start_time, stop_time, user="", sql_property=""):
     """Get an array of consumptions by users
-    params: start date, ending date, optional user"""
-    if db.dialect == "sqlite":  # pragma: no cover
+    p.arams: start date, ending date, optional user"""
+
+    dialect = session.bind.dialect.name
+    if dialect == "sqlite":  # pragma: no cover
         msg = "Get_accounting_summary is not supported with sqlite"
         raise NotImplementedError(msg)
 
     user_query = "AND accounting_user = '%s'" % (user) if user else ""
     sql_property = "AND ( " + sql_property + " )" if sql_property else ""
 
-    cur = db.session
+    cur = session
     res = cur.execute(
         """SELECT accounting_user as user, consumption_type,
     sum(consumption) as seconds,
@@ -49,7 +50,7 @@ def get_accounting_summary(start_time, stop_time, user="", sql_property=""):
 
 
 def get_accounting_summary_byproject(
-    start_time, stop_time, user="", limit="", offset=""
+    session, start_time, stop_time, user="", limit="", offset=""
 ):
     """ "Get an array of consumptions by project for a given user
     params: start date, ending date, user"""
@@ -63,7 +64,7 @@ def get_accounting_summary_byproject(
     if offset:
         limit_offset_query = limit_offset_query + " OFFSET " + offset
 
-    cur = db.session
+    cur = session
     res = cur.execute(
         """SELECT accounting_user as user, consumption_type,
     sum(consumption) as seconds, accounting_project as project
@@ -88,7 +89,15 @@ def get_accounting_summary_byproject(
 
 
 def update_accounting(
-    start_time, stop_time, window_size, user, project, queue_name, c_type, nb_resources
+    session,
+    start_time,
+    stop_time,
+    window_size,
+    user,
+    project,
+    queue_name,
+    c_type,
+    nb_resources,
 ):
     """Insert accounting data in table accounting
     # params : start date in second, stop date in second, window size, user, queue, type(ASKED or USED)
@@ -115,14 +124,14 @@ def update_accounting(
 
 
 def add_accounting_row(
-    window_start, window_stop, user, project, queue_name, c_type, consumption
+    session, window_start, window_stop, user, project, queue_name, c_type, consumption
 ):
     # Insert or update one row according to consumption
 
     # Test if the window exists
     # TODO: Need to be cached (in python process or externaly through Redis by example
     result = (
-        db.query(Accounting.consumption)
+        session.query(Accounting.consumption)
         .filter(Accounting.user == user)
         .filter(Accounting.project == project)
         .filter(Accounting.consumption_type == c_type)
@@ -151,7 +160,7 @@ def add_accounting_row(
             + " s"
         )
 
-        db.query(Accounting).filter(Accounting.user == user).filter(
+        session.query(Accounting).filter(Accounting.user == user).filter(
             Accounting.project == project
         ).filter(Accounting.consumption_type == c_type).filter(
             Accounting.queue_name == queue_name
@@ -192,12 +201,12 @@ def add_accounting_row(
         )
 
 
-def check_accounting_update(window_size):
+def check_accounting_update(session, window_size):
     """Check jobs that are not treated in accounting table
     params : base, window size"""
 
     result = (
-        db.query(
+        session.query(
             Job.start_time,
             Job.stop_time,
             MoldableJobDescription.walltime,
@@ -261,31 +270,33 @@ def check_accounting_update(window_size):
             nb_resources,
         )
 
-        db.query(Job).update({Job.accounted: "YES"}, synchronize_session=False)
+        session.query(Job).update({Job.accounted: "YES"}, synchronize_session=False)
 
-    db.commit()
+    session.commit()
 
 
-def delete_all_from_accounting():
+def delete_all_from_accounting(
+    session,
+):
     """Empty the table accounting and update the jobs table."""
-    db.query(Accounting).delete(synchronize_session=False)
-    db.query(Job).update({Job.accounted: "NO"}, synchronize_session=False)
-    db.commit()
+    session.query(Accounting).delete(synchronize_session=False)
+    session.query(Job).update({Job.accounted: "NO"}, synchronize_session=False)
+    session.commit()
 
 
-def delete_accounting_windows_before(window_stop):
+def delete_accounting_windows_before(session, window_stop):
     """Remove windows from accounting."""
-    db.query(Accounting).filter(Accounting.window_stop <= window_stop).delete(
+    session.query(Accounting).filter(Accounting.window_stop <= window_stop).delete(
         synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def get_last_project_karma(user, project, date):
+def get_last_project_karma(session, user, project, date):
     """Get the last project Karma of user at a given date
     params: user, project, date"""
 
-    cur = db.session
+    cur = session
     result = cur.execute(
         """SELECT message FROM jobs
     WHERE job_user='%s' AND message like \'%s\' AND project ='%s' AND start_time < %s

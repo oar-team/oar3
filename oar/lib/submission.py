@@ -7,10 +7,11 @@ import sys
 from socket import gethostname
 
 from procset import ProcSet
-from sqlalchemy import exc, text
+from sqlalchemy import exc, insert, text
 
 import oar.lib.tools as tools
-from oar.lib import (
+from oar.lib.hierarchy import find_resource_hierarchies_scattered
+from oar.lib.models import (
     AdmissionRule,
     Challenge,
     Job,
@@ -22,10 +23,7 @@ from oar.lib import (
     MoldableJobDescription,
     Queue,
     Resource,
-    config,
-    db,
 )
-from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.resource import ResourceSet
 from oar.lib.tools import (
     PIPE,
@@ -471,14 +469,14 @@ def parse_resource_descriptions(
     return resource_request
 
 
-def estimate_job_nb_resources(resource_request, j_properties):
+def estimate_job_nb_resources(session, config, resource_request, j_properties):
     """returns an array with an estimation of the number of resources that can be used by a job:
     (resources_available, [(nbresources => int, walltime => int)])
     """
     # estimate_job_nb_resources
     estimated_nb_resources = []
     is_resource_available = False
-    resource_set = ResourceSet()
+    resource_set = ResourceSet(session, config)
     resources_itvs = resource_set.roid_itvs
 
     for mld_idx, mld_resource_request in enumerate(resource_request):
@@ -578,17 +576,24 @@ def estimate_job_nb_resources(resource_request, j_properties):
 
 
 def add_micheline_subjob(
-    job_parameters, ssh_private_key, ssh_public_key, array_id, array_index, command
+    session,
+    config,
+    job_parameters,
+    ssh_private_key,
+    ssh_public_key,
+    array_id,
+    array_index,
+    command,
 ):
     # Estimate_job_nb_resources and incidentally test if properties and resources request are coherent
     # against available resources
 
-    date = get_date()
+    date = get_date(session)
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
 
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        resource_request, properties
+        session, config, resource_request, properties
     )
     if error[0] != 0:
         return (error, -1)
@@ -765,7 +770,7 @@ def add_micheline_subjob(
         session.execute(JobDependencie.__table__.insert(), ins)
 
     if not job_parameters.hold:
-        req = session.insert(JobStateLog).values(
+        req = insert(JobStateLog).values(
             {"job_id": job_id, "job_state": "Waiting", "date_start": date}
         )
         session.execute(req)
@@ -776,7 +781,7 @@ def add_micheline_subjob(
         )
         session.commit()
     else:
-        req = session.insert(JobStateLog).values(
+        req = insert(JobStateLog).values(
             {"job_id": job_id, "job_state": "Hold", "date_start": date}
         )
         session.execute(req)
@@ -786,6 +791,8 @@ def add_micheline_subjob(
 
 
 def add_micheline_simple_array_job(
+    session,
+    config,
     job_parameters,
     ssh_private_key,
     ssh_public_key,
@@ -794,7 +801,7 @@ def add_micheline_simple_array_job(
     array_commands,
 ):
     job_id_list = []
-    date = get_date()
+    date = get_date(session)
 
     # Check the jobs are no moldable
     resource_request = job_parameters.resource_request
@@ -806,7 +813,7 @@ def add_micheline_simple_array_job(
     # against avalaible resources
     properties = job_parameters.properties
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        resource_request, properties
+        session, config, resource_request, properties
     )
 
     # Add admin properties to the job
@@ -1006,7 +1013,12 @@ def add_micheline_simple_array_job(
 
 
 def add_micheline_jobs(
-    job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+    session,
+    config,
+    job_parameters,
+    import_job_key_inline,
+    import_job_key_file,
+    export_job_key_file,
 ):
     """Adds a new job(or multiple in case of array-job) to the table Jobs applying
     the admission rules from the base  parameters : base, jobtype, nbnodes,
@@ -1125,6 +1137,8 @@ def add_micheline_jobs(
     if job_parameters.array_nb > 1 and not job_parameters.use_job_key:
         # Simple array job submission is used
         (error, job_id_list) = add_micheline_simple_array_job(
+            session,
+            config,
             job_parameters,
             ssh_private_key,
             ssh_public_key,
@@ -1146,6 +1160,8 @@ def add_micheline_jobs(
                 return (error, job_id_list)
 
             (error, job_id) = add_micheline_subjob(
+                session,
+                config,
                 job_parameters,
                 ssh_private_key,
                 ssh_public_key,
@@ -1224,7 +1240,8 @@ def check_reservation(reservation_date_str):
 
 
 class JobParameters:
-    def __init__(self, **kwargs):
+    def __init__(self, config, **kwargs):
+        self.config = config
         self.error = (0, "")
         self.array_params = []
 

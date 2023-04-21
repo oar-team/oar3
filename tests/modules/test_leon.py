@@ -92,7 +92,7 @@ def test_leon_exterminate_jobid(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
 
-    FragJob.create(minimal_db_initialization,job_id=job_id, state="LEON_EXTERMINATE")
+    FragJob.create(minimal_db_initialization, job_id=job_id, state="LEON_EXTERMINATE")
     print("job_id:" + str(job_id))
 
     leon = Leon(config, logger, [str(job_id)])
@@ -122,7 +122,7 @@ def test_leon_exterminate(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
 
-    FragJob.create(minimal_db_initialization,job_id=job_id, state="LEON_EXTERMINATE")
+    FragJob.create(minimal_db_initialization, job_id=job_id, state="LEON_EXTERMINATE")
     print("job_id:" + str(job_id))
 
     leon = Leon(
@@ -153,7 +153,7 @@ def test_leon_get_jobs_to_kill_waiting(
         info_type="123.123.123.123:1234",
     )
 
-    FragJob.create(minimal_db_initialization,job_id=job_id, state="LEON")
+    FragJob.create(minimal_db_initialization, job_id=job_id, state="LEON")
 
     leon = Leon(
         config,

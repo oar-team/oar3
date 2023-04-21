@@ -3,12 +3,14 @@ import time
 
 import pytest
 import zmq
-
 from sqlalchemy.orm import scoped_session, sessionmaker
+
 import oar.lib.tools
 import oar.lib.tools as tools
-from oar.lib.models import Resource
 from oar.lib.database import ephemeral_session
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
+from oar.lib.models import Resource
 from oar.modules.hulot import (
     Hulot,
     HulotClient,
@@ -17,8 +19,6 @@ from oar.modules.hulot import (
     fill_timeouts,
     get_timeout,
 )
-from oar.lib.logging import get_logger
-from oar.lib.globals import init_oar
 
 from ..fakezmq import FakeZmq
 
@@ -64,7 +64,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request, setup_config):
-    config, _ , _  = setup_config
+    config, _, _ = setup_config
     config.setdefault_config(DEFAULT_CONFIG)
     fakezmq.reset()
 
@@ -151,7 +151,9 @@ def test_bad_energy_saving_nodes_keepalive_2(setup_config, setup):
     assert hulot.exit_code == 2
 
 
-def test_hulot_check_simple(monkeypatch, setup_config, setup, minimal_db_initialization):
+def test_hulot_check_simple(
+    monkeypatch, setup_config, setup, minimal_db_initialization
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
     print("wut?!", minimal_db_initialization)
@@ -170,12 +172,14 @@ def test_hulot_bad_command(monkeypatch, setup_config, minimal_db_initialization,
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_nodes_to_remind(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_check_nodes_to_remind(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
     hulot = Hulot(config, logger)
     hulot.nodes_list_to_remind = {"localhost0": {"timeout": -1, "command": "HALT"}}
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     assert "localhost0" in hulot.nodes_list_running
     assert hulot.nodes_list_running["localhost0"]["command"] == "HALT"
@@ -183,14 +187,16 @@ def test_hulot_check_nodes_to_remind(monkeypatch, setup_config, minimal_db_initi
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_wakeup_for_min_nodes(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_check_wakeup_for_min_nodes(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     # localhost2 to wakeup
     prev_value = config["ENERGY_SAVING_NODES_KEEPALIVE"]
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':3"
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
     hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = prev_value
     print(hulot.nodes_list_running)
     assert "localhost2" in hulot.nodes_list_running
@@ -203,7 +209,7 @@ def test_hulot_halt_1(monkeypatch, setup_config, minimal_db_initialization, setu
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
     hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     assert "localhost0" in hulot.nodes_list_running
     assert hulot.nodes_list_running["localhost0"]["command"] == "HALT"
@@ -211,14 +217,16 @@ def test_hulot_halt_1(monkeypatch, setup_config, minimal_db_initialization, setu
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_keepalive(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_halt_keepalive(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     prev_value = config["ENERGY_SAVING_NODES_KEEPALIVE"]
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':3"
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
     hulot = Hulot(config, logger)
     # import pdb; pdb.set_trace()
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = prev_value
     print(hulot.nodes_list_running)
     assert "localhost2" in hulot.nodes_list_running
@@ -227,12 +235,14 @@ def test_hulot_halt_keepalive(monkeypatch, setup_config, minimal_db_initializati
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_1_forker(monkeypatch, setup_config, minimal_db_initialization,setup):
+def test_hulot_halt_1_forker(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "no"
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
     hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "yes"
     print(hulot.nodes_list_running)
     assert "localhost0" in hulot.nodes_list_running
@@ -241,11 +251,11 @@ def test_hulot_halt_1_forker(monkeypatch, setup_config, minimal_db_initializatio
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_1(monkeypatch, setup_config, minimal_db_initialization,setup):
+def test_hulot_wakeup_1(monkeypatch, setup_config, minimal_db_initialization, setup):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
     hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     assert "localhost2" in hulot.nodes_list_running
     assert hulot.nodes_list_running["localhost2"]["command"] == "WAKEUP"
@@ -253,26 +263,33 @@ def test_hulot_wakeup_1(monkeypatch, setup_config, minimal_db_initialization,set
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_already_timeouted(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_wakeup_already_timeouted(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
     hulot = Hulot(config, logger)
     hulot.nodes_list_running = {"localhost2": {"timeout": -1, "command": "WAKEUP"}}
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     assert hulot.nodes_list_running == {}
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_already_pending(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_wakeup_already_pending(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
     hulot = Hulot(config, logger)
     hulot.nodes_list_running = {
-        "localhost2": {"timeout": tools.get_date(minimal_db_initialization) + 1000, "command": "WAKEUP"}
+        "localhost2": {
+            "timeout": tools.get_date(minimal_db_initialization) + 1000,
+            "command": "WAKEUP",
+        }
     }
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     print(hulot.nodes_list_to_remind)
     assert "localhost2" in hulot.nodes_list_running
@@ -281,14 +298,19 @@ def test_hulot_wakeup_already_pending(monkeypatch, setup_config, minimal_db_init
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_wakeup_already_pending(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_halt_wakeup_already_pending(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost2"]}]
     hulot = Hulot(config, logger)
     hulot.nodes_list_running = {
-        "localhost2": {"timeout": tools.get_date(minimal_db_initialization) + 1000, "command": "WAKEUP"}
+        "localhost2": {
+            "timeout": tools.get_date(minimal_db_initialization) + 1000,
+            "command": "WAKEUP",
+        }
     }
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     print(hulot.nodes_list_to_remind)
     assert "localhost2" in hulot.nodes_list_running
@@ -298,24 +320,28 @@ def test_hulot_halt_wakeup_already_pending(monkeypatch, setup_config, minimal_db
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_clean_booted_node(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_check_clean_booted_node(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
     hulot = Hulot(config, logger)
     hulot.nodes_list_running = {"localhost0": {"timeout": -1, "command": "WAKEUP"}}
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     print(hulot.nodes_list_running)
     assert hulot.nodes_list_running == {}
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_1_forker(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_wakeup_1_forker(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "no"
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
     hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization,False)
+    exit_code = hulot.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "yes"
     print(hulot.nodes_list_running)
     assert "localhost2" in hulot.nodes_list_running
@@ -334,7 +360,9 @@ def test_hulot_client(monkeypatch, setup_config, minimal_db_initialization, setu
     assert fakezmq.sent_msgs[0][2] == {"cmd": "WAKEUP", "nodes": "localhost"}
 
 
-def test_hulot_command_executor(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_hulot_command_executor(
+    monkeypatch, setup_config, minimal_db_initialization, setup
+):
     config = setup
     assert command_executor(("HALT", "node1"), config) == 0
     print(called_command)
@@ -349,12 +377,26 @@ def yop(a, b=0):
     return a
 
 
-def test_hulot_window_forker_check_executors(setup_config, minimal_db_initialization, setup):
+def test_hulot_window_forker_check_executors(
+    setup_config, minimal_db_initialization, setup
+):
     wf = WindowForker(1, 10, setup)
     wf.executors = {
-        wf.pool.apply_async(yop, (0,)): ("node1", "HALT", tools.get_date(minimal_db_initialization)),
-        wf.pool.apply_async(yop, (0,)): ("node2", "WAKEUP", tools.get_date(minimal_db_initialization)),
-        wf.pool.apply_async(yop, (1,)): ("node3", "HALT", tools.get_date(minimal_db_initialization)),
+        wf.pool.apply_async(yop, (0,)): (
+            "node1",
+            "HALT",
+            tools.get_date(minimal_db_initialization),
+        ),
+        wf.pool.apply_async(yop, (0,)): (
+            "node2",
+            "WAKEUP",
+            tools.get_date(minimal_db_initialization),
+        ),
+        wf.pool.apply_async(yop, (1,)): (
+            "node3",
+            "HALT",
+            tools.get_date(minimal_db_initialization),
+        ),
     }
     nodes_list_running = {
         "node1": "command_and_args",
@@ -373,7 +415,9 @@ def test_hulot_window_forker_check_executors(setup_config, minimal_db_initializa
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_window_forker_check_executors_timeout(setup_config, setup, minimal_db_initialization):
+def test_hulot_window_forker_check_executors_timeout(
+    setup_config, setup, minimal_db_initialization
+):
     wf = WindowForker(1, 10, setup)
     wf.executors = {wf.pool.apply_async(yop, (0, 0.2)): ("localhost0", "HALT", 0)}
     nodes_list_running = {"localhost0": "command_and_args"}
@@ -384,6 +428,8 @@ def test_hulot_window_forker_check_executors_timeout(setup_config, setup, minima
     print(nodes_list_running)
     assert nodes_list_running == {}
     resource = (
-        minimal_db_initialization.query(Resource).filter(Resource.network_address == "localhost0").first()
+        minimal_db_initialization.query(Resource)
+        .filter(Resource.network_address == "localhost0")
+        .first()
     )
     assert resource.next_state == "Suspected"

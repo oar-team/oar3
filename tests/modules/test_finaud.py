@@ -1,11 +1,11 @@
 # coding: utf-8
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.models import Resource
 from oar.lib.database import ephemeral_session
+from oar.lib.models import Resource
 from oar.modules.finaud import Finaud
-from sqlalchemy.orm import scoped_session, sessionmaker
 
 fake_bad_nodes = (1, [])
 
@@ -33,7 +33,11 @@ def minimal_db_initialization(request, setup_config):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def monkeypatch_tools(request,setup_config, monkeypatch,):
+def monkeypatch_tools(
+    request,
+    setup_config,
+    monkeypatch,
+):
     monkeypatch.setattr(oar.lib.tools, "pingchecker", fake_pingchecker)
 
 
@@ -45,7 +49,7 @@ def test_finaud_void(setup_config, minimal_db_initialization):
     assert finaud.return_value == 0
 
 
-def test_finaud_one_bad_node(setup_config,minimal_db_initialization):
+def test_finaud_one_bad_node(setup_config, minimal_db_initialization):
     config, _, _ = setup_config
     set_fake_bad_nodes(["localhost0"])
     finaud = Finaud(config)
@@ -54,16 +58,22 @@ def test_finaud_one_bad_node(setup_config,minimal_db_initialization):
 
     print(finaud.return_value)
 
-    resource = minimal_db_initialization.query(Resource).filter(Resource.next_state == "Suspected").first()
+    resource = (
+        minimal_db_initialization.query(Resource)
+        .filter(Resource.next_state == "Suspected")
+        .first()
+    )
     assert resource.network_address == "localhost0"
     assert finaud.return_value == 1
 
 
-def test_finaud_one_suspected_node_is_not_bad(setup_config,minimal_db_initialization):
+def test_finaud_one_suspected_node_is_not_bad(setup_config, minimal_db_initialization):
     # resources = db.query(Resource).all()
     # import pdb; pdb.set_trace()
     config, _, _ = setup_config
-    minimal_db_initialization.query(Resource).filter(Resource.network_address == "localhost0").update(
+    minimal_db_initialization.query(Resource).filter(
+        Resource.network_address == "localhost0"
+    ).update(
         {Resource.state: "Suspected", Resource.finaud_decision: "YES"},
         synchronize_session=False,
     )
@@ -72,7 +82,9 @@ def test_finaud_one_suspected_node_is_not_bad(setup_config,minimal_db_initializa
     print(finaud.return_value)
 
     resource = (
-        minimal_db_initialization.query(Resource).filter(Resource.network_address == "localhost0").first()
+        minimal_db_initialization.query(Resource)
+        .filter(Resource.network_address == "localhost0")
+        .first()
     )
     assert resource.next_state == "Alive"
     assert finaud.return_value == 1

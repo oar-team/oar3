@@ -63,7 +63,9 @@ def start_all_queues(
 
 
 def create_queue(session, name, priority, policy):
-    Queue.create(name=name, priority=priority, scheduler_policy=policy, state="Active")
+    Queue.create(
+        session, name=name, priority=priority, scheduler_policy=policy, state="Active"
+    )
     session.commit()
 
 

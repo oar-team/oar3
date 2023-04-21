@@ -2,7 +2,7 @@
 import os
 import time
 
-from oar.lib import db, load_fixtures
+from oar.lib import load_fixtures
 
 if __name__ == "__main__":
     # populate database

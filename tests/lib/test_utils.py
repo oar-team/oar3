@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import pytest
 
-from oar.lib import Database
+from oar.lib.database import Database
 from oar.lib.utils import (
     ResultProxyIter,
     SimpleNamespace,
@@ -24,8 +24,9 @@ from oar.lib.utils import (
 
 
 @pytest.fixture
-def db(request, monkeypatch):
-    db = Database(uri="sqlite://")
+def db(request, monkeypatch, setup_config):
+    config, _, _ = setup_config
+    db = Database(config, uri="sqlite://")
 
     table = db.Table(
         "table", db.Column("num", db.Integer), db.Column("word", db.String(255))

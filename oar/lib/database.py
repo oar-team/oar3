@@ -337,7 +337,9 @@ def _include_sqlalchemy(db):
     db.Table = _make_table(db)
 
     class Column(sqlalchemy.Column):
-        # Since SQLAlchemy 1.4, Column needs the attribute `inherit_cache`. Otherwise a warning is displayed.
+        # Since SQLAlchemy 1.4, Column needs the attribute `inherit_cache`.
+        # Otherwise a warning is displayed.
+
         # https://docs.sqlalchemy.org/en/14/core/compiler.html#synopsis
         inherit_cache = True
 

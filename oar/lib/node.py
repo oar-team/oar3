@@ -46,7 +46,7 @@ def get_resources_of_nodes(session, hostnames):
     return result
 
 
-def get_nodes_with_state(nsession, odes):
+def get_nodes_with_state(session, odes):
     result = (
         session.query(Resource.network_address, Resource.state)
         .filter(Resource.network_address.in_(tuple(nodes)))
