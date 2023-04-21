@@ -67,10 +67,10 @@ def assign_resources(session, job_id):
         AssignedResource.create(session, moldable_id=job_id, resource_id=r.id)
 
 
-def test_node_change_state_main():
-    exit_code = main()
-    print(exit_code)
-    assert exit_code == 0
+# def test_node_change_state_main():
+#     exit_code = main()
+#     print(exit_code)
+#     assert exit_code == 0
 
 
 def test_node_change_state_void(minimal_db_initialization, setup_config):

@@ -7,14 +7,9 @@ from codecs import open
 
 import pytest
 from sqlalchemy import (
-    BigInteger,
-    CheckConstraint,
     Column,
-    Index,
     Integer,
     String,
-    Table,
-    Text,
     text,
 )
 

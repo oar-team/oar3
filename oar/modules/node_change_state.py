@@ -8,6 +8,8 @@ It also checks all pending events in the table :ref:`database-event-logs-anchor`
 """
 import os
 import re
+from sqlalchemy.orm import scoped_session, sessionmaker
+from oar.lib.database import EngineConnector
 import sys
 
 import oar.lib.tools as tools
@@ -507,8 +509,18 @@ class NodeChangeState(object):
 
 
 def main():
-    node_change_state = NodeChangeState()
-    node_change_state.run()
+    config, db, logger = init_oar()
+    engine = EngineConnector(db).get_engine()
+
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger.info("Start Sarko")
+
+    node_change_state = NodeChangeState(config)
+
+    node_change_state.run(scoped)
     return node_change_state.exit_code
 
 
