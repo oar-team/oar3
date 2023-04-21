@@ -16,8 +16,8 @@ The jobs of Sarko are:
 import sys
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
 from oar.lib.event import add_new_event, add_new_event_with_host
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     frag_job,
     get_current_moldable_job,
@@ -31,6 +31,7 @@ from oar.lib.job_handling import (
     job_leon_exterminate,
     job_refrag,
 )
+from oar.lib.logging import get_logger
 from oar.lib.resource_handling import (
     get_absent_suspected_resources_for_a_timeout,
     get_expired_resources,
@@ -39,15 +40,17 @@ from oar.lib.resource_handling import (
     update_resource_nextFinaudDecision,
 )
 
-logger = get_logger("oar.modules.sarko", forward_stderr=True)
-logger.info("Start Sarko")
-
 
 class Sarko(object):
-    def __init__(self):
+    def __init__(self, config, logger):
         self.guilty_found = 0
+        self.conf = config
+        self.logger = logger
 
-    def run(self):
+    def run(self, session):
+        config = self.conf
+        logger = self.logger
+
         leon_soft_walltime = config["LEON_SOFT_WALLTIME"]
         leon_walltime = config["LEON_WALLTIME"]
 
@@ -84,25 +87,25 @@ class Sarko(object):
 
         logger.debug("Hello, identity control !!!")
 
-        date = tools.get_date()
+        date = tools.get_date(session)
 
         # Look at leon timers
         # Decide if OAR must retry to delete the job or just change values in the database
-        for job in get_timer_armed_job():
+        for job in get_timer_armed_job(session):
             if job.state in ["Terminated", "Error", "Finishing"]:
-                job_fragged(job.id)
+                job_fragged(session, job.id)
                 logger.debug("Set to FRAGGED the job: " + str(job.id))
             else:
-                frag_date = get_frag_date(job.id)
+                frag_date = get_frag_date(session, job.id)
                 if (date > (frag_date + leon_soft_walltime)) and (
                     date <= (frag_date + leon_walltime)
                 ):
                     logger.debug("Leon will RE-FRAG bipbip of job :" + str(job.id))
-                    job_refrag(job.id)
+                    job_refrag(session, job.id)
                     self.guilty_found = 1
                 elif date > (frag_date + leon_walltime):
                     logger.debug("Leon will EXTERMINATE bipbip of job :" + str(job.id))
-                    job_leon_exterminate(job.id)
+                    job_leon_exterminate(session, job.id)
                     self.guilty_found = 1
                 else:
                     logger.debug(
@@ -112,13 +115,13 @@ class Sarko(object):
                     )
 
         # Look at job walltimes
-        for job in get_jobs_in_state("Running"):
+        for job in get_jobs_in_state(session, "Running"):
             start_time = job.start_time
             # Get walltime
-            mold_job = get_current_moldable_job(job.assigned_moldable_job)
+            mold_job = get_current_moldable_job(session, job.assigned_moldable_job)
             max_time = mold_job.walltime
             if job.suspended == "YES":
-                max_time = get_job_suspended_sum_duration(job.id, date)
+                max_time = get_job_suspended_sum_duration(session, job.id, date)
 
             logger.debug(
                 "Job: "
@@ -134,8 +137,9 @@ class Sarko(object):
             if date > (start_time + max_time):
                 logger.debug("--> walltime reached")
                 self.guilty_found = 1
-                frag_job(job.id)
+                frag_job(session, job.id)
                 add_new_event(
+                    session,
                     "WALLTIME",
                     job.id,
                     "Job: "
@@ -154,8 +158,8 @@ class Sarko(object):
                 # OAR must notify the job to checkpoint itself
                 logger.debug("Send checkpoint signal to the job:" + str(job.id))
                 # Retrieve node names used by the job
-                hosts = get_job_current_hostnames(job.id)
-                job_types = get_job_types(job.id)
+                hosts = get_job_current_hostnames(session, job.id)
+                job_types = get_job_types(session, job.id)
                 head_host = None
                 # deploy, cosystem and no host part
                 if ("cosystem" in job_types.keys()) or (len(hosts) == 0):
@@ -166,6 +170,7 @@ class Sarko(object):
                     head_host = hosts[0]
 
                 add_new_event(
+                    session,
                     "CHECKPOINT",
                     job.id,
                     "User oar (sarko) requested a checkpoint on the job:"
@@ -179,7 +184,9 @@ class Sarko(object):
                 )
                 if comment:
                     logger.warning(comment)
-                    add_new_event("CHECKPOINT_ERROR", job.id, "[Sarko]" + comment)
+                    add_new_event(
+                        session, "CHECKPOINT_ERROR", job.id, "[Sarko]" + comment
+                    )
                 else:
                     comment = (
                         "The job "
@@ -188,15 +195,18 @@ class Sarko(object):
                         + head_host
                     )
                     logger.debug(comment)
-                    add_new_event("CHECKPOINT_SUCCESSFULL", job.id, "[Sarko]" + comment)
+                    add_new_event(
+                        session, "CHECKPOINT_SUCCESSFULL", job.id, "[Sarko]" + comment
+                    )
 
         # Retrieve nodes with expiry_dates in the past
         # special for Desktop computing (UNUSED ?)
-        resource_ids = get_expired_resources()
+        resource_ids = get_expired_resources(session)
         for resource_id in resource_ids:
-            set_resource_nextState(resource_id, "Suspected")
-            resource = get_resource(resource_id)
+            set_resource_nextState(session, resource_id, "Suspected")
+            resource = get_resource(session, resource_id)
             add_new_event_with_host(
+                session,
                 "LOG_SUSPECTED",
                 0,
                 "The DESKTOP COMPUTING resource $r has expired on node "
@@ -212,10 +222,10 @@ class Sarko(object):
         if dead_switch_time > 0:
             notify = False
             for resource_id in get_absent_suspected_resources_for_a_timeout(
-                dead_switch_time
+                session, dead_switch_time
             ):
-                set_resource_nextState(resource_id, "Dead")
-                update_resource_nextFinaudDecision(resource_id, "YES")
+                set_resource_nextState(session, resource_id, "Dead")
+                update_resource_nextFinaudDecision(session, resource_id, "YES")
 
                 logger.debug(
                     "Set the next state of resource: " + str(resource_id) + " to Dead"
@@ -227,7 +237,12 @@ class Sarko(object):
 
 
 def main():  # pragma: no cover
-    sarko = Sarko()
+    config, _, logger = init_oar()
+
+    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger.info("Start Sarko")
+
+    sarko = Sarko(config, logger)
     sarko.run()
     return sarko.guilty_found
 

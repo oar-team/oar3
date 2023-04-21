@@ -281,7 +281,7 @@ def get_expired_resources(
     0000-00-00 00:00:00 is always considered as in the future. Used for desktop computing schema.
     """
     # TODO: UNUSED (Desktop computing)
-    date = tools.get_date()
+    date = tools.get_date(session)
 
     res = (
         session.query(Resource.id)
@@ -295,7 +295,7 @@ def get_expired_resources(
 
 
 def get_absent_suspected_resources_for_a_timeout(session, timeout):
-    date = tools.get_date()
+    date = tools.get_date(session)
     res = (
         session.query(ResourceLog.resource_id)
         .filter(ResourceLog.attribute == "state")

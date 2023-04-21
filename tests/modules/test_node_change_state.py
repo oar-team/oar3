@@ -13,8 +13,8 @@ from oar.lib.models import (
     EventLog,
     FragJob,
     Job,
-    Resource,
     MoldableJobDescription,
+    Resource,
 )
 from oar.modules.node_change_state import NodeChangeState, main
 
