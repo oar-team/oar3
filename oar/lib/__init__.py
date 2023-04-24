@@ -62,7 +62,7 @@ all_by_module = {
         "row2dict",
     ],
     "oar.lib.plugins": ["find_plugin_for_entry_point"],
-    "oar.lib.globals": ["config"],
+    "oar.lib.globals": [""],
     "oar.lib.fixture": ["load_fixtures", "dump_fixtures"],
 }
 

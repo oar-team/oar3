@@ -8,12 +8,14 @@ from tempfile import mkstemp
 
 import pytest
 import zmq
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
 from oar.kao.quotas import Quotas
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
-from oar.lib.models import GanttJobsPrediction, Job, Resource
+from oar.lib.models import GanttJobsPrediction, Job, Queue, Resource
 from oar.lib.tools import get_date, local_to_sql
 
 from ..fakezmq import FakeZmq
@@ -33,23 +35,36 @@ quotas_simple_temporal_rules = {
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=0, scheduler_policy="kamelot", state="Active"
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        Queue.create(
+            session,
+            name="default",
+            priority=0,
+            scheduler_policy="kamelot",
+            state="Active",
         )
-        db["Queue"].create(
-            name="admin", priority=100, scheduler_policy="kamelot", state="Active"
+        Queue.create(
+            session,
+            name="admin",
+            priority=100,
+            scheduler_policy="kamelot",
+            state="Active",
         )
         # add some resources
         for i in range(5):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
-        yield
+            Resource.create(session, network_address="localhost" + str(int(i / 2)))
+
+        yield session
 
 
 @pytest.fixture(scope="function")
-def active_quotas(request):
-    print("active_quotas")
+def active_quotas(request, setup_config):
+    config, _, _ = setup_config
     config["QUOTAS"] = "yes"
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
@@ -65,9 +80,12 @@ def active_quotas(request):
 
     request.addfinalizer(teardown)
 
+    yield config
+
 
 @pytest.fixture(scope="function")
-def active_energy_saving(request):
+def active_energy_saving(request, setup_config):
+    config, _, _ = setup_config
     # Some tests modify this value. We register the initial value and reset it
     # after the test so it doesn't break other tests.
     initial_energy_saving_internal = config["ENERGY_SAVING_INTERNAL"]
@@ -77,6 +95,8 @@ def active_energy_saving(request):
     config["SCHEDULER_NODE_MANAGER_IDLE_TIME"] = "30"
     config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"] = "30"
     config["SCHEDULER_NODE_MANAGER_WAKE_UP_CMD"] = "wakeup_node_command"
+
+    yield config
 
     def teardown():
         # config.clear()
@@ -93,33 +113,36 @@ def active_energy_saving(request):
     request.addfinalizer(teardown)
 
 
+
 def period_weekstart():
     t_dt = datetime.fromtimestamp(time.time()).date()
     t_weekstart_day_dt = t_dt - timedelta(days=t_dt.weekday())
     return int(datetime.combine(t_weekstart_day_dt, datetime.min.time()).timestamp())
 
 
-def create_quotas_rules_file(quotas_rules):
+def create_quotas_rules_file(config, quotas_rules):
     """create_quotas_rules_file('{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}')"""
     with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
         quotas_fd.write(quotas_rules)
-    Quotas.enable()
+    Quotas.enable(config)
 
 
-def insert_and_sched_ar(start_time, walltime=60):
+def insert_and_sched_ar(session, config, start_time, walltime=60):
     insert_job(
+        session,
         res=[(walltime, [("resource_id=4", "")])],
         reservation="toSchedule",
         start_time=start_time,
         info_type="localhost:4242",
     )
 
-    meta_schedule("internal")
+    meta_schedule(session, config, "internal")
 
-    return db["Job"].query.order_by(Job.id.desc()).first()
+    return session.query(Job).order_by(Job.id.desc()).first()
 
 
 def assign_node_list(nodes):
+    print("lkjlmjsqdmqjdsfqlmfdks")
     global node_list
     node_list = nodes
 
@@ -152,66 +175,83 @@ def setup(request):
     oar.lib.tools.bipbip_commander_socket = None
 
 
-def test_db_all_in_one_simple_1(monkeypatch):
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
-    job = db["Job"].query.one()
+def test_db_all_in_one_simple_1(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
+    job = minimal_db_initialization.query(Job).one()
     print("job state:", job.state)
 
-    # pdb.set_trace()
+    # psession.set_trace()
     print("fakezmq.num_socket: ", fakezmq.num_socket)
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
     print("fakezmq.num_socket: ", fakezmq.num_socket)
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     assert job.state == "toLaunch"
 
 
-def test_db_all_in_one_ar_different_moldable_id(monkeypatch):
+def test_db_all_in_one_ar_different_moldable_id(
+    monkeypatch, minimal_db_initialization, setup_config
+):
     # add one job
-    from oar.lib import Job, MoldableJobDescription
+    from oar.lib.models import Job, MoldableJobDescription
 
-    dummy_job_id = insert_job(res=[(60, [("resource_id=6", "")])], properties="")
+    config, _, _ = setup_config
+
+    dummy_job_id = insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=6", "")])], properties=""
+    )
 
     # Insert another moldable configuration for the dummy_job, so the next will
     # have its id shifted from the moldable id
     dummy_mld = {"moldable_job_id": dummy_job_id, "moldable_walltime": 100}
-    db.session.execute(MoldableJobDescription.__table__.insert(), dummy_mld)
+    minimal_db_initialization.execute(
+        MoldableJobDescription.__table__.insert(), dummy_mld
+    )
 
-    now = get_date()
-    job = insert_and_sched_ar(now + 10)
+    now = get_date(minimal_db_initialization)
+    job = insert_and_sched_ar(minimal_db_initialization, config, now + 10)
 
     new_start_time = now - 20
 
-    db.query(GanttJobsPrediction).update(
+    minimal_db_initialization.query(GanttJobsPrediction).update(
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
-    db.commit()
+    minimal_db_initialization.commit()
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.order_by(Job.id.desc()).first()
+    job = minimal_db_initialization.query(Job).order_by(Job.id.desc()).first()
 
     print("\n", job.id, job.state, " ", job.reservation, job.start_time)
 
     assert job.state == "toLaunch"
 
 
-def test_db_all_in_one_ar_1(monkeypatch):
+def test_db_all_in_one_ar_1(monkeypatch, minimal_db_initialization, setup_config):
     # add one job
 
-    job = insert_and_sched_ar(get_date() + 10)
+    config, _, _ = setup_config
+    job = insert_and_sched_ar(
+        minimal_db_initialization, config, get_date(minimal_db_initialization) + 10
+    )
     print(job.state, " ", job.reservation)
 
     assert (job.state == "Waiting") and (job.reservation == "Scheduled")
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_quotas_1(monkeypatch):
+def test_db_all_in_one_quotas_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
     """
     quotas[queue, project, job_type, user] = [int, int, float];
                                                |    |     |
@@ -219,21 +259,39 @@ def test_db_all_in_one_quotas_1(monkeypatch):
               maximum number of running jobs -------+     |
               maximum resources times (hours) ------------+
     """
+    config = active_quotas
 
     create_quotas_rules_file(
-        '{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 5]}}'
+        config, '{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 5]}}'
     )
 
-    insert_job(res=[(100, [("resource_id=1", "")])], properties="", user="toto")
-    insert_job(res=[(200, [("resource_id=1", "")])], properties="", user="toto")
-    insert_job(res=[(200, [("resource_id=1", "")])], properties="", user="toto")
+    insert_job(
+        minimal_db_initialization,
+        res=[(100, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(200, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(200, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
 
-    now = get_date()
-    meta_schedule("internal")
+    now = get_date(minimal_db_initialization)
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     res = []
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time - now)
         res.append(i.start_time - now)
@@ -241,8 +299,9 @@ def test_db_all_in_one_quotas_1(monkeypatch):
     assert res == [0, 160, 420]
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_quotas_2(monkeypatch):
+def test_db_all_in_one_quotas_2(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
     """
     quotas[queue, project, job_type, user] = [int, int, float];
                                                |    |     |
@@ -250,24 +309,37 @@ def test_db_all_in_one_quotas_2(monkeypatch):
               maximum number of running jobs -------+     |
               maximum resources times (hours) ------------+
     """
+    config = active_quotas
 
-    create_quotas_rules_file('{"quotas": {"*,*,*,/": [-1, 1, -1]}}')
+    create_quotas_rules_file(config, '{"quotas": {"*,*,*,/": [-1, 1, -1]}}')
 
     # Submit and allocate an Advance Reservation
-    t0 = get_date()
-    insert_and_sched_ar(t0 + 100)
+    t0 = get_date(minimal_db_initialization)
+    insert_and_sched_ar(minimal_db_initialization, config, t0 + 100)
 
     # Submit other jobs
-    insert_job(res=[(100, [("resource_id=1", "")])], properties="", user="toto")
-    insert_job(res=[(200, [("resource_id=1", "")])], properties="", user="toto")
+    insert_job(
+        minimal_db_initialization,
+        res=[(100, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(200, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
 
-    # pdb.set_trace()
-    t1 = get_date()
-    meta_schedule("internal")
+    # psession.set_trace()
+    t1 = get_date(minimal_db_initialization)
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     res = []
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time - t1)
         res.append(i.start_time - t1)
@@ -276,40 +348,58 @@ def test_db_all_in_one_quotas_2(monkeypatch):
     assert (res[2] - res[0]) == 280
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_quotas_AR(monkeypatch):
-    create_quotas_rules_file('{"quotas": {"*,*,*,*": [1, -1, -1]}}')
+def test_db_all_in_one_quotas_AR(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
+    config = active_quotas
+    create_quotas_rules_file(config, '{"quotas": {"*,*,*,*": [1, -1, -1]}}')
 
-    job = insert_and_sched_ar(get_date() + 10)
+    job = insert_and_sched_ar(
+        minimal_db_initialization, config, get_date(minimal_db_initialization) + 10
+    )
     print(job.state, " ", job.reservation)
 
     assert job.state == "Error"
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_temporal_quotas_1(monkeypatch):
+def test_db_all_in_one_temporal_quotas_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
+    config = active_quotas
     a = deepcopy(quotas_simple_temporal_rules)
 
-    now = get_date()
+    now = get_date(minimal_db_initialization)
     t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
     rules_str = str(a).replace("'", '"')
     print(rules_str)
-    create_quotas_rules_file(rules_str)
+    create_quotas_rules_file(config, rules_str)
 
-    insert_job(res=[(100, [("resource_id=5", "")])], properties="", user="toto")
-    insert_job(res=[(200, [("resource_id=1", "")])], properties="", user="toto")
+    insert_job(
+        minimal_db_initialization,
+        res=[(100, [("resource_id=5", "")])],
+        properties="",
+        user="toto",
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(200, [("resource_id=1", "")])],
+        properties="",
+        user="toto",
+    )
 
-    # pdb.set_trace()
-    meta_schedule("internal")
+    # psession.set_trace()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     print("now:{} t1: {} t1-now: {}".format(now, t1, t1 - now))
 
     res = []
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time - now)
         res.append(i.start_time)
@@ -317,30 +407,44 @@ def test_db_all_in_one_temporal_quotas_1(monkeypatch):
     assert res == [t1 - (t1 % 60), now]
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_temporal_quotas_2(monkeypatch):
+def test_db_all_in_one_temporal_quotas_2(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
+    config = active_quotas
     a = deepcopy(quotas_simple_temporal_rules)
 
-    now = get_date()
+    now = get_date(minimal_db_initialization)
     t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
     rules_str = str(a).replace("'", '"')
     print(rules_str)
-    create_quotas_rules_file(rules_str)
+    create_quotas_rules_file(config, rules_str)
 
-    insert_job(res=[(100, [("resource_id=5", "")])], properties="", user="toto")
-    insert_job(res=[(200, [("resource_id=5", "")])], properties="", types=["no_quotas"])
+    insert_job(
+        minimal_db_initialization,
+        res=[(100, [("resource_id=5", "")])],
+        properties="",
+        user="toto",
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(200, [("resource_id=5", "")])],
+        properties="",
+        types=["no_quotas"],
+    )
 
-    # pdb.set_trace()
-    meta_schedule("internal")
+    # psession.set_trace()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     print("now:{} t1: {} t1-now: {}".format(now, t1, t1 - now))
 
     res = []
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time - now)
         res.append(i.start_time)
@@ -348,24 +452,30 @@ def test_db_all_in_one_temporal_quotas_2(monkeypatch):
     assert res == [t1 - (t1 % 60), now]
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_temporal_quotas_AR_1(monkeypatch):
+def test_db_all_in_one_temporal_quotas_AR_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
+    config = active_quotas
     a = deepcopy(quotas_simple_temporal_rules)
     rules_str = str(a).replace("'", '"')
     print(rules_str)
 
-    create_quotas_rules_file(rules_str)
+    create_quotas_rules_file(config, rules_str)
 
-    job = insert_and_sched_ar(get_date() + 10)
+    job = insert_and_sched_ar(
+        minimal_db_initialization, config, get_date(minimal_db_initialization) + 10
+    )
     print(job.state, " ", job.reservation)
 
     assert job.state == "Error"
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_db_all_in_one_temporal_quotas_AR_2(monkeypatch):
+def test_db_all_in_one_temporal_quotas_AR_2(
+    monkeypatch, minimal_db_initialization, setup_config, active_quotas
+):
+    config = active_quotas
     a = deepcopy(quotas_simple_temporal_rules)
-    now = get_date()
+    now = get_date(minimal_db_initialization)
     t1 = now + int(2 * 86400)
     t2 = t1 + 86400
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
@@ -373,104 +483,115 @@ def test_db_all_in_one_temporal_quotas_AR_2(monkeypatch):
     rules_str = str(a).replace("'", '"')
     print(rules_str)
 
-    create_quotas_rules_file(rules_str)
+    create_quotas_rules_file(config, rules_str)
 
-    job = insert_and_sched_ar(t1 + 3600)
+    job = insert_and_sched_ar(minimal_db_initialization, config, t1 + 3600)
     print(job.state, " ", job.reservation)
 
     assert job.state == "Waiting"
 
 
-def test_db_all_in_one_AR_2(monkeypatch):
-    job = insert_and_sched_ar(get_date() - 1000)
+def test_db_all_in_one_AR_2(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    job = insert_and_sched_ar(
+        minimal_db_initialization, config, get_date(minimal_db_initialization) - 1000
+    )
     print(job.state, " ", job.reservation)
     assert job.state == "Error"
 
 
-def test_db_all_in_one_AR_3(monkeypatch):
-    now = get_date()
-    job = insert_and_sched_ar(now + 1000)
+def test_db_all_in_one_AR_3(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    now = get_date(minimal_db_initialization)
+    job = insert_and_sched_ar(minimal_db_initialization, config, now + 1000)
     new_start_time = now - 2000
 
-    set_jobs_start_time(tuple([job.id]), new_start_time)
-    db.query(GanttJobsPrediction).update(
+    set_jobs_start_time(minimal_db_initialization, tuple([job.id]), new_start_time)
+    minimal_db_initialization.query(GanttJobsPrediction).update(
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
-    db.commit()
+    minimal_db_initialization.commit()
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print("\n", job.id, job.state, " ", job.reservation, job.start_time)
 
     assert job.state == "Error"
 
 
-def test_db_all_in_one_AR_4(monkeypatch):
-    now = get_date()
-    job = insert_and_sched_ar(now + 10)
+def test_db_all_in_one_AR_4(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    now = get_date(minimal_db_initialization)
+    job = insert_and_sched_ar(minimal_db_initialization, config, now + 10)
     new_start_time = now - 20
 
-    db.query(GanttJobsPrediction).update(
+    minimal_db_initialization.query(GanttJobsPrediction).update(
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
-    db.commit()
+    minimal_db_initialization.commit()
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print("\n", job.id, job.state, " ", job.reservation, job.start_time)
 
     assert job.state == "toLaunch"
 
 
-def test_db_all_in_one_AR_5(monkeypatch):
-    now = get_date()
-    job = insert_and_sched_ar(now + 10)
+def test_db_all_in_one_AR_5(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    now = get_date(minimal_db_initialization)
+    job = insert_and_sched_ar(minimal_db_initialization, config, now + 10)
     new_start_time = now - 20
 
-    set_jobs_start_time(tuple([job.id]), new_start_time)
-    db.query(GanttJobsPrediction).update(
+    set_jobs_start_time(minimal_db_initialization, tuple([job.id]), new_start_time)
+    minimal_db_initialization.query(GanttJobsPrediction).update(
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
-    db.commit()
+    minimal_db_initialization.commit()
 
-    db.query(Resource).update({Resource.state: "Suspected"}, synchronize_session=False)
-    db.commit()
+    minimal_db_initialization.query(Resource).update(
+        {Resource.state: "Suspected"}, synchronize_session=False
+    )
+    minimal_db_initialization.commit()
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print("\n", job.id, job.state, " ", job.reservation, job.start_time)
 
     assert job.state == "Waiting"
 
 
-def test_db_all_in_one_AR_6(monkeypatch):
-    now = get_date()
-    job = insert_and_sched_ar(now + 10, 600)
+def test_db_all_in_one_AR_6(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    now = get_date(minimal_db_initialization)
+    job = insert_and_sched_ar(minimal_db_initialization, config, now + 10, 600)
     new_start_time = now - 350
 
-    set_jobs_start_time(tuple([job.id]), new_start_time)
-    db.query(GanttJobsPrediction).update(
+    set_jobs_start_time(minimal_db_initialization, tuple([job.id]), new_start_time)
+    minimal_db_initialization.query(GanttJobsPrediction).update(
         {GanttJobsPrediction.start_time: new_start_time}, synchronize_session=False
     )
 
-    # db.query(Resource).update(
+    # session.query(Resource).update(
     #     {Resource.state: "Suspected"}, synchronize_session="loooool"
     # )
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print("\n", job.id, job.state, " ", job.reservation, job.start_time)
 
     assert job.state == "toLaunch"
 
 
-def test_db_all_in_one_AR_7(monkeypatch):
-    now = get_date()
+def test_db_all_in_one_AR_7(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    now = get_date(minimal_db_initialization)
     insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         reservation="toSchedule",
         start_time=now + 10,
@@ -478,32 +599,38 @@ def test_db_all_in_one_AR_7(monkeypatch):
         types=["timesharing=*,*"],
     )
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     assert (job.state == "Waiting") and (job.reservation == "Scheduled")
 
 
-def test_db_all_in_one_BE(monkeypatch):
-    db["Queue"].create(
-        name="besteffort", priority=0, scheduler_policy="kamelot", state="Active"
+def test_db_all_in_one_BE(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    Queue.create(
+        minimal_db_initialization,
+        name="besteffort",
+        priority=0,
+        scheduler_policy="kamelot",
+        state="Active",
     )
 
     insert_job(
+        minimal_db_initialization,
         res=[(100, [("resource_id=1", "")])],
         queue_name="besteffort",
         types=["besteffort"],
     )
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     assert job.state == "toLaunch"
 
 
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
-def test_db_all_in_one_BE_to_kill(monkeypatch):
+def test_db_all_in_one_BE_to_kill(monkeypatch, minimal_db_initialization, setup_config):
     os.environ["USER"] = "root"  # to allow fragging
     db["Queue"].create(
         name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
@@ -517,7 +644,7 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
 
     meta_schedule("internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     assert job.state == "toLaunch"
 
     insert_job(res=[(100, [("resource_id=5", "")])])
@@ -535,7 +662,9 @@ def test_db_all_in_one_BE_to_kill(monkeypatch):
 
 
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
-def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
+def test_db_all_in_one_BE_to_checkpoint(
+    monkeypatch, minimal_db_initialization, setup_config
+):
     os.environ["USER"] = "root"  # to allow fragging
     db["Queue"].create(
         name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
@@ -550,7 +679,7 @@ def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
 
     meta_schedule("internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     assert job.state == "toLaunch"
 
     insert_job(res=[(100, [("resource_id=5", "")])])
@@ -566,7 +695,7 @@ def test_db_all_in_one_BE_to_checkpoint(monkeypatch):
 
 
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
-def test_db_all_in_one_BE_2(monkeypatch):
+def test_db_all_in_one_BE_2(monkeypatch, minimal_db_initialization, setup_config):
     # TODO TOFINISH
     db["Queue"].create(
         name="besteffort", priority=3, scheduler_policy="kamelot", state="Active"
@@ -579,7 +708,7 @@ def test_db_all_in_one_BE_2(monkeypatch):
     )
 
     meta_schedule("internal")
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
 
     set_job_state(job.id, "Running")
 
@@ -593,41 +722,50 @@ def test_db_all_in_one_BE_2(monkeypatch):
     assert jobs[1].state == "Waiting"
 
 
-@pytest.mark.usefixtures("active_energy_saving")
-def test_db_all_in_one_wakeup_node_1(monkeypatch):
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+def test_db_all_in_one_wakeup_node_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
+):
+    config = active_energy_saving
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
 
-    now = get_date()
+    now = get_date(minimal_db_initialization)
     # Suspend nodes
-    db.query(Resource).update(
+    minimal_db_initialization.query(Resource).update(
         {Resource.state: "Absent", Resource.available_upto: now + 1000},
         synchronize_session=False,
     )
-    db.commit()
-    meta_schedule("internal")
+    minimal_db_initialization.commit()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     print(node_list)
     assert job.state == "Waiting"
     assert node_list == ["localhost0", "localhost1"]
 
 
-@pytest.mark.usefixtures("active_energy_saving")
-def test_db_all_in_one_sleep_node_1(monkeypatch):
-    now = get_date()
+def test_db_all_in_one_sleep_node_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
+):
+    config = active_energy_saving
 
-    insert_job(res=[(60, [("resource_id=1", "")])], properties="")
+    now = get_date(minimal_db_initialization)
+
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=1", "")])], properties=""
+    )
 
     # Suspend nodes
-    # pdb.set_trace()
-    db.query(Resource).update(
+    # psession.set_trace()
+    minimal_db_initialization.query(Resource).update(
         {Resource.available_upto: now + 50000}, synchronize_session=False
     )
-    db.commit()
-    meta_schedule("internal")
+    minimal_db_initialization.commit()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     print(node_list)
     assert job.state == "toLaunch"
@@ -637,22 +775,28 @@ def test_db_all_in_one_sleep_node_1(monkeypatch):
     ]
 
 
-@pytest.mark.usefixtures("active_energy_saving")
-def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
+def test_db_all_in_one_wakeup_node_energy_saving_internal_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
+):
+
+    config = active_energy_saving
+
     config["ENERGY_SAVING_INTERNAL"] = "yes"
 
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
 
-    now = get_date()
+    now = get_date(minimal_db_initialization)
     # Suspend nodes
-    db.query(Resource).update(
+    minimal_db_initialization.query(Resource).update(
         {Resource.state: "Absent", Resource.available_upto: now + 1000},
         synchronize_session=False,
     )
-    db.commit()
-    meta_schedule("internal")
+    minimal_db_initialization.commit()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     print(node_list)
     print("fakezmq.sent_msgs", fakezmq.sent_msgs)
@@ -662,23 +806,27 @@ def test_db_all_in_one_wakeup_node_energy_saving_internal_1(monkeypatch):
     }
 
 
-@pytest.mark.usefixtures("active_energy_saving")
-def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
+def test_db_all_in_one_sleep_node_energy_saving_internal_1(
+    monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
+):
+    config = active_energy_saving
     config["ENERGY_SAVING_INTERNAL"] = "yes"
 
-    now = get_date()
+    now = get_date(minimal_db_initialization)
 
-    insert_job(res=[(60, [("resource_id=1", "")])], properties="")
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=1", "")])], properties=""
+    )
 
     # Suspend nodes
-    # pdb.set_trace()
-    db.query(Resource).update(
+    # psession.set_trace()
+    minimal_db_initialization.query(Resource).update(
         {Resource.available_upto: now + 50000}, synchronize_session=False
     )
-    db.commit()
-    meta_schedule("internal")
+    minimal_db_initialization.commit()
+    meta_schedule(minimal_db_initialization, config, "internal")
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     print(node_list)
     print("fakezmq.sent_msgs", fakezmq.sent_msgs)
@@ -689,41 +837,55 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(monkeypatch):
     assert fakezmq.sent_msgs[0][0]["nodes"] == ["localhost1", "localhost2"]
 
 
-def test_db_all_in_one_simple_2(monkeypatch):
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
-    job = db["Job"].query.one()
+def test_db_all_in_one_simple_2(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
+    job = minimal_db_initialization.query(Job).one()
     print("job state:", job.state)
 
     os.environ["OARDIR"] = "/tmp/"
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
 
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
     assert job.state == "toLaunch"
 
 
-def test_db_all_in_one_simple_interactive_waiting_1(monkeypatch):
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+def test_db_all_in_one_simple_interactive_waiting_1(
+    monkeypatch, minimal_db_initialization, setup_config
+):
+    config, _, _ = setup_config
     insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
+    insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
         job_type="INTERACTIVE",
         info_type="0.0.0.0:1234",
     )
 
-    meta_schedule("internal")
+    meta_schedule(minimal_db_initialization, config, "internal")
 
     for i in (
-        db.query(GanttJobsPrediction).order_by(GanttJobsPrediction.moldable_id).all()
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.moldable_id)
+        .all()
     ):
         print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
 
-    jobs = db["Job"].query.order_by(db["Job"].id).all()
+    jobs = minimal_db_initialization.query(Job).order_by(Job.id).all()
     assert jobs[0].state == "toLaunch"
     assert jobs[1].state == "Waiting"

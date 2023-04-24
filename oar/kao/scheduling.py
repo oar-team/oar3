@@ -190,7 +190,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             return (ProcSet(), -1, -1)
         # import pdb; pdb.set_trace()
         if Quotas.calendar and (not job.no_quotas):
-            time_limit = slot_b + config["QUOTAS_WINDOW_TIME_LIMIT"]
+            time_limit = slot_b + Quotas.calendar.quotas_window_time_limit
             while (slot_e - slot_b + 1) < walltime:
                 if slot_e > time_limit:
                     logger.info(

@@ -79,7 +79,7 @@ def internal_schedule_cycle(
         )
 
         waiting_ordered_jids = jobs_sorting(
-            config, queues, now, waiting_jids, waiting_jobs, plt
+            session, config, queues, now, waiting_jids, waiting_jobs, plt
         )
 
         #
@@ -201,8 +201,9 @@ def schedule_cycle(session, config, plt, now, queues=["default"]):
 #
 # Main function
 #
-def main():
-    logger = get_logger("oar.kamelot", forward_stderr=True)
+def main(session=None):
+    config, _, log = init_oar()
+    logger = get_logger(log, "oar.kamelot", forward_stderr=True)
 
     plt = Platform()
 
@@ -212,16 +213,15 @@ def main():
     logger.debug("argv..." + str(sys.argv))
 
     if len(sys.argv) > 2:
-        schedule_cycle(plt, int(float(sys.argv[2])), [sys.argv[1]])
+        schedule_cycle(session, config, plt, int(float(sys.argv[2])), [sys.argv[1]])
     elif len(sys.argv) == 2:
-        schedule_cycle(plt, plt.get_time(), [sys.argv[1]])
+        schedule_cycle(session, config, plt, plt.get_time(), [sys.argv[1]])
     else:
-        schedule_cycle(plt, plt.get_time())
+        schedule_cycle(session, config, plt, plt.get_time())
 
     logger.info("That's all folks")
-    from oar.lib import db
 
-    db.commit()
+    session.commit()
 
 
 if __name__ == "__main__":  # pragma: no cover

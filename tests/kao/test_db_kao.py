@@ -1,11 +1,14 @@
 # coding: utf-8
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.kao import main
+from oar.lib.database import ephemeral_session
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
 from oar.lib.logging import get_logger
+from oar.lib.models import Job, Queue, Resource
 
 config, _, log = init_oar()
 
@@ -22,16 +25,25 @@ def setup(request):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        Queue.create(
+            session,
+            name="default",
+            priority=3,
+            scheduler_policy="kamelot",
+            state="Active",
         )
 
         # add some resources
         for i in range(5):
-            db["Resource"].create(network_address="localhost")
-        yield
+            Resource.create(session, network_address="localhost")
+
+        yield session
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -47,37 +59,36 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "notify_bipbip_commander", lambda json_msg: True)
 
 
-def test_db_kao_simple_1(monkeypatch):
-    insert_job(res=[(60, [("resource_id=4", "")])], properties="")
-    job = db["Job"].query.one()
+def test_db_kao_simple_1(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
+    job = minimal_db_initialization.query(Job).one()
     print("job state:", job.state)
 
-    main()
+    main(minimal_db_initialization, config)
 
-    for i in db["GanttJobsPrediction"].query.all():
-        print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
-
-    job = db["Job"].query.one()
-    print(job.state)
+    job = minimal_db_initialization.query(Job).one()
 
     assert job.state == "toLaunch"
 
 
-def test_db_kao_moldable(monkeypatch):
+def test_db_kao_moldable(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     # First moldable job should never pass because there is not enough resources.
     insert_job(
-        res=[(5, [("resource_id=6", "")]), (2, [("resource_id=2", "")])], properties=""
+        minimal_db_initialization,
+        res=[(5, [("resource_id=6", "")]), (2, [("resource_id=2", "")])],
+        properties="",
     )
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
 
     print("job state:", job.state)
 
-    main()
+    main(minimal_db_initialization, config)
 
-    for i in db["GanttJobsPrediction"].query.all():
-        print("moldable_id: ", i.moldable_id, " start_time: ", i.start_time)
-
-    job = db["Job"].query.one()
+    job = minimal_db_initialization.query(Job).one()
     print(job.state)
 
     assert job.state == "toLaunch"

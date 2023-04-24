@@ -10,11 +10,10 @@ config, _, log = init_oar()
 logger = get_logger(log, "oar.kao")
 
 
-def main():
+def main(session, config):
     logger.info("Starting Kao Meta Scheduler")
-    return meta_schedule(config["METASCHEDULER_MODE"])
+    return meta_schedule(session, config, config["METASCHEDULER_MODE"])
 
 
 if __name__ == "__main__":  # pragma: no cover
-    logger = get_logger("oar.kao", forward_stderr=True)
     main()

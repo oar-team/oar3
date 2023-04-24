@@ -30,6 +30,7 @@ class Calendar(object):
         self.quotas_period = config["QUOTAS_PERIOD"]
         self.period_end = 0  # period_end = period_begin = quotas_period
 
+        self.quotas_window_time_limit = config["QUOTAS_WINDOW_TIME_LIMIT"]
         self.ordered_periodical_ids = []
         self.op_index = 0
         self.periodicals = {}
@@ -514,7 +515,7 @@ class Quotas(object):
     job_types = ["*"]
 
     @classmethod
-    def enable(cls, resource_set=None):
+    def enable(cls, config, resource_set=None):
         cls.enabled = True
         if "QUOTAS_ALL_NB_RESOURCES_MODE" in config:
             mode = config["QUOTAS_ALL_NB_RESOURCES_MODE"]
@@ -527,7 +528,7 @@ class Quotas(object):
                 all_value = resource_set.nb_resources_default_not_dead
         else:
             all_value = None
-        cls.load_quotas_rules(all_value)
+        cls.load_quotas_rules(config, all_value)
 
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
@@ -718,7 +719,7 @@ class Quotas(object):
         return rules
 
     @classmethod
-    def load_quotas_rules(cls, all_value=None):
+    def load_quotas_rules(cls, config, all_value=None):
         """
         Simple example
         --------------
@@ -769,7 +770,7 @@ class Quotas(object):
         with open(quotas_rules_filename) as json_file:
             json_quotas = json.load(json_file)
             if ("periodical" in json_quotas) or ("oneshot" in json_quotas):
-                cls.calendar = Calendar(json_quotas)
+                cls.calendar = Calendar(json_quotas, config)
             if "quotas" in json_quotas:
                 cls.default_rules = cls.quotas_rules_fromJson(
                     json_quotas["quotas"], all_value
