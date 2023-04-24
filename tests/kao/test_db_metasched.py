@@ -5,16 +5,14 @@ import pytest
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
-from oar.lib import (
+from oar.lib.job_handling import insert_job
+from oar.lib.models import (
     AssignedResource,
     FragJob,
     Job,
     MoldableJobDescription,
     Resource,
-    config,
-    db,
 )
-from oar.lib.job_handling import insert_job
 from oar.lib.queue import get_all_queue_by_priority
 from oar.lib.tools import get_date
 

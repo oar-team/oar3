@@ -1,4 +1,4 @@
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     change_walltime,
     get_job_suspended_sum_duration,
@@ -7,13 +7,16 @@ from oar.lib.job_handling import (
     get_possible_job_end_time_in_interval,
     get_running_job,
 )
+from oar.lib.logging import get_logger
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed
 from oar.lib.walltime import get_conf, update_walltime_change_request
 
-logger = get_logger("oar.kao.walltime_change")
+_, _, log = init_oar()
+
+logger = get_logger(log, "oar.kao.walltime_change")
 
 
-def process_walltime_change_requests(plt):
+def process_walltime_change_requests(config, plt):
     now = plt.get_time()
     walltime_change_apply_time = config["WALLTIME_CHANGE_APPLY_TIME"]
     walltime_increment = config["WALLTIME_INCREMENT"]

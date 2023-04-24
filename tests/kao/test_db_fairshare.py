@@ -7,8 +7,8 @@ import pytest
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import Job, config, db
 from oar.lib.job_handling import insert_job
+from oar.lib.models import Job
 
 
 @pytest.fixture(scope="function", autouse=True)

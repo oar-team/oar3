@@ -12,8 +12,8 @@ import zmq
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
 from oar.kao.quotas import Quotas
-from oar.lib import GanttJobsPrediction, Job, Resource, config, db
 from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
+from oar.lib.models import GanttJobsPrediction, Job, Resource
 from oar.lib.tools import get_date, local_to_sql
 
 from ..fakezmq import FakeZmq

@@ -3,10 +3,13 @@
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 from oar.kao.slot import MAX_TIME, SlotSet
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
+from oar.lib.logging import get_logger
 
-logger = get_logger("oar.kamelot_basic")
+config, _, log = init_oar()
+
+logger = get_logger(log, "oar.kamelot_basic")
 
 
 def schedule_cycle(plt, queues=["default"]):

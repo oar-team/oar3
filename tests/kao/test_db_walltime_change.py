@@ -3,12 +3,15 @@ import pytest
 
 from oar.kao.platform import Platform
 from oar.kao.walltime_change import process_walltime_change_requests
-from oar.lib import EventLog, WalltimeChange, db, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
+from oar.lib.logging import get_logger
+from oar.lib.models import EventLog, WalltimeChange
 
 from ..helpers import insert_running_jobs
 
-logger = get_logger("oar.kao.walltime_change")
+_, _, log = init_oar()
+logger = get_logger(log, "oar.kao.walltime_change")
 
 
 @pytest.fixture(scope="function", autouse=True)

@@ -8,9 +8,12 @@ from procset import ProcSet
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import Slot, SlotSet
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import JobPseudo
+from oar.lib.logging import get_logger
 from oar.lib.resource import ResourceSet
+
+config, _, log = init_oar()
 
 # import pdb
 

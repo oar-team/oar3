@@ -1,11 +1,13 @@
 import yaml
 
 from oar.kao.karma import evaluate_jobs_karma
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
-# Log category
+config, _, log = init_oar()
 
-logger = get_logger("oar.kao.priorty")
+
+logger = get_logger(log, "oar.kao.priorty")
 
 
 def evaluate_jobs_priority(queues, now, jids, jobs, plt):

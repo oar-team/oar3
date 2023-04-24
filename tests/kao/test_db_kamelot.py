@@ -5,7 +5,6 @@ import time
 import pytest
 
 from oar.kao.kamelot import main
-from oar.lib import db
 from oar.lib.job_handling import insert_job
 
 

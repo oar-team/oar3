@@ -455,7 +455,7 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
                 job.find = False
                 job.no_quotas = False
                 if job.suspended == "YES":
-                    job.walltime += get_job_suspended_sum_duration(job.id, now)
+                    job.walltime += get_job_suspended_sum_duration(session, job.id, now)
 
             roid = resource_set.rid_i2o[r_id]
             roids.append(roid)
@@ -468,7 +468,7 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
         jobs_lst.append(job)
         jids.append(job.id)
         jobs[job.id] = job
-        get_jobs_types(jids, jobs)
+        get_jobs_types(session, jids, jobs)
 
     return (jobs, jobs_lst, jids, rid2jid)
 
@@ -492,7 +492,7 @@ def get_scheduled_jobs(session, resource_set, job_security_time, now):
     )
 
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(
-        result, resource_set, job_security_time, now
+        session, result, resource_set, job_security_time, now
     )
 
     return jobs_lst
@@ -551,7 +551,7 @@ def get_waiting_scheduled_AR_jobs(
     )
 
     _, jobs_lst, _, _ = extract_scheduled_jobs(
-        result, resource_set, job_security_time, now
+        session, result, resource_set, job_security_time, now
     )
 
     return jobs_lst
@@ -559,7 +559,7 @@ def get_waiting_scheduled_AR_jobs(
 
 # TODO MOVE TO GANTT_HANDLING ???
 def get_gantt_jobs_to_launch(
-    resource_set, job_security_time, now, kill_duration_before_reservation=0
+    session, resource_set, job_security_time, now, kill_duration_before_reservation=0
 ):
     # get unlaunchable jobs
     # NOT USED launcher will manage these cases ??? (MUST BE CONFIRMED)
@@ -595,7 +595,7 @@ def get_gantt_jobs_to_launch(
     )
 
     jobs, jobs_lst, _, rid2jid = extract_scheduled_jobs(
-        result, resource_set, job_security_time, now
+        session, result, resource_set, job_security_time, now
     )
 
     return (jobs, jobs_lst, rid2jid)
@@ -660,7 +660,7 @@ def save_assigns(session, jobs, resource_set):
                         for rid in riods
                     ]
                 )
-                msg = job_message(j, nb_resources=len(riods))
+                msg = job_message(session, j, nb_resources=len(riods))
                 message_updates[j.id] = msg
 
         if message_updates:
@@ -1686,7 +1686,7 @@ def set_job_state(session, jid, state):
             elif state == "Running":
                 tools.notify_user(job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
-                update_current_scheduler_priority(job, "+2", "START")
+                update_current_scheduler_priority(session, job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
                     session.query(Job).filter(Job.id == jid).update(

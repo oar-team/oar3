@@ -5,7 +5,6 @@ import pytest
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import config, db
 from oar.lib.job_handling import insert_job
 
 from .test_db_fairshare import generate_accountings

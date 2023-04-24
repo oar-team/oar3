@@ -431,3 +431,24 @@ class ScopedSession(sqlalchemy.orm.scoped_session):
             return ephemeral_session(self, **kwargs)
         else:
             return super(ScopedSession, self).__call__(**kwargs)
+
+
+def delete_all(engine, bind=None, **kwargs):
+    """Drop all tables."""
+    if bind is None:
+        bind = self.engine
+    with bind.connect() as con:
+        trans = con.begin()
+        try:
+            if bind.dialect.name == "postgresql":
+                con.execute(
+                    "TRUNCATE {} RESTART IDENTITY CASCADE;".format(
+                        ",".join(table.name for table in self.tables.values())
+                    )
+                )
+            else:
+                for table in self.tables.values():
+                    con.execute(table.delete())
+            trans.commit()
+        except Exception:
+            trans.rollba

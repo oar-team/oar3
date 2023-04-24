@@ -9,6 +9,8 @@ from oar.lib.job_handling import get_job_types
 from oar.lib.models import AdmissionRule, JobResourceDescription, Queue, Resource
 from oar.lib.submission import JobParameters, add_micheline_jobs, scan_script
 
+from ..kao.test_db_all_in_one import active_quotas
+
 fake_popen_process_stdout = ""
 
 
@@ -190,8 +192,10 @@ def test_add_micheline_jobs_2(setup_config, minimal_db_initialization):
     assert len(job_id_lst) == 1
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_add_micheline_jobs_no_quotas_1(setup_config, minimal_db_initialization):
+# @pytest.mark.usefixtures("active_quotas")
+def test_add_micheline_jobs_no_quotas_1(
+    setup_config, minimal_db_initialization, active_quotas
+):
     config, _, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
@@ -214,11 +218,11 @@ def test_add_micheline_jobs_no_quotas_1(setup_config, minimal_db_initialization)
     print("error:", error)
     assert error == (0, "")
     assert len(job_id_lst) == 1
-    job_types = get_job_types(job_id_lst[0])
+    job_types = get_job_types(minimal_db_initialization, job_id_lst[0])
     assert job_types == {"foo": True}
 
 
-@pytest.mark.usefixtures("active_quotas")
+# @pytest.mark.usefixtures("active_quotas")
 def test_add_micheline_jobs_quotas_admin(setup_config, minimal_db_initialization):
     config, _, _ = setup_config
     job_parameters = default_job_parameters(config, None)
@@ -243,7 +247,7 @@ def test_add_micheline_jobs_quotas_admin(setup_config, minimal_db_initialization
     print("error:", error)
     assert error == (0, "")
     assert len(job_id_lst) == 1
-    job_types = get_job_types(job_id_lst[0])
+    job_types = get_job_types(minimal_db_initialization, job_id_lst[0])
     print(job_types)
     assert "no_quotas" in job_types
 

@@ -7,13 +7,13 @@ from procset import ProcSet
 
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
 
-# Initialize some variables to default value or retrieve from oar.conf
-# configuration file *)
+config, _, log = init_oar()
 
 
-logger = get_logger("oar.kamelot_fifo")
+logger = get_logger(log, "oar.kamelot_fifo")
 
 
 def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):

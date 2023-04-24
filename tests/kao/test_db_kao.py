@@ -3,8 +3,13 @@ import pytest
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.kao import main
-from oar.lib import config, db
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
+from oar.lib.logging import get_logger
+
+config, _, log = init_oar()
+
+logger = get_logger(log, "oar.kao")
 
 
 @pytest.fixture(scope="function", autouse=True)

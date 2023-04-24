@@ -6,10 +6,10 @@ import redis
 import zmq
 from click.testing import CliRunner
 
-# from oar.kao.bataar import bataar
-from oar.lib import config, db
-
 from ..fakezmq import FakeZmq
+
+# from oar.kao.bataar import bataar
+
 
 #
 # SKIP ENTIRE MODULE/FILE wait new pybatsim

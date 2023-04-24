@@ -4,7 +4,6 @@ import os
 from procset import ProcSet
 
 from oar.kao.simsim import JobSimu, ResourceSetSimu, SimSched, SWFWorkload
-from oar.lib import config
 
 
 def _test_simsim_1():

@@ -6,16 +6,20 @@
 import re
 
 import oar.lib.tools as tools
-from oar.lib import WalltimeChange, config, db, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
     get_job_suspended_sum_duration,
     get_job_types,
 )
+from oar.lib.logging import get_logger
+from oar.lib.models import WalltimeChange
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed, hms_to_duration
 
-logger = get_logger("oar.lib.walltime")
+_, _, log = init_oar()
+
+logger = get_logger(log, "oar.lib.walltime")
 
 
 def get_conf(config_value, queue, walltime, value):

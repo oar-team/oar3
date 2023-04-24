@@ -13,11 +13,11 @@ _, _, logger = init_oar()
 logger = get_logger(logger, "oar.lib.queue")
 
 
-def get_all_queue_by_priority():
+def get_all_queue_by_priority(session):
     return session.query(Queue).order_by(Queue.priority.desc()).all()
 
 
-def get_queues_groupby_priority():
+def get_queues_groupby_priority(session):
     """Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
     queues_ordered = session.query(Queue).order_by(Queue.priority.desc()).all()
     res = []

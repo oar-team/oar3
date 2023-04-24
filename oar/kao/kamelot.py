@@ -7,17 +7,19 @@ from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
+from oar.lib.logging import get_logger
 from oar.lib.plugins import find_plugin_function
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
-logger = get_logger("oar.kamelot")
+_, _, log = init_oar()
+logger = get_logger(log, "oar.kamelot")
 
 
-def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
+def jobs_sorting(config, queues, now, waiting_jids, waiting_jobs, plt):
     waiting_ordered_jids = waiting_jids
 
     if "JOB_PRIORITY" in config:
@@ -53,13 +55,17 @@ def jobs_sorting(queues, now, waiting_jids, waiting_jobs, plt):
     return waiting_ordered_jids
 
 
-def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
-    resource_set = plt.resource_set()
+def internal_schedule_cycle(
+    session, config, plt, now, all_slot_sets, job_security_time, queues
+):
+    resource_set = plt.resource_set(session, config)
 
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(
+        queues, session=session
+    )
 
     if nb_waiting_jobs > 0:
         logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
@@ -69,10 +75,12 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
+        plt.get_data_jobs(
+            session, waiting_jobs, waiting_jids, resource_set, job_security_time
+        )
 
         waiting_ordered_jids = jobs_sorting(
-            queues, now, waiting_jids, waiting_jobs, plt
+            config, queues, now, waiting_jids, waiting_jobs, plt
         )
 
         #
@@ -91,7 +99,7 @@ def internal_schedule_cycle(plt, now, all_slot_sets, job_security_time, queues):
         #
         logger.info("save assignement")
 
-        plt.save_assigns(waiting_jobs, resource_set)
+        plt.save_assigns(session, waiting_jobs, resource_set)
     else:
         logger.info("no waiting jobs")
 
