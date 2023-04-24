@@ -19,7 +19,8 @@ def minimal_db_initialization(request):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def oar_conf(request):
+def oar_conf(request, setup_config):
+    config, _, _ = setup_config
     config["JOB_PRIORITY"] = "MULTIFACTOR"
 
     @request.addfinalizer
@@ -31,8 +32,10 @@ def oar_conf(request):
 #    plt = Platform()
 
 
-def test_db_multifactor_fairshare():
+def test_db_multifactor_fairshare(minimal_db_initialization, oar_conf):
     _, priority_file_name = mkstemp()
+    config = oar_conf
+
     config["PRIORITY_CONF_FILE"] = priority_file_name
 
     with open(config["PRIORITY_CONF_FILE"], "w", encoding="utf-8") as priority_fd:

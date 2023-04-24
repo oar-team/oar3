@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import sys
 
 from oar.kao.karma import karma_jobs_sorting
@@ -19,7 +18,7 @@ _, _, log = init_oar()
 logger = get_logger(log, "oar.kamelot")
 
 
-def jobs_sorting(config, queues, now, waiting_jids, waiting_jobs, plt):
+def jobs_sorting(session, config, queues, now, waiting_jids, waiting_jobs, plt):
     waiting_ordered_jids = waiting_jids
 
     if "JOB_PRIORITY" in config:
@@ -28,7 +27,7 @@ def jobs_sorting(config, queues, now, waiting_jids, waiting_jobs, plt):
             # Karma job sorting (Fairsharing)
             #
             waiting_ordered_jids = karma_jobs_sorting(
-                queues, now, waiting_jids, waiting_jobs, plt
+                session, config, queues, now, waiting_jids, waiting_jobs, plt
             )
         elif config["JOB_PRIORITY"] == "MULTIFACTOR":
             waiting_ordered_jids = multifactor_jobs_sorting(
@@ -104,7 +103,7 @@ def internal_schedule_cycle(
         logger.info("no waiting jobs")
 
 
-def schedule_cycle(plt, now, queues=["default"]):
+def schedule_cycle(session, config, plt, now, queues=["default"]):
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
             now, " ".join([q for q in queues])
@@ -113,7 +112,9 @@ def schedule_cycle(plt, now, queues=["default"]):
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queues)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(
+        queues, session=session
+    )
 
     if nb_waiting_jobs > 0:
         logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
@@ -125,7 +126,7 @@ def schedule_cycle(plt, now, queues=["default"]):
         #
         # Determine Global Resource Intervals and Initial Slot
         #
-        resource_set = plt.resource_set()
+        resource_set = plt.resource_set(session, config)
         initial_slot_set = SlotSet((resource_set.roid_itvs, now))
 
         #
@@ -150,17 +151,21 @@ def schedule_cycle(plt, now, queues=["default"]):
         #
         # Get  additional waiting jobs' data
         #
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
+        plt.get_data_jobs(
+            session, waiting_jobs, waiting_jids, resource_set, job_security_time
+        )
 
         # Job sorting (karma and advanced)
         waiting_ordered_jids = jobs_sorting(
-            queues, now, waiting_jids, waiting_jobs, plt
+            session, config, queues, now, waiting_jids, waiting_jobs, plt
         )
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(resource_set, job_security_time, now)
+        scheduled_jobs = plt.get_scheduled_jobs(
+            session, resource_set, job_security_time, now
+        )
 
         all_slot_sets = {"default": initial_slot_set}
 
@@ -188,7 +193,7 @@ def schedule_cycle(plt, now, queues=["default"]):
         #
         logger.info("save assignement")
 
-        plt.save_assigns(waiting_jobs, resource_set)
+        plt.save_assigns(session, waiting_jobs, resource_set)
     else:
         logger.info("no waiting jobs")
 

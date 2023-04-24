@@ -112,7 +112,7 @@ def get_sum_accounting_by_user(session, queues, window_start, window_stop):
 #
 # Evaluate Karma value for each job
 #
-def evaluate_jobs_karma(config, queues, now, jids, jobs, plt):
+def evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt):
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
     # TODO NOT UDSED
@@ -139,13 +139,13 @@ def evaluate_jobs_karma(config, queues, now, jids, jobs, plt):
     window_stop = now
 
     karma_sum_time_asked, karma_sum_time_used = plt.get_sum_accounting_window(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     karma_projects_asked, karma_projects_used = plt.get_sum_accounting_by_project(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     #
     # Compute actual karma for each job
@@ -193,8 +193,8 @@ def evaluate_jobs_karma(config, queues, now, jids, jobs, plt):
         job.karma = projet + user + user_ask
 
 
-def karma_jobs_sorting(config, queues, now, jids, jobs, plt):
-    evaluate_jobs_karma(config, queues, now, jids, jobs, plt)
+def karma_jobs_sorting(session, config, queues, now, jids, jobs, plt):
+    evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt)
     #
     # Sort jobs accordingly to karma value (fairsharing)
     #

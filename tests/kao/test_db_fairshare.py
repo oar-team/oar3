@@ -4,21 +4,30 @@ import time
 from random import sample
 
 import pytest
+from sqlalchemy import delete, insert
+from sqlalchemy.orm import scoped_session, sessionmaker
 
+import oar.lib.tools  # for monkeypatching
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
-from oar.lib.models import Job
+from oar.lib.models import Accounting, GanttJobsPrediction, Job, Resource
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
-        yield
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        yield session
 
 
 @pytest.fixture(scope="module", autouse=True)
-def oar_conf(request):
+def oar_conf(request, setup_config):
+    config, _, _ = setup_config
     config["JOB_PRIORITY"] = "FAIRSHARE"
 
     @request.addfinalizer
@@ -26,12 +35,12 @@ def oar_conf(request):
         config["JOB_PRIORITY"] = "FIFO"
 
 
-def del_accounting():
-    db.session.execute(db["accounting"].delete())
-    db.commit()
+def del_accounting(session):
+    session.execute(delete(Accounting))
+    session.commit()
 
 
-def set_accounting(accountings, consumption_type):
+def set_accounting(session, accountings, consumption_type):
     ins_accountings = []
     for a in accountings:
         w_start, w_stop, proj, user, queue, consumption = a
@@ -47,14 +56,14 @@ def set_accounting(accountings, consumption_type):
             }
         )
 
-    db.session.execute(db["accounting"].insert(), ins_accountings)
-    db.commit()
+    session.execute(insert(Accounting), ins_accountings)
+    session.commit()
 
 
 def generate_accountings(
-    nb_users=5, t_window=24 * 36000, queue="default", project="default"
+    session, nb_users=5, t_window=24 * 36000, queue="default", project="default"
 ):
-    del_accounting()
+    del_accounting(session)
 
     nb_accounts = 5
 
@@ -76,20 +85,21 @@ def generate_accountings(
             )
             accountings_u.append((w_start, w_stop, project, user, queue, consumption))
 
-    set_accounting(accountings_a, "ASKED")
-    set_accounting(accountings_u, "USED")
+    set_accounting(session, accountings_a, "ASKED")
+    set_accounting(session, accountings_u, "USED")
 
 
-def test_db_fairsharing():
+def test_db_fairsharing(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     print("Test_db_fairsharing")
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])
 
-    generate_accountings()
+    generate_accountings(minimal_db_initialization)
 
     # add some resources
     for i in range(5):
-        db["Resource"].create(network_address="localhost")
+        Resource.create(minimal_db_initialization, network_address="localhost")
 
     nb_users = 5
 
@@ -99,20 +109,23 @@ def test_db_fairsharing():
     jid_2_u = {}
     for i, user in enumerate(users):
         insert_job(
-            job_user="zozo" + user, res=[(60, [("resource_id=4", "")])], properties=""
+            minimal_db_initialization,
+            job_user="zozo" + user,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
         )
         jid_2_u[i + 1] = int(user)
 
     plt = Platform()
-    r = plt.resource_set()
+    r = plt.resource_set(minimal_db_initialization, config)
 
     print("r.roid_itvs: ", r.roid_itvs)
 
-    schedule_cycle(plt, plt.get_time())
+    schedule_cycle(minimal_db_initialization, config, plt, plt.get_time())
 
     req = (
-        db["GanttJobsPrediction"]
-        .query.order_by(db["GanttJobsPrediction"].start_time)
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.start_time)
         .all()
     )
     flag = True
@@ -132,7 +145,7 @@ def test_db_fairsharing():
 
     # Check if messages are updated and valid
     r = re.compile("R=\d+,W=\d+,J=(P|I),Q=\w+ \(Karma=\d+.\d+\)$")
-    req = db.query(Job).all()
+    req = minimal_db_initialization.query(Job).all()
 
     for j in req:
         assert r.match(j.message) is not None
