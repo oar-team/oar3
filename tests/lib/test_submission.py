@@ -100,7 +100,7 @@ def create_hierarchy(request, setup_config, minimal_db_initialization):
 
 
 @pytest.fixture(scope="function")
-def active_quotas(request, config, setup_config):
+def active_quotas(request, setup_config):
     config, _, _ = setup_config
     print("active_quotas")
     config["QUOTAS"] = "yes"
@@ -192,11 +192,10 @@ def test_add_micheline_jobs_2(setup_config, minimal_db_initialization):
     assert len(job_id_lst) == 1
 
 
-# @pytest.mark.usefixtures("active_quotas")
 def test_add_micheline_jobs_no_quotas_1(
     setup_config, minimal_db_initialization, active_quotas
 ):
-    config, _, _ = setup_config
+    config = active_quotas
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -223,7 +222,7 @@ def test_add_micheline_jobs_no_quotas_1(
 
 
 # @pytest.mark.usefixtures("active_quotas")
-def test_add_micheline_jobs_quotas_admin(setup_config, minimal_db_initialization):
+def test_add_micheline_jobs_quotas_admin(setup_config, minimal_db_initialization, active_quotas):
     config, _, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
