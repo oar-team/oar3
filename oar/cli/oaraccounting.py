@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import config
 from oar.lib.accounting import (
     check_accounting_update,
     delete_accounting_windows_before,
     delete_all_from_accounting,
 )
+from oar.lib.database import EngineConnector
+from oar.lib.globals import init_oar
+from oar.lib.logging import get_logger
+from oar.lib.models import Model
 
 from .utils import CommandReturns
 
@@ -25,8 +29,24 @@ click.disable_unicode_literals_warning = True
     help="Delete every records the number of given seconds ago.",
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version number.")
+@click.pass_context
 def cli(reinitialize, delete_before, version):
     """Feed accounting table to make usage statistics."""
+
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     # Default window size
     window_size = 86400
 

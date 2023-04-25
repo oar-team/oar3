@@ -6,7 +6,7 @@ import random
 import re
 
 from procset import ProcSet
-from sqlalchemy import distinct, func, text
+from sqlalchemy import distinct, func, insert, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.session import make_transient
 from sqlalchemy.sql import case
@@ -1510,7 +1510,7 @@ def ask_checkpoint_signal_job(session, job_id, signal=None, user=None):
         else:
             user = os.environ["USER"]
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     error_msg = "Cannot checkpoint "
     if signal:
@@ -1524,12 +1524,14 @@ def ask_checkpoint_signal_job(session, job_id, signal=None, user=None):
         if job.state == "Running":
             if signal:
                 add_new_event(
+                    session,
                     "CHECKPOINT",
                     job_id,
                     "User {} requested a checkpoint on the job {}".format(user, job_id),
                 )
             else:
                 add_new_event(
+                    session,
                     "SIGNAL_{}".format(signal),
                     job_id,
                     "User {} requested the signal {} on the job {}".format(
@@ -1582,7 +1584,7 @@ def get_job_types(session, job_id):
 
 
 def add_current_job_types(session, job_id, j_type):
-    req = session.insert(JobType).values({"job_id": job_id, "type": j_type})
+    req = insert(JobType).values({"job_id": job_id, "type": j_type})
     session.execute(req)
 
 
@@ -1748,7 +1750,7 @@ def set_job_state(session, jid, state):
 
 def get_job_duration_in_state(session, jid, state):
     """Get the amount of time in the defined state for a job"""
-    date = tools.get_date()
+    date = tools.get_date(session)
     result = (
         session.query(JobStateLog.date_start, JobStateLog.date_stop)
         .filter(JobStateLog.job_id == jid)
