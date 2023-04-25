@@ -3,10 +3,10 @@ import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.database import ephemeral_session
-from oar.lib.models import Resource, Queue, Job
 from oar.kao.meta_sched import meta_schedule
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job, set_job_state
+from oar.lib.models import Job, Queue, Resource
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -60,13 +60,17 @@ def config_suspend_resume(request, setup_config):
     request.addfinalizer(teardown)
 
 
-def test_suspend_resume_1(monkeypatch, minimal_db_initialization, config_suspend_resume):
+def test_suspend_resume_1(
+    monkeypatch, minimal_db_initialization, config_suspend_resume
+):
     # now = get_date()
-    insert_job(minimal_db_initialization,res=[(60, [("resource_id=4", "")])], properties="")
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
     meta_schedule(minimal_db_initialization, config_suspend_resume, "internal")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
-    set_job_state(minimal_db_initialization,job.id, "Resuming")
+    set_job_state(minimal_db_initialization, job.id, "Resuming")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
     meta_schedule(minimal_db_initialization, config_suspend_resume, "internal")
@@ -74,15 +78,19 @@ def test_suspend_resume_1(monkeypatch, minimal_db_initialization, config_suspend
     # assert(True)
 
 
-def test_suspend_resume_2(monkeypatch, minimal_db_initialization, config_suspend_resume):
-    config = config_suspend_resume    
+def test_suspend_resume_2(
+    monkeypatch, minimal_db_initialization, config_suspend_resume
+):
+    config = config_suspend_resume
     config["JUST_BEFORE_RESUME_EXEC_FILE"] = "sleep 2"
     # now = get_date()
-    insert_job(minimal_db_initialization,res=[(60, [("resource_id=4", "")])], properties="")
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+    )
     meta_schedule(minimal_db_initialization, config, "internal")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
-    set_job_state(minimal_db_initialization,job.id, "Resuming")
+    set_job_state(minimal_db_initialization, job.id, "Resuming")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
     meta_schedule(minimal_db_initialization, config, "internal")

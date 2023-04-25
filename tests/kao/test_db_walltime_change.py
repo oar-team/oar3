@@ -1,16 +1,14 @@
 # coding: utf-8
 import pytest
-
-from oar.kao.platform import Platform
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib.database import ephemeral_session
+from oar.kao.platform import Platform
 from oar.kao.walltime_change import process_walltime_change_requests
+from oar.lib.database import ephemeral_session
 from oar.lib.globals import init_oar
-from oar.lib.models import Resource, Queue
 from oar.lib.job_handling import insert_job
 from oar.lib.logging import get_logger
-from oar.lib.models import EventLog, WalltimeChange
+from oar.lib.models import EventLog, Queue, Resource, WalltimeChange
 
 from ..helpers import insert_running_jobs
 

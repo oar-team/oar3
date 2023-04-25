@@ -113,8 +113,8 @@ def evaluate_jobs_priority(session, config, queues, now, jids, jobs, plt):
             job.priority += nice_weight * max(1.0, job.nice)
 
 
-def multifactor_jobs_sorting(session,config,queues, now, jids, jobs, plt):
-    evaluate_jobs_priority(session,config,queues, now, jids, jobs, plt)
+def multifactor_jobs_sorting(session, config, queues, now, jids, jobs, plt):
+    evaluate_jobs_priority(session, config, queues, now, jids, jobs, plt)
 
     ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
     # print("job priorty")

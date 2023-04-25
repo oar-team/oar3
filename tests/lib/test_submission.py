@@ -222,7 +222,9 @@ def test_add_micheline_jobs_no_quotas_1(
 
 
 # @pytest.mark.usefixtures("active_quotas")
-def test_add_micheline_jobs_quotas_admin(setup_config, minimal_db_initialization, active_quotas):
+def test_add_micheline_jobs_quotas_admin(
+    setup_config, minimal_db_initialization, active_quotas
+):
     config, _, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""

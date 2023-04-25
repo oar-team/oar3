@@ -18,6 +18,7 @@ def insert_terminated_jobs(
         start_time = 30000 + (window_size / 4) * i
         stop_time = start_time + j_duration
         job_id = insert_job(
+            session,
             res=[(j_walltime, [("resource_id=2", "")])],
             properties="",
             command="yop",
@@ -38,7 +39,7 @@ def insert_terminated_jobs(
         )
 
         for r in resources[i : i + 2]:
-            AssignedResource.create(moldable_id=mld_id, resource_id=r.id)
+            AssignedResource.create(session, moldable_id=mld_id, resource_id=r.id)
             print(r.id, r.network_address)
         session.commit()
     if update_accounting:

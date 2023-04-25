@@ -4,12 +4,20 @@ import re
 
 import pytest
 from click.testing import CliRunner
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarstat import cli
-from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
+from oar.lib.database import ephemeral_session
 from oar.lib.event import add_new_event
 from oar.lib.job_handling import insert_job
+from oar.lib.models import (
+    AssignedResource,
+    Job,
+    MoldableJobDescription,
+    Queue,
+    Resource,
+)
 
 from ..helpers import insert_terminated_jobs
 
@@ -17,14 +25,18 @@ NB_JOBS = 5
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    with db.session(ephemeral=True):
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
         # add some resources
         for i in range(10):
-            db["Resource"].create(network_address="localhost")
+            Resource.create(session, network_address="localhost")
 
-        db["Queue"].create(name="default")
-        yield
+        Queue.create(session, name="default")
+        yield session
 
 
 @pytest.fixture(scope="function")
@@ -32,24 +44,27 @@ def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "get_username", lambda: "zozo")
 
 
-def test_version():
+def test_version(minimal_db_initialization, setup_config):
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"])
+    result = runner.invoke(cli, ["-V"], obj=minimal_db_initialization)
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
 
-def test_oarstat_help():
+def test_oarstat_help(minimal_db_initialization, setup_config):
     runner = CliRunner()
-    result = runner.invoke(cli, ["--help"], catch_exceptions=False)
+    result = runner.invoke(
+        cli, ["--help"], catch_exceptions=False, obj=minimal_db_initialization
+    )
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
-def test_oarstat_simple():
+def test_oarstat_simple(minimal_db_initialization, setup_config):
     for _ in range(NB_JOBS):
         insert_job(
+            minimal_db_initialization,
             res=[(60, [("resource_id=4", "")])],
             properties="",
             job_user="Toto",
@@ -57,25 +72,27 @@ def test_oarstat_simple():
         )
 
     runner = CliRunner()
-    result = runner.invoke(cli, catch_exceptions=False)
+    result = runner.invoke(cli, catch_exceptions=False, obj=minimal_db_initialization)
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
-def test_oarstat():
+def test_oarstat(minimal_db_initialization, setup_config):
     for i in range(NB_JOBS):
         id = insert_job(
+            minimal_db_initialization,
             res=[(60, [("resource_id=4", "")])],
             properties="",
             state="Running",
             job_user="Toto",
             message="Relatively long message",
         )
-        assign_resources(id)
+        assign_resources(minimal_db_initialization, id)
 
     for i in range(NB_JOBS):
         id = insert_job(
+            minimal_db_initialization,
             res=[(60, [("resource_id=4", "")])],
             properties="",
             job_user="Toto",
@@ -83,47 +100,53 @@ def test_oarstat():
         )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
+    result = runner.invoke(
+        cli, ["-r"], catch_exceptions=False, obj=minimal_db_initialization
+    )
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
-def test_oarstat_simple_with_resources():
+def test_oarstat_simple_with_resources(minimal_db_initialization, setup_config):
     for i in range(NB_JOBS):
         id = insert_job(
+            minimal_db_initialization,
             res=[(60, [("resource_id=4", "")])],
             properties="",
             job_user="Toto",
             message="Relatively long message",
         )
-        assign_resources(id)
+        assign_resources(minimal_db_initialization, id)
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r"], catch_exceptions=False)
+    result = runner.invoke(
+        cli, ["-r"], catch_exceptions=False, obj=minimal_db_initialization
+    )
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
-def assign_resources(job_id):
+def assign_resources(session, job_id):
     moldable = (
-        db.query(MoldableJobDescription)
+        session.query(MoldableJobDescription)
         .filter(MoldableJobDescription.job_id == job_id)
         .first()
     )
 
-    db.query(Job).filter(Job.id == job_id).update(
+    session.query(Job).filter(Job.id == job_id).update(
         {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
     )
-    resources = db.query(Resource).all()
+    resources = session.query(Resource).all()
     for r in resources[:4]:
-        AssignedResource.create(moldable_id=moldable.id, resource_id=r.id)
+        AssignedResource.create(session, moldable_id=moldable.id, resource_id=r.id)
 
 
-def test_oarstat_full():
+def test_oarstat_full(minimal_db_initialization, setup_config):
     for i in range(NB_JOBS):
         id = insert_job(
+            minimal_db_initialization,
             res=[(60, [("resource_id=4", "")])],
             properties="",
             job_name=f"test-{i}",
@@ -131,21 +154,31 @@ def test_oarstat_full():
             command="oarsub -l ",
             message="Relatively long message",
         )
-        assign_resources(id)
+        assign_resources(minimal_db_initialization, id)
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-f"], catch_exceptions=False)
+    result = runner.invoke(
+        cli, ["-f"], catch_exceptions=False, obj=minimal_db_initialization
+    )
     print("\n" + result.output)
     # assert nb_lines == NB_JOBS + 3
     assert result.exit_code == 0
 
 
-def test_oarstat_sql_property():
+def test_oarstat_sql_property(minimal_db_initialization, setup_config):
     for i in range(NB_JOBS):
-        insert_job(res=[(60, [("resource_id=4", "")])], properties="", user=str(i))
+        insert_job(
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            user=str(i),
+        )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "(job_user='2' OR job_user='3')"], catch_exceptions=False
+        cli,
+        ["--sql", "(job_user='2' OR job_user='3')"],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
     )
     print("\n" + result.output)
     nb_lines = len(result.output.split("\n"))
@@ -157,10 +190,12 @@ def test_oarstat_sql_property():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_oarstat_accounting():
-    insert_terminated_jobs()
+def test_oarstat_accounting(minimal_db_initialization, setup_config):
+    insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
-    result = runner.invoke(cli, ["--accounting", "1970-01-01, 1970-01-20"])
+    result = runner.invoke(
+        cli, ["--accounting", "1970-01-01, 1970-01-20"], obj=minimal_db_initialization
+    )
     str_result = result.output
     print(str_result)
     print(str_result.split("\n"))
@@ -170,10 +205,13 @@ def test_oarstat_accounting():
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_oarstat_accounting_user(monkeypatch_tools):
-    insert_terminated_jobs()
+def test_oarstat_accounting_user(
+    monkeypatch_tools, minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization)
     karma = " Karma=0.345"
     insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=2", "")])],
         properties="",
         command="yop",
@@ -184,7 +222,9 @@ def test_oarstat_accounting_user(monkeypatch_tools):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--accounting", "1970-01-01, 1970-01-20", "--user", "_this_user_"]
+        cli,
+        ["--accounting", "1970-01-01, 1970-01-20", "--user", "_this_user_"],
+        obj=minimal_db_initialization,
     )
     str_result = result.output
     print(str_result)
@@ -195,19 +235,23 @@ def test_oarstat_accounting_user(monkeypatch_tools):
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_oarstat_accounting_error(monkeypatch_tools):
-    insert_terminated_jobs()
+def test_oarstat_accounting_error(
+    monkeypatch_tools, minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
-    result = runner.invoke(cli, ["--accounting", "1970-error, 1970-01-20"])
+    result = runner.invoke(
+        cli, ["--accounting", "1970-error, 1970-01-20"], obj=minimal_db_initialization
+    )
     print(result.output)
 
     assert result.exit_code == 1
 
 
-def test_oarstat_gantt():
-    insert_terminated_jobs(update_accounting=False)
+def test_oarstat_gantt(minimal_db_initialization, setup_config):
+    insert_terminated_jobs(minimal_db_initialization, update_accounting=False)
 
-    jobs = db.query(Job).all()
+    jobs = minimal_db_initialization.query(Job).all()
     # print_query_results(jobs)
 
     for j in jobs:
@@ -215,32 +259,45 @@ def test_oarstat_gantt():
         # print(j.id, j.assigned_moldable_job)
     # import pdb; pdb.set_trace(# )
     runner = CliRunner()
-    result = runner.invoke(cli, ["--gantt", "1970-01-01 01:20:00, 1970-01-20 00:00:00"])
+    result = runner.invoke(
+        cli,
+        ["--gantt", "1970-01-01 01:20:00, 1970-01-20 00:00:00"],
+        obj=minimal_db_initialization,
+    )
     str_result = result.output
     print(str_result)
     assert re.match(".*10 days.*", str_result.split("\n")[3])
 
 
-def test_oarstat_events():
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])])
-    add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
+def test_oarstat_events(minimal_db_initialization, setup_config):
+    job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
+    add_new_event(minimal_db_initialization, "EXECUTE_JOB", job_id, "Have a good day !")
     runner = CliRunner()
-    result = runner.invoke(cli, ["--events", "--job", str(job_id)])
+    result = runner.invoke(
+        cli, ["--events", "--job", str(job_id)], obj=minimal_db_initialization
+    )
 
     str_result = result.output.splitlines()
-    print("\n" + result.output)
+
+    print("lala: \n" + str(result))
     assert re.match(".*EXECUTE_JOB.*", str_result[3])
 
 
-def test_oarstat_events_array():
+def test_oarstat_events_array(minimal_db_initialization, setup_config):
     job_ids = []
     for _ in range(5):
-        job_id = insert_job(res=[(60, [("resource_id=4", "")])], array_id=10)
-        add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
+        job_id = insert_job(
+            minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=10
+        )
+        add_new_event(
+            minimal_db_initialization, "EXECUTE_JOB", job_id, "Have a good day !"
+        )
         job_ids.append(job_id)
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["--events", "--array", str(10)])
+    result = runner.invoke(
+        cli, ["--events", "--array", str(10)], obj=minimal_db_initialization
+    )
 
     print("\n" + result.output)
     # Remove the headers
@@ -249,16 +306,23 @@ def test_oarstat_events_array():
     assert re.match(".*EXECUTE_JOB.*", str_result)
 
 
-def test_oarstat_events_array_json():
+def test_oarstat_events_array_json(minimal_db_initialization, setup_config):
     job_ids = []
     for _ in range(5):
-        job_id = insert_job(res=[(60, [("resource_id=4", "")])], array_id=100)
-        add_new_event("EXECUTE_JOB", job_id, "Have a good day !")
+        job_id = insert_job(
+            minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=100
+        )
+        add_new_event(
+            minimal_db_initialization, "EXECUTE_JOB", job_id, "Have a good day !"
+        )
         job_ids.append(job_id)
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--events", "--array", str(100), "-J"], catch_exceptions=False
+        cli,
+        ["--events", "--array", str(100), "-J"],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
     )
 
     print("lla\n" + result.output)
@@ -270,32 +334,40 @@ def test_oarstat_events_array_json():
     assert result.exit_code == 0
 
 
-def test_oarstat_events_no_job_ids():
+def test_oarstat_events_no_job_ids(minimal_db_initialization, setup_config):
     runner = CliRunner()
-    result = runner.invoke(cli, ["--events", "--array", str(20)])
+    result = runner.invoke(
+        cli, ["--events", "--array", str(20)], obj=minimal_db_initialization
+    )
     str_result = result.output
     print(str_result)
     assert re.match(".*No job ids specified.*", str_result)
 
 
-def test_oarstat_properties():
-    insert_terminated_jobs(update_accounting=False)
-    job_id = db.query(Job.id).first()[0]
+def test_oarstat_properties(minimal_db_initialization, setup_config):
+    insert_terminated_jobs(minimal_db_initialization, update_accounting=False)
+    job_id = minimal_db_initialization.query(Job.id).first()[0]
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--properties", "--job", str(job_id)], catch_exceptions=False
+        cli,
+        ["--properties", "--job", str(job_id)],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
     )
     str_result = result.output
     print("res:\n" + str_result)
     assert re.match(".*network_address.*", str_result)
 
 
-def test_oarstat_properties_json():
-    insert_terminated_jobs(update_accounting=False)
-    job_id = db.query(Job.id).first()[0]
+def test_oarstat_properties_json(minimal_db_initialization, setup_config):
+    insert_terminated_jobs(minimal_db_initialization, update_accounting=False)
+    job_id = minimal_db_initialization.query(Job.id).first()[0]
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--properties", "--job", str(job_id), "-J"], catch_exceptions=False
+        cli,
+        ["--properties", "--job", str(job_id), "-J"],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
     )
     parsed_json = json.loads(result.output)
     print(parsed_json)
@@ -303,21 +375,25 @@ def test_oarstat_properties_json():
     assert len(parsed_json[str(job_id)]) == 2
 
 
-def test_oarstat_state():
-    job_id = insert_job(res=[(60, [("resource_id=2", "")])])
+def test_oarstat_state(minimal_db_initialization, setup_config):
+    job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
     runner = CliRunner()
-    result = runner.invoke(cli, ["--state", "--job", str(job_id)])
+    result = runner.invoke(
+        cli, ["--state", "--job", str(job_id)], obj=minimal_db_initialization
+    )
     str_result = result.output
     print(str_result)
     assert re.match(".*Waiting.*", str_result)
 
 
-def test_oarstat_state_json():
-    job_id = insert_job(res=[(60, [("resource_id=2", "")])])
-    job_id1 = insert_job(res=[(60, [("resource_id=2", "")])])
+def test_oarstat_state_json(minimal_db_initialization, setup_config):
+    job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+    job_id1 = insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--state", "--job", str(job_id), "--job", str(job_id1), "--json"]
+        cli,
+        ["--state", "--job", str(job_id), "--job", str(job_id1), "--json"],
+        obj=minimal_db_initialization,
     )
     str_result = result.output
     try:
@@ -328,11 +404,15 @@ def test_oarstat_state_json():
     assert result.exit_code == 0
 
 
-def test_oarstat_simple_json():
+def test_oarstat_simple_json(minimal_db_initialization, setup_config):
     for _ in range(NB_JOBS):
-        insert_job(res=[(60, [("resource_id=4", "")])], properties="")
+        insert_job(
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+        )
     runner = CliRunner()
-    result = runner.invoke(cli, ["--json"])
+    result = runner.invoke(cli, ["--json"], obj=minimal_db_initialization)
     str_result = result.output
     print(str_result)
     try:
@@ -343,15 +423,21 @@ def test_oarstat_simple_json():
     assert result.exit_code == 0
 
 
-def test_oarstat_full_json():
+def test_oarstat_full_json(minimal_db_initialization, setup_config):
     for _ in range(NB_JOBS):
-        insert_job(res=[(60, [("resource_id=4", "")])], user="toto", properties="")
+        insert_job(
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            user="toto",
+            properties="",
+        )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["--json", "--full"])
+    result = runner.invoke(cli, ["--json", "--full"], obj=minimal_db_initialization)
     str_result = result.output
     print(str_result)
     try:
+        print(str_result)
         parsed_json = json.loads(str_result)
         assert len(parsed_json) == NB_JOBS
         for job in parsed_json:
@@ -362,15 +448,20 @@ def test_oarstat_full_json():
     assert result.exit_code == 0
 
 
-def test_oarstat_json_only_one_job():
+def test_oarstat_json_only_one_job(minimal_db_initialization, setup_config):
     for _ in range(NB_JOBS):
         jid = insert_job(
-            res=[(60, [("resource_id=4", "")])], user="toto", properties=""
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            user="toto",
+            properties="",
         )
 
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--json", "--full", "-j", str(jid), "-j", str(jid - 1)]
+        cli,
+        ["--json", "--full", "-j", str(jid), "-j", str(jid - 1)],
+        obj=minimal_db_initialization,
     )
     str_result = result.output
 
@@ -384,21 +475,27 @@ def test_oarstat_json_only_one_job():
     assert result.exit_code == 0
 
 
-def test_oarstat_job_id_array_error():
+def test_oarstat_job_id_array_error(minimal_db_initialization, setup_config):
     runner = CliRunner()
-    result = runner.invoke(cli, ["-j", "1", "--array", "1"])
+    result = runner.invoke(
+        cli, ["-j", "1", "--array", "1"], obj=minimal_db_initialization
+    )
     print(result.output)
     assert result.exit_code == 1
 
 
-def test_oarstat_job_id_error():
+def test_oarstat_job_id_error(minimal_db_initialization, setup_config):
     # Error jobs
     jid = insert_job(
-        res=[(60, [("resource_id=4", "")])], user="toto", properties="", state="Error"
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        user="toto",
+        properties="",
+        state="Error",
     )
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["-j", str(jid), "-J"])
+    result = runner.invoke(cli, ["-j", str(jid), "-J"], obj=minimal_db_initialization)
 
     print(result.output)
     str_result = result.output

@@ -11,22 +11,27 @@ from rich import box
 from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import db
 from oar.lib.accounting import (
     get_accounting_summary,
     get_accounting_summary_byproject,
     get_last_project_karma,
 )
+from oar.lib.basequery import BaseQueryCollection
+from oar.lib.database import EngineConnector
 from oar.lib.event import get_jobs_events
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_cpuset_name,
     get_job_resources_properties,
     get_jobs_state,
 )
+from oar.lib.logging import get_logger
+from oar.lib.models import Model
 from oar.lib.tools import (
     check_resource_system_property,
     get_duration,
@@ -57,7 +62,7 @@ STATE2CHAR = {
 }
 
 
-def get_job_full(jobs) -> List[str]:
+def get_job_full(session, jobs) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
@@ -69,7 +74,7 @@ def get_job_full(jobs) -> List[str]:
     # First yield the headers
     yield headers
 
-    now = tools.get_date()
+    now = tools.get_date(session)
     for job in jobs:
         # Compute job duration
         duration = 0
@@ -94,7 +99,7 @@ def get_job_full(jobs) -> List[str]:
         yield job_line
 
 
-def get_table_lines_jobs(jobs, arg) -> List[str]:
+def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
@@ -111,7 +116,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
     # First yield the headers
     yield headers
 
-    now = tools.get_date()
+    now = tools.get_date(session)
     for job in jobs:
         # Compute job duration
         duration = 0
@@ -173,6 +178,7 @@ def gather_all_user_accounting(items, arg) -> List[str]:
 
 
 def print_table(
+    session,
     objects: List[any],
     gather_prop: Generator[List[str], None, None],
     min_column_size: int = 7,
@@ -182,7 +188,7 @@ def print_table(
     Use Rich to print a table in the terminal
     """
     table = Table(title="")
-    lines_generator = gather_prop(objects, extra_arg)
+    lines_generator = gather_prop(session, objects, extra_arg)
 
     # The first yielded value should be the header list
     lines = [next(lines_generator)]
@@ -198,11 +204,12 @@ def print_table(
     console.print(table)
 
 
-def print_jobs(legacy, jobs, json, show_resources=False, full=False):
+def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
     console = Console()
+    queryCollection = BaseQueryCollection(session)
 
     if full or show_resources:
-        res = db.queries.get_assigned_jobs_resources(jobs)
+        res = queryCollection.get_assigned_jobs_resources(jobs)
         for job in jobs:
             if job.id in res:
                 nodes = NodeSet.fromlist(
@@ -240,7 +247,9 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
                 )
             console.print()
     elif legacy:
-        print_table(jobs, get_table_lines_jobs, extra_arg={"resources": show_resources})
+        print_table(
+            session, jobs, get_table_lines_jobs, extra_arg={"resources": show_resources}
+        )
     else:
         print(jobs)
 
@@ -329,15 +338,15 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
         cmd_ret.exit()
 
 
-def print_events(cmd_ret, job_ids, array_id, json):
+def print_events(session, cmd_ret, job_ids, array_id, json):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
 
     if job_ids:
-        events = get_jobs_events(job_ids)
+        events = get_jobs_events(session, job_ids)
         if not json:
 
-            def gather_events(events, extra_args={}):
+            def gather_events(_, events, extra_args={}):
                 yield ["Date", "job id", "Type", "Description"]
                 for event in events:
                     yield [
@@ -347,7 +356,7 @@ def print_events(cmd_ret, job_ids, array_id, json):
                         str(event.description),
                     ]
 
-            print_table(events, gather_events)
+            print_table(session, events, gather_events)
         else:
             events_per_jobs = dict()
             for event in events:
@@ -365,16 +374,16 @@ def print_events(cmd_ret, job_ids, array_id, json):
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(cmd_ret, job_ids, array_id, json):
+def print_properties(session, cmd_ret, job_ids, array_id, json):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
 
     if job_ids:
         # Gather a list of [(Resource, job_id), ...]
         resources_properties = [
             (p, job_id)
             for job_id in job_ids
-            for p in get_job_resources_properties(job_id)
+            for p in get_job_resources_properties(session, job_id)
         ]
 
         # For each job, construct the list of its resources properties
@@ -415,12 +424,12 @@ def print_properties(cmd_ret, job_ids, array_id, json):
         cmd_ret.warning("No job ids specified")
 
 
-def print_state(cmd_ret, job_ids, array_id, json):
+def print_state(session, cmd_ret, job_ids, array_id, json):
     # TODO json mode
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
     if job_ids:
-        job_ids_state = get_jobs_state(job_ids)
+        job_ids_state = get_jobs_state(session, job_ids)
         if json:
             json_dict = {}
             for i, job_id_state in enumerate(job_ids_state):
@@ -430,7 +439,7 @@ def print_state(cmd_ret, job_ids, array_id, json):
             # import pdb; pdb.set_trace()
             print(dumps(json_dict))
         else:
-            for job_id_state in get_jobs_state(job_ids):
+            for job_id_state in get_jobs_state(session, job_ids):
                 job_id, state = job_id_state
                 print("{}: {}".format(job_id, state))
     else:
@@ -510,7 +519,9 @@ class UserOption(click.Command):
 )
 @click.option("-J", "--json", is_flag=True, help="print result in JSON format")
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
+@click.pass_context
 def cli(
+    ctx,
     job,
     full,
     state,
@@ -526,7 +537,24 @@ def cli(
     json,
     version,
 ):
+
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     cmd_ret = CommandReturns(cli)
+
+    queryCollection = BaseQueryCollection(session)
 
     # Print OAR version and exit
     if version:
@@ -552,11 +580,11 @@ def cli(
         cmd_ret.exit()
 
     if events:
-        print_events(cmd_ret, job_ids, array_id, json)
+        print_events(session, cmd_ret, job_ids, array_id, json)
     elif properties:
-        print_properties(cmd_ret, job_ids, array_id, json)
+        print_properties(session, cmd_ret, job_ids, array_id, json)
     elif state:
-        print_state(cmd_ret, job_ids, array_id, json)
+        print_state(session, cmd_ret, job_ids, array_id, json)
     else:
         start_time = None
         stop_time = None
@@ -570,13 +598,13 @@ def cli(
             start_time = sql_to_local(date1)
             stop_time = sql_to_local(date2)
 
-        jobs = db.queries.get_jobs_for_user(
+        jobs = queryCollection.get_jobs_for_user(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
         for job in jobs:
-            job.cpuset_name = get_job_cpuset_name(job.id, job=job)
+            job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
 
-        print_jobs(True, jobs, json, show_resources, full)
+        print_jobs(session, True, jobs, json, show_resources, full)
 
     cmd_ret.exit()

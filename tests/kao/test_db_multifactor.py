@@ -1,15 +1,15 @@
 from random import sample
 from tempfile import mkstemp
+
+import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib.database import ephemeral_session
-from oar.lib.models import Resource, GanttJobsPrediction
-import pytest
-
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
+from oar.lib.models import GanttJobsPrediction, Resource
 
 from .test_db_fairshare import generate_accountings
 
@@ -22,7 +22,7 @@ def minimal_db_initialization(request, setup_config):
 
     with ephemeral_session(scoped, engine, bind=engine) as session:
         for i in range(5):
-            Resource.create(session,network_address="localhost")
+            Resource.create(session, network_address="localhost")
         yield session
 
 
@@ -60,8 +60,11 @@ def test_db_multifactor_fairshare(minimal_db_initialization, oar_conf):
     print("users:", users)
     jid_2_u = {}
     for i, user in enumerate(users):
-        insert_job(minimal_db_initialization,
-            job_user="zozo" + user, res=[(60, [("resource_id=4", "")])], properties=""
+        insert_job(
+            minimal_db_initialization,
+            job_user="zozo" + user,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
         )
         jid_2_u[i + 1] = int(user)
 
@@ -73,7 +76,8 @@ def test_db_multifactor_fairshare(minimal_db_initialization, oar_conf):
     schedule_cycle(minimal_db_initialization, config, plt, plt.get_time())
 
     req = (
-        minimal_db_initialization.query(GanttJobsPrediction).order_by(GanttJobsPrediction.start_time)
+        minimal_db_initialization.query(GanttJobsPrediction)
+        .order_by(GanttJobsPrediction.start_time)
         .all()
     )
     flag = True
