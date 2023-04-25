@@ -522,7 +522,7 @@ def get_after_sched_no_AR_jobs(
     )
 
     _, jobs_lst, _, _ = extract_scheduled_jobs(
-        result, resource_set, job_security_time, now
+        session, result, resource_set, job_security_time, now
     )
 
     return jobs_lst

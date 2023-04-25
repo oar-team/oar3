@@ -272,7 +272,7 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
             '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}'
         )
 
-    Quotas.enable()
+    Quotas.enable(config)
 
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = res
@@ -321,7 +321,7 @@ def test_quotas_two_jobs_job_type_proc():
     with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
         quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "job_types": ["yop"]}')
 
-    Quotas.enable()
+    Quotas.enable(config)
 
     print(Quotas.default_rules, Quotas.job_types)
 

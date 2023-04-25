@@ -27,6 +27,7 @@ logger = get_logger(log, "oar.kao.quotas")
 
 class Calendar(object):
     def __init__(self, json_quotas, config):
+        self.config = config
         self.quotas_period = config["QUOTAS_PERIOD"]
         self.period_end = 0  # period_end = period_begin = quotas_period
 
@@ -517,6 +518,7 @@ class Quotas(object):
     @classmethod
     def enable(cls, config, resource_set=None):
         cls.enabled = True
+
         if "QUOTAS_ALL_NB_RESOURCES_MODE" in config:
             mode = config["QUOTAS_ALL_NB_RESOURCES_MODE"]
         else:

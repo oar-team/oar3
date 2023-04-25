@@ -112,9 +112,13 @@ def compare_slots_val_ref(slots, v):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def oar_conf(request):
+def oar_conf(request, setup_config):
+    config, _, _ = setup_config
+
     config["QUOTAS"] = "yes"
     # config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks
+
+    yield config
 
     def remove_quotas():
         config["QUOTAS"] = "no"
@@ -138,8 +142,9 @@ def period_weekstart():
     return int(datetime.combine(t_weekstart_day_dt, datetime.min.time()).timestamp())
 
 
-def test_calendar_periodical_fromJson():
-    calendar = Calendar(rules_example_full)
+def test_calendar_periodical_fromJson(oar_conf):
+
+    calendar = Calendar(rules_example_full, oar_conf)
     print()
     calendar.show()
     check, periodical_id = calendar.check_periodicals()
@@ -147,8 +152,8 @@ def test_calendar_periodical_fromJson():
     assert check
 
 
-def test_calendar_periodical_default_fromJson():
-    calendar = Calendar(rules_default_example)
+def test_calendar_periodical_default_fromJson(oar_conf):
+    calendar = Calendar(rules_default_example, oar_conf)
     print()
     calendar.show()
     check, periodical_id = calendar.check_periodicals()
@@ -156,8 +161,8 @@ def test_calendar_periodical_default_fromJson():
     assert check
 
 
-def test_calendar_periodical_only_default_fromJson():
-    calendar = Calendar(rules_only_default_example)
+def test_calendar_periodical_only_default_fromJson(oar_conf):
+    calendar = Calendar(rules_only_default_example, config)
     print()
     calendar.show()
     check, periodical_id = calendar.check_periodicals()
@@ -172,10 +177,11 @@ def test_calendar_periodical_fromJson_bad():
     # ["09:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
 
 
-def test_calendar_rules_at_1():
+def test_calendar_rules_at_1(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     Quotas.calendar.show()
     t0 = period_weekstart()
 
@@ -185,13 +191,14 @@ def test_calendar_rules_at_1():
     assert remaining_period == 259200
 
 
-def test_calendar_rules_at_2():
+def test_calendar_rules_at_2(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
 
     (example_w_oneshot, t, _, _, _) = add_oneshot_to_simple_example()
 
-    Quotas.calendar = Calendar(example_w_oneshot)
+    Quotas.calendar = Calendar(example_w_oneshot, config)
     Quotas.calendar.show(t)
 
     quotas_rules_id, remaining_period = Quotas.calendar.rules_at(t)
@@ -200,10 +207,11 @@ def test_calendar_rules_at_2():
     assert remaining_period == 129600
 
 
-def test_calendar_simple_slotSet_1():
+def test_calendar_simple_slotSet_1(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     res = ProcSet(*[(1, 32)])
     t0 = period_weekstart()
     ss = SlotSet(Slot(1, 0, 0, res, t0, t0 + 3 * 86400))
@@ -211,10 +219,11 @@ def test_calendar_simple_slotSet_1():
     assert ss.slots[1].quotas_rules_id == 0
 
 
-def test_calendar_simple_slotSet_2():
+def test_calendar_simple_slotSet_2(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     check, periodical_id = Quotas.calendar.check_periodicals()
     res = ProcSet(*[(1, 32)])
     t0 = period_weekstart()
@@ -226,10 +235,11 @@ def test_calendar_simple_slotSet_2():
     assert ss.slots[1].e - ss.slots[1].b == 3 * 86400 - 1
 
 
-def test_calendar_simple_slotSet_3():
+def test_calendar_simple_slotSet_3(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     check, periodical_id = Quotas.calendar.check_periodicals()
     res = ProcSet(*[(1, 32)])
     t0 = period_weekstart()
@@ -239,10 +249,11 @@ def test_calendar_simple_slotSet_3():
     assert ss.slots[1].e - ss.slots[1].b == 3 * 86400 - 1
 
 
-def test_calendar_simple_slotSet_4():
+def test_calendar_simple_slotSet_4(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     Quotas.calendar.show()
     check, periodical_id = Quotas.calendar.check_periodicals()
     print(check, periodical_id)
@@ -272,10 +283,11 @@ def test_calendar_simple_slotSet_4():
     assert v == [(1, 259200, 0), (2, 345600, 1), (3, 259200, 0), (4, 345600, 1)]
 
 
-def test_calendar_simple_slotSet_5():
+def test_calendar_simple_slotSet_5(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     Quotas.calendar.show()
     check, periodical_id = Quotas.calendar.check_periodicals()
     print(check, periodical_id)
@@ -311,7 +323,8 @@ def test_calendar_simple_slotSet_5():
     ]
 
 
-def test_temporal_slotSet_oneshot():
+def test_temporal_slotSet_oneshot(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
 
@@ -320,7 +333,7 @@ def test_temporal_slotSet_oneshot():
 
     (rules_example_w_oneshot, t, tw, _, _) = add_oneshot_to_simple_example()
 
-    Quotas.calendar = Calendar(rules_example_w_oneshot)
+    Quotas.calendar = Calendar(rules_example_w_oneshot, config)
 
     Quotas.calendar.show(tw + 3600)
 
@@ -355,10 +368,11 @@ def test_calendar_simple_slotSet_multi_slot_1():
     assert True
 
 
-def test_check_slots_quotas_1():
+def test_check_slots_quotas_1(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     Quotas.calendar.show()
     check, periodical_id = Quotas.calendar.check_periodicals()
     print(check, periodical_id)
@@ -385,10 +399,11 @@ def test_check_slots_quotas_1():
     assert res == (False, "different quotas rules over job's time", "", 0)
 
 
-def test_check_slots_quotas_2():
+def test_check_slots_quotas_2(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     Quotas.calendar.show()
     check, periodical_id = Quotas.calendar.check_periodicals()
     print(check, periodical_id)
@@ -418,10 +433,11 @@ def test_check_slots_quotas_2():
     assert res == (False, "nb resources quotas failed", ("*", "*", "*", "/"), 16)
 
 
-def test_temporal_quotas_4_jobs_rule_nb_res_1():
+def test_temporal_quotas_4_jobs_rule_nb_res_1(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = ProcSet(*res)
 
@@ -460,7 +476,8 @@ def test_temporal_quotas_4_jobs_rule_nb_res_1():
     assert j4.res_set == ProcSet(*[(1, 8)])
 
 
-def test_temporal_quotas_oneshot_1_job_rule_nb_res_1():
+def test_temporal_quotas_oneshot_1_job_rule_nb_res_1(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
 
@@ -469,7 +486,7 @@ def test_temporal_quotas_oneshot_1_job_rule_nb_res_1():
 
     (rules_example_w_oneshot, t, tw, _, _) = add_oneshot_to_simple_example()
 
-    Quotas.calendar = Calendar(rules_example_w_oneshot)
+    Quotas.calendar = Calendar(rules_example_w_oneshot, config)
 
     t1 = tw + 7 * 86400 - 1
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), tw, t1))
@@ -495,14 +512,15 @@ def test_temporal_quotas_oneshot_1_job_rule_nb_res_1():
     assert j.res_set == ProcSet(*[(1, 32)])
 
 
-def test_temporal_quotas_job_no_quotas():
+def test_temporal_quotas_job_no_quotas(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
 
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = ProcSet(*res)
 
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
 
     t0 = period_weekstart()
     t1 = t0 + 7 * 86400 - 1
@@ -521,10 +539,11 @@ def test_temporal_quotas_job_no_quotas():
     assert j.res_set == ProcSet(*[(1, 32)])
 
 
-def test_temporal_quotas_window_time_limit_reached():
+def test_temporal_quotas_window_time_limit_reached(oar_conf):
+    config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
     Quotas.enabled = True
-    Quotas.calendar = Calendar(rules_example_simple)
+    Quotas.calendar = Calendar(rules_example_simple, config)
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = ProcSet(*res)
 

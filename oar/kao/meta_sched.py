@@ -72,7 +72,7 @@ from oar.lib.queue import get_queues_groupby_priority, stop_queue
 from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.hulot import HulotClient
 
-#FIXME global config
+# FIXME global config
 config, _, log = init_oar()
 
 # Constant duration time of a besteffort job *)
@@ -468,6 +468,7 @@ def check_reservation_jobs(
 
 
 def check_besteffort_jobs_to_kill(
+    session,
     jobs_to_launch,
     rid2jid_to_launch,
     current_time_sec,
@@ -490,7 +491,7 @@ def check_besteffort_jobs_to_kill(
             be_job = besteffort_rid2job[rid]
             job_to_launch = jobs_to_launch[job_id]
 
-            if is_timesharing_for_two_jobs(be_job, job_to_launch):
+            if is_timesharing_for_two_jobs(session, be_job, job_to_launch):
                 logger.debug(
                     "Resource "
                     + str(rid)
@@ -533,11 +534,12 @@ def check_besteffort_jobs_to_kill(
                         )
 
                         add_new_event(
+                            session,
                             "BESTEFFORT_KILL",
                             be_job.id,
                             "kill the besteffort job " + str(be_job.id),
                         )
-                        frag_job(be_job.id)
+                        frag_job(session, be_job.id)
 
                     fragged_jobs.append(be_job.id)
                     return_code = 1
@@ -617,6 +619,7 @@ def update_gantt_visualization(session):
 
 
 def call_external_scheduler(
+    session,
     binpath,
     scheduled_jobs,
     all_slot_sets,
@@ -696,7 +699,7 @@ def call_external_scheduler(
             + " Disabling queue {} (see `oarnotify')".format(queue.name)
         )
         # stop queue
-        stop_queue(queue.name)
+        stop_queue(session, queue.name)
 
     if sched_exit_code != 0:
         logger.error(
@@ -708,11 +711,11 @@ def call_external_scheduler(
             + "{} (see `oarnotify')".format(queue.name)
         )
         # stop queue
-        stop_queue(queue.name)
+        stop_queue(session, queue.name)
 
     # retrieve jobs and assignement decision from previous scheduling step
     scheduled_jobs = get_after_sched_no_AR_jobs(
-        queue.name, resource_set, job_security_time, initial_time_sec
+        session, queue.name, resource_set, job_security_time, initial_time_sec
     )
 
     if scheduled_jobs != []:
@@ -815,7 +818,9 @@ def nodes_energy_saving(session, config, current_time_sec):
         # Get nodes which the scheduler wants to schedule jobs to,
         # but which are in the Absent state, to wake them up
         wakeup_time = int(config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"])
-        nodes_2_wakeup = get_gantt_hostname_to_wake_up(session, current_time_sec, wakeup_time)
+        nodes_2_wakeup = get_gantt_hostname_to_wake_up(
+            session, current_time_sec, wakeup_time
+        )
 
     return {"halt": nodes_2_halt, "wakeup": nodes_2_wakeup}
 
@@ -955,6 +960,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             for queue in active_queues:
                 if mode == "external":  # pragma: no cover
                     call_external_scheduler(
+                        session,
                         binpath,
                         scheduled_jobs,
                         all_slot_sets,
@@ -977,7 +983,11 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                     logger.error("Specified mode is unknown: " + mode)
 
                 handle_waiting_reservation_jobs(
-                    queue.name, resource_set, job_security_time, current_time_sec
+                    session,
+                    queue.name,
+                    resource_set,
+                    job_security_time,
+                    current_time_sec,
                 )
 
     (
@@ -1001,6 +1011,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     if (
         check_besteffort_jobs_to_kill(
+            session,
             jobs_to_launch_with_security_time,  # Jobs to launch or about to be launched
             rid2jid_to_launch,
             current_time_sec,

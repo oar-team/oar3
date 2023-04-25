@@ -113,7 +113,6 @@ def active_energy_saving(request, setup_config):
     request.addfinalizer(teardown)
 
 
-
 def period_weekstart():
     t_dt = datetime.fromtimestamp(time.time()).date()
     t_weekstart_day_dt = t_dt - timedelta(days=t_dt.weekday())
