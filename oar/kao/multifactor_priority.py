@@ -4,13 +4,13 @@ from oar.kao.karma import evaluate_jobs_karma
 from oar.lib.globals import init_oar
 from oar.lib.logging import get_logger
 
-config, _, log = init_oar()
+_, _, log = init_oar()
 
 
 logger = get_logger(log, "oar.kao.priorty")
 
 
-def evaluate_jobs_priority(queues, now, jids, jobs, plt):
+def evaluate_jobs_priority(session, config, queues, now, jids, jobs, plt):
     """
     Job's Priority = Sum of (criterion_weight * criterion_factor) where criteria are:
     age, queue, work, size, karma, qos, nice
@@ -75,7 +75,7 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
         nice_weight = yaml_priority["nice_weight"]
 
     # evalute and retrieve jobs' karma for fair-share
-    evaluate_jobs_karma(queues, now, jids, jobs, plt)
+    evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt)
 
     for job in jobs.values():
         job.priority = age_weight * max(1.0, age_coef * (now - job.submission_time))
@@ -113,8 +113,8 @@ def evaluate_jobs_priority(queues, now, jids, jobs, plt):
             job.priority += nice_weight * max(1.0, job.nice)
 
 
-def multifactor_jobs_sorting(queues, now, jids, jobs, plt):
-    evaluate_jobs_priority(queues, now, jids, jobs, plt)
+def multifactor_jobs_sorting(session,config,queues, now, jids, jobs, plt):
+    evaluate_jobs_priority(session,config,queues, now, jids, jobs, plt)
 
     ordered_jids = sorted(jids, key=lambda jid: jobs[jid].priority, reverse=True)
     # print("job priorty")

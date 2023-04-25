@@ -1114,13 +1114,13 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     if "Resuming" in jobs_by_state:
         logger.warning("Resuming job is NOT ENTIRELY IMPLEMENTED")
         for job in jobs_by_state["Resuming"]:
-            other_jobs = get_jobs_on_resuming_job_resources(job.id)
+            other_jobs = get_jobs_on_resuming_job_resources(session, job.id)
             # TODO : look for timesharing other jobs. What do we do?????
             if other_jobs == []:
                 # We can resume the job
                 logger.debug("[" + str(job.id) + "] Resuming job")
                 if "noop" in job.types:
-                    resume_job_action(job.id)
+                    resume_job_action(session,job.id)
                     logger.debug("[" + str(job.id) + "] Resume NOOP job OK")
                 else:
                     script = config["JUST_BEFORE_RESUME_EXEC_FILE"]
@@ -1146,7 +1146,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                         logger.error(
                             str(e) + "[" + str(job.id) + "] Suspend script timeouted"
                         )
-                        add_new_event(
+                        add_new_event(session,
                             "RESUME_SCRIPT_ERROR", job.id, "Suspend script timeouted"
                         )
                     if return_code != 0:
@@ -1157,8 +1157,8 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                             + str(return_code)
                         )
                         logger.error(str_error)
-                        add_new_event("RESUME_SCRIPT_ERROR", job.id, str_error)
-                        frag_job(job.id)
+                        add_new_event(session,"RESUME_SCRIPT_ERROR", job.id, str_error)
+                        frag_job(session,job.id)
                         tools.notify_almighty("Qdel")
                     skip = 1
 

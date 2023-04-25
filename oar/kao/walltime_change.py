@@ -16,15 +16,15 @@ _, _, log = init_oar()
 logger = get_logger(log, "oar.kao.walltime_change")
 
 
-def process_walltime_change_requests(config, plt):
+def process_walltime_change_requests(session, config, plt):
     now = plt.get_time()
     walltime_change_apply_time = config["WALLTIME_CHANGE_APPLY_TIME"]
     walltime_increment = config["WALLTIME_INCREMENT"]
 
-    job_wtcs = get_jobs_with_walltime_change()
+    job_wtcs = get_jobs_with_walltime_change(session)
 
     for job_id, job in job_wtcs.items():
-        suspended = get_job_suspended_sum_duration(job_id, now)
+        suspended = get_job_suspended_sum_duration(session, job_id, now)
         fit = job.pending
         if fit > 0:
             apply_time = get_conf(
@@ -57,10 +57,10 @@ def process_walltime_change_requests(config, plt):
             )
             from_ = job.start_time + job.walltime + suspended
             to = from_ + fit
-            job_types = get_job_types(job_id)
+            job_types = get_job_types(session, job_id)
 
             if "inner" in job_types:
-                container_job = get_running_job(int(job_types["inner"]))
+                container_job = get_running_job(session, int(job_types["inner"]))
                 if container_job:
                     if (
                         container_job.start_time + container_job.moldable_walltime
@@ -92,6 +92,7 @@ def process_walltime_change_requests(config, plt):
 
             fit = (
                 get_possible_job_end_time_in_interval(
+                    session,
                     from_,
                     to,
                     job.rids,
@@ -130,6 +131,7 @@ def process_walltime_change_requests(config, plt):
         logger.debug("[{}] {}".format(job_id, message))
 
         update_walltime_change_request(
+            session,
             job_id,
             new_pending,
             "NO" if (new_pending == 0) else None,
@@ -143,4 +145,4 @@ def process_walltime_change_requests(config, plt):
             else 0,
         )
 
-        change_walltime(job_id, new_walltime, message)
+        change_walltime(session, job_id, new_walltime, message)

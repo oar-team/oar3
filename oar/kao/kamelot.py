@@ -30,7 +30,7 @@ def jobs_sorting(session, config, queues, now, waiting_jids, waiting_jobs, plt):
                 session, config, queues, now, waiting_jids, waiting_jobs, plt
             )
         elif config["JOB_PRIORITY"] == "MULTIFACTOR":
-            waiting_ordered_jids = multifactor_jobs_sorting(
+            waiting_ordered_jids = multifactor_jobs_sorting(session, config,
                 queues, now, waiting_jids, waiting_jobs, plt
             )
 
