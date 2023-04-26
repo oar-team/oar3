@@ -10,7 +10,7 @@ import click
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
-from oar.lib import Job, config, db
+from oar.lib.models import Job
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
@@ -52,23 +52,23 @@ signal.signal(signal.SIGHUP, qdel)
 signal.signal(signal.SIGPIPE, qdel)
 
 
-def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
+def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
     """Connect to a job and give the shell of the user on the remote host."""
     xauth_path = (
         os.environ["OARXAUTHLOCATION"] if "OARXAUTHLOCATION" in os.environ else None
     )
     luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if ((luser == job.user) or (luser == "oar")) and (job.state == "Running"):
-        types = get_job_types(job_id)
+        types = get_job_types(session,job_id)
         # No operation job type
         if "noop" in types:
             cmd_ret.warning(" It is not possible to connect to a NOOP job.")
             cmd_ret.exit(17)
 
-        hosts = get_job_current_hostnames(job_id)
+        hosts = get_job_current_hostnames(session,job_id)
         host_to_connect_via_ssh = hosts[0]
 
         # Deploy, cosystem and no host part
@@ -88,11 +88,11 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             and ("deploy" not in types)
             and hosts
         ):
-            os.environ["OAR_CPUSET"] = cpuset_path + "/" + get_job_cpuset_name(job_id)
+            os.environ["OAR_CPUSET"] = cpuset_path + "/" + get_job_cpuset_name(session, job_id)
         else:
             os.environ["OAR_CPUSET"] = ""
 
-        moldable = get_current_moldable_job(job.assigned_moldable_job)
+        moldable = get_current_moldable_job(session, job.assigned_moldable_job)
         job_user = job.user
         shell = tools.getpwnam(luser).pw_shell
 
@@ -150,7 +150,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             + str(job_id)
         )
 
-        script = get_oarexecuser_script_for_oarsub(
+        script = get_oarexecuser_script_for_oarsub(config, 
             job, moldable.walltime, node_file, shell, resource_file
         )
 
@@ -404,7 +404,9 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 )
 @click.option("--resubmit", type=int, help="Resubmit the given job as a new one.")
 @click.option("-V", "--version", is_flag=True, help="Print OAR version number.")
+@click.pass_context
 def cli(
+    ctx,
     command,
     interactive,
     queue,
@@ -434,6 +436,22 @@ def cli(
     version,
 ):
     """Submit a job to OAR batch scheduler."""
+
+    ctx = click.get_current_context()
+    cmd_ret = CommandReturns(cli)
+    if ctx.obj:
+        session, config = ctx.obj
+
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
 
     global job_id_lst
 
@@ -502,7 +520,7 @@ def cli(
 
     if resubmit:
         cmd_ret.print_("# Resubmitting job " + str(resubmit) + "...")
-        error, job_id = resubmit_job(resubmit)
+        error, job_id = resubmit_job(session, resubmit)
         if error[0] == 0:
             print(" done.")
             print("OAR_JOB_ID=" + str(job_id))
@@ -534,7 +552,7 @@ def cli(
 
     user = os.environ["OARDO_USER"]
 
-    job_parameters = JobParameters(
+    job_parameters = JobParameters(config,
         job_type=None,
         resource=resource,
         command=command,
@@ -621,7 +639,7 @@ def cli(
             cmd_ret.exit()
 
     # Launch the checked submission
-    (error, job_id_lst) = submission.submit()
+    (error, job_id_lst) = submission.submit(session, config)
 
     if error[0] != 0:
         cmd_ret.error("unamed error", 0, error)  # TODO
@@ -633,7 +651,7 @@ def cli(
     if len(job_id_lst) == 1:
         print("OAR_JOB_ID=" + str(job_id_lst[0]))
     else:
-        job = db["Job"].query.filter(Job.id == job_id_lst[0]).one()
+        job = session.query(Job).filter(Job.id == job_id_lst[0]).one()
         oar_array_id = job.array_id
         for job_id in job_id_lst:
             print("OAR_JOB_ID=" + str(job_id))

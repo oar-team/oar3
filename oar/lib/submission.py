@@ -1457,12 +1457,12 @@ class Submission:
     def __init__(self, job_parameters):
         self.job_parameters = job_parameters
 
-    def submit(self):
+    def submit(self, session, config):
         import_job_key_inline = self.job_parameters.import_job_key_inline
         import_job_key_file = self.job_parameters.import_job_key_file
         export_job_key_file = self.job_parameters.export_job_key_file
 
-        (err, job_id_lst) = add_micheline_jobs(
+        (err, job_id_lst) = add_micheline_jobs(session, config,
             self.job_parameters,
             import_job_key_inline,
             import_job_key_file,
