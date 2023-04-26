@@ -54,8 +54,9 @@ def insert_running_jobs(
     job_ids = []
     resources = session.query(Resource).all()
     for i in range(nb_jobs):
-        start_time = tools.get_date()
+        start_time = tools.get_date(session)
         job_id = insert_job(
+            session,
             res=[(j_walltime, [("resource_id=2", "")])],
             properties="",
             command="yop",
@@ -77,7 +78,7 @@ def insert_running_jobs(
         )
 
         for r in resources[i : i + 2]:
-            AssignedResource.create(moldable_id=mld_id, resource_id=r.id)
+            AssignedResource.create(session, moldable_id=mld_id, resource_id=r.id)
             print(job_id, mld_id, r.id, r.network_address)
         session.commit()
     return job_ids

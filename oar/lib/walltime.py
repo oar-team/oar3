@@ -57,24 +57,24 @@ def get_walltime_change_for_job(session, job_id):
         return walltime_change
 
 
-def get(session, job_id):
+def get(session, config, job_id):
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"
     ):
         return (None, "functionality is disabled", None)
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
     if not job:
         return (None, "unknown job", None)
 
-    walltime_change = get_walltime_change_for_job(job_id)
+    walltime_change = get_walltime_change_for_job(session, job_id)
 
     if not walltime_change:
         walltime_change = WalltimeChange()
 
     if job.assigned_moldable_job != 0:
-        moldable = get_current_moldable_job(job.assigned_moldable_job)
+        moldable = get_current_moldable_job(session, job.assigned_moldable_job)
         walltime_change.walltime = moldable.moldable_walltime
     else:
         walltime_change.walltime = 0
@@ -109,10 +109,10 @@ def get(session, job_id):
     walltime_users_allowed_to_delay_jobs = get_conf(  # noqa
         config["WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS"], job.queue_name, None, ""
     )
-    now = tools.get_date()
+    now = tools.get_date(session)
 
     # TODO Unused
-    suspended = get_job_suspended_sum_duration(job_id, now)  # noqa
+    suspended = get_job_suspended_sum_duration(session, job_id, now)  # noqa
 
     if job.state != "Running" or (walltime_change.walltime < walltime_min_for_change):
         walltime_change.possible = duration_to_sql_signed(0)
@@ -150,14 +150,14 @@ def get(session, job_id):
     return (walltime_change, None, job.state)
 
 
-def request(session, job_id, user, new_walltime, force, delay_next_jobs):
+def request(session, config, job_id, user, new_walltime, force, delay_next_jobs):
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"
     ):
         return (5, 405, "not available", "functionality is disabled")
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if not job:
         return (4, 404, "not found", "could not find job {}".format(job_id))
@@ -170,7 +170,7 @@ def request(session, job_id, user, new_walltime, force, delay_next_jobs):
     if job.state != "Running":
         return (3, 403, "forbidden", "job {} is not running".format(job_id))
 
-    moldable = get_current_moldable_job(job.assigned_moldable_job)
+    moldable = get_current_moldable_job(session, job.assigned_moldable_job)
 
     walltime_max_increase = get_conf(
         config["WALLTIME_MAX_INCREASE"], job.queue_name, moldable.walltime, 0
@@ -252,11 +252,11 @@ def request(session, job_id, user, new_walltime, force, delay_next_jobs):
         )
 
     # For negative extratime, do not allow end time before now
-    now = tools.get_date()
+    now = tools.get_date(session)
 
-    suspended = get_job_suspended_sum_duration(job_id, now)
+    suspended = get_job_suspended_sum_duration(session, job_id, now)
 
-    job_types = get_job_types(job_id)
+    job_types = get_job_types(session, job_id)
     # Arbitrary refuse to reduce container jobs, because we don't want to handle inner jobs which could possibly cross the new boundaries of their container, or should be reduced as well.
     if ("container" in job_types) and (new_walltime_seconds < 0):
         return (
@@ -271,7 +271,7 @@ def request(session, job_id, user, new_walltime, force, delay_next_jobs):
         new_walltime_seconds = -job_remaining_time
 
     # OAR::IO::lock_table($dbh,['walltime_change']);
-    current_walltime_change = get_walltime_change_for_job(job_id)
+    current_walltime_change = get_walltime_change_for_job(session, job_id)
     if current_walltime_change:
         if (
             (walltime_max_increase != -1)
@@ -291,6 +291,7 @@ def request(session, job_id, user, new_walltime, force, delay_next_jobs):
             )
         else:
             update_walltime_change_request(
+                session,
                 job_id,
                 new_walltime_seconds,
                 "YES" if (force and (new_walltime_seconds > 0)) else "NO",
@@ -324,6 +325,7 @@ def request(session, job_id, user, new_walltime, force, delay_next_jobs):
             )
         else:
             add_walltime_change_request(
+                session,
                 job_id,
                 new_walltime_seconds,
                 "YES" if (force and (new_walltime_seconds > 0)) else "NO",

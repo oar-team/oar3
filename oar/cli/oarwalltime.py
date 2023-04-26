@@ -10,7 +10,15 @@ from .utils import CommandReturns
 
 
 def oarwalltime(
-    job_id, new_walltime, force, delay_next_jobs, version, user=None, cli=True
+    session,
+    config,
+    job_id,
+    new_walltime,
+    force,
+    delay_next_jobs,
+    version,
+    user=None,
+    cli=True,
 ):
     cmd_ret = CommandReturns(cli)
 
@@ -31,7 +39,7 @@ def oarwalltime(
         return cmd_ret
 
     if not new_walltime:
-        (walltime_change, message, state) = walltime.get(job_id)
+        (walltime_change, message, state) = walltime.get(session, config, job_id)
         # Job doesn't exist, or the feature is disabled
         if not walltime_change:
             cmd_ret.error(message, 2, 2)
@@ -106,6 +114,8 @@ def oarwalltime(
             user = os.environ["USER"]
 
     (error, _, status, message) = walltime.request(
+        session,
+        config,
         job_id,
         user,
         new_walltime,
@@ -147,5 +157,12 @@ def cli(job_id, new_walltime, force, delay_next_jobs, version):
 
     The job must be running to request a walltime change.
     """
-    cmd_ret = oarwalltime(job_id, new_walltime, force, delay_next_jobs, version)
+    ctx = click.get_current_context()
+    cmd_ret = CommandReturns(cli)
+    if ctx.obj:
+        session, config = ctx.obj
+
+    cmd_ret = oarwalltime(
+        session, config, job_id, new_walltime, force, delay_next_jobs, version
+    )
     cmd_ret.exit()
