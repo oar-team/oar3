@@ -2,21 +2,25 @@
 """oarresume - Resumes a job, it will be rescheduled."""
 
 import click
+from sqlalchemy.orm import scoped_session
 
 import oar.lib.tools as tools
 from oar import VERSION
+from oar.lib.database import EngineConnector, sessionmaker
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_ids_with_given_properties,
     resume_job,
 )
+from oar.lib.models import Model
 
 from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
 
-def oarresume(job_ids, array, sql, version, user=None, cli=True):
+def oarresume(session, config, job_ids, array, sql, version, user=None, cli=True):
     cmd_ret = CommandReturns(cli)
 
     if version:
@@ -28,20 +32,20 @@ def oarresume(job_ids, array, sql, version, user=None, cli=True):
         return cmd_ret
 
     if array:
-        job_ids = get_array_job_ids(array)
+        job_ids = get_array_job_ids(session, array)
 
         if not job_ids:
             cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
 
     if sql:
-        job_ids = get_job_ids_with_given_properties(sql)
+        job_ids = get_job_ids_with_given_properties(session, sql)
         if not job_ids:
             cmd_ret.warning(
                 "There are no job for this SQL WHERE clause ({})".format(array), 4
             )
 
     for job_id in job_ids:
-        error = resume_job(job_id, user)
+        error = resume_job(session, config, job_id, user)
         if error:
             error_msg = "/!\\ Cannot resume {} : ".format(job_id)
             if error == -1:
@@ -83,5 +87,19 @@ def cli(job_id, array, sql, version):
     """Ask OAR to change job_ids states into Waiting
     when it is Hold or in Running if it is Suspended."""
 
-    cmd_ret = oarresume(job_id, array, sql, version, None)
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
+    cmd_ret = oarresume(session, config, job_id, array, sql, version, None)
     cmd_ret.exit()

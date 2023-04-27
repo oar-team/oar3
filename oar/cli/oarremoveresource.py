@@ -1,5 +1,9 @@
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
+from oar.lib.database import EngineConnector
+from oar.lib.globals import init_oar
+from oar.lib.models import Model
 from oar.lib.resource_handling import remove_resource
 
 from .utils import CommandReturns
@@ -16,6 +20,20 @@ def cli(resource):
 
     So you will loose this resource history and jobs executed on this one
     """
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     resource_ids = resource
     cmd_ret = CommandReturns(cli)
     if resource_ids:

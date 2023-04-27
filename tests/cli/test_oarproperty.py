@@ -5,7 +5,6 @@ import pytest
 from click.testing import CliRunner
 
 from oar.cli.oarproperty import cli
-from oar.lib import db
 
 # @pytest.fixture(scope='function', autouse=True)
 # def minimal_db_initialization(request):

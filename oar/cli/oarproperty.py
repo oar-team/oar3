@@ -9,9 +9,12 @@
 #   echo -e "mysqlroot\nmysqlpassword\n" | oar_property.pl -q -l
 import click
 from sqlalchemy import VARCHAR
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar import VERSION
-from oar.lib import JobResourceDescription, Resource, ResourceLog, db
+from oar.lib.database import EngineConnector
+from oar.lib.globals import init_oar
+from oar.lib.models import JobResourceDescription, Model, Resource, ResourceLog
 from oar.lib.tools import check_resource_property
 
 from .utils import CommandReturns
@@ -37,7 +40,10 @@ def check_property_name(cmd_ret, prop_name, quiet=False):
     return False
 
 
-def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, version):
+def oarproperty(
+    session, config, prop_list, show_type, add, varchar, delete, rename, quiet, version
+):
+    db = session
     cmd_ret = CommandReturns()
 
     # it's mainly use Operations from Alembic through db.op
@@ -51,8 +57,8 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 
     # Reflect to load all the colums from the database
     # (including the columns not in the class Resource)
-    db.reflect()
-    columns = db[resources].columns
+    session.reflect()
+    columns = Resource.columns
     properties = [column.name for column in columns]
 
     if prop_list:
@@ -154,9 +160,32 @@ def oarproperty(prop_list, show_type, add, varchar, delete, rename, quiet, versi
 @click.option("-q", "--quiet", is_flag=True, help="Quiet mode (no extra output).")
 @click.option("-V", "--version", is_flag=True, help="Show OAR version.")
 def cli(list, type, add, varchar, delete, rename, quiet, version):
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     prop_list = list
     show_type = type
     cmd_ret = oarproperty(
-        prop_list, show_type, add, varchar, delete, rename, quiet, version
+        session,
+        config,
+        prop_list,
+        show_type,
+        add,
+        varchar,
+        delete,
+        rename,
+        quiet,
+        version,
     )
     cmd_ret.exit()

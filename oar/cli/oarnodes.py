@@ -27,8 +27,10 @@ from rich.table import Column, Table
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import AssignedResource, Job, Resource, db
+from oar.lib.database import ephemeral_session
 from oar.lib.event import get_events_for_hostname_from
+from oar.lib.job_handling import insert_job
+from oar.lib.models import AssignedResource, Job, Resource
 from oar.lib.node import (
     get_all_network_address,
     get_resources_of_nodes,
@@ -46,9 +48,9 @@ from .utils import CommandReturns
 click.disable_unicode_literals_warning = True
 
 
-def get_resources_for_job():
+def get_resources_for_job(session):
     res = (
-        db.query(Resource, Job)
+        session.query(Resource, Job)
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
         .filter(AssignedResource.resource_id == Resource.id)
         .filter(Job.state == "Running")
@@ -60,10 +62,10 @@ def get_resources_for_job():
     return grouped
 
 
-def get_resources_grouped_by_network_address(hostnames=[]):
+def get_resources_grouped_by_network_address(session, hostnames=[]):
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(Resource.network_address.in_(hostnames))
         .order_by(Resource.network_address, Resource.id)
         .all()
@@ -74,7 +76,7 @@ def get_resources_grouped_by_network_address(hostnames=[]):
     return grouped
 
 
-def print_events(date, hostnames, json):
+def print_events(session, date, hostnames, json):
     console = Console()
     if not json:
         table = Table()
@@ -88,7 +90,7 @@ def print_events(date, hostnames, json):
         table.add_column("Description")
 
         for hostname in hostnames:
-            events = get_events_for_hostname_from(hostname, date)
+            events = get_events_for_hostname_from(session, hostname, date)
             for ev in events:
                 table.add_row(
                     str(local_to_sql(ev.date)),
@@ -102,15 +104,16 @@ def print_events(date, hostnames, json):
     else:
         hosts_events = {
             hostname: [
-                ev.to_dict() for ev in get_events_for_hostname_from(hostname, date)
+                ev.to_dict()
+                for ev in get_events_for_hostname_from(session, hostname, date)
             ]
             for hostname in hostnames
         }
         console.print_json(dumps(hosts_events))
 
 
-def print_resources_states(resource_ids, json):
-    resource_states = get_resources_state(resource_ids)
+def print_resources_states(session, resource_ids, json):
+    resource_states = get_resources_state(session, resource_ids)
     if not json:
         for resource_state in resource_states:
             resource_id, state = resource_state.popitem()
@@ -119,14 +122,15 @@ def print_resources_states(resource_ids, json):
         print(dumps(resource_states))
 
 
-def print_resources_states_for_hosts(hostnames, json, show_jobs=False):
+def print_resources_states_for_hosts(session, hostnames, json, show_jobs=False):
     if not json:
-        node_list = get_resources_grouped_by_network_address(hostnames)
-        res_to_jobs = get_resources_for_job()
+        node_list = get_resources_grouped_by_network_address(session, hostnames)
+        res_to_jobs = get_resources_for_job(session)
         cluster_details(node_list, res_to_jobs, False)
     else:
         hosts_states = [
-            {hostname: get_resources_state_for_host(hostname)} for hostname in hostnames
+            {hostname: get_resources_state_for_host(session, hostname)}
+            for hostname in hostnames
         ]
         print(dumps(hosts_states))
 
@@ -140,10 +144,10 @@ def print_all_hostnames(nodes, json):
 
 
 # INFO: function to change if you want to change the user std output
-def print_resources_flat_way(cmd_ret, resources):
+def print_resources_flat_way(session, cmd_ret, resources):
     now = tools.get_date()
 
-    properties = [column.name for column in db[Resource.__tablename__].columns]
+    properties = [column.name for column in Resource.columns]
 
     for resource in resources:
         cmd_ret.print_("network_address: " + resource.network_address)
@@ -182,7 +186,7 @@ def print_resources_table(
     if show_properties:
         properties = [
             column.name
-            for column in db[Resource.__tablename__].columns
+            for column in Resource.columns
             if not check_resource_system_property(column.name)
             and (column.name in properties_to_display or show_all)
         ]

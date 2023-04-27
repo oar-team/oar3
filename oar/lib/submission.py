@@ -1462,7 +1462,9 @@ class Submission:
         import_job_key_file = self.job_parameters.import_job_key_file
         export_job_key_file = self.job_parameters.export_job_key_file
 
-        (err, job_id_lst) = add_micheline_jobs(session, config,
+        (err, job_id_lst) = add_micheline_jobs(
+            session,
+            config,
             self.job_parameters,
             import_job_key_inline,
             import_job_key_file,

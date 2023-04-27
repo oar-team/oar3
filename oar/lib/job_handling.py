@@ -1708,7 +1708,7 @@ def set_job_state(session, jid, state):
                     # Verify if the job was suspended and if the resource
                     # property suspended is updated
                     if job.suspended == "YES":
-                        r = get_current_resources_with_suspended_job()
+                        r = get_current_resources_with_suspended_job(session)
 
                         if r != ():
                             session.query(Resource).filter(~Resource.id.in_(r)).update(
@@ -1765,7 +1765,7 @@ def get_job_duration_in_state(session, jid, state):
     return duration
 
 
-def hold_job(session, job_id, running, user=None):
+def hold_job(session, config, job_id, running, user=None):
     """sets the state field of a job to 'Hold'
     equivalent to set_job_state(base,jobid,"Hold") except for permissions on user
     parameters : jobid, running, user
@@ -1780,7 +1780,7 @@ def hold_job(session, job_id, running, user=None):
         else:
             user = os.environ["USER"]
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     user_allowed_hold_resume = False
     if (
@@ -1811,6 +1811,7 @@ def hold_job(session, job_id, running, user=None):
                 )
             ):
                 add_new_event(
+                    session,
                     event_type,
                     job_id,
                     "User {} launched oarhold on the job {}".format(user, job_id),
@@ -1826,7 +1827,7 @@ def hold_job(session, job_id, running, user=None):
     return 0
 
 
-def resume_job(session, job_id, user=None):
+def resume_job(session, config, job_id, user=None):
     """Returns the state of the job from 'Hold' to 'Waiting'
     equivalent to set_job_state(base,jobid,"Waiting") except for permissions on
     user and the fact the job must already be in 'Hold' state
@@ -1842,7 +1843,7 @@ def resume_job(session, job_id, user=None):
         else:
             user = os.environ["USER"]
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     user_allowed_hold_resume = False
     if (
@@ -1862,6 +1863,7 @@ def resume_job(session, job_id, user=None):
         elif (user == job.user) or (user == "oar") or (user == "root"):
             if (job.state == "Hold") or (job.state == "Suspended"):
                 add_new_event(
+                    session,
                     "RESUME_JOB",
                     job_id,
                     "User {} launched oarresume on the job {}".format(user, job_id),

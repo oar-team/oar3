@@ -15,8 +15,8 @@ from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import get_job_types
 from oar.lib.models import (
     AdmissionRule,
-    Challenge,
     AssignedResource,
+    Challenge,
     FragJob,
     Job,
     JobResourceDescription,
@@ -450,9 +450,9 @@ def test_oarsub_connect_job_function(
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1)[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
@@ -463,9 +463,9 @@ def test_oarsub_connect_job_function_bad_user(
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "yop"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1)[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
 
     print(cmd_ret.buffer)
     print(cmd_ret.exit_values[-1])
@@ -478,9 +478,9 @@ def test_oarsub_connect_job_function_noop(
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1, types=["noop"])[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1, types=["noop"])[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     print(cmd_ret.exit_values[-1])
     assert cmd_ret.exit_values[-1] == 17
@@ -492,20 +492,22 @@ def test_oarsub_connect_job_function_cosystem(
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1, types=["cosystem"])[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1, types=["cosystem"])[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
 
-def test_oarsub_connect_job_function_deploy(monkeypatch, minimal_db_initialization,setup_config):
+def test_oarsub_connect_job_function_deploy(
+    monkeypatch, minimal_db_initialization, setup_config
+):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1, types=["deploy"])[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1, types=["deploy"])[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == []
 
@@ -519,9 +521,9 @@ def test_oarsub_connect_job_function_returncode(
     fake_run_return_code = return_code << 8
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
-    job_id = insert_running_jobs(minimal_db_initialization,1)[0]
+    job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
     cmd_ret = FakeCommandReturns(None)
-    connect_job(minimal_db_initialization, config,job_id, 0, "openssh_cmd", cmd_ret)
+    connect_job(minimal_db_initialization, config, job_id, 0, "openssh_cmd", cmd_ret)
     print(cmd_ret.buffer)
     assert cmd_ret.exit_values == exit_values
 
@@ -529,14 +531,13 @@ def test_oarsub_connect_job_function_returncode(
 def test_oarsub_resubmit_bad_user(monkeypatch, minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "iznogoud"
-    job_id = insert_terminated_jobs(minimal_db_initialization,False, 1)[0]
+    job_id = insert_terminated_jobs(minimal_db_initialization, False, 1)[0]
     print(job_id)
     runner = CliRunner()
     result = runner.invoke(
         cli, ["--resubmit", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
-
 
     assert result.exception.code == (-3, "Resubmitted job user mismatch.")
     # job = db['Job'].query.one()
@@ -617,7 +618,6 @@ def test_oarsub_interactive_array(monkeypatch, minimal_db_initialization, setup_
     print(result.output)
     print(result.exception)
 
-
     assert result.exit_code == 8
 
 
@@ -665,8 +665,11 @@ def test_oarsub_array_index(monkeypatch, minimal_db_initialization, setup_config
     print(vars(result))
 
     import traceback
+
     print("".join(traceback.format_tb(result.exc_info[2])))
 
-    job_array_ids = minimal_db_initialization.query(Job.id, Job.array_id, Job.array_index).all()
+    job_array_ids = minimal_db_initialization.query(
+        Job.id, Job.array_id, Job.array_index
+    ).all()
     print(job_array_ids)
     assert result.exit_code == 0

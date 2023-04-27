@@ -3,23 +3,28 @@
 """
 
 import click
+from sqlalchemy.orm import scoped_session
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import config
+from oar.lib.database import EngineConnector, sessionmaker
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_ids_with_given_properties,
     get_job_types,
     hold_job,
 )
+from oar.lib.models import Model
 
 from .utils import CommandReturns
 
 click.disable_unicode_literals_warning = True
 
 
-def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
+def oarhold(
+    session, config, job_ids, running, array, sql, version, user=None, cli=True
+):
     """Ask OAR to not schedule job_id until oarresume command will be executed."""
     cmd_ret = CommandReturns(cli)
 
@@ -33,13 +38,13 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 
     # import pdb; pdb.set_trace()
     if array:
-        job_ids = get_array_job_ids(array)
+        job_ids = get_array_job_ids(session, array)
         if not job_ids:
             cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
             return cmd_ret
 
     if sql:
-        job_ids = get_job_ids_with_given_properties(sql)
+        job_ids = get_job_ids_with_given_properties(session, sql)
         if not job_ids:
             cmd_ret.warning(
                 "There are no job for this SQL WHERE clause ({})".format(sql), 4
@@ -48,7 +53,7 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 
     for job_id in job_ids:
         if running:
-            types = get_job_types(job_id)
+            types = get_job_types(session, job_id)
             if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" not in config:
                 cmd_ret.warning("CPUSET tag is not configured in the oar.conf", 2, 2)
                 return cmd_ret
@@ -67,7 +72,7 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
                 )
                 return cmd_ret
 
-        error = hold_job(job_id, running, user)
+        error = hold_job(session, config, job_id, running, user)
         if error:
             error_msg = "/!\\ Cannot hold {} : ".format(job_id)
             if error == -1:
@@ -113,5 +118,19 @@ def oarhold(job_ids, running, array, sql, version, user=None, cli=True):
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(job_id, running, array, sql, version):
-    cmd_ret = oarhold(job_id, running, array, sql, version, None)
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
+    cmd_ret = oarhold(config, session, job_id, running, array, sql, version, None)
     cmd_ret.exit()

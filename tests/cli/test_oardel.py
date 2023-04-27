@@ -10,15 +10,7 @@ import oar.lib.tools  # for monkeypatching
 from oar.cli.oardel import cli
 from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
-from oar.lib.models import (
-    AssignedResource,
-    FragJob,
-    Job,
-    JobStateLog,
-    MoldableJobDescription,
-    Queue,
-    Resource,
-)
+from oar.lib.models import FragJob, JobStateLog, Queue, Resource
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -308,9 +300,6 @@ def test_oardel_add_besteffort(minimal_db_initialization, setup_config):
     result = runner.invoke(
         cli, ["--besteffort", str(job_id)], obj=(config, minimal_db_initialization)
     )
-    import traceback
-
-    print(traceback.format_tb(result.exc_info[2]))
     print(result.output)
     assert re.match(r".*Add besteffort type .*", result.output)
     assert result.exit_code == 0

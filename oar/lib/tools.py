@@ -895,8 +895,8 @@ def resources2dump_perl(resources):
     #         s = s + ',
 
 
-def get_oarexecuser_script_for_oarsub(config,
-    job, job_walltime, node_file, shell, resource_file
+def get_oarexecuser_script_for_oarsub(
+    config, job, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
     """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'

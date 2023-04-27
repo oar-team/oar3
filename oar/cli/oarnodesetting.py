@@ -9,12 +9,15 @@ import time
 from socket import gethostname
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import db
-from oar.lib.database import wait_db_ready
+from oar.lib.basequery import BaseQueryCollection
+from oar.lib.database import EngineConnector, wait_db_ready
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import get_job
+from oar.lib.models import Model
 from oar.lib.node import (
     get_all_resources_on_node,
     get_node_job_to_frag,
@@ -38,7 +41,7 @@ from .utils import CommandReturns
 click.disable_unicode_literals_warning = True
 
 
-def set_resources_properties(cmd_ret, resources, hostnames, properties):
+def set_resources_properties(session, cmd_ret, resources, hostnames, properties):
     for prop in properties:
         name_value = prop.lstrip().split("=")
         if len(name_value) == 2:
@@ -52,7 +55,7 @@ def set_resources_properties(cmd_ret, resources, hostnames, properties):
                 cmd_ret.exit_values.append(8)
             else:
                 cmd_ret.print_("Set property {} to '{}'...".format(name, value))
-                ret = set_resources_property(resources, hostnames, name, value)
+                ret = set_resources_property(session, resources, hostnames, name, value)
                 cmd_ret.print_("{} resource(s) updated.".format(ret))
                 if ret <= 0:
                     cmd_ret.exit_values.append(9)
@@ -61,7 +64,7 @@ def set_resources_properties(cmd_ret, resources, hostnames, properties):
             cmd_ret.exit_values.append(10)
 
 
-def wait_end_of_running_jobs(cmd_ret, jobs):
+def wait_end_of_running_jobs(session, cmd_ret, jobs):
     # active waiting: it is not very nice but it works!!
     # TODO: remove active waiting (notification system)
     max_timeout = 30
@@ -69,10 +72,10 @@ def wait_end_of_running_jobs(cmd_ret, jobs):
         cmd_ret.print_("Wait end of job: " + str(job_id))
         count = 0
         while True:
-            job = get_job(job_id)
+            job = get_job(session, job_id)
             # Without this commit get_job keeps polling old data even
             # if the job state is changing. Maybe there is a better way...
-            db.commit()
+            session.commit()
             if (
                 job.state == "Terminated"
                 or job.state == "Error"
@@ -88,10 +91,10 @@ def wait_end_of_running_jobs(cmd_ret, jobs):
             cmd_ret.print_("Delete")
 
 
-def set_maintenance(cmd_ret, resources, maintenance, no_wait):
+def set_maintenance(session, cmd_ret, resources, maintenance, no_wait):
     # import pdb; pdb.set_trace()
     for resource_id in resources:
-        resource = get_resource(resource_id)
+        resource = get_resource(session, resource_id)
         if not resource:
             cmd_ret.error(
                 "The resource {} does not exist in OAR database.".format(resource_id)
@@ -100,35 +103,43 @@ def set_maintenance(cmd_ret, resources, maintenance, no_wait):
             cmd_ret.print_(
                 "Maintenance mode set to 'ON' on resource {}".format(resource_id)
             )
-            log_resource_maintenance_event(resource_id, maintenance, tools.get_date())
+            log_resource_maintenance_event(
+                session, resource_id, maintenance, tools.get_date()
+            )
             prop_to_set = ["available_upto=0"]
             last_available_upto = resource.available_upto
             if last_available_upto != 0:
                 prop_to_set.append("last_available_upto=" + str(last_available_upto))
-            set_resources_properties(cmd_ret, [resource_id], None, prop_to_set)
-            set_resource_nextState(resource_id, "Absent")
+            set_resources_properties(session, cmd_ret, [resource_id], None, prop_to_set)
+            set_resource_nextState(session, resource_id, "Absent")
             tools.notify_almighty("ChState")
             if not no_wait:
                 cmd_ret.print_(
                     "Check jobs to delete on resource {}".format(resource_id)
                 )
-                jobs = get_resource_job_to_frag(resource_id)
-                wait_end_of_running_jobs(cmd_ret, jobs)
+                jobs = get_resource_job_to_frag(session, resource_id)
+                wait_end_of_running_jobs(session, cmd_ret, jobs)
         else:  # maintenance == off
             cmd_ret.print_(
                 "Maintenance mode set to 'OFF' on resource {}".format(resource_id)
             )
-            log_resource_maintenance_event(resource_id, maintenance, tools.get_date())
+            log_resource_maintenance_event(
+                session, resource_id, maintenance, tools.get_date()
+            )
             prop_to_set = []
             available_upto = resource.last_available_upto
             if available_upto != 0:
                 prop_to_set = ["available_upto={}".format(available_upto)]
-                set_resources_properties(cmd_ret, [resource_id], None, prop_to_set)
-            set_resource_nextState(resource_id, "Absent")
+                set_resources_properties(
+                    session, cmd_ret, [resource_id], None, prop_to_set
+                )
+            set_resource_nextState(session, resource_id, "Absent")
             tools.notify_almighty("ChState")
 
 
 def oarnodesetting(
+    session,
+    config,
     resources,
     hostnames,
     filename,
@@ -173,7 +184,7 @@ def oarnodesetting(
         return cmd_ret
 
     if sql:
-        resources = get_resources_with_given_sql(sql)
+        resources = get_resources_with_given_sql(session, sql)
         if not resources:
             cmd_ret.warning(
                 "There are no resource(s) for this SQL WHERE clause ({})".format(sql),
@@ -203,7 +214,7 @@ def oarnodesetting(
         hostnames = [gethostname()]
 
     if last_property_value:
-        value = get_resource_max_value_of_property(last_property_value)
+        value = get_resource_max_value_of_property(session, last_property_value)
         if value:
             cmd_ret.print_(str(value))
         else:
@@ -222,7 +233,7 @@ def oarnodesetting(
         for host in hostnames:
             # wait_db_ready to manage DB taking time to be up during boot
             try:
-                new_resource_id = wait_db_ready(add_resource, (host, state))
+                new_resource_id = wait_db_ready(add_resource, (session, host, state))
             except Exception as e:
                 cmd_ret.error(f"Failed to contact database: {e}", 1, 1)
                 cmd_ret.exit()
@@ -238,7 +249,7 @@ def oarnodesetting(
     else:
         if resources:
             if state:
-                nb_match_for_update = set_resources_nextState(resources, state)
+                nb_match_for_update = set_resources_nextState(session, resources, state)
                 if nb_match_for_update < len(resources):
                     cmd_ret.warning(
                         str(len(resources) - nb_match_for_update)
@@ -255,13 +266,13 @@ def oarnodesetting(
                         cmd_ret.print_(
                             "Check jobs to delete on resource: " + str(resource)
                         )
-                        jobs = get_resource_job_to_frag(resource)
-                        wait_end_of_running_jobs(cmd_ret, jobs)
+                        jobs = get_resource_job_to_frag(session, resource)
+                        wait_end_of_running_jobs(session, cmd_ret, jobs)
                 elif state == "Alive":
                     cmd_ret.print_("Done")
 
             if maintenance:
-                set_maintenance(cmd_ret, resources, maintenance, no_wait)
+                set_maintenance(session, cmd_ret, resources, maintenance, no_wait)
 
         else:
             # update all resources with netwokAdress = $hostname
@@ -299,9 +310,9 @@ def oarnodesetting(
     # Update properties
     if properties:
         if resources:
-            set_resources_properties(cmd_ret, resources, None, properties)
+            set_resources_properties(session, cmd_ret, resources, None, properties)
         elif hostnames:
-            set_resources_properties(cmd_ret, None, hostnames, properties)
+            set_resources_properties(session, cmd_ret, None, hostnames, properties)
         else:
             cmd_ret.warning("Cannot find resources to set in OAR database.", 2)
 
@@ -387,11 +398,27 @@ def cli(
     last_property_value,
     version,
 ):
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     resources = resource
     hostnames = hostname
     filename = file
     properties = property
     cmd_ret = oarnodesetting(
+        session,
+        config,
         resources,
         hostnames,
         filename,

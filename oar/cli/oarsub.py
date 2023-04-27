@@ -10,7 +10,6 @@ import click
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
-from oar.lib.models import Job
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
@@ -19,6 +18,7 @@ from oar.lib.job_handling import (
     get_job_types,
     resubmit_job,
 )
+from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
 
@@ -62,13 +62,13 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
     job = get_job(session, job_id)
 
     if ((luser == job.user) or (luser == "oar")) and (job.state == "Running"):
-        types = get_job_types(session,job_id)
+        types = get_job_types(session, job_id)
         # No operation job type
         if "noop" in types:
             cmd_ret.warning(" It is not possible to connect to a NOOP job.")
             cmd_ret.exit(17)
 
-        hosts = get_job_current_hostnames(session,job_id)
+        hosts = get_job_current_hostnames(session, job_id)
         host_to_connect_via_ssh = hosts[0]
 
         # Deploy, cosystem and no host part
@@ -88,7 +88,9 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             and ("deploy" not in types)
             and hosts
         ):
-            os.environ["OAR_CPUSET"] = cpuset_path + "/" + get_job_cpuset_name(session, job_id)
+            os.environ["OAR_CPUSET"] = (
+                cpuset_path + "/" + get_job_cpuset_name(session, job_id)
+            )
         else:
             os.environ["OAR_CPUSET"] = ""
 
@@ -150,8 +152,8 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             + str(job_id)
         )
 
-        script = get_oarexecuser_script_for_oarsub(config, 
-            job, moldable.walltime, node_file, shell, resource_file
+        script = get_oarexecuser_script_for_oarsub(
+            config, job, moldable.walltime, node_file, shell, resource_file
         )
 
         cmd = openssh_cmd
@@ -552,7 +554,8 @@ def cli(
 
     user = os.environ["OARDO_USER"]
 
-    job_parameters = JobParameters(config,
+    job_parameters = JobParameters(
+        config,
         job_type=None,
         resource=resource,
         command=command,
