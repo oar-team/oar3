@@ -393,4 +393,4 @@ def get_resources_state_for_host(session, host):
         .order_by(Resource.id)
         .all()
     ]
-    return get_resources_state(resource_ids)
+    return get_resources_state(session, resource_ids)

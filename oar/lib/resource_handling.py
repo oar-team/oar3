@@ -41,7 +41,7 @@ def add_resource(session, name, state):
     result = session.execute(ins)
     r_id = result.inserted_primary_key[0]
 
-    date = tools.get_date()
+    date = tools.get_date(session)
 
     ins = ResourceLog.__table__.insert().values(
         {
@@ -160,7 +160,7 @@ def set_resources_property(session, resources, hostnames, prop_name, prop_value)
         )
         if nb_affected_rows > 0:
             # Update LOG table
-            date = tools.get_date()
+            date = tools.get_date(session)
             session.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
                 ResourceLog.attribute == prop_name
             ).filter(ResourceLog.resource_id.in_(rids)).update(
@@ -483,7 +483,7 @@ def get_resource_max_value_of_property(session, property_name):
 
 
 def get_resources_state(session, resource_ids):
-    date = tools.get_date()
+    date = tools.get_date(session)
     result = (
         session.query(Resource.id, Resource.state, Resource.available_upto)
         .filter(Resource.id.in_(tuple(resource_ids)))

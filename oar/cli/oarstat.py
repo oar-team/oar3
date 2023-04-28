@@ -30,7 +30,6 @@ from oar.lib.job_handling import (
     get_job_resources_properties,
     get_jobs_state,
 )
-from oar.lib.logging import get_logger
 from oar.lib.models import Model
 from oar.lib.tools import (
     check_resource_system_property,

@@ -24,13 +24,15 @@ from rich.padding import Padding
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Column, Table
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.database import ephemeral_session
+from oar.lib.database import EngineConnector
 from oar.lib.event import get_events_for_hostname_from
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.models import AssignedResource, Job, Resource
+from oar.lib.models import AssignedResource, Job, Model, Resource
 from oar.lib.node import (
     get_all_network_address,
     get_resources_of_nodes,
@@ -145,7 +147,7 @@ def print_all_hostnames(nodes, json):
 
 # INFO: function to change if you want to change the user std output
 def print_resources_flat_way(session, cmd_ret, resources):
-    now = tools.get_date()
+    now = tools.get_date(session)
 
     properties = [column.name for column in Resource.columns]
 
@@ -221,11 +223,11 @@ def print_resources_table(
 
 
 def print_resources_nodes_infos(
-    cmd_ret, properties, show_all_properties, resources, nodes, json
+    session, cmd_ret, properties, show_all_properties, resources, nodes, json
 ):
     # import pdb; pdb.set_trace()
     if nodes:
-        resources = get_resources_of_nodes(nodes)
+        resources = get_resources_of_nodes(session, nodes)
 
     if not json:
         print_resources_table(
@@ -384,6 +386,8 @@ def cluster_details(node_list, res_to_jobs, show_jobs=False):
 
 
 def oarnodes(
+    session,
+    config,
     nodes,
     properties,
     show_all_properties,
@@ -404,10 +408,10 @@ def oarnodes(
         return cmd_ret
 
     if (not nodes and not (resource_ids or sql)) or list_nodes:
-        nodes = get_all_network_address()
+        nodes = get_all_network_address(session)
 
     if sql:
-        sql_resource_ids = get_resources_with_given_sql(sql)
+        sql_resource_ids = get_resources_with_given_sql(session, sql)
         if not sql_resource_ids:
             cmd_ret.warning(
                 "There are no resource(s) for this SQL WHERE clause ({})".format(sql),
@@ -418,27 +422,27 @@ def oarnodes(
     if events:
         if events == "_events_without_date_":
             events = None  # To display the 30's latest events
-        print_events(events, nodes, json)
+        print_events(session, events, nodes, json)
     elif summary:
-        node_list = get_resources_grouped_by_network_address(nodes)
-        res_to_jobs = get_resources_for_job()
+        node_list = get_resources_grouped_by_network_address(session, nodes)
+        res_to_jobs = get_resources_for_job(session)
         cluster_summary(node_list, res_to_jobs)
     elif state:
         if resource_ids:
-            print_resources_states(resource_ids, json)
+            print_resources_states(session, resource_ids, json)
         else:
             # cluster_details(node_list, res_to_jobs)
-            print_resources_states_for_hosts(nodes, json)
+            print_resources_states_for_hosts(session, nodes, json)
     elif list_nodes:
         print_all_hostnames(nodes, json)
     elif resource_ids or sql:
         resources = get_resources_from_ids(resource_ids)
         print_resources_nodes_infos(
-            cmd_ret, properties, show_all_properties, resources, None, json
+            session, cmd_ret, properties, show_all_properties, resources, None, json
         )
     elif nodes:
         print_resources_nodes_infos(
-            cmd_ret, properties, show_all_properties, None, nodes, json
+            session, cmd_ret, properties, show_all_properties, None, nodes, json
         )
     else:
         cmd_ret.print_("No nodes to display...")
@@ -523,8 +527,24 @@ def cli(
     cli=True,
 ):
     """Display informations about nodes."""
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (config, session) = ctx.obj
+    else:
+        config, db, log = init_oar()
+        engine = EngineConnector(db).get_engine()
+
+        Model.metadata.drop_all(bind=engine)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        # TODO
+        session = scoped()
+
     properties = property
     cmd_ret = oarnodes(
+        session,
+        config,
         nodes,
         properties,
         show_all_properties,
