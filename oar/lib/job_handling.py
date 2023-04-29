@@ -984,7 +984,7 @@ def resubmit_job(job_id):
         job.start_time = 0
     job.message = ""
     job.scheduler_info = ""
-    job.exit_code = None
+    # job.exit_code = None
     job.assigned_moldable_job = 0
 
     db.session.add(job)
@@ -2020,7 +2020,7 @@ def check_end_of_job(
                 "idempotent" in job_types.keys()
             ):
                 if is_an_event_exists(job_id, "BESTEFFORT_KILL"):
-                    new_job_id = resubmit_job(job_id)
+                    (_, new_job_id) = resubmit_job(job_id)
                     logger.warning(
                         "We resubmit the job "
                         + str(job_id)
