@@ -36,18 +36,24 @@ def minimal_db_initialization(request, setup_config):
 def monkeypatch_tools(request, monkeypatch, minimal_db_initialization, setup_config):
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", fake_notify_almighty)
     monkeypatch.setattr(time, "sleep", lambda x: True)
+    global fake_notifications
+
+    fake_notifications = []
 
 
 def test_version(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"])
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
 
 def test_oarnodesetting_simple(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-a"])
+    result = runner.invoke(cli, ["-a"], obj=(minimal_db_initialization, config))
+    print(result.exception)
     resource = minimal_db_initialization.query(Resource).one()
     print(resource)
     # nb_lines = len(result.output_bytes.decode().split('\n'))
@@ -58,8 +64,11 @@ def test_oarnodesetting_simple(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_core_cpu(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-a", "-p core=1", "-p cpu=2"])
+    result = runner.invoke(
+        cli, ["-a", "-p core=1", "-p cpu=2"], obj=(minimal_db_initialization, config)
+    )
     print(result)
     resource = minimal_db_initialization.query(Resource).one()
     print(resource)
@@ -72,74 +81,109 @@ def test_oarnodesetting_core_cpu(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_1(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r", "1"])
+    result = runner.invoke(cli, ["-r", "1"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert result.exit_code == 1
 
 
 def test_oarnodesetting_error_2(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r", "1", "--state", "Suspected"])
+    result = runner.invoke(
+        cli,
+        ["-r", "1", "--state", "Suspected"],
+        obj=(minimal_db_initialization, config),
+    )
     print(result.output)
     assert result.exit_code == 1
 
 
 def test_oarnodesetting_error_3(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r", "1", "--maintenance", "midoff"])
+    result = runner.invoke(
+        cli,
+        ["-r", "1", "--maintenance", "midoff"],
+        obj=(minimal_db_initialization, config),
+    )
     print(result.output)
     assert result.exit_code == 1
 
 
 def test_oarnodesetting_error_4(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r", "1", "--drain", "midoff"])
+    result = runner.invoke(
+        cli, ["-r", "1", "--drain", "midoff"], obj=(minimal_db_initialization, config)
+    )
     print(result.output)
     assert result.exit_code == 1
 
 
 def test_oarnodesetting_error_5(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-r", "1", "--add"])
+    result = runner.invoke(
+        cli, ["-r", "1", "--add"], obj=(minimal_db_initialization, config)
+    )
     print(result.output)
     assert result.exit_code == 1
 
 
 def test_oarnodesetting_sql_drain(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
-    result = runner.invoke(cli, ["--sql", "state='Alive'", "--drain", "on"])
+    result = runner.invoke(
+        cli,
+        ["--sql", "state='Alive'", "--drain", "on"],
+        obj=(minimal_db_initialization, config),
+    )
     resource = minimal_db_initialization.query(Resource).one()
     print(result.output)
     assert resource.drain == "YES"
 
 
 def test_oarnodesetting_drain_off(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost", drain="YES")
     resource = minimal_db_initialization.query(Resource).one()
     print(resource.drain)
     runner = CliRunner()
-    result = runner.invoke(cli, ["-h", "localhost", "--drain", "off"])
+    result = runner.invoke(
+        cli,
+        ["-h", "localhost", "--drain", "off"],
+        obj=(minimal_db_initialization, config),
+    )
     resource = minimal_db_initialization.query(Resource).one()
     print(result.output)
     assert resource.drain == "NO"
 
 
 def test_oarnodesetting_sql_void(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
-    result = runner.invoke(cli, ["--sql", "state='NotExist'", "--drain", "on"])
+    result = runner.invoke(
+        cli,
+        ["--sql", "state='NotExist'", "--drain", "on"],
+        obj=(minimal_db_initialization, config),
+    )
     print(result.output)
     assert re.match(".*are no resource.*", result.output)
     assert result.exit_code == 0
 
 
 def test_oarnodesetting_system_property_error(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-h", "localhost", "-p", "state=Alive", "--drain", "on"]
+        cli,
+        ["-h", "localhost", "-p", "state=Alive", "--drain", "on"],
+        obj=(minimal_db_initialization, config),
     )
     print(result.output)
     assert result.exit_code == 8
@@ -148,16 +192,20 @@ def test_oarnodesetting_system_property_error(minimal_db_initialization, setup_c
 def test_oarnodesetting_malformed_property_error(
     minimal_db_initialization, setup_config
 ):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-h", "localhost", "-p", "state=Ali=ve", "--drain", "on"]
+        cli,
+        ["-h", "localhost", "-p", "state=Ali=ve", "--drain", "on"],
+        obj=(minimal_db_initialization, config),
     )
     print(result.output)
     assert result.exit_code == 10
 
 
 def test_oarnodesetting_sql_state(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     for _ in range(2):
         Resource.create(
             minimal_db_initialization, network_address="localhost", state="Absent"
@@ -165,37 +213,49 @@ def test_oarnodesetting_sql_state(minimal_db_initialization, setup_config):
     minimal_db_initialization.commit()
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "network_address='localhost'", "--state", "Alive"]
+        cli,
+        ["--sql", "network_address='localhost'", "--state", "Alive"],
+        obj=(minimal_db_initialization, config),
     )
     assert fake_notifications == ["ChState"]
     assert result.exit_code == 0
 
 
 def test_oarnodesetting_sql_state1(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     for _ in range(2):
         Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "network_address='localhost'", "--state", "Dead"]
+        cli,
+        ["--sql", "network_address='localhost'", "--state", "Dead"],
+        obj=(minimal_db_initialization, config),
     )
     assert fake_notifications == ["ChState"]
     assert result.exit_code == 0
 
 
 def test_oarnodesetting_host_by_file_state(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     here = os.path.abspath(os.path.dirname(__file__))
     filename = os.path.join(here, "data", "hostfile.txt")
     for _ in range(2):
         Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--file", filename, "--state", "Absent"])
+    result = runner.invoke(
+        cli,
+        ["--file", filename, "--state", "Absent"],
+        obj=(minimal_db_initialization, config),
+    )
+    print(result.exception)
     assert fake_notifications == ["ChState"]
     assert result.exit_code == 0
 
 
 def test_oarnodesetting_hosts_state(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(
         minimal_db_initialization, network_address="localhost0", state="Absent"
     )
@@ -205,7 +265,9 @@ def test_oarnodesetting_hosts_state(minimal_db_initialization, setup_config):
     minimal_db_initialization.commit()
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-h", "localhost0", "-h", "localhost1", "--state", "Alive"]
+        cli,
+        ["-h", "localhost0", "-h", "localhost1", "--state", "Alive"],
+        obj=(minimal_db_initialization, config),
     )
     print(result.output)
     resources = minimal_db_initialization.query(Resource).all()
@@ -215,6 +277,7 @@ def test_oarnodesetting_hosts_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_hosts_state1(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(
         minimal_db_initialization, network_address="localhost0", state="Absent"
     )
@@ -224,9 +287,11 @@ def test_oarnodesetting_hosts_state1(minimal_db_initialization, setup_config):
     minimal_db_initialization.commit()
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-h", "localhost0", "-h", "localhost1", "--state", "Dead"]
+        cli,
+        ["-h", "localhost0", "-h", "localhost1", "--state", "Dead"],
+        obj=(minimal_db_initialization, config),
     )
-    print(result.output)
+    print(result.exception)
     resources = minimal_db_initialization.query(Resource).all()
     assert resources[0].next_state == "Dead"
     assert fake_notifications == ["ChState"]
@@ -234,11 +299,14 @@ def test_oarnodesetting_hosts_state1(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_last_property_value(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost", core="1")
     Resource.create(minimal_db_initialization, network_address="localhost", core="2")
     minimal_db_initialization.commit()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--last-property-value", "core"])
+    result = runner.invoke(
+        cli, ["--last-property-value", "core"], obj=(minimal_db_initialization, config)
+    )
     print(result.output)
     assert re.match(r"2", result.output)
 
@@ -246,11 +314,16 @@ def test_oarnodesetting_last_property_value(minimal_db_initialization, setup_con
 def test_oarnodesetting_last_property_value_error0(
     minimal_db_initialization, setup_config
 ):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--last-property-value", "NotExist"])
+    result = runner.invoke(
+        cli,
+        ["--last-property-value", "NotExist"],
+        obj=(minimal_db_initialization, config),
+    )
     print(result.output)
     assert re.match(r".*retrieve the last value.*", result.output)
 
@@ -258,24 +331,31 @@ def test_oarnodesetting_last_property_value_error0(
 def todo_test_oarnodesetting_last_property_value_error1(
     minimal_db_initialization, setup_config
 ):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     runner = CliRunner()
-    result = runner.invoke(cli, ["--last-property-value", "drain"])
+    result = runner.invoke(
+        cli, ["--last-property-value", "drain"], obj=(minimal_db_initialization, config)
+    )
     print(result.output)
     assert re.match(r".*retrieve the last value.*", result.output)
 
 
 def test_oarnodesetting_maintenance_on_nowait(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     last_available_upto = (
         minimal_db_initialization.query(Resource).one().last_available_upto
     )
     runner = CliRunner()
-    result = runner.invoke(cli, ["-h", "localhost", "--maintenance", "on", "--no-wait"])
-    print(result.output)
+    result = runner.invoke(
+        cli,
+        ["-h", "localhost", "--maintenance", "on", "--no-wait"],
+        obj=(minimal_db_initialization, config),
+    )
     print(fake_notifications)
     assert fake_notifications == ["ChState"]
     assert (
@@ -285,6 +365,7 @@ def test_oarnodesetting_maintenance_on_nowait(minimal_db_initialization, setup_c
 
 
 def test_oarnodesetting_maintenance_off_nowait(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     Resource.create(
         minimal_db_initialization,
         network_address="localhost",
@@ -294,9 +375,11 @@ def test_oarnodesetting_maintenance_off_nowait(minimal_db_initialization, setup_
     last_available_upto = minimal_db_initialization.query(Resource).one().available_upto
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-h", "localhost", "--maintenance", "off", "--no-wait"]
+        cli,
+        ["-h", "localhost", "--maintenance", "off", "--no-wait"],
+        obj=(minimal_db_initialization, config),
     )
-    print(result.output)
+    print(result)
     print(fake_notifications)
     assert fake_notifications == ["ChState"]
     assert (
@@ -319,6 +402,7 @@ def test_oarnodesetting_maintenance_on_wait_timeout(
         ["-h", "localhost", "--maintenance", "on"],
         obj=(minimal_db_initialization, config),
     )
+    print(result.exception)
     print(result.output)
     assert result.exit_code == 11
     # print(fake_notifications)

@@ -13,7 +13,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.basequery import BaseQueryCollection
 from oar.lib.database import EngineConnector, wait_db_ready
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import get_job
@@ -104,7 +103,7 @@ def set_maintenance(session, cmd_ret, resources, maintenance, no_wait):
                 "Maintenance mode set to 'ON' on resource {}".format(resource_id)
             )
             log_resource_maintenance_event(
-                session, resource_id, maintenance, tools.get_date()
+                session, resource_id, maintenance, tools.get_date(session)
             )
             prop_to_set = ["available_upto=0"]
             last_available_upto = resource.available_upto
@@ -124,7 +123,7 @@ def set_maintenance(session, cmd_ret, resources, maintenance, no_wait):
                 "Maintenance mode set to 'OFF' on resource {}".format(resource_id)
             )
             log_resource_maintenance_event(
-                session, resource_id, maintenance, tools.get_date()
+                session, resource_id, maintenance, tools.get_date(session)
             )
             prop_to_set = []
             available_upto = resource.last_available_upto
@@ -279,14 +278,17 @@ def oarnodesetting(
             if maintenance:
                 resources_to_maintain = []
                 for host in hostnames:
-                    resources_to_maintain += get_all_resources_on_node(host)
+                    print(f"{hostnames}")
+                    resources_to_maintain += get_all_resources_on_node(session, host)
 
-                set_maintenance(cmd_ret, resources_to_maintain, maintenance, no_wait)
+                set_maintenance(
+                    session, cmd_ret, resources_to_maintain, maintenance, no_wait
+                )
 
             if state:
                 hosts_to_check = []
                 for host in hostnames:
-                    if set_node_nextState(host, state):
+                    if set_node_nextState(session, host, state):
                         cmd_ret.print_(host + " --> " + state)
                         hosts_to_check.append(host)
                     else:
@@ -298,8 +300,8 @@ def oarnodesetting(
                 if (state in ["Dead", "Absent"]) and not no_wait:
                     for hosts in hosts_to_check:
                         cmd_ret.print_("Check jobs to delete on host: " + host)
-                        jobs = get_node_job_to_frag(host)
-                        wait_end_of_running_jobs(cmd_ret, jobs)
+                        jobs = get_node_job_to_frag(session, host)
+                        wait_end_of_running_jobs(session, cmd_ret, jobs)
 
     if drain:
         if drain == "on":
@@ -398,6 +400,7 @@ def cli(
     last_property_value,
     version,
 ):
+
     ctx = click.get_current_context()
     if ctx.obj:
         (session, config) = ctx.obj
