@@ -6,10 +6,13 @@ import socket
 import sys
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
+from oar.lib.database import EngineConnector
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
@@ -18,7 +21,7 @@ from oar.lib.job_handling import (
     get_job_types,
     resubmit_job,
 )
-from oar.lib.models import Job
+from oar.lib.models import Job, Model
 from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
 

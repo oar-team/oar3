@@ -27,6 +27,9 @@ def create_logger(config):
     logger = getLogger("oar")
     del logger.handlers[:]
 
+    # TODO: duck tape
+    logger.config = config
+
     logger.setLevel(LEVELS[config["LOG_LEVEL"]])
 
     log_file = config.get("LOG_FILE", None)
@@ -58,7 +61,7 @@ def get_logger(logger, *args, **kwargs):
     sublogger = getLogger(*args, **kwargs)
     sublogger.propage = False
     if forward_stderr:
-        stream_handler = get_global_stream_handler("stderr")
+        stream_handler = get_global_stream_handler(logger.config, "stderr")
         if stream_handler not in logger.handlers:  # pragma: no cover
             sublogger.addHandler(stream_handler)
     return sublogger
@@ -70,6 +73,7 @@ def get_global_stream_handler(config, output="stderr"):
     global STREAM_HANDLER
     if STREAM_HANDLER[output] is None:
         STREAM_HANDLER[output] = StreamHandler(getattr(sys, output, "stderr"))
+        print("haha", config["LOG_LEVEL"])
         STREAM_HANDLER[output].setLevel(LEVELS[config["LOG_LEVEL"]])
         STREAM_HANDLER[output].setFormatter(Formatter(config["LOG_FORMAT"]))
     return STREAM_HANDLER[output]

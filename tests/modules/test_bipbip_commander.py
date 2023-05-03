@@ -4,7 +4,6 @@ import pytest
 import zmq
 
 import oar.lib.tools
-from oar.lib.globals import init_oar
 from oar.modules.bipbip_commander import BipbipCommander
 
 from ..faketools import FakeProcess, fake_call, fake_called_command
