@@ -44,7 +44,7 @@ def test_oarremoveresource_bad_user(minimal_db_initialization, setup_config):
 def test_oarremoveresource_not_dead(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
-    first_id = db.query(Resource).first().id
+    first_id = minimal_db_initialization.query(Resource).first().id
     runner = CliRunner()
     result = runner.invoke(
         cli, [str(first_id)], obj=(config, minimal_db_initialization)
@@ -74,7 +74,8 @@ def test_oarremoveresource_simple(minimal_db_initialization, setup_config):
     result = runner.invoke(
         cli, [str(dead_rid)], obj=(config, minimal_db_initialization)
     )
-    nb_res2 = len(db.query(Resource).all())
+    print(result.exception)
+    nb_res2 = len(minimal_db_initialization.query(Resource).all())
     assert nb_res1 == 6
     assert nb_res2 == 5
     assert result.exit_code == 0

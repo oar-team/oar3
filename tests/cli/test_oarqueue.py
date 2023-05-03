@@ -19,7 +19,7 @@ def minimal_db_initialization(request, setup_config):
 
     with ephemeral_session(scoped, engine, bind=engine) as session:
 
-        Queue.create(name="default", scheduler_policy="kao", state="unkown")
+        Queue.create(session, name="default", scheduler_policy="kao", state="unkown")
         yield session
 
 
@@ -125,7 +125,7 @@ def test_oarqueue_change(minimal_db_initialization, setup_config):
 def test_oarqueue_remove(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
-    create_queue("admin", 10, "kamelot")
+    create_queue(minimal_db_initialization, "admin", 10, "kamelot")
     assert len(minimal_db_initialization.query(Queue).all()) == 2
     runner = CliRunner()
     result = runner.invoke(

@@ -162,7 +162,7 @@ def oarproperty(
 def cli(list, type, add, varchar, delete, rename, quiet, version):
     ctx = click.get_current_context()
     if ctx.obj:
-        session = ctx.obj
+        (session, config) = ctx.obj
     else:
         config, db, log = init_oar()
         engine = EngineConnector(db).get_engine()

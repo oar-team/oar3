@@ -436,7 +436,7 @@ def oarnodes(
     elif list_nodes:
         print_all_hostnames(nodes, json)
     elif resource_ids or sql:
-        resources = get_resources_from_ids(resource_ids)
+        resources = get_resources_from_ids(session, resource_ids)
         print_resources_nodes_infos(
             session, cmd_ret, properties, show_all_properties, resources, None, json
         )

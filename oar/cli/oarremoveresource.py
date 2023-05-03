@@ -22,7 +22,7 @@ def cli(resource):
     """
     ctx = click.get_current_context()
     if ctx.obj:
-        session = ctx.obj
+        (config, session) = ctx.obj
     else:
         config, db, log = init_oar()
         engine = EngineConnector(db).get_engine()
@@ -38,6 +38,6 @@ def cli(resource):
     cmd_ret = CommandReturns(cli)
     if resource_ids:
         for resource_id in resource_ids:
-            error, error_msg = remove_resource(resource_id)
+            error, error_msg = remove_resource(session, resource_id)
             cmd_ret.error(error_msg, error, error)
     cmd_ret.exit()

@@ -194,7 +194,7 @@ def test_oarnodes_sql(minimal_db_initialization, setup_config):
         ["--sql", "network_address='akira'"],
         obj=(config, minimal_db_initialization),
     )
-    print(result.output)
+    print(result.exception)
     concerned_lines = re.findall(r".*akira.*", result.output)
     assert len(concerned_lines) == 2
     assert result.exit_code == 0
