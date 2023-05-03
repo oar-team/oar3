@@ -17,7 +17,7 @@ import sys
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, add_new_event_with_host
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     frag_job,
     get_current_moldable_job,
@@ -31,7 +31,6 @@ from oar.lib.job_handling import (
     job_leon_exterminate,
     job_refrag,
 )
-from oar.lib.logging import get_logger
 from oar.lib.resource_handling import (
     get_absent_suspected_resources_for_a_timeout,
     get_expired_resources,
@@ -237,9 +236,9 @@ class Sarko(object):
 
 
 def main():  # pragma: no cover
-    config, _, logger = init_oar()
+    config, _, logger, _ = init_oar()
 
-    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger = get_logger("oar.modules.sarko", forward_stderr=True)
     logger.info("Start Sarko")
 
     sarko = Sarko(config, logger)

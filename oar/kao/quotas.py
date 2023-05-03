@@ -5,8 +5,7 @@ from datetime import datetime, timedelta
 
 import simplejson as json
 
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
@@ -21,8 +20,8 @@ _day2week_offset = {
     "sun": 6,
 }
 
-_, _, log = init_oar()
-logger = get_logger(log, "oar.kao.quotas")
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.kao.quotas")
 
 
 class Calendar(object):

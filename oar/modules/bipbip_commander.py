@@ -35,10 +35,9 @@ import socket
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 
-config, db, logger = init_oar()
+config, db, log, session_factory = init_oar()
 
 
 # Set undefined config value to default one
@@ -61,7 +60,7 @@ Detach_oarexec = config["DETACH_JOB_FROM_SERVER"]
 # Maximum duration a a bipbip process (after that time the process is killed)
 Max_bipbip_process_duration = 30 * 60
 
-logger = get_logger(logger, "oar.modules.bipbip_commander", forward_stderr=True)
+logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
 logger.info("Start Bipbip Commander")
 
 if "OARDIR" in os.environ:

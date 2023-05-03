@@ -5,14 +5,13 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.kao.kao import main
 from oar.lib.database import ephemeral_session
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.logging import get_logger
 from oar.lib.models import Job, Queue, Resource
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
-logger = get_logger(log, "oar.kao")
+logger = get_logger("oar.kao")
 
 
 @pytest.fixture(scope="function", autouse=True)

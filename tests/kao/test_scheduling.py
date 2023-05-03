@@ -10,7 +10,7 @@ from oar.kao.slot import Slot, SlotSet
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import JobPseudo
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
 # import pdb
 

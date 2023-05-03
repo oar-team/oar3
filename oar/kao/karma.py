@@ -4,14 +4,7 @@ import re
 
 from sqlalchemy import func
 
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
 from oar.lib.models import Accounting
-
-_, _, log = init_oar()
-
-# Log category
-logger = get_logger(log, "oar.kao.karma")
 
 
 # convert perl hash 2 dict

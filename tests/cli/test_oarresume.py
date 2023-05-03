@@ -79,7 +79,7 @@ def test_oarresume_simple(minimal_db_initialization, setup_config):
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
-    set_job_state(minimal_db_initialization, job_id, "Suspended")
+    set_job_state(minimal_db_initialization, config, job_id, "Suspended")
     runner = CliRunner()
     result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
     event_job_id = (
@@ -96,7 +96,7 @@ def test_oarresume_array(minimal_db_initialization, setup_config):
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=11
     )
-    set_job_state(minimal_db_initialization, job_id, "Suspended")
+    set_job_state(minimal_db_initialization, config, job_id, "Suspended")
     runner = CliRunner()
     result = runner.invoke(
         cli, ["--array", "11"], obj=(minimal_db_initialization, config)
@@ -128,7 +128,7 @@ def test_oarresume_sql(minimal_db_initialization, setup_config):
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=11
     )
-    set_job_state(minimal_db_initialization, job_id, "Suspended")
+    set_job_state(minimal_db_initialization, config, job_id, "Suspended")
     runner = CliRunner()
     result = runner.invoke(
         cli, ["--sql", "array_id='11'"], obj=(minimal_db_initialization, config)

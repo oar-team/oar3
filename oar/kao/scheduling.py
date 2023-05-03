@@ -8,17 +8,15 @@ from procset import ProcSet
 
 from oar.kao.quotas import Quotas
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
-from oar.lib.logging import get_logger
 
 # for quotas
 from oar.lib.resource import ResourceSet
 
-_, _, log = init_oar()
-
-logger = get_logger(log, "oar.kamelot")
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.kamelot")
 
 
 def set_slots_with_prev_scheduled_jobs(

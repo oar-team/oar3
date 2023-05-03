@@ -529,16 +529,12 @@ def cli(
     """Display informations about nodes."""
     ctx = click.get_current_context()
     if ctx.obj:
-        (config, session) = ctx.obj
+        (session, config) = ctx.obj
     else:
-        config, db, log = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
+        config, engine, log = init_oar()
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     properties = property

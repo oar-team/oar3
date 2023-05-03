@@ -8,7 +8,7 @@ from oar.lib import tools
 from oar.lib.globals import init_oar
 from oar.lib.models import EventLog, EventLogHostname  # , db, get_logger, tools
 
-config, db, logger = init_oar()
+# config, db, log, session_factory = init_oar()
 
 
 def add_new_event(session, ev_type, job_id, description, to_check="YES"):

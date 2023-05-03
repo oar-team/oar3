@@ -3,13 +3,12 @@
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 from oar.kao.slot import MAX_TIME, SlotSet
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
-from oar.lib.logging import get_logger
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
-logger = get_logger(log, "oar.kamelot_basic")
+logger = get_logger("oar.kamelot_basic")
 
 
 def schedule_cycle(session, config, plt, queues=["default"]):
@@ -93,9 +92,9 @@ def schedule_cycle(session, config, plt, queues=["default"]):
 # Main function
 #
 def main(session=None, config=None):
-    config, _, log = init_oar()
+    config, _, log, session_factory = init_oar()
 
-    logger = get_logger(log, "oar.kamelot_basic", forward_stderr=True)
+    logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     plt = Platform()
 
     schedule_cycle(session, config, plt)

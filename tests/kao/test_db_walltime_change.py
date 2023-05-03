@@ -5,15 +5,14 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from oar.kao.platform import Platform
 from oar.kao.walltime_change import process_walltime_change_requests
 from oar.lib.database import ephemeral_session
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.logging import get_logger
 from oar.lib.models import EventLog, Queue, Resource, WalltimeChange
 
 from ..helpers import insert_running_jobs
 
-_, _, log = init_oar()
-logger = get_logger(log, "oar.kao.walltime_change")
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.kao.walltime_change")
 
 
 @pytest.fixture(scope="function", autouse=True)

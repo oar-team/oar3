@@ -6,16 +6,15 @@ from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
-from oar.lib.logging import get_logger
 from oar.lib.plugins import find_plugin_function
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
-_, _, log = init_oar()
-logger = get_logger(log, "oar.kamelot")
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.kamelot")
 
 
 def jobs_sorting(session, config, queues, now, waiting_jids, waiting_jobs, plt):
@@ -202,8 +201,8 @@ def schedule_cycle(session, config, plt, now, queues=["default"]):
 # Main function
 #
 def main(session=None):
-    config, _, log = init_oar()
-    logger = get_logger(log, "oar.kamelot", forward_stderr=True)
+    config, _, log, session_factory = init_oar()
+    logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()
 

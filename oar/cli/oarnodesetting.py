@@ -405,7 +405,7 @@ def cli(
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log = init_oar()
+        config, db, log, session_factory = init_oar()
         engine = EngineConnector(db).get_engine()
 
         Model.metadata.drop_all(bind=engine)

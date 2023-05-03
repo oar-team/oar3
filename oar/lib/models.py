@@ -26,60 +26,9 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool
 
+from oar.lib.database import Database
+
 from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
-
-
-def setup_db(db):
-    JOBS_TABLES = [
-        {"jobs": "job_id"},
-        {"challenges": "job_id"},
-        {"event_logs": "job_id"},
-        {"frag_jobs": "frag_id_job"},
-        {"job_dependencies": "job_id"},
-        {"job_dependencies": "job_id_required"},
-        {"job_state_logs": "job_id"},
-        {"job_types": "job_id"},
-        {"moldable_job_descriptions": "moldable_job_id"},
-    ]
-
-    MOLDABLES_JOBS_TABLES = [
-        {"moldable_job_descriptions": "moldable_id"},
-        {"assigned_resources": "moldable_job_id"},
-        {"job_resource_groups": "res_group_moldable_id"},
-        {"gantt_jobs_predictions": "moldable_job_id"},
-        {"gantt_jobs_predictions_log": "moldable_job_id"},
-        {"gantt_jobs_predictions_visu": "moldable_job_id"},
-        {"gantt_jobs_resources": "moldable_job_id"},
-        {"gantt_jobs_resources_log": "moldable_job_id"},
-        {"gantt_jobs_resources_visu": "moldable_job_id"},
-    ]
-
-    RESOURCES_TABLES = [
-        {"resources": "resource_id"},
-        {"assigned_resources": "resource_id"},
-        {"resource_logs": "resource_id"},
-        {"gantt_jobs_resources": "resource_id"},
-        {"gantt_jobs_resources_log": "resource_id"},
-        {"gantt_jobs_resources_visu": "resource_id"},
-    ]
-
-    db.__time_columns__ = [
-        "window_start",
-        "window_stop",
-        "date_start",
-        "date_stop",
-        "last_job_date",
-        "available_upto",
-        "start_time",
-        "date",
-        "submission_time",
-        "stop_time",
-        "date",
-    ]
-
-    # schema = Table(
-    #     "schema", Column("version", String(255)), Column("name", String(255))
-    # )
 
 
 class _BoundDeclarativeMeta(DeclarativeMeta):
@@ -179,7 +128,7 @@ class BaseModel(object):
         return "<%s %s>" % (self.__class__.__name__, inspect(self).identity)
 
 
-Model = declarative_base(cls=BaseModel, name="Model", metaclass=_BoundDeclarativeMeta)
+Model = declarative_base(cls=BaseModel, name="Model")
 
 
 class DeferredReflectionModel(DeferredReflection, Model):
@@ -435,6 +384,30 @@ class JobType(Model):
     types_index = Column(String(7), index=True, server_default="CURRENT")
 
 
+class Resource(DeferredReflectionModel):
+    __tablename__ = "resources"
+
+    id = Column("resource_id", Integer, primary_key=True)
+    type = Column(String(100), index=True, server_default="default")
+    network_address = Column(String(100), index=True, server_default="")
+    state = Column(String(9), index=True, server_default="Alive")
+    next_state = Column(String(9), index=True, server_default="UnChanged")
+    finaud_decision = Column(String(3), server_default="NO")
+    next_finaud_decision = Column(String(3), server_default="NO")
+    state_num = Column(Integer, server_default="0")
+    suspended_jobs = Column(String(3), index=True, server_default="NO")
+    scheduler_priority = Column(BigInteger, server_default="0")
+    cpuset = Column(String(255), server_default="0")
+    besteffort = Column(String(3), server_default="YES")
+    deploy = Column(String(3), server_default="NO")
+    expiry_date = Column(Integer, server_default="0")
+    desktop_computing = Column(String(3), server_default="NO")
+    last_job_date = Column(Integer, server_default="0")
+    available_upto = Column(Integer, server_default="2147483647")
+    last_available_upto = Column(Integer, server_default="0")
+    drain = Column(String(3), server_default="NO")
+
+
 class Job(DeferredReflectionModel):
     __tablename__ = "jobs"
     __table_args__ = (Index("state_id", "state", "job_id"),)
@@ -505,30 +478,6 @@ class ResourceLog(Model):
     finaud_decision = Column(String(3), index=True, server_default="NO")
 
 
-class Resource(DeferredReflectionModel):
-    __tablename__ = "resources"
-
-    id = Column("resource_id", Integer, primary_key=True)
-    type = Column(String(100), index=True, server_default="default")
-    network_address = Column(String(100), index=True, server_default="")
-    state = Column(String(9), index=True, server_default="Alive")
-    next_state = Column(String(9), index=True, server_default="UnChanged")
-    finaud_decision = Column(String(3), server_default="NO")
-    next_finaud_decision = Column(String(3), server_default="NO")
-    state_num = Column(Integer, server_default="0")
-    suspended_jobs = Column(String(3), index=True, server_default="NO")
-    scheduler_priority = Column(BigInteger, server_default="0")
-    cpuset = Column(String(255), server_default="0")
-    besteffort = Column(String(3), server_default="YES")
-    deploy = Column(String(3), server_default="NO")
-    expiry_date = Column(Integer, server_default="0")
-    desktop_computing = Column(String(3), server_default="NO")
-    last_job_date = Column(Integer, server_default="0")
-    available_upto = Column(Integer, server_default="2147483647")
-    last_available_upto = Column(Integer, server_default="0")
-    drain = Column(String(3), server_default="NO")
-
-
 class Scheduler(Model):
     __tablename__ = "scheduler"
 
@@ -572,3 +521,56 @@ def all_tables():
             yield obj.__table__.name, obj.__table__
         elif isinstance(obj, Table):
             yield obj.name, obj
+
+
+def setup_db(db: Database, engine):
+    JOBS_TABLES = [
+        {"jobs": "job_id"},
+        {"challenges": "job_id"},
+        {"event_logs": "job_id"},
+        {"frag_jobs": "frag_id_job"},
+        {"job_dependencies": "job_id"},
+        {"job_dependencies": "job_id_required"},
+        {"job_state_logs": "job_id"},
+        {"job_types": "job_id"},
+        {"moldable_job_descriptions": "moldable_job_id"},
+    ]
+
+    MOLDABLES_JOBS_TABLES = [
+        {"moldable_job_descriptions": "moldable_id"},
+        {"assigned_resources": "moldable_job_id"},
+        {"job_resource_groups": "res_group_moldable_id"},
+        {"gantt_jobs_predictions": "moldable_job_id"},
+        {"gantt_jobs_predictions_log": "moldable_job_id"},
+        {"gantt_jobs_predictions_visu": "moldable_job_id"},
+        {"gantt_jobs_resources": "moldable_job_id"},
+        {"gantt_jobs_resources_log": "moldable_job_id"},
+        {"gantt_jobs_resources_visu": "moldable_job_id"},
+    ]
+
+    RESOURCES_TABLES = [
+        {"resources": "resource_id"},
+        {"assigned_resources": "resource_id"},
+        {"resource_logs": "resource_id"},
+        {"gantt_jobs_resources": "resource_id"},
+        {"gantt_jobs_resources_log": "resource_id"},
+        {"gantt_jobs_resources_visu": "resource_id"},
+    ]
+
+    db.__time_columns__ = [
+        "window_start",
+        "window_stop",
+        "date_start",
+        "date_stop",
+        "last_job_date",
+        "available_upto",
+        "start_time",
+        "date",
+        "submission_time",
+        "stop_time",
+        "date",
+    ]
+
+    # schema = Table(
+    #     "schema", Column("version", String(255)), Column("name", String(255))
+    # )

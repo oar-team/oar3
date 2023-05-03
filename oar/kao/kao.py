@@ -2,12 +2,11 @@
 # coding: utf-8
 
 from oar.kao.meta_sched import meta_schedule
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
-logger = get_logger(log, "oar.kao")
+logger = get_logger("oar.kao")
 
 
 def main(session, config):

@@ -10,8 +10,7 @@ from oar.lib.accounting import (
     delete_all_from_accounting,
 )
 from oar.lib.database import EngineConnector
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import Model
 
 from .utils import CommandReturns
@@ -37,7 +36,7 @@ def cli(reinitialize, delete_before, version):
     if ctx.obj:
         session = ctx.obj
     else:
-        config, db, log = init_oar()
+        config, db, log, session_factory = init_oar()
         engine = EngineConnector(db).get_engine()
 
         Model.metadata.drop_all(bind=engine)

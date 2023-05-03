@@ -443,19 +443,13 @@ def cli(
     """Submit a job to OAR batch scheduler."""
 
     ctx = click.get_current_context()
-    cmd_ret = CommandReturns(cli)
     if ctx.obj:
-        session, config = ctx.obj
-
+        (session, config) = ctx.obj
     else:
-        config, db, log = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
+        config, engine, log = init_oar()
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     global job_id_lst
@@ -711,7 +705,7 @@ def cli(
                 break
 
         if answer == "GOOD JOB":
-            connect_job(job_id_lst[0], 1, openssh_cmd, cmd_ret)
+            connect_job(session, config, job_id_lst[0], 1, openssh_cmd, cmd_ret)
         else:
             cmd_ret.exit(11)
 

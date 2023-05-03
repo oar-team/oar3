@@ -17,8 +17,7 @@ from oar.kao.helpers import extract_find_assign_args
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 
 # from oar.lib.utils import render_query
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import (
     AssignedResource,
     Challenge,
@@ -48,9 +47,7 @@ from oar.lib.tools import (
     limited_dict2hash_perl,
 )
 
-config, db, logger = init_oar()
-
-logger = get_logger(logger, "oar.lib.job_handling")
+logger = get_logger("oar.lib.job_handling")
 
 
 """ Use
@@ -1642,7 +1639,7 @@ def log_job(session, job):  # pragma: no cover
     session.commit()
 
 
-def set_job_state(session, jid, state):
+def set_job_state(session, config, jid, state):
     result = (
         session.query(Job)
         .filter(Job.id == jid)
@@ -1688,7 +1685,7 @@ def set_job_state(session, jid, state):
             elif state == "Running":
                 tools.notify_user(job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
-                update_current_scheduler_priority(session, job, "+2", "START")
+                update_current_scheduler_priority(session, config, job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
                 if job.stop_time < job.start_time:
                     session.query(Job).filter(Job.id == jid).update(
@@ -1726,7 +1723,7 @@ def set_job_state(session, jid, state):
                         job, "ERROR", "Job stopped abnormally or an OAR error occured."
                     )
 
-                update_current_scheduler_priority(session, job, "-2", "STOP")
+                update_current_scheduler_priority(session, config, job, "-2", "STOP")
 
                 # Here we must not be asynchronously with the scheduler
                 log_job(session, job)
@@ -1937,7 +1934,7 @@ def get_job_host_log(session, moldable_id):
 
 def suspend_job_action(session, job_id, moldable_id):
     """perform all action when a job is suspended"""
-    set_job_state(session, job_id, "Suspended")
+    set_job_state(session, config, job_id, "Suspended")
     session.query(Job).filter(Job.id == job_id).update(
         {"suspended": "YES"}, synchronize_session=False
     )
@@ -2030,7 +2027,7 @@ def check_end_of_job(
     if job.state in ["Running", "Launching", "Suspended", "Resuming"]:
         logger.debug(log_jid + "Job is ended")
         set_finish_date(session, job)
-        set_job_state(session, job_id, "Finishing")
+        set_job_state(session, config, job_id, "Finishing")
 
         if exit_script_value:
             try:

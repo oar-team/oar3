@@ -541,14 +541,8 @@ def cli(
     if ctx.obj:
         session = ctx.obj
     else:
-        config, db, log = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
-        session_factory = sessionmaker(bind=engine)
+        config, db, log, session_factory = init_oar()
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     cmd_ret = CommandReturns(cli)

@@ -8,7 +8,7 @@ from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 from oar.lib.globals import init_oar
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
 config["LOG_FILE"] = ":stderr:"
 

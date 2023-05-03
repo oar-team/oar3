@@ -14,7 +14,7 @@ from oar.modules.almighty import Almighty, signal_handler
 from ..faketools import FakePopen, fake_call, fake_get_date, fake_popen, set_fake_date
 from ..fakezmq import FakeZmq
 
-config, db, logger = init_oar()
+config, db, log, session_factory = init_oar()
 
 fakezmq = FakeZmq()
 

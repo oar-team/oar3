@@ -4,13 +4,8 @@
 # TODO is_waiting_job_specific_queue_present($$);
 from itertools import groupby
 
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import Queue
-
-_, _, logger = init_oar()
-
-logger = get_logger(logger, "oar.lib.queue")
 
 
 def get_all_queue_by_priority(session):

@@ -48,8 +48,7 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.node import (
     change_node_state,
     get_alive_nodes_with_jobs,
@@ -57,8 +56,8 @@ from oar.lib.node import (
     get_nodes_with_given_sql,
 )
 
-_, _, logger = init_oar()
-logger = get_logger(logger, "oar.modules.hulot", forward_stderr=True)
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.modules.hulot", forward_stderr=True)
 
 
 def check_reminded_list(

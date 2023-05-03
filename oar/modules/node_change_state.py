@@ -22,7 +22,7 @@ from oar.lib.event import (
     get_to_check_events,
     is_an_event_exists,
 )
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     frag_job,
     get_cpuset_values,
@@ -35,7 +35,6 @@ from oar.lib.job_handling import (
     set_job_state,
     suspend_job_action,
 )
-from oar.lib.logging import get_logger
 from oar.lib.node import get_all_resources_on_node, set_node_state
 from oar.lib.queue import stop_all_queues
 from oar.lib.resource_handling import (
@@ -46,9 +45,9 @@ from oar.lib.resource_handling import (
     set_resource_state,
 )
 
-_, _, logger = init_oar()
+config, db, log = init_oar(no_db=True)
 
-logger = get_logger(logger, "oar.modules.node_change_state", forward_stderr=True)
+logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
 logger.info("Start Node Change State")
 
 
@@ -510,13 +509,13 @@ class NodeChangeState(object):
 
 
 def main():
-    config, db, logger = init_oar()
+    config, db, log, session_factory = init_oar()
     engine = EngineConnector(db).get_engine()
 
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
-    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger = get_logger("oar.modules.sarko", forward_stderr=True)
     logger.info("Start Sarko")
 
     node_change_state = NodeChangeState(config)

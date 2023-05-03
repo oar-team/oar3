@@ -6,8 +6,7 @@ from sqlalchemy import distinct, func, or_, text
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, is_an_event_exists
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import (
     AssignedResource,
     EventLog,
@@ -21,8 +20,6 @@ from oar.lib.models import (
 from oar.lib.psycopg2 import pg_bulk_insert
 
 State_to_num = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
-
-config, db, logger = init_oar()
 
 logger = get_logger("oar.lib.resource_handling")
 
@@ -320,7 +317,7 @@ def update_scheduler_last_job_date(session, date, moldable_id):
     ).update({Resource.last_job_date: date}, synchronize_session=False)
 
 
-def update_current_scheduler_priority(session, job, value, state):
+def update_current_scheduler_priority(session, config, job, value, state):
     """Update the scheduler_priority field of the table resources"""
     # TODO: need to adress this s
     from oar.lib.job_handling import get_job_types
@@ -344,18 +341,24 @@ def update_current_scheduler_priority(session, job, value, state):
         try:
             job_types = job.types
         except AttributeError:
-            job_types = get_job_types(job.id)
+            job_types = get_job_types(session, job.id)
 
         if (
             ("besteffort" in job_types.keys()) or ("timesharing" in job_types.keys())
         ) and (
             (
                 (state == "START")
-                and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") <= 0
+                and is_an_event_exists(
+                    session, job.id, "SCHEDULER_PRIORITY_UPDATED_START"
+                )
+                <= 0
             )
             or (
                 (state == "STOP")
-                and is_an_event_exists(job.id, "SCHEDULER_PRIORITY_UPDATED_START") > 0
+                and is_an_event_exists(
+                    session, job.id, "SCHEDULER_PRIORITY_UPDATED_START"
+                )
+                > 0
             )
         ):
             coeff = 1

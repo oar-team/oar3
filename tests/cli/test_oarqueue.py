@@ -26,7 +26,7 @@ def minimal_db_initialization(request, setup_config):
 def test_version(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
@@ -35,7 +35,7 @@ def test_oarqueue_bad_user(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "bob"
     runner = CliRunner()
-    result = runner.invoke(cli, obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 8
 
 
@@ -43,7 +43,7 @@ def test_oarqueue_void(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
-    result = runner.invoke(cli, obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     print(result.output)
     assert result.exit_code == 0
     assert re.match(r".*default.*", result.output)
@@ -54,7 +54,7 @@ def test_oarqueue_enable(minimal_db_initialization, setup_config):
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-e", "default"], obj=(config, minimal_db_initialization)
+        cli, ["-e", "default"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     queue = minimal_db_initialization.query(Queue).filter(Queue.name == "default").one()
@@ -66,7 +66,7 @@ def test_oarqueue_disable(minimal_db_initialization, setup_config):
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-d", "default"], obj=(config, minimal_db_initialization)
+        cli, ["-d", "default"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     queue = minimal_db_initialization.query(Queue).filter(Queue.name == "default").one()
@@ -77,7 +77,7 @@ def test_oarqueue_enable_all(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
-    result = runner.invoke(cli, ["-E"], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, ["-E"], obj=(minimal_db_initialization, config))
     assert result.exit_code == 0
     queue = minimal_db_initialization.query(Queue).filter(Queue.name == "default").one()
     assert queue.state == "Active"
@@ -87,7 +87,7 @@ def test_oarqueue_disable_all(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
-    result = runner.invoke(cli, ["-D"], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, ["-D"], obj=(minimal_db_initialization, config))
     assert result.exit_code == 0
     queue = minimal_db_initialization.query(Queue).filter(Queue.name == "default").one()
     assert queue.state == "notActive"
@@ -98,7 +98,7 @@ def test_oarqueue_add(minimal_db_initialization, setup_config):
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--add", "admin,10,kamelot"], obj=(config, minimal_db_initialization)
+        cli, ["--add", "admin,10,kamelot"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     queue = (
@@ -114,7 +114,7 @@ def test_oarqueue_change(minimal_db_initialization, setup_config):
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--change", "default,42,fast"], obj=(config, minimal_db_initialization)
+        cli, ["--change", "default,42,fast"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     queue = minimal_db_initialization.query(Queue).filter(Queue.name == "default").one()
@@ -129,7 +129,7 @@ def test_oarqueue_remove(minimal_db_initialization, setup_config):
     assert len(minimal_db_initialization.query(Queue).all()) == 2
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--remove", "admin"], obj=(config, minimal_db_initialization)
+        cli, ["--remove", "admin"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     assert len(minimal_db_initialization.query(Queue).all()) == 1

@@ -21,6 +21,19 @@ from .utils import cached_property, get_table_name, merge_dicts, reraise, to_jso
 __all__ = ["Database"]
 
 
+def reflect_base(metadata, defered, engine):
+    """Proxy for Model.prepare"""
+    # from oar.lib.models import DeferredReflectionModel
+
+    # try:
+    #     metadata.create_all(bind=engine)
+    # except Exception as e:
+    #     print("mouyahahah: f{e}")
+
+    # autoload all tables marked for autoreflect
+    defered.prepare(engine)
+
+
 def wait_db_ready(f, args=None, attempt=7):
     delay = 0.2
     while attempt > 0:
@@ -179,7 +192,11 @@ class Database(object):
         if not self._reflected:
             if bind is None:
                 bind = self.engine
-            self.create_all(metadata, bind=bind)
+            try:
+                self.create_all(metadata, bind=bind)
+            except Exception as e:
+                print("mouyahahah: f{e}")
+
             # autoload all tables marked for autoreflect
             DeferredReflectionModel.prepare(bind)
             self._reflected = True

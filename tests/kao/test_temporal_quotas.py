@@ -9,16 +9,15 @@ from procset import ProcSet
 from oar.kao.quotas import Calendar, Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.slot import Slot, SlotSet
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import JobPseudo
-from oar.lib.logging import get_logger
 from oar.lib.resource import ResourceSet
 from oar.lib.tools import local_to_sql
 
-config, _, log = init_oar()
+config, _, log, session_factory = init_oar()
 
 config["LOG_FILE"] = ":stderr:"
-logger = get_logger(log, "oar.test")
+logger = get_logger("oar.test")
 
 """
     quotas[queue, project, job_type, user] = [int, int, float];

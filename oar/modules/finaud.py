@@ -7,8 +7,7 @@ import sys
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event_with_host
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.node import (
     get_current_assigned_nodes,
     get_finaud_nodes,
@@ -16,8 +15,8 @@ from oar.lib.node import (
     update_node_nextFinaudDecision,
 )
 
-_, _, log = init_oar()
-logger = get_logger(log, "oar.modules.finaud", forward_stderr=True)
+config, db, log = init_oar(no_db=True)
+logger = get_logger("oar.modules.finaud", forward_stderr=True)
 logger.debug("Start Finaud")
 
 

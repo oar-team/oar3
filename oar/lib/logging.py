@@ -53,20 +53,6 @@ def create_logger(config):
     return logger
 
 
-def get_logger(logger, *args, **kwargs):
-    """Returns sub logger once the root logger is configured."""
-    global STREAM_HANDLER
-    forward_stderr = kwargs.pop("forward_stderr", False)
-    # Make sure that the root logger is configured
-    sublogger = getLogger(*args, **kwargs)
-    sublogger.propage = False
-    if forward_stderr:
-        stream_handler = get_global_stream_handler(logger.config, "stderr")
-        if stream_handler not in logger.handlers:  # pragma: no cover
-            sublogger.addHandler(stream_handler)
-    return sublogger
-
-
 def get_global_stream_handler(config, output="stderr"):
     # from . import config
 

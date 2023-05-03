@@ -36,7 +36,7 @@ def monkeypatch_tools(request, monkeypatch):
 def test_version(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
@@ -44,7 +44,7 @@ def test_version(minimal_db_initialization, setup_config):
 def test_oarhold_void(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
@@ -55,7 +55,7 @@ def test_oarhold_simple_bad_user(minimal_db_initialization, setup_config):
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
@@ -66,7 +66,7 @@ def test_oarhold_simple(minimal_db_initialization, setup_config):
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
     event_job_id = (
         minimal_db_initialization.query(EventLog.job_id)
         .filter(EventLog.job_id == job_id)
@@ -83,7 +83,7 @@ def test_oarhold_array(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--array", "11"], obj=(config, minimal_db_initialization)
+        cli, ["--array", "11"], obj=(minimal_db_initialization, config)
     )
     event_job_id = (
         minimal_db_initialization.query(EventLog.job_id)
@@ -100,7 +100,7 @@ def test_oarhold_array_nojob(minimal_db_initialization, setup_config):
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--array", "11"], obj=(config, minimal_db_initialization)
+        cli, ["--array", "11"], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*job for this array job.*", result.output)
@@ -114,7 +114,7 @@ def test_oarhold_sql(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "array_id='11'"], obj=(config, minimal_db_initialization)
+        cli, ["--sql", "array_id='11'"], obj=(minimal_db_initialization, config)
     )
     event_job_id = (
         minimal_db_initialization.query(EventLog.job_id)
@@ -130,7 +130,7 @@ def test_oarhold_sql_nojob(minimal_db_initialization, setup_config):
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "array_id='11'"], obj=(config, minimal_db_initialization)
+        cli, ["--sql", "array_id='11'"], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*job for this SQL WHERE.*", result.output)
@@ -146,7 +146,7 @@ def test_oarhold_job_types_cosystem(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--running", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--running", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*cosystem type.*", result.output)
@@ -160,7 +160,7 @@ def test_oarhold_job_types_deploy(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--running", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--running", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*deploy type.*", result.output)

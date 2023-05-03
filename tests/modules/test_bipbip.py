@@ -85,7 +85,7 @@ def monkeypatch_tools(request, monkeypatch):
 def test_bipbip_void(setup_config, minimal_db_initialization):
     config, db, engine = setup_config
     bipbip = BipBip([], config)
-    bipbip.run(config, minimal_db_initialization)
+    bipbip.run(minimal_db_initialization, config)
     print(bipbip.exit_code)
     assert bipbip.exit_code == 1
 

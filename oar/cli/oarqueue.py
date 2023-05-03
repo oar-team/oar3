@@ -128,9 +128,9 @@ def cli(list, enable, disable, enable_all, disable_all, add, change, remove, ver
 
     ctx = click.get_current_context()
     if ctx.obj:
-        (config, session) = ctx.obj
+        (session, config) = ctx.obj
     else:
-        config, db, log = init_oar()
+        config, db, log, session_factory = init_oar()
         engine = EngineConnector(db).get_engine()
 
         Model.metadata.drop_all(bind=engine)

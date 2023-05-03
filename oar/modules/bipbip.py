@@ -13,7 +13,7 @@ import sys
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, add_new_event_with_host
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     archive_some_moldable_job_nodes,
     check_end_of_job,
@@ -27,7 +27,6 @@ from oar.lib.job_handling import (
     set_job_message,
     set_job_state,
 )
-from oar.lib.logging import get_logger
 from oar.lib.resource_handling import get_current_assigned_job_resources
 from oar.lib.tools import (
     TimeoutExpired,
@@ -39,7 +38,7 @@ from oar.lib.tools import (
 
 _, db, logger = init_oar()
 
-logger = get_logger(logger, "oar.modules.bipbip", forward_stderr=True)
+logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
 
 class BipBip(object):

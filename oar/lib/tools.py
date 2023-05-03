@@ -29,15 +29,12 @@ import zmq
 from oar.lib.event import add_new_event
 
 # from oar.lib import config, db
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 
 # from oar.lib import logger as log
 
 
-config, db, logger = init_oar()
-
-tools_logger = get_logger(logger, "oar.lib.tools", forward_stderr=True)
+tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
 zmq_context = None
 almighty_socket = None
@@ -335,7 +332,7 @@ def send_log_by_email(title, message):  # pragma: no cover
     return
 
 
-def exec_with_timeout(cmd, timeout=config["TIMEOUT_SSH"]):  # pragma: no cover
+def exec_with_timeout(cmd, timeout=None):  # pragma: no cover
     # Launch admin script
     error_msg = ""
     try:

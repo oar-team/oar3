@@ -3,8 +3,7 @@
 from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
-from oar.lib.globals import init_oar
-from oar.lib.logging import get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import (  # config,; db,; get_logger,
     AssignedResource,
     EventLog,
@@ -19,11 +18,9 @@ from oar.lib.models import (  # config,; db,; get_logger,
 )
 from oar.lib.resource_handling import get_resources_state
 
-_, _, logger = init_oar()
-
 STATE2NUM = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 
-logger = get_logger(logger, "oar.lib.node")
+logger = get_logger("oar.lib.node")
 
 
 # TODO change name

@@ -6,21 +6,28 @@ import tempfile
 from codecs import open
 
 import pytest
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from sqlalchemy import Column, Integer, String, text
 
-from oar.lib.database import EngineConnector
+from oar.lib.database import EngineConnector, reflect_base
 
 # from oar.lib import config, db
-from oar.lib.globals import init_oar
-from oar.lib.models import Model
+from oar.lib.globals import init_config, init_oar
+from oar.lib.models import DeferredReflectionModel, Model
 
 from . import DEFAULT_CONFIG
 
-config, db, logger = init_oar()
+
+def op(engine):
+    ctx = MigrationContext.configure(engine.connect())
+    return Operations(ctx)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
+    config = init_config()
+
     config.update(DEFAULT_CONFIG.copy())
     tempdir = tempfile.mkdtemp()
     config["LOG_FILE"] = os.path.join(tempdir, "oar.log")
@@ -47,32 +54,24 @@ def setup_config(request):
         config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
         config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "localhost")
 
-    def dump_configuration(filename):
-        folder = os.path.dirname(filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        with open(filename, "w", encoding="utf-8") as fd:
-            for key, value in config.items():
-                if not key.startswith("SQLALCHEMY_"):
-                    fd.write("%s=%s\n" % (key, str(value)))
+    config, engine, _ = init_oar(config=config, no_reflect=True)
 
-    dump_configuration("/tmp/oar.conf")
-
-    engine = EngineConnector(db).get_engine()
-
-    Model.metadata.drop_all(bind=engine)
-    db.create_all(Model.metadata, bind=engine)
-
+    # Model.metadata.drop_all(bind=engine)
     kw = {"nullable": True}
 
-    db.op(engine).add_column("resources", Column("core", Integer, **kw))
-    db.op(engine).add_column("resources", Column("cpu", Integer, **kw))
-    db.op(engine).add_column("resources", Column("host", String(255), **kw))
-    db.op(engine).add_column("resources", Column("mem", Integer, **kw))
+    Model.metadata.create_all(bind=engine)
 
-    db.reflect(Model.metadata, bind=engine)
+    op(engine).add_column("resources", Column("core", Integer, **kw))
+    op(engine).add_column("resources", Column("cpu", Integer, **kw))
+    op(engine).add_column("resources", Column("host", String(255), **kw))
+    op(engine).add_column("resources", Column("mem", Integer, **kw))
 
-    yield config, db, engine
+    # reflect_base(Model.metadata, DeferredReflectionModel, engine)
+    DeferredReflectionModel.prepare(engine)
+    # db.reflect(Model.metadata, bind=engine)
+    yield config, True, engine
 
-    db.close()
+    # db.close()
+    engine.dispose()
+
     shutil.rmtree(tempdir)

@@ -17,7 +17,7 @@ import sys
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     get_job_current_hostnames,
     get_job_frag_state,
@@ -31,11 +31,10 @@ from oar.lib.job_handling import (
     set_job_state,
     set_running_date,
 )
-from oar.lib.logging import get_logger
 
-_, _, logger = init_oar()
+config, db, log = init_oar(no_db=True)
 
-logger = get_logger(logger, "oar.modules.leon", forward_stderr=True)
+logger = get_logger("oar.modules.leon", forward_stderr=True)
 
 logger.info("Start Leon")
 
@@ -175,9 +174,9 @@ class Leon(object):
 
 
 def main():  # pragma: no cover
-    config, _, logger = init_oar()
+    config, _, logger, _ = init_oar()
 
-    logger = get_logger(logger, "oar.modules.sarko", forward_stderr=True)
+    logger = get_logger("oar.modules.sarko", forward_stderr=True)
     logger.info("Start Sarko")
 
     leon = Leon(config, logger, sys.argv[1:])

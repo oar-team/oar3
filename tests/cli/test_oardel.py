@@ -37,7 +37,7 @@ def monkeypatch_tools(request, monkeypatch):
 def test_version(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
@@ -45,7 +45,7 @@ def test_version(minimal_db_initialization, setup_config):
 def test_oardel_void(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
@@ -56,7 +56,7 @@ def test_oardel_simple(minimal_db_initialization, setup_config):
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
     fragjob_id = (
         minimal_db_initialization.query(FragJob.job_id)
         .filter(FragJob.job_id == job_id)
@@ -77,7 +77,7 @@ def test_oardel_simple_cosystem(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-s", "USR1", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["-s", "USR1", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     import traceback
@@ -97,7 +97,7 @@ def test_oardel_simple_deploy(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-s", "USR1", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["-s", "USR1", str(job_id)], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
 
@@ -109,7 +109,7 @@ def test_oardel_simple_bad_user(minimal_db_initialization, setup_config):
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
     runner = CliRunner()
-    result = runner.invoke(cli, [str(job_id)], obj=(config, minimal_db_initialization))
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
@@ -127,7 +127,7 @@ def test_oardel_array(minimal_db_initialization, setup_config):
         )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--array", "1234"], obj=(config, minimal_db_initialization)
+        cli, ["--array", "1234"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     assert len(minimal_db_initialization.query(FragJob.job_id).all()) == 5
@@ -139,7 +139,7 @@ def test_oardel_array_nojob(minimal_db_initialization, setup_config):
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--array", "11"], obj=(config, minimal_db_initialization)
+        cli, ["--array", "11"], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*job for this array job.*", result.output)
@@ -153,7 +153,7 @@ def test_oardel_sql(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "array_id='11'"], obj=(config, minimal_db_initialization)
+        cli, ["--sql", "array_id='11'"], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 0
     assert len(minimal_db_initialization.query(FragJob.job_id).all()) == 1
@@ -164,7 +164,7 @@ def test_oardel_sql_nojob(minimal_db_initialization, setup_config):
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--sql", "array_id='11'"], obj=(config, minimal_db_initialization)
+        cli, ["--sql", "array_id='11'"], obj=(minimal_db_initialization, config)
     )
     assert re.match(r".*job for this SQL WHERE.*", result.output)
     assert result.exit_code == 0
@@ -180,7 +180,7 @@ def test_oardel_force_terminate_finishing_job_bad_user(
     result = runner.invoke(
         cli,
         ["--force-terminate-finishing-job", str(job_id)],
-        obj=(config, minimal_db_initialization),
+        obj=(minimal_db_initialization, config),
     )
     assert result.exit_code == 8
 
@@ -195,7 +195,7 @@ def test_oardel_force_terminate_finishing_job_not_finishing(
     result = runner.invoke(
         cli,
         ["--force-terminate-finishing-job", str(job_id)],
-        obj=(config, minimal_db_initialization),
+        obj=(minimal_db_initialization, config),
     )
     assert result.exit_code == 10
 
@@ -214,7 +214,7 @@ def test_oardel_force_terminate_finishing_job_too_early(
     result = runner.invoke(
         cli,
         ["--force-terminate-finishing-job", str(job_id)],
-        obj=(config, minimal_db_initialization),
+        obj=(minimal_db_initialization, config),
     )
     assert result.exit_code == 11
 
@@ -240,7 +240,7 @@ def test_oardel_force_terminate_finishing_job(minimal_db_initialization, setup_c
     result = runner.invoke(
         cli,
         ["--force-terminate-finishing-job", str(job_id)],
-        obj=(config, minimal_db_initialization),
+        obj=(minimal_db_initialization, config),
     )
 
     print(result.output)
@@ -254,7 +254,7 @@ def test_oardel_besteffort_bad_user(minimal_db_initialization, setup_config):
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--besteffort", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--besteffort", str(job_id)], obj=(minimal_db_initialization, config)
     )
     assert result.exit_code == 8
 
@@ -265,7 +265,7 @@ def test_oardel_besteffort_not_running(minimal_db_initialization, setup_config):
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--besteffort", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--besteffort", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*Running state.*", result.output)
@@ -283,7 +283,7 @@ def test_oardel_remove_besteffort(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--besteffort", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--besteffort", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*Remove besteffort type.*", result.output)
@@ -298,7 +298,7 @@ def test_oardel_add_besteffort(minimal_db_initialization, setup_config):
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--besteffort", str(job_id)], obj=(config, minimal_db_initialization)
+        cli, ["--besteffort", str(job_id)], obj=(minimal_db_initialization, config)
     )
     print(result.output)
     assert re.match(r".*Add besteffort type .*", result.output)

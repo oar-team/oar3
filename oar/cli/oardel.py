@@ -192,7 +192,9 @@ def oardel(
                 job = get_job(session, job_id)
                 if job.state == "Running":
                     if "besteffort" in get_job_types(session, job_id):
-                        update_current_scheduler_priority(session, job, "-2", "STOP")
+                        update_current_scheduler_priority(
+                            session, config, job, "-2", "STOP"
+                        )
                         remove_current_job_types(session, job_id, "besteffort")
                         add_new_event(
                             session,
@@ -205,7 +207,9 @@ def oardel(
                         )
                     else:
                         add_current_job_types(session, job_id, "besteffort")
-                        update_current_scheduler_priority(session, job, "+2", "START")
+                        update_current_scheduler_priority(
+                            session, config, job, "+2", "START"
+                        )
                         add_new_event(
                             session,
                             "ADD_BESTEFFORT_JOB_TYPE",
@@ -321,10 +325,10 @@ def cli(
     ctx = click.get_current_context()
     cmd_ret = CommandReturns(cli)
     if ctx.obj:
-        config, session = ctx.obj
+        session, config = ctx.obj
 
     else:
-        config, db, log = init_oar()
+        config, db, log, session_factory = init_oar()
         engine = EngineConnector(db).get_engine()
 
         Model.metadata.drop_all(bind=engine)

@@ -31,7 +31,7 @@ from oar.kao.slot import (
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
 from oar.lib.event import add_new_event, get_job_events
-from oar.lib.globals import init_oar
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     ALLOW,
     NO_PLACEHOLDER,
@@ -59,7 +59,6 @@ from oar.lib.job_handling import (
     set_job_state,
     set_moldable_job_max_time,
 )
-from oar.lib.logging import get_logger
 from oar.lib.models import GanttJobsPredictionsVisu, GanttJobsResourcesVisu
 from oar.lib.node import (
     get_gantt_hostname_to_wake_up,
@@ -73,7 +72,7 @@ from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.hulot import HulotClient
 
 # FIXME global config
-config, _, log = init_oar()
+config, _, log = init_oar(no_db=True)
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -89,7 +88,7 @@ reservation_waiting_timeout = int(config["RESERVATION_WAITING_RESOURCES_TIMEOUT"
 
 config["LOG_FILE"] = ":stderr:"
 # Log category
-logger = get_logger(log, "oar.kao.meta_sched")
+logger = get_logger("oar.kao.meta_sched")
 
 exit_code = 0
 
@@ -249,7 +248,7 @@ def prepare_job_to_be_launched(session, job, current_time_sec):
     # fix resource assignement
     add_resource_job_pairs(session, job.moldable_id)
 
-    set_job_state(session, job.id, "toLaunch")
+    set_job_state(session, config, job.id, "toLaunch")
 
     notify_to_run_job(job.id)
 
@@ -276,7 +275,7 @@ def handle_waiting_reservation_jobs(
                 + str(job.id)
                 + "] set job state to Error: avdance reservation expired and couldn't be started"
             )
-            set_job_state(session, job.id, "Error")
+            set_job_state(session, config, job.id, "Error")
             set_job_message(
                 session, job.id, "Reservation expired and couldn't be started."
             )
@@ -379,7 +378,7 @@ def check_reservation_jobs(
                     "[" + str(job.id) + "] Canceling job: reservation is too old"
                 )
                 set_job_message(session, job.id, "Reservation too old")
-                set_job_state(session, job.id, "toError")
+                set_job_state(session, config, job.id, "toError")
                 continue
             else:
                 if job.start_time < current_time_sec:
@@ -426,7 +425,7 @@ def check_reservation_jobs(
                         + ", value: "
                         + str(value)
                     )
-                    set_job_state(session, job.id, "toError")
+                    set_job_state(session, config, job.id, "toError")
                     set_job_message(
                         session,
                         job.id,
@@ -440,7 +439,7 @@ def check_reservation_jobs(
                     + str(job.id)
                     + "] advance reservation cannot be validated, not enough resources"
                 )
-                set_job_state(session, job.id, "toError")
+                set_job_state(session, config, job.id, "toError")
                 set_job_message(session, job.id, "This advance reservation cannot run")
             else:
                 # The reservation can be scheduled
@@ -456,7 +455,7 @@ def check_reservation_jobs(
                 #    slots_sets[job.id] = SlotSet(slot)
                 # Update the slotsets for the next AR to be scheduled within this loop
                 all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
-                set_job_state(session, job.id, "toAckReservation")
+                set_job_state(session, config, job.id, "toAckReservation")
 
             set_job_resa_state(session, job.id, "Scheduled")
 
@@ -1245,7 +1244,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                         "Cannot open connection to oarsub client for" + str(job.id)
                     )
             logger.debug("Set job " + str(job.id) + " to state Error")
-            set_job_state(session, job.id, "Error")
+            set_job_state(session, config, job.id, "Error")
 
     # Process toAckReservation jobs
     if "toAckReservation" in jobs_by_state:
@@ -1279,7 +1278,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                     + ") --> OK; jobInfo="
                     + job.info_type
                 )
-                set_job_state(session, job.id, "Waiting")
+                set_job_state(session, config, job.id, "Waiting")
                 if ((job.start_time - 1) <= current_time_sec) and (exit_code == 0):
                     exit_code = 1
 

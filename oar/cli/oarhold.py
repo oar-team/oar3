@@ -122,7 +122,7 @@ def cli(job_id, running, array, sql, version):
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log = init_oar()
+        config, db, log, session_factory = init_oar()
         engine = EngineConnector(db).get_engine()
 
         Model.metadata.drop_all(bind=engine)
@@ -132,5 +132,5 @@ def cli(job_id, running, array, sql, version):
         # TODO
         session = scoped()
 
-    cmd_ret = oarhold(config, session, job_id, running, array, sql, version, None)
+    cmd_ret = oarhold(session, config, job_id, running, array, sql, version, None)
     cmd_ret.exit()
