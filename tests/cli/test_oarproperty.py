@@ -3,13 +3,20 @@ import re
 
 import pytest
 from click.testing import CliRunner
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.cli.oarproperty import cli
+from oar.lib.database import ephemeral_session
 
-# @pytest.fixture(scope='function', autouse=True)
-# def minimal_db_initialization(request):
-#    with db.session(ephemeral=True):
-#        yield
+
+@pytest.fixture(scope="function", autouse=True)
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        yield session
 
 
 def test_version(minimal_db_initialization, setup_config):

@@ -27,14 +27,16 @@ def setup(request, setup_config):
     setup_config["APPENDICE_SERVER_PORT"] = "6670"
     setup_config["BIPBIP_COMMANDER_SERVER"] = "localhost"
     setup_config["BIPBIP_COMMANDER_PORT"] = "6671"
+
     fakezmq.reset()
 
-    @request.addfinalizer
-    def teardown():
-        del setup_config["SERVER_HOSTNAME"]
-        del setup_config["APPENDICE_SERVER_PORT"]
-        del setup_config["BIPBIP_COMMANDER_SERVER"]
-        del setup_config["BIPBIP_COMMANDER_PORT"]
+    yield
+
+    fakezmq.reset()
+    # del setup_config["SERVER_HOSTNAME"]
+    # del setup_config["APPENDICE_SERVER_PORT"]
+    # del setup_config["BIPBIP_COMMANDER_SERVER"]
+    # del setup_config["BIPBIP_COMMANDER_PORT"]
 
 
 def test_bipbip_commander_OAREXEC():

@@ -15,12 +15,9 @@ from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import get_job_types
 from oar.lib.models import (
     AdmissionRule,
-    AssignedResource,
     Challenge,
-    FragJob,
     Job,
     JobResourceDescription,
-    JobStateLog,
     MoldableJobDescription,
     Queue,
     Resource,
@@ -574,6 +571,7 @@ def test_oarsub_parameters_file_error(
         obj=(minimal_db_initialization, config),
     )
     print(result.output)
+    print(result.exception)
     assert result.exception.code == (
         6,
         "An array of job must have a number of sub-jobs greater than 0.",
