@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
+from oar.lib.job_handling import insert_job
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
+from oar.api.app import create_app
 from oar.api.query import APIQuery
-from oar.lib import db
+
+# from oar.lib import db
 from oar.lib.basequery import BaseQuery
+from oar.lib.database import ephemeral_session
+from oar.lib.models import Queue, Resource
 
 
 def ordered(obj):
@@ -28,17 +34,17 @@ def assign_node_list(nodes):  # TODO TOREPLACE
 
 
 @pytest.fixture()
-def fastapi_app():
-    from oar.api.app import create_app
+def fastapi_app(setup_config):
+    config, _, engine = setup_config
 
-    app = create_app()
+    app = create_app(config=config, engine=engine)
 
     # force to use APIQuery needed when all tests are launched and previous ones have set BaseQuery
-    db.sessionmaker.configure(query_cls=APIQuery)
+    # db.sessionmaker.configure(query_cls=APIQuery)
 
     yield app
 
-    db.sessionmaker.configure(query_cls=BaseQuery)
+    # db.sessionmaker.configure(query_cls=BaseQuery)
 
 
 @pytest.fixture()
@@ -78,13 +84,21 @@ def monkeypatch_scoped_session(request, monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def minimal_db_initialization(client, monkeypatch_tools, monkeypatch_scoped_session):
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+def minimal_db_initialization(client, setup_config, monkeypatch_tools):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        Queue.create(
+            session,
+            name="default",
+            priority=3,
+            scheduler_policy="kamelot",
+            state="Active",
         )
         # add some resources
         for i in range(10):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
+            Resource.create(session, network_address="localhost" + str(int(i / 2)))
 
-        yield
+        yield session

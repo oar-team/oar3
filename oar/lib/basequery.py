@@ -18,7 +18,7 @@ __all__ = ["BaseQuery", "BaseQueryCollection"]
 
 
 class BaseQuery:
-    def __init__(self, session):
+    def __init__(self, session=None):
         self.session = session
 
     def render(self):
@@ -33,7 +33,9 @@ class BaseQuery:
         """Like :meth:`get` but raises an error if not found instead of
         returning `None`.
         """
-        rv = self.get(uid)
+
+        session = self.session
+        rv = session.get(uid)
         if rv is None:
             raise DoesNotExist()
         return rv

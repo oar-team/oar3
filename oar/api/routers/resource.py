@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 import oar.lib.tools as tools
-from oar.lib import Resource, db
+from oar.lib.models import Resource
 from oar.lib.resource_handling import (
     get_count_busy_resources,
     remove_resource,

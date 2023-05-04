@@ -56,8 +56,7 @@ def init_oar(config=None, no_db=False, no_reflect=False):
     logger = create_logger(config)
     if no_db:
         return config, None, logger
-
-    if not no_db:
+    else:
         db = Database(config)
 
         engine = EngineConnector(db).get_engine()

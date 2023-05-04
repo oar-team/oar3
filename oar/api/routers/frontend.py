@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException  # ,Request, Header, Depen
 from passlib.apache import HtpasswdFile
 
 from oar import VERSION
-from oar.lib import config
 
 from .. import API_VERSION
 from ..dependencies import get_user
 from . import TimestampRoute
+
+# from oar.lib import config
+
 
 # from oar.lib import config
 

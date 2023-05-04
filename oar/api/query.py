@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from math import ceil
+from fastapi import HTTPException
 
 from flask import abort, current_app
 
@@ -9,10 +10,22 @@ from oar.lib.basequery import BaseQuery, BaseQueryCollection
 from oar.lib.utils import cached_property, row2dict
 
 
+def paginate(query, offset, limit, error_out=True):
+    if limit is None:
+        limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+    if error_out and offset < 0:
+        raise HTTPException(status_code=404, detail="Pagination out of bounds")
+
+    return PaginationQuery(query, offset, limit, error_out)
+
+
 class APIQuery(BaseQuery):
-    def get_or_404(self, ident):
+    def __init__(self, session):
+        super(APIQuery, self).__init__(session)
+
+    def get_or_404(self, query, ident):
         try:
-            return self.get_or_error(ident)
+            return query.get_or_error(ident)
         except Exception:
             abort(404)
 
@@ -35,10 +48,12 @@ class PaginationQuery(object):
 
     def __init__(self, query, offset, limit, error_out):
         self.query = query.limit(limit).offset(offset)
+        print(self.query)
         self.items = self.query.all()
         self.offset = offset
         self.limit = limit
 
+        print("offfset", offset, self.items)
         # No need to count if we're on the first page and there are fewer
         # items than we expected.
         if offset == 0 and len(self.items) < limit:
@@ -47,7 +62,7 @@ class PaginationQuery(object):
             self.total = query.order_by(None).count()
 
         if not self.items and offset != 0 and error_out:
-            abort(404)
+            raise HTTPException(status_code=404, detail="Empty request")
 
     def render(self):
         self.query.render()

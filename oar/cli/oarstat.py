@@ -11,6 +11,7 @@ from rich import box
 from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
+from oar.lib.basequery import BaseQueryCollection
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools

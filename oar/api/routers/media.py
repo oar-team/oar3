@@ -21,12 +21,18 @@ from fastapi import (
 )
 
 import oar.lib.tools as tools
-from oar.lib import config
+
+# FIXME: gbl config that's bad
+from oar.lib.globals import init_config
+
+# from oar.lib import config
 from oar.lib.tools import PIPE
 
 from ..dependencies import need_authentication
 from ..url_utils import list_paginate
 from . import TimestampRoute
+
+config = init_config()
 
 router = APIRouter(
     route_class=TimestampRoute,
