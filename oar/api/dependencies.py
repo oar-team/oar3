@@ -17,6 +17,7 @@ async def get_user(x_remote_ident: Optional[str] = Header(None)):
 
 # Dependency
 def get_db(request: Request):
+    print("get_db: ", request.state.db)
     return request.state.db
 
 

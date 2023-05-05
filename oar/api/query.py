@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from math import ceil
-from fastapi import HTTPException
 
+from fastapi import HTTPException
 from flask import abort, current_app
 
 from oar.lib.basequery import BaseQuery, BaseQueryCollection

@@ -3,14 +3,14 @@ import re
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from oar.api.query import APIQuery, APIQueryCollection, paginate
-from oar.lib.basequery import BaseQueryCollection
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from oar.api.query import APIQuery, APIQueryCollection, paginate
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
+from oar.lib.basequery import BaseQueryCollection
 from oar.lib.configuration import Configuration
 from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
@@ -94,18 +94,19 @@ def show(
     db: Session = Depends(get_db),
     config: Configuration = Depends(get_config),
 ):
+    queryCollection = APIQueryCollection(db)
     job = db.query(Job).get(job_id)
-
+    data = job.asdict()
     if details and job:
         job = Job()
         job.id = job_id
-        job_resources = db.queries.get_assigned_obs_resources([job])
-        attach_resources(job, job_resources)
+        job_resources = queryCollection.get_assigned_jobs_resources([job])
+        attach_resources(data, job_resources)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    return job
+    return data
 
 
 @router.get("/{job_id}/nodes")
@@ -126,10 +127,11 @@ def get_resources(
     db: Session = Depends(get_db),
     config: Configuration = Depends(get_config),
 ):
+    queryCollection = APIQueryCollection(db)
     job = Job()
     job.id = job_id
-    query = db.queries.get_assigned_one_job_resources(job)
-    page = query.paginate(offset, limit)
+    query = queryCollection.get_assigned_one_job_resources(job)
+    page = paginate(query, offset, limit)
     data = {}
     data["total"] = page.total
     data["offset"] = offset
@@ -294,6 +296,7 @@ def submit(
     #    resource = [resource]
 
     job_parameters = JobParameters(
+        config,
         job_type="PASSIVE",
         command=sp.command,
         resource=sp.resource,
@@ -333,7 +336,7 @@ def submit(
 
     submission = Submission(job_parameters)
 
-    (error, job_id_lst) = submission.submit()
+    (error, job_id_lst) = submission.submit(db, config)
 
     # TODO Enhance
     data = {}
@@ -365,10 +368,12 @@ def delete(
 ):
     # TODO Get and return error codes ans messages
     if array:
-        cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
+        cmd_ret = oardel(
+            db, config, None, None, None, None, job_id, None, None, None, user, False
+        )
     else:
         cmd_ret = oardel(
-            [job_id], None, None, None, None, None, None, None, user, False
+            db, config, [job_id], None, None, None, None, None, None, None, user, False
         )
     data = {}
     data["id"] = job_id
@@ -392,7 +397,18 @@ def signal(
         checkpointing = True
 
     cmd_ret = oardel(
-        [job_id], checkpointing, signal, None, None, None, None, None, user, False
+        db,
+        config,
+        [job_id],
+        checkpointing,
+        signal,
+        None,
+        None,
+        None,
+        None,
+        None,
+        user,
+        False,
     )
 
     data = {}
@@ -412,7 +428,7 @@ def resume(
 ):
     """Asks to resume a holded job"""
 
-    cmd_ret = oarresume([job_id], None, None, None, user, False)
+    cmd_ret = oarresume(db, config, [job_id], None, None, None, user, False)
     data = {}
     data["id"] = job_id
     data["cmd_output"] = cmd_ret.to_str()

@@ -769,6 +769,7 @@ def add_micheline_subjob(
         ins = [{"job_id": job_id, "job_id_required": dep} for dep in dependencies]
         session.execute(JobDependencie.__table__.insert(), ins)
 
+    print("what", session)
     if not job_parameters.hold:
         req = insert(JobStateLog).values(
             {"job_id": job_id, "job_state": "Waiting", "date_start": date}
