@@ -13,7 +13,7 @@ from oar.modules.bipbip import BipBip
 
 from ..faketools import FakePopen, fake_popen
 
-_, db, logger = init_oar()
+# _, db, logger = init_oar()
 fake_bad_nodes = {"pingchecker": (1, []), "init": [], "clean": []}
 fake_tag = 1
 

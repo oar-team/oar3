@@ -1368,7 +1368,7 @@ def resume_job_action(session, job_id):
     session.commit()
 
 
-def get_cpuset_values(session, cpuset_field, moldable_id):
+def get_cpuset_values(session, config, cpuset_field, moldable_id):
     """get cpuset values for each nodes of a moldable_id
     Note: this function is called get_cpuset_values_for_a_moldable_job in OAR2.x
     """
@@ -2006,6 +2006,7 @@ def set_job_exit_code(session, job_id, exit_code):
 
 def check_end_of_job(
     session,
+    config,
     job_id,
     exit_script_value,
     error,
@@ -2272,14 +2273,14 @@ def check_end_of_job(
         )
 
     if do_finishing_sequence:
-        job_finishing_sequence(session, epilogue_script, job_id, events)
+        job_finishing_sequence(session, config,epilogue_script, job_id, events)
     if notify_almighty_term:
         tools.notify_almighty("Term")
 
     tools.notify_almighty("BipBip")
 
 
-def job_finishing_sequence(session, epilogue_script, job_id, events):
+def job_finishing_sequence(session, config,epilogue_script, job_id, events):
     if epilogue_script:
         # launch server epilogue
         cmd = [epilogue_script, str(job_id)]
@@ -2325,7 +2326,7 @@ def job_finishing_sequence(session, epilogue_script, job_id, events):
         # Clean all CPUSETs if needed
         if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config:
             cpuset_field = config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
-            cpuset_name = get_job_cpuset_name(job_id)
+            cpuset_name = get_job_cpuset_name(session, job_id)
             openssh_cmd = config["OPENSSH_CMD"]
             # TODO
             # if 'OAR_SSH_CONNECTION_TIMEOUT':
@@ -2347,8 +2348,8 @@ def job_finishing_sequence(session, epilogue_script, job_id, events):
             if cpuset_path and cpuset_name:
                 cpuset_full_path = cpuset_path + "/" + cpuset_name
 
-            job = get_job(job_id)
-            nodes_cpuset_fields = get_cpuset_values(
+            job = get_job(session, job_id)
+            nodes_cpuset_fields = get_cpuset_values(session, config,
                 cpuset_field, job.assigned_moldable_job
             )
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
@@ -2358,7 +2359,7 @@ def job_finishing_sequence(session, epilogue_script, job_id, events):
                     + "] Clean cpuset on each nodes"
                 )
                 taktuk_cmd = config["TAKTUK_CMD"]
-                job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
+                job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(session,
                     job_id
                 )
                 ssh_public_key = format_ssh_pub_key(
@@ -2376,7 +2377,7 @@ def job_finishing_sequence(session, epilogue_script, job_id, events):
                             "key": ssh_public_key,
                         },
                         "private": {
-                            "file_name": get_private_ssh_key_file_name(cpuset_name),
+                            "file_name": get_private_ssh_key_file_name(cpuset_name, config),
                             "key": ssh_private_key,
                         },
                     },

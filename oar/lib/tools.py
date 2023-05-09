@@ -805,7 +805,7 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
     return formated_key
 
 
-def get_private_ssh_key_file_name(cpuset_name):
+def get_private_ssh_key_file_name(cpuset_name, config):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return config["OAREXEC_DIRECTORY"] + "/" + cpuset_name + ".jobkey"
 

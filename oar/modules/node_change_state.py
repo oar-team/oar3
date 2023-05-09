@@ -45,15 +45,11 @@ from oar.lib.resource_handling import (
     set_resource_state,
 )
 
-config, db, log = init_oar(no_db=True)
-
-logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
-logger.info("Start Node Change State")
-
 
 class NodeChangeState(object):
-    def __init__(self, config):
+    def __init__(self, config, logger):
         self.config = config
+        self.logger = logger
         self.exit_code = 0
         self.resources_to_heal = []
         self.cpuset_field = None
@@ -65,6 +61,8 @@ class NodeChangeState(object):
 
     def run(self, session):
         config = self.config
+        logger = self.logger
+
         for event in get_to_check_events(session):
             job_id = event.job_id
             logger.debug(
@@ -427,14 +425,14 @@ class NodeChangeState(object):
                 #    tools.set_ssh_timeout(config['OAR_SSH_CONNECTION_TIMEOUT'])
                 if "SUSPEND_RESUME_FILE" not in config:
                     msg = "SUSPEND_RESUME_FILE variable conguration is missing"
-                    logger.error(msg)
+                    self.logger.error(msg)
                     raise Exception(msg)
 
                 suspend_file = config["SUSPEND_RESUME_FILE"]
                 if not re.match(r"^\/", suspend_file):
                     if "OARDIR" not in os.environ:
                         msg = "$OARDIR variable envionment must be defined"
-                        logger.error(msg)
+                        self.logger.error(msg)
                         raise Exception(msg)
                     suspend_file = os.environ["OARDIR"] + "/" + suspend_file
 
@@ -454,7 +452,7 @@ class NodeChangeState(object):
                         + "] Bad suspend/resume file: "
                         + suspend_file
                     )
-                    logger.error(msg)
+                    self.logger.error(msg)
                     add_new_event(
                         session,
                         "SUSPEND_RESUME_MANAGER_FILE",
@@ -494,7 +492,7 @@ class NodeChangeState(object):
                             + "] error on several nodes: "
                             + str(bad)
                         )
-                        logger.error(msg)
+                        self.logger.error(msg)
                         add_new_event_with_host(
                             session,
                             "SUSPEND_ERROR",
@@ -509,18 +507,21 @@ class NodeChangeState(object):
 
 
 def main():
-    config, db, log, session_factory = init_oar()
-    engine = EngineConnector(db).get_engine()
+    config, engine, log = init_oar()
 
     session_factory = sessionmaker(bind=engine)
+    # Legacy call
     scoped = scoped_session(session_factory)
+
+    # Create a session  
+    session = scoped()
 
     logger = get_logger("oar.modules.sarko", forward_stderr=True)
     logger.info("Start Sarko")
 
-    node_change_state = NodeChangeState(config)
+    node_change_state = NodeChangeState(config, logger)
 
-    node_change_state.run(scoped)
+    node_change_state.run(session)
     return node_change_state.exit_code
 
 

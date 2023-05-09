@@ -541,7 +541,7 @@ def cli(
     if ctx.obj:
         session = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
+        _, _, session_factory = init_oar()
         scoped = scoped_session(session_factory)
         session = scoped()
 

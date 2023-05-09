@@ -38,10 +38,6 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_oar
 
-# leon_command = binpath + 'Leon'
-# bipbip_command = binpath + 'bipbip'
-# bipbip_command = 'true'
-
 
 def bipbip_leon_executor(
     command: dict[str, Any], leon_command: str, bipbip_command: str, logger
@@ -62,7 +58,7 @@ def bipbip_leon_executor(
 class BipbipCommander(object):
     def __init__(self, config=None):
         if not config:
-            config, _, log = init_oar()
+            config, _, log = init_oar(no_db=True)
 
         # Set undefined config value to default one
         DEFAULT_CONFIG = {

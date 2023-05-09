@@ -36,14 +36,16 @@ from oar.lib.tools import (
     resources2dump_perl,
 )
 
-_, db, logger = init_oar()
+# _, db, logger = init_oar()
 
-logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+# logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
 
 class BipBip(object):
     def __init__(self, args, config):
         self.job_id = None
+        self.logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+
         if not args:
             self.exit_code = 1
             return
@@ -87,7 +89,7 @@ class BipBip(object):
         if not re.match(r"^\/", cpuset_file):
             if "OARDIR" not in os.environ:
                 msg = "$OARDIR variable environment must be defined"
-                logger.error(msg)
+                self.logger.error(msg)
                 raise Exception(msg)
             cpuset_file = os.environ["OARDIR"] + "/" + cpuset_file
 
@@ -110,7 +112,7 @@ class BipBip(object):
             "Suspended",
             "Resuming",
         ]:
-            logger.debug(
+            self.logger.debug(
                 "["
                 + str(job.id)
                 + "] OAREXEC end: "
@@ -123,7 +125,7 @@ class BipBip(object):
                 self.oarexec_reattach_exit_vint = int(self.oarexec_reattach_exit_value)
 
             except ValueError:
-                logger.error(
+                self.logger.error(
                     "["
                     + str(job.id)
                     + "] Bad argument for bipbip : "
@@ -135,6 +137,7 @@ class BipBip(object):
             if self.oarexec_challenge == job_challenge:
                 check_end_of_job(
                     session,
+                    config,
                     job_id,
                     self.oarexec_reattach_script_exit_value,
                     self.oarexec_reattach_exit_vint,
@@ -152,17 +155,17 @@ class BipBip(object):
                     + job_challenge
                     + ")."
                 )
-                logger.error("[" + str(job.id) + "] " + msg)
+                self.logger.error("[" + str(job.id) + "] " + msg)
                 add_new_event(session, "BIPBIP_CHALLENGE", job_id, msg)
                 self.exit_code = 2
                 return
 
         if job.state == "toLaunch":
             # Tell that the launching process is initiated
-            set_job_state(session, job_id, "Launching")
+            set_job_state(session, config, job_id, "Launching")
             job.state = "Launching"
         else:
-            logger.warning(
+            self.logger.warning(
                 "[" + str(job.id) + "] Job already treated or deleted in the meantime"
             )
             self.exit_code = 1
@@ -180,7 +183,7 @@ class BipBip(object):
         job_types = get_job_types(session, job.id)
 
         # HERE we must launch oarexec on the first node
-        logger.debug(
+        self.logger.debug(
             "["
             + str(job.id)
             + "] User: "
@@ -207,7 +210,7 @@ class BipBip(object):
             nodes_cpuset_fields = None
             if cpuset_field:
                 nodes_cpuset_fields = get_cpuset_values(
-                    session, cpuset_field, job.assigned_moldable_job
+                    session, config, cpuset_field, job.assigned_moldable_job
                 )
 
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
@@ -225,7 +228,7 @@ class BipBip(object):
                             "key": ssh_public_key,
                         },
                         "private": {
-                            "file_name": get_private_ssh_key_file_name(cpuset_name),
+                            "file_name": get_private_ssh_key_file_name(cpuset_name, config),
                             "key": ssh_private_key,
                         },
                     },
@@ -265,7 +268,7 @@ class BipBip(object):
                         + "] Bad cpuset file: "
                         + cpuset_file
                     )
-                    logger.error(msg)
+                    self.logger.error(msg)
                     events.append(("CPUSET_MANAGER_FILE", msg, None))
                 else:
                     bad = bad + bad_hosts
@@ -326,7 +329,7 @@ class BipBip(object):
 
             if bad == []:
                 # check nodes
-                logger.debug("[" + str(job.id) + "] Check nodes: " + str(hosts))
+                self.logger.debug("[" + str(job.id) + "] Check nodes: " + str(hosts))
                 event_type = "PING_CHECKER_NODE_SUSPECTED"
 
                 (pingcheck, bad) = tools.pingchecker(hosts)
@@ -340,7 +343,7 @@ class BipBip(object):
                 set_job_message(
                     session, job_id, "One or several nodes are not responding correctly"
                 )
-                logger.error(
+                self.logger.error(
                     "["
                     + str(job.id)
                     + "] Some nodes are inaccessible ("
@@ -417,7 +420,7 @@ class BipBip(object):
         ):
             almighty_hostname = socket.gethostname()
 
-        logger.debug("[" + str(job.id) + "] Execute oarexec on node: " + head_node)
+        self.logger.debug("[" + str(job.id) + "] Execute oarexec on node: " + head_node)
 
         job_challenge, _, _ = get_job_challenge(session, job_id)
 
@@ -490,8 +493,8 @@ class BipBip(object):
 
         cmd = cmd + " -x" + " -T " + head_node + " perl - " + str(job_id) + " OAREXEC"
 
-        logger.debug(cmd)
-        logger.debug(oarexec_files)
+        self.logger.debug(cmd)
+        self.logger.debug(oarexec_files)
 
         def data_to_oar_env(data: dict[str, any]) -> dict[str, str]:
             """
@@ -520,26 +523,26 @@ class BipBip(object):
 
         # NOOP jobs
         if "noop" in job_types:
-            set_job_state(session, job_id, "Running")
-            logger.debug(
+            set_job_state(session, config, job_id, "Running")
+            self.logger.debug(
                 "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
             )
             return
 
         # ssh-oarexec exist error
         if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
-            set_job_state(session, job_id, "Running")
+            set_job_state(session, config, job_id, "Running")
 
             # Notify interactive oarsub
             if (job.type == "INTERACTIVE") and (job.reservation == "None"):
-                logger.debug(
+                self.logger.debug(
                     "["
                     + str(job.id)
                     + "] Interactive request ;Answer to the client Qsub -I"
                 )
                 if not tools.notify_interactif_user(job, "GOOD JOB"):
                     addr, port = job.info_type.split(":")
-                    logger.error(
+                    self.logger.error(
                         "["
                         + str(job.id)
                         + "] Frag job because oarsub cannot be notified by the frontend on host {addr}:{port}. Check your network and firewall configuration\n".format(
@@ -548,7 +551,7 @@ class BipBip(object):
                     )
                     tools.notify_almighty("Qdel")
                     return
-            logger.debug("[" + str(job.id) + "] Exit from bipbip normally")
+            self.logger.debug("[" + str(job.id) + "] Exit from bipbip normally")
         else:
             # TODO: OAR3 only use detached OAREXEC
             #        child.expect('OAREXEC_SCRIPT_EXIT_VALUE\s*(\d+|N)', timeout=pro_epi_timeout)
@@ -593,7 +596,7 @@ class BipBip(object):
                         + str(cmd)
                         + ")"
                     )
-                    logger.error(msg)
+                    self.logger.error(msg)
                     add_new_event(
                         session,
                         "SERVER_PROLOGUE_EXIT_CODE_ERROR",
@@ -609,14 +612,14 @@ class BipBip(object):
                     return 1
 
             except OSError as e:
-                logger.error("Cannot run: {}. OsError: {}", str(cmd), e)
+                self.logger.error("Cannot run: {}. OsError: {}", str(cmd), e)
 
             except TimeoutExpired:
                 tools.kill_child_processes(child.pid)
                 msg = (
                     "[" + str(job.id) + "] Server prologue timeouted (cmd: " + str(cmd)
                 )
-                logger.error(msg)
+                self.logger.error(msg)
                 add_new_event(
                     session, "SERVER_PROLOGUE_TIMEOUT", job.id, "[bipbip] " + msg
                 )
@@ -632,14 +635,23 @@ class BipBip(object):
 
 
 def main():  # pragma: no cover
+    config, session_factory, log = init_oar()
+
+    # Create a session maker
+    session_factory = sessionmaker(bind=engine)
+    # Legacy call
+    scoped = scoped_session(session_factory)
+
+    # Create a session  
+    session = scoped()
+
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:])
         try:
-            bipbip.run()
+            bipbip.run(session, config)
         except Exception as ex:
             import traceback
-
-            logger.error(
+            self.logger.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
                 )
@@ -653,5 +665,5 @@ def main():  # pragma: no cover
 if __name__ == "__main__":  # pragma: no cover
     exit_code = main()
     if exit_code:
-        logger.error("Bipbip.run exit code is not null: {}".format(exit_code))
+        self.logger.error("Bipbip.run exit code is not null: {}".format(exit_code))
     sys.exit(exit_code)

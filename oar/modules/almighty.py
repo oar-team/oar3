@@ -21,9 +21,10 @@ import time
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger, init_config
 
-config, db, log, session_factory = init_oar()
+
+config = init_config()
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
