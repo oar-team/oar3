@@ -3,8 +3,8 @@ import json
 import pytest
 
 from oar.kao.meta_sched import meta_schedule
-from oar.lib.models import FragJob, Job, Resource
 from oar.lib.job_handling import insert_job, set_job_state
+from oar.lib.models import FragJob, Job, Resource
 
 
 def test_get_all(client, minimal_db_initialization, setup_config):

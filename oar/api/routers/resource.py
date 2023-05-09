@@ -2,11 +2,11 @@ import json
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from oar.api.query import APIQueryCollection, paginate
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 import oar.lib.tools as tools
+from oar.api.query import APIQueryCollection, paginate
 from oar.lib.models import Resource
 from oar.lib.resource_handling import (
     get_count_busy_resources,
@@ -14,11 +14,9 @@ from oar.lib.resource_handling import (
     set_resource_state,
 )
 
-from ..dependencies import need_authentication
+from ..dependencies import get_config, get_db, need_authentication
 from ..url_utils import replace_query_params
 from . import TimestampRoute
-
-from ..dependencies import get_config, get_db, need_authentication
 
 router = APIRouter(
     route_class=TimestampRoute,
@@ -51,7 +49,7 @@ def index(
     """
     queryCollection = APIQueryCollection(db)
     query = queryCollection.get_resources(network_address, detailed)
-    page = paginate(query,offset, limit)
+    page = paginate(query, offset, limit)
 
     data = {}
     data["total"] = page.total

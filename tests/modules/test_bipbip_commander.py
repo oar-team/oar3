@@ -38,9 +38,10 @@ def setup(request, setup_config):
     # del setup_config["BIPBIP_COMMANDER_PORT"]
 
 
-def test_bipbip_commander_OAREXEC():
+def test_bipbip_commander_OAREXEC(setup_config):
+    config, _, db = setup_config
     fakezmq.recv_msgs[0] = [{"job_id": 10, "args": ["2", "N", "34"], "cmd": "OAREXEC"}]
-    bipbip_commander = BipbipCommander()
+    bipbip_commander = BipbipCommander(config)
     bipbip_commander.run(False)
     # bipbip_commander.bipbip_leon_executors[10].join()
     # exitcode = bipbip_commander.bipbip_leon_executors[10].exitcode
@@ -55,9 +56,10 @@ def test_bipbip_commander_OAREXEC():
     ] == fake_called_command["cmd"]
 
 
-def test_bipbip_commander_LEONEXTERMINATE():
+def test_bipbip_commander_LEONEXTERMINATE(setup_config):
+    config, _, db = setup_config
     fakezmq.recv_msgs[0] = [{"job_id": 10, "cmd": "LEONEXTERMINATE"}]
-    bipbip_commander = BipbipCommander()
+    bipbip_commander = BipbipCommander(config)
     bipbip_commander.run(False)
     # bipbip_commander.bipbip_leon_executors[10].join()
     # exitcode = bipbip_commander.bipbip_leon_executors[10].exitcode
@@ -67,12 +69,13 @@ def test_bipbip_commander_LEONEXTERMINATE():
     assert ["/usr/local/lib/oar/oar-leon", "10"] == fake_called_command["cmd"]
 
 
-def test_bipbip_commander_LEONEXTERMINATE2():
+def test_bipbip_commander_LEONEXTERMINATE2(setup_config):
+    config, _, db = setup_config
     fakezmq.recv_msgs[0] = [
         {"job_id": 10, "cmd": "LEONEXTERMINATE"},
         {"job_id": 10, "cmd": "LEONEXTERMINATE"},
     ]
-    bipbip_commander = BipbipCommander()
+    bipbip_commander = BipbipCommander(config)
 
     bipbip_commander.run(False)
     # import pdb; pdb.set_trace()

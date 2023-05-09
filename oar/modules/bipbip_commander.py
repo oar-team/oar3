@@ -31,55 +31,21 @@ Example:
 
 import os
 import socket
+from typing import Any
 
 import zmq
 
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_oar
 
-config, db, log, session_factory = init_oar()
-
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    "SERVER_HOSTNAME": "localhost",
-    "APPENDICE_SERVER_PORT": "6670",
-    "BIPBIP_COMMANDER_SERVER": "localhost",
-    "BIPBIP_COMMANDER_PORT": "6671",
-    "MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING": "25",
-    "DETACH_JOB_FROM_SERVER": "1",
-    "LOG_FILE": "/var/log/oar.log",
-}
-
-config.setdefault_config(DEFAULT_CONFIG)
-
-# Max number of concurrent bipbip processes
-Max_bipbip_processes = int(config["MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING"])
-Detach_oarexec = config["DETACH_JOB_FROM_SERVER"]
-
-# Maximum duration a a bipbip process (after that time the process is killed)
-Max_bipbip_process_duration = 30 * 60
-
-logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
-logger.info("Start Bipbip Commander")
-
-if "OARDIR" in os.environ:
-    binpath = os.environ["OARDIR"]
-else:
-    binpath = "/usr/local/lib/oar/"
-    os.environ["OARDIR"] = binpath
-    logger.warning(
-        "OARDIR env variable must be defined, " + binpath + " is used by default"
-    )
-
-leon_command = os.path.join(binpath, "oar-leon")
-bipbip_command = os.path.join(binpath, "oar-bipbip")
 # leon_command = binpath + 'Leon'
 # bipbip_command = binpath + 'bipbip'
 # bipbip_command = 'true'
 
 
-def bipbip_leon_executor(*args, **command):
+def bipbip_leon_executor(
+    command: dict[str, Any], leon_command: str, bipbip_command: str, logger
+):
     job_id = command["job_id"]
 
     if command["cmd"] == "LEONEXTERMINATE":
@@ -94,7 +60,49 @@ def bipbip_leon_executor(*args, **command):
 
 
 class BipbipCommander(object):
-    def __init__(self):
+    def __init__(self, config=None):
+        if not config:
+            config, _, log = init_oar()
+
+        # Set undefined config value to default one
+        DEFAULT_CONFIG = {
+            "SERVER_HOSTNAME": "localhost",
+            "APPENDICE_SERVER_PORT": "6670",
+            "BIPBIP_COMMANDER_SERVER": "localhost",
+            "BIPBIP_COMMANDER_PORT": "6671",
+            "MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING": "25",
+            "DETACH_JOB_FROM_SERVER": "1",
+            "LOG_FILE": "/var/log/oar.log",
+        }
+
+        config.setdefault_config(DEFAULT_CONFIG)
+
+        # Max number of concurrent bipbip processes
+        self.Max_bipbip_processes = int(
+            config["MAX_CONCURRENT_JOBS_STARTING_OR_TERMINATING"]
+        )
+        self.Detach_oarexec = config["DETACH_JOB_FROM_SERVER"]
+
+        # Maximum duration a a bipbip process (after that time the process is killed)
+        self.Max_bipbip_process_duration = 30 * 60
+
+        self.logger = get_logger("oar.modules.bipbip_commander", forward_stderr=True)
+        self.logger.info("Start Bipbip Commander")
+
+        if "OARDIR" in os.environ:
+            binpath = os.environ["OARDIR"]
+        else:
+            binpath = "/usr/local/lib/oar/"
+            os.environ["OARDIR"] = binpath
+            self.logger.warning(
+                "OARDIR env variable must be defined, "
+                + binpath
+                + " is used by default"
+            )
+
+        self.leon_command = os.path.join(binpath, "oar-leon")
+        self.bipbip_command = os.path.join(binpath, "oar-bipbip")
+
         # Initialize zeromq context
         self.context = zmq.Context()
 
@@ -127,21 +135,27 @@ class BipbipCommander(object):
             # add_timeout if bipbip_leon_commands_to_run is not empty
             try:
                 command = self.notification.recv_json()
-                logger.debug("bipbip commander received notification:" + str(command))
+                self.logger.debug(
+                    "bipbip commander received notification:" + str(command)
+                )
                 self.bipbip_leon_commands_to_run.append(command)
 
             except zmq.error.Again as e:
-                logger.debug("Timeout on notification:" + str(e))
+                self.logger.debug("Timeout on notification:" + str(e))
                 if self.bipbip_leon_commands_to_run == []:
-                    logger.error("Not queued commands with timeout actived is abnormal")
+                    self.logger.error(
+                        "Not queued commands with timeout actived is abnormal"
+                    )
 
             except zmq.ZMQError as e:
-                logger.error("Something is wrong with notification reception" + str(e))
+                self.logger.error(
+                    "Something is wrong with notification reception" + str(e)
+                )
                 exit(1)
 
             while (
                 len(self.bipbip_leon_commands_to_run) > 0
-                and len(self.bipbip_leon_executors.keys()) <= Max_bipbip_processes
+                and len(self.bipbip_leon_executors.keys()) <= self.Max_bipbip_processes
             ):
                 command = self.bipbip_leon_commands_to_run.pop(0)
                 job_id = command["job_id"]
@@ -153,7 +167,7 @@ class BipbipCommander(object):
                     else:
                         flag_exec = False
                         # requeue command
-                        logger.debug(
+                        self.logger.debug(
                             "A process is already running for the job "
                             + str(job_id)
                             + ". We requeue: "
@@ -164,7 +178,14 @@ class BipbipCommander(object):
                 if flag_exec:
                     # exec
                     executor = tools.Process(
-                        target=bipbip_leon_executor, args=(), kwargs=command
+                        target=bipbip_leon_executor,
+                        args=(
+                            command,
+                            self.leon_command,
+                            self.bipbip_command,
+                            self.logger,
+                        ),
+                        kwargs=command,
                     )
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor
@@ -176,7 +197,7 @@ class BipbipCommander(object):
             # Remove finished executors:
             for job_id in list(self.bipbip_leon_executors.keys()):
                 if not self.bipbip_leon_executors[job_id].is_alive():
-                    logger.debug(
+                    self.logger.debug(
                         "Executor Exitcode: "
                         + str(self.bipbip_leon_executors[job_id].exitcode)
                     )

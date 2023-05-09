@@ -6,7 +6,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.api.app import create_app
-from oar.api.dependencies import get_db
+from oar.api.dependencies import get_config, get_db
 from oar.api.query import APIQuery
 
 # from oar.lib import db
@@ -42,7 +42,8 @@ def fastapi_app(setup_config):
 
 
 @pytest.fixture(scope="function")
-def client(fastapi_app, minimal_db_initialization):
+def client(fastapi_app, minimal_db_initialization, setup_config):
+    config, _, db = setup_config
     with TestClient(fastapi_app) as app:
         # override the get_db dependency to inject the test session
         fastapi_app.dependency_overrides[get_db] = lambda: minimal_db_initialization

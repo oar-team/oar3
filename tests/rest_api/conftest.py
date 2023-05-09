@@ -3,7 +3,8 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import db
+
+# from oar.lib import db
 from oar.lib.basequery import BaseQuery
 from oar.rest_api.app import create_app
 from oar.rest_api.query import APIQuery

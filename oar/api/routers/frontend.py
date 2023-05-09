@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 
-from fastapi import APIRouter, Depends, HTTPException  # ,Request, Header, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from passlib.apache import HtpasswdFile
 
 from oar import VERSION
+from oar.lib.configuration import Configuration  # ,Request, Header, Depends
 
 from .. import API_VERSION
-from ..dependencies import get_user
+from ..dependencies import get_config, get_user
 from . import TimestampRoute
 
 # from oar.lib import config
@@ -69,7 +70,9 @@ def timezone():
 
 
 @router.get("/authentication")
-def authentication(basic_user: str, basic_password: str):
+def authentication(
+    basic_user: str, basic_password: str, config: Configuration = Depends(get_config)
+):
     """allow to test is user/password math htpasswd, can be use as workaround
     to avoid popup open on browser, usefull for integrated dashboard"""
 

@@ -31,10 +31,10 @@ def init_logger(config=None):
     return create_logger(config)
 
 
-def get_logger(*args, **kwargs):
+def get_logger(*args, config=None, **kwargs):
     """Returns sub logger once the root logger is configured."""
 
-    logger = init_logger()
+    logger = init_logger(config)
     print(logger)
 
     global STREAM_HANDLER

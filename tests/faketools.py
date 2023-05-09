@@ -42,9 +42,13 @@ class FakeProcess(object):
     def __init__(self, **kargs):
         self.target = kargs["target"]
         self.kwargs = kargs["kwargs"]
+        self.args = kargs["args"]
 
     def start(self):
-        self.target(**self.kwargs)
+        print(self.args)
+        print(self.kwargs)
+        # self.target(*self.args,**self.kwargs)
+        self.target(*self.args)
 
     def join(self):
         pass
