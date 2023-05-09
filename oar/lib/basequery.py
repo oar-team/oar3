@@ -154,6 +154,27 @@ class BaseQueryCollection(object):
             user, from_time, to_time, states, job_ids, array_id, sql_property
         )
 
+    def get_gantt_prediction(self, horizon):
+        columns = ("job_id", "start_time", "moldable_walltime", "message")
+        query = (
+            # db.query(Job, MoldableJobDescription)
+            db.query(Job)
+            # .outerjoin(MoldableJobDescription, Job.assigned_moldable_job == MoldableJobDescription.id)
+            .join(MoldableJobDescription, Job.id == MoldableJobDescription.id)
+            # .join(AssignedResource, MoldableJobDescription.job_id == AssignedResource.moldable_id)
+            # .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(Job.queue_name == "default")
+            .filter(Job.stop_time == 0)
+            .filter(Job.state.in_(["Running", "Suspended", "Resuming", "Waiting", "Launching"]))
+            # .filter(Job.assigned_moldable_job == MoldableJobDescription.id)
+            # .filter(MoldableJobDescription.id == AssignedResource.moldable_id)
+            # .filter(AssignedResource.resource_id == Resource.id)
+            .filter(Job.start_time <= horizon)
+            .filter(Job.start_time + MoldableJobDescription.walltime >= horizon)
+        )
+        return query
+        
+
     def get_resources(self, network_address, detailed=True):
         if detailed:
             query = db.query(Resource)

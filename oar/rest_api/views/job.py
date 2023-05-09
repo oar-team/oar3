@@ -328,6 +328,17 @@ def show(job_id, detailed=None):
     g.data["events"] = get_job_events(job_id)
     attach_links(g.data)
 
+@app.route("/gantt", methods=["GET"])
+@app.route("/gantt/<int:horizon>", methods=["GET"])
+def gantt(horizon=0):
+    now = int(time.time())
+    time_horizon = now + horizon
+    query = db.queries.get_gantt_prediction(time_horizon)
+    data = query.all()
+    g.data["now"] = now
+    g.data["horizon"] = time_horizon
+    g.data["items"] = data
+
 
 @app.route("/<int:job_id>/nodes", methods=["GET"])
 @app.args({"offset": Arg(int, default=0), "limit": Arg(int)})
