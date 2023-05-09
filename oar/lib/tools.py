@@ -119,7 +119,7 @@ def send_mail(job, mail_address, subject, msg_content):  # pragma: no cover
     s.quit()
 
 
-def create_almighty_socket():  # pragma: no cover
+def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: no cover
     global zmq_context
     global almighty_socket
 
@@ -127,9 +127,7 @@ def create_almighty_socket():  # pragma: no cover
         zmq_context = zmq.Context()
 
     almighty_socket = zmq_context.socket(zmq.PUSH)
-    almighty_socket.connect(
-        "tcp://" + config["SERVER_HOSTNAME"] + ":" + config["APPENDICE_SERVER_PORT"]
-    )
+    almighty_socket.connect("tcp://" + server_hostname + ":" + server_port)
 
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
