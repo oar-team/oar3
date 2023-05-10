@@ -513,7 +513,7 @@ def main():
     # Legacy call
     scoped = scoped_session(session_factory)
 
-    # Create a session  
+    # Create a session
     session = scoped()
 
     logger = get_logger("oar.modules.sarko", forward_stderr=True)

@@ -15,6 +15,8 @@ There are 2 frag types :
 """
 import sys
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event
 from oar.lib.globals import get_logger, init_oar
@@ -32,10 +34,9 @@ from oar.lib.job_handling import (
     set_running_date,
 )
 
-config, db, log = init_oar(no_db=True)
+# config, db, log = init_oar(no_db=True)
 
 logger = get_logger("oar.modules.leon", forward_stderr=True)
-
 logger.info("Start Leon")
 
 
@@ -174,13 +175,15 @@ class Leon(object):
 
 
 def main():  # pragma: no cover
-    config, _, logger, _ = init_oar()
-
-    logger = get_logger("oar.modules.sarko", forward_stderr=True)
-    logger.info("Start Sarko")
+    config, engine, log = init_oar()
 
     leon = Leon(config, logger, sys.argv[1:])
-    leon.run()
+
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+    session = scoped()
+
+    leon.run(session)
     return leon.exit_code
 
 

@@ -28,11 +28,9 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.database import EngineConnector
 from oar.lib.event import get_events_for_hostname_from
 from oar.lib.globals import init_oar
-from oar.lib.job_handling import insert_job
-from oar.lib.models import AssignedResource, Job, Model, Resource
+from oar.lib.models import AssignedResource, Job, Resource
 from oar.lib.node import (
     get_all_network_address,
     get_resources_of_nodes,

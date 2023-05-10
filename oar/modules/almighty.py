@@ -23,7 +23,6 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_config
 
-
 config = init_config()
 
 # Set undefined config value to default one

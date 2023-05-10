@@ -3,7 +3,7 @@
 import os
 from logging import getLogger
 
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.engine import Engine
 
 from oar.lib.models import Model
 
@@ -49,6 +49,19 @@ def get_logger(*args, config=None, **kwargs):
     return sublogger
 
 
+def init_db(config, no_reflect=False) -> Engine:
+    db = Database(config)
+
+    engine = EngineConnector(db).get_engine()
+
+    setup_db(db, engine)
+
+    if not no_reflect:
+        reflect_base(Model.metadata, DeferredReflectionModel, engine)
+    
+    return engine
+
+
 def init_oar(config=None, no_db=False, no_reflect=False):
     if not config:
         config = init_config()
@@ -57,16 +70,5 @@ def init_oar(config=None, no_db=False, no_reflect=False):
     if no_db:
         return config, None, logger
     else:
-        db = Database(config)
-
-        engine = EngineConnector(db).get_engine()
-
-        setup_db(db, engine)
-
-        if not no_reflect:
-            reflect_base(Model.metadata, DeferredReflectionModel, engine)
-
+        engine = init_db(config, no_reflect=no_reflect)
         return config, engine, logger
-
-    # session_factory = sessionmaker(bind=engine)
-    # scoped = scoped_session(session_factory)

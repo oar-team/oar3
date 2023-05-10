@@ -2273,14 +2273,14 @@ def check_end_of_job(
         )
 
     if do_finishing_sequence:
-        job_finishing_sequence(session, config,epilogue_script, job_id, events)
+        job_finishing_sequence(session, config, epilogue_script, job_id, events)
     if notify_almighty_term:
         tools.notify_almighty("Term")
 
     tools.notify_almighty("BipBip")
 
 
-def job_finishing_sequence(session, config,epilogue_script, job_id, events):
+def job_finishing_sequence(session, config, epilogue_script, job_id, events):
     if epilogue_script:
         # launch server epilogue
         cmd = [epilogue_script, str(job_id)]
@@ -2349,8 +2349,8 @@ def job_finishing_sequence(session, config,epilogue_script, job_id, events):
                 cpuset_full_path = cpuset_path + "/" + cpuset_name
 
             job = get_job(session, job_id)
-            nodes_cpuset_fields = get_cpuset_values(session, config,
-                cpuset_field, job.assigned_moldable_job
+            nodes_cpuset_fields = get_cpuset_values(
+                session, config, cpuset_field, job.assigned_moldable_job
             )
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 logger.debug(
@@ -2359,8 +2359,8 @@ def job_finishing_sequence(session, config,epilogue_script, job_id, events):
                     + "] Clean cpuset on each nodes"
                 )
                 taktuk_cmd = config["TAKTUK_CMD"]
-                job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(session,
-                    job_id
+                job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
+                    session, job_id
                 )
                 ssh_public_key = format_ssh_pub_key(
                     ssh_public_key, cpuset_full_path, job.user, job.user
@@ -2377,7 +2377,9 @@ def job_finishing_sequence(session, config,epilogue_script, job_id, events):
                             "key": ssh_public_key,
                         },
                         "private": {
-                            "file_name": get_private_ssh_key_file_name(cpuset_name, config),
+                            "file_name": get_private_ssh_key_file_name(
+                                cpuset_name, config
+                            ),
                             "key": ssh_private_key,
                         },
                     },

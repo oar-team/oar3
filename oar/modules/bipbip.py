@@ -228,7 +228,9 @@ class BipBip(object):
                             "key": ssh_public_key,
                         },
                         "private": {
-                            "file_name": get_private_ssh_key_file_name(cpuset_name, config),
+                            "file_name": get_private_ssh_key_file_name(
+                                cpuset_name, config
+                            ),
                             "key": ssh_private_key,
                         },
                     },
@@ -642,7 +644,7 @@ def main():  # pragma: no cover
     # Legacy call
     scoped = scoped_session(session_factory)
 
-    # Create a session  
+    # Create a session
     session = scoped()
 
     if len(sys.argv) > 1:
@@ -651,6 +653,7 @@ def main():  # pragma: no cover
             bipbip.run(session, config)
         except Exception as ex:
             import traceback
+
             self.logger.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
