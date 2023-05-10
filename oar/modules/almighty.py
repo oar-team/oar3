@@ -23,21 +23,6 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_config
 
-config = init_config()
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    "META_SCHED_CMD": "kao",
-    "SERVER_HOSTNAME": "localhost",
-    "APPENDICE_SERVER_PORT": "6670",  # new endpoint which replaces appendice
-    "SCHEDULER_MIN_TIME_BETWEEN_2_CALLS": "1",
-    "FINAUD_FREQUENCY": "300",
-    "LOG_FILE": "/var/log/oar.log",
-    "ENERGY_SAVING_INTERNAL": "no",
-}
-
-config.setdefault_config(DEFAULT_CONFIG)
-
 # Everything is run by oar user (The real uid of this process.)
 os.environ["OARDO_UID"] = str(os.geteuid())
 
@@ -55,10 +40,6 @@ else:
     )
     os.environ["OARDIR"] = binpath
 
-meta_sched_command = config["META_SCHED_CMD"]
-m = re.match(r"^\/", meta_sched_command)
-if not m:
-    meta_sched_command = os.path.join(binpath, meta_sched_command)
 
 leon_command = os.path.join(binpath, "oar-leon")
 check_for_villains_command = os.path.join(binpath, "oar-sarko")
@@ -95,17 +76,9 @@ max_successive_read = 1
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
 schedulertimeout = 60
-# Min waiting time before 2 scheduling attempts
-scheduler_min_time_between_2_calls = int(config["SCHEDULER_MIN_TIME_BETWEEN_2_CALLS"])
-
 
 # Max waiting time before check for jobs whose time allowed has elapsed
 villainstimeout = 10
-
-# Max waiting time before check node states
-checknodestimeout = int(config["FINAUD_FREQUENCY"])
-
-Log_file = config["LOG_FILE"]
 
 energy_pid = 0
 
@@ -166,11 +139,6 @@ def check_hulot(hulot):
 #
 
 
-def meta_scheduler():
-    """Start :mod:`oar.kao.meta_sched`"""
-    return launch_command(meta_sched_command)
-
-
 def check_for_villains():
     """Start :mod:`oar.modules.sarko`"""
     return launch_command(check_for_villains_command)
@@ -194,15 +162,18 @@ def nodeChangeState():
 class Almighty(object):
     def __init__(self):
         self.state = "Init"
+
+        self._init(binpath)
+
         logger.debug("Current state [" + self.state + "]")
 
         # Activate appendice socket
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
-        ip_addr_server = socket.gethostbyname(config["SERVER_HOSTNAME"])
+        ip_addr_server = socket.gethostbyname(self.config["SERVER_HOSTNAME"])
         try:
             self.appendice.bind(
-                "tcp://" + ip_addr_server + ":" + config["APPENDICE_SERVER_PORT"]
+                "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
             )
         except Exception as e:
             logger.error(f"Failed to activate appendice endpoint: {e}")
@@ -212,7 +183,7 @@ class Almighty(object):
 
         # Starting of Hulot, the Energy saving module
         self.hulot = None
-        if config["ENERGY_SAVING_INTERNAL"] == "yes":
+        if self.config["ENERGY_SAVING_INTERNAL"] == "yes":
             self.hulot = start_hulot()
 
         self.lastscheduler = 0
@@ -226,6 +197,42 @@ class Almighty(object):
         self.state = "Qget"
 
         self.start_companions()
+
+    def _init(self, binpath):
+        config = init_config()
+
+        # Set undefined config value to default one
+        DEFAULT_CONFIG = {
+            "META_SCHED_CMD": "kao",
+            "SERVER_HOSTNAME": "localhost",
+            "APPENDICE_SERVER_PORT": "6670",  # new endpoint which replaces appendice
+            "SCHEDULER_MIN_TIME_BETWEEN_2_CALLS": "1",
+            "FINAUD_FREQUENCY": "300",
+            "LOG_FILE": "/var/log/oar.log",
+            "ENERGY_SAVING_INTERNAL": "no",
+        }
+
+        config.setdefault_config(DEFAULT_CONFIG)
+
+        self.meta_sched_command = config["META_SCHED_CMD"]
+        m = re.match(r"^\/", self.meta_sched_command)
+        if not m:
+            self.meta_sched_command = os.path.join(binpath, self.meta_sched_command)
+
+        # Min waiting time before 2 scheduling attempts
+        self.scheduler_min_time_between_2_calls = int(
+            config["SCHEDULER_MIN_TIME_BETWEEN_2_CALLS"]
+        )
+
+        # Max waiting time before check node states
+        self.checknodestimeout = int(config["FINAUD_FREQUENCY"])
+
+        self.Log_file = config["LOG_FILE"]
+        self.config = config
+
+    def meta_scheduler(self):
+        """Start :mod:`oar.kao.meta_sched`"""
+        return launch_command(self.meta_sched_command)
 
     def start_companions(self):
         """Start appendice :mod:`oar.modules.appendice_proxy` and :mod:`oar.modules.bipbip_commander` commander processes"""
@@ -241,7 +248,10 @@ class Almighty(object):
         if (
             (current >= (self.lastscheduler + schedulertimeout))
             or (self.scheduler_wanted >= 1)
-            and (current >= (self.lastscheduler + scheduler_min_time_between_2_calls))
+            and (
+                current
+                >= (self.lastscheduler + self.scheduler_min_time_between_2_calls)
+            )
         ):
             logger.debug("Scheduling timeout")
             # lastscheduler = current + schedulertimeout
@@ -252,8 +262,8 @@ class Almighty(object):
             # lastvillains =  current +  villainstimeout
             self.add_command("Villains")
 
-        if (current >= (self.lastchecknodes + checknodestimeout)) and (
-            checknodestimeout > 0
+        if (current >= (self.lastchecknodes + self.checknodestimeout)) and (
+            self.checknodestimeout > 0
         ):
             logger.debug("Node check timeout")
             # lastchecknodes = -current + checknodestimeout
@@ -383,7 +393,7 @@ class Almighty(object):
             elif self.state == "Scheduler":
                 current_time = tools.get_time()
                 if current_time >= (
-                    self.lastscheduler + scheduler_min_time_between_2_calls
+                    self.lastscheduler + self.scheduler_min_time_between_2_calls
                 ):
                     self.scheduler_wanted = 0
                     # First, check pending events
@@ -404,7 +414,7 @@ class Almighty(object):
                             time.sleep(5)
                             start_hulot()
 
-                        scheduler_result = meta_scheduler()
+                        scheduler_result = self.meta_scheduler()
                         self.lastscheduler = tools.get_time()
                         if scheduler_result == 0:
                             self.state = "Time update"
@@ -432,7 +442,7 @@ class Almighty(object):
                         + ">= ("
                         + str(self.lastscheduler)
                         + " + "
-                        + str(scheduler_min_time_between_2_calls)
+                        + str(self.scheduler_min_time_between_2_calls)
                         + ")"
                     )
 

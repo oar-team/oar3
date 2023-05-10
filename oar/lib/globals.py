@@ -58,7 +58,7 @@ def init_db(config, no_reflect=False) -> Engine:
 
     if not no_reflect:
         reflect_base(Model.metadata, DeferredReflectionModel, engine)
-    
+
     return engine
 
 
