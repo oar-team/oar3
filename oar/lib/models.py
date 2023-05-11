@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-import inspect
 import sys
 from collections import OrderedDict
 
 # from .globals import db
-from contextlib import contextmanager
 
 from sqlalchemy import (  # , exc
     BigInteger,
@@ -15,52 +13,16 @@ from sqlalchemy import (  # , exc
     String,
     Table,
     Text,
-    create_engine,
     inspect,
     text,
 )
-from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import DeferredReflection
-from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
-from sqlalchemy.orm.exc import UnmappedClassError
+from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.orm.state import InstanceState
-from sqlalchemy.pool import StaticPool
 
 from oar.lib.database import Database
 
-from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
-
-
-class _BoundDeclarativeMeta(DeclarativeMeta):
-    def __new__(cls, name, bases, d):
-        if (
-            "__tablename__" not in d
-            and "__table__" not in d
-            and "__abstract__" not in d
-        ):
-            d["__tablename__"] = get_table_name(name)
-        default_table_args = d.pop(
-            "__default_table_args__", BaseModel.__default_table_args__
-        )
-        table_args = d.pop("__table_args__", {})
-        if isinstance(table_args, dict):
-            table_args = merge_dicts(default_table_args, table_args)
-        elif isinstance(table_args, tuple):
-            table_args = list(table_args)
-            if isinstance(table_args[-1], dict):
-                table_args[-1] = merge_dicts(default_table_args, table_args[-1])
-            else:
-                table_args.append(default_table_args)
-            table_args = tuple(table_args)
-        d["__table_args__"] = table_args
-        return DeclarativeMeta.__new__(cls, name, bases, d)
-
-    def __init__(self, name, bases, d):
-        DeclarativeMeta.__init__(self, name, bases, d)
-        if hasattr(bases[0], "_db"):
-            bases[0]._db.models[name] = self
-            bases[0]._db.tables[self.__table__.name] = self.__table__
-            self._db = bases[0]._db
+from .utils import reraise, to_json
 
 
 def get_entity_loaded_propnames(entity):

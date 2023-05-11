@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import sys
 import threading
 import time
-from collections import OrderedDict
 from contextlib import contextmanager
 
 import sqlalchemy
@@ -10,13 +8,11 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, inspect  # , exc
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.declarative import DeferredReflection
-from sqlalchemy.orm import DeclarativeMeta, class_mapper, declarative_base, sessionmaker
+from sqlalchemy.orm import class_mapper, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
-from sqlalchemy.orm.state import InstanceState
 from sqlalchemy.pool import StaticPool
 
-from .utils import cached_property, get_table_name, merge_dicts, reraise, to_json
+from .utils import cached_property
 
 __all__ = ["Database"]
 
@@ -31,6 +27,7 @@ def reflect_base(metadata, defered, engine):
     #     print("mouyahahah: f{e}")
 
     # autoload all tables marked for autoreflect
+    # DeferredReflectionModel.prepare(bind)
     defered.prepare(engine)
 
 

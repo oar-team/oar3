@@ -56,6 +56,7 @@ def init_db(config, no_reflect=False) -> Engine:
     setup_db(db, engine)
 
     if not no_reflect:
+        DeferredReflectionModel.prepare(engine)
         reflect_base(Model.metadata, DeferredReflectionModel, engine)
 
     return engine

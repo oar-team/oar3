@@ -12,10 +12,10 @@ from sqlalchemy import VARCHAR
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar import VERSION
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
-from oar.lib.models import JobResourceDescription, Model, Resource, ResourceLog
+from oar.lib.models import JobResourceDescription, Resource, ResourceLog
 from oar.lib.tools import check_resource_property
+from oar.lib.models import Model
 
 from .utils import CommandReturns
 
@@ -46,6 +46,8 @@ def oarproperty(
     db = session
     cmd_ret = CommandReturns()
 
+    Model.metadata.reflect(bind=session.get_bind())
+    # print(vars(Model.metadata.tables["resources"]))
     # it's mainly use Operations from Alembic through db.op
     # import pdb; pdb.set_trace()
     if version:
@@ -55,10 +57,11 @@ def oarproperty(
     resources = Resource.__tablename__
     # get properties from tables
 
-    # Reflect to load all the colums from the database
+    # Reflect to load all the columns from the database
     # (including the columns not in the class Resource)
-    session.reflect()
-    columns = Resource.columns
+    # session.get_bind().reflect()
+    columns = Model.metadata.tables["resources"].columns
+    print(columns)
     properties = [column.name for column in columns]
 
     if prop_list:
