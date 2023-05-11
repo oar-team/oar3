@@ -6,14 +6,13 @@ from sqlalchemy.orm import scoped_session
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.database import EngineConnector, sessionmaker
+from oar.lib.database import sessionmaker
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_ids_with_given_properties,
     resume_job,
 )
-from oar.lib.models import Model
 
 from .utils import CommandReturns
 
@@ -91,14 +90,9 @@ def cli(job_id, array, sql, version):
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
+        config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     cmd_ret = oarresume(session, config, job_id, array, sql, version, None)

@@ -130,14 +130,9 @@ def cli(list, enable, disable, enable_all, disable_all, add, change, remove, ver
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
+        config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     list_all = list

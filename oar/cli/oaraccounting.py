@@ -36,10 +36,7 @@ def cli(reinitialize, delete_before, version):
     if ctx.obj:
         session = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
+        config, engine, log = init_oar()
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)

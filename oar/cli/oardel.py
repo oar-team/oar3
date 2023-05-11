@@ -7,8 +7,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.basequery import BaseQueryCollection
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     add_current_job_types,
@@ -24,7 +22,6 @@ from oar.lib.job_handling import (
     get_job_types,
     remove_current_job_types,
 )
-from oar.lib.models import Model
 from oar.lib.resource_handling import update_current_scheduler_priority
 
 from .utils import CommandReturns
@@ -328,14 +325,9 @@ def cli(
         session, config = ctx.obj
 
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
+        config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     cmd_ret = oardel(

@@ -1,9 +1,7 @@
 import click
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
-from oar.lib.models import Model
 from oar.lib.resource_handling import remove_resource
 
 from .utils import CommandReturns
@@ -24,14 +22,9 @@ def cli(resource):
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
+        config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     resource_ids = resource

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+
 # Rename because signal is also a parameter of oarsub
 import signal as sysig
 import socket
@@ -40,9 +41,6 @@ def init_tcp_server():
     sock.bind(("0.0.0.0", 0))
     sock.listen(5)
     return sock
-
-
-
 
 
 def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
@@ -450,7 +448,9 @@ def cli(
         if job_id_lst:
             if signalnum == sysig.SIGINT:
                 print("Caught Interrupt (^C), cancelling job(s)...")
-            oardel(session, config, job_id_lst, None, None, None, None, None, None, None)
+            oardel(
+                session, config, job_id_lst, None, None, None, None, None, None, None
+            )
         exit(1)
 
     sysig.signal(sysig.SIGINT, qdel)

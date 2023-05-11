@@ -13,10 +13,9 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.database import EngineConnector, wait_db_ready
+from oar.lib.database import wait_db_ready
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import get_job
-from oar.lib.models import Model
 from oar.lib.node import (
     get_all_resources_on_node,
     get_node_job_to_frag,
@@ -405,14 +404,9 @@ def cli(
     if ctx.obj:
         (session, config) = ctx.obj
     else:
-        config, db, log, session_factory = init_oar()
-        engine = EngineConnector(db).get_engine()
-
-        Model.metadata.drop_all(bind=engine)
-
+        config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
-        # TODO
         session = scoped()
 
     resources = resource

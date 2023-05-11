@@ -4,6 +4,9 @@ import re
 import click
 
 import oar.lib.walltime as walltime
+from oar.lib.globals import init_oar
+
+from sqlalchemy.orm import sessionmaker, scoped_session
 from oar import VERSION
 
 from .utils import CommandReturns
@@ -161,6 +164,11 @@ def cli(job_id, new_walltime, force, delay_next_jobs, version):
     cmd_ret = CommandReturns(cli)
     if ctx.obj:
         session, config = ctx.obj
+    else:
+        config, engine, log = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
 
     cmd_ret = oarwalltime(
         session, config, job_id, new_walltime, force, delay_next_jobs, version
