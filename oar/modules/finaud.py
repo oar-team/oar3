@@ -5,6 +5,8 @@ Check Alive and Suspected nodes.
 """
 import sys
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event_with_host
 from oar.lib.globals import get_logger, init_oar
@@ -96,8 +98,18 @@ class Finaud(object):
 
 
 def main():  # pragma: no cover
-    finaud = Finaud()
-    finaud.run()
+    config, engine, log = init_oar()
+
+    # Create a session maker
+    session_factory = sessionmaker(bind=engine)
+    # Legacy call
+    scoped = scoped_session(session_factory)
+
+    # Create a session
+    session = scoped()
+
+    finaud = Finaud(config)
+    finaud.run(session)
     return finaud.return_value
 
 

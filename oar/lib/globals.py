@@ -35,7 +35,6 @@ def get_logger(*args, config=None, **kwargs):
     """Returns sub logger once the root logger is configured."""
 
     logger = init_logger(config)
-    print(logger)
 
     global STREAM_HANDLER
     forward_stderr = kwargs.pop("forward_stderr", False)

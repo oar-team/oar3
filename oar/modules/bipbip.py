@@ -11,6 +11,8 @@ import re
 import socket
 import sys
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, add_new_event_with_host
 from oar.lib.globals import get_logger, init_oar
@@ -637,7 +639,7 @@ class BipBip(object):
 
 
 def main():  # pragma: no cover
-    config, session_factory, log = init_oar()
+    config, engine, log = init_oar()
 
     # Create a session maker
     session_factory = sessionmaker(bind=engine)
@@ -648,7 +650,7 @@ def main():  # pragma: no cover
     session = scoped()
 
     if len(sys.argv) > 1:
-        bipbip = BipBip(sys.argv[1:])
+        bipbip = BipBip(sys.argv[1:], config)
         try:
             bipbip.run(session, config)
         except Exception as ex:

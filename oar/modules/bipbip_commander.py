@@ -36,13 +36,35 @@ from typing import Any
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib.globals import get_logger, init_config, init_oar
+from oar.lib.globals import get_logger, init_config
+
+
+def launch_command(command, logger):
+    """Launch the command line passed in parameter"""
+
+    # TODO move to oar.lib.tools
+    # global finishTag
+
+    logger.debug("Launching command : [" + command + "]")
+
+    p = tools.Popen(command, stdout=tools.PIPE, stderr=tools.PIPE, shell=True)
+    stdout, stderr = p.communicate()
+    return_code = p.wait()
+
+    logger.debug(command + " terminated")
+    logger.debug("Exit value : " + str(return_code))
+
+    if return_code != 0:
+        logger.debug("Command failed with error: {}".format(stderr.decode("utf-8")))
+
+    return return_code
 
 
 def bipbip_leon_executor(
     command: dict[str, Any], leon_command: str, bipbip_command: str, logger
 ):
     job_id = command["job_id"]
+    logger.info(f"executing job: {job_id}")
 
     if command["cmd"] == "LEONEXTERMINATE":
         cmd_arg = [leon_command, str(job_id)]
@@ -52,7 +74,8 @@ def bipbip_leon_executor(
     logger.debug("Launching: " + str(cmd_arg))
 
     # TODO returncode,
-    tools.call(cmd_arg)
+    launch_command(" ".join(cmd_arg), logger)
+    # tools.call(cmd_arg)
 
 
 class BipbipCommander(object):
@@ -153,6 +176,7 @@ class BipbipCommander(object):
                 len(self.bipbip_leon_commands_to_run) > 0
                 and len(self.bipbip_leon_executors.keys()) <= self.Max_bipbip_processes
             ):
+                self.logger.debug("some job to run!")
                 command = self.bipbip_leon_commands_to_run.pop(0)
                 job_id = command["job_id"]
                 flag_exec = True
@@ -173,6 +197,7 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
+                    self.logger.info("starting a new bl executor")
                     executor = tools.Process(
                         target=bipbip_leon_executor,
                         args=(
@@ -181,7 +206,7 @@ class BipbipCommander(object):
                             self.bipbip_command,
                             self.logger,
                         ),
-                        kwargs=command,
+                        kwargs={},
                     )
                     executor.start()
                     self.bipbip_leon_executors[job_id] = executor

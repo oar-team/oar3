@@ -47,8 +47,8 @@ class FakeProcess(object):
     def start(self):
         print(self.args)
         print(self.kwargs)
-        # self.target(*self.args,**self.kwargs)
-        self.target(*self.args)
+        self.target(*self.args,**self.kwargs)
+        # self.target(*self.args)
 
     def join(self):
         pass

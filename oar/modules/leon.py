@@ -103,7 +103,7 @@ class Leon(object):
             logger.debug("Normal kill: treates job " + str(job.id))
             if (job.state == "Waiting") or (job.state == "Hold"):
                 logger.debug("Job is not launched")
-                set_job_state(session, job.id, "Error")
+                set_job_state(session, config, job.id, "Error")
                 set_job_message(session, job.id, "Job killed by Leon directly")
                 if job.type == "INTERACTIVE":
                     logger.debug("I notify oarsub in waiting mode")
@@ -128,7 +128,7 @@ class Leon(object):
                 if "noop" in job_types.keys():
                     logger.debug("Kill the NOOP job: " + str(job.id))
                     set_finish_date(session, job)
-                    set_job_state(session, job.id, "Terminated")
+                    set_job_state(session, config, job.id, "Terminated")
                     job_finishing_sequence(session, epilogue_script, job.id, [])
                     self.exit_code = 1
                 else:
@@ -164,7 +164,7 @@ class Leon(object):
             session,
         ):
             logger.debug("EXTERMINATE the job: " + str(job.id))
-            set_job_state(session, job.id, "Finishing")
+            set_job_state(session, config, job.id, "Finishing")
             if job.start_time == 0:
                 set_running_date(session, job.id)
             set_finish_date(session, job)

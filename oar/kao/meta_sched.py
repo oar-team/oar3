@@ -856,7 +856,9 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     ):
         process_walltime_change_requests(plt)
 
-    tools.create_almighty_socket()
+    tools.create_almighty_socket(
+        config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
+    )
 
     logger.debug(
         "Retrieve information for already scheduled reservations from \

@@ -195,7 +195,7 @@ class Database(object):
             try:
                 self.create_all(metadata, bind=bind)
             except Exception as e:
-                print("mouyahahah: f{e}")
+                pass
 
             # autoload all tables marked for autoreflect
             DeferredReflectionModel.prepare(bind)

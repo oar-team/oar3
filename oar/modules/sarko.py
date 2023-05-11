@@ -15,6 +15,8 @@ The jobs of Sarko are:
 """
 import sys
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, add_new_event_with_host
 from oar.lib.globals import get_logger, init_oar
@@ -236,13 +238,22 @@ class Sarko(object):
 
 
 def main():  # pragma: no cover
-    config, _, logger, _ = init_oar()
+    config, engine, log = init_oar()
+
+    # Create a session maker
+    session_factory = sessionmaker(bind=engine)
+    # Legacy call
+    scoped = scoped_session(session_factory)
+
+    # Create a session
+    session = scoped()
 
     logger = get_logger("oar.modules.sarko", forward_stderr=True)
     logger.info("Start Sarko")
 
     sarko = Sarko(config, logger)
-    sarko.run()
+    sarko.run(session)
+
     return sarko.guilty_found
 
 

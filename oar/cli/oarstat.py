@@ -21,7 +21,6 @@ from oar.lib.accounting import (
     get_last_project_karma,
 )
 from oar.lib.basequery import BaseQueryCollection
-from oar.lib.database import EngineConnector
 from oar.lib.event import get_jobs_events
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
@@ -30,7 +29,6 @@ from oar.lib.job_handling import (
     get_job_resources_properties,
     get_jobs_state,
 )
-from oar.lib.models import Model
 from oar.lib.tools import (
     check_resource_system_property,
     get_duration,
@@ -541,7 +539,8 @@ def cli(
     if ctx.obj:
         session = ctx.obj
     else:
-        _, _, session_factory = init_oar()
+        config, engine, log = init_oar()
+        session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
 

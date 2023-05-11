@@ -98,12 +98,12 @@ class NodeChangeState(object):
 
             #  Check if we must expressely change the job state
             if event.type == "SWITCH_INTO_TERMINATE_STATE":
-                set_job_state(session, job_id, "Terminated")
+                set_job_state(session, config, job_id, "Terminated")
 
             elif (event.type == "SWITCH_INTO_ERROR_STATE") or (
                 event.type == "FORCE_TERMINATE_FINISHING_JOB"
             ):
-                set_job_state(session, job_id, "Error")
+                set_job_state(session, config, job_id, "Error")
 
             # Check if we must change the job state #
             type_to_check = [
@@ -128,19 +128,19 @@ class NodeChangeState(object):
                     or (event.type == "RESERVATION_NO_NODE")
                     or (job.assigned_moldable_job == 0)
                 ):
-                    set_job_state(session, job_id, "Error")
+                    set_job_state(session, config, job_id, "Error")
                 elif (
                     (job.reservation != "None")
                     and (event.type != "PING_CHECKER_NODE_SUSPECTED")
                     and (event.type != "CPUSET_ERROR")
                 ):
-                    set_job_state(session, job_id, "Error")
+                    set_job_state(session, config, job_id, "Error")
 
             if (event.type == "CPUSET_CLEAN_ERROR") or (event.type == "EPILOGUE_ERROR"):
                 # At this point the job was executed normally
                 # The state is changed here to avoid to schedule other jobs
                 # on nodes that will be Suspected
-                set_job_state(session, job_id, "Terminated")
+                set_job_state(session, config, job_id, "Terminated")
 
             # Check if we must suspect some nodes
             type_to_check = [
@@ -249,7 +249,7 @@ class NodeChangeState(object):
                 stop_all_queues(
                     session,
                 )
-                set_job_state(session, job_id, "Error")
+                set_job_state(session, config, job_id, "Error")
 
             # Check if we must resubmit the job
             type_to_check = [
@@ -287,7 +287,7 @@ class NodeChangeState(object):
             # Check Suspend/Resume job feature
             if event.type in ["HOLD_WAITING_JOB", "HOLD_RUNNING_JOB", "RESUME_JOB"]:
                 if event.type != "RESUME_JOB" and job.state == "Waiting":
-                    set_job_state(session, job_id, "Hold")
+                    set_job_state(session, config, job_id, "Hold")
                     if job.type == "INTERACTIVE":
                         addr, port = job.info_type.split(":")
                         tools.notify_tcp_socket(
@@ -295,7 +295,7 @@ class NodeChangeState(object):
                         )
 
                 elif event.type != "RESUME_JOB" and job.state == "Resuming":
-                    set_job_state(session, job_id, "Suspended")
+                    set_job_state(session, config, job_id, "Suspended")
                     tools.notify_almighty("Term")
 
                 elif event.type == "HOLD_WAITING_JOB" and job.state == "Running":
@@ -309,11 +309,11 @@ class NodeChangeState(object):
                         self.suspend_job(session, job, event)
 
                 elif event.type == "RESUME_JOB" and job.state == "Suspend":
-                    set_job_state(session, job_id, "Resuming")
+                    set_job_state(session, config, job_id, "Resuming")
                     tools.notify_almighty("Qresume")
 
                 elif event.type == "RESUME_JOB" and job.state == "Hold":
-                    set_job_state(session, job_id, "Waiting")
+                    set_job_state(session, config, job_id, "Waiting")
                     tools.notify_almighty("Qresume")
 
             # Check if we must notify the user
@@ -483,7 +483,7 @@ class NodeChangeState(object):
                                 add_new_event(
                                     session, "SUSPEND_SCRIPT_ERROR", job.id, msg
                                 )
-                                set_job_state(session, job.id, "Resuming")
+                                set_job_state(session, config, job.id, "Resuming")
                                 tools.notify_almighty("Qresume")
                     else:
                         msg = (

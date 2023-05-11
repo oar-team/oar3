@@ -1932,7 +1932,7 @@ def get_job_host_log(session, moldable_id):
     return [h[0] for h in res]
 
 
-def suspend_job_action(session, job_id, moldable_id):
+def suspend_job_action(session, config, job_id, moldable_id):
     """perform all action when a job is suspended"""
     set_job_state(session, config, job_id, "Suspended")
     session.query(Job).filter(Job.id == job_id).update(
@@ -2015,12 +2015,10 @@ def check_end_of_job(
     launchingDirectory,
     epilogue_script,
 ):
-    print("dsmqjfdsmfjdsmljf", error)
     """check end of job"""
     log_jid = "[" + str(job_id) + "] "
     # TODO: do we really need to get refresh job data by reget it ? (see bipbip usage)
     job = get_job(session, job_id)
-    print(job)
 
     do_finishing_sequence = True
     notify_almighty_term = False

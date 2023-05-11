@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-import signal
+# Rename because signal is also a parameter of oarsub
+import signal as sysig
 import socket
 import sys
 
@@ -41,18 +42,7 @@ def init_tcp_server():
     return sock
 
 
-def qdel(signalnum, frame):  # pragma: no cover
-    """Handle ^C in interactive submission."""
-    if job_id_lst:
-        if signalnum == signal.SIGINT:
-            print("Caught Interrupt (^C), cancelling job(s)...")
-        oardel(job_id_lst, None, None, None, None, None, None, None)
-    exit(1)
 
-
-signal.signal(signal.SIGINT, qdel)
-signal.signal(signal.SIGHUP, qdel)
-signal.signal(signal.SIGPIPE, qdel)
 
 
 def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
@@ -453,6 +443,19 @@ def cli(
         session = scoped()
 
     global job_id_lst
+
+    # Setup handlers with closure
+    def qdel(signalnum, frame):  # pragma: no cover
+        """Handle ^C in interactive submission."""
+        if job_id_lst:
+            if signalnum == sysig.SIGINT:
+                print("Caught Interrupt (^C), cancelling job(s)...")
+            oardel(session, config, job_id_lst, None, None, None, None, None, None, None)
+        exit(1)
+
+    sysig.signal(sysig.SIGINT, qdel)
+    sysig.signal(sysig.SIGHUP, qdel)
+    sysig.signal(sysig.SIGPIPE, qdel)
 
     cmd_ret = CommandReturns()
 

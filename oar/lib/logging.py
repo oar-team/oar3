@@ -59,7 +59,6 @@ def get_global_stream_handler(config, output="stderr"):
     global STREAM_HANDLER
     if STREAM_HANDLER[output] is None:
         STREAM_HANDLER[output] = StreamHandler(getattr(sys, output, "stderr"))
-        print("haha", config["LOG_LEVEL"])
         STREAM_HANDLER[output].setLevel(LEVELS[config["LOG_LEVEL"]])
         STREAM_HANDLER[output].setFormatter(Formatter(config["LOG_FORMAT"]))
     return STREAM_HANDLER[output]

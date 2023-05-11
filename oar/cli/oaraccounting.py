@@ -10,7 +10,7 @@ from oar.lib.accounting import (
     delete_all_from_accounting,
 )
 from oar.lib.database import EngineConnector
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import init_oar
 from oar.lib.models import Model
 
 from .utils import CommandReturns
@@ -61,12 +61,12 @@ def cli(reinitialize, delete_before, version):
         cmd_ret.exit()
 
     if reinitialize:
-        print("Deleting all records from the acounting table...")
-        delete_all_from_accounting()
+        print("Deleting all records from the accounting table...")
+        delete_all_from_accounting(session)
     elif delete_before:
         print("Deleting records older than $Delete_windows_before seconds ago...")
-        delete_windows_before = tools.get_date() - delete_windows_before
+        delete_windows_before = tools.get_date(session) - delete_windows_before
 
-        delete_accounting_windows_before(delete_windows_before)
+        delete_accounting_windows_before(session, delete_windows_before)
     else:
-        check_accounting_update(window_size)
+        check_accounting_update(session, window_size)

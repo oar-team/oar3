@@ -29,10 +29,11 @@ import zmq
 from oar.lib.event import add_new_event
 
 # from oar.lib import config, db
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger, init_config, init_oar
 
 # from oar.lib import logger as log
-
+# FIXME:Global config
+config = init_config()
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -132,8 +133,11 @@ def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: n
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
+
     if not almighty_socket:
-        create_almighty_socket()
+        create_almighty_socket(
+            config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
+        )
 
     message = {"cmd": cmd}
     if job_id:
