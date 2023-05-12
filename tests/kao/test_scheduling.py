@@ -7,10 +7,10 @@ from oar.kao.scheduling import (
     set_slots_with_prev_scheduled_jobs,
 )
 from oar.kao.slot import Slot, SlotSet
-from oar.lib.globals import init_oar
+from oar.lib.globals import init_config
 from oar.lib.job_handling import JobPseudo
 
-config, _, log, session_factory = init_oar()
+config = init_config()
 
 # import pdb
 

@@ -14,9 +14,9 @@ from oar.lib.job_handling import JobPseudo
 from oar.lib.resource import ResourceSet
 from oar.lib.tools import local_to_sql
 
-config, _, log, session_factory = init_oar()
+# config, engine, log  = init_oar()
 
-config["LOG_FILE"] = ":stderr:"
+# config["LOG_FILE"] = ":stderr:"
 logger = get_logger("oar.test")
 
 """

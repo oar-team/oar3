@@ -6,7 +6,6 @@ from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 
-config, _, log, session_factory = init_oar()
 
 logger = get_logger("oar.kamelot_basic")
 

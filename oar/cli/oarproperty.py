@@ -8,14 +8,15 @@
 # To use the quiet mode, just do something like:
 #   echo -e "mysqlroot\nmysqlpassword\n" | oar_property.pl -q -l
 import click
-from sqlalchemy import VARCHAR
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from sqlalchemy import VARCHAR, Column, Integer, String
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar import VERSION
 from oar.lib.globals import init_oar
-from oar.lib.models import JobResourceDescription, Resource, ResourceLog
+from oar.lib.models import JobResourceDescription, Model, Resource, ResourceLog
 from oar.lib.tools import check_resource_property
-from oar.lib.models import Model
 
 from .utils import CommandReturns
 
@@ -40,13 +41,28 @@ def check_property_name(cmd_ret, prop_name, quiet=False):
     return False
 
 
+def get_op(engine):
+    ctx = MigrationContext.configure(engine)
+    return Operations(ctx)
+
+
 def oarproperty(
-    session, config, prop_list, show_type, add, varchar, delete, rename, quiet, version
+    session,
+    engine,
+    config,
+    prop_list,
+    show_type,
+    add,
+    varchar,
+    delete,
+    rename,
+    quiet,
+    version,
 ):
     db = session
     cmd_ret = CommandReturns()
 
-    Model.metadata.reflect(bind=session.get_bind())
+    Model.metadata.reflect(bind=engine)
     # print(vars(Model.metadata.tables["resources"]))
     # it's mainly use Operations from Alembic through db.op
     # import pdb; pdb.set_trace()
@@ -61,7 +77,6 @@ def oarproperty(
     # (including the columns not in the class Resource)
     # session.get_bind().reflect()
     columns = Model.metadata.tables["resources"].columns
-    print(columns)
     properties = [column.name for column in columns]
 
     if prop_list:
@@ -69,12 +84,13 @@ def oarproperty(
             if not check_resource_property(column):
                 print(column)
 
+    op = get_op(engine.connect())
     if delete:
         for prop_todelete in delete:
             if check_property_name(cmd_ret, prop_todelete):
                 return cmd_ret
 
-            db.op.drop_column(resources, prop_todelete)
+            op.drop_column(resources, prop_todelete)
             if not quiet:
                 cmd_ret.print_("Deleled property: {}".format(prop_todelete))
 
@@ -103,11 +119,9 @@ def oarproperty(
             if not skip:
                 kw = {"nullable": True}
                 if varchar:
-                    db.op.add_column(
-                        resources, db.Column(prop_toadd, db.String(255), **kw)
-                    )
+                    op.add_column(resources, Column(prop_toadd, String(255), **kw))
                 else:
-                    db.op.add_column(resources, db.Column(prop_toadd, db.Integer, **kw))
+                    op.add_column(resources, Column(prop_toadd, Integer, **kw))
                 if not quiet:
                     cmd_ret.print_("Added property: {}".format(prop_toadd))
 
@@ -118,24 +132,31 @@ def oarproperty(
                 return cmd_ret
             if check_property_name(cmd_ret, new_prop):
                 return cmd_ret
+            if old_prop not in columns:
+                cmd_ret.error(f"Cannot rename unexistent property: '{old_prop}'")
+                return cmd_ret
+            if new_prop in columns:
+                cmd_ret.error(
+                    f"cannot rename '{old_prop}' into '{new_prop}'. Property '{new_prop}' already exists."
+                )
+                return cmd_ret
 
-            db.op.alter_column(resources, old_prop, new_column_name=new_prop)
+            op.alter_column(resources, old_prop, new_column_name=new_prop)
 
-            db.query(ResourceLog).filter(ResourceLog.attribute == old_prop).update(
+            session.query(ResourceLog).filter(ResourceLog.attribute == old_prop).update(
                 {ResourceLog.attribute: new_prop}, synchronize_session=False
             )
 
-            db.query(JobResourceDescription).filter(
+            session.query(JobResourceDescription).filter(
                 JobResourceDescription.resource_type == old_prop
             ).update(
                 {JobResourceDescription.resource_type: new_prop},
                 synchronize_session=False,
             )
-            db.commit()
+            session.commit()
             if not quiet:
                 cmd_ret.print_("Rename property {} into {}".format(old_prop, new_prop))
 
-    db.close()
     return cmd_ret
 
 
@@ -176,6 +197,7 @@ def cli(list, type, add, varchar, delete, rename, quiet, version):
     show_type = type
     cmd_ret = oarproperty(
         session,
+        engine,
         config,
         prop_list,
         show_type,

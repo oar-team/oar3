@@ -12,7 +12,7 @@ from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import JobPseudo
 from oar.lib.resource import ResourceSet
 
-config, _, log, session_factory = init_oar()
+config, engine, log= init_oar(no_db=True)
 
 # import pdb
 

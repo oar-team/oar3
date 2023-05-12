@@ -30,7 +30,7 @@ import oar.lib.tools as tools
 from oar import VERSION
 from oar.lib.event import get_events_for_hostname_from
 from oar.lib.globals import init_oar
-from oar.lib.models import AssignedResource, Job, Resource
+from oar.lib.models import AssignedResource, Job, Model, Resource
 from oar.lib.node import (
     get_all_network_address,
     get_resources_of_nodes,
@@ -147,7 +147,11 @@ def print_all_hostnames(nodes, json):
 def print_resources_flat_way(session, cmd_ret, resources):
     now = tools.get_date(session)
 
-    properties = [column.name for column in Resource.columns]
+    # Load reflected table
+    Model.metadata.reflect(bind=session.get_bind())
+    columns = Model.metadata.tables["resources"].columns
+
+    properties = [column.name for column in columns]
 
     for resource in resources:
         cmd_ret.print_("network_address: " + resource.network_address)
@@ -171,7 +175,7 @@ def print_resources_flat_way(session, cmd_ret, resources):
 
 
 def print_resources_table(
-    cmd_ret, resources, properties_to_display=["cpu"], show_all=False
+    cmd_ret, session, resources, properties_to_display=["cpu"], show_all=False
 ):
     table = Table()
     table.box = rich.box.SIMPLE_HEAD
@@ -183,10 +187,13 @@ def print_resources_table(
     table.add_column("Available upto")
     show_properties = properties_to_display or show_all
 
+    Model.metadata.reflect(bind=session.get_bind())
+    columns = Model.metadata.tables["resources"].columns
+
     if show_properties:
         properties = [
             column.name
-            for column in Resource.columns
+            for column in columns
             if not check_resource_system_property(column.name)
             and (column.name in properties_to_display or show_all)
         ]
@@ -230,6 +237,7 @@ def print_resources_nodes_infos(
     if not json:
         print_resources_table(
             cmd_ret,
+            session,
             resources,
             properties,
             show_all_properties,

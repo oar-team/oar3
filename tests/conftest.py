@@ -3,14 +3,11 @@
 import os
 import shutil
 import tempfile
-from codecs import open
 
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-from sqlalchemy import Column, Integer, String, text
-
-from oar.lib.database import EngineConnector, reflect_base
+from sqlalchemy import Column, Integer, String
 
 # from oar.lib import config, db
 from oar.lib.globals import init_config, init_oar

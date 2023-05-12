@@ -2,8 +2,6 @@
 import sys
 from collections import OrderedDict
 
-# from .globals import db
-
 from sqlalchemy import (  # , exc
     BigInteger,
     CheckConstraint,
@@ -23,6 +21,8 @@ from sqlalchemy.orm.state import InstanceState
 from oar.lib.database import Database
 
 from .utils import reraise, to_json
+
+# from .globals import db
 
 
 def get_entity_loaded_propnames(entity):

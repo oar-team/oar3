@@ -6,9 +6,9 @@ from simpy.events import AnyOf
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib.globals import init_oar
+from oar.lib.globals import init_config
 
-config, _, log, session_factory = init_oar()
+config = init_config()
 
 config["LOG_FILE"] = ":stderr:"
 

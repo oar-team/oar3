@@ -2,12 +2,11 @@ import os
 import re
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.walltime as walltime
-from oar.lib.globals import init_oar
-
-from sqlalchemy.orm import sessionmaker, scoped_session
 from oar import VERSION
+from oar.lib.globals import init_oar
 
 from .utils import CommandReturns
 
