@@ -28,35 +28,39 @@ def minimal_db_initialization(request, setup_config):
         yield session
 
 
-def test_db_kamelot_1(minimal_db_initialization):
+def test_db_kamelot_1(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default", time.time()]
-    main(session=minimal_db_initialization)
+    main(session=minimal_db_initialization, config=config)
     sys.argv = old_sys_argv
     req = minimal_db_initialization.query(GanttJobsPrediction).all()
     assert len(req) == 5
 
 
-def test_db_kamelot_2(minimal_db_initialization):
+def test_db_kamelot_2(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default"]
-    main(session=minimal_db_initialization)
+    main(session=minimal_db_initialization, config=config)
     sys.argv = old_sys_argv
     req = minimal_db_initialization.query(GanttJobsPrediction).all()
     assert len(req) == 5
 
 
-def test_db_kamelot_3(minimal_db_initialization):
+def test_db_kamelot_3(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot"]
-    main(session=minimal_db_initialization)
+    main(session=minimal_db_initialization, config=config)
     sys.argv = old_sys_argv
     req = minimal_db_initialization.query(GanttJobsPrediction).all()
     assert len(req) == 5
 
 
 @pytest.fixture(scope="function", autouse=False)
-def properties_init(request, minimal_db_initialization):
+def properties_init(request, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     for i in range(4):
         Resource.create(minimal_db_initialization, network_address="localhost")
 
@@ -75,11 +79,12 @@ def properties_init(request, minimal_db_initialization):
     yield (tokens, minimal_db_initialization)
 
 
-def test_db_kamelot_4(properties_init, minimal_db_initialization):
+def test_db_kamelot_4(properties_init, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     properties_init, session = properties_init
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default", time.time()]
-    main(session=minimal_db_initialization)
+    main(session=minimal_db_initialization, config=config)
     sys.argv = old_sys_argv
     req = session.query(GanttJobsResource).all()
 

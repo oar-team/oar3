@@ -86,7 +86,7 @@ class Leon(object):
                 logger.debug('Leon was called to exterminate job "' + str(job_id) + '"')
                 job_arm_leon_timer(session, job_id)
                 events = [("EXTERMINATE_JOB", "I exterminate the job " + str(job_id))]
-                job_finishing_sequence(session, epilogue_script, job_id, events)
+                job_finishing_sequence(session, config, epilogue_script, job_id, events)
                 tools.notify_almighty("ChState")
             else:
                 logger.error(
@@ -129,7 +129,7 @@ class Leon(object):
                     logger.debug("Kill the NOOP job: " + str(job.id))
                     set_finish_date(session, job)
                     set_job_state(session, config, job.id, "Terminated")
-                    job_finishing_sequence(session, epilogue_script, job.id, [])
+                    job_finishing_sequence(session, config,epilogue_script, job.id, [])
                     self.exit_code = 1
                 else:
                     hosts = get_job_current_hostnames(session, job.id)

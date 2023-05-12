@@ -49,7 +49,7 @@ def test_oardel_void(minimal_db_initialization, setup_config):
     assert result.exit_code == 1
 
 
-def test_oardel_simple(minimal_db_initialization, setup_config):
+def test_oardel_simple(minimal_db_initialization, setup_config,backup_and_restore_environ_function):
     config, _, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(

@@ -34,7 +34,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
@@ -70,7 +70,7 @@ def test_suspend_resume_1(
     meta_schedule(minimal_db_initialization, config_suspend_resume, "internal")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
-    set_job_state(minimal_db_initialization, job.id, "Resuming")
+    set_job_state(minimal_db_initialization, config_suspend_resume, job.id, "Resuming")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
     meta_schedule(minimal_db_initialization, config_suspend_resume, "internal")
@@ -90,7 +90,7 @@ def test_suspend_resume_2(
     meta_schedule(minimal_db_initialization, config, "internal")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
-    set_job_state(minimal_db_initialization, job.id, "Resuming")
+    set_job_state(minimal_db_initialization, config_suspend_resume, job.id, "Resuming")
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
     meta_schedule(minimal_db_initialization, config, "internal")

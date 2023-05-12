@@ -7,6 +7,7 @@ from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib.globals import get_logger, init_oar
+from sqlalchemy.orm import sessionmaker, scoped_session
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.lib.plugins import find_plugin_function
 
@@ -200,8 +201,14 @@ def schedule_cycle(session, config, plt, now, queues=["default"]):
 #
 # Main function
 #
-def main(session=None):
-    config, _, log, session_factory = init_oar()
+def main(session=None, config=None):
+    if not session:
+        config, engine, log = init_oar(config)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+    
     logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()

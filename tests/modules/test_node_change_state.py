@@ -16,7 +16,7 @@ from oar.lib.models import (
     MoldableJobDescription,
     Resource,
 )
-from oar.modules.node_change_state import NodeChangeState, main
+from oar.modules.node_change_state import NodeChangeState
 
 fake_manage_remote_commands_return = (1, [])
 
@@ -49,7 +49,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "manage_remote_commands", fake_manage_remote_commands

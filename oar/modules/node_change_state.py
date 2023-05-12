@@ -47,9 +47,10 @@ from oar.lib.resource_handling import (
 
 
 class NodeChangeState(object):
-    def __init__(self, config, logger):
+    def __init__(self, config):
         self.config = config
-        self.logger = logger
+        self.logger = get_logger("oar.modules.node_change_state", forward_stderr=True)
+
         self.exit_code = 0
         self.resources_to_heal = []
         self.cpuset_field = None
@@ -408,7 +409,7 @@ class NodeChangeState(object):
         if self.cpuset_field:
             cpuset_name = get_job_cpuset_name(session, job.id, job)
             nodes_cpuset_fields = get_cpuset_values(
-                session, self.cpuset_field, job.assigned_moldable_job
+                session, config, self.cpuset_field, job.assigned_moldable_job
             )
 
             suspend_data = {
@@ -461,7 +462,7 @@ class NodeChangeState(object):
                     )
                 else:
                     if len(bad) == 0:
-                        suspend_job_action(session, job.id, job.assigned_moldable_job)
+                        suspend_job_action(session, self.config,job.id, job.assigned_moldable_job)
                         suspend_script = None
                         if "JUST_AFTER_SUSPEND_EXEC_FILE" in config:
                             suspend_script = config["JUST_AFTER_SUSPEND_EXEC_FILE"]
@@ -516,10 +517,8 @@ def main():
     # Create a session
     session = scoped()
 
-    logger = get_logger("oar.modules.sarko", forward_stderr=True)
-    logger.info("Start Sarko")
 
-    node_change_state = NodeChangeState(config, logger)
+    node_change_state = NodeChangeState(config)
 
     node_change_state.run(session)
     return node_change_state.exit_code

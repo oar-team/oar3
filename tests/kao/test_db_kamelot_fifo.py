@@ -20,7 +20,8 @@ def minimal_db_initialization(request, setup_config):
         yield session
 
 
-def test_db_kamelot_fifo_no_hierarchy(minimal_db_initialization):
+def test_db_kamelot_fifo_no_hierarchy(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     # add some resources
     for i in range(5):
         Resource.create(minimal_db_initialization, network_address="localhost")
@@ -32,7 +33,7 @@ def test_db_kamelot_fifo_no_hierarchy(minimal_db_initialization):
             properties="",
         )
 
-    main(session=minimal_db_initialization)
+    main(session=minimal_db_initialization, config=config)
 
     req = minimal_db_initialization.query(GanttJobsPrediction).all()
 

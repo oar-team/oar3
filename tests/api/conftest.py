@@ -6,13 +6,10 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.api.app import create_app
-from oar.api.dependencies import get_config, get_db
-from oar.api.query import APIQuery
+from oar.api.dependencies import get_db
 
 # from oar.lib import db
-from oar.lib.basequery import BaseQuery
 from oar.lib.database import ephemeral_session
-from oar.lib.job_handling import insert_job
 from oar.lib.models import Queue, Resource
 
 
@@ -55,7 +52,7 @@ def client(fastapi_app, minimal_db_initialization, setup_config):
 
 @pytest.fixture(scope="function", autouse=False)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(oar.lib.tools, "notify_bipbip_commander", lambda x: True)
     monkeypatch.setattr(
@@ -86,7 +83,7 @@ def minimal_db_initialization(setup_config, monkeypatch_tools):
             scheduler_policy="kamelot",
             state="Active",
         )
-        print(session)
+
         # add some resources
         for i in range(10):
             Resource.create(session, network_address="localhost" + str(int(i / 2)))

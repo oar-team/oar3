@@ -62,6 +62,7 @@ def test_check_end_of_job(error, event_type, minimal_db_initialization, setup_co
     )
     check_end_of_job(
         minimal_db_initialization,
+        config,
         job_id,
         0,
         error,

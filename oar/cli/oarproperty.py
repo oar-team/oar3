@@ -59,7 +59,6 @@ def oarproperty(
     quiet,
     version,
 ):
-    db = session
     cmd_ret = CommandReturns()
 
     Model.metadata.reflect(bind=engine)
@@ -187,6 +186,7 @@ def cli(list, type, add, varchar, delete, rename, quiet, version):
     ctx = click.get_current_context()
     if ctx.obj:
         (session, config) = ctx.obj
+        engine = session.get_bind()
     else:
         config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)

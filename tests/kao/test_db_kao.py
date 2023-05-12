@@ -9,7 +9,7 @@ from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
 from oar.lib.models import Job, Queue, Resource
 
-config, engine, log= init_oar(no_db=True)
+config, engine, log = init_oar(no_db=True)
 
 logger = get_logger("oar.kao")
 
@@ -47,7 +47,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)

@@ -52,7 +52,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
@@ -246,7 +246,7 @@ def test_db_metasched_ar_check_no_be_security_time(
 
 
 def test_call_external_scheduler_fails(
-    monkeypatch, minimal_db_initialization, setup_config
+    monkeypatch, minimal_db_initialization, setup_config, backup_and_restore_environ_function
 ):
     config, _, _ = setup_config
     # Ensure that we don't find an external scheduler

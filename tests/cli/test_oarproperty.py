@@ -23,6 +23,7 @@ def test_version(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
+    print(result.exception)
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 

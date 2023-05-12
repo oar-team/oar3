@@ -9,7 +9,7 @@ from procset import ProcSet
 from oar.kao.quotas import Calendar, Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.slot import Slot, SlotSet
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.job_handling import JobPseudo
 from oar.lib.resource import ResourceSet
 from oar.lib.tools import local_to_sql
@@ -161,7 +161,7 @@ def test_calendar_periodical_default_fromJson(oar_conf):
 
 
 def test_calendar_periodical_only_default_fromJson(oar_conf):
-    calendar = Calendar(rules_only_default_example, config)
+    calendar = Calendar(rules_only_default_example, oar_conf)
     print()
     calendar.show()
     check, periodical_id = calendar.check_periodicals()

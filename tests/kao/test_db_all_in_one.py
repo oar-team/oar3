@@ -148,7 +148,7 @@ def assign_node_list(nodes):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
@@ -836,7 +836,7 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(
     assert fakezmq.sent_msgs[0][0]["nodes"] == ["localhost1", "localhost2"]
 
 
-def test_db_all_in_one_simple_2(monkeypatch, minimal_db_initialization, setup_config):
+def test_db_all_in_one_simple_2(monkeypatch, minimal_db_initialization, setup_config, backup_and_restore_environ_function):
     config, _, _ = setup_config
 
     insert_job(
@@ -858,6 +858,7 @@ def test_db_all_in_one_simple_2(monkeypatch, minimal_db_initialization, setup_co
 
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
+
     assert job.state == "toLaunch"
 
 
