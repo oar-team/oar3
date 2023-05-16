@@ -13,7 +13,7 @@ from oar.lib.submission import JobParameters, check_reservation
 from oar.lib.tools import sql_to_duration  # noqa: F401
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
     _, _, engine = setup_config
     session_factory = sessionmaker(bind=engine)

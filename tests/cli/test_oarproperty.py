@@ -31,9 +31,10 @@ def test_version(minimal_db_initialization, setup_config):
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-def test_oarproperty_add():
+def test_oarproperty_add(minimal_db_initialization, setup_config):
+    config, engine, log = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-a", "fancy", "-c"])
+    result = runner.invoke(cli, ["-a", "fancy", "-c"], catch_exceptions=False, obj=(minimal_db_initialization, config))
     print(result.output)
     assert result.exit_code == 0
 
