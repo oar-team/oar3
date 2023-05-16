@@ -2759,7 +2759,7 @@ WHERE
     """.format(
         only_adv_reservations, from_, to, exclude, resources_str
     )
-    raw_start_times = session.engine.execute(text(req))
+    raw_start_times = session.get_bind().execute(text(req))
 
     for start_time in raw_start_times.fetchall():
         if (not first) or (first > (start_time[0] - scheduler_job_security_time)):
@@ -2774,5 +2774,5 @@ def change_walltime(session, job_id, new_walltime, message):
         MoldableJobDescription.job_id == job_id
     ).update({MoldableJobDescription.walltime: new_walltime}, synchronize_session=False)
     session.commit()
-    add_new_event("WALLTIME", job_id, message, to_check="NO")
+    add_new_event(session, "WALLTIME", job_id, message, to_check="NO")
     session.commit()

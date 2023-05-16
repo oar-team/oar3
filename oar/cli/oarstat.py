@@ -142,7 +142,7 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
         yield job_line
 
 
-def gather_all_user_accounting(items, arg) -> List[str]:
+def gather_all_user_accounting(session, items, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "User",
@@ -251,7 +251,7 @@ def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
         print(jobs)
 
 
-def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
+def print_accounting(session, cmd_ret, accounting, user, sql_property, json=False):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
@@ -262,7 +262,7 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
         d1_local = sql_to_local(date1)
         d2_local = sql_to_local(date2)
 
-        consumptions = get_accounting_summary(d1_local, d2_local, user, sql_property)
+        consumptions = get_accounting_summary(session, d1_local, d2_local, user, sql_property)
         # import pdb; pdb.set_trace()
         # One user output
         if user:
@@ -300,7 +300,7 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
             print("By project consumption:")
 
             consumptions_by_project = get_accounting_summary_byproject(
-                d1_local, d2_local, user
+                session, d1_local, d2_local, user
             )
             for project, consumptions_proj in consumptions_by_project.items():
                 print("  " + project + ":")
@@ -322,14 +322,14 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
                     )
                 )
 
-                last_karma = get_last_project_karma(user, project, d2_local)
+                last_karma = get_last_project_karma(session, user, project, d2_local)
                 if last_karma:
                     m = re.match(r".*Karma\s*\=\s*(\d+\.\d+)", last_karma)
                     if m:
                         print("{:>28}: {}".format("Last Karma", m.group(1)))
         # All users array output
         else:
-            print_table(consumptions.items(), gather_all_user_accounting)
+            print_table(session, consumptions.items(), gather_all_user_accounting)
     else:
         cmd_ret.error("Bad syntax for --accounting", 1, 1)
         cmd_ret.exit()
@@ -558,7 +558,7 @@ def cli(
 
     # if accounting print it and exit
     if accounting:
-        print_accounting(cmd_ret, accounting, user, sql)
+        print_accounting(session, cmd_ret, accounting, user, sql)
         cmd_ret.exit()
 
     job_ids = job
