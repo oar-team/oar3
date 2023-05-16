@@ -246,7 +246,10 @@ def test_db_metasched_ar_check_no_be_security_time(
 
 
 def test_call_external_scheduler_fails(
-    monkeypatch, minimal_db_initialization, setup_config, backup_and_restore_environ_function
+    monkeypatch,
+    minimal_db_initialization,
+    setup_config,
+    backup_and_restore_environ_function,
 ):
     config, _, _ = setup_config
     # Ensure that we don't find an external scheduler

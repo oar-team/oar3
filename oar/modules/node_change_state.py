@@ -462,7 +462,9 @@ class NodeChangeState(object):
                     )
                 else:
                     if len(bad) == 0:
-                        suspend_job_action(session, self.config,job.id, job.assigned_moldable_job)
+                        suspend_job_action(
+                            session, self.config, job.id, job.assigned_moldable_job
+                        )
                         suspend_script = None
                         if "JUST_AFTER_SUSPEND_EXEC_FILE" in config:
                             suspend_script = config["JUST_AFTER_SUSPEND_EXEC_FILE"]
@@ -516,7 +518,6 @@ def main():
 
     # Create a session
     session = scoped()
-
 
     node_change_state = NodeChangeState(config)
 

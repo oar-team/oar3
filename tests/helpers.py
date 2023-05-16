@@ -43,7 +43,7 @@ def insert_terminated_jobs(
             print(r.id, r.network_address)
         session.commit()
     if update_accounting:
-        check_accounting_update(window_size)
+        check_accounting_update(session, window_size)
     return job_ids
 
 

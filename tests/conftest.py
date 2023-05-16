@@ -21,7 +21,6 @@ def op(engine):
     return Operations(ctx)
 
 
-
 @pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
     config = init_config()
@@ -75,8 +74,8 @@ def setup_config(request):
     shutil.rmtree(tempdir)
 
 
-# Waiting for this to be possible: https://github.com/pytest-dev/pytest/issues/1681 
-@pytest.fixture(scope="function",autouse=False)
+# Waiting for this to be possible: https://github.com/pytest-dev/pytest/issues/1681
+@pytest.fixture(scope="function", autouse=False)
 def backup_and_restore_environ_function(request):
     """
     Simple fixture that can be invoked if a test needs to change the program environnement.
@@ -91,7 +90,7 @@ def backup_and_restore_environ_function(request):
         os.environ.update(old_environ)
 
 
-@pytest.fixture(scope="module",autouse=False)
+@pytest.fixture(scope="module", autouse=False)
 def backup_and_restore_environ_module(request):
     """
     Simple fixture that can be invoked if a module needs to change the environment.

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import schedule_id_jobs_ct
 from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib.globals import get_logger, init_oar
-from sqlalchemy.orm import scoped_session, sessionmaker
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 
 logger = get_logger("oar.kamelot_basic")
@@ -97,7 +98,7 @@ def main(session=None, config=None):
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
-    
+
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     plt = Platform()
 

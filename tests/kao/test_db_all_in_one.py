@@ -836,7 +836,12 @@ def test_db_all_in_one_sleep_node_energy_saving_internal_1(
     assert fakezmq.sent_msgs[0][0]["nodes"] == ["localhost1", "localhost2"]
 
 
-def test_db_all_in_one_simple_2(monkeypatch, minimal_db_initialization, setup_config, backup_and_restore_environ_function):
+def test_db_all_in_one_simple_2(
+    monkeypatch,
+    minimal_db_initialization,
+    setup_config,
+    backup_and_restore_environ_function,
+):
     config, _, _ = setup_config
 
     insert_job(

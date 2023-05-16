@@ -4,8 +4,8 @@
 import copy
 
 from procset import ProcSet
-
 from sqlalchemy.orm import scoped_session, sessionmaker
+
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
 from oar.lib.globals import get_logger, init_oar
@@ -117,7 +117,7 @@ def main(session=None, config=None):
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
-    
+
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
 
     config["LOG_FILE"] = "/tmp/oar_kamelot.log"

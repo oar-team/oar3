@@ -1,5 +1,7 @@
 import sys
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 from oar.kao.karma import karma_jobs_sorting
 from oar.kao.multifactor_priority import multifactor_jobs_sorting
 from oar.kao.platform import Platform
@@ -7,7 +9,6 @@ from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib.globals import get_logger, init_oar
-from sqlalchemy.orm import sessionmaker, scoped_session
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.lib.plugins import find_plugin_function
 
@@ -208,7 +209,7 @@ def main(session=None, config=None):
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
-    
+
     logger = get_logger("oar.kamelot", forward_stderr=True)
 
     plt = Platform()

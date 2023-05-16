@@ -129,7 +129,7 @@ class Leon(object):
                     logger.debug("Kill the NOOP job: " + str(job.id))
                     set_finish_date(session, job)
                     set_job_state(session, config, job.id, "Terminated")
-                    job_finishing_sequence(session, config,epilogue_script, job.id, [])
+                    job_finishing_sequence(session, config, epilogue_script, job.id, [])
                     self.exit_code = 1
                 else:
                     hosts = get_job_current_hostnames(session, job.id)
