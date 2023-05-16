@@ -194,7 +194,10 @@ def test_oarstat_accounting(minimal_db_initialization, setup_config):
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--accounting", "1970-01-01, 1970-01-20"], obj=minimal_db_initialization, catch_exceptions=False
+        cli,
+        ["--accounting", "1970-01-01, 1970-01-20"],
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
     )
     str_result = result.output
     print(result.exception)
@@ -225,7 +228,8 @@ def test_oarstat_accounting_user(
     result = runner.invoke(
         cli,
         ["--accounting", "1970-01-01, 1970-01-20", "--user", "_this_user_"],
-        obj=minimal_db_initialization, catch_exceptions=False
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
     )
     str_result = result.output
     print(str_result)

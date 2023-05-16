@@ -262,7 +262,9 @@ def print_accounting(session, cmd_ret, accounting, user, sql_property, json=Fals
         d1_local = sql_to_local(date1)
         d2_local = sql_to_local(date2)
 
-        consumptions = get_accounting_summary(session, d1_local, d2_local, user, sql_property)
+        consumptions = get_accounting_summary(
+            session, d1_local, d2_local, user, sql_property
+        )
         # import pdb; pdb.set_trace()
         # One user output
         if user:

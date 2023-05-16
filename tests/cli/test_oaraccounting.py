@@ -71,7 +71,12 @@ def test_oaraccounting_reinitialize(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
-    result = runner.invoke(oaraccounting, ["--reinitialize"], obj=(minimal_db_initialization, config),catch_exceptions=False)
+    result = runner.invoke(
+        oaraccounting,
+        ["--reinitialize"],
+        obj=(minimal_db_initialization, config),
+        catch_exceptions=False,
+    )
     print(result.output)
     print(result.exception)
     accounting = minimal_db_initialization.query(Accounting).all()
@@ -89,7 +94,11 @@ def test_oaraccounting_delete_before(
     insert_terminated_jobs(minimal_db_initialization)
     accounting1 = minimal_db_initialization.query(Accounting).all()
     runner = CliRunner()
-    result = runner.invoke(oaraccounting, ["--delete-before", "432000"], obj=(minimal_db_initialization, config))
+    result = runner.invoke(
+        oaraccounting,
+        ["--delete-before", "432000"],
+        obj=(minimal_db_initialization, config),
+    )
     print(result.output)
     print(result.exception)
     accounting2 = minimal_db_initialization.query(Accounting).all()

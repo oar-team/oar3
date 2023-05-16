@@ -55,7 +55,9 @@ def test_check_accounting_update_one(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_check_accounting_update(minimal_db_initialization):
-    insert_terminated_jobs(minimal_db_initialization, )
+    insert_terminated_jobs(
+        minimal_db_initialization,
+    )
     accounting = minimal_db_initialization.query(Accounting).all()
     for a in accounting:
         print(
@@ -75,7 +77,9 @@ def test_check_accounting_update(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_delete_all_from_accounting(minimal_db_initialization):
-    insert_terminated_jobs(minimal_db_initialization, )
+    insert_terminated_jobs(
+        minimal_db_initialization,
+    )
     delete_all_from_accounting(minimal_db_initialization)
     accounting = minimal_db_initialization.query(Accounting).all()
     assert accounting == []
@@ -85,7 +89,9 @@ def test_delete_all_from_accounting(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_delete_accounting_windows_before(minimal_db_initialization):
-    insert_terminated_jobs(minimal_db_initialization, )
+    insert_terminated_jobs(
+        minimal_db_initialization,
+    )
     accounting1 = minimal_db_initialization.query(Accounting).all()
     delete_accounting_windows_before(minimal_db_initialization, 5 * 86400)
     accounting2 = minimal_db_initialization.query(Accounting).all()
@@ -117,7 +123,9 @@ def test_get_last_project_karma(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_get_accounting_summary(minimal_db_initialization):
-    insert_terminated_jobs(minimal_db_initialization, )
+    insert_terminated_jobs(
+        minimal_db_initialization,
+    )
     result1 = get_accounting_summary(minimal_db_initialization, 0, 100 * 86400)
     result2 = get_accounting_summary(minimal_db_initialization, 0, 100 * 86400, "toto")
     print(result1)
@@ -131,9 +139,15 @@ def test_get_accounting_summary(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_get_accounting_summary_byproject(minimal_db_initialization):
-    insert_terminated_jobs(minimal_db_initialization, )
-    result1 = get_accounting_summary_byproject(minimal_db_initialization, 0, 100 * 86400)
-    result2 = get_accounting_summary_byproject(minimal_db_initialization, 0, 100 * 86400, "toto")
+    insert_terminated_jobs(
+        minimal_db_initialization,
+    )
+    result1 = get_accounting_summary_byproject(
+        minimal_db_initialization, 0, 100 * 86400
+    )
+    result2 = get_accounting_summary_byproject(
+        minimal_db_initialization, 0, 100 * 86400, "toto"
+    )
     print(result1)
     print(result2)
     assert result1["yopa"]["ASKED"]["zozo"] == 10368000
