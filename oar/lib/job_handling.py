@@ -864,6 +864,13 @@ def insert_job(session, **kwargs):
     if "user" in kwargs:
         kwargs["job_user"] = kwargs.pop("user")
 
+    # FIXME: Quickfix for _test_bipbip_toLaunch to requires the moldable id of the inserted job.
+    # It allows to be able to get the mld id from the function without changing its return type
+    # that will need to be changed in every test using this function.
+    return_modable = False
+    if "return_moldable" in kwargs:
+        return_modable = kwargs.pop("return_moldable")
+
     ins = Job.__table__.insert().values(**kwargs)
     result = session.execute(ins)
     job_id = result.inserted_primary_key[0]
@@ -882,6 +889,7 @@ def insert_job(session, **kwargs):
 
     if len(mld_jid_walltimes) == 1:
         mld_ids = [result.inserted_primary_key[0]]
+        created_moldable = [result.inserted_primary_key[0]]
     else:
         r = (
             session.query(MoldableJobDescription.id)
@@ -889,6 +897,7 @@ def insert_job(session, **kwargs):
             .all()
         )
         mld_ids = [x for e in r for x in e]
+        created_moldable = mld_ids
 
     for mld_idx, res_grp in enumerate(res_grps):
         # job_resource_groups
@@ -937,6 +946,8 @@ def insert_job(session, **kwargs):
             ins = [{"job_id": job_id, "type": typ} for typ in types]
         session.execute(JobType.__table__.insert(), ins)
 
+    if return_modable:
+        return (job_id, created_moldable)
     return job_id
 
 

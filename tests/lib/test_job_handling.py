@@ -9,7 +9,7 @@ from oar.lib.job_handling import check_end_of_job, get_data_jobs, insert_job
 from oar.lib.models import EventLog
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def minimal_db_initialization(request, setup_config):
     _, _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
@@ -87,7 +87,6 @@ def test_get_data_jobs_moldable(monkeypatch, minimal_db_initialization, setup_co
         ],
     )
     test_jobs.append((job_id, 2))
-
     job_id = insert_job(
         minimal_db_initialization,
         res=[

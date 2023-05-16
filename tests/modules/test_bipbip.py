@@ -114,7 +114,7 @@ def _test_bipbip_toLaunch(
     session, config, types=[], job_id=None, state="toLaunch", args=[]
 ):
     if not job_id:
-        job_id = insert_job(
+        (job_id, moldable_id) = insert_job(
             session,
             res=[(60, [("resource_id=4", "")])],
             properties="",
@@ -123,9 +123,10 @@ def _test_bipbip_toLaunch(
             stdout_file="poy",
             stderr_file="yop",
             types=types,
+            return_moldable=True,
         )
     session.query(Job).update(
-        {Job.assigned_moldable_job: job_id}, synchronize_session=False
+        {Job.assigned_moldable_job: moldable_id[0]}, synchronize_session=False
     )
     Challenge.create(
         session,

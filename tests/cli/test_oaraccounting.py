@@ -6,8 +6,8 @@ from click.testing import CliRunner
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.cli.oarstat import cli
 from oar.cli.oaraccounting import cli as oaraccounting
+from oar.cli.oarstat import cli
 from oar.lib.database import ephemeral_session
 from oar.lib.models import Accounting, Queue, Resource
 
