@@ -116,7 +116,14 @@ def update_accounting(
 
         consumption = consumption * nb_resources
         add_accounting_row(
-            window_start, window_stop, user, project, queue_name, c_type, consumption
+            session,
+            window_start,
+            window_stop,
+            user,
+            project,
+            queue_name,
+            c_type,
+            consumption,
         )
         window_start = window_stop + 1
         start_time = window_start
@@ -191,6 +198,7 @@ def add_accounting_row(
         )
 
         Accounting.create(
+            session,
             user=user,
             consumption_type=c_type,
             queue_name=queue_name,
@@ -250,6 +258,7 @@ def check_accounting_update(session, window_size):
         max_stop_time = start_time + walltime
         print("[ACCOUNTING] Treate job " + str(job_id))
         update_accounting(
+            session,
             start_time,
             stop_time,
             window_size,
@@ -260,6 +269,7 @@ def check_accounting_update(session, window_size):
             nb_resources,
         )
         update_accounting(
+            session,
             start_time,
             max_stop_time,
             window_size,

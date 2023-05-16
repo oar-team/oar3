@@ -9,9 +9,7 @@ from oar.lib.accounting import (
     delete_accounting_windows_before,
     delete_all_from_accounting,
 )
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
-from oar.lib.models import Model
 
 from .utils import CommandReturns
 
@@ -29,12 +27,12 @@ click.disable_unicode_literals_warning = True
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version number.")
 @click.pass_context
-def cli(reinitialize, delete_before, version):
+def cli(ctx, reinitialize, delete_before, version):
     """Feed accounting table to make usage statistics."""
 
     ctx = click.get_current_context()
     if ctx.obj:
-        session = ctx.obj
+        (session, config) = ctx.obj
     else:
         config, engine, log = init_oar()
 

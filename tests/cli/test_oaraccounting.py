@@ -7,6 +7,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarstat import cli
+from oar.cli.oaraccounting import cli as oaraccounting
 from oar.lib.database import ephemeral_session
 from oar.lib.models import Accounting, Queue, Resource
 
@@ -30,12 +31,13 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "get_date", lambda: 864000)
+    monkeypatch.setattr(oar.lib.tools, "get_date", lambda x: 864000)
 
 
-def test_version(minimal_db_initialization):
+def test_version(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=minimal_db_initialization)
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 
@@ -44,9 +46,10 @@ def test_version(minimal_db_initialization):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_simple_oaraccounting(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
-    runner.invoke(cli, obj=minimal_db_initialization)
+    runner.invoke(oaraccounting, obj=(minimal_db_initialization, config))
     accounting = minimal_db_initialization.query(Accounting).all()
     for a in accounting:
         print(
@@ -65,9 +68,12 @@ def test_simple_oaraccounting(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oaraccounting_reinitialize(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
-    runner.invoke(cli, ["--reinitialize"], obj=minimal_db_initialization)
+    result = runner.invoke(oaraccounting, ["--reinitialize"], obj=(minimal_db_initialization, config),catch_exceptions=False)
+    print(result.output)
+    print(result.exception)
     accounting = minimal_db_initialization.query(Accounting).all()
     print(accounting)
     assert accounting == []
@@ -79,10 +85,13 @@ def test_oaraccounting_reinitialize(minimal_db_initialization, setup_config):
 def test_oaraccounting_delete_before(
     monkeypatch, minimal_db_initialization, setup_config
 ):
+    config, _, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     accounting1 = minimal_db_initialization.query(Accounting).all()
     runner = CliRunner()
-    runner.invoke(cli, ["--delete-before", "432000"])
+    result = runner.invoke(oaraccounting, ["--delete-before", "432000"], obj=(minimal_db_initialization, config))
+    print(result.output)
+    print(result.exception)
     accounting2 = minimal_db_initialization.query(Accounting).all()
 
     assert len(accounting1) > len(accounting2)
