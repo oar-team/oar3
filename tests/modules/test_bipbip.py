@@ -113,6 +113,7 @@ def test_bipbip_simple(setup_config, minimal_db_initialization):
 def _test_bipbip_toLaunch(
     session, config, types=[], job_id=None, state="toLaunch", args=[]
 ):
+    moldable_id = [job_id]
     if not job_id:
         (job_id, moldable_id) = insert_job(
             session,

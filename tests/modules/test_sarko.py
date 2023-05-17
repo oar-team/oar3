@@ -13,6 +13,7 @@ from oar.lib.models import (
     Job,
     Resource,
     ResourceLog,
+    MoldableJobDescription
 )
 from oar.modules.sarko import Sarko
 
@@ -57,8 +58,13 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def assign_resources(session, job_id):
+    moldable = (
+        session.query(MoldableJobDescription)
+        .filter(MoldableJobDescription.job_id == job_id)
+        .first()
+    )
     session.query(Job).filter(Job.id == job_id).update(
-        {Job.assigned_moldable_job: job_id}, synchronize_session=False
+        {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
     )
     resources = session.query(Resource).all()
     print(resources)

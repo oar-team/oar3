@@ -35,7 +35,6 @@ from oar.lib.models import (
     WalltimeChange,
 )
 from oar.lib.plugins import find_plugin_function
-from oar.lib.psycopg2 import pg_bulk_insert
 from oar.lib.resource_handling import (
     get_current_resources_with_suspended_job,
     update_current_scheduler_priority,
