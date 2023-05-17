@@ -6,7 +6,7 @@ from sqlalchemy import distinct, func, or_, text
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, is_an_event_exists
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.models import (
     AssignedResource,
     EventLog,
@@ -17,7 +17,6 @@ from oar.lib.models import (
     Resource,
     ResourceLog,
 )
-from oar.lib.psycopg2 import pg_bulk_insert
 
 State_to_num = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 
