@@ -25,7 +25,6 @@ from . import TimestampRoute
 # FIXME: gbl config that's bad
 
 
-
 router = APIRouter(
     route_class=TimestampRoute,
     prefix="/proxy",
