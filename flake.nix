@@ -2,7 +2,7 @@
   description = "nixos-compose";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -48,9 +48,10 @@
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            (poetry2nix.mkPoetryEnv { projectDir = self; })
+            # (poetry2nix.mkPoetryEnv { projectDir = self; })
             # Install the entry point and the plugins
-            (poetry2nix.mkPoetryApplication { projectDir = self; })
+            # (poetry2nix.mkPoetryApplication { projectDir = self; })
+            
             python3Packages.sphinx_rtd_theme
             poetry
             postgresql
