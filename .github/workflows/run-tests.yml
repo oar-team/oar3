@@ -15,11 +15,16 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Check out repository code
-          uses: actions/checkout@v2
-        - name: Install dev requirements
-          run: pip install -r requirements/dev.txt
+          uses: actions/checkout@v3
+        - uses: cachix/install-nix-action@v20
+        # - run: nix develop
+        # - run: nix flake check
+        # - name: Install dev requirements
+        #   run: pip install -r requirements/dev.txt
         - name: Check code formatting
-          run: ./scripts/ci/check-formatting.sh
+          run: nix profile install nixpkgs#poetry
+        - run: poetry install && poetry shell
+        - run: ./scripts/ci/check-formatting.sh
     Run-Tests-On-Docker:
       runs-on: ubuntu-latest
       strategy:
