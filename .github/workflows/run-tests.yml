@@ -23,8 +23,10 @@ jobs:
         #   run: pip install -r requirements/dev.txt
         - name: Check code formatting
           run: nix profile install nixpkgs#poetry
-        - run: poetry install && poetry shell
-        - run: ./scripts/ci/check-formatting.sh
+        - run: |
+            poetry install
+            source $(poetry env info --path)/bin/activate
+            ./scripts/ci/check-formatting.sh
     Run-Tests-On-Docker:
       runs-on: ubuntu-latest
       strategy:
