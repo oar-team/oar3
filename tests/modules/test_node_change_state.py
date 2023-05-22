@@ -404,13 +404,14 @@ def test_node_change_state_resource_dead_assigned(
         _,
         _,
     ) = setup_config
-    job_id = insert_job(
+    (job_id, moldable_id) = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
         state="Running",
+        return_moldable=True,
     )
-    assign_resources(minimal_db_initialization, job_id)
+    assign_resources(minimal_db_initialization, moldable_id[0])
     minimal_db_initialization.query(Resource).filter(
         Resource.network_address == "localhost0"
     ).update({Resource.next_state: "Dead"}, synchronize_session=False)

@@ -11,9 +11,9 @@ from oar.lib.models import (
     EventLog,
     FragJob,
     Job,
+    MoldableJobDescription,
     Resource,
     ResourceLog,
-    MoldableJobDescription
 )
 from oar.modules.sarko import Sarko
 

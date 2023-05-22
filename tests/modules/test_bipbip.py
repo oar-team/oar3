@@ -8,7 +8,14 @@ import oar.lib.tools  # for monkeypatching
 from oar.lib.database import ephemeral_session
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.models import AssignedResource, Challenge, EventLog, Job, Resource
+from oar.lib.models import (
+    AssignedResource,
+    Challenge,
+    EventLog,
+    Job,
+    MoldableJobDescription,
+    Resource,
+)
 from oar.modules.bipbip import BipBip
 
 from ..faketools import FakePopen, fake_popen
@@ -113,7 +120,6 @@ def test_bipbip_simple(setup_config, minimal_db_initialization):
 def _test_bipbip_toLaunch(
     session, config, types=[], job_id=None, state="toLaunch", args=[]
 ):
-    moldable_id = [job_id]
     if not job_id:
         (job_id, moldable_id) = insert_job(
             session,
@@ -126,6 +132,14 @@ def _test_bipbip_toLaunch(
             types=types,
             return_moldable=True,
         )
+    else:
+        moldable_id = [
+            row[0]
+            for row in session.query(MoldableJobDescription.id)
+            .filter(MoldableJobDescription.job_id == job_id)
+            .all()
+        ]
+
     session.query(Job).update(
         {Job.assigned_moldable_job: moldable_id[0]}, synchronize_session=False
     )
@@ -145,7 +159,7 @@ def _test_bipbip_toLaunch(
     print(resources)
 
     for r in resources[:4]:
-        AssignedResource.create(session, moldable_id=job_id, resource_id=r.id)
+        AssignedResource.create(session, moldable_id=moldable_id[0], resource_id=r.id)
         print(r.id, r.network_address)
     session.commit()
 
@@ -195,7 +209,7 @@ def test_bipbip_toLaunch_cpuset_error(minimal_db_initialization, builtin_config)
 def test_bipbip_toLaunch_cpuset_error_advance_reservation(
     monkeypatch, minimal_db_initialization, builtin_config
 ):
-    job_id = insert_job(
+    (job_id, moldable_id) = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
@@ -204,6 +218,7 @@ def test_bipbip_toLaunch_cpuset_error_advance_reservation(
         stdout_file="poy",
         stderr_file="yop",
         reservation="Scheduled",
+        return_moldable=True,
     )
     fake_bad_nodes["init"] = ["localhost0"]
     _, bipbip = _test_bipbip_toLaunch(

@@ -141,7 +141,6 @@ def insert_and_sched_ar(session, config, start_time, walltime=60):
 
 
 def assign_node_list(nodes):
-    print("lkjlmjsqdmqjdsfqlmfdks")
     global node_list
     node_list = nodes
 
