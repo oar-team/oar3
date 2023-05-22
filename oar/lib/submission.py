@@ -48,6 +48,7 @@ def print_info(*objs):
 
 
 def job_key_management(
+    config,
     use_job_key,
     import_job_key_inline,
     import_job_key_file,
@@ -1151,6 +1152,7 @@ def add_micheline_jobs(
         # Single job to submit or when job key is used with array job
         for cmd in array_commands:
             (error, ssh_private_key, ssh_public_key) = job_key_management(
+                config,
                 job_parameters.use_job_key,
                 import_job_key_inline,
                 import_job_key_file,

@@ -5,10 +5,8 @@ import time
 import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-import oar.lib.tools  # for monkeypatching
 from oar.kao.kamelot import main
 from oar.lib.database import ephemeral_session
-from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
 from oar.lib.models import GanttJobsPrediction, GanttJobsResource, Resource
 

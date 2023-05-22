@@ -3,12 +3,7 @@
 from sqlalchemy import desc, func
 
 from oar.lib import tools
-
-# logger = get_logger("oar.lib.event")
-from oar.lib.globals import init_oar
-from oar.lib.models import EventLog, EventLogHostname  # , db, get_logger, tools
-
-# config, db, log, session_factory = init_oar()
+from oar.lib.models import EventLog, EventLogHostname
 
 
 def add_new_event(session, ev_type, job_id, description, to_check="YES"):

@@ -6,17 +6,15 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from oar.api.query import APIQuery, APIQueryCollection, paginate
+from oar.api.query import APIQueryCollection, paginate
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
-from oar.lib.basequery import BaseQueryCollection
 from oar.lib.configuration import Configuration
 from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
 from ..dependencies import get_config, get_db, need_authentication
-from . import TimestampRoute
 
 router = APIRouter(
     # route_class=TimestampRoute,

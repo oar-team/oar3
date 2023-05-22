@@ -10,7 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarnodesetting import cli
 from oar.lib.database import ephemeral_session
-from oar.lib.models import FragJob, JobStateLog, Queue, Resource
+from oar.lib.models import Resource
 
 from ..helpers import insert_running_jobs
 
@@ -356,6 +356,7 @@ def test_oarnodesetting_maintenance_on_nowait(minimal_db_initialization, setup_c
         ["-h", "localhost", "--maintenance", "on", "--no-wait"],
         obj=(minimal_db_initialization, config),
     )
+    print(result.output)
     print(fake_notifications)
     assert fake_notifications == ["ChState"]
     assert (

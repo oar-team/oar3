@@ -35,12 +35,9 @@ def setup(request, setup_config):
     setup_config["BIPBIP_COMMANDER_PORT"] = "6671"
 
     fakezmq.reset()
-    fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
 
     yield
 
-    fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
-    fakezmq.reset()
     # del setup_config["SERVER_HOSTNAME"]
     # del setup_config["APPENDICE_SERVER_PORT"]
     # del setup_config["BIPBIP_COMMANDER_SERVER"]

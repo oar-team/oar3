@@ -47,6 +47,7 @@ def generate_jobs(nb_jobs, size_max, mode="same"):
     return jobs
 
 
+# flake8: noqa:
 def save_assigns_bulk_0(jobs, resource_set):
     if len(jobs) > 0:
         mld_id_start_time_s = []

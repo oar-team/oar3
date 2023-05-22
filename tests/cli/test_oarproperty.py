@@ -145,7 +145,7 @@ def test_oarproperty_delete(minimal_db_initialization, setup_config):
     # assert 'core' in db['resources'].columns
     assert result.exit_code == 0
     # assert len(column_name1) == len(column_name2) + 1
-    kw = {"nullable": True}
+    # kw = {"nullable": True}
     # db.op.add_column("resources", db.Column("core", db.Integer, **kw))
 
 

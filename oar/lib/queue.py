@@ -4,7 +4,6 @@
 # TODO is_waiting_job_specific_queue_present($$);
 from itertools import groupby
 
-from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import Queue
 
 

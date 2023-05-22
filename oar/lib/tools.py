@@ -29,7 +29,7 @@ import zmq
 from oar.lib.event import add_new_event
 
 # from oar.lib import config, db
-from oar.lib.globals import get_logger, init_config, init_oar
+from oar.lib.globals import get_logger, init_config
 
 # from oar.lib import logger as log
 # FIXME:Global config

@@ -9,9 +9,6 @@ from starlette.responses import RedirectResponse
 import oar.lib.tools as tools
 from oar.lib.configuration import Configuration
 
-# FIXME: gbl config that's bad
-from oar.lib.globals import init_config
-
 # from oar.lib import config
 from oar.lib.job_handling import get_job
 
@@ -24,6 +21,10 @@ from ..proxy_utils import (
     save_treafik_rules,
 )
 from . import TimestampRoute
+
+# FIXME: gbl config that's bad
+
+
 
 router = APIRouter(
     route_class=TimestampRoute,

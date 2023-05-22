@@ -33,6 +33,7 @@ def test_oar2trace_void(minimal_db_initialization, setup_config):
     assert result.exit_code == 1
 
 
+# flake8: noqa: F401 (TODO)
 @pytest.mark.skip(reason="wip (not working)")
 def test_oar2trace_simple(minimal_db_initialization, setup_config):
     config, _, _ = setup_config

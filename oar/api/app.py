@@ -1,11 +1,10 @@
 import os
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, Request, Response
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib.globals import get_logger, init_config, init_oar
+from oar.lib.globals import init_config, init_oar
 
-from .query import APIQuery, APIQueryCollection
 from .routers import frontend, job, media, proxy, resource, stress_factor
 
 # from oar import VERSION

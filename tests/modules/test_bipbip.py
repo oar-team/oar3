@@ -1,12 +1,10 @@
 # coding: utf-8
-from contextlib import contextmanager
 
 import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.lib.database import ephemeral_session
-from oar.lib.globals import init_oar
 from oar.lib.job_handling import insert_job
 from oar.lib.models import (
     AssignedResource,

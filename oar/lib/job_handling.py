@@ -677,6 +677,7 @@ def save_assigns(session, jobs, resource_set):
         session.commit()
 
 
+# flake8: noqa: (TODO: write an equivalent, benchmark it)
 def save_assigns_bulk(session, jobs, resource_set):
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))

@@ -6,7 +6,6 @@ import pytest
 import zmq
 
 import oar.lib.tools
-from oar.lib.globals import init_oar
 
 # from oar.lib import config
 from oar.modules.almighty import Almighty, signal_handler

@@ -99,6 +99,7 @@ def create_hierarchy(request, setup_config, minimal_db_initialization):
     yield
 
 
+# flake8: noqa: EF811 (function used in fixtures)
 @pytest.fixture(scope="function")
 def active_quotas(request, setup_config):
     config, _, _ = setup_config

@@ -692,6 +692,7 @@ def test_db_all_in_one_BE_to_checkpoint(
     assert jobs[1].state == "Waiting"
 
 
+# flake8: noqa: (FIXME)
 @pytest.mark.skip(reason="Bug occurs only in travis-CI upto now")
 def test_db_all_in_one_BE_2(monkeypatch, minimal_db_initialization, setup_config):
     # TODO TOFINISH

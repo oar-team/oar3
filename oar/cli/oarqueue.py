@@ -4,9 +4,7 @@ import click
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar import VERSION
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
-from oar.lib.models import Model
 from oar.lib.queue import (
     change_queue,
     create_queue,

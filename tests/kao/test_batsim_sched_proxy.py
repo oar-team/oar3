@@ -1,4 +1,5 @@
 # coding: utf-8
+# flake8: noqa (TO rework)
 import pytest
 import redis
 import zmq

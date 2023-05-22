@@ -3,7 +3,7 @@
 import pytest
 import zmq
 
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import init_oar
 
 # from oar.lib import config
 from oar.modules.appendice_proxy import AppendiceProxy

@@ -7,7 +7,7 @@ from sqlalchemy.orm import scoped_session
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib.database import EngineConnector, sessionmaker
+from oar.lib.database import sessionmaker
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
@@ -15,7 +15,6 @@ from oar.lib.job_handling import (
     get_job_types,
     hold_job,
 )
-from oar.lib.models import Model
 
 from .utils import CommandReturns
 

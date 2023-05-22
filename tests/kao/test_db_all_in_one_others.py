@@ -205,6 +205,7 @@ def test_db_properties_3(monkeypatch, minimal_db_initialization, setup_config):
     assert res[0] == res[1]
 
 
+# flake8: noqa (TODO)
 def _test_db_placeholder_1(monkeypatch, minimal_db_initialization, setup_config):
     now = get_date()
     insert_job(

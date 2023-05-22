@@ -192,6 +192,7 @@ class Database(object):
             try:
                 self.create_all(metadata, bind=bind)
             except Exception as e:
+                print(e)
                 pass
 
             # autoload all tables marked for autoreflect
@@ -447,6 +448,7 @@ class ScopedSession(sqlalchemy.orm.scoped_session):
             return super(ScopedSession, self).__call__(**kwargs)
 
 
+# flake8: noqa: (TODO: remove this function, write a working equivalent ?)
 def delete_all(engine, bind=None, **kwargs):
     """Drop all tables."""
     if bind is None:

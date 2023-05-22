@@ -3,8 +3,8 @@
 from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
-from oar.lib.globals import get_logger, init_oar
-from oar.lib.models import (  # config,; db,; get_logger,
+from oar.lib.globals import get_logger
+from oar.lib.models import (
     AssignedResource,
     EventLog,
     EventLogHostname,
@@ -43,7 +43,7 @@ def get_resources_of_nodes(session, hostnames):
     return result
 
 
-def get_nodes_with_state(session, odes):
+def get_nodes_with_state(session, nodes):
     result = (
         session.query(Resource.network_address, Resource.state)
         .filter(Resource.network_address.in_(tuple(nodes)))

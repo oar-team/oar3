@@ -1,7 +1,7 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.api.dependencies import get_config, get_db
+from oar.api.dependencies import get_config
 from oar.lib.job_handling import insert_job
 
 fake_call_retcodes = []

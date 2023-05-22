@@ -13,7 +13,6 @@ import sys
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
-from oar.lib.database import EngineConnector
 from oar.lib.event import (
     add_new_event,
     add_new_event_with_host,

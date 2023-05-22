@@ -7,7 +7,6 @@ import pytest
 from sqlalchemy import delete, insert
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-import oar.lib.tools  # for monkeypatching
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
 from oar.lib.database import ephemeral_session

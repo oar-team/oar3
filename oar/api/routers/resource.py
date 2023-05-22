@@ -14,7 +14,7 @@ from oar.lib.resource_handling import (
     set_resource_state,
 )
 
-from ..dependencies import get_config, get_db, need_authentication
+from ..dependencies import get_db, need_authentication
 from ..url_utils import replace_query_params
 from . import TimestampRoute
 

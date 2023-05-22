@@ -2,7 +2,6 @@
 import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-import oar.lib.tools  # for monkeypatching
 from oar.kao.kamelot_fifo import main, schedule_fifo_cycle
 from oar.kao.platform import Platform
 from oar.lib.database import ephemeral_session

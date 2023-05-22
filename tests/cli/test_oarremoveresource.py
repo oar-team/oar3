@@ -7,8 +7,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.cli.oarremoveresource import cli
 from oar.lib.database import ephemeral_session
-from oar.lib.job_handling import insert_job
-from oar.lib.models import EventLog, Queue, Resource
+from oar.lib.models import Queue, Resource
 
 
 @pytest.fixture(scope="function", autouse=True)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import text
-from sqlalchemy.orm import Load, Query
+from sqlalchemy.orm import Load
 
 # from . import db
 from .exceptions import DoesNotExist

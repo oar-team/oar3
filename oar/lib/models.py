@@ -485,54 +485,6 @@ def all_tables():
             yield obj.name, obj
 
 
+# TODO: remove this function ? Seems only usefull to pull the database object
 def setup_db(db: Database, engine):
-    JOBS_TABLES = [
-        {"jobs": "job_id"},
-        {"challenges": "job_id"},
-        {"event_logs": "job_id"},
-        {"frag_jobs": "frag_id_job"},
-        {"job_dependencies": "job_id"},
-        {"job_dependencies": "job_id_required"},
-        {"job_state_logs": "job_id"},
-        {"job_types": "job_id"},
-        {"moldable_job_descriptions": "moldable_job_id"},
-    ]
-
-    MOLDABLES_JOBS_TABLES = [
-        {"moldable_job_descriptions": "moldable_id"},
-        {"assigned_resources": "moldable_job_id"},
-        {"job_resource_groups": "res_group_moldable_id"},
-        {"gantt_jobs_predictions": "moldable_job_id"},
-        {"gantt_jobs_predictions_log": "moldable_job_id"},
-        {"gantt_jobs_predictions_visu": "moldable_job_id"},
-        {"gantt_jobs_resources": "moldable_job_id"},
-        {"gantt_jobs_resources_log": "moldable_job_id"},
-        {"gantt_jobs_resources_visu": "moldable_job_id"},
-    ]
-
-    RESOURCES_TABLES = [
-        {"resources": "resource_id"},
-        {"assigned_resources": "resource_id"},
-        {"resource_logs": "resource_id"},
-        {"gantt_jobs_resources": "resource_id"},
-        {"gantt_jobs_resources_log": "resource_id"},
-        {"gantt_jobs_resources_visu": "resource_id"},
-    ]
-
-    db.__time_columns__ = [
-        "window_start",
-        "window_stop",
-        "date_start",
-        "date_stop",
-        "last_job_date",
-        "available_upto",
-        "start_time",
-        "date",
-        "submission_time",
-        "stop_time",
-        "date",
-    ]
-
-    # schema = Table(
-    #     "schema", Column("version", String(255)), Column("name", String(255))
-    # )
+    pass
