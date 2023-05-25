@@ -1,11 +1,11 @@
 import os
-
 from typing import Optional
+
 from fastapi import FastAPI, Request, Response
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib.globals import init_config, init_oar
 from oar.lib.configuration import Configuration
+from oar.lib.globals import init_config, init_oar
 
 from .routers import frontend, job, media, proxy, resource, stress_factor
 
