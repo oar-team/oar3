@@ -1,9 +1,11 @@
 import os
 
+from typing import Optional
 from fastapi import FastAPI, Request, Response
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.lib.globals import init_config, init_oar
+from oar.lib.configuration import Configuration
 
 from .routers import frontend, job, media, proxy, resource, stress_factor
 
@@ -44,9 +46,11 @@ class WSGIProxyFix(object):
         return self.app(scope, receive, send)
 
 
-def create_app(config=None, engine=None):
+def create_app(
+    config: Optional[Configuration] = None, engine=None, root_path: Optional[str] = None
+):
     """Return the OAR API application instance."""
-    app = FastAPI()
+    app = FastAPI(root_path=root_path)
 
     if not config:
         config = init_config()
