@@ -76,7 +76,7 @@ psycopg2 = "^2.8.6"
 ptpython = "^3.0.20"
 rich = ">=12.5, <=13.3.2"
 ClusterShell = ">=1.8"
-httpx = "^0.23.0"
+httpx = ">=0.23.0"
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
