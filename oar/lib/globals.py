@@ -4,6 +4,7 @@ import os
 from logging import getLogger
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.lib.models import Model
 
@@ -72,3 +73,15 @@ def init_oar(config=None, no_db=False, no_reflect=False):
     else:
         engine = init_db(config, no_reflect=no_reflect)
         return config, engine, logger
+
+
+def init_and_get_session(config=None):
+    if not config:
+        config = init_config()
+
+    engine = init_db(config)
+
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    return scoped()

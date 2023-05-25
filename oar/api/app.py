@@ -73,8 +73,6 @@ def create_app(config=None, engine=None):
 
     @app.middleware("http")
     async def reflect_database(request: Request, call_next):
-        # db.reflect()
-        # Calls next middleware
         response = await call_next(request)
         return response
 
