@@ -8,13 +8,14 @@ from procset import ProcSet
 
 from oar.kao.quotas import Quotas
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
-from oar.lib import config, get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
 
 # for quotas
 from oar.lib.resource import ResourceSet
 
+config, db, log = init_oar(no_db=True)
 logger = get_logger("oar.kamelot")
 
 
@@ -187,7 +188,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
             return (ProcSet(), -1, -1)
         # import pdb; pdb.set_trace()
         if Quotas.calendar and (not job.no_quotas):
-            time_limit = slot_b + config["QUOTAS_WINDOW_TIME_LIMIT"]
+            time_limit = slot_b + Quotas.calendar.quotas_window_time_limit
             while (slot_e - slot_b + 1) < walltime:
                 if slot_e > time_limit:
                     logger.info(

@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-import signal
+
+# Rename because signal is also a parameter of oarsub
+import signal as sysig
 import socket
 import sys
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
-from oar.lib import Job, config, db
+from oar.lib.database import EngineConnector
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
@@ -19,6 +23,7 @@ from oar.lib.job_handling import (
     get_job_types,
     resubmit_job,
 )
+from oar.lib.models import Job, Model
 from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
 
@@ -38,37 +43,23 @@ def init_tcp_server():
     return sock
 
 
-def qdel(signalnum, frame):  # pragma: no cover
-    """Handle ^C in interactive submission."""
-    if job_id_lst:
-        if signalnum == signal.SIGINT:
-            print("Caught Interrupt (^C), cancelling job(s)...")
-        oardel(job_id_lst, None, None, None, None, None, None, None)
-    exit(1)
-
-
-signal.signal(signal.SIGINT, qdel)
-signal.signal(signal.SIGHUP, qdel)
-signal.signal(signal.SIGPIPE, qdel)
-
-
-def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
+def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
     """Connect to a job and give the shell of the user on the remote host."""
     xauth_path = (
         os.environ["OARXAUTHLOCATION"] if "OARXAUTHLOCATION" in os.environ else None
     )
     luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if ((luser == job.user) or (luser == "oar")) and (job.state == "Running"):
-        types = get_job_types(job_id)
+        types = get_job_types(session, job_id)
         # No operation job type
         if "noop" in types:
             cmd_ret.warning(" It is not possible to connect to a NOOP job.")
             cmd_ret.exit(17)
 
-        hosts = get_job_current_hostnames(job_id)
+        hosts = get_job_current_hostnames(session, job_id)
         host_to_connect_via_ssh = hosts[0]
 
         # Deploy, cosystem and no host part
@@ -88,11 +79,13 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
             and ("deploy" not in types)
             and hosts
         ):
-            os.environ["OAR_CPUSET"] = cpuset_path + "/" + get_job_cpuset_name(job_id)
+            os.environ["OAR_CPUSET"] = (
+                cpuset_path + "/" + get_job_cpuset_name(session, job_id)
+            )
         else:
             os.environ["OAR_CPUSET"] = ""
 
-        moldable = get_current_moldable_job(job.assigned_moldable_job)
+        moldable = get_current_moldable_job(session, job.assigned_moldable_job)
         job_user = job.user
         shell = tools.getpwnam(luser).pw_shell
 
@@ -151,7 +144,7 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
         )
 
         script = get_oarexecuser_script_for_oarsub(
-            job, moldable.walltime, node_file, shell, resource_file
+            config, job, moldable.walltime, node_file, shell, resource_file
         )
 
         cmd = openssh_cmd
@@ -404,7 +397,9 @@ def connect_job(job_id, stop_oarexec, openssh_cmd, cmd_ret):
 )
 @click.option("--resubmit", type=int, help="Resubmit the given job as a new one.")
 @click.option("-V", "--version", is_flag=True, help="Print OAR version number.")
+@click.pass_context
 def cli(
+    ctx,
     command,
     interactive,
     queue,
@@ -435,7 +430,32 @@ def cli(
 ):
     """Submit a job to OAR batch scheduler."""
 
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, engine, log = init_oar()
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
     global job_id_lst
+
+    # Setup handlers with closure
+    def qdel(signalnum, frame):  # pragma: no cover
+        """Handle ^C in interactive submission."""
+        if job_id_lst:
+            if signalnum == sysig.SIGINT:
+                print("Caught Interrupt (^C), cancelling job(s)...")
+            oardel(
+                session, config, job_id_lst, None, None, None, None, None, None, None
+            )
+        exit(1)
+
+    sysig.signal(sysig.SIGINT, qdel)
+    sysig.signal(sysig.SIGHUP, qdel)
+    sysig.signal(sysig.SIGPIPE, qdel)
 
     cmd_ret = CommandReturns()
 
@@ -502,7 +522,7 @@ def cli(
 
     if resubmit:
         cmd_ret.print_("# Resubmitting job " + str(resubmit) + "...")
-        error, job_id = resubmit_job(resubmit)
+        error, job_id = resubmit_job(session, resubmit)
         if error[0] == 0:
             print(" done.")
             print("OAR_JOB_ID=" + str(job_id))
@@ -535,6 +555,7 @@ def cli(
     user = os.environ["OARDO_USER"]
 
     job_parameters = JobParameters(
+        config,
         job_type=None,
         resource=resource,
         command=command,
@@ -621,7 +642,7 @@ def cli(
             cmd_ret.exit()
 
     # Launch the checked submission
-    (error, job_id_lst) = submission.submit()
+    (error, job_id_lst) = submission.submit(session, config)
 
     if error[0] != 0:
         cmd_ret.error("unamed error", 0, error)  # TODO
@@ -633,7 +654,7 @@ def cli(
     if len(job_id_lst) == 1:
         print("OAR_JOB_ID=" + str(job_id_lst[0]))
     else:
-        job = db["Job"].query.filter(Job.id == job_id_lst[0]).one()
+        job = session.query(Job).filter(Job.id == job_id_lst[0]).one()
         oar_array_id = job.array_id
         for job_id in job_id_lst:
             print("OAR_JOB_ID=" + str(job_id))
@@ -687,7 +708,7 @@ def cli(
                 break
 
         if answer == "GOOD JOB":
-            connect_job(job_id_lst[0], 1, openssh_cmd, cmd_ret)
+            connect_job(session, config, job_id_lst[0], 1, openssh_cmd, cmd_ret)
         else:
             cmd_ret.exit(11)
 

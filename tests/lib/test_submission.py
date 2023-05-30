@@ -1,11 +1,15 @@
 # coding: utf-8
 import pytest
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.quotas import Quotas
-from oar.lib import AdmissionRule, config, db
+from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import get_job_types
+from oar.lib.models import AdmissionRule, JobResourceDescription, Queue, Resource
 from oar.lib.submission import JobParameters, add_micheline_jobs, scan_script
+
+from ..kao.test_db_all_in_one import active_quotas
 
 fake_popen_process_stdout = ""
 
@@ -33,56 +37,72 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def minimal_db_initialization(request):
-    db.delete_all()
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+def minimal_db_initialization(request, setup_config):
+    _, _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        Queue.create(
+            session,
+            name="default",
+            priority=3,
+            scheduler_policy="kamelot",
+            state="Active",
         )
-        db["Queue"].create(
-            name="admin", priority=1, scheduler_policy="kamelot", state="Active"
+        Queue.create(
+            session,
+            name="admin",
+            priority=1,
+            scheduler_policy="kamelot",
+            state="Active",
         )
         # add some resources
         for i in range(5):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
+            Resource.create(session, network_address="localhost" + str(int(i / 2)))
 
-        db.session.execute(AdmissionRule.__table__.delete())
-        db["AdmissionRule"].create(rule="name='yop'")
-        yield
+        session.execute(AdmissionRule.__table__.delete())
+        AdmissionRule.create(session, rule="name='yop'")
+        yield session
 
 
 @pytest.fixture(scope="function", autouse=False)
-def create_hierarchy(request):
-    with db.session(ephemeral=True):
-        for i in range(4):
-            db["Resource"].create(
-                network_address="localhost-1",
-                host="localhost-1",
-                cpu=str(i // 2 + 1),
-                core=i + 1,
-            )
+def create_hierarchy(request, setup_config, minimal_db_initialization):
+    session = minimal_db_initialization
+    for i in range(4):
+        Resource.create(
+            session,
+            network_address="localhost-1",
+            host="localhost-1",
+            cpu=str(i // 2 + 1),
+            core=i + 1,
+        )
 
-        for i in range(i + 1, 8):
-            db["Resource"].create(
-                network_address="localhost-2",
-                host="localhost-2",
-                cpu=str(i // 2 + 1),
-                core=i + 1,
-            )
+    for i in range(i + 1, 8):
+        Resource.create(
+            session,
+            network_address="localhost-2",
+            host="localhost-2",
+            cpu=str(i // 2 + 1),
+            core=i + 1,
+        )
 
-        for i in range(i + 1, 12):
-            db["Resource"].create(
-                network_address="localhost-3",
-                host="localhost-3",
-                cpu=str(i // 2 + 1),
-                core=i + 1,
-            )
+    for i in range(i + 1, 12):
+        Resource.create(
+            session,
+            network_address="localhost-3",
+            host="localhost-3",
+            cpu=str(i // 2 + 1),
+            core=i + 1,
+        )
 
-        yield
+    yield
 
 
+# flake8: noqa: EF811 (function used in fixtures)
 @pytest.fixture(scope="function")
-def active_quotas(request):
+def active_quotas(request, setup_config):
+    config, _, _ = setup_config
     print("active_quotas")
     config["QUOTAS"] = "yes"
 
@@ -95,9 +115,12 @@ def active_quotas(request):
 
     request.addfinalizer(teardown)
 
+    yield config
 
-def default_job_parameters(resource_request):
+
+def default_job_parameters(config, resource_request):
     return JobParameters(
+        config,
         job_type="PASSIVE",
         resource=resource_request,
         name="yop",
@@ -123,13 +146,20 @@ def default_job_parameters(resource_request):
     )
 
 
-def test_add_micheline_jobs_1():
-    job_parameters = default_job_parameters(None)
+def test_add_micheline_jobs_1(setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
+
+    job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
     export_job_key_file = ""
     (error, job_id_lst) = add_micheline_jobs(
-        job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+        minimal_db_initialization,
+        config,
+        job_parameters,
+        import_job_key_inline,
+        import_job_key_file,
+        export_job_key_file,
     )
 
     print("job id:", job_id_lst)
@@ -138,8 +168,9 @@ def test_add_micheline_jobs_1():
     assert len(job_id_lst) == 1
 
 
-def test_add_micheline_jobs_2():
-    job_parameters = default_job_parameters(None)
+def test_add_micheline_jobs_2(setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
+    job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
     export_job_key_file = ""
@@ -148,7 +179,12 @@ def test_add_micheline_jobs_2():
     job_parameters.types = ["foo"]
 
     (error, job_id_lst) = add_micheline_jobs(
-        job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+        minimal_db_initialization,
+        config,
+        job_parameters,
+        import_job_key_inline,
+        import_job_key_file,
+        export_job_key_file,
     )
 
     print("job id:", job_id_lst)
@@ -157,9 +193,11 @@ def test_add_micheline_jobs_2():
     assert len(job_id_lst) == 1
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_add_micheline_jobs_no_quotas_1():
-    job_parameters = default_job_parameters(None)
+def test_add_micheline_jobs_no_quotas_1(
+    setup_config, minimal_db_initialization, active_quotas
+):
+    config = active_quotas
+    job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
     export_job_key_file = ""
@@ -168,20 +206,28 @@ def test_add_micheline_jobs_no_quotas_1():
     job_parameters.types = ["foo", "no_quotas"]
 
     (error, job_id_lst) = add_micheline_jobs(
-        job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+        minimal_db_initialization,
+        config,
+        job_parameters,
+        import_job_key_inline,
+        import_job_key_file,
+        export_job_key_file,
     )
 
     print("job id:", job_id_lst)
     print("error:", error)
     assert error == (0, "")
     assert len(job_id_lst) == 1
-    job_types = get_job_types(job_id_lst[0])
+    job_types = get_job_types(minimal_db_initialization, job_id_lst[0])
     assert job_types == {"foo": True}
 
 
-@pytest.mark.usefixtures("active_quotas")
-def test_add_micheline_jobs_quotas_admin():
-    job_parameters = default_job_parameters(None)
+# @pytest.mark.usefixtures("active_quotas")
+def test_add_micheline_jobs_quotas_admin(
+    setup_config, minimal_db_initialization, active_quotas
+):
+    config, _, _ = setup_config
+    job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
     export_job_key_file = ""
@@ -191,19 +237,25 @@ def test_add_micheline_jobs_quotas_admin():
     job_parameters.queue = "admin"
 
     (error, job_id_lst) = add_micheline_jobs(
-        job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+        minimal_db_initialization,
+        config,
+        job_parameters,
+        import_job_key_inline,
+        import_job_key_file,
+        export_job_key_file,
     )
 
     print("job id:", job_id_lst)
     print("error:", error)
     assert error == (0, "")
     assert len(job_id_lst) == 1
-    job_types = get_job_types(job_id_lst[0])
+    job_types = get_job_types(minimal_db_initialization, job_id_lst[0])
     print(job_types)
     assert "no_quotas" in job_types
 
 
-def test_add_micheline_simple_array_job():
+def test_add_micheline_simple_array_job(setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
     prev_conf0 = config["OARSUB_DEFAULT_RESOURCES"]
     prev_conf1 = config["OARSUB_NODES_RESOURCES"]
 
@@ -212,7 +264,7 @@ def test_add_micheline_simple_array_job():
     ] = "network_address=2/resource_id=1+/resource_id=2"
     config["OARSUB_NODES_RESOURCES"] = "resource_id"
 
-    job_parameters = default_job_parameters(None)
+    job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
     export_job_key_file = ""
@@ -224,13 +276,18 @@ def test_add_micheline_simple_array_job():
     # print(job_vars)
 
     (error, job_id_lst) = add_micheline_jobs(
-        job_parameters, import_job_key_inline, import_job_key_file, export_job_key_file
+        minimal_db_initialization,
+        config,
+        job_parameters,
+        import_job_key_inline,
+        import_job_key_file,
+        export_job_key_file,
     )
 
-    res = db["JobResourceGroup"].query.all()
+    res = minimal_db_initialization.query(JobResourceDescription).all()
     for item in res:
         print(item.to_dict())
-    res = db["JobResourceDescription"].query.all()
+    res = minimal_db_initialization.query(JobResourceDescription).all()
     for item in res:
         print(item.to_dict())
 
@@ -243,7 +300,8 @@ def test_add_micheline_simple_array_job():
     config["OARSUB_NODES_RESOURCES"] = prev_conf1
 
 
-def test_scan_script(monkeypatch_tools):
+def test_scan_script(monkeypatch_tools, setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
     global fake_popen_process_stdout
     fake_popen_process_stdout = (
         "#Funky job\n"
@@ -303,15 +361,17 @@ def test_scan_script(monkeypatch_tools):
     assert res == result
 
 
-def test_job_parameter_notify():
-    job_parameters = default_job_parameters(None)
+def test_job_parameter_notify(setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
+    job_parameters = default_job_parameters(config, None)
     job_parameters.notify = "mail:name@domain.com"
     error = job_parameters.check_parameters()
     assert error[0] == 0
 
 
-def test_job_parameter_notify_badexec():
-    job_parameters = default_job_parameters(None)
+def test_job_parameter_notify_badexec(setup_config, minimal_db_initialization):
+    config, _, _ = setup_config
+    job_parameters = default_job_parameters(config, None)
     job_parameters.notify = "exec:/path/to/script args rogue$*"
     error = job_parameters.check_parameters()
     assert error == (
@@ -376,8 +436,14 @@ def test_job_parameter_notify_badexec():
 )
 # This doesn't test moldable jobs
 def test_estimate_job_nb_resources(
-    monkeypatch, create_hierarchy, res_request, expected
+    monkeypatch,
+    create_hierarchy,
+    res_request,
+    expected,
+    setup_config,
+    minimal_db_initialization,
 ):
+    config, _, _ = setup_config
     from oar.lib.submission import estimate_job_nb_resources
 
     request = [
@@ -388,7 +454,7 @@ def test_estimate_job_nb_resources(
     ]
 
     error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        request, None
+        minimal_db_initialization, config, request, None
     )
 
     assert estimated_nb_resources[0][0] == expected

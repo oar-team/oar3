@@ -4,18 +4,20 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from oar.api.query import APIQueryCollection, paginate
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
-from oar.lib import Job, db
+from oar.lib.configuration import Configuration
+from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
-from ..dependencies import need_authentication
-from . import TimestampRoute
+from ..dependencies import get_config, get_db, need_authentication
 
 router = APIRouter(
-    route_class=TimestampRoute,
+    # route_class=TimestampRoute,
     prefix="/jobs",
     tags=["jobs"],
     responses={404: {"description": "Not found"}},
@@ -52,19 +54,27 @@ def index(
     details: str = None,
     offset: int = 0,
     limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
+
+    queryCollection = APIQueryCollection(db)
+
     # import pdb; pdb.set_trace()
-    query = db.queries.get_jobs_for_user(
+    query = queryCollection.get_jobs_for_user(
         user, start_time, stop_time, states, job_ids, array, None, details
     )
     data = {}
-    page = query.paginate(offset, limit)
+
+    # page = query.paginate(offset, limit)
+    page = paginate(query, offset, limit)
+
     data["total"] = page.total
     data["offset"] = offset
     data["items"] = []
 
     if details:
-        jobs_resources = db.queries.get_assigned_jobs_resources(page.items)
+        jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
         pass
     for item in page:
         if details:
@@ -76,15 +86,23 @@ def index(
 
 
 @router.get("/{job_id}")
-def show(job_id: int, details: Optional[bool] = None):
-    job = db.query(Job).get_or_404(job_id)
+def show(
+    job_id: int,
+    details: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    queryCollection = APIQueryCollection(db)
+    job = db.query(Job).get(job_id)
     data = job.asdict()
-    if details:
+    if details and job:
         job = Job()
         job.id = job_id
-        job_resources = db.queries.get_assigned_jobs_resources([job])
+        job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
-        # attach_nodes(data, job_resources)
+
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
 
     return data
 
@@ -104,11 +122,14 @@ def get_resources(
     job_id: int,
     offset: int = 0,
     limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
+    queryCollection = APIQueryCollection(db)
     job = Job()
     job.id = job_id
-    query = db.queries.get_assigned_one_job_resources(job)
-    page = query.paginate(offset, limit)
+    query = queryCollection.get_assigned_one_job_resources(job)
+    page = paginate(query, offset, limit)
     data = {}
     data["total"] = page.total
     data["offset"] = offset
@@ -151,7 +172,12 @@ class SumbitParameters(BaseModel):
 
 @router.post("")
 @router.post("/")
-def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
+def submit(
+    sp: SumbitParameters,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     """Job submission
 
         resource (string): the resources description as required by oar (example: “/nodes=1/cpu=2”)
@@ -268,6 +294,7 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
     #    resource = [resource]
 
     job_parameters = JobParameters(
+        config,
         job_type="PASSIVE",
         command=sp.command,
         resource=sp.resource,
@@ -307,7 +334,7 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
 
     submission = Submission(job_parameters)
 
-    (error, job_id_lst) = submission.submit()
+    (error, job_id_lst) = submission.submit(db, config)
 
     # TODO Enhance
     data = {}
@@ -330,13 +357,21 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
 # @app.route("/<any(array):array>/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
 @router.delete("/{job_id}")
 @router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
-def delete(job_id: int, array: bool = False, user: str = Depends(need_authentication)):
+def delete(
+    job_id: int,
+    array: bool = False,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     # TODO Get and return error codes ans messages
     if array:
-        cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
+        cmd_ret = oardel(
+            db, config, None, None, None, None, job_id, None, None, None, user, False
+        )
     else:
         cmd_ret = oardel(
-            [job_id], None, None, None, None, None, None, None, user, False
+            db, config, [job_id], None, None, None, None, None, None, None, user, False
         )
     data = {}
     data["id"] = job_id
@@ -348,7 +383,11 @@ def delete(job_id: int, array: bool = False, user: str = Depends(need_authentica
 @router.post("/{job_id}/signal/{signal}")
 @router.post("/{job_id}/checkpoints/new")
 def signal(
-    job_id: int, signal: Optional[int] = None, user: dict = Depends(need_authentication)
+    job_id: int,
+    signal: Optional[int] = None,
+    user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
     if signal:
         checkpointing = False
@@ -356,7 +395,18 @@ def signal(
         checkpointing = True
 
     cmd_ret = oardel(
-        [job_id], checkpointing, signal, None, None, None, None, None, user, False
+        db,
+        config,
+        [job_id],
+        checkpointing,
+        signal,
+        None,
+        None,
+        None,
+        None,
+        None,
+        user,
+        False,
     )
 
     data = {}
@@ -368,10 +418,15 @@ def signal(
 
 
 @router.post("/{job_id}/resumptions/new")
-def resume(job_id: int, user: dict = Depends(need_authentication)):
+def resume(
+    job_id: int,
+    user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     """Asks to resume a holded job"""
 
-    cmd_ret = oarresume([job_id], None, None, None, user, False)
+    cmd_ret = oarresume(db, config, [job_id], None, None, None, user, False)
     data = {}
     data["id"] = job_id
     data["cmd_output"] = cmd_ret.to_str()
@@ -385,12 +440,14 @@ def hold(
     job_id: int,
     hold: str = "hold",
     user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
     running = False
     if hold == "rhold":
         running = True
 
-    cmd_ret = oarhold([job_id], running, None, None, None, user, False)
+    cmd_ret = oarhold(db, config, [job_id], running, None, None, None, user, False)
 
     data = {}
     data["id"] = job_id

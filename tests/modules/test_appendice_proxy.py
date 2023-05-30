@@ -3,10 +3,14 @@
 import pytest
 import zmq
 
-from oar.lib import config
+from oar.lib.globals import init_oar
+
+# from oar.lib import config
 from oar.modules.appendice_proxy import AppendiceProxy
 
 from ..fakezmq import FakeZmq
+
+config, db, log = init_oar(no_db=True)
 
 fakezmq = FakeZmq()
 

@@ -30,14 +30,8 @@ from oar.kao.slot import (
 
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
-from oar.lib import (
-    GanttJobsPredictionsVisu,
-    GanttJobsResourcesVisu,
-    config,
-    db,
-    get_logger,
-)
 from oar.lib.event import add_new_event, get_job_events
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     ALLOW,
     NO_PLACEHOLDER,
@@ -65,6 +59,7 @@ from oar.lib.job_handling import (
     set_job_state,
     set_moldable_job_max_time,
 )
+from oar.lib.models import GanttJobsPredictionsVisu, GanttJobsResourcesVisu
 from oar.lib.node import (
     get_gantt_hostname_to_wake_up,
     get_last_wake_up_date_of_node,
@@ -75,6 +70,9 @@ from oar.lib.plugins import find_plugin_function
 from oar.lib.queue import get_queues_groupby_priority, stop_queue
 from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.hulot import HulotClient
+
+# FIXME global config
+config, _, log = init_oar(no_db=True)
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -103,7 +101,9 @@ to_launch_jobs_already_treated = {}
 batsim_sched_proxy = None
 
 
-def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
+def gantt_init_with_running_jobs(
+    session, config, plt, initial_time_sec, job_security_time
+):
     """
     Initialize gantt tables with scheduled reservation jobs, Running jobs,
     toLaunch jobs and Launching jobs.
@@ -118,21 +118,22 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     #
     # Determine Global Resource Intervals and Initial Slot
     #
-    resource_set = plt.resource_set()
+    resource_set = plt.resource_set(session, config)
     initial_slot_set = SlotSet((resource_set.roid_itvs, initial_time_sec))
 
     logger.debug("Processing of processing of already handled reservations")
-    moldable_ids = get_waiting_moldable_of_reservations_already_scheduled()
-    gantt_flush_tables(moldable_ids)
+    moldable_ids = get_waiting_moldable_of_reservations_already_scheduled(session)
+    gantt_flush_tables(session, moldable_ids)
 
     # TODO Can we remove this step, below ???
     #  why don't use: assigned_resources and job start_time ??? in get_scheduled_jobs ???
     logger.debug("Processing of current jobs")
     current_jobs = get_jobs_in_multiple_states(
+        session,
         ["Running", "toLaunch", "Launching", "Finishing", "Suspended", "Resuming"],
         resource_set,
     )
-    plt.save_assigns(current_jobs, resource_set)  # TODO to verify
+    plt.save_assigns(session, current_jobs, resource_set)  # TODO to verify
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
@@ -158,7 +159,7 @@ def gantt_init_with_running_jobs(plt, initial_time_sec, job_security_time):
     # TODO?: Remove resources of the type specified in
     # SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE
     scheduled_jobs = plt.get_scheduled_jobs(
-        resource_set, job_security_time, initial_time_sec
+        session, resource_set, job_security_time, initial_time_sec
     )
 
     # retrieve resources used by besteffort jobs
@@ -225,7 +226,7 @@ def notify_to_run_job(jid):
                     )
 
 
-def prepare_job_to_be_launched(job, current_time_sec):
+def prepare_job_to_be_launched(session, job, current_time_sec):
     """
     Prepare a job to be run by bipbip
     """
@@ -240,25 +241,27 @@ def prepare_job_to_be_launched(job, current_time_sec):
     # OAR::IO::set_assigned_moldable_job($base, $job_id, $moldable_job_id);
 
     # set start_time an for jobs to launch
-    set_job_start_time_assigned_moldable_id(job.id, current_time_sec, job.moldable_id)
+    set_job_start_time_assigned_moldable_id(
+        session, job.id, current_time_sec, job.moldable_id
+    )
 
     # fix resource assignement
-    add_resource_job_pairs(job.moldable_id)
+    add_resource_job_pairs(session, job.moldable_id)
 
-    set_job_state(job.id, "toLaunch")
+    set_job_state(session, config, job.id, "toLaunch")
 
     notify_to_run_job(job.id)
 
 
 def handle_waiting_reservation_jobs(
-    queue_name, resource_set, job_security_time, current_time_sec
+    session, queue_name, resource_set, job_security_time, current_time_sec
 ):
     logger.debug(
         "Queue " + queue_name + ": begin processing accepted Advance Reservations"
     )
 
     ar_jobs = get_waiting_scheduled_AR_jobs(
-        queue_name, resource_set, job_security_time, current_time_sec
+        session, queue_name, resource_set, job_security_time, current_time_sec
     )
 
     for job in ar_jobs:
@@ -272,8 +275,10 @@ def handle_waiting_reservation_jobs(
                 + str(job.id)
                 + "] set job state to Error: avdance reservation expired and couldn't be started"
             )
-            set_job_state(job.id, "Error")
-            set_job_message(job.id, "Reservation expired and couldn't be started.")
+            set_job_state(session, config, job.id, "Error")
+            set_job_message(
+                session, job.id, "Reservation expired and couldn't be started."
+            )
         else:
             # Determine current available resources
             avail_res = resource_set.roid_itvs & job.res_set
@@ -286,7 +291,7 @@ def handle_waiting_reservation_jobs(
                 )
 
                 # Delay launching time
-                set_gantt_job_start_time(moldable_id, current_time_sec + 1)
+                set_gantt_job_start_time(session, moldable_id, current_time_sec + 1)
             elif job.start_time < current_time_sec:
                 # TODO: not tested
                 if (job.start_time + reservation_waiting_timeout) > current_time_sec:
@@ -305,12 +310,14 @@ def handle_waiting_reservation_jobs(
                             )
                             + " seconds)"
                         )
-                        set_gantt_job_start_time(moldable_id, current_time_sec + 1)
+                        set_gantt_job_start_time(
+                            session, moldable_id, current_time_sec + 1
+                        )
                 else:
                     # It's time to launch the AR job, remove missing resources
                     missing_resources_itvs = job.res_set - avail_res
                     remove_gantt_resource_job(
-                        moldable_id, missing_resources_itvs, resource_set
+                        session, moldable_id, missing_resources_itvs, resource_set
                     )
                     logger.warning(
                         "["
@@ -320,6 +327,7 @@ def handle_waiting_reservation_jobs(
                     )
 
                     add_new_event(
+                        session,
                         "SCHEDULER_REDUCE_NB_RESSOURCES_FOR_RESERVATION",
                         job.id,
                         "[MetaSched] Reduce the number of resources for the job "
@@ -329,7 +337,7 @@ def handle_waiting_reservation_jobs(
                     nb_res = len(job.res_set) - len(missing_resources_itvs)
                     new_message = re.sub(r"R=\d+", "R=" + str(nb_res), job.message)
                     if new_message != job.message:
-                        set_job_message(job.id, new_message)
+                        set_job_message(session, job.id, new_message)
 
     logger.debug(
         "Queue "
@@ -339,7 +347,7 @@ def handle_waiting_reservation_jobs(
 
 
 def check_reservation_jobs(
-    plt, resource_set, queue_name, all_slot_sets, current_time_sec
+    session, plt, resource_set, queue_name, all_slot_sets, current_time_sec
 ):
     """Processing of new Advance Reservations"""
 
@@ -347,12 +355,14 @@ def check_reservation_jobs(
 
     ar_jobs_scheduled = {}
 
-    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(queue_name, "toSchedule")
+    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(
+        queue_name, "toSchedule", session=session
+    )
     logger.debug("nb_ar_jobs:" + str(nb_ar_jobs))
 
     if nb_ar_jobs > 0:
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
-        plt.get_data_jobs(ar_jobs, ar_jids, resource_set, job_security_time)
+        plt.get_data_jobs(session, ar_jobs, ar_jids, resource_set, job_security_time)
 
         logger.debug("Try and schedule new Advance Reservations")
         for jid in ar_jids:
@@ -367,8 +377,8 @@ def check_reservation_jobs(
                 logger.warning(
                     "[" + str(job.id) + "] Canceling job: reservation is too old"
                 )
-                set_job_message(job.id, "Reservation too old")
-                set_job_state(job.id, "toError")
+                set_job_message(session, job.id, "Reservation too old")
+                set_job_state(session, config, job.id, "toError")
                 continue
             else:
                 if job.start_time < current_time_sec:
@@ -415,9 +425,11 @@ def check_reservation_jobs(
                         + ", value: "
                         + str(value)
                     )
-                    set_job_state(job.id, "toError")
+                    set_job_state(session, config, job.id, "toError")
                     set_job_message(
-                        job.id, "This advance reservation cannot run due to quotas"
+                        session,
+                        job.id,
+                        "This advance reservation cannot run due to quotas",
                     )
 
             if len(itvs) == 0:
@@ -427,8 +439,8 @@ def check_reservation_jobs(
                     + str(job.id)
                     + "] advance reservation cannot be validated, not enough resources"
                 )
-                set_job_state(job.id, "toError")
-                set_job_message(job.id, "This advance reservation cannot run")
+                set_job_state(session, config, job.id, "toError")
+                set_job_message(session, job.id, "This advance reservation cannot run")
             else:
                 # The reservation can be scheduled
                 logger.debug("[" + str(job.id) + "] advance reservation is validated")
@@ -443,18 +455,19 @@ def check_reservation_jobs(
                 #    slots_sets[job.id] = SlotSet(slot)
                 # Update the slotsets for the next AR to be scheduled within this loop
                 all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
-                set_job_state(job.id, "toAckReservation")
+                set_job_state(session, config, job.id, "toAckReservation")
 
-            set_job_resa_state(job.id, "Scheduled")
+            set_job_resa_state(session, job.id, "Scheduled")
 
     if ar_jobs_scheduled != []:
         logger.debug("Save AR jobs' assignements in database")
-        save_assigns(ar_jobs_scheduled, resource_set)
+        save_assigns(session, ar_jobs_scheduled, resource_set)
 
     logger.debug("Queue " + queue_name + ": end processing of new reservations")
 
 
 def check_besteffort_jobs_to_kill(
+    session,
     jobs_to_launch,
     rid2jid_to_launch,
     current_time_sec,
@@ -477,7 +490,7 @@ def check_besteffort_jobs_to_kill(
             be_job = besteffort_rid2job[rid]
             job_to_launch = jobs_to_launch[job_id]
 
-            if is_timesharing_for_two_jobs(be_job, job_to_launch):
+            if is_timesharing_for_two_jobs(session, be_job, job_to_launch):
                 logger.debug(
                     "Resource "
                     + str(rid)
@@ -520,11 +533,12 @@ def check_besteffort_jobs_to_kill(
                         )
 
                         add_new_event(
+                            session,
                             "BESTEFFORT_KILL",
                             be_job.id,
                             "kill the besteffort job " + str(be_job.id),
                         )
-                        frag_job(be_job.id)
+                        frag_job(session, be_job.id)
 
                     fragged_jobs.append(be_job.id)
                     return_code = 1
@@ -534,7 +548,9 @@ def check_besteffort_jobs_to_kill(
     return return_code
 
 
-def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql):
+def handle_jobs_to_launch(
+    session, jobs_to_launch_lst, current_time_sec, current_time_sql
+):
     logger.debug("Begin processing jobs to launch (start time <= " + current_time_sql)
 
     return_code = 0
@@ -552,8 +568,8 @@ def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql
         if (job.reservation == "Scheduled") and (job.start_time < current_time_sec):
             max_time = walltime - (current_time_sec - job.start_time)
 
-            set_moldable_job_max_time(job.moldable_id, max_time)
-            set_gantt_job_start_time(job.moldable_id, current_time_sec)
+            set_moldable_job_max_time(session, job.moldable_id, max_time)
+            set_gantt_job_start_time(session, job.moldable_id, current_time_sec)
             logger.warning(
                 "Reduce walltime of job "
                 + str(job.id)
@@ -565,6 +581,7 @@ def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql
             )
 
             add_new_event(
+                session,
                 "REDUCE_RESERVATION_WALLTIME",
                 job.id,
                 "Change walltime from " + str(walltime) + " to " + str(max_time),
@@ -574,33 +591,34 @@ def handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql
             new_message = re.sub(r"W=\d+:\d+:\d+", "W=" + w_max_time, job.message)
 
             if new_message != job.message:
-                set_job_message(job.id, new_message)
+                set_job_message(session, job.id, new_message)
 
-        prepare_job_to_be_launched(job, current_time_sec)
+        prepare_job_to_be_launched(session, job, current_time_sec)
 
     logger.debug("End processing of jobs to launch")
 
     return return_code
 
 
-def update_gantt_visualization():
+def update_gantt_visualization(session):
     """
     Update the database with the new scheduling decisions for visualizations.
     """
-    db.query(GanttJobsPredictionsVisu).delete()
-    db.query(GanttJobsResourcesVisu).delete()
-    db.commit()
+    session.query(GanttJobsPredictionsVisu).delete()
+    session.query(GanttJobsResourcesVisu).delete()
+    session.commit()
 
     sql_queries = [
         "INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
         "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources",
     ]
     for query in sql_queries:
-        db.session.execute(query)
-    db.commit()
+        session.execute(query)
+    session.commit()
 
 
 def call_external_scheduler(
+    session,
     binpath,
     scheduled_jobs,
     all_slot_sets,
@@ -680,7 +698,7 @@ def call_external_scheduler(
             + " Disabling queue {} (see `oarnotify')".format(queue.name)
         )
         # stop queue
-        stop_queue(queue.name)
+        stop_queue(session, queue.name)
 
     if sched_exit_code != 0:
         logger.error(
@@ -692,11 +710,11 @@ def call_external_scheduler(
             + "{} (see `oarnotify')".format(queue.name)
         )
         # stop queue
-        stop_queue(queue.name)
+        stop_queue(session, queue.name)
 
     # retrieve jobs and assignement decision from previous scheduling step
     scheduled_jobs = get_after_sched_no_AR_jobs(
-        queue.name, resource_set, job_security_time, initial_time_sec
+        session, queue.name, resource_set, job_security_time, initial_time_sec
     )
 
     if scheduled_jobs != []:
@@ -727,7 +745,7 @@ def call_batsim_sched_proxy(
 
 
 def call_internal_scheduler(
-    plt, scheduled_jobs, all_slot_sets, job_security_time, queues, now
+    session, config, plt, scheduled_jobs, all_slot_sets, job_security_time, queues, now
 ):
     """
     Internal scheduling phase. The scheduler is not loaded from an external command,
@@ -741,11 +759,17 @@ def call_internal_scheduler(
         )
 
     internal_schedule_cycle(
-        plt, now, all_slot_sets, job_security_time, [q.name for q in queues]
+        session,
+        config,
+        plt,
+        now,
+        all_slot_sets,
+        job_security_time,
+        [q.name for q in queues],
     )
 
 
-def nodes_energy_saving(current_time_sec):
+def nodes_energy_saving(session, config, current_time_sec):
     """
     Energy saving mode.
 
@@ -771,7 +795,7 @@ def nodes_energy_saving(current_time_sec):
         idle_duration = int(config["SCHEDULER_NODE_MANAGER_IDLE_TIME"])
         sleep_duration = int(config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"])
 
-        idle_nodes = search_idle_nodes(current_time_sec)
+        idle_nodes = search_idle_nodes(session, current_time_sec)
         tmp_time = current_time_sec - idle_duration
 
         # Determine nodes to halt
@@ -779,10 +803,10 @@ def nodes_energy_saving(current_time_sec):
         for node, idle_duration in idle_nodes.items():
             if idle_duration < tmp_time:
                 # Search if the node has enough time to sleep
-                tmp = get_next_job_date_on_node(node)
+                tmp = get_next_job_date_on_node(session, node)
                 if (tmp is None) or (tmp - sleep_duration > current_time_sec):
                     # Search if node has not been woken up recently
-                    wakeup_date = get_last_wake_up_date_of_node(node)
+                    wakeup_date = get_last_wake_up_date_of_node(session, node)
                     if (wakeup_date is None) or (wakeup_date < tmp_time):
                         nodes_2_halt.append(node)
 
@@ -793,12 +817,14 @@ def nodes_energy_saving(current_time_sec):
         # Get nodes which the scheduler wants to schedule jobs to,
         # but which are in the Absent state, to wake them up
         wakeup_time = int(config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"])
-        nodes_2_wakeup = get_gantt_hostname_to_wake_up(current_time_sec, wakeup_time)
+        nodes_2_wakeup = get_gantt_hostname_to_wake_up(
+            session, current_time_sec, wakeup_time
+        )
 
     return {"halt": nodes_2_halt, "wakeup": nodes_2_wakeup}
 
 
-def meta_schedule(mode="internal", plt=Platform()):
+def meta_schedule(session, config, mode="internal", plt=Platform()):
     """
     Meta scheduling phase.
     Run the scheduler on each queue dependeding on their priority order.
@@ -823,14 +849,16 @@ def meta_schedule(mode="internal", plt=Platform()):
         kill_duration_before_reservation = 0
 
     if ("QUOTAS" in config) and (config["QUOTAS"] == "yes"):
-        Quotas.enable(plt.resource_set())
+        Quotas.enable(config, plt.resource_set(session, config))
 
     if ("WALLTIME_CHANGE_ENABLED" in config) and (
         config["WALLTIME_CHANGE_ENABLED"] == "yes"
     ):
         process_walltime_change_requests(plt)
 
-    tools.create_almighty_socket()
+    tools.create_almighty_socket(
+        config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
+    )
 
     logger.debug(
         "Retrieve information for already scheduled reservations from \
@@ -839,17 +867,17 @@ def meta_schedule(mode="internal", plt=Platform()):
 
     # reservation ??.
 
-    initial_time_sec = tools.get_date()  # time.time()
+    initial_time_sec = tools.get_date(session)  # time.time()
     initial_time_sql = local_to_sql(initial_time_sec)
 
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
     gantt_init_results = gantt_init_with_running_jobs(
-        plt, initial_time_sec, job_security_time
+        session, config, plt, initial_time_sec, job_security_time
     )
     all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
-    resource_set = plt.resource_set()
+    resource_set = plt.resource_set(session=session, config=config)
 
     # Path for user of external schedulers
     if "OARDIR" in os.environ:
@@ -877,7 +905,7 @@ def meta_schedule(mode="internal", plt=Platform()):
 
     prev_queues = None
 
-    for queues in get_queues_groupby_priority():
+    for queues in get_queues_groupby_priority(session):
         extra_metasched_func(
             prev_queues,
             plt,
@@ -903,6 +931,8 @@ def meta_schedule(mode="internal", plt=Platform()):
         # Only internal scheduler support non-strict priorities between queues
         if mode == "internal":
             call_internal_scheduler(
+                session,
+                config,
                 plt,
                 scheduled_jobs,
                 all_slot_sets,
@@ -912,16 +942,26 @@ def meta_schedule(mode="internal", plt=Platform()):
             )
             for queue in active_queues:
                 handle_waiting_reservation_jobs(
-                    queue.name, resource_set, job_security_time, current_time_sec
+                    session,
+                    queue.name,
+                    resource_set,
+                    job_security_time,
+                    current_time_sec,
                 )
                 # handle_new_AR_jobs
                 check_reservation_jobs(
-                    plt, resource_set, queue.name, all_slot_sets, current_time_sec
+                    session,
+                    plt,
+                    resource_set,
+                    queue.name,
+                    all_slot_sets,
+                    current_time_sec,
                 )
         else:
             for queue in active_queues:
                 if mode == "external":  # pragma: no cover
                     call_external_scheduler(
+                        session,
                         binpath,
                         scheduled_jobs,
                         all_slot_sets,
@@ -944,7 +984,11 @@ def meta_schedule(mode="internal", plt=Platform()):
                     logger.error("Specified mode is unknown: " + mode)
 
                 handle_waiting_reservation_jobs(
-                    queue.name, resource_set, job_security_time, current_time_sec
+                    session,
+                    queue.name,
+                    resource_set,
+                    job_security_time,
+                    current_time_sec,
                 )
 
     (
@@ -952,6 +996,7 @@ def meta_schedule(mode="internal", plt=Platform()):
         jobs_to_launch_with_security_time_lst,
         rid2jid_to_launch,
     ) = get_gantt_jobs_to_launch(
+        session,
         resource_set,
         job_security_time,
         current_time_sec,
@@ -967,6 +1012,7 @@ def meta_schedule(mode="internal", plt=Platform()):
 
     if (
         check_besteffort_jobs_to_kill(
+            session,
             jobs_to_launch_with_security_time,  # Jobs to launch or about to be launched
             rid2jid_to_launch,
             current_time_sec,
@@ -979,20 +1025,22 @@ def meta_schedule(mode="internal", plt=Platform()):
         tools.notify_almighty("ChState")
         exit_code = 2
     elif (
-        handle_jobs_to_launch(jobs_to_launch_lst, current_time_sec, current_time_sql)
+        handle_jobs_to_launch(
+            session, jobs_to_launch_lst, current_time_sec, current_time_sql
+        )
         == 1
     ):
         exit_code = 0
 
     # Update visu gantt tables
-    update_gantt_visualization()
+    update_gantt_visualization(session)
 
     #
     # Manage dynamic node feature for energy saving:
     #
     if ("ENERGY_SAVING_MODE" in config) and config["ENERGY_SAVING_MODE"] != "":
         if config["ENERGY_SAVING_MODE"] == "metascheduler_decision_making":
-            nodes_2_change = nodes_energy_saving(current_time_sec)
+            nodes_2_change = nodes_energy_saving(session, config, current_time_sec)
         elif config["ENERGY_SAVING_MODE"] == "batsim_scheduler_proxy_decision_making":
             nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
         else:
@@ -1000,7 +1048,7 @@ def meta_schedule(mode="internal", plt=Platform()):
                 "Error ENERGY_SAVING_MODE unknown: " + config["ENERGY_SAVING_MODE"]
             )
 
-        hulot = HulotClient()
+        hulot = HulotClient(config, logger)
 
         flag_hulot = False
         timeout_cmd = int(config["SCHEDULER_TIMEOUT"])
@@ -1030,7 +1078,6 @@ def meta_schedule(mode="internal", plt=Platform()):
 
         # Command Hulot to wake up selected nodes
         nodes_2_wakeup = nodes_2_change["wakeup"]
-
         if nodes_2_wakeup != []:
             logger.debug("Awaking some nodes: " + str(nodes_2_change))
             # Using the built-in energy saving module to wake up nodes
@@ -1056,7 +1103,7 @@ def meta_schedule(mode="internal", plt=Platform()):
             #    logger.error("Communication problem with the energy saving module (Hulot)")
 
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.
-    jobs_by_state = get_current_not_waiting_jobs()
+    jobs_by_state = get_current_not_waiting_jobs(session)
 
     #
     # Search jobs to resume
@@ -1068,13 +1115,13 @@ def meta_schedule(mode="internal", plt=Platform()):
     if "Resuming" in jobs_by_state:
         logger.warning("Resuming job is NOT ENTIRELY IMPLEMENTED")
         for job in jobs_by_state["Resuming"]:
-            other_jobs = get_jobs_on_resuming_job_resources(job.id)
+            other_jobs = get_jobs_on_resuming_job_resources(session, job.id)
             # TODO : look for timesharing other jobs. What do we do?????
             if other_jobs == []:
                 # We can resume the job
                 logger.debug("[" + str(job.id) + "] Resuming job")
                 if "noop" in job.types:
-                    resume_job_action(job.id)
+                    resume_job_action(session, job.id)
                     logger.debug("[" + str(job.id) + "] Resume NOOP job OK")
                 else:
                     script = config["JUST_BEFORE_RESUME_EXEC_FILE"]
@@ -1101,7 +1148,10 @@ def meta_schedule(mode="internal", plt=Platform()):
                             str(e) + "[" + str(job.id) + "] Suspend script timeouted"
                         )
                         add_new_event(
-                            "RESUME_SCRIPT_ERROR", job.id, "Suspend script timeouted"
+                            session,
+                            "RESUME_SCRIPT_ERROR",
+                            job.id,
+                            "Suspend script timeouted",
                         )
                     if return_code != 0:
                         str_error = (
@@ -1111,8 +1161,8 @@ def meta_schedule(mode="internal", plt=Platform()):
                             + str(return_code)
                         )
                         logger.error(str_error)
-                        add_new_event("RESUME_SCRIPT_ERROR", job.id, str_error)
-                        frag_job(job.id)
+                        add_new_event(session, "RESUME_SCRIPT_ERROR", job.id, str_error)
+                        frag_job(session, job.id)
                         tools.notify_almighty("Qdel")
                     skip = 1
 
@@ -1149,7 +1199,7 @@ def meta_schedule(mode="internal", plt=Platform()):
     #
 
     # Notify oarsub -I when they will be launched
-    for j_info in get_gantt_waiting_interactive_prediction_date():
+    for j_info in get_gantt_waiting_interactive_prediction_date(session):
         job_id, job_info_type, job_start_time, job_message = j_info
         addr, port = job_info_type.split(":")
         new_start_prediction = local_to_sql(job_start_time)
@@ -1196,7 +1246,7 @@ def meta_schedule(mode="internal", plt=Platform()):
                         "Cannot open connection to oarsub client for" + str(job.id)
                     )
             logger.debug("Set job " + str(job.id) + " to state Error")
-            set_job_state(job.id, "Error")
+            set_job_state(session, config, job.id, "Error")
 
     # Process toAckReservation jobs
     if "toAckReservation" in jobs_by_state:
@@ -1230,7 +1280,7 @@ def meta_schedule(mode="internal", plt=Platform()):
                     + ") --> OK; jobInfo="
                     + job.info_type
                 )
-                set_job_state(job.id, "Waiting")
+                set_job_state(session, config, job.id, "Waiting")
                 if ((job.start_time - 1) <= current_time_sec) and (exit_code == 0):
                     exit_code = 1
 

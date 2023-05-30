@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import simplejson as json
 
-from oar.lib import config, get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
@@ -20,14 +20,17 @@ _day2week_offset = {
     "sun": 6,
 }
 
+config, db, log = init_oar(no_db=True)
 logger = get_logger("oar.kao.quotas")
 
 
 class Calendar(object):
-    def __init__(self, json_quotas):
+    def __init__(self, json_quotas, config):
+        self.config = config
         self.quotas_period = config["QUOTAS_PERIOD"]
         self.period_end = 0  # period_end = period_begin = quotas_period
 
+        self.quotas_window_time_limit = config["QUOTAS_WINDOW_TIME_LIMIT"]
         self.ordered_periodical_ids = []
         self.op_index = 0
         self.periodicals = {}
@@ -512,8 +515,9 @@ class Quotas(object):
     job_types = ["*"]
 
     @classmethod
-    def enable(cls, resource_set=None):
+    def enable(cls, config, resource_set=None):
         cls.enabled = True
+
         if "QUOTAS_ALL_NB_RESOURCES_MODE" in config:
             mode = config["QUOTAS_ALL_NB_RESOURCES_MODE"]
         else:
@@ -525,7 +529,7 @@ class Quotas(object):
                 all_value = resource_set.nb_resources_default_not_dead
         else:
             all_value = None
-        cls.load_quotas_rules(all_value)
+        cls.load_quotas_rules(config, all_value)
 
     def __init__(self):
         self.counters = defaultdict(lambda: [0, 0, 0])
@@ -716,7 +720,7 @@ class Quotas(object):
         return rules
 
     @classmethod
-    def load_quotas_rules(cls, all_value=None):
+    def load_quotas_rules(cls, config, all_value=None):
         """
         Simple example
         --------------
@@ -767,7 +771,7 @@ class Quotas(object):
         with open(quotas_rules_filename) as json_file:
             json_quotas = json.load(json_file)
             if ("periodical" in json_quotas) or ("oneshot" in json_quotas):
-                cls.calendar = Calendar(json_quotas)
+                cls.calendar = Calendar(json_quotas, config)
             if "quotas" in json_quotas:
                 cls.default_rules = cls.quotas_rules_fromJson(
                     json_quotas["quotas"], all_value

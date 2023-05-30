@@ -6,14 +6,17 @@
 import re
 
 import oar.lib.tools as tools
-from oar.lib import WalltimeChange, config, db, get_logger
+from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
     get_job,
     get_job_suspended_sum_duration,
     get_job_types,
 )
+from oar.lib.models import WalltimeChange
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed, hms_to_duration
+
+config, engine, log = init_oar(no_db=True)
 
 logger = get_logger("oar.lib.walltime")
 
@@ -35,11 +38,11 @@ def get_conf(config_value, queue, walltime, value):
     return value
 
 
-def get_walltime_change_for_job(job_id):
+def get_walltime_change_for_job(session, job_id):
     """Get the current extra time added for a given job"""
     try:
         walltime_change = (
-            db.query(WalltimeChange).filter(WalltimeChange.job_id == job_id).one()
+            session.query(WalltimeChange).filter(WalltimeChange.job_id == job_id).one()
         )
     except Exception as e:
         logger.debug(
@@ -53,24 +56,24 @@ def get_walltime_change_for_job(job_id):
         return walltime_change
 
 
-def get(job_id):
+def get(session, config, job_id):
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"
     ):
         return (None, "functionality is disabled", None)
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
     if not job:
         return (None, "unknown job", None)
 
-    walltime_change = get_walltime_change_for_job(job_id)
+    walltime_change = get_walltime_change_for_job(session, job_id)
 
     if not walltime_change:
         walltime_change = WalltimeChange()
 
     if job.assigned_moldable_job != 0:
-        moldable = get_current_moldable_job(job.assigned_moldable_job)
+        moldable = get_current_moldable_job(session, job.assigned_moldable_job)
         walltime_change.walltime = moldable.moldable_walltime
     else:
         walltime_change.walltime = 0
@@ -105,10 +108,10 @@ def get(job_id):
     walltime_users_allowed_to_delay_jobs = get_conf(  # noqa
         config["WALLTIME_ALLOWED_USERS_TO_DELAY_JOBS"], job.queue_name, None, ""
     )
-    now = tools.get_date()
+    now = tools.get_date(session)
 
     # TODO Unused
-    suspended = get_job_suspended_sum_duration(job_id, now)  # noqa
+    suspended = get_job_suspended_sum_duration(session, job_id, now)  # noqa
 
     if job.state != "Running" or (walltime_change.walltime < walltime_min_for_change):
         walltime_change.possible = duration_to_sql_signed(0)
@@ -146,14 +149,14 @@ def get(job_id):
     return (walltime_change, None, job.state)
 
 
-def request(job_id, user, new_walltime, force, delay_next_jobs):
+def request(session, config, job_id, user, new_walltime, force, delay_next_jobs):
     if (
         "WALLTIME_CHANGE_ENABLED" not in config
         or config["WALLTIME_CHANGE_ENABLED"] != "YES"
     ):
         return (5, 405, "not available", "functionality is disabled")
 
-    job = get_job(job_id)
+    job = get_job(session, job_id)
 
     if not job:
         return (4, 404, "not found", "could not find job {}".format(job_id))
@@ -166,7 +169,7 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
     if job.state != "Running":
         return (3, 403, "forbidden", "job {} is not running".format(job_id))
 
-    moldable = get_current_moldable_job(job.assigned_moldable_job)
+    moldable = get_current_moldable_job(session, job.assigned_moldable_job)
 
     walltime_max_increase = get_conf(
         config["WALLTIME_MAX_INCREASE"], job.queue_name, moldable.walltime, 0
@@ -248,11 +251,11 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
         )
 
     # For negative extratime, do not allow end time before now
-    now = tools.get_date()
+    now = tools.get_date(session)
 
-    suspended = get_job_suspended_sum_duration(job_id, now)
+    suspended = get_job_suspended_sum_duration(session, job_id, now)
 
-    job_types = get_job_types(job_id)
+    job_types = get_job_types(session, job_id)
     # Arbitrary refuse to reduce container jobs, because we don't want to handle inner jobs which could possibly cross the new boundaries of their container, or should be reduced as well.
     if ("container" in job_types) and (new_walltime_seconds < 0):
         return (
@@ -267,7 +270,7 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
         new_walltime_seconds = -job_remaining_time
 
     # OAR::IO::lock_table($dbh,['walltime_change']);
-    current_walltime_change = get_walltime_change_for_job(job_id)
+    current_walltime_change = get_walltime_change_for_job(session, job_id)
     if current_walltime_change:
         if (
             (walltime_max_increase != -1)
@@ -287,6 +290,7 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
             )
         else:
             update_walltime_change_request(
+                session,
                 job_id,
                 new_walltime_seconds,
                 "YES" if (force and (new_walltime_seconds > 0)) else "NO",
@@ -320,6 +324,7 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
             )
         else:
             add_walltime_change_request(
+                session,
                 job_id,
                 new_walltime_seconds,
                 "YES" if (force and (new_walltime_seconds > 0)) else "NO",
@@ -342,17 +347,18 @@ def request(job_id, user, new_walltime, force, delay_next_jobs):
     return result
 
 
-def add_walltime_change_request(job_id, pending, force, delay_next_jobs):
+def add_walltime_change_request(session, job_id, pending, force, delay_next_jobs):
     """Add an extra time request to the database:
     add 1 line to the walltime_change table"""
     walltime_change = WalltimeChange(
         job_id=job_id, pending=pending, force=force, delay_next_jobs=delay_next_jobs
     )
-    db.add(walltime_change)
-    db.commit()
+    session.add(walltime_change)
+    session.commit()
 
 
 def update_walltime_change_request(
+    session,
     job_id,
     pending,
     force,
@@ -376,7 +382,7 @@ def update_walltime_change_request(
         ),
     }
 
-    db.query(WalltimeChange).filter(WalltimeChange.job_id == job_id).update(
+    session.query(WalltimeChange).filter(WalltimeChange.job_id == job_id).update(
         walltime_change_update, synchronize_session=False
     )
-    db.commit()
+    session.commit()

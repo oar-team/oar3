@@ -3,13 +3,16 @@ from urllib.parse import urlparse
 
 import simplejson as json
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
 import oar.lib.tools as tools
-from oar.lib import config
+from oar.lib.configuration import Configuration
+
+# from oar.lib import config
 from oar.lib.job_handling import get_job
 
-from ..dependencies import need_authentication
+from ..dependencies import get_config, get_db, need_authentication
 from ..proxy_utils import (
     acquire_lock,
     add_traefik_rule,
@@ -19,6 +22,9 @@ from ..proxy_utils import (
 )
 from . import TimestampRoute
 
+# FIXME: gbl config that's bad
+
+
 router = APIRouter(
     route_class=TimestampRoute,
     prefix="/proxy",
@@ -27,20 +33,25 @@ router = APIRouter(
 )
 
 
-if "OARDIR" not in os.environ:
-    os.environ["OARDIR"] = "/usr/local/lib/oar"
-
-OARDODO_CMD = os.environ["OARDIR"] + "/oardodo/oardodo"
-if "OARDODO" in config:
-    OARDODO_CMD = config["OARDODO"]
-
-
 @router.get("/{job_id}")
-def proxy(job_id: int, user=Depends(need_authentication)):
+def proxy(
+    job_id: int,
+    user=Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+
+    if "OARDIR" not in os.environ:
+        os.environ["OARDIR"] = "/usr/local/lib/oar"
+
+    OARDODO_CMD = os.environ["OARDIR"] + "/oardodo/oardodo"
+    if "OARDODO" in config:
+        OARDODO_CMD = config["OARDODO"]
+
     if config["PROXY"] != "traefik":
         raise HTTPException(status_code=404, detail="Proxy is not configured")
 
-    job = get_job(job_id)
+    job = get_job(db, job_id)
     if not job:
         raise HTTPException(
             status_code=404, detail="Job: {} does not exist".format(job_id)

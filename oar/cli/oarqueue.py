@@ -1,8 +1,10 @@
 import os
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar import VERSION
+from oar.lib.globals import init_oar
 from oar.lib.queue import (
     change_queue,
     create_queue,
@@ -20,7 +22,17 @@ click.disable_unicode_literals_warning = True
 
 
 def oarqueue(
-    list_all, enable, disable, enable_all, disable_all, add, change, remove, version
+    session,
+    config,
+    list_all,
+    enable,
+    disable,
+    enable_all,
+    disable_all,
+    add,
+    change,
+    remove,
+    version,
 ):
     cmd_ret = CommandReturns(cli)
     if version:
@@ -37,7 +49,7 @@ def oarqueue(
         return cmd_ret
 
     if list_all:
-        for queue in get_all_queue_by_priority():
+        for queue in get_all_queue_by_priority(session):
             print(queue.name)
             print("priority = {}".format(queue.priority))
             print("policy = {}".format(queue.scheduler_policy))
@@ -45,37 +57,41 @@ def oarqueue(
         return cmd_ret
 
     if enable:
-        start_queue(enable)
+        start_queue(session, enable)
         return cmd_ret
 
     if disable:
-        stop_queue(disable)
+        stop_queue(session, disable)
         return cmd_ret
 
     if enable_all:
-        start_all_queues()
+        start_all_queues(
+            session,
+        )
         return cmd_ret
 
     if disable_all:
-        stop_all_queues()
+        stop_all_queues(
+            session,
+        )
         return cmd_ret
 
     if add:
         name, priority, policy = add.split(",")
         if priority:
             priority = int(priority)
-        create_queue(name, priority, policy)
+        create_queue(session, name, priority, policy)
         return cmd_ret
 
     if change:
         name, priority, policy = change.split(",")
         if priority:
             priority = int(priority)
-        change_queue(name, priority, policy)
+        change_queue(session, name, priority, policy)
         return cmd_ret
 
     if remove:
-        remove_queue(remove)
+        remove_queue(session, remove)
         return cmd_ret
 
     return cmd_ret
@@ -107,6 +123,16 @@ def oarqueue(
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(list, enable, disable, enable_all, disable_all, add, change, remove, version):
     """List, create or change OAR's scheduler queues."""
+
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, engine, log = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
     list_all = list
     if not (
         list_all
@@ -122,6 +148,16 @@ def cli(list, enable, disable, enable_all, disable_all, add, change, remove, ver
         list_all = True
 
     cmd_ret = oarqueue(
-        list_all, enable, disable, enable_all, disable_all, add, change, remove, version
+        session,
+        config,
+        list_all,
+        enable,
+        disable,
+        enable_all,
+        disable_all,
+        add,
+        change,
+        remove,
+        version,
     )
     cmd_ret.exit()

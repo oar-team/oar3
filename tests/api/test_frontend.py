@@ -3,16 +3,17 @@ from tempfile import mkstemp
 
 from oar import VERSION
 from oar.api import API_VERSION
-from oar.lib import config
 
 
-def test_app_frontend_index(client):
+def test_app_frontend_index(client, setup_config):
+    config, _, db = setup_config
     res = client.get("/")
     print(res.json)
     assert res.status_code == 200 and "api_timestamp" in res.json()
 
 
-def test_app_frontend_version(client):
+def test_app_frontend_version(client, setup_config):
+    config, _, db = setup_config
     res = client.get("/version")
     print(res.json())
     assert res.status_code == 200 and "api_timestamp" in res.json()
@@ -22,21 +23,24 @@ def test_app_frontend_version(client):
     assert "apilib_version" in res.json()
 
 
-def test_app_frontend_whoami(client):
+def test_app_frontend_whoami(client, setup_config):
+    config, _, db = setup_config
     res = client.get("/whoami")
     print(res.json())
     assert res.status_code == 200 and "api_timestamp" in res.json()
     assert res.json()["authenticated_user"] is None
 
 
-def test_app_frontend_timezone(client):
+def test_app_frontend_timezone(client, setup_config):
+    config, _, db = setup_config
     res = client.get("/timezone")
     print(res.json())
     assert res.status_code == 200 and "api_timestamp" in res.json()
     assert "api_timezone" in res.json()
 
 
-def test_app_frontend_authentication(client):
+def test_app_frontend_authentication(client, setup_config):
+    config, _, db = setup_config
     _, htpasswd_filename = mkstemp()
     config["HTPASSWD_FILE"] = htpasswd_filename
 
@@ -50,7 +54,8 @@ def test_app_frontend_authentication(client):
     assert res.status_code == 200 and res.json()["basic authentication"] == "valid"
 
 
-def test_app_frontend_authentication_wrong_passwd(client):
+def test_app_frontend_authentication_wrong_passwd(client, setup_config):
+    config, _, db = setup_config
     _, htpasswd_filename = mkstemp()
     config["HTPASSWD_FILE"] = htpasswd_filename
 

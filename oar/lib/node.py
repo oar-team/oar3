@@ -3,7 +3,8 @@
 from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
-from oar.lib import (
+from oar.lib.globals import get_logger
+from oar.lib.models import (
     AssignedResource,
     EventLog,
     EventLogHostname,
@@ -14,9 +15,6 @@ from oar.lib import (
     MoldableJobDescription,
     Resource,
     ResourceLog,
-    config,
-    db,
-    get_logger,
 )
 from oar.lib.resource_handling import get_resources_state
 
@@ -26,16 +24,18 @@ logger = get_logger("oar.lib.node")
 
 
 # TODO change name
-def get_all_resources_on_node(hostname):
+def get_all_resources_on_node(session, hostname):
     """Return the current resources on node whose hostname is passed in parameter"""
-    result = db.query(Resource.id).filter(Resource.network_address == hostname).all()
+    result = (
+        session.query(Resource.id).filter(Resource.network_address == hostname).all()
+    )
     return [r[0] for r in result]
 
 
-def get_resources_of_nodes(hostnames):
+def get_resources_of_nodes(session, hostnames):
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(Resource.network_address.in_(tuple(hostnames)))
         .order_by(Resource.id)
         .all()
@@ -43,18 +43,18 @@ def get_resources_of_nodes(hostnames):
     return result
 
 
-def get_nodes_with_state(nodes):
+def get_nodes_with_state(session, nodes):
     result = (
-        db.query(Resource.network_address, Resource.state)
+        session.query(Resource.network_address, Resource.state)
         .filter(Resource.network_address.in_(tuple(nodes)))
         .all()
     )
     return result
 
 
-def search_idle_nodes(date):
+def search_idle_nodes(session, date):
     result = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(Resource.id == GanttJobsResource.resource_id)
         .filter(GanttJobsPrediction.start_time <= date)
         .filter(Resource.network_address != "")
@@ -68,7 +68,7 @@ def search_idle_nodes(date):
         busy_nodes[network_address[0]] = True
 
     result = (
-        db.query(Resource.network_address, func.max(Resource.last_job_date))
+        session.query(Resource.network_address, func.max(Resource.last_job_date))
         .filter(Resource.state == "Alive")
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
@@ -88,10 +88,10 @@ def search_idle_nodes(date):
 
 
 # TODO MOVE TO GANTT
-def get_gantt_hostname_to_wake_up(date, wakeup_time):
+def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
     """Get hostname that we must wake up to launch jobs"""
     hostnames = (
-        db.query(Resource.network_address)
+        session.query(Resource.network_address)
         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
         .filter(Job.id == MoldableJobDescription.job_id)
@@ -112,9 +112,9 @@ def get_gantt_hostname_to_wake_up(date, wakeup_time):
     return hosts
 
 
-def get_next_job_date_on_node(hostname):
+def get_next_job_date_on_node(session, hostname):
     result = (
-        db.query(func.min(GanttJobsPrediction.start_time))
+        session.query(func.min(GanttJobsPrediction.start_time))
         .filter(Resource.network_address == hostname)
         .filter(GanttJobsResource.resource_id == Resource.id)
         .filter(GanttJobsPrediction.moldable_id == GanttJobsResource.moldable_id)
@@ -123,9 +123,9 @@ def get_next_job_date_on_node(hostname):
     return result
 
 
-def get_last_wake_up_date_of_node(hostname):
+def get_last_wake_up_date_of_node(session, hostname):
     result = (
-        db.query(EventLog.date)
+        session.query(EventLog.date)
         .filter(EventLogHostname.event_id == EventLog.id)
         .filter(EventLogHostname.hostname == hostname)
         .filter(EventLog.type == "WAKEUP_NODE")
@@ -136,10 +136,12 @@ def get_last_wake_up_date_of_node(hostname):
     return result
 
 
-def get_alive_nodes_with_jobs():
+def get_alive_nodes_with_jobs(
+    session,
+):
     """Returns the list of occupied nodes"""
     result = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(Resource.id == AssignedResource.resource_id)
         .filter(AssignedResource.moldable_id == MoldableJobDescription.id)
         .filter(MoldableJobDescription.job_id == Job.id)
@@ -164,10 +166,10 @@ def get_alive_nodes_with_jobs():
     return [r[0] for r in result]
 
 
-def get_nodes_that_can_be_waked_up(date):
+def get_nodes_that_can_be_waked_up(session, date):
     """Returns the list nodes that can be waked up from to the given date"""
     result = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(Resource.state == "Absent")
         .filter(Resource.available_upto > date)
         .all()
@@ -175,20 +177,23 @@ def get_nodes_that_can_be_waked_up(date):
     return [r[0] for r in result]
 
 
-def get_nodes_with_given_sql(properties):
+def get_nodes_with_given_sql(session, properties):
     """Gets the nodes list with the given sql properties"""
     result = (
-        db.query(Resource.network_address).distinct().filter(text(properties)).all()
+        session.query(Resource.network_address)
+        .distinct()
+        .filter(text(properties))
+        .all()
     )
     return [r[0] for r in result]
 
 
-def set_node_state(hostname, state, finaud_tag):
-    """Sets the state field of some node identified by its hostname in the DB.
+def set_node_state(session, hostname, state, finaud_tag, config):
+    """Sets the state field of some node identified by its hostname in the session.
     - parameters : base, hostname, state, finaudDecision
     - side effects : changes the state value in some field of the nodes table"""
     if state == "Suspect":
-        query = db.query(Resource).filter(Resource.network_address == hostname)
+        query = session.query(Resource).filter(Resource.network_address == hostname)
         if finaud_tag == "YES":
             query = query.filter(Resource.state == "Alive")
         else:
@@ -220,7 +225,7 @@ def set_node_state(hostname, state, finaud_tag):
             return
 
     else:
-        db.query(Resource).filter(Resource.network_address == hostname).update(
+        session.query(Resource).filter(Resource.network_address == hostname).update(
             {
                 Resource.state: state,
                 Resource.finaud_decision: finaud_tag,
@@ -228,10 +233,10 @@ def set_node_state(hostname, state, finaud_tag):
             },
             synchronize_session=False,
         )
-        db.commit()
-    date = tools.get_date()
+        session.commit()
+    date = tools.get_date(session)
     if config["DB_TYPE"] == "Pg":
-        db.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
+        session.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
             ResourceLog.attribute == "state"
         ).filter(Resource.network_address == hostname).filter(
             ResourceLog.resource_id == Resource.id
@@ -240,7 +245,7 @@ def set_node_state(hostname, state, finaud_tag):
         )
     else:
         logger.debug("Warnning: Sqlite must not be used in production")
-        cur = db.session
+        cur = session
         cur.execute(
             """UPDATE resource_logs SET date_stop = %s
         WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '%s'
@@ -249,7 +254,7 @@ def set_node_state(hostname, state, finaud_tag):
         AND resource_logs.attribute = '%s'"""
             % (str(date), hostname, state)
         )
-    db.commit()
+    session.commit()
 
     # sel = select([Resource.id, text('state'), text(state), text(str(date)), text(finaud_tag)])\
     #     .where(Resource.network_address == hostname)
@@ -258,7 +263,7 @@ def set_node_state(hostname, state, finaud_tag):
     #                           .from_select((ResourceLog.resource_id, ResourceLog.attribute,
     #                                         ResourceLog.value, ResourceLog.date_start,
     #                                         ResourceLog.finaud_decision), sel)
-    # db.session.execute(ins)
+    # session.execute(ins)
 
     # sqlalchemy.exc.ProgrammingError: (psycopg2.ProgrammingError) column "suspected" does not exist
     # LINE 1: ...ud_decision) SELECT resources.resource_id, state, Suspected,...
@@ -266,7 +271,7 @@ def set_node_state(hostname, state, finaud_tag):
     # [SQL: 'INSERT INTO resource_logs (resource_id, attribute, value, date_start, finaud_decision) SELECT resources.resource_id, state, Suspected, 1512296767, NO \nFROM resources \nWHERE resources.network_address = %(network_address_1)s'] [parameters: {'network_address_1': ('node1',)}]
     # [   DEBUG] [2017-12-03 10:26:07,603] [oar.modules.almighty]: /usr/local/lib/oar/oar3-node-change-state terminated
 
-    cur = db.session
+    cur = session
     cur.execute(
         """INSERT INTO resource_logs (resource_id,attribute,value,date_start,finaud_decision)
                 SELECT resources.resource_id, 'state', '%s', '%s' , '%s'
@@ -275,36 +280,38 @@ def set_node_state(hostname, state, finaud_tag):
                     resources.network_address = '%s'"""
         % (state, str(date), finaud_tag, hostname)
     )
-    db.commit()
+    session.commit()
 
 
-def set_node_nextState(hostname, next_state):
+def set_node_nextState(session, hostname, next_state):
     """Sets the nextState field of a node identified by its network_address"""
     nb_matched = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(Resource.network_address == hostname)
         .update(
             {Resource.next_state: next_state, Resource.next_finaud_decision: "NO"},
             synchronize_session=False,
         )
     )
-    db.commit()
+    session.commit()
     return nb_matched
 
 
-def change_node_state(node, state, config):
+def change_node_state(session, node, state, config):
     """Changes node state and notify central automaton"""
-    set_node_nextState(node, state)
+    set_node_nextState(session, node, state)
     tools.notify_almighty("ChState")
 
 
-def get_finaud_nodes():
+def get_finaud_nodes(
+    session,
+):
     """Return the list of network address nodes for Finaud"""
-    # TODO: db.query(Resource).distinct(Resource.network_address) should not properly work with SQLITE
+    # TODO: session.query(Resource).distinct(Resource.network_address) should not properly work with SQLITE
     # https://stackoverflow.com/questions/17223174/returning-distinct-rows-in-sqlalchemy-with-sqlite
 
     return (
-        db.query(Resource)
+        session.query(Resource)
         .distinct(Resource.network_address)
         .filter(
             or_(
@@ -319,10 +326,12 @@ def get_finaud_nodes():
     )
 
 
-def get_current_assigned_nodes():
+def get_current_assigned_nodes(
+    session,
+):
     """Returns the current nodes"""
     results = (
-        db.query(distinct(Resource.network_address))
+        session.query(distinct(Resource.network_address))
         .filter(AssignedResource.index == "CURRENT")
         .filter(Resource.id == AssignedResource.resource_id)
         .filter(Resource.type == "default")
@@ -331,25 +340,25 @@ def get_current_assigned_nodes():
     return [r[0] for r in results]
 
 
-def update_node_nextFinaudDecision(network_address, finaud_decision):
+def update_node_nextFinaudDecision(session, network_address, finaud_decision):
     # Update nextFinaudDecision field
-    db.query(Resource).filter(Resource.network_address == network_address).update(
+    session.query(Resource).filter(Resource.network_address == network_address).update(
         {Resource.next_finaud_decision: finaud_decision}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def get_node_job_to_frag(hostname):
+def get_node_job_to_frag(session, hostname):
     # same as get_node_job but excepts cosystem jobs
     subq = (
-        db.query(JobType.job_id)
+        session.query(JobType.job_id)
         .filter(or_(JobType.type == "cosystem", JobType.type == "noop"))
         .filter(JobType.types_index == "CURRENT")
         .subquery()
     )
 
     res = (
-        db.query(Job.id)
+        session.query(Job.id)
         .filter(AssignedResource.index == "CURRENT")
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(Resource.network_address == hostname)
@@ -366,17 +375,19 @@ def get_node_job_to_frag(hostname):
     return [r[0] for r in res]
 
 
-def get_all_network_address():
-    res = db.query(distinct(Resource.network_address)).all()
+def get_all_network_address(
+    session,
+):
+    res = session.query(distinct(Resource.network_address)).all()
     return [r[0] for r in res]
 
 
-def get_resources_state_for_host(host):
+def get_resources_state_for_host(session, host):
     resource_ids = [
         r[0]
-        for r in db.query(Resource.id)
+        for r in session.query(Resource.id)
         .filter(Resource.network_address == host)
         .order_by(Resource.id)
         .all()
     ]
-    return get_resources_state(resource_ids)
+    return get_resources_state(session, resource_ids)

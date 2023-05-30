@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import text
-from sqlalchemy.orm import Load, Query
+from sqlalchemy.orm import Load
 
-from . import db
+# from . import db
 from .exceptions import DoesNotExist
 from .models import (
     AssignedResource,
@@ -17,7 +17,10 @@ from .utils import render_query
 __all__ = ["BaseQuery", "BaseQueryCollection"]
 
 
-class BaseQuery(Query):
+class BaseQuery:
+    def __init__(self, session=None):
+        self.session = session
+
     def render(self):
         class QueryStr(str):
             # Useful for debug
@@ -30,7 +33,9 @@ class BaseQuery(Query):
         """Like :meth:`get` but raises an error if not found instead of
         returning `None`.
         """
-        rv = self.get(uid)
+
+        session = self.session
+        rv = session.get(uid)
         if rv is None:
             raise DoesNotExist()
         return rv
@@ -45,8 +50,9 @@ class BaseQuery(Query):
         return rv
 
     def filter_jobs_for_user(
-        self, user, from_time, to_time, states, job_ids, array_id, sql_property
+        self, query, user, from_time, to_time, states, job_ids, array_id, sql_property
     ):
+        db = self.session
         if not states and not (job_ids or array_id):
             states = [
                 "Finishing",
@@ -122,7 +128,7 @@ class BaseQuery(Query):
         q3 = apply_commons_filters(q3, c3_from, c3_to)
 
         unionquery = q1.union(q2, q3).subquery()
-        return self.outerjoin(
+        return query.outerjoin(
             MoldableJobDescription,
             Job.assigned_moldable_job == MoldableJobDescription.id,
         ).join(unionquery, Job.id == unionquery.c.job_id)
@@ -130,6 +136,10 @@ class BaseQuery(Query):
 
 class BaseQueryCollection(object):
     """Queries collection."""
+
+    def __init__(self, session):
+        self.session = session
+        self.basequery = BaseQuery(session)
 
     def get_jobs_for_user(
         self,
@@ -142,6 +152,7 @@ class BaseQueryCollection(object):
         sql_property=None,
         detailed=True,
     ):
+        db = self.session
         # import pdb; pdb.set_trace()
         """Get all distinct jobs for a user query."""
         if detailed:
@@ -150,11 +161,12 @@ class BaseQueryCollection(object):
             columns = ("id", "name", "queue_name", "user", "submission_time", "state")
             query = db.query(Job).options(Load(Job).load_only(*columns))
 
-        return query.order_by(Job.id).filter_jobs_for_user(
-            user, from_time, to_time, states, job_ids, array_id, sql_property
-        )
+        return self.basequery.filter_jobs_for_user(
+            query, user, from_time, to_time, states, job_ids, array_id, sql_property
+        ).order_by(Job.id)
 
     def get_resources(self, network_address, detailed=True):
+        db = self.session
         if detailed:
             query = db.query(Resource)
         else:
@@ -173,6 +185,7 @@ class BaseQueryCollection(object):
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
+        db = self.session
         columns = (
             "id",
             "network_address",
@@ -190,6 +203,7 @@ class BaseQueryCollection(object):
     def get_assigned_one_job_resources(self, job):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
+        db = self.session
         columns = (
             "id",
             "network_address",
@@ -205,6 +219,7 @@ class BaseQueryCollection(object):
 
     def get_gantt_visu_scheduled_jobs_resources(self, jobs):
         """Returns network_address allocated to a (waiting) reservation."""
+        db = self.session
         columns = ("id",)
         job_id_column = MoldableJobDescription.id.label("job_id")
         query = (
@@ -219,6 +234,7 @@ class BaseQueryCollection(object):
 
     def get_jobs_resource(self, resource_id):
         """Returns job ids associated to a resource which is allocated to."""
+        db = self.session
         query = (
             db.query(Job.id)
             .filter(AssignedResource.resource_id == resource_id)

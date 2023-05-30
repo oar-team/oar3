@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: TODO: not tested
 
 # TODO: Evalys integration
 # TODO: Complete Job header
@@ -21,7 +22,7 @@ from collections import OrderedDict
 import click
 from sqlalchemy.sql import distinct, func, or_
 
-from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
+from oar.lib.models import AssignedResource, Job, MoldableJobDescription, Resource
 
 click.disable_unicode_literals_warning = True
 

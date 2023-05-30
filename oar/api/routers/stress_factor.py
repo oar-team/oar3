@@ -12,9 +12,16 @@ import os
 from fastapi import APIRouter, HTTPException
 
 import oar.lib.tools as tools
-from oar.lib import config
+
+# FIXME: gbl config that's bad
+from oar.lib.globals import init_config
 
 from . import TimestampRoute
+
+# from oar.lib import config
+
+
+config = init_config()
 
 router = APIRouter(
     route_class=TimestampRoute,
