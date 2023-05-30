@@ -397,6 +397,7 @@ def update_current_scheduler_priority(session, config, job, value, state):
                 )
 
             add_new_event(
+                session,
                 "SCHEDULER_PRIORITY_UPDATED_" + state,
                 job.id,
                 "Scheduler priority for job "
