@@ -31,7 +31,7 @@ from oar.kao.slot import (
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
 from oar.lib.event import add_new_event, get_job_events
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.job_handling import (
     ALLOW,
     NO_PLACEHOLDER,
