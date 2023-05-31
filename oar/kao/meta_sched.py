@@ -350,7 +350,7 @@ def handle_waiting_reservation_jobs(
 
 
 def check_reservation_jobs(
-    session, plt, resource_set, queue_name, all_slot_sets, current_time_sec
+    session, config, plt, resource_set, queue_name, all_slot_sets, current_time_sec
 ):
     """Processing of new Advance Reservations"""
 
@@ -955,6 +955,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                 # handle_new_AR_jobs
                 check_reservation_jobs(
                     session,
+                    config,
                     plt,
                     resource_set,
                     queue.name,
