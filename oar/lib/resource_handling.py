@@ -389,10 +389,11 @@ def update_current_scheduler_priority(session, config, job, value, state):
                     return
 
                 incr_priority = int(value) * index * coeff
+
                 session.query(Resource).filter(
                     (getattr(Resource, f)).in_(resources)
                 ).update(
-                    {Resource.scheduler_priority: incr_priority},
+                    {Resource.scheduler_priority: Resource.scheduler_priority + incr_priority},
                     synchronize_session=False,
                 )
 
