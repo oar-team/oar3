@@ -72,7 +72,7 @@ from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.hulot import HulotClient
 
 # FIXME global config
-config, _, log = init_oar(no_db=True)
+# config, _, log = init_oar(no_db=True)
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
@@ -84,9 +84,10 @@ EXTRA_METASCHED_FUNC_ENTRY_POINT = "oar.extra_metasched_func"
 # reservation_validation_timeout = 30
 
 # waiting time when a reservation has not all of its nodes
-reservation_waiting_timeout = int(config["RESERVATION_WAITING_RESOURCES_TIMEOUT"])
+# reservation_waiting_timeout = int(config["RESERVATION_WAITING_RESOURCES_TIMEOUT"])
 
-config["LOG_FILE"] = ":stderr:"
+
+# config["LOG_FILE"] = ":stderr:"
 # Log category
 logger = get_logger("oar.kao.meta_sched")
 
@@ -186,7 +187,7 @@ def gantt_init_with_running_jobs(
     return (all_slot_sets, scheduled_jobs, besteffort_rid2job)
 
 
-def notify_to_run_job(jid):
+def notify_to_run_job(config, jid):
     """
     Tell bipbip commander to run a job. It can also notifies oar2 almighty if METASCHEDULER_OAR3_WITH_OAR2 configuration variable is set to yes.
     """
@@ -226,7 +227,7 @@ def notify_to_run_job(jid):
                     )
 
 
-def prepare_job_to_be_launched(session, job, current_time_sec):
+def prepare_job_to_be_launched(session, config, job, current_time_sec):
     """
     Prepare a job to be run by bipbip
     """
@@ -250,12 +251,14 @@ def prepare_job_to_be_launched(session, job, current_time_sec):
 
     set_job_state(session, config, job.id, "toLaunch")
 
-    notify_to_run_job(job.id)
+    notify_to_run_job(config, job.id)
 
 
 def handle_waiting_reservation_jobs(
-    session, queue_name, resource_set, job_security_time, current_time_sec
+    session, config, queue_name, resource_set, job_security_time, current_time_sec
 ):
+
+    reservation_waiting_timeout = int(config["RESERVATION_WAITING_RESOURCES_TIMEOUT"])
     logger.debug(
         "Queue " + queue_name + ": begin processing accepted Advance Reservations"
     )
@@ -549,7 +552,7 @@ def check_besteffort_jobs_to_kill(
 
 
 def handle_jobs_to_launch(
-    session, jobs_to_launch_lst, current_time_sec, current_time_sql
+    session, config, jobs_to_launch_lst, current_time_sec, current_time_sql
 ):
     logger.debug("Begin processing jobs to launch (start time <= " + current_time_sql)
 
@@ -593,7 +596,7 @@ def handle_jobs_to_launch(
             if new_message != job.message:
                 set_job_message(session, job.id, new_message)
 
-        prepare_job_to_be_launched(session, job, current_time_sec)
+        prepare_job_to_be_launched(session, config, job, current_time_sec)
 
     logger.debug("End processing of jobs to launch")
 
@@ -943,6 +946,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             for queue in active_queues:
                 handle_waiting_reservation_jobs(
                     session,
+                    config,
                     queue.name,
                     resource_set,
                     job_security_time,
@@ -985,6 +989,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
                 handle_waiting_reservation_jobs(
                     session,
+                    config,
                     queue.name,
                     resource_set,
                     job_security_time,
@@ -1026,7 +1031,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
         exit_code = 2
     elif (
         handle_jobs_to_launch(
-            session, jobs_to_launch_lst, current_time_sec, current_time_sql
+            session, config, jobs_to_launch_lst, current_time_sec, current_time_sql
         )
         == 1
     ):
@@ -1287,7 +1292,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     # Process toLaunch jobs
     if "toLaunch" in jobs_by_state:
         for job in jobs_by_state["toLaunch"]:
-            notify_to_run_job(job.id)
+            notify_to_run_job(config, job.id)
 
     logger.debug("End of Meta Scheduler")
 
