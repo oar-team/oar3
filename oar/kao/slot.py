@@ -4,11 +4,13 @@ This module contains the base scheduling structures :class:`SlotSet` and :class:
 """
 
 import copy
+from typing import Dict, List
 
 from procset import ProcSet
 
 from oar.kao.quotas import Quotas
 from oar.lib.job_handling import ALLOW, NO_PLACEHOLDER, PLACEHOLDER
+from oar.lib.models import Job
 from oar.lib.utils import dict_ps_copy
 
 MAX_TIME = 2147483648  # (* 2**31 *)
@@ -20,7 +22,17 @@ class Slot(object):
     The Slots is a linked structure as it also holds references on its previous and next :class:`Slot`.
     """
 
-    def __init__(self, id, prev, next, itvs, b, e, ts_itvs=None, ph_itvs=None):
+    def __init__(
+        self,
+        id: int,
+        prev: int,
+        next: int,
+        itvs: ProcSet,
+        b: int,
+        e: int,
+        ts_itvs=None,
+        ph_itvs=None,
+    ):
         """
         A :class:`Slot` is initialized with the ids of its previous and next Slots,
         the :class:`ProcSet` of resources and the time interval (`b` and `e`).
@@ -77,7 +89,7 @@ class Slot(object):
         """
         print("%s" % self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         String representation of a :class:`Slot`.
 
@@ -97,11 +109,13 @@ class Slot(object):
         )
         return "Slot(%s)" % (repr_string % vars(self))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<%s>" % self
 
 
-def intersec_itvs_slots(slots, sid_left, sid_right):
+def intersec_itvs_slots(
+    slots: Dict[int, Slot], sid_left: int, sid_right: int
+) -> ProcSet:
     """
     Return the :class:`ProcSet` which is the intersection of all slots from `sid_left` to `sid_right`.
 
@@ -132,13 +146,15 @@ def intersec_itvs_slots(slots, sid_left, sid_right):
     return itvs_acc
 
 
-def intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job):
+def intersec_ts_ph_itvs_slots(
+    slots: Dict[int, Slot], sid_left: int, sid_right: int, job: Job
+) -> ProcSet:
     """
     Same as :func:`intersec_itvs_slots`, but depending on the `job` configuration enables to share resources between jobs.
     More precisely, if `job.ts` is `True`, it gathers resources from slot `sid_left` to `sid_right` depending on the slot time sharing configuration (see :class:`Slot`).
     """
     sid = sid_left
-    itvs_acc = ProcSet()
+    itvs_acc: ProcSet = ProcSet()
     while True:
         slot = slots[sid]
         itvs = slot.itvs
@@ -202,19 +218,19 @@ class SlotSet:
                 [1] Slot(id=1, prev=0, next=0, itvs=1-2, b=0, e=2147483648, ts_itvs={}, ph_itvs={})
                 -----------------------------------------------------------------------------------
         """
-        self.last_id = 1
+        self.last_id: int = 1
         # The first (earlier) slot has identifier one.
         if type(slots) == dict:
-            self.slots = slots
+            self.slots: Dict[int, Slot] = slots
             s = slots[1]
-            self.begin = s.b
+            self.begin: int = s.b
             while s.next != 0:
                 s = slots[s.next]
             self.last_id = s.id
         elif type(slots) == tuple:
             itvs, b = slots
-            self.begin = b
-            self.slots = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
+            self.begin: int = b
+            self.slots: Dict[int, Slot] = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
         else:
             # Given slots is, in fact, one slot
             self.slots = {1: slots}
@@ -240,7 +256,7 @@ class SlotSet:
                     slot, quotas_rules_id, remaining_duration
                 )
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = []
         for i, slot in self.slots.items():
             lines.append("[%s] %s" % (i, slot))
@@ -249,13 +265,13 @@ class SlotSet:
         lines.insert(0, ("{:-^%d}" % max_length).format(" SlotSet "))
         return "\n".join(lines)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "%s" % self
 
     def show_slots(self):
         print("%s" % self)
 
-    def slot_before_job(self, slot, job):
+    def slot_before_job(self, slot: Slot, job: Job):
         s_id = slot.id
         self.last_id += 1
         next_id = self.last_id
@@ -283,7 +299,7 @@ class SlotSet:
             a_slot.quotas.set_rules(slot.quotas_rules_id)
 
     # Transform given slot to B slot (substract job resources)
-    def sub_slot_during_job(self, slot, job):
+    def sub_slot_during_job(self, slot: Slot, job: Job):
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         slot.itvs = slot.itvs - job.res_set
@@ -306,7 +322,7 @@ class SlotSet:
             # slot.quotas.show_counters()
 
     #  Transform given slot to B slot
-    def add_slot_during_job(self, slot, job):
+    def add_slot_during_job(self, slot: Slot, job: Job):
         slot.b = max(slot.b, job.start_time)
         slot.e = min(slot.e, job.start_time + job.walltime - 1)
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
@@ -329,7 +345,7 @@ class SlotSet:
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
     # Generate C slot - slot after job's end
-    def slot_after_job(self, slot, job):
+    def slot_after_job(self, slot: Slot, job: Job):
         self.last_id += 1
         s_id = self.last_id
         c_slot = Slot(
@@ -350,7 +366,7 @@ class SlotSet:
             c_slot.quotas_rules_id = slot.quotas_rules_id
             c_slot.quotas.set_rules(slot.quotas_rules_id)
 
-    def split_slots(self, sid_left, sid_right, job, sub=True):
+    def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
         Split slot accordingly to a job resource assignment.
         New slot A + B + C (A, B and C can be null)
@@ -425,7 +441,7 @@ class SlotSet:
             if we_will_break:
                 break
 
-    def split_slots_jobs(self, ordered_jobs, sub=True):
+    def split_slots_jobs(self, ordered_jobs: List[Job], sub=True):
         """
         Split slots according to jobs by substracting or adding jobs' assigned resources in slots.
         Jobs must be sorted by start_time.
@@ -456,7 +472,12 @@ class SlotSet:
 
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
-    def temporal_quotas_split_slot(self, slot, quotas_rules_id, remaining_duration):
+    def temporal_quotas_split_slot(
+        self, slot: Slot, quotas_rules_id: int, remaining_duration: int
+    ):
+        # So mypy can infer that this function has been called with Quotas.calendar enabled
+        assert Quotas.calendar is not None
+
         while True:
             # import pdb; pdb.set_trace()
             # slot is included in actual quotas_rules

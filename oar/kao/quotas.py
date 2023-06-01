@@ -2,9 +2,11 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
+from typing import List, Optional
 
 import simplejson as json
 
+from oar.lib import configuration
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
@@ -509,13 +511,13 @@ class Quotas(object):
 
     """
 
-    enabled = False
-    calendar = None
+    enabled: bool = False
+    calendar: Optional[Calendar] = None
     default_rules = {}
-    job_types = ["*"]
+    job_types: List[str] = ["*"]
 
     @classmethod
-    def enable(cls, config, resource_set=None):
+    def enable(cls, config: configuration, resource_set=None):
         cls.enabled = True
 
         if "QUOTAS_ALL_NB_RESOURCES_MODE" in config:
