@@ -258,11 +258,15 @@ class SlotSet:
 
     def __str__(self) -> str:
         lines = []
-        for i, slot in self.slots.items():
-            lines.append("[%s] %s" % (i, slot))
-        max_length = max([len(line) for line in lines])
-        lines.append("%s" % ("-" * max_length))
-        lines.insert(0, ("{:-^%d}" % max_length).format(" SlotSet "))
+        slots = self.slots.values()
+        # Get first slot
+        slot = [s for s in slots if s.prev == 0][0]
+
+        while slot.next != 0:
+            lines.append(f"{slot}")
+            slot = self.slots[slot.next]
+        # Get last slot
+        lines.append(f"{slot}")
         return "\n".join(lines)
 
     def __repr__(self) -> str:
