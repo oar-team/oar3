@@ -461,18 +461,16 @@ class SlotSet:
 
         for job in ordered_jobs:
             # Find first slot
-            while not (
-                (slot.b > job.start_time)
-                or ((slot.b <= job.start_time) and (job.start_time <= slot.e))
-            ):
-                left_sid_2_split = slot.next
+            while (slot.b <= job.start_time) and slot.next != 0:
+                left_sid_2_split = slot.id
+                right_sid_2_split = slot.id
+
                 slot = self.slots[slot.next]
 
-            right_sid_2_split = left_sid_2_split
             # Find slots encompass
-            while not (slot.e >= (job.start_time + job.walltime)):
-                right_sid_2_split = slot.next
+            while (slot.e < (job.start_time + job.walltime)) and slot.next != 0:
                 slot = self.slots[slot.next]
+                right_sid_2_split = slot.id
 
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
