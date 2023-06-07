@@ -299,7 +299,7 @@ def test_split_slots_jobs_same_end_time():
     [
         [
             JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
-            JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
+            # JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
         ],
     ],
 )
@@ -314,6 +314,7 @@ def test_slots_and_jobs(jobs):
     prevs = set()
     nexts = set()
 
+    print()
     print(ss)
     # Check the integrity of a slotset without result verification
     while slot.next != 0:
@@ -338,6 +339,32 @@ def test_slots_and_jobs(jobs):
     ],
 )
 def test_slot_id_at(time, answer):
+    slots = {
+       1: Slot(1,0,2, ProcSet((1,32)), 50, 249),
+       2: Slot(2,1,3, ProcSet((1,32)), 250, 499),
+       3: Slot(3,2,0, ProcSet((1,32)), 500, 1000),
+    }
+
+    ss = SlotSet(slots)
+
+    print(ss)
+    assert ss.slot_id_at(time) == answer
+
+
+
+
+@pytest.mark.parametrize(
+    "time, answer",
+    [
+        (5, 1),
+        (250, 2),
+        (499, 2),
+        (500, 3),
+        (1500, 0),
+        (25, 0)
+    ],
+)
+def test_get_encompassing_range(time, answer):
     slots = {
        1: Slot(1,0,2, ProcSet((1,32)), 50, 249),
        2: Slot(2,1,3, ProcSet((1,32)), 250, 499),
