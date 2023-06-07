@@ -4,7 +4,7 @@ This module contains the base scheduling structures :class:`SlotSet` and :class:
 """
 
 import copy
-from typing import Dict, List
+from typing import Dict, Generator, List, Optional, Tuple
 
 from procset import ProcSet
 
@@ -275,6 +275,70 @@ class SlotSet:
     def show_slots(self):
         print("%s" % self)
 
+    def new_id(self):
+        self.last_id += 1
+        return self.last_id
+
+    def first(self) -> Optional[Slot]:
+        if self.slots:
+            return [s for s in self.slots.values() if s.prev == 0][0]
+
+    def slot_id_at(self, date: int) -> int:
+        """Return the slot corresponding to the date given in parameter.
+
+        Args:
+            insertion_date (int): find slot for this date
+
+        Returns:
+            int: return the slot id, or 0 if not found
+        """
+        current = self.first()
+        if current.b > date:
+            return 0
+
+        slot_id = current.id
+
+        while current.e < date and current.next != 0:
+            current = self.slots[current.next]
+            slot_id = current.id
+
+        if current.next == 0 and current.e < date:
+            return 0
+
+        return slot_id
+
+    def split_at(self, insertion_date: int) -> Tuple[int, int]:
+        slot = self.slot_id_at(insertion_date)
+
+        new_id = self.new_id()
+        new_slot = Slot(new_id, slot.prev, slot.id, slot.b, insertion_date - 1)
+
+        slot.prev = new_id
+        slot.b = insertion_date
+
+        self.slots[new_id] = new_slot
+
+        return (new_id, slot.id)
+
+    def get_encompassing_range(self, start: int, end: int) -> Tuple[int, int]:
+        start = self.slot_id_at(start)
+        end = self.slot_id_at(end)
+
+        return (start, end)
+
+    def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
+        if start != 0:
+            slot = self.slots[start]
+        else:
+            slot = self.first()
+
+        while slot.id != 0 and slot.next != end:
+            yield slot
+            slot = self.slots[0]
+
+        # yield the last slot
+        yield slot
+
     def slot_before_job(self, slot: Slot, job: Job):
         s_id = slot.id
         self.last_id += 1
@@ -461,17 +525,8 @@ class SlotSet:
 
         for job in ordered_jobs:
             # Find first slot
-            while (slot.b <= job.start_time) and slot.next != 0:
-                left_sid_2_split = slot.id
-                right_sid_2_split = slot.id
-
-                slot = self.slots[slot.next]
-
-            # Find slots encompass
-            while (slot.e < (job.start_time + job.walltime)) and slot.next != 0:
-                slot = self.slots[slot.next]
-                right_sid_2_split = slot.id
-
+            (left_sid_2_split, right_sid_2_split) = self.get_encompassing_range(job.start_time, job.start_time + job.walltime)
+            
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
     def temporal_quotas_split_slot(
