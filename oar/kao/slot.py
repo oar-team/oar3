@@ -308,10 +308,21 @@ class SlotSet:
         return slot_id
 
     def split_at(self, insertion_date: int) -> Tuple[int, int]:
-        slot = self.slot_id_at(insertion_date)
+        slot_id = self.slot_id_at(insertion_date)
+        if slot_id == 0:
+            return (0, 0)
 
+        slot = self.slots[slot_id]
+
+        # Do not insert at boundaries
+        if insertion_date == slot.b or insertion_date - 1 == slot.e:
+            return (0, slot.id)
+        
         new_id = self.new_id()
-        new_slot = Slot(new_id, slot.prev, slot.id, slot.b, insertion_date - 1)
+        new_slot = Slot(new_id, slot.prev, slot.id, ProcSet(),slot.b, insertion_date - 1)
+
+        if slot.prev != 0:
+            self.slots[slot.prev].next = new_id
 
         slot.prev = new_id
         slot.b = insertion_date
@@ -340,31 +351,34 @@ class SlotSet:
         yield slot
 
     def slot_before_job(self, slot: Slot, job: Job):
-        s_id = slot.id
-        self.last_id += 1
-        next_id = self.last_id
-        print("next id:", next_id)
-        a_slot = Slot(
-            s_id,
-            slot.prev,
-            next_id,
-            copy.copy(slot.itvs),
-            slot.b,
-            job.start_time - 1,
-            dict_ps_copy(slot.ts_itvs),
-            dict_ps_copy(slot.ph_itvs),
-        )
-        slot.prev = s_id
-        self.slots[s_id] = a_slot
-        # slot_id is changed so we have always the rightmost slot (min slot.b)
-        # w/ sid = 1 r
-        slot.id = next_id
-        self.slots[next_id] = slot
 
-        if hasattr(a_slot, "quotas"):
-            a_slot.quotas.deepcopy_from(slot.quotas)
-            a_slot.quotas_rules_id = slot.quotas_rules_id
-            a_slot.quotas.set_rules(slot.quotas_rules_id)
+        (slot_id_before, _) = self.split_at(job.start_time)
+
+        if slot_id_before != 0:
+            new_slot = self.slots[slot_id_before]
+            new_slot.ts_itvs = dict_ps_copy(slot.ts_itvs),
+            new_slot.ph_itvs = dict_ps_copy(slot.ph_itvs),
+  
+        if hasattr(new_slot, "quotas"):
+            new_slot.quotas.deepcopy_from(slot.quotas)
+            new_slot.quotas_rules_id = slot.quotas_rules_id
+            new_slot.quotas.set_rules(slot.quotas_rules_id)
+
+    # Generate C slot - slot after job's end
+    def slot_after_job(self, slot: Slot, job: Job):
+        (slot_id_before, slot_id_after) = self.split_at(job.start_time + job.walltime)
+        print(slot_id_before, slot_id_after)
+        print(self)
+
+        if slot_id_before != 0:
+            new_slot = self.slots[slot_id_before]
+            new_slot.ts_itvs = dict_ps_copy(slot.ts_itvs),
+            new_slot.ph_itvs = dict_ps_copy(slot.ph_itvs),
+
+        if hasattr(new_slot, "quotas"):
+            new_slot.quotas.deepcopy_from(slot.quotas)
+            new_slot.quotas_rules_id = slot.quotas_rules_id
+            new_slot.quotas.set_rules(slot.quotas_rules_id)
 
     # Transform given slot to B slot (substract job resources)
     def sub_slot_during_job(self, slot: Slot, job: Job):
@@ -412,27 +426,7 @@ class SlotSet:
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
-    # Generate C slot - slot after job's end
-    def slot_after_job(self, slot: Slot, job: Job):
-        self.last_id += 1
-        s_id = self.last_id
-        c_slot = Slot(
-            s_id,
-            slot.id,
-            slot.next,
-            copy.copy(slot.itvs),
-            job.start_time + job.walltime,
-            slot.e,
-            dict_ps_copy(slot.ts_itvs),
-            dict_ps_copy(slot.ph_itvs),
-        )
-        slot.next = s_id
-        self.slots[s_id] = c_slot
 
-        if hasattr(c_slot, "quotas"):
-            c_slot.quotas.deepcopy_from(slot.quotas)
-            c_slot.quotas_rules_id = slot.quotas_rules_id
-            c_slot.quotas.set_rules(slot.quotas_rules_id)
 
     def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
