@@ -307,83 +307,149 @@ class SlotSet:
 
         return slot_id
 
-    def split_at(self, insertion_date: int) -> Tuple[int, int]:
-        slot_id = self.slot_id_at(insertion_date)
+    def split_at_before(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
         if slot_id == 0:
             return (0, 0)
 
         slot = self.slots[slot_id]
 
-        # Do not insert at boundaries
-        if insertion_date == slot.b or insertion_date - 1 == slot.e:
-            return (0, slot.id)
-        
+        # The insertion_date must be between the boundaries of the slot
+        # Hard fail for the moment
+        assert insertion_date >= slot.b and insertion_date <= slot.e
+
+        # Cannot subdivide slot of size 1
+        if slot.b == slot.e:
+            return (slot_id, slot_id)
+
+        new_slot_end = insertion_date - 1
+        if slot.b == insertion_date:
+            new_slot_end = slot.b
+
         new_id = self.new_id()
-        new_slot = Slot(new_id, slot.prev, slot.id, ProcSet(),slot.b, insertion_date - 1)
+        new_slot = Slot(
+            new_id, slot.prev, slot.id, ProcSet(), slot.b, new_slot_end
+        )
 
         if slot.prev != 0:
             self.slots[slot.prev].next = new_id
 
         slot.prev = new_id
-        slot.b = insertion_date
+
+        if slot.b == insertion_date:
+            slot.b = slot.b + 1
+        else:
+            slot.b = insertion_date
 
         self.slots[new_id] = new_slot
 
+        self.copy_intervals_set(slot.id, new_id)
+
         return (new_id, slot.id)
 
+    def split_at_after(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
+        # Cannot split slot_id 0
+        if slot_id == 0:
+            return (0, 0)
+
+        # Find the slot
+        slot = self.slots[slot_id]
+        # The insertion_date must be between the boundaries of the slot
+        # Hard fail for the moment
+        assert insertion_date >= slot.b and insertion_date <= slot.e
+
+        # Cannot subdivide slot of size 1
+        if slot.b == slot.e:
+            return (slot_id, slot_id)
+
+        new_slot_begin = insertion_date
+        # If the slot is splitted at its begin time, it means that the remaining slot will be of
+        # size 1. To prevent to go off the slot boundaries we adjust the position
+        if slot.b == insertion_date:
+            new_slot_begin = slot.b + 1
+        
+        new_id = self.new_id()
+        new_slot = Slot(
+            new_id, slot.id, slot.next, ProcSet(), new_slot_begin, slot.e
+        )
+
+        if slot.next != 0:
+            self.slots[slot.next].prev = new_id
+
+        slot.next = new_id
+
+        if slot.b == insertion_date:
+            slot.e = insertion_date
+        else:
+            slot.e = insertion_date - 1
+
+        self.slots[new_id] = new_slot
+
+        self.copy_intervals_set(slot.id, new_id)
+
+        return (slot.id, new_id)
+
+    def find_and_split_at(self, insertion_date: int) -> Tuple[int, int]:
+        slot_id = self.slot_id_at(insertion_date)
+        return self.split_at(slot_id)
+
     def get_encompassing_range(self, start: int, end: int) -> Tuple[int, int]:
+        # TODO: do it in one go
+
         start = self.slot_id_at(start)
         end = self.slot_id_at(end)
 
         return (start, end)
 
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
+        """loop between the slot_id start and slot_id end. 
+        Note that, the ids are not ordered, so using a slot id for the end argument that is not after start will lead have 
+        the same result as using end = 0 (i.e looping untill it reaches the end of the structure)
+
+        Args:
+            start (int, optional): first id to start the parcour. Defaults to 0.
+            end (int, optional): end id. Defaults to 0.
+
+        Yields:
+            Generator[Slot, None, None]: _description_
+        """
+        # Check that the slots exists
+        if (start != 0 and start not in self.slots) or (
+            end != 0 and end not in self.slots
+        ):
+            return
+
         if start != 0:
             slot = self.slots[start]
         else:
             slot = self.first()
 
-        while slot.id != 0 and slot.next != end:
+        while slot.id != 0 and slot.next != 0 and slot.id != end:
             yield slot
-            slot = self.slots[0]
+            slot = self.slots[slot.next]
 
         # yield the last slot
         yield slot
 
-    def slot_before_job(self, slot: Slot, job: Job):
+    def copy_intervals_set(self, id_slot_from: int, id_slot_to: int):
+        assert id_slot_from != id_slot_to and id_slot_to != 0
 
-        (slot_id_before, _) = self.split_at(job.start_time)
+        slot_from = self.slots[id_slot_from]
+        slot_to = self.slots[id_slot_to]
 
-        if slot_id_before != 0:
-            new_slot = self.slots[slot_id_before]
-            new_slot.ts_itvs = dict_ps_copy(slot.ts_itvs),
-            new_slot.ph_itvs = dict_ps_copy(slot.ph_itvs),
-  
-        if hasattr(new_slot, "quotas"):
-            new_slot.quotas.deepcopy_from(slot.quotas)
-            new_slot.quotas_rules_id = slot.quotas_rules_id
-            new_slot.quotas.set_rules(slot.quotas_rules_id)
+        slot_to.itvs = copy.copy(slot_from.itvs)
+        slot_to.ts_itvs = dict_ps_copy(slot_from.ts_itvs)
+        slot_to.ph_itvs = dict_ps_copy(slot_from.ph_itvs)
 
-    # Generate C slot - slot after job's end
-    def slot_after_job(self, slot: Slot, job: Job):
-        (slot_id_before, slot_id_after) = self.split_at(job.start_time + job.walltime)
-        print(slot_id_before, slot_id_after)
-        print(self)
-
-        if slot_id_before != 0:
-            new_slot = self.slots[slot_id_before]
-            new_slot.ts_itvs = dict_ps_copy(slot.ts_itvs),
-            new_slot.ph_itvs = dict_ps_copy(slot.ph_itvs),
-
-        if hasattr(new_slot, "quotas"):
-            new_slot.quotas.deepcopy_from(slot.quotas)
-            new_slot.quotas_rules_id = slot.quotas_rules_id
-            new_slot.quotas.set_rules(slot.quotas_rules_id)
+        if hasattr(slot_to, "quotas"):
+            slot_to.quotas.deepcopy_from(slot_from.quotas)
+            slot_to.quotas_rules_id = slot_from.quotas_rules_id
+            slot_to.quotas.set_rules(slot_from.quotas_rules_id)
 
     # Transform given slot to B slot (substract job resources)
     def sub_slot_during_job(self, slot: Slot, job: Job):
-        slot.b = max(slot.b, job.start_time)
-        slot.e = min(slot.e, job.start_time + job.walltime - 1)
+        # slot.b = max(slot.b, job.start_time)
+        # slot.e = min(slot.e, job.start_time + job.walltime - 1)
+
         slot.itvs = slot.itvs - job.res_set
         if job.ts:
             if job.ts_user not in slot.ts_itvs:
@@ -426,8 +492,6 @@ class SlotSet:
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
-
-
     def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
         Split slot accordingly to a job resource assignment.
@@ -443,65 +507,29 @@ class SlotSet:
 
         Generate A slot - slot before job's begin
         """
-        sid = sid_left
-        we_will_break = False
-        while True:
-            slot = self.slots[sid]
 
-            if sid == sid_right:
-                we_will_break = True
+        # It means that the begin time of the slot set is not old enough
+        if sid_left == 0:
+            first = self.first()
+            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), job.start_time, first.b - 1)
+            first.prev = new_slot.id
+            self.copy_intervals_set(first.id, new_slot.id)
+
+        if sid_left != 0 and self.slots[sid_left].b != job.start_time:
+            (_, sid_left) = self.split_at_before(sid_left, job.start_time)
+ 
+        if sid_right != self.slots[sid_right].e != job.start_time + job.walltime:
+            (sid_right, _) = self.split_at_after(sid_right, job.start_time + job.walltime)
+
+        print(self)
+        print(f"from {sid_left} to {sid_right}")
+        for slot in self.traverse_id(sid_left, sid_right):
+            if sub:
+                # substract resources
+                self.sub_slot_during_job(slot, job)
             else:
-                sid = slot.next
-
-            # Found a slot in which the job should execute
-            if job.start_time > slot.b:
-                # Generate AB | ABC
-                # The current slot alone cannot contains the job (i.e. the job walltime ends after the slot).
-                if (job.start_time + job.walltime) > slot.e:
-                    # Generate AB
-                    self.slot_before_job(slot, job)
-                    if sub:
-                        # substract resources
-                        self.sub_slot_during_job(slot, job)
-                    else:
-                        # add resources
-                        self.add_slot_during_job(slot, job)
-                else:
-                    # generate ABC
-                    # The job's duration is contained in the current slot.
-                    self.slot_before_job(slot, job)
-                    # generate C before modify slot / B
-                    self.slot_after_job(slot, job)
-                    if sub:
-                        # substract resources
-                        self.sub_slot_during_job(slot, job)
-                    else:
-                        # add resources
-                        self.add_slot_during_job(slot, job)
-            else:
-                # Generate B | BC
-                if ((job.start_time + job.walltime) - 1) >= slot.e:
-                    # Generate B
-                    if sub:
-                        # substract resources
-                        self.sub_slot_during_job(slot, job)
-                    else:
-                        # add resources
-                        self.add_slot_during_job(slot, job)
-
-                else:
-                    # Generate BC
-                    # Generate C before modify slot / B
-                    self.slot_after_job(slot, job)
-                    if sub:
-                        # substract resources
-                        self.sub_slot_during_job(slot, job)
-                    else:
-                        # add resources
-                        self.add_slot_during_job(slot, job)
-
-            if we_will_break:
-                break
+                # add resources
+                self.add_slot_during_job(slot, job)
 
     def split_slots_jobs(self, ordered_jobs: List[Job], sub=True):
         """
@@ -519,8 +547,10 @@ class SlotSet:
 
         for job in ordered_jobs:
             # Find first slot
-            (left_sid_2_split, right_sid_2_split) = self.get_encompassing_range(job.start_time, job.start_time + job.walltime)
-            
+            (left_sid_2_split, right_sid_2_split) = self.get_encompassing_range(
+                job.start_time, job.start_time + job.walltime
+            )
+
             self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
     def temporal_quotas_split_slot(
