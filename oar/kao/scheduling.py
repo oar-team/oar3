@@ -128,7 +128,7 @@ def get_encompassing_slots(slots, t_begin, t_end):
     return (sid_left, sid_right)
 
 
-def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time):
+def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, min_start_time: int):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
     For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
@@ -150,7 +150,7 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
     # flag to control cache update for considered entry
     no_cache = False
     # updated_cache = False
-    sid_left = 1
+    sid_left = slots_set.first().id
     if min_start_time < 0:
         # to not always begin by the first slots ( O(n^2) )
         # TODO cache_by_container/inner + moldable + time_sharing(?)
