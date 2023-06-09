@@ -394,7 +394,7 @@ class SlotSet:
 
     def find_and_split_at(self, insertion_date: int) -> Tuple[int, int]:
         slot_id = self.slot_id_at(insertion_date)
-        return self.split_at(slot_id)
+        return self.split_at_after(slot_id, insertion_date)
 
     def get_encompassing_range(self, start: int, end: int) -> Tuple[int, int]:
         # TODO: do it in one go
@@ -433,6 +433,18 @@ class SlotSet:
 
         # yield the last slot
         yield slot
+    
+    def traverse_with_width(self, width) -> Generator[Tuple[Slot, Slot], None, None]:
+        for start_slot in self.traverse_id():
+            begin_time = start_slot.b
+            for end_slot in self.traverse_id(start=start_slot.id):
+                size = end_slot.e - begin_time
+                if size + 1 >= width:
+                    yield (start_slot, end_slot)
+
+                    # If we found a long enough interval from this starting point we don't need to continue
+                    # We can skip to the next start
+                    break
 
     def copy_intervals_set(self, id_slot_from: int, id_slot_to: int):
         assert id_slot_from != id_slot_to and id_slot_to != 0
@@ -617,7 +629,7 @@ class SlotSet:
             else:
                 # add resources
                 self.add_slot_during_job(slot, job)
-
+        
     def split_slots_jobs(self, ordered_jobs: List[Job], sub=True):
         """
         Split slots according to jobs by substracting or adding jobs' assigned resources in slots.
