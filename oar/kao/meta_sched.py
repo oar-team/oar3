@@ -18,7 +18,6 @@ from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import (
     find_resource_hierarchies_job,
-    get_encompassing_slots,
     set_slots_with_prev_scheduled_jobs,
 )
 from oar.kao.slot import (
@@ -396,10 +395,12 @@ def check_reservation_jobs(
 
             # TODO: test if container is an AR job
 
-            slots = all_slot_sets[ss_name].slots
+            slots_set = all_slot_sets[ss_name]
 
             t_e = job.start_time + walltime - job_security_time
-            sid_left, sid_right = get_encompassing_slots(slots, job.start_time, t_e)
+            sid_left, sid_right = slots_set.get_encompassing_range(job.start_time, t_e)
+
+            slots = slots_set.slots
 
             if job.ts or (job.ph == ALLOW):
                 itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)

@@ -114,20 +114,6 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     return result
 
 
-def get_encompassing_slots(slots, t_begin, t_end):
-    sid_left = 1
-
-    while slots[sid_left].e < t_begin:
-        sid_left = slots[sid_left].next
-
-    sid_right = sid_left
-
-    while slots[sid_right].e < t_end:
-        sid_right = slots[sid_right].next
-
-    return (sid_left, sid_right)
-
-
 def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, min_start_time: int):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.

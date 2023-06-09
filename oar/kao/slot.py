@@ -283,6 +283,10 @@ class SlotSet:
         if self.slots:
             return [s for s in self.slots.values() if s.prev == 0][0]
 
+    def last(self) -> Optional[Slot]:
+        if self.slots:
+            return [s for s in self.slots.values() if s.next == 0][0]
+
     def slot_id_at(self, date: int) -> int:
         """Return the slot corresponding to the date given in parameter.
 
@@ -395,10 +399,10 @@ class SlotSet:
     def get_encompassing_range(self, start: int, end: int) -> Tuple[int, int]:
         # TODO: do it in one go
 
-        start = self.slot_id_at(start)
-        end = self.slot_id_at(end)
+        slot_id_start = self.slot_id_at(start)
+        slot_id_end = self.slot_id_at(end)
 
-        return (start, end)
+        return (slot_id_start, slot_id_end)
 
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
         """loop between the slot_id start and slot_id end. 
@@ -492,6 +496,88 @@ class SlotSet:
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
+    def extend(self, date):
+        first = self.first()
+        last = self.last()
+
+        if date >= first.b and date <= last.e:
+            # Lets fail will see later what is best to do
+            assert False
+
+        elif date < first.b:
+            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), date, first.b - 1)
+            first.prev = new_slot.id
+            self.slots[new_slot.id] = new_slot
+            self.copy_intervals_set(first.id, new_slot.id)
+
+            return new_slot.id
+        elif date > last.e:
+            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), last.e, date)
+            first.prev = new_slot.id
+            self.slots[new_slot.id] = new_slot
+            self.copy_intervals_set(first.id, new_slot.id)
+
+            return new_slot.id
+
+    def add_front(self, date: int) -> int:
+        first = self.first()
+        assert date < first.b
+
+        new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), date, first.b - 1)
+        first.prev = new_slot.id
+        self.slots[new_slot.id] = new_slot
+        self.copy_intervals_set(first.id, new_slot.id)
+
+        return new_slot.id
+
+    def add_back(self, date: int) -> int:
+        last = self.last()
+        assert date > last.e
+
+        new_slot = Slot(self.new_id(), last.id, 0, ProcSet(), last.e, date)
+        last.next = new_slot.id
+
+        self.slots[new_slot.id] = new_slot
+        self.copy_intervals_set(last.id, new_slot.id)
+
+        return new_slot.id
+
+    def extend_range(self, begin: int, end: int) -> Tuple[Optional[int], Optional[int]]:
+        """Extend the slot set considering a time range (useful to insert a new job)
+
+        Args:
+            begin (int): begin time to insert
+            end (int): end time to insert
+
+        Returns:
+            Tuple[int, int]: return the newly created slot if any
+        """
+        first = self.first()
+        last = self.last()
+
+        first_id = None
+        last_id = None
+
+        assert begin < end
+
+        if end < first.b:
+            # both end and begin are before the beginning of the slot set
+            # this adding on in front is sufficient
+            last_id = first_id = self.add_front(begin)
+        elif begin > last.e:
+            # both end and begin are after the end of the slot set
+            # this adding on in back is sufficient
+            last_id = first_id = self.add_back(end)
+        else:
+            # Otherwise we check and add both if needed
+            if begin < first.b:
+                first_id = self.add_front(begin)
+            
+            if end > last.e:
+                last_id = self.add_back(end)
+
+        return (first_id, last_id)
+        
     def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
         Split slot accordingly to a job resource assignment.
@@ -508,21 +594,22 @@ class SlotSet:
         Generate A slot - slot before job's begin
         """
 
-        # It means that the begin time of the slot set is not old enough
-        if sid_left == 0:
-            first = self.first()
-            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), job.start_time, first.b - 1)
-            first.prev = new_slot.id
-            self.copy_intervals_set(first.id, new_slot.id)
+        # First check if we need to increase the size of the slotset
+        if sid_left == 0 or sid_right == 0:
+            (new_first, new_last) = self.extend_range(job.start_time, job.start_time + job.walltime)
+
+            if sid_left == 0:
+                sid_left = new_first
+
+            if sid_right == 0:
+                sid_right = new_last
 
         if sid_left != 0 and self.slots[sid_left].b != job.start_time:
             (_, sid_left) = self.split_at_before(sid_left, job.start_time)
  
-        if sid_right != self.slots[sid_right].e != job.start_time + job.walltime:
+        if sid_right != 0 and sid_right != self.slots[sid_right].e != job.start_time + job.walltime:
             (sid_right, _) = self.split_at_after(sid_right, job.start_time + job.walltime)
 
-        print(self)
-        print(f"from {sid_left} to {sid_right}")
         for slot in self.traverse_id(sid_left, sid_right):
             if sub:
                 # substract resources
