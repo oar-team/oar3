@@ -17,17 +17,15 @@ config = init_config()
 config["LOG_FILE"] = ":stderr:"
 
 
-def compare_slots_val_ref(slots, v):
-    sid = 1
+def compare_slots_val_ref(slots: SlotSet, v):
+    slot = slots.first()
     i = 0
-    while True:
-        slot = slots[sid]
+    for slot in slots.traverse_id():
+        # slot = slots[sid]
         (b, e, itvs) = v[i]
         if (slot.b != b) or (slot.e != e) or not (slot.itvs == itvs):
+            print("NOT EQUAL", slot.b, b, slot.e, e, slot.itvs, itvs)
             return False
-        sid = slot.next
-        if sid == 0:
-            break
         i += 1
     return True
 
@@ -64,8 +62,10 @@ def test_set_slots_with_prev_scheduled_jobs_1():
     all_ss = {"default": ss}
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 10)
+    print()
+    print(ss)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_assign_resources_mld_job_split_slots_1():
@@ -89,7 +89,7 @@ def test_assign_resources_mld_job_split_slots_1():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_assign_resources_mld_job_split_slots_2():
@@ -111,7 +111,7 @@ def test_assign_resources_mld_job_split_slots_2():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
     ss.show_slots()
-    assert compare_slots_val_ref(ss.slots, v)
+    assert compare_slots_val_ref(ss, v)
 
 
 def test_assign_resources_mld_job_split_slots_3():
@@ -134,7 +134,7 @@ def test_assign_resources_mld_job_split_slots_3():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
     ss.show_slots()
-    assert compare_slots_val_ref(ss.slots, v)
+    assert compare_slots_val_ref(ss, v)
 
 
 def test_schedule_id_jobs_ct_1():
@@ -157,7 +157,7 @@ def test_schedule_id_jobs_ct_1():
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_schedule_error_1():

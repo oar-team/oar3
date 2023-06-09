@@ -375,6 +375,28 @@ def test_traverse():
         print(slot)
 
 
+def test_traverse_width():
+    slots = {
+        1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 1000),
+    }
+
+    ss = SlotSet(slots)
+    ss.find_and_split_at(10)
+    ss.find_and_split_at(11)
+    ss.find_and_split_at(50)
+    ss.find_and_split_at(150)
+    ss.find_and_split_at(500)
+    ss.find_and_split_at(750)
+
+    print(ss)
+
+    print()
+    for (b, e) in ss.traverse_with_width(2000):
+        print(b, e)
+        print(e.e, "-", b.b, " -> ", e.e - b.b + 1)
+        break
+
+
 def test_split_at_before():
     slots = {
         1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
