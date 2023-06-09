@@ -216,7 +216,7 @@ def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, m
                         )
                         return (ProcSet(), -1, -1)
         else:
-            while (slot_e - slot_b + 1) < walltime:
+            while (slot_e - slot_b) < walltime:
                 sid_right = slots[sid_right].next
                 if sid_right != 0:
                     slot_e = slots[sid_right].e
