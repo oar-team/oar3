@@ -433,11 +433,11 @@ class SlotSet:
 
         # yield the last slot
         yield slot
-    
-    def traverse_with_width(self, width) -> Generator[Tuple[Slot, Slot], None, None]:
-        for start_slot in self.traverse_id():
+
+    def traverse_with_width(self, width, start_id=0, end_id=0) -> Generator[Tuple[Slot, Slot], None, None]:
+        for start_slot in self.traverse_id(start=start_id, end=end_id):
             begin_time = start_slot.b
-            for end_slot in self.traverse_id(start=start_slot.id):
+            for end_slot in self.traverse_id(start=start_slot.id, end=end_id):
                 size = end_slot.e - begin_time
                 if size + 1 >= width:
                     yield (start_slot, end_slot)

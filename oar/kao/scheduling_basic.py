@@ -31,10 +31,16 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
 def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy) -> Tuple[ProcSet, int, int]:
     """find first_suitable_contiguous_slot"""
-    (_, walltime, hy_res_rqts) = res_rqt
+    (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = ProcSet()
 
     slots = slots_set.slots
+    cache = slots_set.cache
+
+    if job.key_cache and (job.key_cache[mld_id] in cache):
+        sid_left = cache[job.key_cache[mld_id]]
+    else:
+        sid_left = 0
 
     for (slot_begin, slot_end) in slots_set.traverse_with_width(walltime):
         # find next contiguous slots_time
@@ -43,6 +49,9 @@ def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy) -
 
         if len(itvs) != 0:
             break
+
+    if job.key_cache:
+        cache[job.key_cache[mld_id]] = sid_left
 
     return (itvs, slot_begin.id, slot_end.id)
 
