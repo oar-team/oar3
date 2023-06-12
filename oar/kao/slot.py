@@ -531,9 +531,12 @@ class SlotSet:
 
             return new_slot.id
 
-    def add_front(self, date: int) -> int:
+    def add_front(self, date: int, inplace=False) -> int:
         first = self.first()
         assert date < first.b
+        if inplace:
+            first.b = date
+            return first.id
 
         new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), date, first.b - 1)
         first.prev = new_slot.id
@@ -542,9 +545,13 @@ class SlotSet:
 
         return new_slot.id
 
-    def add_back(self, date: int) -> int:
+    def add_back(self, date: int, inplace=False) -> int:
         last = self.last()
         assert date > last.e
+
+        if inplace:
+            last.e = date
+            return last.id
 
         new_slot = Slot(self.new_id(), last.id, 0, ProcSet(), last.e, date)
         last.next = new_slot.id
@@ -554,7 +561,7 @@ class SlotSet:
 
         return new_slot.id
 
-    def extend_range(self, begin: int, end: int) -> Tuple[Optional[int], Optional[int]]:
+    def extend_range(self, begin: int, end: int, inplace: bool = False) -> Tuple[Optional[int], Optional[int]]:
         """Extend the slot set considering a time range (useful to insert a new job)
 
         Args:
@@ -575,18 +582,18 @@ class SlotSet:
         if end < first.b:
             # both end and begin are before the beginning of the slot set
             # this adding on in front is sufficient
-            last_id = first_id = self.add_front(begin)
+            last_id = first_id = self.add_front(begin, inplace)
         elif begin > last.e:
             # both end and begin are after the end of the slot set
             # this adding on in back is sufficient
-            last_id = first_id = self.add_back(end)
+            last_id = first_id = self.add_back(end, inplace)
         else:
             # Otherwise we check and add both if needed
             if begin < first.b:
-                first_id = self.add_front(begin)
+                first_id = self.add_front(begin, inplace)
             
             if end > last.e:
-                last_id = self.add_back(end)
+                last_id = self.add_back(end, inplace)
 
         return (first_id, last_id)
         
@@ -608,7 +615,7 @@ class SlotSet:
 
         # First check if we need to increase the size of the slotset
         if sid_left == 0 or sid_right == 0:
-            (new_first, new_last) = self.extend_range(job.start_time, job.start_time + job.walltime)
+            (new_first, new_last) = self.extend_range(job.start_time, job.start_time + job.walltime, inplace=True)
 
             if sid_left == 0:
                 sid_left = new_first

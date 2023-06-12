@@ -144,15 +144,16 @@ def test_bug_split_slots():
 
 
 def test_add_split_slots_jobs_one_job():
-    v = [(10, 14, ProcSet(*[(10, 50)])), (15, MAX_TIME, ProcSet())]
+    v = [(5, 14, ProcSet(*[(10, 50)])), (15, MAX_TIME, ProcSet())]
 
     ss = SlotSet((ProcSet(*[]), 10))
-
+    print()
+    print(ss)
     j = JobPseudo(
         id=1, start_time=5, walltime=10, res_set=ProcSet(*[(10, 50)]), ts=False, ph=0
     )
 
-    print(ss)
+
     ss.split_slots_jobs([j], False)
     print(ss)
 
