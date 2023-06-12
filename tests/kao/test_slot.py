@@ -1,11 +1,10 @@
 # coding: utf-8
+import pytest
 from procset import ProcSet
+from rich import print
 
 from oar.kao.slot import MAX_TIME, Slot, SlotSet, intersec_itvs_slots
 from oar.lib.job_handling import JobPseudo
-from rich import print
-
-import pytest
 
 
 def compare_slots_val_ref(slots: SlotSet, v):
@@ -152,7 +151,6 @@ def test_add_split_slots_jobs_one_job():
     j = JobPseudo(
         id=1, start_time=5, walltime=10, res_set=ProcSet(*[(10, 50)]), ts=False, ph=0
     )
-
 
     ss.split_slots_jobs([j], False)
     print(ss)

@@ -330,9 +330,7 @@ class SlotSet:
             new_slot_end = slot.b
 
         new_id = self.new_id()
-        new_slot = Slot(
-            new_id, slot.prev, slot.id, ProcSet(), slot.b, new_slot_end
-        )
+        new_slot = Slot(new_id, slot.prev, slot.id, ProcSet(), slot.b, new_slot_end)
 
         if slot.prev != 0:
             self.slots[slot.prev].next = new_id
@@ -370,11 +368,9 @@ class SlotSet:
         # size 1. To prevent to go off the slot boundaries we adjust the position
         if slot.b == insertion_date:
             new_slot_begin = slot.b + 1
-        
+
         new_id = self.new_id()
-        new_slot = Slot(
-            new_id, slot.id, slot.next, ProcSet(), new_slot_begin, slot.e
-        )
+        new_slot = Slot(new_id, slot.id, slot.next, ProcSet(), new_slot_begin, slot.e)
 
         if slot.next != 0:
             self.slots[slot.next].prev = new_id
@@ -405,8 +401,8 @@ class SlotSet:
         return (slot_id_start, slot_id_end)
 
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
-        """loop between the slot_id start and slot_id end. 
-        Note that, the ids are not ordered, so using a slot id for the end argument that is not after start will lead have 
+        """loop between the slot_id start and slot_id end.
+        Note that, the ids are not ordered, so using a slot id for the end argument that is not after start will lead have
         the same result as using end = 0 (i.e looping untill it reaches the end of the structure)
 
         Args:
@@ -434,7 +430,9 @@ class SlotSet:
         # yield the last slot
         yield slot
 
-    def traverse_with_width(self, width, start_id=0, end_id=0) -> Generator[Tuple[Slot, Slot], None, None]:
+    def traverse_with_width(
+        self, width, start_id=0, end_id=0
+    ) -> Generator[Tuple[Slot, Slot], None, None]:
         for start_slot in self.traverse_id(start=start_id, end=end_id):
             begin_time = start_slot.b
             for end_slot in self.traverse_id(start=start_slot.id, end=end_id):
@@ -561,7 +559,9 @@ class SlotSet:
 
         return new_slot.id
 
-    def extend_range(self, begin: int, end: int, inplace: bool = False) -> Tuple[Optional[int], Optional[int]]:
+    def extend_range(
+        self, begin: int, end: int, inplace: bool = False
+    ) -> Tuple[Optional[int], Optional[int]]:
         """Extend the slot set considering a time range (useful to insert a new job)
 
         Args:
@@ -591,12 +591,12 @@ class SlotSet:
             # Otherwise we check and add both if needed
             if begin < first.b:
                 first_id = self.add_front(begin, inplace)
-            
+
             if end > last.e:
                 last_id = self.add_back(end, inplace)
 
         return (first_id, last_id)
-        
+
     def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
         Split slot accordingly to a job resource assignment.
@@ -615,7 +615,9 @@ class SlotSet:
 
         # First check if we need to increase the size of the slotset
         if sid_left == 0 or sid_right == 0:
-            (new_first, new_last) = self.extend_range(job.start_time, job.start_time + job.walltime, inplace=True)
+            (new_first, new_last) = self.extend_range(
+                job.start_time, job.start_time + job.walltime, inplace=True
+            )
 
             if sid_left == 0:
                 sid_left = new_first
@@ -625,9 +627,11 @@ class SlotSet:
 
         if sid_left != 0 and self.slots[sid_left].b != job.start_time:
             (_, sid_left) = self.split_at_before(sid_left, job.start_time)
- 
+
         if sid_right != 0 and self.slots[sid_right].e != job.start_time + job.walltime:
-            (sid_right, _) = self.split_at_after(sid_right, job.start_time + job.walltime)
+            (sid_right, _) = self.split_at_after(
+                sid_right, job.start_time + job.walltime
+            )
 
         for slot in self.traverse_id(sid_left, sid_right):
             if sub:
@@ -636,7 +640,7 @@ class SlotSet:
             else:
                 # add resources
                 self.add_slot_during_job(slot, job)
-        
+
     def split_slots_jobs(self, ordered_jobs: List[Job], sub=True):
         """
         Split slots according to jobs by substracting or adding jobs' assigned resources in slots.
@@ -674,7 +678,9 @@ class SlotSet:
                 # -----
                 # |A|B|
                 # -----
-                (_, id_new_slot) = self.split_at_after(slot.id, slot.b + remaining_duration)
+                (_, id_new_slot) = self.split_at_after(
+                    slot.id, slot.b + remaining_duration
+                )
 
                 slot.quotas_rules_id = quotas_rules_id
                 slot.quotas.set_rules(quotas_rules_id)

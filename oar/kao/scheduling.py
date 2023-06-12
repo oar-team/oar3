@@ -114,7 +114,9 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     return result
 
 
-def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt, hy, min_start_time: int):
+def find_first_suitable_contiguous_slots_quotas(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
     For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
@@ -148,7 +150,9 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(walltime, start_id=sid_left):
+    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+        walltime, start_id=sid_left
+    ):
         sid_left = slot_begin.id
         sid_right = slot_end.id
 
@@ -166,9 +170,7 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
             if slot_end.quotas_rules_id == -1:
                 # assumption is done that this part is rarely executed (either it's abnormal)
                 t_begin = slot_end.b
-                quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(
-                    t_begin
-                )
+                quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(t_begin)
                 slots_set.temporal_quotas_split_slot(
                     slot_end, quotas_rules_id, remaining_duration
                 )
@@ -200,7 +202,7 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
                 hy,
                 beginning_slotset,
                 *job.find_args,
-                **job.find_kwargs
+                **job.find_kwargs,
             )
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
@@ -231,7 +233,9 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
     return (itvs, sid_left, sid_right)
 
 
-def find_first_suitable_contiguous_slots_no_quotas(slots_set: SlotSet, job, res_rqt, hy, min_start_time: int):
+def find_first_suitable_contiguous_slots_no_quotas(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
     For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
@@ -265,12 +269,16 @@ def find_first_suitable_contiguous_slots_no_quotas(slots_set: SlotSet, job, res_
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(walltime, start_id=sid_left):
+    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+        walltime, start_id=sid_left
+    ):
         sid_left = slot_begin.id
         sid_right = slot_end.id
 
         if job.ts or (job.ph == ALLOW):
-            itvs_avail = intersec_ts_ph_itvs_slots(slots, slot_begin.id, slot_end.id, job)
+            itvs_avail = intersec_ts_ph_itvs_slots(
+                slots, slot_begin.id, slot_end.id, job
+            )
         else:
             itvs_avail = intersec_itvs_slots(slots, slot_begin.id, slot_end.id)
 
@@ -282,7 +290,7 @@ def find_first_suitable_contiguous_slots_no_quotas(slots_set: SlotSet, job, res_
                 # True if this is the first slot
                 slot_begin.prev == 0,
                 *job.find_args,
-                **job.find_kwargs
+                **job.find_kwargs,
             )
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
@@ -290,20 +298,24 @@ def find_first_suitable_contiguous_slots_no_quotas(slots_set: SlotSet, job, res_
         if len(itvs) != 0:
             break
 
-    if len(itvs) == 0:    # TODO error
+    if len(itvs) == 0:  # TODO error
         # TODO: fill cache also if the job cannot be scheduled
         logger.info(
             "can't schedule job with id: {}, no suitable resources".format(job.id)
         )
         return (ProcSet(), -1, -1)
     else:
-        if job.key_cache and (min_start_time < 0) and (not no_cache):  # and (not job.deps):
+        if (
+            job.key_cache and (min_start_time < 0) and (not no_cache)
+        ):  # and (not job.deps):
             cache[job.key_cache[mld_id]] = sid_left
 
         return (itvs, sid_left, sid_right)
 
 
-def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, min_start_time: int):
+def find_first_suitable_contiguous_slots(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
     For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
@@ -317,9 +329,13 @@ def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, m
     """
 
     if Quotas.enabled and not job.no_quotas:
-        return find_first_suitable_contiguous_slots_quotas(slots_set, job, res_rqt, hy,min_start_time)
-    
-    return find_first_suitable_contiguous_slots_no_quotas(slots_set, job, res_rqt, hy,min_start_time)
+        return find_first_suitable_contiguous_slots_quotas(
+            slots_set, job, res_rqt, hy, min_start_time
+        )
+
+    return find_first_suitable_contiguous_slots_no_quotas(
+        slots_set, job, res_rqt, hy, min_start_time
+    )
 
 
 def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_time):
@@ -365,8 +381,12 @@ def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(prev_start_time, prev_t_finish)
-            print(f"encompassing: {(prev_sid_left, prev_sid_right)} - {(prev_start_time, prev_t_finish)}")
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
+                prev_start_time, prev_t_finish
+            )
+            print(
+                f"encompassing: {(prev_sid_left, prev_sid_right)} - {(prev_start_time, prev_t_finish)}"
+            )
 
     # no suitable time*resources found for all res_rqt
     if res_set_nfound == len(job.mld_res_rqts):
@@ -474,7 +494,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     hy,
                     min_start_time,
                     *job.assign_args,
-                    **job.assign_kwargs
+                    **job.assign_kwargs,
                 )
             else:
                 assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)

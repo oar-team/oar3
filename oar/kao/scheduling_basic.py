@@ -1,5 +1,6 @@
 # coding: utf-8
 from typing import Dict, Tuple
+
 from procset import ProcSet
 
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots
@@ -29,7 +30,9 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     return result
 
 
-def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy) -> Tuple[ProcSet, int, int]:
+def find_first_suitable_contiguous_slots(
+    slots_set: SlotSet, job, res_rqt, hy
+) -> Tuple[ProcSet, int, int]:
     """find first_suitable_contiguous_slot"""
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = ProcSet()
@@ -92,7 +95,9 @@ def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy):
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(prev_start_time, prev_t_finish)
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
+                prev_start_time, prev_t_finish
+            )
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
     job.moldable_id = mld_id

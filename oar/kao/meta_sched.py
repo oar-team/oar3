@@ -10,7 +10,6 @@ import sys
 from typing import Dict
 
 from procset import ProcSet
-from oar.lib.configuration import Configuration
 
 import oar.lib.tools as tools
 from oar.kao.kamelot import internal_schedule_cycle
@@ -31,6 +30,7 @@ from oar.kao.slot import (
 
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
+from oar.lib.configuration import Configuration
 from oar.lib.event import add_new_event, get_job_events
 from oar.lib.globals import get_logger
 from oar.lib.job_handling import (
@@ -351,7 +351,13 @@ def handle_waiting_reservation_jobs(
 
 
 def check_reservation_jobs(
-    session, config: Configuration, plt: Platform, resource_set:ProcSet, queue_name: str, all_slot_sets: Dict[str, SlotSet], current_time_sec
+    session,
+    config: Configuration,
+    plt: Platform,
+    resource_set: ProcSet,
+    queue_name: str,
+    all_slot_sets: Dict[str, SlotSet],
+    current_time_sec,
 ):
     """Processing of new Advance Reservations"""
 
@@ -449,10 +455,14 @@ def check_reservation_jobs(
                 job.walltime = walltime
                 ar_jobs_scheduled[job.id] = job
 
-                (sid_left, sid_right) = all_slot_sets[ss_name].get_encompassing_range(job.start_time, job.start_time + job.walltime)
+                (sid_left, sid_right) = all_slot_sets[ss_name].get_encompassing_range(
+                    job.start_time, job.start_time + job.walltime
+                )
 
                 # print(f"what should: {(a, b)}, what is: {(sid_left, sid_right)} security: {job_security_time}")
-                print(f"check for yourself {job.start_time} + {job.walltime} = {job.start_time + job.walltime}:\n{all_slot_sets[ss_name]}")
+                print(
+                    f"check for yourself {job.start_time} + {job.walltime} = {job.start_time + job.walltime}:\n{all_slot_sets[ss_name]}"
+                )
                 all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
                 set_job_state(session, config, job.id, "toAckReservation")
 
