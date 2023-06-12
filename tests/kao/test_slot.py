@@ -152,7 +152,9 @@ def test_add_split_slots_jobs_one_job():
         id=1, start_time=5, walltime=10, res_set=ProcSet(*[(10, 50)]), ts=False, ph=0
     )
 
+    print(ss)
     ss.split_slots_jobs([j], False)
+    print(ss)
 
     assert compare_slots_val_ref(ss, v)
 

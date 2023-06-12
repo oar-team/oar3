@@ -619,7 +619,7 @@ class SlotSet:
         if sid_left != 0 and self.slots[sid_left].b != job.start_time:
             (_, sid_left) = self.split_at_before(sid_left, job.start_time)
  
-        if sid_right != 0 and sid_right != self.slots[sid_right].e != job.start_time + job.walltime:
+        if sid_right != 0 and self.slots[sid_right].e != job.start_time + job.walltime:
             (sid_right, _) = self.split_at_after(sid_right, job.start_time + job.walltime)
 
         for slot in self.traverse_id(sid_left, sid_right):
@@ -636,10 +636,6 @@ class SlotSet:
         Jobs must be sorted by start_time.
         It used in to insert previously scheduled jobs in slots or container jobs.
         """
-        slot = self.slots[1]  # 1
-        left_sid_2_split = 1
-        right_sid_2_split = 1
-
         if not sub:
             # for adding resources we need to inverse the chronological order
             ordered_jobs.reverse()

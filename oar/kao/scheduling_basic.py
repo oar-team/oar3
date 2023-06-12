@@ -56,7 +56,7 @@ def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy) -
     return (itvs, slot_begin.id, slot_end.id)
 
 
-def assign_resources_mld_job_split_slots(slots_set, job, hy):
+def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy):
     """
     According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
@@ -92,8 +92,7 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            prev_sid_left = sid_left
-            prev_sid_right = sid_right
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(prev_start_time, prev_t_finish)
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
     job.moldable_id = mld_id
