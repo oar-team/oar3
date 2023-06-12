@@ -432,6 +432,41 @@ def test_check_slots_quotas_2(oar_conf):
     assert res == (False, "nb resources quotas failed", ("*", "*", "*", "/"), 16)
 
 
+def test_test(oar_conf):
+    config = oar_conf
+    config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
+    Quotas.enabled = True
+    Quotas.calendar = Calendar(rules_example_simple, config)
+    res = ProcSet(*[(1, 32)])
+    ResourceSet.default_itvs = ProcSet(*res)
+
+    t0 = period_weekstart()
+    t1 = t0 + 7 * 86400 - 1
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), t0, t1))
+
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(id=1, queue="default", user="toto", project="")
+    j1.simple_req(("node", 3), 60, res)
+
+    j2 = JobPseudo(id=2, queue="default", user="toto", project="")
+    j2.simple_req(("node", 4), 60, res)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+
+    for j in [j1, j2]:
+        print(j.id, j.start_time - t0, j.res_set if hasattr(j, "res_set") else None)
+
+    print(f"{j1.start_time} t0:{t0}")
+    assert j1.start_time - t0 == 259200
+    assert j2.start_time == -1
+
+    assert j1.res_set == ProcSet(*[(1, 24)])
+    assert j2.res_set == ProcSet()
+
+
 def test_temporal_quotas_4_jobs_rule_nb_res_1(oar_conf):
     config = oar_conf
     config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
@@ -464,6 +499,7 @@ def test_temporal_quotas_4_jobs_rule_nb_res_1(oar_conf):
 
     for j in [j1, j2, j3, j4]:
         print(j.id, j.start_time - t0, j.res_set if hasattr(j, "res_set") else None)
+    print(f"{j1.start_time} t0:{t0}")
     assert j1.start_time - t0 == 259200
     assert j2.start_time == -1
     assert j3.start_time - t0 == 259260

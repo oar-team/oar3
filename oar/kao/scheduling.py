@@ -16,7 +16,7 @@ from oar.lib.job_handling import ALLOW, JobPseudo
 from oar.lib.resource import ResourceSet
 
 config, db, log = init_oar(no_db=True)
-logger = get_logger("oar.kamelot")
+logger = get_logger("oar.kamelot", forward_stderr=True)
 
 
 def set_slots_with_prev_scheduled_jobs(
@@ -149,48 +149,40 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
 
     sid_right = sid_left
     for (slot_begin, slot_end) in slots_set.traverse_with_width(walltime, start_id=sid_left):
+        sid_left = slot_begin.id
+        sid_right = slot_end.id
 
-        time_limit = slot_begin.b + Quotas.calendar.quotas_window_time_limit
-        if slot_end.e > time_limit:
-            logger.info(
-                "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached {}".format(
-                    job.id, walltime
-                )
-            )
-            return (ProcSet(), -1, -1)
-
-        # test next slot need to be temporal_quotas sliced
-        if slot_end.quotas_rules_id == -1:
-            # assumption is done that this part is rarely executed (either it's abnormal)
-            t_begin = slot_end.b
-            quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(
-                t_begin
-            )
-            slots_set.temporal_quotas_split_slot(
-                slot_end, quotas_rules_id, remaining_duration
-            )
-            # TODO to long extenion extension here also
-
-        sid_right = slots[sid_right].next
-        if sid_right != 0:
-            slot_e = slot_end.e
-        else:
-            logger.info(
-                "can't schedule job with id: {}, walltime not satisfied: {}".format(
-                    job.id, walltime
-                )
-            )
-            return (ProcSet(), -1, -1)
-
-        if slot_end.quotas_rules_id != slot_begin.quotas_rules_id:
-            sid_left = sid_right
-            if sid_left == 0:
+        if Quotas.calendar and not job.no_quotas:
+            time_limit = slot_begin.b + Quotas.calendar.quotas_window_time_limit
+            if slot_end.e > time_limit:
                 logger.info(
-                    "can't schedule job with id: {}, temporal quotas, no more slot".format(
-                        job.id
+                    "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached {}".format(
+                        job.id, walltime
                     )
                 )
                 return (ProcSet(), -1, -1)
+
+            # test next slot need to be temporal_quotas sliced
+            if slot_end.quotas_rules_id == -1:
+                # assumption is done that this part is rarely executed (either it's abnormal)
+                t_begin = slot_end.b
+                quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(
+                    t_begin
+                )
+                slots_set.temporal_quotas_split_slot(
+                    slot_end, quotas_rules_id, remaining_duration
+                )
+                # TODO to long extenion extension here also
+
+            if slot_end.quotas_rules_id != slot_begin.quotas_rules_id:
+                sid_left = sid_right
+                if sid_left == 0:
+                    logger.info(
+                        "can't schedule job with id: {}, temporal quotas, no more slot".format(
+                            job.id
+                        )
+                    )
+                    return (ProcSet(), -1, -1)
 
         if job.ts or (job.ph == ALLOW):
             itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
@@ -222,19 +214,19 @@ def find_first_suitable_contiguous_slots_quotas(slots_set: SlotSet, job, res_rqt
 
             if not quotas_ok:
                 logger.info(
-                    "Quotas limitation reached, job:"
-                    + str(job.id)
-                    + ", "
-                    + quotas_msg
-                    + ", rule: "
-                    + str(rule)
-                    + ", value: "
-                    + str(value)
+                    f"Quotas limitation reached, job: {str(job.id)}, {quotas_msg}, rule: {rule}, value: {value}"
                 )
+                itvs = ProcSet()
             else:
                 break
 
-        sid_left = slots[sid_left].next
+    if len(itvs) == 0:
+        logger.info(
+            "can't schedule job with id: {}, walltime not satisfied: {}".format(
+                job.id, walltime
+            )
+        )
+        return (ProcSet(), -1, -1)
 
     return (itvs, sid_left, sid_right)
 
@@ -324,13 +316,13 @@ def find_first_suitable_contiguous_slots(slots_set: SlotSet, job, res_rqt, hy, m
     :param min_start_time: The earliest date at which the job can start
     """
 
-    if Quotas.calendar and (not job.no_quotas):
+    if Quotas.enabled and not job.no_quotas:
         return find_first_suitable_contiguous_slots_quotas(slots_set, job, res_rqt, hy,min_start_time)
     
     return find_first_suitable_contiguous_slots_no_quotas(slots_set, job, res_rqt, hy,min_start_time)
 
 
-def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
+def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_time):
     """
     According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
@@ -373,11 +365,12 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            prev_sid_left = sid_left
-            prev_sid_right = sid_right
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(prev_start_time, prev_t_finish)
+            print(f"encompassing: {(prev_sid_left, prev_sid_right)} - {(prev_start_time, prev_t_finish)}")
 
     # no suitable time*resources found for all res_rqt
     if res_set_nfound == len(job.mld_res_rqts):
+        print("cannot schedule job")
         job.res_set = ProcSet()
         job.start_time = -1
         job.moldable_id = -1

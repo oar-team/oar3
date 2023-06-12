@@ -671,24 +671,11 @@ class SlotSet:
                 # -----
                 # |A|B|
                 # -----
-                self.last_id += 1
-                b_id = self.last_id
-                b_slot = Slot(
-                    b_id,
-                    slot.id,
-                    slot.next,
-                    copy.copy(slot.itvs),
-                    slot.b + remaining_duration,
-                    slot.e,
-                    dict_ps_copy(slot.ts_itvs),
-                    dict_ps_copy(slot.ph_itvs),
-                )
-                self.slots[b_id] = b_slot
-                # modify current A
-                slot.next = b_id
-                slot.e = slot.b + remaining_duration - 1
+                (_, id_new_slot) = self.split_at_after(slot.id, slot.b + remaining_duration)
+
                 slot.quotas_rules_id = quotas_rules_id
                 slot.quotas.set_rules(quotas_rules_id)
+                b_slot = self.slots[id_new_slot]
 
                 # What is next new rules_id / duration or quatos_period_reached
                 quotas_rules_id, remaining_duration = Quotas.calendar.next_rules(
