@@ -275,19 +275,36 @@ class SlotSet:
     def show_slots(self):
         print("%s" % self)
 
-    def new_id(self):
+    def new_id(self) -> int:
+        """Get a new Id for constructing new slots.
+
+        Returns:
+            int: the new id
+        """
         self.last_id += 1
         return self.last_id
 
     def first(self) -> Optional[Slot]:
+        """Find the first slot starting the slotset.
+
+        Returns:
+            Optional[Slot]: The first slot or None if not found (that should never appends)
+        """
         if self.slots:
             return [s for s in self.slots.values() if s.prev == 0][0]
 
     def last(self) -> Optional[Slot]:
+        """Find the last slot ending the slotset.
+
+        Returns:
+            Optional[Slot]: Return the last slot.
+        """
+        # TODO: Maybe the last and first slots can always be referenced, so we won't have to
+        # search the whole set each time
         if self.slots:
             return [s for s in self.slots.values() if s.next == 0][0]
 
-    def slot_id_at(self, date: int) -> int:
+    def slot_id_at(self, date: int, starting_id=0) -> int:
         """Return the slot corresponding to the date given in parameter.
 
         Args:
@@ -296,7 +313,13 @@ class SlotSet:
         Returns:
             int: return the slot id, or 0 if not found
         """
-        current = self.first()
+        assert starting_id == 0 or starting_id in self.slots
+
+        if starting_id != 0:
+            current = self.slots[starting_id]
+        else:
+            current = self.first()
+
         if current.b > date:
             return 0
 
@@ -312,6 +335,24 @@ class SlotSet:
         return slot_id
 
     def split_at_before(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
+        """Split a given slot at the insertion date.
+          The new slot is created and inserted before the original slot.
+
+          |                     |         |          |          |
+          |       Slot 1        | ----->  |  Slot 2  |  Slot 1  |
+          |                     |         |          |          |
+        --|---------------------|--     --|----------|----------|--
+          0                    10         0       a-1|a        10
+
+          If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot
+
+          Args:
+              slot_id (int): The slot to split
+              insertion_date (int): The date at which split the slit (must be within the slot range)
+
+          Returns:
+              Tuple[int, int]: return the two slots, starting with the new one.
+        """
         if slot_id == 0:
             return (0, 0)
 
@@ -349,6 +390,24 @@ class SlotSet:
         return (new_id, slot.id)
 
     def split_at_after(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
+        """Split a given slot at the insertion date.
+          The new slot is created and inserted before the original slot.
+
+          |                     |         |          |          |
+          |       Slot 1        | ----->  |  Slot 1  |  Slot 2  |
+          |                     |         |          |          |
+        --|---------------------|--     --|----------|----------|--
+          0                    10         0       a-1|a        10
+
+          If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot.
+
+          Args:
+              slot_id (int): The slot to split
+              insertion_date (int): The date at which split the slit (must be within the slot range)
+
+          Returns:
+              Tuple[int, int]: return the two slots, starting with the new one.
+        """
         # Cannot split slot_id 0
         if slot_id == 0:
             return (0, 0)
@@ -364,6 +423,7 @@ class SlotSet:
             return (slot_id, slot_id)
 
         new_slot_begin = insertion_date
+
         # If the slot is splitted at its begin time, it means that the remaining slot will be of
         # size 1. To prevent to go off the slot boundaries we adjust the position
         if slot.b == insertion_date:
@@ -393,12 +453,20 @@ class SlotSet:
         return self.split_at_after(slot_id, insertion_date)
 
     def get_encompassing_range(self, start: int, end: int) -> Tuple[int, int]:
-        # TODO: do it in one go
+        assert start <= end
 
-        slot_id_start = self.slot_id_at(start)
-        slot_id_end = self.slot_id_at(end)
+        first_slot = 0
+        last_slot = 0
 
-        return (slot_id_start, slot_id_end)
+        for slot in self.traverse_id():
+            if start >= slot.b and start <= slot.e:
+                first_slot = slot.id
+
+            if end >= slot.b and end <= slot.e:
+                last_slot = slot.id
+                break
+
+        return (first_slot, last_slot)
 
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
         """loop between the slot_id start and slot_id end.
@@ -433,6 +501,9 @@ class SlotSet:
     def traverse_with_width(
         self, width, start_id=0, end_id=0
     ) -> Generator[Tuple[Slot, Slot], None, None]:
+        # Width of zero does not exist
+        assert width > 0
+
         for start_slot in self.traverse_id(start=start_id, end=end_id):
             begin_time = start_slot.b
             for end_slot in self.traverse_id(start=start_slot.id, end=end_id):

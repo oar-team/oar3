@@ -213,82 +213,61 @@ def test_add_split_slots_jobs_2_jobs_2():
     assert compare_slots_val_ref(ss, v)
 
 
-def test_split_slots_jobs_same_start_time():
-    # v = [
-    #     (1, 4, ProcSet(*[(1, 32)])),
-    #     (5, 14, ProcSet(*[(1, 9), (21, 32)])),
-    #     (15, 20, ProcSet(*[(1, 32)])),
-    # ]
+def check_slot_integrity(slotset: SlotSet):
+    # Check some properties
+    slots = slotset.slots.values()
+    # Get first slot
+    slot = [s for s in slots if s.prev == 0][0]
+    prevs = set()
+    nexts = set()
 
-    j1 = JobPseudo(
-        id=1,
-        start_time=5,
-        walltime=10,
-        res_set=ProcSet(*[(1, 1)]),
-    )
+    prev_e = None
+    # Check the integrity of a slotset without result verification
+    while slot.next != 0:
+        # Check boundaries
+        assert slot.b <= slot.e
+        # Check for duplicate
+        assert slot.next not in nexts and slot.prev not in prevs
+        # Check contiguity
+        assert prev_e is None or prev_e + 1 == slot.b
 
-    j2 = JobPseudo(
-        id=2,
-        start_time=7,
-        walltime=15,
-        res_set=ProcSet(*[(2, 2)]),
-    )
+        assert slot.prev == 0 or slotset.slots[slot.prev].next == slot.id
+        assert slot.next == 0 or slotset.slots[slot.next].prev == slot.id
 
-    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 30))
+        prev_e = slot.e
 
-    print(ss)
-    # ss.split_slots(1, 1, j1)
-    print(ss)
+        prevs.add(slot.prev)
+        nexts.add(slot.next)
 
-    ss.split_slots_jobs([j1, j2])
-
-    print(ss)
-
-
-def test_split_slots_jobs_same_end_time():
-    # v = [
-    #     (1, 4, ProcSet(*[(1, 32)])),
-    #     (5, 14, ProcSet(*[(1, 9), (21, 32)])),
-    #     (15, 20, ProcSet(*[(1, 32)])),
-    # ]
-
-    j1 = JobPseudo(
-        id=1,
-        start_time=5,
-        walltime=50,
-        res_set=ProcSet(*[(1, 1)]),
-    )
-
-    j2 = JobPseudo(
-        id=2,
-        start_time=5,
-        walltime=10,
-        res_set=ProcSet(*[(2, 2)]),
-    )
-
-    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 300))
-
-    print(ss)
-
-    ss.split_slots_jobs([j1, j2], sub=True)
-
-    print(ss)
+        slot = slotset.slots[slot.next]
 
 
 @pytest.mark.parametrize(
     "jobs",
     [
-        # [
-        #     JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
-        #     JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
-        # ],
-        # [
-        #     JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
-        #     JobPseudo(id=2, start_time=5, walltime=20, res_set=ProcSet(1)),
-        # ],
+        # Same job
+        [
+            JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
+            JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
+            JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
+            JobPseudo(id=2, start_time=5, walltime=10, res_set=ProcSet(1)),
+        ],
+        # Same start time
+        [
+            JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
+            JobPseudo(id=2, start_time=5, walltime=20, res_set=ProcSet(1)),
+        ],
+        # Same start time with inverted endings
         [
             JobPseudo(id=2, start_time=5, walltime=20, res_set=ProcSet(1)),
             JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
+        ],
+        # Stairs
+        [
+            JobPseudo(id=1, start_time=5, walltime=10, res_set=ProcSet(1)),
+            JobPseudo(id=1, start_time=10, walltime=10, res_set=ProcSet(2)),
+            JobPseudo(id=1, start_time=15, walltime=10, res_set=ProcSet(3)),
+            JobPseudo(id=1, start_time=20, walltime=10, res_set=ProcSet(4)),
         ],
     ],
 )
@@ -296,28 +275,21 @@ def test_slots_and_jobs(jobs):
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 300))
     ss.split_slots_jobs(jobs, sub=True)
 
-    # Check some properties
-    slots = ss.slots.values()
-    # Get first slot
-    slot = [s for s in slots if s.prev == 0][0]
-    prevs = set()
-    nexts = set()
+    check_slot_integrity(ss)
 
+
+def test_slots_and_jobs_corner_cases():
+    slots = {
+        1: Slot(1, 0, 2, ProcSet((1, 32)), 50, 249),
+        2: Slot(2, 1, 0, ProcSet((1, 32)), 250, 499),
+    }
+
+    ss = SlotSet(slots)
+    j = JobPseudo(id=1, start_time=249, walltime=1, res_set=ProcSet(1))
+
+    ss.split_slots_jobs([j], sub=True)
     print()
     print(ss)
-    # Check the integrity of a slotset without result verification
-    while slot.next != 0:
-        assert slot.b <= slot.e
-        assert slot.next not in nexts and slot.prev not in prevs
-
-        prevs.add(slot.prev)
-        nexts.add(slot.next)
-
-        slot = ss.slots[slot.next]
-
-    print()
-    for slot in ss.traverse_id():
-        print(slot)
 
 
 @pytest.mark.parametrize(
@@ -333,15 +305,20 @@ def test_slot_id_at(time, answer):
 
     ss = SlotSet(slots)
 
-    print(f"\n{ss}")
     assert ss.slot_id_at(time) == answer
 
 
 @pytest.mark.parametrize(
-    "time, answer",
-    [(5, 0), (250, 2), (499, 2), (500, 3), (1500, 0), (25, 0)],
+    "range, answer",
+    [
+        ((50, 50), (1, 1)),
+        ((50, 249), (1, 1)),
+        ((249, 249), (1, 1)),
+        ((50, 1000), (1, 3)),
+        ((499, 500), (2, 3)),
+    ],
 )
-def test_get_encompassing_range(time, answer):
+def test_get_encompassing_range(range, answer):
     slots = {
         1: Slot(1, 0, 2, ProcSet((1, 32)), 50, 249),
         2: Slot(2, 1, 3, ProcSet((1, 32)), 250, 499),
@@ -350,33 +327,45 @@ def test_get_encompassing_range(time, answer):
 
     ss = SlotSet(slots)
 
-    print(ss)
-    assert ss.slot_id_at(time) == answer
+    assert ss.get_encompassing_range(*range) == answer
 
 
-def test_traverse():
+@pytest.mark.parametrize(
+    "start, end, answer",
+    [
+        # start=0 and end=0 is the default
+        (0, 0, [2, 1, 7]),
+        (2, 7, [2, 1, 7]),
+        # Add -1 so the answer is not the shortest list and zip continues
+        (2, 2, [2, -1, -1]),
+        (7, 2, [7, -1, -1]),
+        (1, 7, [1, 7, -1]),
+    ],
+)
+def test_traverse(start, end, answer):
     slots = {
-        1: Slot(1, 0, 2, ProcSet((1, 32)), 50, 249),
-        2: Slot(2, 1, 3, ProcSet((1, 32)), 250, 499),
-        3: Slot(3, 2, 0, ProcSet((1, 32)), 500, 1000),
+        2: Slot(2, 0, 1, ProcSet((1, 32)), 50, 249),
+        1: Slot(1, 2, 7, ProcSet((1, 32)), 250, 499),
+        7: Slot(7, 1, 0, ProcSet((1, 32)), 500, 1000),
     }
 
     ss = SlotSet(slots)
-    print()
 
-    for slot in ss.traverse_id():
-        print(slot)
-
-    print()
-    for slot in ss.traverse_id(2, 0):
-        print(slot)
-
-    print()
-    for slot in ss.traverse_id(3, 3):
-        print(slot)
+    for (slot, check_id) in zip(ss.traverse_id(start, end), answer):
+        assert slot.id == check_id
 
 
-def test_traverse_width():
+@pytest.mark.parametrize(
+    "width, answer",
+    [
+        # start=0 and end=0 is the default
+        (15, [(1, 3), (2, 3), (3, 3), (4, 4), (5, 5)]),
+        (50, [(1, 4), (2, 4), (3, 4), (4, 4), (5, 5)]),
+        # add a dummy element in the list so if traverse_with_width returns a solution it will fail matching (-1, -1)
+        (20000, [(-1, -1)]),
+    ],
+)
+def test_traverse_width(width, answer):
     slots = {
         1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 1000),
     }
@@ -385,78 +374,47 @@ def test_traverse_width():
     ss.find_and_split_at(10)
     ss.find_and_split_at(11)
     ss.find_and_split_at(50)
-    ss.find_and_split_at(150)
     ss.find_and_split_at(500)
-    ss.find_and_split_at(750)
 
-    print(ss)
+    for (
+        (
+            b,
+            e,
+        ),
+        (check_begin, check_end),
+    ) in zip(ss.traverse_with_width(width), answer):
+        assert b.id == check_begin
+        assert e.id == check_end
 
-    print()
-    for (b, e) in ss.traverse_with_width(2000):
-        print(b, e)
         print(e.e, "-", b.b, " -> ", e.e - b.b + 1)
-        break
+        print(b.id, e.id)
 
 
-def test_split_at_before():
+@pytest.mark.parametrize(
+    "date",
+    [1, 100, 50],
+)
+def test_split_at_before(date):
     slots = {
         1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
     }
 
     ss = SlotSet(slots)
+    ss.split_at_before(1, date)
 
-    print()
-    ss.split_at_before(1, 1)
-    print(ss)
+    check_slot_integrity(ss)
 
+
+@pytest.mark.parametrize(
+    "date",
+    [1, 100, 50],
+)
+def test_split_at_after(date):
     slots = {
         1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
     }
 
     ss = SlotSet(slots)
+    ss.split_at_after(1, date)
 
-    print()
-    ss.split_at_before(1, 100)
-    print(ss)
-
-    slots = {
-        1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
-    }
-
-    ss = SlotSet(slots)
-
-    print()
-    ss.split_at_before(1, 50)
-    print(ss)
-
-
-def test_split_at_after():
-    slots = {
-        1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
-    }
-
-    ss = SlotSet(slots)
-
-    print()
-    ss.split_at_after(1, 1)
-    print(ss)
-
-    slots = {
-        1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
-    }
-
-    ss = SlotSet(slots)
-
-    print()
-    ss.split_at_after(1, 100)
-    print(ss)
-
-    slots = {
-        1: Slot(1, 0, 0, ProcSet((1, 32)), 1, 100),
-    }
-
-    ss = SlotSet(slots)
-
-    print()
-    ss.split_at_after(1, 50)
-    print(ss)
+    check_slot_integrity(ss)
