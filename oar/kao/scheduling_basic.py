@@ -1,5 +1,5 @@
 # coding: utf-8
-from typing import Dict, Tuple
+from typing import Tuple
 
 from procset import ProcSet
 

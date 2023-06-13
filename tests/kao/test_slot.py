@@ -159,13 +159,13 @@ def test_add_split_slots_jobs_one_job():
 
 
 def test_add_split_slots_jobs_2_jobs_1():
-    v = [
-        (10, 19, ProcSet()),
-        (20, 99, ProcSet(*[(40, 50)])),
-        (100, 129, ProcSet(*[(10, 20), (40, 50)])),
-        (130, 219, ProcSet(*[(40, 50)])),
-        (220, MAX_TIME, ProcSet()),
-    ]
+    # v = [
+    #     (10, 19, ProcSet()),
+    #     (20, 99, ProcSet(*[(40, 50)])),
+    #     (100, 129, ProcSet(*[(10, 20), (40, 50)])),
+    #     (130, 219, ProcSet(*[(40, 50)])),
+    #     (220, MAX_TIME, ProcSet()),
+    # ]
 
     ss = SlotSet((ProcSet(*[]), 10))
 
@@ -214,11 +214,11 @@ def test_add_split_slots_jobs_2_jobs_2():
 
 
 def test_split_slots_jobs_same_start_time():
-    v = [
-        (1, 4, ProcSet(*[(1, 32)])),
-        (5, 14, ProcSet(*[(1, 9), (21, 32)])),
-        (15, 20, ProcSet(*[(1, 32)])),
-    ]
+    # v = [
+    #     (1, 4, ProcSet(*[(1, 32)])),
+    #     (5, 14, ProcSet(*[(1, 9), (21, 32)])),
+    #     (15, 20, ProcSet(*[(1, 32)])),
+    # ]
 
     j1 = JobPseudo(
         id=1,
@@ -246,11 +246,11 @@ def test_split_slots_jobs_same_start_time():
 
 
 def test_split_slots_jobs_same_end_time():
-    v = [
-        (1, 4, ProcSet(*[(1, 32)])),
-        (5, 14, ProcSet(*[(1, 9), (21, 32)])),
-        (15, 20, ProcSet(*[(1, 32)])),
-    ]
+    # v = [
+    #     (1, 4, ProcSet(*[(1, 32)])),
+    #     (5, 14, ProcSet(*[(1, 9), (21, 32)])),
+    #     (15, 20, ProcSet(*[(1, 32)])),
+    # ]
 
     j1 = JobPseudo(
         id=1,

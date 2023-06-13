@@ -137,7 +137,7 @@ def find_first_suitable_contiguous_slots_quotas(
     cache = slots_set.cache
 
     # flag to control cache update for considered entry
-    no_cache = False
+    # no_cache = False
 
     sid_left = slots_set.first().id
     if min_start_time < 0:
