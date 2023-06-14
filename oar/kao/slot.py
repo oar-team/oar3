@@ -278,8 +278,7 @@ class SlotSet:
     def new_id(self) -> int:
         """Get a new Id for constructing new slots.
 
-        Returns:
-            int: the new id
+        :return int: the new id
         """
         self.last_id += 1
         return self.last_id
@@ -287,8 +286,7 @@ class SlotSet:
     def first(self) -> Optional[Slot]:
         """Find the first slot starting the slotset.
 
-        Returns:
-            Optional[Slot]: The first slot or None if not found (that should never appends)
+        :return Optional[Slot]: The first slot or None if not found (that should never appends)
         """
         if self.slots:
             return [s for s in self.slots.values() if s.prev == 0][0]
@@ -296,8 +294,7 @@ class SlotSet:
     def last(self) -> Optional[Slot]:
         """Find the last slot ending the slotset.
 
-        Returns:
-            Optional[Slot]: Return the last slot.
+        :return Optional[Slot]: Return the last slot.
         """
         # TODO: Maybe the last and first slots can always be referenced, so we won't have to
         # search the whole set each time
@@ -335,23 +332,26 @@ class SlotSet:
         return slot_id
 
     def split_at_before(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
-        """Split a given slot at the insertion date.
-          The new slot is created and inserted before the original slot.
+        """
+        Split a given slot at the insertion date.
+        The new slot is created and inserted before the original slot.
 
-          |                     |         |          |          |
-          |       Slot 1        | ----->  |  Slot 2  |  Slot 1  |
-          |                     |         |          |          |
-        --|---------------------|--     --|----------|----------|--
-          0                    10         0       a-1|a        10
+        .. code-block:: c
 
-          If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot
+                  |                     |         |          |          |
+                  |       Slot 1        | ----->  |  Slot 2  |  Slot 1  |
+                  |                     |         |          |          |
+                --|---------------------|--     --|----------|----------|--
+                  0                    10         0       a-1|a        10
+                (a is the insertion_date)
 
-          Args:
-              slot_id (int): The slot to split
-              insertion_date (int): The date at which split the slit (must be within the slot range)
+        If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot.
 
-          Returns:
-              Tuple[int, int]: return the two slots, starting with the new one.
+        :param slot_id (int): The slot to split
+        :param insertion_date (int): The date at which split the slit (must be within the slot range)
+
+        :returns: \
+            Tuple[int, int]: return the two slots, starting with the new one.
         """
         if slot_id == 0:
             return (0, 0)
@@ -390,23 +390,26 @@ class SlotSet:
         return (new_id, slot.id)
 
     def split_at_after(self, slot_id: int, insertion_date: int) -> Tuple[int, int]:
-        """Split a given slot at the insertion date.
-          The new slot is created and inserted before the original slot.
+        """
+        Split a given slot at the insertion date.
+        The new slot is created and inserted after the original slot.
 
-          |                     |         |          |          |
-          |       Slot 1        | ----->  |  Slot 1  |  Slot 2  |
-          |                     |         |          |          |
-        --|---------------------|--     --|----------|----------|--
-          0                    10         0       a-1|a        10
+        .. code-block:: c
 
-          If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot.
+                  |                     |         |          |          |
+                  |       Slot 1        | ----->  |  Slot 1  |  Slot 2  |
+                  |                     |         |          |          |
+                --|---------------------|--     --|----------|----------|--
+                  0                    10         0       a-1|a        10
+                (a is the insertion_date)
 
-          Args:
-              slot_id (int): The slot to split
-              insertion_date (int): The date at which split the slit (must be within the slot range)
+        If the slot is of size one (ie begin equals end), the slot is not split and the function returns the id of the given slot.
 
-          Returns:
-              Tuple[int, int]: return the two slots, starting with the new one.
+        :param slot_id (int): The slot to split
+        :param insertion_date (int): The date at which split the slit (must be within the slot range)
+
+        :returns: \
+            Tuple[int, int]: return the two slots, starting with the new one.
         """
         # Cannot split slot_id 0
         if slot_id == 0:
@@ -471,14 +474,13 @@ class SlotSet:
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
         """loop between the slot_id start and slot_id end.
         Note that, the ids are not ordered, so using a slot id for the end argument that is not after start will lead have
-        the same result as using end = 0 (i.e looping untill it reaches the end of the structure)
+        the same result as using end = 0 (i.e looping until it reaches the end of the structure)
 
-        Args:
-            start (int, optional): first id to start the parcour. Defaults to 0.
-            end (int, optional): end id. Defaults to 0.
 
-        Yields:
-            Generator[Slot, None, None]: _description_
+        :param start (int, optional): first id to start the parcour. Defaults to 0.
+        :param end (int, optional): end id. Defaults to 0.
+
+        :yield Generator[Slot, None, None]: the current slot
         """
         # Check that the slots exists
         if (start != 0 and start not in self.slots) or (
@@ -635,12 +637,10 @@ class SlotSet:
     ) -> Tuple[Optional[int], Optional[int]]:
         """Extend the slot set considering a time range (useful to insert a new job)
 
-        Args:
-            begin (int): begin time to insert
-            end (int): end time to insert
+        :param begin (int): begin time to insert
+        :param end (int): end time to insert
 
-        Returns:
-            Tuple[int, int]: return the newly created slot if any
+        :return Tuple[int, int]: return the newly created slot if any
         """
         first = self.first()
         last = self.last()
