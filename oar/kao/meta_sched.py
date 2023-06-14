@@ -7,6 +7,7 @@ It iteratively calls scheduling algorithms on the different queues based on thei
 import os
 import re
 import sys
+from typing import Dict
 
 from procset import ProcSet
 
@@ -18,7 +19,6 @@ from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import (
     find_resource_hierarchies_job,
-    get_encompassing_slots,
     set_slots_with_prev_scheduled_jobs,
 )
 from oar.kao.slot import (
@@ -30,6 +30,7 @@ from oar.kao.slot import (
 
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
+from oar.lib.configuration import Configuration
 from oar.lib.event import add_new_event, get_job_events
 from oar.lib.globals import get_logger
 from oar.lib.job_handling import (
@@ -350,7 +351,13 @@ def handle_waiting_reservation_jobs(
 
 
 def check_reservation_jobs(
-    session, config, plt, resource_set, queue_name, all_slot_sets, current_time_sec
+    session,
+    config: Configuration,
+    plt: Platform,
+    resource_set: ProcSet,
+    queue_name: str,
+    all_slot_sets: Dict[str, SlotSet],
+    current_time_sec,
 ):
     """Processing of new Advance Reservations"""
 
@@ -396,10 +403,12 @@ def check_reservation_jobs(
 
             # TODO: test if container is an AR job
 
-            slots = all_slot_sets[ss_name].slots
+            slots_set = all_slot_sets[ss_name]
 
             t_e = job.start_time + walltime - job_security_time
-            sid_left, sid_right = get_encompassing_slots(slots, job.start_time, t_e)
+            sid_left, sid_right = slots_set.get_encompassing_range(job.start_time, t_e)
+
+            slots = slots_set.slots
 
             if job.ts or (job.ph == ALLOW):
                 itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
@@ -415,18 +424,12 @@ def check_reservation_jobs(
                 res = Quotas.check_slots_quotas(
                     slots, sid_left, sid_right, job, nb_res, walltime
                 )
+                print(f"res: {res}")
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     itvs = ProcSet()
                     logger.info(
-                        "Quotas limitation reached, job:"
-                        + str(job.id)
-                        + ", "
-                        + quotas_msg
-                        + ", rule: "
-                        + str(rule)
-                        + ", value: "
-                        + str(value)
+                        f"Quotas limitation reached, job:{str(job.id)}, {quotas_msg}, rule: {str(rule)}, value: {str(value)}"
                     )
                     set_job_state(session, config, job.id, "toError")
                     set_job_message(
@@ -451,12 +454,15 @@ def check_reservation_jobs(
                 job.res_set = itvs
                 job.walltime = walltime
                 ar_jobs_scheduled[job.id] = job
-                # if 'container' in job.types
-                #    slot = Slot(1, 0, 0, job.res_set[:], job.start_time,
-                #                job.start_time + job.walltime - job_security_time)
-                # slot.show()
-                #    slots_sets[job.id] = SlotSet(slot)
-                # Update the slotsets for the next AR to be scheduled within this loop
+
+                (sid_left, sid_right) = all_slot_sets[ss_name].get_encompassing_range(
+                    job.start_time, job.start_time + job.walltime
+                )
+
+                # print(f"what should: {(a, b)}, what is: {(sid_left, sid_right)} security: {job_security_time}")
+                print(
+                    f"check for yourself {job.start_time} + {job.walltime} = {job.start_time + job.walltime}:\n{all_slot_sets[ss_name]}"
+                )
                 all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
                 set_job_state(session, config, job.id, "toAckReservation")
 

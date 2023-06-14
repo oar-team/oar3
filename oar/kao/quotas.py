@@ -682,6 +682,7 @@ class Quotas(object):
                     slot.quotas_rules_id != slots[slot.next].quotas_rules_id
                 ):
                     return (False, "different quotas rules over job's time", "", 0)
+
         # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
         slots_quotas.update(job, job_nb_resources, duration)
         return slots_quotas.check(job)

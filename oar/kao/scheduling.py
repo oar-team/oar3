@@ -16,7 +16,7 @@ from oar.lib.job_handling import ALLOW, JobPseudo
 from oar.lib.resource import ResourceSet
 
 config, db, log = init_oar(no_db=True)
-logger = get_logger("oar.kamelot")
+logger = get_logger("oar.kamelot", forward_stderr=True)
 
 
 def set_slots_with_prev_scheduled_jobs(
@@ -114,21 +114,9 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     return result
 
 
-def get_encompassing_slots(slots, t_begin, t_end):
-    sid_left = 1
-
-    while slots[sid_left].e < t_begin:
-        sid_left = slots[sid_left].next
-
-    sid_right = sid_left
-
-    while slots[sid_right].e < t_end:
-        sid_right = slots[sid_right].next
-
-    return (sid_left, sid_right)
-
-
-def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_time):
+def find_first_suitable_contiguous_slots_quotas(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
     For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
@@ -147,110 +135,62 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
 
     slots = slots_set.slots
     cache = slots_set.cache
+
     # flag to control cache update for considered entry
-    no_cache = False
-    # updated_cache = False
-    sid_left = 1
+    # no_cache = False
+
+    sid_left = slots_set.first().id
     if min_start_time < 0:
         # to not always begin by the first slots ( O(n^2) )
         # TODO cache_by_container/inner + moldable + time_sharing(?)
         if job.key_cache and (job.key_cache[mld_id] in cache):
             sid_left = cache[job.key_cache[mld_id]]
-            # print("cache hit...... ", sid_left)
-            # else:
-            # print("cache miss :(")
 
     else:
-        while slots[sid_left].b < min_start_time:
-            sid_left = slots[sid_left].next
-        # satisfy job dependencies converted in min start_time
-
-    # sid_left = 1 # TODO no cache
+        sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    slot_e = slots[sid_right].e
+    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+        walltime, start_id=sid_left
+    ):
+        sid_left = slot_begin.id
+        sid_right = slot_end.id
 
-    # print('first sid_left', sid_left)
+        if Quotas.calendar and not job.no_quotas:
+            time_limit = slot_begin.b + Quotas.calendar.quotas_window_time_limit
+            if slot_end.e > time_limit:
+                logger.info(
+                    "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached {}".format(
+                        job.id, walltime
+                    )
+                )
+                return (ProcSet(), -1, -1)
 
-    while True:
-        # find next contiguous slots_time
-        # print("A: job.id:", job.id, "sid_left:", sid_left, "sid_right:",)
-        # sid_right
+            # test next slot need to be temporal_quotas sliced
+            if slot_end.quotas_rules_id == -1:
+                # assumption is done that this part is rarely executed (either it's abnormal)
+                t_begin = slot_end.b
+                quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(t_begin)
+                slots_set.temporal_quotas_split_slot(
+                    slot_end, quotas_rules_id, remaining_duration
+                )
+                # TODO to long extenion extension here also
 
-        if sid_left != 0 and sid_right != 0:
-            slot_b = slots[sid_left].b
-        else:
-            # TODO error
-            # print("TODO error can't schedule job.id:", job.id)
-            logger.info(
-                "can't schedule job with id: {}, no suitable resources".format(job.id)
-            )
-            return (ProcSet(), -1, -1)
-        # import pdb; pdb.set_trace()
-        if Quotas.calendar and (not job.no_quotas):
-            time_limit = slot_b + Quotas.calendar.quotas_window_time_limit
-            while (slot_e - slot_b + 1) < walltime:
-                if slot_e > time_limit:
+            if slot_end.quotas_rules_id != slot_begin.quotas_rules_id:
+                sid_left = sid_right
+                if sid_left == 0:
                     logger.info(
-                        "can't schedule job with id: {}, QUOTAS_WINDOW_TIME_LIMIT reached {}".format(
-                            job.id, walltime
+                        "can't schedule job with id: {}, temporal quotas, no more slot".format(
+                            job.id
                         )
                     )
                     return (ProcSet(), -1, -1)
-                # test next slot need to be temporal_quotas sliced
-                if slots[sid_right].quotas_rules_id == -1:
-                    # assumption is done that this part is rarely executed (either it's abnormal)
-                    t_begin = slots[sid_right].b
-                    quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(
-                        t_begin
-                    )
-                    slots_set.temporal_quotas_split_slot(
-                        slots[sid_right], quotas_rules_id, remaining_duration
-                    )
-                    # TODO to long extenion extension here also
-
-                sid_right = slots[sid_right].next
-                if sid_right != 0:
-                    slot_e = slots[sid_right].e
-                else:
-                    logger.info(
-                        "can't schedule job with id: {}, walltime not satisfied: {}".format(
-                            job.id, walltime
-                        )
-                    )
-                    return (ProcSet(), -1, -1)
-
-                if slots[sid_left].quotas_rules_id != slots[sid_right].quotas_rules_id:
-                    sid_left = sid_right
-                    if sid_left == 0:
-                        logger.info(
-                            "can't schedule job with id: {}, temporal quotas, no more slot".format(
-                                job.id
-                            )
-                        )
-                        return (ProcSet(), -1, -1)
-        else:
-            while (slot_e - slot_b + 1) < walltime:
-                sid_right = slots[sid_right].next
-                if sid_right != 0:
-                    slot_e = slots[sid_right].e
-                else:
-                    logger.info(
-                        "can't schedule job with id: {}, walltime not satisfied: {}".format(
-                            job.id, walltime
-                        )
-                    )
-                    return (ProcSet(), -1, -1)
-
-        #        if not updated_cache and (slots[sid_left].itvs != []):
-        #            cache[walltime] = sid_left
-        #            updated_cache = True
 
         if job.ts or (job.ph == ALLOW):
             itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
         else:
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
-        # print("itvs_avail", itvs_avail, "h_res_req", hy_res_rqts, "hy", hy)
+
         if job.find:
             beginning_slotset = (
                 True if (sid_left == 1) and (slots_set.begin == slots[1].b) else False
@@ -262,48 +202,143 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy, min_start_
                 hy,
                 beginning_slotset,
                 *job.find_args,
-                **job.find_kwargs
+                **job.find_kwargs,
             )
         else:
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
-            if Quotas.enabled and (not job.no_quotas):
-                nb_res = len(itvs & ResourceSet.default_itvs)
-                res = Quotas.check_slots_quotas(
-                    slots, sid_left, sid_right, job, nb_res, walltime
+            nb_res = len(itvs & ResourceSet.default_itvs)
+            res = Quotas.check_slots_quotas(
+                slots, sid_left, sid_right, job, nb_res, walltime
+            )
+            (quotas_ok, quotas_msg, rule, value) = res
+
+            if not quotas_ok:
+                logger.info(
+                    f"Quotas limitation reached, job: {str(job.id)}, {quotas_msg}, rule: {rule}, value: {value}"
                 )
-                (quotas_ok, quotas_msg, rule, value) = res
-                if not quotas_ok:
-                    logger.info(
-                        "Quotas limitation reached, job:"
-                        + str(job.id)
-                        + ", "
-                        + quotas_msg
-                        + ", rule: "
-                        + str(rule)
-                        + ", value: "
-                        + str(value)
-                    )
-                    # quotas limitation trigger therefore disable cache update for this entry
-                    no_cache = True
-                else:
-                    break
+                itvs = ProcSet()
             else:
                 break
 
-        sid_left = slots[sid_left].next
-
-    if job.key_cache and (min_start_time < 0) and (not no_cache):  # and (not job.deps):
-        cache[job.key_cache[mld_id]] = sid_left
-        #        print("cache: update entry ",  job.key_cache[mld_id], " with ", sid_left)
-        # else:
-        # print("cache: not updated ", job.key_cache, min_start_time, job.deps)
+    if len(itvs) == 0:
+        logger.info(
+            "can't schedule job with id: {}, walltime not satisfied: {}".format(
+                job.id, walltime
+            )
+        )
+        return (ProcSet(), -1, -1)
 
     return (itvs, sid_left, sid_right)
 
 
-def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
+def find_first_suitable_contiguous_slots_no_quotas(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
+    """
+    Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
+    For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
+    to find compatible resources allocation for the job, if such allocation is found the function ends.
+
+    :param SlotSet slots_set: Slot set of the current platform
+    :param Job job: The job to schedule
+    :param res_rqt: The job resource request
+    :param hy: The definition of the resources hierarchy
+    :param min_start_time: The earliest date at which the job can start
+    """
+
+    (mld_id, walltime, hy_res_rqts) = res_rqt
+
+    itvs = ProcSet()
+
+    slots = slots_set.slots
+    cache = slots_set.cache
+
+    # flag to control cache update for considered entry
+    no_cache = False
+
+    sid_left = slots_set.first().id
+    if min_start_time < 0:
+        # to not always begin by the first slots ( O(n^2) )
+        # TODO cache_by_container/inner + moldable + time_sharing(?)
+        if job.key_cache and (job.key_cache[mld_id] in cache):
+            sid_left = cache[job.key_cache[mld_id]]
+
+    else:
+        sid_left = slots_set.slot_id_at(min_start_time)
+
+    sid_right = sid_left
+    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+        walltime, start_id=sid_left
+    ):
+        sid_left = slot_begin.id
+        sid_right = slot_end.id
+
+        if job.ts or (job.ph == ALLOW):
+            itvs_avail = intersec_ts_ph_itvs_slots(
+                slots, slot_begin.id, slot_end.id, job
+            )
+        else:
+            itvs_avail = intersec_itvs_slots(slots, slot_begin.id, slot_end.id)
+
+        if job.find:
+            itvs = job.find_func(
+                itvs_avail,
+                hy_res_rqts,
+                hy,
+                # True if this is the first slot
+                slot_begin.prev == 0,
+                *job.find_args,
+                **job.find_kwargs,
+            )
+        else:
+            itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
+
+        if len(itvs) != 0:
+            break
+
+    if len(itvs) == 0:  # TODO error
+        # TODO: fill cache also if the job cannot be scheduled
+        logger.info(
+            "can't schedule job with id: {}, no suitable resources".format(job.id)
+        )
+        return (ProcSet(), -1, -1)
+    else:
+        if (
+            job.key_cache and (min_start_time < 0) and (not no_cache)
+        ):  # and (not job.deps):
+            cache[job.key_cache[mld_id]] = sid_left
+
+        return (itvs, sid_left, sid_right)
+
+
+def find_first_suitable_contiguous_slots(
+    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+):
+    """
+    Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
+    For each compatible time slice, call the function :py:func:`find_resource_hierarchies_job`
+    to find compatible resources allocation for the job, if such allocation is found the function ends.
+
+    :param SlotSet slots_set: Slot set of the current platform
+    :param Job job: The job to schedule
+    :param res_rqt: The job resource request
+    :param hy: The definition of the resources hierarchy
+    :param min_start_time: The earliest date at which the job can start
+    """
+
+    if Quotas.enabled and not job.no_quotas:
+        return find_first_suitable_contiguous_slots_quotas(
+            slots_set, job, res_rqt, hy, min_start_time
+        )
+
+    return find_first_suitable_contiguous_slots_no_quotas(
+        slots_set, job, res_rqt, hy, min_start_time
+    )
+
+
+def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_time):
     """
     According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
@@ -346,11 +381,16 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time):
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            prev_sid_left = sid_left
-            prev_sid_right = sid_right
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
+                prev_start_time, prev_t_finish
+            )
+            print(
+                f"encompassing: {(prev_sid_left, prev_sid_right)} - {(prev_start_time, prev_t_finish)}"
+            )
 
     # no suitable time*resources found for all res_rqt
     if res_set_nfound == len(job.mld_res_rqts):
+        print("cannot schedule job")
         job.res_set = ProcSet()
         job.start_time = -1
         job.moldable_id = -1
@@ -454,7 +494,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     hy,
                     min_start_time,
                     *job.assign_args,
-                    **job.assign_kwargs
+                    **job.assign_kwargs,
                 )
             else:
                 assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)

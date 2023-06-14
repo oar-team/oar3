@@ -1,7 +1,9 @@
 # coding: utf-8
+from typing import Tuple
+
 from procset import ProcSet
 
-from oar.kao.slot import Slot, intersec_itvs_slots
+from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 
 
@@ -28,7 +30,9 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
     return result
 
 
-def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
+def find_first_suitable_contiguous_slots(
+    slots_set: SlotSet, job, res_rqt, hy
+) -> Tuple[ProcSet, int, int]:
     """find first_suitable_contiguous_slot"""
     (mld_id, walltime, hy_res_rqts) = res_rqt
     itvs = ProcSet()
@@ -36,52 +40,26 @@ def find_first_suitable_contiguous_slots(slots_set, job, res_rqt, hy):
     slots = slots_set.slots
     cache = slots_set.cache
 
-    # updated_cache = False
-
-    # to not always begin by the first slots ( O(n^2) )
-    # TODO:
     if job.key_cache and (job.key_cache[mld_id] in cache):
         sid_left = cache[job.key_cache[mld_id]]
     else:
-        sid_left = 1
+        sid_left = 0
 
-    # sid_left = 1 # TODO no cache
-
-    sid_right = sid_left
-    slot_e = slots[sid_right].e
-
-    # print 'first sid_left', sid_left
-
-    while True:
+    for (slot_begin, slot_end) in slots_set.traverse_with_width(walltime):
         # find next contiguous slots_time
-
-        slot_b = slots[sid_left].b
-
-        # print "slot_e, slot_b, walltime ", slot_e, slot_b, walltime
-
-        while (slot_e - slot_b + 1) < walltime:
-            sid_right = slots[sid_right].next
-            slot_e = slots[sid_right].e
-
-        #        if not updated_cache and (slots[sid_left].itvs != []):
-        #            cache[walltime] = sid_left
-        #            updated_cache = True
-
-        itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
+        itvs_avail = intersec_itvs_slots(slots, slot_begin.id, slot_end.id)
         itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
             break
 
-        sid_left = slots[sid_left].next
-
     if job.key_cache:
         cache[job.key_cache[mld_id]] = sid_left
 
-    return (itvs, sid_left, sid_right)
+    return (itvs, slot_begin.id, slot_end.id)
 
 
-def assign_resources_mld_job_split_slots(slots_set, job, hy):
+def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy):
     """
     According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request
@@ -117,8 +95,9 @@ def assign_resources_mld_job_split_slots(slots_set, job, hy):
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            prev_sid_left = sid_left
-            prev_sid_right = sid_right
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
+                prev_start_time, prev_t_finish
+            )
 
     (mld_id, walltime, hy_res_rqts) = prev_res_rqt
     job.moldable_id = mld_id
