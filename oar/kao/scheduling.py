@@ -175,17 +175,6 @@ def find_first_suitable_contiguous_slots_quotas(
                 slots_set.temporal_quotas_split_slot(
                     slot_end, quotas_rules_id, remaining_duration
                 )
-                # TODO to long extenion extension here also
-
-            if slot_end.quotas_rules_id != slot_begin.quotas_rules_id:
-                sid_left = sid_right
-                if sid_left == 0:
-                    logger.info(
-                        "can't schedule job with id: {}, temporal quotas, no more slot".format(
-                            job.id
-                        )
-                    )
-                    return (ProcSet(), -1, -1)
 
         if job.ts or (job.ph == ALLOW):
             itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)

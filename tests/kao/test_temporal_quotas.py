@@ -583,22 +583,25 @@ def test_temporal_quotas_window_time_limit_reached(oar_conf):
     ResourceSet.default_itvs = ProcSet(*res)
 
     t0 = period_weekstart()
-    t1 = t0 + 7 * 86400 - 1
+    t1 = t0 + 14 * 86400  # - 1
 
     ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), t0, t1))
+    ss.print_table()
 
     all_ss = {"default": ss}
     hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(id=1, queue="default", user="toto", project="")
-    j1.simple_req(("node", 3), 5 * 86400, res)
+    j1.simple_req(("node", 3), 3 * 86400, res)
     j2 = JobPseudo(id=1, queue="default", user="toto", project="")
     j2.simple_req(("node", 5), 10 * 86400, res)
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
+    print(j1.start_time, t0, (j1.start_time - t0) / 3600 / 24)
     assert j1.start_time - t0 == 259200
     assert j2.start_time == -1
 
     assert j1.res_set == ProcSet(*[(1, 24)])
     assert j2.res_set == ProcSet()
+
