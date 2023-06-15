@@ -155,6 +155,7 @@ def find_first_suitable_contiguous_slots_quotas(
     ):
         sid_left = slot_begin.id
         sid_right = slot_end.id
+        print("ici: ", sid_left, sid_right)
 
         if Quotas.calendar and not job.no_quotas:
             time_limit = slot_begin.b + Quotas.calendar.quotas_window_time_limit

@@ -6,7 +6,10 @@ This module contains the base scheduling structures :class:`SlotSet` and :class:
 import copy
 from typing import Dict, Generator, List, Optional, Tuple
 
+from rich import print
+from rich import box
 from procset import ProcSet
+from rich.table import Table
 
 from oar.kao.quotas import Quotas
 from oar.lib.job_handling import ALLOW, NO_PLACEHOLDER, PLACEHOLDER
@@ -269,8 +272,45 @@ class SlotSet:
         lines.append(f"{slot}")
         return "\n".join(lines)
 
-    def __repr__(self) -> str:
-        return "%s" % self
+    def print_table(self) -> str:
+        table = Table(show_header=True)
+        table.row_styles = ["none", "dim"]
+        table.box = box.MINIMAL
+
+        table.add_column("Id")
+        table.add_column("Prev")
+        table.add_column("Next")
+        table.add_column("Begin")
+        table.add_column("End")
+        table.add_column("Size (days)")
+        table.add_column("Itvs")
+        table.add_column("Ph_itvs")
+
+        slots = self.slots.values()
+        # Get first slot
+        slot = [s for s in slots if s.prev == 0][0]
+        if hasattr(slot, "quotas_rules_id"):
+            table.add_column("Quotas_rules_id")
+
+        while slot.next != 0:
+            row = [
+                str(slot.id),
+                str(slot.prev),
+                str(slot.next),
+                str(slot.b),
+                str(slot.e),
+                str(round((slot.e - slot.b) / 3600 / 24)),
+                str(slot.itvs),
+                str(slot.ph_itvs),
+            ]
+
+            if hasattr(slot, "quotas_rules_id"):
+                row.append(str(slot.quotas_rules_id))
+
+            table.add_row(*row)
+            slot = self.slots[slot.next]
+        # Get last slot
+        print(table)
 
     def show_slots(self):
         print("%s" % self)

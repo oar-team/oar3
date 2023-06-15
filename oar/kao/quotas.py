@@ -312,6 +312,7 @@ class Calendar(object):
         return (rules_id, remaining_duration)
 
     def show(self, t=None, begin=None, end=None, check=True, json=False):
+
         t_epoch = None
         if t:
             try:
@@ -409,7 +410,6 @@ class Calendar(object):
 
 class Quotas(object):
     """
-
         Implements quotas on:
            - the amount of busy resources at a time
            - the number of running jobs at a time
