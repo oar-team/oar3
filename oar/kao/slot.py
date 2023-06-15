@@ -6,9 +6,8 @@ This module contains the base scheduling structures :class:`SlotSet` and :class:
 import copy
 from typing import Dict, Generator, List, Optional, Tuple
 
-from rich import print
-from rich import box
 from procset import ProcSet
+from rich import box, print
 from rich.table import Table
 
 from oar.kao.quotas import Quotas

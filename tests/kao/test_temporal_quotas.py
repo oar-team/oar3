@@ -604,4 +604,3 @@ def test_temporal_quotas_window_time_limit_reached(oar_conf):
 
     assert j1.res_set == ProcSet(*[(1, 24)])
     assert j2.res_set == ProcSet()
-
