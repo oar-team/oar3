@@ -247,12 +247,13 @@ def set_node_state(session, hostname, state, finaud_tag, config):
         logger.debug("Warnning: Sqlite must not be used in production")
         cur = session
         cur.execute(
-            """UPDATE resource_logs SET date_stop = %s
-        WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '%s'
+            text(
+                f"""UPDATE resource_logs SET date_stop = {str(date)}
+        WHERE EXISTS (SELECT 1 FROM resources WHERE resources.network_address = '{hostname}'
         AND resource_logs.resource_id = resources.resource_id)
         AND resource_logs.date_stop = 0
-        AND resource_logs.attribute = '%s'"""
-            % (str(date), hostname, state)
+        AND resource_logs.attribute = '{state}'"""
+            )
         )
     session.commit()
 
@@ -273,12 +274,13 @@ def set_node_state(session, hostname, state, finaud_tag, config):
 
     cur = session
     cur.execute(
-        """INSERT INTO resource_logs (resource_id,attribute,value,date_start,finaud_decision)
-                SELECT resources.resource_id, 'state', '%s', '%s' , '%s'
+        text(
+            f"""INSERT INTO resource_logs (resource_id,attribute,value,date_start,finaud_decision)
+                SELECT resources.resource_id, 'state', '{state}', '{str(date)}' , '{finaud_tag}'
                 FROM resources
                 WHERE
-                    resources.network_address = '%s'"""
-        % (state, str(date), finaud_tag, hostname)
+                    resources.network_address = '{hostname}'"""
+        )
     )
     session.commit()
 

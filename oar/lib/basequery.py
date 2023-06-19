@@ -158,7 +158,15 @@ class BaseQueryCollection(object):
         if detailed:
             query = db.query(Job)
         else:
-            columns = ("id", "name", "queue_name", "user", "submission_time", "state")
+            # columns = ("id", "name", "queue_name", "user", "submission_time", "state")
+            columns = (
+                Job.id,
+                Job.name,
+                Job.queue_name,
+                Job.user,
+                Job.submission_time,
+                Job.state,
+            )
             query = db.query(Job).options(Load(Job).load_only(*columns))
 
         return self.basequery.filter_jobs_for_user(
@@ -170,7 +178,13 @@ class BaseQueryCollection(object):
         if detailed:
             query = db.query(Resource)
         else:
-            columns = ("id", "state", "available_upto", "network_address")
+            # columns = ("id", "state", "available_upto", "network_address")
+            columns = (
+                Resource.id,
+                Resource.state,
+                Resource.available_upto,
+                Resource.network_address,
+            )
             query = db.query(Resource).options(Load(Resource).load_only(*columns))
         if network_address is not None:
             query = query.filter_by(network_address=network_address)
@@ -186,10 +200,7 @@ class BaseQueryCollection(object):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
         db = self.session
-        columns = (
-            "id",
-            "network_address",
-        )
+        columns = (Resource.id, Resource.network_address)
         job_id_column = AssignedResource.moldable_id.label("job_id")
         query = (
             db.query(job_id_column, Resource)
@@ -204,10 +215,7 @@ class BaseQueryCollection(object):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
         db = self.session
-        columns = (
-            "id",
-            "network_address",
-        )
+        columns = (Resource.id, Resource.network_address)
         job_id_column = AssignedResource.moldable_id.label("id")
         query = (
             db.query(job_id_column, Resource)
@@ -220,7 +228,7 @@ class BaseQueryCollection(object):
     def get_gantt_visu_scheduled_jobs_resources(self, jobs):
         """Returns network_address allocated to a (waiting) reservation."""
         db = self.session
-        columns = ("id",)
+        columns = Resource.id
         job_id_column = MoldableJobDescription.id.label("job_id")
         query = (
             db.query(job_id_column.label("job_id"), Resource)
@@ -236,7 +244,7 @@ class BaseQueryCollection(object):
         """Returns job ids associated to a resource which is allocated to."""
         db = self.session
         query = (
-            db.query(Job.id)
+            db.query(Job)
             .filter(AssignedResource.resource_id == resource_id)
             .filter(MoldableJobDescription.id == AssignedResource.moldable_id)
             .filter(MoldableJobDescription.job_id == Job.id)

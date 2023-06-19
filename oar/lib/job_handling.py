@@ -1105,7 +1105,7 @@ def is_job_already_resubmitted(session, job_id):
     args : db ref, job id"""
 
     count_query = (
-        select([func.count()]).select_from(Job).where(Job.resubmit_job_id == job_id)
+        select((func.count())).select_from(Job).where(Job.resubmit_job_id == job_id)
     )
     return session.execute(count_query).scalar()
 
@@ -1896,7 +1896,7 @@ def get_count_same_ssh_keys_current_jobs(
 ):
     """return the number of current jobs with the same ssh keys"""
     count_query = (
-        select([func.count(Challenge.job_id)])
+        select(func.count(Challenge.job_id))
         .select_from(Challenge)
         .where(Challenge.job_id == Job.id)
         .where(

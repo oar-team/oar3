@@ -373,13 +373,10 @@ def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_
             (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
                 prev_start_time, prev_t_finish
             )
-            print(
-                f"encompassing: {(prev_sid_left, prev_sid_right)} - {(prev_start_time, prev_t_finish)}"
-            )
 
     # no suitable time*resources found for all res_rqt
     if res_set_nfound == len(job.mld_res_rqts):
-        print("cannot schedule job")
+        logger.info(f"cannot schedule job {job.id}")
         job.res_set = ProcSet()
         job.start_time = -1
         job.moldable_id = -1

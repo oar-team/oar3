@@ -11,11 +11,12 @@ from typing import Dict
 
 from procset import ProcSet
 
+# for quotas
+from sqlalchemy import text
+
 import oar.lib.tools as tools
 from oar.kao.kamelot import internal_schedule_cycle
 from oar.kao.platform import Platform
-
-# for quotas
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import (
     find_resource_hierarchies_job,
@@ -618,8 +619,12 @@ def update_gantt_visualization(session):
     session.commit()
 
     sql_queries = [
-        "INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions",
-        "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources",
+        text(
+            "INSERT INTO gantt_jobs_predictions_visu SELECT * FROM gantt_jobs_predictions"
+        ),
+        text(
+            "INSERT INTO gantt_jobs_resources_visu SELECT * FROM gantt_jobs_resources"
+        ),
     ]
     for query in sql_queries:
         session.execute(query)

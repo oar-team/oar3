@@ -48,7 +48,7 @@ def set_accounting(session, accountings, consumption_type):
                 "window_start": w_start,
                 "window_stop": w_stop,
                 "accounting_project": proj,
-                "accounting_user": user,
+                "user": user,
                 "queue_name": queue,
                 "consumption_type": consumption_type,
                 "consumption": consumption,

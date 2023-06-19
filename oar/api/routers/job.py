@@ -136,7 +136,7 @@ def get_resources(
     data["items"] = []
 
     for item in page:
-        data["items"].append(item)
+        data["items"].append(item[1])
 
     return data
 

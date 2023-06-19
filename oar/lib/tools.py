@@ -25,6 +25,7 @@ from subprocess import (  # noqa
 
 import psutil
 import zmq
+from sqlalchemy import text
 
 from oar.lib.event import add_new_event
 
@@ -616,7 +617,7 @@ def get_date(session):  # pragma: no cover
     else:
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
-    result = session.execute(req).scalar()
+    result = session.execute(text(req)).scalar()
     return int(result)
 
 

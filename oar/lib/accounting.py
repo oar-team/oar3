@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 
 from oar.lib.models import (
     Accounting,
@@ -28,13 +28,15 @@ def get_accounting_summary(session, start_time, stop_time, user="", sql_property
 
     cur = session
     res = cur.execute(
-        """SELECT accounting_user as user, consumption_type,
+        text(
+            """SELECT accounting_user as user, consumption_type,
     sum(consumption) as seconds,
     min(window_start) as first_window_start, max(window_stop) as last_window_stop
     FROM accounting
     WHERE window_stop > %s AND window_start < %s %s %s
     GROUP BY accounting_user,consumption_type ORDER BY seconds"""
-        % (start_time, stop_time, user_query, sql_property)
+            % (start_time, stop_time, user_query, sql_property)
+        )
     )
 
     results = {}
@@ -308,10 +310,12 @@ def get_last_project_karma(session, user, project, date):
 
     cur = session
     result = cur.execute(
-        """SELECT message FROM jobs
+        text(
+            """SELECT message FROM jobs
     WHERE job_user='%s' AND message like \'%s\' AND project ='%s' AND start_time < %s
     ORDER BY start_time desc LIMIT 1"""
-        % (user, "%Karma%", project, date)
+            % (user, "%Karma%", project, date)
+        )
     )
     if result:
         r = result.first()
