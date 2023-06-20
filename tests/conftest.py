@@ -15,12 +15,6 @@ from oar.lib.models import DeferredReflectionModel, Model
 
 from . import DEFAULT_CONFIG
 
-
-def op(engine):
-    ctx = MigrationContext.configure(engine.connect())
-    return Operations(ctx)
-
-
 @pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
     config = init_config()
@@ -58,10 +52,16 @@ def setup_config(request):
 
     Model.metadata.create_all(bind=engine)
 
-    op(engine).add_column("resources", Column("core", Integer, **kw))
-    op(engine).add_column("resources", Column("cpu", Integer, **kw))
-    op(engine).add_column("resources", Column("host", String(255), **kw))
-    op(engine).add_column("resources", Column("mem", Integer, **kw))
+    conn = engine.connect()
+    context = MigrationContext.configure(conn)
+
+    with context.begin_transaction():
+        op = Operations(context)
+        # op.execute("ALTER TYPE mood ADD VALUE 'soso'")
+        op.add_column("resources", Column("core", Integer, **kw))
+        op.add_column("resources", Column("cpu", Integer, **kw))
+        op.add_column("resources", Column("host", String(255), **kw))
+        op.add_column("resources", Column("mem", Integer, **kw))
 
     # reflect_base(Model.metadata, DeferredReflectionModel, engine)
     DeferredReflectionModel.prepare(engine)

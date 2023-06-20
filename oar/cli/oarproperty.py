@@ -83,78 +83,83 @@ def oarproperty(
             if not check_resource_property(column):
                 print(column)
 
-    op = get_op(engine.connect())
-    if delete:
-        for prop_todelete in delete:
-            if check_property_name(cmd_ret, prop_todelete):
-                return cmd_ret
+    conn = engine.connect()
 
-            op.drop_column(resources, prop_todelete)
-            if not quiet:
-                cmd_ret.print_("Deleled property: {}".format(prop_todelete))
+    context = MigrationContext.configure(conn)
 
-    if add:
-        for prop_toadd in add:
-            skip = False
-            prop_toadd = prop_toadd.lstrip()
-            if check_property_name(cmd_ret, prop_toadd):
-                return cmd_ret
-            if prop_toadd in properties:
-                if varchar and (type(columns[prop_toadd]) != VARCHAR):
-                    cmd_ret.error(
-                        "Property '{}' already exists but with type mismatch.".format(
-                            prop_toadd
-                        ),
-                        2,
-                        2,
-                    )
-                    skip = True
-                else:
-                    if not quiet:
-                        cmd_ret.print_(
-                            "Property '{}' already exists.".format(prop_toadd)
-                        )
-                    skip = True
-            if not skip:
-                kw = {"nullable": True}
-                if varchar:
-                    op.add_column(resources, Column(prop_toadd, String(255), **kw))
-                else:
-                    op.add_column(resources, Column(prop_toadd, Integer, **kw))
+    with context.begin_transaction():
+        op = Operations(context)
+        if delete:
+            for prop_todelete in delete:
+                if check_property_name(cmd_ret, prop_todelete):
+                    return cmd_ret
+
+                op.drop_column(resources, prop_todelete)
                 if not quiet:
-                    cmd_ret.print_("Added property: {}".format(prop_toadd))
+                    cmd_ret.print_("Deleled property: {}".format(prop_todelete))
 
-    if rename:
-        for prop_torename in rename:
-            old_prop, new_prop = prop_torename.split(",")
-            if check_property_name(cmd_ret, old_prop):
-                return cmd_ret
-            if check_property_name(cmd_ret, new_prop):
-                return cmd_ret
-            if old_prop not in columns:
-                cmd_ret.error(f"Cannot rename unexistent property: '{old_prop}'")
-                return cmd_ret
-            if new_prop in columns:
-                cmd_ret.error(
-                    f"cannot rename '{old_prop}' into '{new_prop}'. Property '{new_prop}' already exists."
+        if add:
+            for prop_toadd in add:
+                skip = False
+                prop_toadd = prop_toadd.lstrip()
+                if check_property_name(cmd_ret, prop_toadd):
+                    return cmd_ret
+                if prop_toadd in properties:
+                    if varchar and (type(columns[prop_toadd]) != VARCHAR):
+                        cmd_ret.error(
+                            "Property '{}' already exists but with type mismatch.".format(
+                                prop_toadd
+                            ),
+                            2,
+                            2,
+                        )
+                        skip = True
+                    else:
+                        if not quiet:
+                            cmd_ret.print_(
+                                "Property '{}' already exists.".format(prop_toadd)
+                            )
+                        skip = True
+                if not skip:
+                    kw = {"nullable": True}
+                    if varchar:
+                        op.add_column(resources, Column(prop_toadd, String(255), **kw))
+                    else:
+                        op.add_column(resources, Column(prop_toadd, Integer, **kw))
+                    if not quiet:
+                        cmd_ret.print_("Added property: {}".format(prop_toadd))
+
+        if rename:
+            for prop_torename in rename:
+                old_prop, new_prop = prop_torename.split(",")
+                if check_property_name(cmd_ret, old_prop):
+                    return cmd_ret
+                if check_property_name(cmd_ret, new_prop):
+                    return cmd_ret
+                if old_prop not in columns:
+                    cmd_ret.error(f"Cannot rename unexistent property: '{old_prop}'")
+                    return cmd_ret
+                if new_prop in columns:
+                    cmd_ret.error(
+                        f"cannot rename '{old_prop}' into '{new_prop}'. Property '{new_prop}' already exists."
+                    )
+                    return cmd_ret
+
+                op.alter_column(resources, old_prop, new_column_name=new_prop)
+
+                session.query(ResourceLog).filter(ResourceLog.attribute == old_prop).update(
+                    {ResourceLog.attribute: new_prop}, synchronize_session=False
                 )
-                return cmd_ret
 
-            op.alter_column(resources, old_prop, new_column_name=new_prop)
-
-            session.query(ResourceLog).filter(ResourceLog.attribute == old_prop).update(
-                {ResourceLog.attribute: new_prop}, synchronize_session=False
-            )
-
-            session.query(JobResourceDescription).filter(
-                JobResourceDescription.resource_type == old_prop
-            ).update(
-                {JobResourceDescription.resource_type: new_prop},
-                synchronize_session=False,
-            )
-            session.commit()
-            if not quiet:
-                cmd_ret.print_("Rename property {} into {}".format(old_prop, new_prop))
+                session.query(JobResourceDescription).filter(
+                    JobResourceDescription.resource_type == old_prop
+                ).update(
+                    {JobResourceDescription.resource_type: new_prop},
+                    synchronize_session=False,
+                )
+                session.commit()
+                if not quiet:
+                    cmd_ret.print_("Rename property {} into {}".format(old_prop, new_prop))
 
     return cmd_ret
 
@@ -185,8 +190,8 @@ def oarproperty(
 def cli(list, type, add, varchar, delete, rename, quiet, version):
     ctx = click.get_current_context()
     if ctx.obj:
-        (session, config) = ctx.obj
-        engine = session.get_bind()
+        (session, engine, config) = ctx.obj
+        # engine = session.get_bind()
     else:
         config, engine, log = init_oar()
         session_factory = sessionmaker(bind=engine)
