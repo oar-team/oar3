@@ -201,13 +201,12 @@ class BaseQueryCollection(object):
         in parameter."""
         db = self.session
         columns = (Resource.id, Resource.network_address)
-        job_id_column = AssignedResource.moldable_id.label("job_id")
         query = (
-            db.query(job_id_column, Resource)
+            db.query(Job.id, Resource)
             .options(Load(Resource).load_only(*columns))
+            .join(AssignedResource,Job.assigned_moldable_job == AssignedResource.moldable_id)
             .join(Resource, Resource.id == AssignedResource.resource_id)
-            .filter(job_id_column.in_([job.id for job in jobs]))
-            .order_by(job_id_column.asc())
+            .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
 
@@ -216,12 +215,13 @@ class BaseQueryCollection(object):
         in parameter."""
         db = self.session
         columns = (Resource.id, Resource.network_address)
-        job_id_column = AssignedResource.moldable_id.label("id")
+        # job_id_column = AssignedResource.moldable_id.label("id")
         query = (
-            db.query(job_id_column, Resource)
+            db.query(Job.id, Resource)
             .options(Load(Resource).load_only(*columns))
+            .join(AssignedResource,Job.assigned_moldable_job == AssignedResource.moldable_id)
             .join(Resource, Resource.id == AssignedResource.resource_id)
-            .filter(job_id_column == job.id)
+            # .filter(job_id_column == job.id)
         )
         return query
 
