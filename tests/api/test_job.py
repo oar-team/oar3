@@ -4,7 +4,7 @@ import pytest
 from oar.api.url_utils import replace_query_params
 from oar.kao.meta_sched import meta_schedule
 from oar.lib.job_handling import insert_job, set_job_state
-from oar.lib.models import FragJob, Job
+from oar.lib.models import AssignedResource, FragJob, Job
 
 
 def test_jobs_index(client, minimal_db_initialization):
