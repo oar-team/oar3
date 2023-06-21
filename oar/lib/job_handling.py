@@ -1178,9 +1178,7 @@ def get_waiting_moldable_of_reservations_already_scheduled(
     return the moldable jobs assigned to already scheduled reservations.
     """
     result = (
-        session.query(
-            MoldableJobDescription.id, Job.id
-        )
+        session.query(MoldableJobDescription.id, Job.id)
         .filter((Job.state == "Waiting") | (Job.state == "toAckReservation"))
         .filter(Job.reservation == "Scheduled")
         .filter(Job.id == MoldableJobDescription.job_id)

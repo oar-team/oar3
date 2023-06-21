@@ -8,12 +8,14 @@ import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.exc import ProgrammingError
 
 # from oar.lib import config, db
 from oar.lib.globals import init_config, init_oar
 from oar.lib.models import DeferredReflectionModel, Model
 
 from . import DEFAULT_CONFIG
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_config(request):
@@ -55,13 +57,17 @@ def setup_config(request):
     conn = engine.connect()
     context = MigrationContext.configure(conn)
 
-    with context.begin_transaction():
-        op = Operations(context)
-        # op.execute("ALTER TYPE mood ADD VALUE 'soso'")
-        op.add_column("resources", Column("core", Integer, **kw))
-        op.add_column("resources", Column("cpu", Integer, **kw))
-        op.add_column("resources", Column("host", String(255), **kw))
-        op.add_column("resources", Column("mem", Integer, **kw))
+    try:
+        with context.begin_transaction():
+            op = Operations(context)
+            # op.execute("ALTER TYPE mood ADD VALUE 'soso'")
+            op.add_column("resouces", Column("core", Integer, **kw))
+            op.add_column("resources", Column("cpu", Integer, **kw))
+            op.add_column("resources", Column("host", String(255), **kw))
+            op.add_column("resources", Column("mem", Integer, **kw))
+    except ProgrammingError: 
+        # if the columns already exist we continue the tests
+        pass
 
     # reflect_base(Model.metadata, DeferredReflectionModel, engine)
     DeferredReflectionModel.prepare(engine)

@@ -86,9 +86,9 @@ def oarproperty(
     conn = engine.connect()
 
     context = MigrationContext.configure(conn)
+    op = Operations(context)
 
     with context.begin_transaction():
-        op = Operations(context)
         if delete:
             for prop_todelete in delete:
                 if check_property_name(cmd_ret, prop_todelete):
@@ -96,7 +96,7 @@ def oarproperty(
 
                 op.drop_column(resources, prop_todelete)
                 if not quiet:
-                    cmd_ret.print_("Deleled property: {}".format(prop_todelete))
+                    cmd_ret.print_("Deleted property: {}".format(prop_todelete))
 
         if add:
             for prop_toadd in add:
@@ -147,9 +147,9 @@ def oarproperty(
 
                 op.alter_column(resources, old_prop, new_column_name=new_prop)
 
-                session.query(ResourceLog).filter(ResourceLog.attribute == old_prop).update(
-                    {ResourceLog.attribute: new_prop}, synchronize_session=False
-                )
+                session.query(ResourceLog).filter(
+                    ResourceLog.attribute == old_prop
+                ).update({ResourceLog.attribute: new_prop}, synchronize_session=False)
 
                 session.query(JobResourceDescription).filter(
                     JobResourceDescription.resource_type == old_prop
@@ -159,7 +159,9 @@ def oarproperty(
                 )
                 session.commit()
                 if not quiet:
-                    cmd_ret.print_("Rename property {} into {}".format(old_prop, new_prop))
+                    cmd_ret.print_(
+                        "Rename property {} into {}".format(old_prop, new_prop)
+                    )
 
     return cmd_ret
 

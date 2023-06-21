@@ -1,9 +1,11 @@
 # coding: utf-8
 import re
-from oar.lib.models import Model
+from oar.lib.models import DeferredReflectionModel, Model
 
 import pytest
 from click.testing import CliRunner
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.cli.oarproperty import cli
@@ -23,7 +25,7 @@ def minimal_db_initialization(request, setup_config):
 def test_version(minimal_db_initialization, setup_config):
     config, _, engine = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, engine,config))
+    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, engine, config))
     print(result.exception)
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
@@ -58,7 +60,6 @@ def test_oarproperty_simple_error(minimal_db_initialization, setup_config):
         ["-a core", "-c"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
-
     )
     print(result.output)
     assert result.exit_code == 2
@@ -123,7 +124,9 @@ def test_oarproperty_list(minimal_db_initialization, setup_config):
     config, _, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["--list"], catch_exceptions=False,
+        cli,
+        ["--list"],
+        catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )
     print(result.output)
@@ -136,11 +139,8 @@ def test_oarproperty_list(minimal_db_initialization, setup_config):
 )
 def test_oarproperty_delete(minimal_db_initialization, setup_config):
     config, _, engine = setup_config
-    # column_name1 = [p.name for p in db["resources"].columns]
     runner = CliRunner()
 
-    # FIXME: since now alembic needs transaction, IDK how to rollback now.
-    # Thus I reset the database to a working state...
     result = runner.invoke(
         cli,
         ["-a", "tadam"],
@@ -148,13 +148,17 @@ def test_oarproperty_delete(minimal_db_initialization, setup_config):
         obj=(minimal_db_initialization, engine, config),
     )
 
+    DeferredReflectionModel.prepare(engine)
     result = runner.invoke(
         cli,
         ["-d", "tadam"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )
+
     print(result.output)
+    assert result.output == "Deleted property: tadam"
+
     assert result.exit_code == 0
 
 
@@ -163,27 +167,32 @@ def test_oarproperty_delete(minimal_db_initialization, setup_config):
 )
 def test_oarproperty_rename(minimal_db_initialization, setup_config):
     config, _, engine = setup_config
+
     runner = CliRunner()
 
     result = runner.invoke(
         cli,
-        ["-a", "caprice"],
+        ["-a", "tadam"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )
-    print(result)
 
-    runner = CliRunner()
-    columns = Model.metadata.tables["resources"].columns
-    properties = [column.name for column in columns]
-    print(properties)
+    DeferredReflectionModel.prepare(engine)
 
     result = runner.invoke(
         cli,
-        ["--rename", "caprice,ecirpac"],
+        ["--rename", "tadam,madat"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )
-    print(result.output)
     assert result.exit_code == 0
+    print(result.output)
 
+    DeferredReflectionModel.prepare(engine)
+    # Clean the table
+    result = runner.invoke(
+        cli,
+        ["-d", "madat"],
+        catch_exceptions=False,
+        obj=(minimal_db_initialization, engine, config),
+    )
