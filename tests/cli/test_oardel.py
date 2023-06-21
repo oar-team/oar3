@@ -37,7 +37,12 @@ def monkeypatch_tools(request, monkeypatch):
 def test_version(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
     runner = CliRunner()
-    result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
+    result = runner.invoke(
+        cli,
+        ["-V"],
+        obj=(minimal_db_initialization, config),
+        catch_exceptions=False,
+    )
     print(result.output)
     assert re.match(r".*\d\.\d\.\d.*", result.output)
 

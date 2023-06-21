@@ -44,17 +44,16 @@ def oardel(
     cli=True,
 ):
 
+    cmd_ret = CommandReturns(cli)
+    if version:
+        cmd_ret.print_("OAR version : " + VERSION)
+        return cmd_ret
+
     if not user:
         if "OARDO_USER" in os.environ:
             user = os.environ["OARDO_USER"]
         else:
             user = os.environ["USER"]
-
-    cmd_ret = CommandReturns(cli)
-
-    if version:
-        cmd_ret.print_("OAR version : " + VERSION)
-        return cmd_ret
 
     if not job_ids and not sql and not array:
         cmd_ret.usage(1)
