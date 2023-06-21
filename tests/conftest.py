@@ -61,7 +61,7 @@ def setup_config(request):
         with context.begin_transaction():
             op = Operations(context)
             # op.execute("ALTER TYPE mood ADD VALUE 'soso'")
-            op.add_column("resouces", Column("core", Integer, **kw))
+            op.add_column("resources", Column("core", Integer, **kw))
             op.add_column("resources", Column("cpu", Integer, **kw))
             op.add_column("resources", Column("host", String(255), **kw))
             op.add_column("resources", Column("mem", Integer, **kw))
