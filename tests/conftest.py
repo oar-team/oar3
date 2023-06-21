@@ -65,7 +65,7 @@ def setup_config(request):
             op.add_column("resources", Column("cpu", Integer, **kw))
             op.add_column("resources", Column("host", String(255), **kw))
             op.add_column("resources", Column("mem", Integer, **kw))
-    except ProgrammingError: 
+    except ProgrammingError:
         # if the columns already exist we continue the tests
         pass
 

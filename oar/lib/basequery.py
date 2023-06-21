@@ -204,7 +204,10 @@ class BaseQueryCollection(object):
         query = (
             db.query(Job.id, Resource)
             .options(Load(Resource).load_only(*columns))
-            .join(AssignedResource,Job.assigned_moldable_job == AssignedResource.moldable_id)
+            .join(
+                AssignedResource,
+                Job.assigned_moldable_job == AssignedResource.moldable_id,
+            )
             .join(Resource, Resource.id == AssignedResource.resource_id)
             .order_by(Job.id.asc())
         )
@@ -219,7 +222,10 @@ class BaseQueryCollection(object):
         query = (
             db.query(Job.id, Resource)
             .options(Load(Resource).load_only(*columns))
-            .join(AssignedResource,Job.assigned_moldable_job == AssignedResource.moldable_id)
+            .join(
+                AssignedResource,
+                Job.assigned_moldable_job == AssignedResource.moldable_id,
+            )
             .join(Resource, Resource.id == AssignedResource.resource_id)
             # .filter(job_id_column == job.id)
         )

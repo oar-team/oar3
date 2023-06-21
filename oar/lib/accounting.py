@@ -68,15 +68,17 @@ def get_accounting_summary_byproject(
 
     cur = session
     res = cur.execute(
-        text("""SELECT accounting_user as user, consumption_type,
+        text(
+            """SELECT accounting_user as user, consumption_type,
     sum(consumption) as seconds, accounting_project as project
     FROM accounting
     WHERE
     window_stop > %s AND window_start < %s %s
     GROUP BY accounting_user,project,consumption_type
     ORDER BY project,consumption_type,seconds %s """
-        % (start_time, stop_time, user_query, limit_offset_query)
-    ))
+            % (start_time, stop_time, user_query, limit_offset_query)
+        )
+    )
 
     results = {}
     for r in res:

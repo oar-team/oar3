@@ -1,16 +1,13 @@
 # coding: utf-8
 import re
-from oar.lib.models import DeferredReflectionModel, Model
 
 import pytest
-from sqlalchemy import Column, Integer
 from click.testing import CliRunner
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.cli.oarproperty import cli
 from oar.lib.database import ephemeral_session
+from oar.lib.models import DeferredReflectionModel
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -55,6 +52,7 @@ def test_oarproperty_add(minimal_db_initialization, setup_config):
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )
+
 
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
@@ -145,7 +143,9 @@ def test_oarproperty_list(minimal_db_initialization, setup_config):
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
-@pytest.mark.skip(reason="messing up with resource table has other side effects in tests...")
+@pytest.mark.skip(
+    reason="messing up with resource table has other side effects in tests..."
+)
 def test_oarproperty_delete(minimal_db_initialization, setup_config):
     config, _, engine = setup_config
     runner = CliRunner()
@@ -177,4 +177,3 @@ def test_oarproperty_rename(minimal_db_initialization, setup_config):
     )
 
     assert result.exit_code == 0
-
