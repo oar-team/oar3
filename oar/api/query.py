@@ -2,12 +2,15 @@
 from math import ceil
 
 from fastapi import HTTPException
-# from flask import abort, current_app
 
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 
 # from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property, row2dict
+
+# from flask import abort, current_app
+# TODO: This whole file is to review since it has been adapted from flask and now use in fastapi.
+# Especially the error handling previously done with abort from flask
 
 
 def paginate(query, offset, limit, error_out=True):
@@ -25,23 +28,15 @@ class APIQuery(BaseQuery):
         super(APIQuery, self).__init__(session)
 
     def get_or_404(self, query, ident):
-        try:
-            return query.get_or_error(ident)
-        except Exception:
-            abort(404)
+        return query.get_or_error(ident)
 
     def first_or_404(self):
-        try:
-            return self.first_or_error()
-        except Exception:
-            abort(404)
+        return self.first_or_error()
 
     def paginate(self, offset, limit, error_out=True):
         if limit is None:
             raise Exception("Handle this case")
             # limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
-        if error_out and offset < 0:
-            abort(404)
         return PaginationQuery(self, offset, limit, error_out)
 
 
