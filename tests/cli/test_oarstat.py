@@ -501,9 +501,10 @@ def test_oarstat_job_id_error(minimal_db_initialization, setup_config):
 
     runner = CliRunner()
     result = runner.invoke(cli, ["-j", str(jid), "-J"], obj=minimal_db_initialization)
-
-    print(result.output)
     str_result = result.output
+    # import traceback
+    # print(result.exception)
+    # print(traceback.print_tb(result.exc_info[2]))
 
     try:
         parsed_json = json.loads(str_result)

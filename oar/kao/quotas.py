@@ -531,6 +531,7 @@ class Quotas(object):
                 all_value = resource_set.nb_resources_default_not_dead
         else:
             all_value = None
+
         cls.load_quotas_rules(config, all_value)
 
     def __init__(self):
