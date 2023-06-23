@@ -2,7 +2,7 @@
 from math import ceil
 
 from fastapi import HTTPException
-from flask import abort, current_app
+# from flask import abort, current_app
 
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 
@@ -12,7 +12,8 @@ from oar.lib.utils import cached_property, row2dict
 
 def paginate(query, offset, limit, error_out=True):
     if limit is None:
-        limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+        raise Exception("Handle this case")
+        # limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
     if error_out and offset < 0:
         raise HTTPException(status_code=404, detail="Pagination out of bounds")
 
@@ -37,7 +38,8 @@ class APIQuery(BaseQuery):
 
     def paginate(self, offset, limit, error_out=True):
         if limit is None:
-            limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+            raise Exception("Handle this case")
+            # limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
         if error_out and offset < 0:
             abort(404)
         return PaginationQuery(self, offset, limit, error_out)
