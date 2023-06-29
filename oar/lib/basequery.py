@@ -209,6 +209,7 @@ class BaseQueryCollection(object):
                 Job.assigned_moldable_job == AssignedResource.moldable_id,
             )
             .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(Job.id.in_([job.id for job in jobs]))
             .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
