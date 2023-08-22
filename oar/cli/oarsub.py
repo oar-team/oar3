@@ -13,7 +13,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
-from oar.lib.database import EngineConnector
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
