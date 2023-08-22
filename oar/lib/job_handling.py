@@ -152,14 +152,15 @@ def get_jobs_types(session, jids, jobs):
         elif t == "allow":
             job.ph = ALLOW
             job.ph_name = t_v[1]
-        elif t == "assign":
+        elif t == "assign":  # pragma: no cover
+            # Skip coverage for the two next elif because it should be used with plugins
             job.assign = True
             raw_args = "=".join(t_v[1:])
             funcname, job.assign_args, job.assign_kwargs = extract_find_assign_args(
                 raw_args
             )
             job.assign_func = find_plugin_function("oar.assign_func", funcname)
-        elif t == "find":
+        elif t == "find":  # pragma: no cover
             job.find = True
             raw_args = "=".join(t_v[1:])
             funcname, job.find_args, job.find_kwargs = extract_find_assign_args(
@@ -678,7 +679,7 @@ def save_assigns(session, jobs, resource_set):
 
 
 # flake8: noqa: (TODO: write an equivalent, benchmark it)
-def save_assigns_bulk(session, jobs, resource_set):
+def save_assigns_bulk(session, jobs, resource_set):  # pragma: no cover
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []

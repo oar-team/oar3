@@ -48,7 +48,7 @@ def generate_jobs(nb_jobs, size_max, mode="same"):
 
 
 # flake8: noqa:
-def save_assigns_bulk_0(jobs, resource_set):
+def save_assigns_bulk_0(jobs, resource_set):  # pragma: no cover
     if len(jobs) > 0:
         mld_id_start_time_s = []
         mld_id_rid_s = []
