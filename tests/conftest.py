@@ -23,7 +23,7 @@ def setup_config(request):
 
     config.update(DEFAULT_CONFIG.copy())
     tempdir = tempfile.mkdtemp()
-    config["LOG_FILE"] = os.path.join(tempdir, "oar.log")
+    config["LOG_FILE"] = os.path.join("/tmp", "oar.log")
 
     db_type = os.environ.get("DB_TYPE", "memory")
     os.environ.setdefault("DB_TYPE", db_type)

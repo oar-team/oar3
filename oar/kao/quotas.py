@@ -514,6 +514,7 @@ class Quotas(object):
     enabled: bool = False
     calendar: Optional[Calendar] = None
     default_rules = {}
+    # Job types are apart, so they can extends the quotas globally ?
     job_types: List[str] = ["*"]
 
     @classmethod
@@ -566,6 +567,7 @@ class Quotas(object):
 
         for t in Quotas.job_types:
             if (t == "*") or (t in job.types):
+                # TODO: can't we instead loop over active rules?
                 # Update the number of used resources
                 self.counters["*", "*", t, "*"][0] += nb_resources
                 self.counters["*", "*", t, user][0] += nb_resources
@@ -605,63 +607,145 @@ class Quotas(object):
     def check(self, job):
         # self.show_counters('before check, job id: ' + str(job.id))
         for rl_fields, rl_quotas in self.rules.items():
-            # pdb.set_trace()
+            print("check rule", rl_fields, job.id)
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, counters in self.counters.items():
-                queue, project, job_type, user = fields
-                nb_resources, nb_jobs, resources_time = counters
-                # match queue
-                if (
-                    ((rl_queue == "*") and (queue == "*"))
-                    or ((rl_queue == queue) and (job.queue_name == queue))
-                    or (rl_queue == "/")
-                ):
-                    # match project
-                    if (
-                        ((rl_project == "*") and (project == "*"))
-                        or ((rl_project == project) and (job.project == project))
-                        or (rl_project == "/")
-                    ):
-                        # match job_typ
-                        if ((rl_job_type == "*") and (job_type == "*")) or (
-                            (rl_job_type == job_type) and (job_type in job.types)
-                        ):
-                            # match user
-                            if (
-                                ((rl_user == "*") and (user == "*"))
-                                or ((rl_user == user) and (job.user == user))
-                                or (rl_user == "/")
-                            ):
-                                # test quotas values plus job's ones
-                                # 1) test nb_resources
-                                if (rl_nb_resources > -1) and (
-                                    rl_nb_resources < nb_resources
-                                ):
-                                    return (
-                                        False,
-                                        "nb resources quotas failed",
-                                        rl_fields,
-                                        rl_nb_resources,
-                                    )
-                                # 2) test nb_jobs
-                                if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-                                    return (
-                                        False,
-                                        "nb jobs quotas failed",
-                                        rl_fields,
-                                        rl_nb_jobs,
-                                    )
-                                # 3) test resources_time (work)
-                                if (rl_resources_time > -1) and (
-                                    rl_resources_time < resources_time
-                                ):
-                                    return (
-                                        False,
-                                        "resources hours quotas failed",
-                                        rl_fields,
-                                        rl_resources_time,
-                                    )
+
+            queue, project, job_types, user = (
+                job.queue_name,
+                job.project,
+                job.types,
+                job.user,
+            )
+
+            # At this point, we need to find the counters that applies for the current job
+            key_queue = None
+            if rl_queue == "/" or rl_queue == "*" or rl_queue == queue:
+                if rl_queue == "*":
+                    key_queue = "*"
+                elif rl_queue == "/" or rl_queue == queue:
+                    key_queue = queue
+
+            key_project = None
+            if rl_project == "/" or rl_project == "*" or rl_project == project:
+                if rl_project == "*":
+                    key_project = "*"
+                elif rl_project == "/" or rl_project == project:
+                    key_project = project
+
+            key_user = None
+            if rl_user == "/" or rl_user == "*" or rl_user == user:
+                if rl_user == "*":
+                    key_user = "*"
+                elif rl_user == "/" or rl_user == user:
+                    key_user = user
+
+            key_job_type = None
+            # TODO: double check this one
+            if rl_job_type == "*" or (
+                (rl_job_type in job_types) and rl_job_type in Quotas.job_types
+            ):
+                if rl_job_type == "*":
+                    key_job_type = "*"
+                else:
+                    key_job_type = rl_job_type
+
+            complete_key = (key_queue, key_project, key_job_type, key_user)
+
+            # Current rule does not apply to our case
+            if not (key_queue and key_project and key_user and key_job_type):
+                print("not matching", complete_key)
+                continue
+
+            if complete_key in self.counters:
+                count = self.counters[(key_queue, key_project, key_job_type, key_user)]
+                nb_resources, nb_jobs, resources_time = count
+
+                print("coucou", rl_fields, complete_key, count, rl_quotas)
+
+                # test quotas values plus job's ones
+                # 1) test nb_resources
+                if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
+                    print("a")
+                    return (
+                        False,
+                        "nb resources quotas failed",
+                        rl_fields,
+                        rl_nb_resources,
+                    )
+
+                # 2) test nb_jobs
+                if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
+                    print("b")
+                    return (
+                        False,
+                        "nb jobs quotas failed",
+                        rl_fields,
+                        rl_nb_jobs,
+                    )
+                # 3) test resources_time (work)
+                if (rl_resources_time > -1) and (rl_resources_time < resources_time):
+                    return (
+                        False,
+                        "resources hours quotas failed",
+                        rl_fields,
+                        rl_resources_time,
+                    )
+
+            # for fields, counters in self.counters.items():
+            #    queue, project, job_type, user = fields
+            #    nb_resources, nb_jobs, resources_time = counters
+            #    # match queue
+            #    if (
+            #        ((rl_queue == "*") and (queue == "*"))
+            #        or ((rl_queue == queue) and (job.queue_name == queue))
+            #        or (rl_queue == "/")
+            #    ):
+            #        # match project
+            #        if (
+            #            ((rl_project == "*") and (project == "*"))
+            #            or ((rl_project == project) and (job.project == project))
+            #            or (rl_project == "/")
+            #        ):
+            #            # match job_typ
+            #            if ((rl_job_type == "*") and (job_type == "*")) or (
+            #                (rl_job_type == job_type) and (job_type in job.types)
+            #            ):
+            #                # match user
+            #                if (
+            #                    ((rl_user == "*") and (user == "*"))
+            #                    or ((rl_user == user) and (job.user == user))
+            #                    or (rl_user == "/")
+            #                ):
+            #                    # test quotas values plus job's ones
+            #                    # 1) test nb_resources
+            #                    if (rl_nb_resources > -1) and (
+            #                        rl_nb_resources < nb_resources
+            #                    ):
+            #                        return (
+            #                            False,
+            #                            "nb resources quotas failed",
+            #                            rl_fields,
+            #                            rl_nb_resources,
+            #                        )
+            #                    # 2) test nb_jobs
+            #                    if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
+            #                        return (
+            #                            False,
+            #                            "nb jobs quotas failed",
+            #                            rl_fields,
+            #                            rl_nb_jobs,
+            #                        )
+            #                    # 3) test resources_time (work)
+            #                    if (rl_resources_time > -1) and (
+            #                        rl_resources_time < resources_time
+            #                    ):
+            #                        return (
+            #                            False,
+            #                            "resources hours quotas failed",
+            #                            rl_fields,
+            #                            rl_resources_time,
+            #                        )
         return (True, "quotas ok", "", 0)
 
     @staticmethod
