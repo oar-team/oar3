@@ -605,13 +605,13 @@ class Quotas(object):
         # self.show_counters('combine after')
 
     def check(self, job):
-        # self.show_counters('before check, job id: ' + str(job.id))
+        print("current rules -> ", self.rules)
+        self.show_counters("before check, job id: " + str(job.id))
         for rl_fields, rl_quotas in self.rules.items():
-            print("check rule", rl_fields, job.id)
             rl_queue, rl_project, rl_job_type, rl_user = rl_fields
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
 
-            queue, project, job_types, user = (
+            job_attr = (queue, project, job_types, user) = (
                 job.queue_name,
                 job.project,
                 job.types,
@@ -619,6 +619,8 @@ class Quotas(object):
             )
 
             # At this point, we need to find the counters that applies for the current job
+            # If one of the following field is None, then the current rule doesn't apply to
+            # the job given in parameter
             key_queue = None
             if rl_queue == "/" or rl_queue == "*" or rl_queue == queue:
                 if rl_queue == "*":
@@ -653,20 +655,22 @@ class Quotas(object):
             complete_key = (key_queue, key_project, key_job_type, key_user)
 
             # Current rule does not apply to our case
-            if not (key_queue and key_project and key_user and key_job_type):
-                print("not matching", complete_key)
+            if (
+                key_queue is None
+                or key_project is None
+                or key_user is None
+                or key_job_type is None
+            ):
+                # Checking None bc empty string is considered false, and some tests don't fill the user for instance
                 continue
 
             if complete_key in self.counters:
-                count = self.counters[(key_queue, key_project, key_job_type, key_user)]
+                count = self.counters[key_queue, key_project, key_job_type, key_user]
                 nb_resources, nb_jobs, resources_time = count
-
-                print("coucou", rl_fields, complete_key, count, rl_quotas)
 
                 # test quotas values plus job's ones
                 # 1) test nb_resources
                 if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
-                    print("a")
                     return (
                         False,
                         "nb resources quotas failed",
@@ -676,7 +680,6 @@ class Quotas(object):
 
                 # 2) test nb_jobs
                 if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-                    print("b")
                     return (
                         False,
                         "nb jobs quotas failed",
@@ -692,60 +695,6 @@ class Quotas(object):
                         rl_resources_time,
                     )
 
-            # for fields, counters in self.counters.items():
-            #    queue, project, job_type, user = fields
-            #    nb_resources, nb_jobs, resources_time = counters
-            #    # match queue
-            #    if (
-            #        ((rl_queue == "*") and (queue == "*"))
-            #        or ((rl_queue == queue) and (job.queue_name == queue))
-            #        or (rl_queue == "/")
-            #    ):
-            #        # match project
-            #        if (
-            #            ((rl_project == "*") and (project == "*"))
-            #            or ((rl_project == project) and (job.project == project))
-            #            or (rl_project == "/")
-            #        ):
-            #            # match job_typ
-            #            if ((rl_job_type == "*") and (job_type == "*")) or (
-            #                (rl_job_type == job_type) and (job_type in job.types)
-            #            ):
-            #                # match user
-            #                if (
-            #                    ((rl_user == "*") and (user == "*"))
-            #                    or ((rl_user == user) and (job.user == user))
-            #                    or (rl_user == "/")
-            #                ):
-            #                    # test quotas values plus job's ones
-            #                    # 1) test nb_resources
-            #                    if (rl_nb_resources > -1) and (
-            #                        rl_nb_resources < nb_resources
-            #                    ):
-            #                        return (
-            #                            False,
-            #                            "nb resources quotas failed",
-            #                            rl_fields,
-            #                            rl_nb_resources,
-            #                        )
-            #                    # 2) test nb_jobs
-            #                    if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-            #                        return (
-            #                            False,
-            #                            "nb jobs quotas failed",
-            #                            rl_fields,
-            #                            rl_nb_jobs,
-            #                        )
-            #                    # 3) test resources_time (work)
-            #                    if (rl_resources_time > -1) and (
-            #                        rl_resources_time < resources_time
-            #                    ):
-            #                        return (
-            #                            False,
-            #                            "resources hours quotas failed",
-            #                            rl_fields,
-            #                            rl_resources_time,
-            #                        )
         return (True, "quotas ok", "", 0)
 
     @staticmethod
