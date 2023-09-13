@@ -11,6 +11,8 @@ from oar.lib.globals import get_logger, init_oar
 from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
+from rich import print
+
 
 _day2week_offset = {
     "mon": 0,
@@ -604,96 +606,99 @@ class Quotas(object):
             self.counters[key][2] += value[2]
         # self.show_counters('combine after')
 
+    def naive_get_applicable_rule(self):
+        self.rule_tree = dict()
+
+        for fields, rule in self.rules.items():
+            current = self.rule_tree
+            for f in fields:
+                if f not in current:
+                    current[f] = dict()
+                current = current[f]
+            queue, project, job_type, user = fields
+
+            self.rule_tree[queue][project][job_type][user] = rule
+
+        print(self.rule_tree)
+        return self.rule_tree
+
+    def find_applicable_rule(self, job):
+
+        # Performance issue, only for testing purpose, need to be done only once
+        self.naive_get_applicable_rule()
+
+        (queue, project, job_types, user) = (
+            job.queue_name,
+            job.project,
+            job.types,
+            job.user,
+        )
+            
+        def get_item(d, value):
+            print("bmamama", d, value)
+            if value in d:
+                return value
+            if '/' in d:
+                return '/'
+            if '*' in d:
+                return '*'
+
+            return None
+
+        rule = None
+        key_queue, key_project, key_job_type, key_user = (get_item(self.rule_tree, queue), None, None, None)
+        if key_queue:
+            key_project = get_item(self.rule_tree[key_queue], project)
+            if key_project:
+                key_job_type = get_item(self.rule_tree[key_queue][key_project], "*")
+                if key_job_type:
+                    key_user = get_item(self.rule_tree[key_queue][key_project][key_job_type], user)
+                    rule = self.rule_tree[key_queue][key_project][key_job_type][key_user]
+
+        rule_key = key_queue, key_project, key_job_type, key_user
+        return (rule, rule_key)
+
     def check(self, job):
         print("current rules -> ", self.rules)
-        self.show_counters("before check, job id: " + str(job.id))
-        for rl_fields, rl_quotas in self.rules.items():
-            rl_queue, rl_project, rl_job_type, rl_user = rl_fields
-            rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
 
-            job_attr = (queue, project, job_types, user) = (
-                job.queue_name,
-                job.project,
-                job.types,
-                job.user,
-            )
+        # self.show_counters("before check, job id: " + str(job.id))
+        # rl_queue, rl_project, rl_job_type, rl_user = rl_fields
 
-            # At this point, we need to find the counters that applies for the current job
-            # If one of the following field is None, then the current rule doesn't apply to
-            # the job given in parameter
-            key_queue = None
-            if rl_queue == "/" or rl_queue == "*" or rl_queue == queue:
-                if rl_queue == "*":
-                    key_queue = "*"
-                elif rl_queue == "/" or rl_queue == queue:
-                    key_queue = queue
+        (rl_quotas, complete_key) = self.find_applicable_rule(job)
+        rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
 
-            key_project = None
-            if rl_project == "/" or rl_project == "*" or rl_project == project:
-                if rl_project == "*":
-                    key_project = "*"
-                elif rl_project == "/" or rl_project == project:
-                    key_project = project
+        (key_queue, key_project, key_job_type, key_user) = complete_key
+        if complete_key in self.counters:
+            print(f"concerning counter: {complete_key}")
+            count = self.counters[key_queue, key_project, key_job_type, key_user]
+            nb_resources, nb_jobs, resources_time = count
 
-            key_user = None
-            if rl_user == "/" or rl_user == "*" or rl_user == user:
-                if rl_user == "*":
-                    key_user = "*"
-                elif rl_user == "/" or rl_user == user:
-                    key_user = user
+            # test quotas values plus job's ones
+            # 1) test nb_resources
+            if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
+                return (
+                    False,
+                    "nb resources quotas failed",
+                    complete_key,
+                    rl_nb_resources,
+                )
 
-            key_job_type = None
-            # TODO: double check this one
-            if rl_job_type == "*" or (
-                (rl_job_type in job_types) and rl_job_type in Quotas.job_types
-            ):
-                if rl_job_type == "*":
-                    key_job_type = "*"
-                else:
-                    key_job_type = rl_job_type
-
-            complete_key = (key_queue, key_project, key_job_type, key_user)
-
-            # Current rule does not apply to our case
-            if (
-                key_queue is None
-                or key_project is None
-                or key_user is None
-                or key_job_type is None
-            ):
-                # Checking None bc empty string is considered false, and some tests don't fill the user for instance
-                continue
-
-            if complete_key in self.counters:
-                count = self.counters[key_queue, key_project, key_job_type, key_user]
-                nb_resources, nb_jobs, resources_time = count
-
-                # test quotas values plus job's ones
-                # 1) test nb_resources
-                if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
-                    return (
-                        False,
-                        "nb resources quotas failed",
-                        rl_fields,
-                        rl_nb_resources,
-                    )
-
-                # 2) test nb_jobs
-                if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-                    return (
-                        False,
-                        "nb jobs quotas failed",
-                        rl_fields,
-                        rl_nb_jobs,
-                    )
-                # 3) test resources_time (work)
-                if (rl_resources_time > -1) and (rl_resources_time < resources_time):
-                    return (
-                        False,
-                        "resources hours quotas failed",
-                        rl_fields,
-                        rl_resources_time,
-                    )
+            # 2) test nb_jobs
+            if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
+                return (
+                    False,
+                    "nb jobs quotas failed",
+                    complete_key,
+                    rl_nb_jobs,
+                )
+            # 3) test resources_time (work)
+            if (rl_resources_time > -1) and (rl_resources_time < resources_time):
+                return (
+                    False,
+                    "resources hours quotas failed",
+                    complete_key,
+                    rl_resources_time,
+                )
 
         return (True, "quotas ok", "", 0)
 
