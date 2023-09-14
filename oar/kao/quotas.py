@@ -537,9 +537,14 @@ class Quotas(object):
 
         cls.load_quotas_rules(config, all_value)
 
-    def __init__(self):
+    def __init__(self, rules=None):
         self.counters = defaultdict(lambda: [0, 0, 0])
-        self.rules = Quotas.default_rules
+        if not rules:
+            self.rules = Quotas.default_rules
+        else:
+            self.rules = rules
+        # Init the tree
+        self.init_rule_tree()
 
     def deepcopy_from(self, quotas):
         self.counters = deepcopy(quotas.counters)
@@ -620,7 +625,7 @@ class Quotas(object):
         #                 /      \          /
         # user:         '/'     '*'       '*'
 
-        self.rule_tree = dict()
+        self.rule_tree: dict[str, dict[str, dict[str, (int, int, float)]]] = dict()
 
         for fields, rule in self.rules.items():
             current = self.rule_tree
@@ -635,15 +640,12 @@ class Quotas(object):
         return self.rule_tree
 
     def find_applicable_rule(self, job):
+        """ """
         # Function that get the rule that should be applied to the current job in parameter.
         # Only one rule applies to the job, and the rule is found by looking at the rule tree
         # from top to bottom with the following priority:
         # '*' < '/' < $var
         # $var is any specified value for instance 'toto' for the user or 'besteffort' for the queue
-
-        # TODO: Performance issue, only for testing purpose, need to be done only once
-        self.init_rule_tree()
-
         (queue, project, job_types, user) = (
             job.queue_name,
             job.project,
@@ -651,7 +653,7 @@ class Quotas(object):
             job.user,
         )
 
-        def get_item(d, value):
+        def get_item(d: dict, value: str):
             if value in d:
                 return value
             if "/" in d:
@@ -704,8 +706,9 @@ class Quotas(object):
 
         return (rule, rule_counter, rule_key)
 
-    def check(self, job):
+    def check(self, job) -> tuple[bool, str, str, int]:
         (rule, complete_key, rl_quotas) = self.find_applicable_rule(job)
+        print("on en est la", self.rule_tree, self.rules, rule, complete_key, rl_quotas)
 
         if rule and complete_key in self.counters:
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rule
@@ -746,8 +749,8 @@ class Quotas(object):
     @staticmethod
     def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
         # loop over slot_set
-        slots_quotas = Quotas()
-        slots_quotas.rules = slots[sid_left].quotas.rules
+        slots_quotas = Quotas(slots[sid_left].quotas.rules)
+
         sid = sid_left
         while True:
             slot = slots[sid]
@@ -771,6 +774,7 @@ class Quotas(object):
         """Use for temporal calendar, when rules must be change from default"""
         if Quotas.calendar:
             self.rules = Quotas.calendar.quotas_rules_list[rules_id]
+            self.init_rule_tree()
 
     @staticmethod
     def quotas_rules_fromJson(json_quotas_rules, all_value=None):

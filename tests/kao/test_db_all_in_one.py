@@ -379,7 +379,6 @@ def test_db_all_in_one_temporal_quotas_1(
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
     rules_str = str(a).replace("'", '"')
-    print(rules_str)
     create_quotas_rules_file(config, rules_str)
 
     insert_job(
