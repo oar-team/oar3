@@ -5,14 +5,13 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import simplejson as json
+from rich import print
 
 from oar.lib import configuration
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.resource import ResourceSet
 from oar.lib.submission import check_reservation
 from oar.lib.tools import hms_str_to_duration, local_to_sql
-from rich import print
-
 
 _day2week_offset = {
     "mon": 0,
