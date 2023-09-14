@@ -606,7 +606,20 @@ class Quotas(object):
             self.counters[key][2] += value[2]
         # self.show_counters('combine after')
 
-    def naive_get_applicable_rule(self):
+    def init_rule_tree(self):
+        # Create the rule multi-tree from all active rules
+        # The three depths correspond to the current entity on which the level applies
+        # For instance the first level is the queue, the second level is the project etc
+
+        # The rule set ["*", "*", "*", "/"], ["*", "*", "besteffort", "*"] leads to the three
+        # queue:                         '*'
+        #                               /
+        # project                _____'*'_____
+        #                      /              \
+        # job_types         _'*'_            besteffort
+        #                 /      \          /
+        # user:         '/'     '*'       '*'
+
         self.rule_tree = dict()
 
         for fields, rule in self.rules.items():
@@ -619,13 +632,17 @@ class Quotas(object):
 
             self.rule_tree[queue][project][job_type][user] = rule
 
-        print(self.rule_tree)
         return self.rule_tree
 
     def find_applicable_rule(self, job):
+        # Function that get the rule that should be applied to the current job in parameter.
+        # Only one rule applies to the job, and the rule is found by looking at the rule tree
+        # from top to bottom with the following priority:
+        # '*' < '/' < $var
+        # $var is any specified value for instance 'toto' for the user or 'besteffort' for the queue
 
-        # Performance issue, only for testing purpose, need to be done only once
-        self.naive_get_applicable_rule()
+        # TODO: Performance issue, only for testing purpose, need to be done only once
+        self.init_rule_tree()
 
         (queue, project, job_types, user) = (
             job.queue_name,
@@ -633,43 +650,67 @@ class Quotas(object):
             job.types,
             job.user,
         )
-            
+
         def get_item(d, value):
-            print("bmamama", d, value)
             if value in d:
                 return value
-            if '/' in d:
-                return '/'
-            if '*' in d:
-                return '*'
+            if "/" in d:
+                return "/"
+            if "*" in d:
+                return "*"
 
             return None
 
-        rule = None
-        key_queue, key_project, key_job_type, key_user = (get_item(self.rule_tree, queue), None, None, None)
+        # Init the rule to return
+        rule = None  # [-1, -1, -1]
+        rule_key = None
+
+        key_queue, key_project, key_job_type, key_user = (
+            get_item(self.rule_tree, queue),
+            None,
+            None,
+            None,
+        )
+        # Walk the rule tree to find the rule
         if key_queue:
             key_project = get_item(self.rule_tree[key_queue], project)
             if key_project:
-                key_job_type = get_item(self.rule_tree[key_queue][key_project], "*")
-                if key_job_type:
-                    key_user = get_item(self.rule_tree[key_queue][key_project][key_job_type], user)
-                    rule = self.rule_tree[key_queue][key_project][key_job_type][key_user]
+                for jtype in list(job_types) + Quotas.job_types:
+                    key_job_type = get_item(
+                        self.rule_tree[key_queue][key_project], jtype
+                    )
+                    break
 
-        rule_key = key_queue, key_project, key_job_type, key_user
-        return (rule, rule_key)
+                if key_job_type:
+                    key_user = get_item(
+                        self.rule_tree[key_queue][key_project][key_job_type], user
+                    )
+                    if key_user:
+                        rule = self.rule_tree[key_queue][key_project][key_job_type][
+                            key_user
+                        ]
+                        rule_key = key_queue, key_project, key_job_type, key_user
+
+        # '/' -> substitute by job value
+        if key_queue == "/":
+            key_queue = queue
+        if key_project == "/":
+            key_project = project
+        if key_user == "/":
+            key_user = user
+
+        # Final key to get the corresponding counter from Quotas.counters
+        rule_counter = key_queue, key_project, key_job_type, key_user
+
+        return (rule, rule_counter, rule_key)
 
     def check(self, job):
-        print("current rules -> ", self.rules)
+        (rule, complete_key, rl_quotas) = self.find_applicable_rule(job)
 
-        # self.show_counters("before check, job id: " + str(job.id))
-        # rl_queue, rl_project, rl_job_type, rl_user = rl_fields
+        if rule and complete_key in self.counters:
+            rl_nb_resources, rl_nb_jobs, rl_resources_time = rule
+            (key_queue, key_project, key_job_type, key_user) = complete_key
 
-        (rl_quotas, complete_key) = self.find_applicable_rule(job)
-        rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-
-        (key_queue, key_project, key_job_type, key_user) = complete_key
-        if complete_key in self.counters:
-            print(f"concerning counter: {complete_key}")
             count = self.counters[key_queue, key_project, key_job_type, key_user]
             nb_resources, nb_jobs, resources_time = count
 
@@ -679,7 +720,7 @@ class Quotas(object):
                 return (
                     False,
                     "nb resources quotas failed",
-                    complete_key,
+                    rl_quotas,
                     rl_nb_resources,
                 )
 
@@ -688,7 +729,7 @@ class Quotas(object):
                 return (
                     False,
                     "nb jobs quotas failed",
-                    complete_key,
+                    rl_quotas,
                     rl_nb_jobs,
                 )
             # 3) test resources_time (work)
@@ -696,7 +737,7 @@ class Quotas(object):
                 return (
                     False,
                     "resources hours quotas failed",
-                    complete_key,
+                    rl_quotas,
                     rl_resources_time,
                 )
 

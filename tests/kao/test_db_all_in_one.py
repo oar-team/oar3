@@ -261,7 +261,13 @@ def test_db_all_in_one_quotas_1(
     config = active_quotas
 
     create_quotas_rules_file(
-        config, '{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 5]}}'
+        config,
+        """{
+            "quotas": {
+                "*,*,*,/": [-1, -1, -1], 
+                "/,*,*,*": [-1, 1, 5]
+                }
+            }""",  # The second rule should be applicated
     )
 
     insert_job(
