@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import simplejson as json
+from rich import print
 
 from oar.lib import configuration
 from oar.lib.globals import get_logger, init_oar
@@ -514,6 +515,7 @@ class Quotas(object):
     enabled: bool = False
     calendar: Optional[Calendar] = None
     default_rules = {}
+    # Job types are apart, so they can extends the quotas globally ?
     job_types: List[str] = ["*"]
 
     @classmethod
@@ -534,9 +536,14 @@ class Quotas(object):
 
         cls.load_quotas_rules(config, all_value)
 
-    def __init__(self):
+    def __init__(self, rules=None):
         self.counters = defaultdict(lambda: [0, 0, 0])
-        self.rules = Quotas.default_rules
+        if not rules:
+            self.rules = Quotas.default_rules
+        else:
+            self.rules = rules
+        # Init the tree
+        self.init_rule_tree()
 
     def deepcopy_from(self, quotas):
         self.counters = deepcopy(quotas.counters)
@@ -566,6 +573,7 @@ class Quotas(object):
 
         for t in Quotas.job_types:
             if (t == "*") or (t in job.types):
+                # TODO: can't we instead loop over active rules?
                 # Update the number of used resources
                 self.counters["*", "*", t, "*"][0] += nb_resources
                 self.counters["*", "*", t, user][0] += nb_resources
@@ -602,73 +610,146 @@ class Quotas(object):
             self.counters[key][2] += value[2]
         # self.show_counters('combine after')
 
-    def check(self, job):
-        # self.show_counters('before check, job id: ' + str(job.id))
-        for rl_fields, rl_quotas in self.rules.items():
-            # pdb.set_trace()
-            rl_queue, rl_project, rl_job_type, rl_user = rl_fields
-            rl_nb_resources, rl_nb_jobs, rl_resources_time = rl_quotas
-            for fields, counters in self.counters.items():
-                queue, project, job_type, user = fields
-                nb_resources, nb_jobs, resources_time = counters
-                # match queue
-                if (
-                    ((rl_queue == "*") and (queue == "*"))
-                    or ((rl_queue == queue) and (job.queue_name == queue))
-                    or (rl_queue == "/")
-                ):
-                    # match project
-                    if (
-                        ((rl_project == "*") and (project == "*"))
-                        or ((rl_project == project) and (job.project == project))
-                        or (rl_project == "/")
-                    ):
-                        # match job_typ
-                        if ((rl_job_type == "*") and (job_type == "*")) or (
-                            (rl_job_type == job_type) and (job_type in job.types)
-                        ):
-                            # match user
-                            if (
-                                ((rl_user == "*") and (user == "*"))
-                                or ((rl_user == user) and (job.user == user))
-                                or (rl_user == "/")
-                            ):
-                                # test quotas values plus job's ones
-                                # 1) test nb_resources
-                                if (rl_nb_resources > -1) and (
-                                    rl_nb_resources < nb_resources
-                                ):
-                                    return (
-                                        False,
-                                        "nb resources quotas failed",
-                                        rl_fields,
-                                        rl_nb_resources,
-                                    )
-                                # 2) test nb_jobs
-                                if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
-                                    return (
-                                        False,
-                                        "nb jobs quotas failed",
-                                        rl_fields,
-                                        rl_nb_jobs,
-                                    )
-                                # 3) test resources_time (work)
-                                if (rl_resources_time > -1) and (
-                                    rl_resources_time < resources_time
-                                ):
-                                    return (
-                                        False,
-                                        "resources hours quotas failed",
-                                        rl_fields,
-                                        rl_resources_time,
-                                    )
+    def init_rule_tree(self):
+        # Create the rule multi-tree from all active rules
+        # The three depths correspond to the current entity on which the level applies
+        # For instance the first level is the queue, the second level is the project etc
+
+        # The rule set ["*", "*", "*", "/"], ["*", "*", "besteffort", "*"] leads to the three
+        # queue:                         '*'
+        #                               /
+        # project                _____'*'_____
+        #                      /              \
+        # job_types         _'*'_            besteffort
+        #                 /      \          /
+        # user:         '/'     '*'       '*'
+
+        self.rule_tree: dict[str, dict[str, dict[str, (int, int, float)]]] = dict()
+
+        for fields, rule in self.rules.items():
+            current = self.rule_tree
+            for f in fields:
+                if f not in current:
+                    current[f] = dict()
+                current = current[f]
+            queue, project, job_type, user = fields
+
+            self.rule_tree[queue][project][job_type][user] = rule
+
+        return self.rule_tree
+
+    def find_applicable_rule(self, job):
+        """ """
+        # Function that get the rule that should be applied to the current job in parameter.
+        # Only one rule applies to the job, and the rule is found by looking at the rule tree
+        # from top to bottom with the following priority:
+        # '*' < '/' < $var
+        # $var is any specified value for instance 'toto' for the user or 'besteffort' for the queue
+        (queue, project, job_types, user) = (
+            job.queue_name,
+            job.project,
+            job.types,
+            job.user,
+        )
+
+        def get_item(d: dict, value: str):
+            if value in d:
+                return value
+            if "/" in d:
+                return "/"
+            if "*" in d:
+                return "*"
+
+            return None
+
+        # Init the rule to return
+        rule = None  # [-1, -1, -1]
+        rule_key = None
+
+        key_queue, key_project, key_job_type, key_user = (
+            get_item(self.rule_tree, queue),
+            None,
+            None,
+            None,
+        )
+        # Walk the rule tree to find the rule
+        if key_queue:
+            key_project = get_item(self.rule_tree[key_queue], project)
+            if key_project:
+                for jtype in list(job_types) + Quotas.job_types:
+                    key_job_type = get_item(
+                        self.rule_tree[key_queue][key_project], jtype
+                    )
+                    break
+
+                if key_job_type:
+                    key_user = get_item(
+                        self.rule_tree[key_queue][key_project][key_job_type], user
+                    )
+                    if key_user:
+                        rule = self.rule_tree[key_queue][key_project][key_job_type][
+                            key_user
+                        ]
+                        rule_key = key_queue, key_project, key_job_type, key_user
+
+        # '/' -> substitute by job value
+        if key_queue == "/":
+            key_queue = queue
+        if key_project == "/":
+            key_project = project
+        if key_user == "/":
+            key_user = user
+
+        # Final key to get the corresponding counter from Quotas.counters
+        rule_counter = key_queue, key_project, key_job_type, key_user
+
+        return (rule, rule_counter, rule_key)
+
+    def check(self, job) -> tuple[bool, str, str, int]:
+        (rule, complete_key, rl_quotas) = self.find_applicable_rule(job)
+        print("on en est la", self.rule_tree, self.rules, rule, complete_key, rl_quotas)
+
+        if rule and complete_key in self.counters:
+            rl_nb_resources, rl_nb_jobs, rl_resources_time = rule
+            (key_queue, key_project, key_job_type, key_user) = complete_key
+
+            count = self.counters[key_queue, key_project, key_job_type, key_user]
+            nb_resources, nb_jobs, resources_time = count
+
+            # test quotas values plus job's ones
+            # 1) test nb_resources
+            if (rl_nb_resources > -1) and (rl_nb_resources < nb_resources):
+                return (
+                    False,
+                    "nb resources quotas failed",
+                    rl_quotas,
+                    rl_nb_resources,
+                )
+
+            # 2) test nb_jobs
+            if (rl_nb_jobs > -1) and (rl_nb_jobs < nb_jobs):
+                return (
+                    False,
+                    "nb jobs quotas failed",
+                    rl_quotas,
+                    rl_nb_jobs,
+                )
+            # 3) test resources_time (work)
+            if (rl_resources_time > -1) and (rl_resources_time < resources_time):
+                return (
+                    False,
+                    "resources hours quotas failed",
+                    rl_quotas,
+                    rl_resources_time,
+                )
+
         return (True, "quotas ok", "", 0)
 
     @staticmethod
     def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
         # loop over slot_set
-        slots_quotas = Quotas()
-        slots_quotas.rules = slots[sid_left].quotas.rules
+        slots_quotas = Quotas(slots[sid_left].quotas.rules)
+
         sid = sid_left
         while True:
             slot = slots[sid]
@@ -692,6 +773,7 @@ class Quotas(object):
         """Use for temporal calendar, when rules must be change from default"""
         if Quotas.calendar:
             self.rules = Quotas.calendar.quotas_rules_list[rules_id]
+            self.init_rule_tree()
 
     @staticmethod
     def quotas_rules_fromJson(json_quotas_rules, all_value=None):

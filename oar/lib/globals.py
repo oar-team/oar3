@@ -38,10 +38,10 @@ def get_logger(*args, config=None, **kwargs):
     logger = init_logger(config)
 
     global STREAM_HANDLER
-    forward_stderr = kwargs.pop("forward_stderr", False)
+    forward_stderr = kwargs.pop("forward_stderr", True)
     # Make sure that the root logger is configured
     sublogger = getLogger(*args, **kwargs)
-    sublogger.propage = False
+    sublogger.propage = True
     if forward_stderr:
         stream_handler = get_global_stream_handler(logger.config, "stderr")
         if stream_handler not in logger.handlers:  # pragma: no cover

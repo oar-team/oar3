@@ -126,9 +126,10 @@ def create_quotas_rules_file(config, quotas_rules):
     Quotas.enable(config)
 
 
-def insert_and_sched_ar(session, config, start_time, walltime=60):
+def insert_and_sched_ar(session, config, start_time, walltime=60, user=""):
     insert_job(
         session,
+        user=user,
         res=[(walltime, [("resource_id=4", "")])],
         reservation="toSchedule",
         start_time=start_time,
@@ -260,7 +261,13 @@ def test_db_all_in_one_quotas_1(
     config = active_quotas
 
     create_quotas_rules_file(
-        config, '{"quotas": {"*,*,*,/": [-1, 1, -1], "/,*,*,*": [-1, -1, 5]}}'
+        config,
+        """{
+            "quotas": {
+                "*,*,*,/": [-1, -1, -1], 
+                "/,*,*,*": [-1, 1, 5]
+                }
+            }""",  # The second rule should be applicated
     )
 
     insert_job(
@@ -313,7 +320,7 @@ def test_db_all_in_one_quotas_2(
 
     # Submit and allocate an Advance Reservation
     t0 = get_date(minimal_db_initialization)
-    insert_and_sched_ar(minimal_db_initialization, config, t0 + 100)
+    insert_and_sched_ar(minimal_db_initialization, config, t0 + 100, user="toto")
 
     # Submit other jobs
     insert_job(
@@ -372,7 +379,6 @@ def test_db_all_in_one_temporal_quotas_1(
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
     rules_str = str(a).replace("'", '"')
-    print(rules_str)
     create_quotas_rules_file(config, rules_str)
 
     insert_job(

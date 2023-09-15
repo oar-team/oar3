@@ -8,7 +8,7 @@ from procset import ProcSet
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import Slot, SlotSet
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import JobPseudo
 from oar.lib.resource import ResourceSet
 
@@ -17,7 +17,7 @@ config, engine, log = init_oar(no_db=True)
 # import pdb
 
 config["LOG_FILE"] = ":stderr:"
-logger = get_logger("oar.test")
+# logger = get_logger("oar.test")
 
 """
     quotas[queue, project, job_type, user] = [int, int, float];
@@ -217,8 +217,8 @@ def test_quotas_four_jobs_rule_1():
 def test_quotas_three_jobs_rule_1():
     Quotas.enabled = True
     Quotas.default_rules = {
-        ("*", "*", "*", "/"): [16, -1, -1],
-        ("default", "*", "*", "*"): [-1, -1, 2000],
+        ("*", "*", "*", "/"): [8, -1, -1],
+        # ("default", "*", "*", "*"): [-1, -1, 2000],
     }
 
     res = ProcSet(*[(1, 32)])
