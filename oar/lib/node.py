@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from typing import List
+
 from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
@@ -177,15 +179,15 @@ def get_nodes_that_can_be_waked_up(session, date):
     return [r[0] for r in result]
 
 
-def get_nodes_with_given_sql(session, properties):
+def get_nodes_with_given_sql(session, properties) -> List[str]:
     """Gets the nodes list with the given sql properties"""
     result = (
-        session.query(Resource.network_address)
+        session.query(Resource.network_address, Resource.state, Resource.next_state)
         .distinct()
         .filter(text(properties))
         .all()
     )
-    return [r[0] for r in result]
+    return [r for r in result]
 
 
 def set_node_state(session, hostname, state, finaud_tag, config):
