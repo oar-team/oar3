@@ -70,7 +70,7 @@ def save_assigns_bulk_0(jobs, resource_set):
             )
             pg_bulk_insert(
                 cursor,
-                db["queues"],
+                db["gantt_jobs_resources"],
                 mld_id_rid_s,
                 ("moldable_job_id", "resource_id"),
                 binary=True,
@@ -139,7 +139,7 @@ def save_assigns_redis_pipeline_1(jobs, resource_set):
 
         db.session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         pipe.execute()
-    print("Cumlated mld_id_start_time_s.append time:", t)
+    print("Cumulated mld_id_start_time_s.append time:", t)
 
 
 def bench_job_same(nb_job_exp=10, job_size=100, save_assign="default"):

@@ -225,7 +225,7 @@ class GanttJobsResource(db.Model):
         server_default="0",
     )
     resource_id = db.Column(db.Integer, primary_key=True, server_default="0")
-
+    span = db.Column(db.Integer, server_default="1")
 
 class GanttJobsResourcesLog(db.Model):
     __tablename__ = "gantt_jobs_resources_log"
@@ -237,7 +237,7 @@ class GanttJobsResourcesLog(db.Model):
         "moldable_job_id", db.Integer, primary_key=True, server_default="0"
     )
     resource_id = db.Column(db.Integer, primary_key=True, server_default="0")
-
+    span = db.Column(db.Integer, server_default="1")
 
 class GanttJobsResourcesVisu(db.Model):
     __tablename__ = "gantt_jobs_resources_visu"
@@ -250,7 +250,7 @@ class GanttJobsResourcesVisu(db.Model):
         server_default="0",
     )
     resource_id = db.Column(db.Integer, primary_key=True, server_default="0")
-
+    span = db.Column(db.Integer, server_default="1")
 
 class JobDependencie(db.Model):
     __tablename__ = "job_dependencies"

@@ -88,7 +88,7 @@ def search_idle_nodes(date):
 
 
 # TODO MOVE TO GANTT
-def get_gantt_hostname_to_wake_up(date, wakeup_time):
+def get_gantt_hostname_to_wake_up_(date, wakeup_time):
     """Get hostname that we must wake up to launch jobs"""
     hostnames = (
         db.query(Resource.network_address)
@@ -111,7 +111,54 @@ def get_gantt_hostname_to_wake_up(date, wakeup_time):
     hosts = [h_tpl[0] for h_tpl in hostnames]
     return hosts
 
+def get_gantt_hostname_to_wake_up_(date, wakeup_time):
+    """Get hostname that we must wake up to launch jobs"""
+    hostnames = (
+        db.query(Resource.network_address)
+        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
+        .filter(Job.id == MoldableJobDescription.job_id)
+        .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
+        .filter(Job.state == "Waiting")
+        .filter(Resource.id == GanttJobsResource.resource_id)
+        .filter(Resource.state == "Absent")
+        .filter(Resource.network_address != "")
+        .filter(Resource.type == "default")
+        .filter(
+            (GanttJobsPrediction.start_time + MoldableJobDescription.walltime)
+            <= Resource.available_upto
+        )
+        .group_by(Resource.network_address)
+        .all()
+    )
+    hosts = [h_tpl[0] for h_tpl in hostnames]
+    return hosts
 
+def get_gantt_hostname_to_wake_up(date, wakeup_time):
+    """Get hostname that we must wake up to launch jobs"""
+
+    #get save assignement
+
+    hostnames = (
+        db.query(Resource.network_address)
+        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
+        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
+        .filter(Job.id == MoldableJobDescription.job_id)
+        .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
+        .filter(Job.state == "Waiting")
+        .filter(Resource.id == GanttJobsResource.resource_id)
+        .filter(Resource.state == "Absent")
+        .filter(Resource.network_address != "")
+        .filter(Resource.type == "default")
+        .filter(
+            (GanttJobsPrediction.start_time + MoldableJobDescription.walltime)
+            <= Resource.available_upto
+        )
+        .group_by(Resource.network_address)
+        .all()
+    )
+    hosts = [h_tpl[0] for h_tpl in hostnames]
+    return hosts
 def get_next_job_date_on_node(hostname):
     result = (
         db.query(func.min(GanttJobsPrediction.start_time))

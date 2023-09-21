@@ -123,3 +123,23 @@ class ResourceSet(object):
         default_roids = [self.rid_i2o[i] for i in default_rids]
         self.default_itvs = ProcSet(*default_roids)
         ResourceSet.default_itvs = self.default_itvs  # for Quotas
+
+    def riods_to_rid_itvs_spanned(self, riods):
+        # Convert ordered resource_ids to spanned intervals of DB resource_ids
+        # rid_o2i = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+        # riods_to_rid_itvs_spanned([3,8,5,9,4,1]):
+        # [(1, 2), (5, 3), (9, 1)]
+        rids = [ self.rid_o2i[i] for i in riods ]
+        rids_spanned = []
+        rids.sort()
+        rid_begin = rids[0]
+        span = 1
+        for rid in rids[1:]:
+            if rid == rid_begin + span:
+                span += 1
+            else:
+                rids_spanned.append((rid_begin, span))
+                rid_begin = rid
+                span = 1
+        rids_spanned.append((rid_begin, span))
+        return rids_spanned

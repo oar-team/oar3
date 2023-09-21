@@ -157,7 +157,6 @@ def test_db_all_in_one_simple_1(monkeypatch):
     job = db["Job"].query.one()
     print("job state:", job.state)
 
-    # pdb.set_trace()
     print("fakezmq.num_socket: ", fakezmq.num_socket)
     meta_schedule("internal")
     print("fakezmq.num_socket: ", fakezmq.num_socket)

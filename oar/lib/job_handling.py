@@ -620,7 +620,7 @@ def job_message(job, nb_resources=None):
 
     message_list.append("Q={}".format(job.queue_name))
 
-    logger.info("save assignements")
+    #logger.info("save assignements") TOREMOVE !!!
 
     message = ",".join(message_list)
     if hasattr(job, "karma"):
@@ -629,7 +629,7 @@ def job_message(job, nb_resources=None):
     return message
 
 
-def save_assigns(jobs, resource_set):
+def save_assigns_(jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
@@ -701,12 +701,56 @@ def save_assigns_bulk(jobs, resource_set):
             )
             pg_bulk_insert(
                 cursor,
-                db["queues"],
+                db["gantt_job_resource"],
                 mld_id_rid_s,
                 ("moldable_job_id", "resource_id"),
                 binary=True,
             )
 
+#def save_assigns_span(jobs, resource_set):
+def save_assigns(jobs, resource_set): # span version
+    # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
+    if len(jobs) > 0:
+        logger.debug("nb job to save: " + str(len(jobs)))
+        mld_id_start_time_s = []
+        mld_id_rid_s = []
+        message_updates = {}
+        for j in jobs.values() if isinstance(jobs, dict) else jobs:
+            if j.start_time > -1:
+                logger.debug("job_id to save: " + str(j.id))
+                mld_id_start_time_s.append(
+                    {"moldable_job_id": j.moldable_id, "start_time": j.start_time}
+                )
+                riods = list(j.res_set)
+                mld_id_rid_s.extend(
+                    [
+                        {
+                            "moldable_job_id": j.moldable_id,
+                            "resource_id": rid_begin,
+                            "span": span
+                        }
+                        for rid_begin, span in resource_set.riods_to_rid_itvs_spanned(riods)
+                    ]
+                )
+                msg = job_message(j, nb_resources=len(riods))
+                message_updates[j.id] = msg
+
+        if message_updates:
+            logger.info("save job messages")
+            db.session.query(Job).filter(Job.id.in_(message_updates)).update(
+                {
+                    Job.message: case(
+                        message_updates,
+                        value=Job.id,
+                    )
+                },
+                synchronize_session=False,
+            )
+
+        logger.info("save assignements")
+        db.session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
+        db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        db.commit()
 
 def get_current_jobs_dependencies(jobs):
     # retrieve jobs dependencies *)
@@ -780,6 +824,8 @@ def add_resource_jobs_pairs(tuple_mld_ids):  # pragma: no cover
 
 
 def add_resource_job_pairs(moldable_id):
+    """Set, in DB, the resource_ids attributed to job. It used during job's launch preparation.
+    """
     resources_mld_ids = (
         db.query(GanttJobsResource)
         .filter(GanttJobsResource.moldable_id == moldable_id)
@@ -789,9 +835,10 @@ def add_resource_job_pairs(moldable_id):
     assigned_resources = [
         {
             "moldable_job_id": res_mld_id.moldable_id,
-            "resource_id": res_mld_id.resource_id,
+            "resource_id": res_mld_id.resource_id + i,
         }
         for res_mld_id in resources_mld_ids
+        for i in range(res_mld_id.span)
     ]
 
     db.session.execute(AssignedResource.__table__.insert(), assigned_resources)
@@ -2519,7 +2566,7 @@ def get_timer_armed_job():
 
 def archive_some_moldable_job_nodes(moldable_id, hosts):
     """Sets the index fields to LOG in the table assigned_resources"""
-    # import pdb; pdb.set_trace()
+
     if config["DB_TYPE"] == "Pg":
         db.query(AssignedResource).filter(
             AssignedResource.moldable_id == moldable_id

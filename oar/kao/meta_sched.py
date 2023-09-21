@@ -57,7 +57,6 @@ from oar.lib.job_handling import (
     is_timesharing_for_two_jobs,
     remove_gantt_resource_job,
     resume_job_action,
-    save_assigns,
     set_gantt_job_start_time,
     set_job_message,
     set_job_resa_state,
@@ -98,6 +97,7 @@ exit_code = 0
 to_launch_jobs_already_treated = {}
 
 # order_part = config['SCHEDULER_RESOURCE_ORDER']
+
 
 
 batsim_sched_proxy = None
@@ -242,7 +242,7 @@ def prepare_job_to_be_launched(job, current_time_sec):
     # set start_time an for jobs to launch
     set_job_start_time_assigned_moldable_id(job.id, current_time_sec, job.moldable_id)
 
-    # fix resource assignement
+    # freeze resource assignement
     add_resource_job_pairs(job.moldable_id)
 
     set_job_state(job.id, "toLaunch")
@@ -449,7 +449,7 @@ def check_reservation_jobs(
 
     if ar_jobs_scheduled != []:
         logger.debug("Save AR jobs' assignements in database")
-        save_assigns(ar_jobs_scheduled, resource_set)
+        plt.save_assigns(ar_jobs_scheduled, resource_set)
 
     logger.debug("Queue " + queue_name + ": end processing of new reservations")
 
@@ -986,7 +986,7 @@ def meta_schedule(mode="internal", plt=Platform()):
 
     # Update visu gantt tables
     update_gantt_visualization()
-
+    import pdb; pdb.set_trace()
     #
     # Manage dynamic node feature for energy saving:
     #
