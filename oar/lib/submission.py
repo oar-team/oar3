@@ -25,6 +25,7 @@ from oar.lib.models import (
     Resource,
 )
 from oar.lib.resource import ResourceSet
+from oar.lib.tools import sql_to_duration  # noqa
 from oar.lib.tools import (
     PIPE,
     Popen,
