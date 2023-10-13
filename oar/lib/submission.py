@@ -1100,10 +1100,10 @@ def add_micheline_jobs(
         )
         str_rules = "\n".join([r[0] for r in rules])
 
-    ar_dict = { "session": session }
+    ar_dict = {"session": session}
 
     for key, value in globals().items():
-       ar_dict[key] = value
+        ar_dict[key] = value
 
     # Apply rules
     code = compile(str_rules, "<string>", "exec")
