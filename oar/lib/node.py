@@ -155,7 +155,7 @@ def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
         .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
         .filter(Job.state == "Waiting")
         .filter(Resource.id >= GanttJobsResource.resource_id)
-        .filter(Resource.id <= GanttJobsResource.span)
+        .filter(Resource.id < GanttJobsResource.resource_id + GanttJobsResource.span)
         .filter(Resource.state == "Absent")
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
