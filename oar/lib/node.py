@@ -142,10 +142,10 @@ def get_gantt_hostname_to_wake_up_(session, date, wakeup_time):
     hosts = [h_tpl[0] for h_tpl in hostnames]
     return hosts
 
+
 def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
     """Get hostname that we must wake up to launch jobs"""
-
-    #get save assignement
+    # get save assignement
 
     hostnames = (
         session.query(Resource.network_address)

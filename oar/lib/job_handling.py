@@ -624,7 +624,7 @@ def job_message(session, job, nb_resources=None):
 
     message_list.append("Q={}".format(job.queue_name))
 
-    #logger.info("save assignements") TOREMOVE !!!
+    # logger.info("save assignements") TOREMOVE !!!
 
     message = ",".join(message_list)
     if hasattr(job, "karma"):
@@ -633,8 +633,9 @@ def job_message(session, job, nb_resources=None):
     return message
 
 
-def save_assigns(session, jobs, resource_set):
+def save_assigns_(session, jobs, resource_set):
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
+
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
         mld_id_start_time_s = []
@@ -678,6 +679,55 @@ def save_assigns(session, jobs, resource_set):
         session.commit()
 
 
+# def save_assigns_span(jobs, resource_set):
+def save_assigns(session, jobs, resource_set):  # span version
+
+    # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
+    if len(jobs) > 0:
+        logger.debug("nb job to save: " + str(len(jobs)))
+        mld_id_start_time_s = []
+        mld_id_rid_s = []
+        message_updates = {}
+        for j in jobs.values() if isinstance(jobs, dict) else jobs:
+            if j.start_time > -1:
+                logger.debug("job_id to save: " + str(j.id))
+                mld_id_start_time_s.append(
+                    {"moldable_job_id": j.moldable_id, "start_time": j.start_time}
+                )
+                riods = list(j.res_set)
+                mld_id_rid_s.extend(
+                    [
+                        {
+                            "moldable_job_id": j.moldable_id,
+                            "resource_id": rid_begin,
+                            "span": span,
+                        }
+                        for rid_begin, span in resource_set.riods_to_rid_itvs_spanned(
+                            riods
+                        )
+                    ]
+                )
+                msg = job_message(session, j, nb_resources=len(riods))
+                message_updates[j.id] = msg
+
+        if message_updates:
+            logger.info("save job messages")
+            session.query(Job).filter(Job.id.in_(message_updates)).update(
+                {
+                    Job.message: case(
+                        message_updates,
+                        value=Job.id,
+                    )
+                },
+                synchronize_session=False,
+            )
+
+        logger.info("save assignements: {mld_id_rid_s}")
+        session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
+        session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        session.commit()
+
+
 # flake8: noqa: (TODO: write an equivalent, benchmark it)
 def save_assigns_bulk(session, jobs, resource_set):  # pragma: no cover
     if len(jobs) > 0:
@@ -712,50 +762,6 @@ def save_assigns_bulk(session, jobs, resource_set):  # pragma: no cover
                 binary=True,
             )
 
-#def save_assigns_span(jobs, resource_set):
-def save_assigns(jobs, resource_set): # span version
-    # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
-    if len(jobs) > 0:
-        logger.debug("nb job to save: " + str(len(jobs)))
-        mld_id_start_time_s = []
-        mld_id_rid_s = []
-        message_updates = {}
-        for j in jobs.values() if isinstance(jobs, dict) else jobs:
-            if j.start_time > -1:
-                logger.debug("job_id to save: " + str(j.id))
-                mld_id_start_time_s.append(
-                    {"moldable_job_id": j.moldable_id, "start_time": j.start_time}
-                )
-                riods = list(j.res_set)
-                mld_id_rid_s.extend(
-                    [
-                        {
-                            "moldable_job_id": j.moldable_id,
-                            "resource_id": rid_begin,
-                            "span": span
-                        }
-                        for rid_begin, span in resource_set.riods_to_rid_itvs_spanned(riods)
-                    ]
-                )
-                msg = job_message(j, nb_resources=len(riods))
-                message_updates[j.id] = msg
-
-        if message_updates:
-            logger.info("save job messages")
-            db.session.query(Job).filter(Job.id.in_(message_updates)).update(
-                {
-                    Job.message: case(
-                        message_updates,
-                        value=Job.id,
-                    )
-                },
-                synchronize_session=False,
-            )
-
-        logger.info("save assignements")
-        db.session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
-        db.session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
-        db.commit()
 
 def get_current_jobs_dependencies(session, jobs):
     # retrieve jobs dependencies *)
@@ -831,8 +837,7 @@ def add_resource_jobs_pairs(session, tuple_mld_ids):  # pragma: no cover
 
 
 def add_resource_job_pairs(session, moldable_id):
-    """Set, in DB, the resource_ids attributed to job. It used during job's launch preparation.
-    """
+    """Set, in DB, the resource_ids attributed to job. It used during job's launch preparation."""
     resources_mld_ids = (
         session.query(GanttJobsResource)
         .filter(GanttJobsResource.moldable_id == moldable_id)

@@ -131,7 +131,7 @@ class ResourceSet(object):
         # rid_o2i = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
         # riods_to_rid_itvs_spanned([3,8,5,9,4,1]):
         # [(1, 2), (5, 3), (9, 1)]
-        rids = [ self.rid_o2i[i] for i in riods ]
+        rids = [self.rid_o2i[i] for i in riods]
         rids_spanned = []
         rids.sort()
         rid_begin = rids[0]

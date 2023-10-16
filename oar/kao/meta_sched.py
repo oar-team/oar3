@@ -100,7 +100,6 @@ to_launch_jobs_already_treated = {}
 # order_part = config['SCHEDULER_RESOURCE_ORDER']
 
 
-
 batsim_sched_proxy = None
 
 
@@ -471,7 +470,7 @@ def check_reservation_jobs(
 
     if ar_jobs_scheduled != []:
         logger.debug("Save AR jobs' assignements in database")
-        save_assigns(session, ar_jobs_scheduled, resource_set)
+        plt.save_assigns(session, ar_jobs_scheduled, resource_set)
 
     logger.debug("Queue " + queue_name + ": end processing of new reservations")
 
@@ -1058,7 +1057,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     # Update visu gantt tables
     update_gantt_visualization(session)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     #
     # Manage dynamic node feature for energy saving:
     #
