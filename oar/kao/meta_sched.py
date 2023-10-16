@@ -53,7 +53,6 @@ from oar.lib.job_handling import (
     is_timesharing_for_two_jobs,
     remove_gantt_resource_job,
     resume_job_action,
-    save_assigns,
     set_gantt_job_start_time,
     set_job_message,
     set_job_resa_state,
@@ -99,6 +98,7 @@ exit_code = 0
 to_launch_jobs_already_treated = {}
 
 # order_part = config['SCHEDULER_RESOURCE_ORDER']
+
 
 
 batsim_sched_proxy = None
@@ -1058,7 +1058,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     # Update visu gantt tables
     update_gantt_visualization(session)
-
+    import pdb; pdb.set_trace()
     #
     # Manage dynamic node feature for energy saving:
     #

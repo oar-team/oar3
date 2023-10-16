@@ -182,7 +182,6 @@ def test_db_all_in_one_simple_1(monkeypatch, minimal_db_initialization, setup_co
     job = minimal_db_initialization.query(Job).one()
     print("job state:", job.state)
 
-    # psession.set_trace()
     print("fakezmq.num_socket: ", fakezmq.num_socket)
     meta_schedule(minimal_db_initialization, config, "internal")
     print("fakezmq.num_socket: ", fakezmq.num_socket)
@@ -264,7 +263,7 @@ def test_db_all_in_one_quotas_1(
         config,
         """{
             "quotas": {
-                "*,*,*,/": [-1, -1, -1], 
+                "*,*,*,/": [-1, -1, -1],
                 "/,*,*,*": [-1, 1, 5]
                 }
             }""",  # The second rule should be applicated

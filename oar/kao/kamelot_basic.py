@@ -14,7 +14,7 @@ logger = get_logger("oar.kamelot_basic")
 def schedule_cycle(session, config, plt, queues=["default"]):
     now = plt.get_time()
 
-    logger.info("Begin scheduling....", now)
+    logger.info(f"Begin scheduling.... {now}")
 
     #
     # Retrieve waiting jobs
@@ -23,7 +23,7 @@ def schedule_cycle(session, config, plt, queues=["default"]):
         queues, session=session
     )
 
-    logger.info(waiting_jobs, waiting_jids, nb_waiting_jobs)
+    logger.info(f"waiting jobs: nb: {nb_waiting_jobs}, jids: {waiting_jids}")
 
     if nb_waiting_jobs > 0:
         #

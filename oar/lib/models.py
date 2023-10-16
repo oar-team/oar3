@@ -247,8 +247,8 @@ class GanttJobsResource(Model):
         autoincrement=False,
         server_default="0",
     )
-    resource_id = Column(Integer, primary_key=True, server_default="0")
-
+    resource_id = db.Column(Integer, primary_key=True, server_default="0")
+    span = Column(db.Integer, server_default="1")
 
 class GanttJobsResourcesLog(Model):
     __tablename__ = "gantt_jobs_resources_log"
@@ -259,8 +259,9 @@ class GanttJobsResourcesLog(Model):
     moldable_id = Column(
         "moldable_job_id", Integer, primary_key=True, server_default="0"
     )
-    resource_id = Column(Integer, primary_key=True, server_default="0")
 
+    resource_id = db.Column(Integer, primary_key=True, server_default="0")
+    span = Column(Integer, server_default="1")
 
 class GanttJobsResourcesVisu(Model):
     __tablename__ = "gantt_jobs_resources_visu"
@@ -272,8 +273,8 @@ class GanttJobsResourcesVisu(Model):
         autoincrement=False,
         server_default="0",
     )
-    resource_id = Column(Integer, primary_key=True, server_default="0")
-
+    resource_id = db.Column(Integer, primary_key=True, server_default="0")
+    span = Column(Integer, server_default="1")
 
 class JobDependencie(Model):
     __tablename__ = "job_dependencies"

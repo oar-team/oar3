@@ -1,0 +1,12 @@
+diff --git a/oar/lib/submission.py b/oar/lib/submission.py
+index 8540550..512361a 100644
+--- a/oar/lib/submission.py
++++ b/oar/lib/submission.py
+@@ -32,6 +32,7 @@ from oar.lib.tools import (
+     get_date,
+     hms_str_to_duration,
+     sql_to_local,
++    sql_to_duration  # noqa
+ )
+ 
+ 
