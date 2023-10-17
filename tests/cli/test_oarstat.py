@@ -285,7 +285,6 @@ def test_oarstat_events(minimal_db_initialization, setup_config):
 
     str_result = result.output.splitlines()
 
-    print("lala: \n" + str(result))
     assert re.match(".*EXECUTE_JOB.*", str_result[3])
 
 

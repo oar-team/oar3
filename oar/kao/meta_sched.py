@@ -424,7 +424,6 @@ def check_reservation_jobs(
                 res = Quotas.check_slots_quotas(
                     slots, sid_left, sid_right, job, nb_res, walltime
                 )
-                print(f"res: {res}")
                 (quotas_ok, quotas_msg, rule, value) = res
                 if not quotas_ok:
                     itvs = ProcSet()
@@ -898,6 +897,8 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     )
     all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
     resource_set = plt.resource_set(session=session, config=config)
+
+    logger.info(f"metaschded platform slots:\n{all_slot_sets['default']}")
 
     # Path for user of external schedulers
     if "OARDIR" in os.environ:

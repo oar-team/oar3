@@ -432,7 +432,7 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
     # (job, a, b, c) = req[0]
     if result:
         for x in result:
-            j, moldable_id, start_time, walltime, r_id = x
+            j, moldable_id, start_time, walltime, r_start_id, span = x
             if j.id != prev_jid:
                 if prev_jid != 0:
                     job.res_set = ProcSet(*roids)
@@ -454,9 +454,12 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
                 if job.suspended == "YES":
                     job.walltime += get_job_suspended_sum_duration(session, job.id, now)
 
-            roid = resource_set.rid_i2o[r_id]
-            roids.append(roid)
-            rid2jid[roid] = j.id
+            for r_id in range(r_start_id, r_start_id + span):
+                print(r_id, resource_set.rid_i2o[r_id])
+                roid = resource_set.rid_i2o[r_id]
+                roids.append(roid)
+
+                rid2jid[roid] = j.id
 
         job.res_set = ProcSet(*roids)
         if job.state == "Suspended":
@@ -479,6 +482,7 @@ def get_scheduled_jobs(session, resource_set, job_security_time, now):
             GanttJobsPrediction.start_time,
             MoldableJobDescription.walltime,
             GanttJobsResource.resource_id,
+            GanttJobsResource.span,
         )
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
@@ -488,6 +492,7 @@ def get_scheduled_jobs(session, resource_set, job_security_time, now):
         .all()
     )
 
+    print(f"getting scheulid job {result}")
     jobs, jobs_lst, jids, rid2jid = extract_scheduled_jobs(
         session, result, resource_set, job_security_time, now
     )
@@ -506,6 +511,7 @@ def get_after_sched_no_AR_jobs(
             GanttJobsPrediction.start_time,
             MoldableJobDescription.walltime,
             GanttJobsResource.resource_id,
+            GanttJobsResource.span,
         )
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(Job.queue_name == queue_name)
@@ -535,6 +541,7 @@ def get_waiting_scheduled_AR_jobs(
             GanttJobsPrediction.start_time,
             MoldableJobDescription.walltime,
             GanttJobsResource.resource_id,
+            GanttJobsResource.span,
         )
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(Job.queue_name == queue_name)
@@ -580,6 +587,7 @@ def get_gantt_jobs_to_launch(
             GanttJobsPrediction.start_time,
             MoldableJobDescription.walltime,
             GanttJobsResource.resource_id,
+            GanttJobsResource.span,
         )
         .filter(GanttJobsPrediction.start_time <= date)
         .filter(Job.state == "Waiting")
