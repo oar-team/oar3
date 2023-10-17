@@ -34,8 +34,9 @@ CREATE TABLE admission_rules (
 CREATE TABLE assigned_resources (
   moldable_job_id integer  NOT NULL default '0',
   resource_id integer NOT NULL default '0',
+  span integer NOT NULL default '1',
   assigned_resource_index varchar(7) check (assigned_resource_index in ('CURRENT','LOG')) NOT NULL default 'CURRENT',
-  PRIMARY KEY  (moldable_job_id,resource_id)
+  PRIMARY KEY  (moldable_job_id,resource_id,span)
 );
 CREATE INDEX mjob_id ON assigned_resources (moldable_job_id);
 CREATE INDEX log ON assigned_resources (assigned_resource_index);
@@ -117,14 +118,16 @@ CREATE TABLE gantt_jobs_predictions_log (
 CREATE TABLE gantt_jobs_resources (
   moldable_job_id integer NOT NULL default '0',
   resource_id integer NOT NULL default '0',
-  PRIMARY KEY  (moldable_job_id,resource_id)
+  span integer NOT NULL default '1',
+  PRIMARY KEY  (moldable_job_id,resource_id, span)
 );
 
 
 CREATE TABLE gantt_jobs_resources_visu (
   moldable_job_id integer NOT NULL default '0',
   resource_id integer NOT NULL default '0',
-  PRIMARY KEY  (moldable_job_id,resource_id)
+  span integer NOT NULL default '1',
+  PRIMARY KEY  (moldable_job_id,resource_id,span)
 );
 
 
@@ -132,7 +135,8 @@ CREATE TABLE gantt_jobs_resources_log (
   sched_date integer NOT NULL default '0',
   moldable_job_id integer NOT NULL default '0',
   resource_id integer NOT NULL default '0',
-  PRIMARY KEY  (sched_date, moldable_job_id,resource_id)
+  span integer NOT NULL default '1',
+  PRIMARY KEY  (sched_date, moldable_job_id,resource_id,span)
 );
 
 
