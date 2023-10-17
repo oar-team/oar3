@@ -203,6 +203,7 @@ def test_wakeup_node_2(
     monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
 ):
     config = active_energy_saving
+
     insert_job(
         minimal_db_initialization,
         res=[
@@ -242,17 +243,23 @@ def test_sleep_two_network_address(
 
     now = get_date(minimal_db_initialization)
 
+    # To be resilient to id shift due to database reset during tests
+    first_id = (
+        minimal_db_initialization.query(Resource).order_by(Resource.id).first().id
+    )
+
     # This resources description should push the job on two different network_address
     # Leading localhost0 and localhost1 to be used
     insert_job(
         minimal_db_initialization,
-        res=[(60, [("resource_id=3", "resource_id != 1")])],
+        res=[(60, [("resource_id=3", f"resource_id != {first_id}")])],
         properties="",
     )
 
     minimal_db_initialization.query(Resource).update(
         {Resource.available_upto: now + 50000}, synchronize_session=False
     )
+
     minimal_db_initialization.commit()
     meta_schedule(minimal_db_initialization, config, "internal")
 
@@ -260,13 +267,6 @@ def test_sleep_two_network_address(
 
     job = minimal_db_initialization.query(Job).one()
     print(f"state: {job.state} - node_list: {node_list}")
-    print(
-        [
-            (r.network_address, r.id)
-            for r in minimal_db_initialization.query(Resource).all()
-        ]
-    )
-
     assert job.state == "toLaunch"
     assert set(node_list) == set(["localhost2", "localhost3"])
 
@@ -278,11 +278,16 @@ def test_next_job_date_on_node(
 
     now = get_date(minimal_db_initialization)
 
+    # To be resilient to id shift due to database reset during tests
+    first_id = (
+        minimal_db_initialization.query(Resource).order_by(Resource.id).first().id
+    )
+
     # This resources description should push the job on two different network_address
     # Leading localhost0 and localhost1 to be used
     insert_job(
         minimal_db_initialization,
-        res=[(60, [("resource_id=3", "resource_id != 1")])],
+        res=[(60, [("resource_id=3", f"resource_id != {first_id}")])],
         properties="",
     )
 
