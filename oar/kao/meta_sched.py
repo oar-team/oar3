@@ -818,6 +818,7 @@ def nodes_energy_saving(session, config, logger, current_time_sec):
 
         # Determine nodes to halt
         nodes_2_halt = []
+        logger.info(f"idle nodes: {idle_nodes}")
         for node, idle_duration in idle_nodes.items():
             if idle_duration < tmp_time:
                 # Search if the node has enough time to sleep

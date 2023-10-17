@@ -140,6 +140,7 @@ class AssignedResource(Model):
         server_default="0",
     )
     resource_id = Column(Integer, primary_key=True, server_default="0")
+    span = Column(Integer, server_default="1")
     index = Column(
         "assigned_resource_index", String(7), index=True, server_default="CURRENT"
     )

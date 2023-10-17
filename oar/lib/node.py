@@ -154,8 +154,7 @@ def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
         .filter(Job.id == MoldableJobDescription.job_id)
         .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
         .filter(Job.state == "Waiting")
-        .filter(Resource.id >= GanttJobsResource.resource_id)
-        .filter(Resource.id < GanttJobsResource.resource_id + GanttJobsResource.span)
+        .filter(Resource.id == GanttJobsResource.resource_id)
         .filter(Resource.state == "Absent")
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
@@ -169,7 +168,12 @@ def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
     hosts = [h_tpl[0] for h_tpl in hostnames]
     return hosts
 
+<<<<<<< HEAD
 def get_next_job_date_on_node(session: Session, hostname: str):
+=======
+
+def get_next_job_date_on_node(session, hostname):
+>>>>>>> ec4caec ([test] clean after rebase)
     result = (
         session.query(func.min(GanttJobsPrediction.start_time))
         .filter(Resource.network_address == hostname)

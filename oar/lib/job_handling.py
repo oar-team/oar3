@@ -681,7 +681,6 @@ def save_assigns_(session, jobs, resource_set):
 
 # def save_assigns_span(jobs, resource_set):
 def save_assigns(session, jobs, resource_set):  # span version
-
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
@@ -722,7 +721,8 @@ def save_assigns(session, jobs, resource_set):  # span version
                 synchronize_session=False,
             )
 
-        logger.info("save assignements: {mld_id_rid_s}")
+        logger.info(f"save assignements: {mld_id_rid_s}")
+        print(f"save assignements: {mld_id_rid_s}")
         session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
         session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
         session.commit()
