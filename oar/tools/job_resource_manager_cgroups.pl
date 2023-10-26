@@ -171,12 +171,13 @@ if ($ARGV[0] eq "init"){
     if (!(((-d $Cpuset->{oar_tmp_directory}) and (-O $Cpuset->{oar_tmp_directory})) or (mkdir($Cpuset->{oar_tmp_directory})))){
         exit_myself(13,"Directory $Cpuset->{oar_tmp_directory} does not exist and cannot be created");
     }
-
+    my @cgroup_list = ();
     if (defined($Cpuset_path_job)){
+
         if (open(LOCKFILE,"> $Cpuset->{oar_tmp_directory}/job_manager_lock_file")){
             flock(LOCKFILE,LOCK_EX) or exit_myself(17,"flock failed: $!");
             if (!(-r $Cgroup_directory_collection_links.'/cpuset/tasks')){
-                my @cgroup_list = ("cpuset","cpu","cpuacct","devices","freezer");
+                @cgroup_list = ("cpuset","cpu","cpuacct","devices","freezer");
                 push(@cgroup_list, "memory") if ($Enable_mem_cg eq "YES");
                 push(@cgroup_list, "blkio") if ($Enable_blkio_cg eq "YES");
                 push(@cgroup_list, "net_cls") if ($Enable_net_cls_cg eq "YES");

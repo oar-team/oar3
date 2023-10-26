@@ -2,7 +2,11 @@
 """Extra metascheduling functions which can be called between each queue handling
 """
 from oar.lib import Job, MoldableJobDescription, Resource, db, get_logger
-from oar.lib.job_handling import get_job_types, set_job_state
+from oar.lib.job_handling import (
+    get_job_types,
+    set_job_start_time_assigned_moldable_id,
+    set_job_state,
+)
 
 logger = get_logger("oar.extra_metasched")
 
@@ -46,6 +50,7 @@ def extra_metasched_evolving(
     for jid in waiting_jids:
         job = waiting_jobs[jid]
         job_types = get_job_types(jid)
+
         logger.debug(
             "waiting_jid: {} {} type: {}".format(str(jid), job.__dict__, job_types)
         )
@@ -65,6 +70,7 @@ def extra_metasched_evolving(
             db.query(Job).filter(Job.id == job.id).update(
                 {Job.assigned_moldable_job: result.id}
             )
+            set_job_start_time_assigned_moldable_id(job.id, initial_time_sec, result.id)
 
             notify_to_run_job(job.id)
             pass

@@ -125,8 +125,8 @@ class Leon(object):
                 logger.debug("Job is terminated or is terminating nothing to do")
             else:
                 job_types = get_job_types(session, job.id)
-                if "noop" in job_types.keys():
-                    logger.debug("Kill the NOOP job: " + str(job.id))
+                if "noop" in job_types.keys() or "envelop" in job_types.keys():
+                    logger.debug("Kill the NOOP (or envelop) job: " + str(job.id))
                     set_finish_date(session, job)
                     set_job_state(session, config, job.id, "Terminated")
                     job_finishing_sequence(session, config, epilogue_script, job.id, [])
