@@ -2799,4 +2799,7 @@ def get_jids_with_type(session, like_str):
     :return: \
         A list of jobs
     """
-    return session.query(JobType).filter(JobType.type.like(like_str)).all()
+    return map(
+        lambda job: get_job(job.id),
+        session.query(JobType).filter(JobType.type.like(like_str)).all(),
+    )

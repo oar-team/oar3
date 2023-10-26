@@ -495,6 +495,33 @@ EOF
             exit_myself(10,"Error opening $Cpuset->{ssh_keys}->{public}->{file_name}");
         }
     }
+
+    # Finally steal processes if needed
+    if(!($Cpuset->{evolving_migrate_processes_from_cpusetpath} eq "undef")) {
+        my $Cpuset_migrate_from;
+        my $Previous_oarexec_pid_file;
+        my $Previous_oarexec_pid;
+
+        $Previous_oarexec_pid_file = $Cpuset->{evolving_migrate_processes_from_oarexec_pid_file};
+        $Cpuset_migrate_from = $Cpuset->{cpuset_path}.'/'.$Cpuset->{evolving_migrate_processes_from_cpusetpath};
+
+        $Previous_oarexec_pid=`cat $Previous_oarexec_pid_file`;
+
+        print_log(3, "Migrate processes from " . $Cpuset_migrate_from . " to ours. Old oarexec pid was: $Previous_oarexec_pid.");
+
+        system('echo THAWED > '.$Cgroup_directory_collection_links.'/freezer/'.$Cpuset_path_job.'/freezer.state
+            set -eux
+            for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_migrate_from.'; do
+                if [ -d $d ]; then
+                    echo "migration ! yaouh: $d"
+                    PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
+                    while [ "$PROCESSES" != "" ]; do
+                        oardodo echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/tasks
+                        PROCESSES=$(cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
+                    done
+                fi
+            done');
+    }
 }elsif ($ARGV[0] eq "clean"){
     # delete ssh key files
     if ($Cpuset->{ssh_keys}->{private}->{key} ne ""){
@@ -528,13 +555,14 @@ EOF
                 for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'; do
                     if [ -d $d ]; then
                         PROCESSES=$(cat $d/tasks)
+                        echo "et les processes: $PROCESSES"
                         while [ "$PROCESSES" != "" ]; do
                             oardodo kill -9 $PROCESSES > /dev/null 2>&1
                             PROCESSES=$(cat $d/tasks)
                         done
                     fi
                 done');
-        
+
         # Locking around the cleanup of the cpuset for that user, to prevent a creation to occure at the same time
         # which would allow race condition for the dirty-user-based clean-up mechanism
         if (open(LOCK,">", $Cpuset_lock_file.$Cpuset->{user})){

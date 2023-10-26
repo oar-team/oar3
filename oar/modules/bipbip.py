@@ -21,12 +21,12 @@ from oar.lib.job_handling import (
     check_end_of_job,
     get_cpuset_values,
     get_current_moldable_job,
-    get_jids_with_type,
     get_job,
     get_job_challenge,
     get_job_cpuset_name,
     get_job_current_hostnames,
     get_job_types,
+    get_jobs_with_type,
     set_job_message,
     set_job_state,
 )
@@ -34,6 +34,7 @@ from oar.lib.resource_handling import get_current_assigned_job_resources
 from oar.lib.tools import (
     TimeoutExpired,
     format_ssh_pub_key,
+    get_oar_pid_file_name,
     get_private_ssh_key_file_name,
     limited_dict2hash_perl,
     resources2dump_perl,
@@ -42,6 +43,26 @@ from oar.lib.tools import (
 # _, db, logger = init_oar()
 
 # logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+
+
+def get_cpuset_job_name(
+    job_id,
+    cpuset_path,
+    job_resource_manager_property_db_field=None,
+):
+    cpuset_name = ""
+    cpuset_field = ""
+    cpuset_full_path = ""
+
+    if job_resource_manager_property_db_field is not None:
+        cpuset_name = get_job_cpuset_name(job_id)
+        cpuset_field = job_resource_manager_property_db_field
+
+    cpuset_full_path = ""
+    if cpuset_path and cpuset_name:
+        cpuset_full_path = cpuset_path + "/" + cpuset_name
+
+    return (cpuset_name, cpuset_field, cpuset_full_path)
 
 
 class BipBip(object):
@@ -96,10 +117,18 @@ class BipBip(object):
                 raise Exception(msg)
             cpuset_file = os.environ["OARDIR"] + "/" + cpuset_file
 
-        cpuset_full_path = ""
         cpuset_path = config["CPUSET_PATH"]
-        if cpuset_path and cpuset_name:
-            cpuset_full_path = cpuset_path + "/" + cpuset_name
+        job_resource_manager_property_db_field = (
+            config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
+            if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config
+            else None
+        )
+
+        cpuset_name, cpuset_field, cpuset_full_path = get_cpuset_job_name(
+            job_id,
+            config["CPUSET_PATH"],
+            job_resource_manager_property_db_field=job_resource_manager_property_db_field,
+        )
 
         job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
             session, job_id
@@ -226,7 +255,8 @@ class BipBip(object):
                     "job_id": job.id,
                     "name": cpuset_name,
                     "nodes": nodes_cpuset_fields,
-                    # "evolving_migrate_processes_from": "cpuset name",
+                    "evolving_migrate_processes_from_cpusetpath": "undef",
+                    "evolving_migrate_processes_from_jobid": -1,
                     "cpuset_path": cpuset_path,
                     "ssh_keys": {
                         "public": {
@@ -258,16 +288,47 @@ class BipBip(object):
                     "log_level": config["LOG_LEVEL"],
                 }
 
+                # Treat evolving jobs
                 if "content" in job_types.keys():
                     logger.debug("Evolving: Job of type content: {}".format(job_types))
-                    sibling_evolving_job = get_jids_with_type(
+                    sibling_evolving_jobs = get_jobs_with_type(
                         "%content={}%".format(job_types["content"])
                     )
-                    logger.debug(
-                        "Evolving we might need to steal processes from : {}".format(
-                            sibling_evolving_job
+
+                    # Filter running evolving jobs
+                    sibling_evolving_jobs = [
+                        sibling_job
+                        for sibling_job in sibling_evolving_jobs
+                        if sibling_job.id != job.id and sibling_job.state == "Running"
+                    ]
+
+                    if len(sibling_evolving_jobs) > 1:
+                        raise Exception(
+                            "Two job evolving of the same envelop are running:"
                         )
-                    )
+
+                    elif len(sibling_evolving_jobs) == 1:
+                        logger.debug("Found one relevant job to steal process from.")
+
+                        sibling_cpuset_info = get_cpuset_job_name(
+                            sibling_evolving_jobs[0].id,
+                            config["CPUSET_PATH"],
+                            job_resource_manager_property_db_field=job_resource_manager_property_db_field,
+                        )
+
+                        logger.debug(
+                            "Evolving we might need to steal processes from job: {}, {}".format(
+                                sibling_evolving_jobs[0].__dict__, sibling_cpuset_info
+                            )
+                        )
+
+                        cpuset_data_hash[
+                            "evolving_migrate_processes_from_cpusetpath"
+                        ] = sibling_cpuset_info[0]
+
+                        cpuset_data_hash[
+                            "evolving_migrate_processes_from_oarexec_pid_file"
+                        ] = get_oar_pid_file_name(sibling_evolving_jobs[0].id)
                 else:
                     logger.debug("Job's types: {}".format(job_types))
 

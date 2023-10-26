@@ -488,7 +488,7 @@ my $user_cmd_pid = -1;
 while (($line_read != $pid) and ($Stop_signal == 0) and ($stop_loop == 0)){
     print("[oarexec $Job_id] wait end of child process or kill notification\n");
     select($rin_tmp = $rin, undef, undef, undef);
-    
+
     if (vec($rin_tmp, fileno(pipe_script_read), 1)){
         ($res_read,$line_read) = OAR::Tools::read_socket_line(\*pipe_script_read,1);
         if (($res_read == 1) and ($line_read eq "")){
@@ -523,7 +523,9 @@ while (($line_read != $pid) and ($Stop_signal == 0) and ($stop_loop == 0)){
             if ($Job->{mode} eq "INTERACTIVE"){
                 $stop_loop = 1;
             }else{
-                kill_children($pid);
+                print("Job evolving: not killing the job" . $Job_id . ".\n");
+                # kill_children($pid);
+                $stop_loop = 1;
                 if (defined($Job->{stderr_file}) and ($Job->{stderr_file} ne "")){
                     append_string_to_user_file($Job->{job_user}, $Job->{stderr_file}, $Job->{launching_directory}, "Job $Job_id KILLED");
                 }
