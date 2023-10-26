@@ -414,12 +414,12 @@ class BipBip(object):
             head_node = hosts[0]
 
         # deploy, cosystem and no host part
-        if ("cosystem" in job_types.keys()) or (len(hosts) == 0):
+        if "envelop" in job_types.keys():
+            head_node = config["ENVELOP_HOSTNAME"]
+        elif ("cosystem" in job_types.keys()) or (len(hosts) == 0):
             head_node = config["COSYSTEM_HOSTNAME"]
         elif "deploy" in job_types.keys():
             head_node = config["DEPLOY_HOSTNAME"]
-        elif "envelop" in job_types.keys():
-            head_node = config["ENVELOP_HOSTNAME"]
 
         almighty_hostname = config["SERVER_HOSTNAME"]
         if re.match(r"\s*localhost.*$", almighty_hostname) or re.match(
@@ -481,7 +481,8 @@ class BipBip(object):
         # print(data_to_transfer)
         # print(resources_data_str)
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
-        data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
+        if len(hosts) > 0:
+            data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
 
         error = 50
 

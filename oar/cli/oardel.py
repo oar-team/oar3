@@ -106,6 +106,8 @@ def oardel(
                     host_to_connect = config["COSYSTEM_HOSTNAME"]
                 elif "deploy" in types:
                     host_to_connect = config["DEPLOY_HOSTNAME"]
+                elif "envelop" in types:
+                    host_to_connect = config["ENVELOP_HOSTNAME"]
                 else:
                     host_to_connect = hosts[0]
                 timeout_ssh = config["OAR_SSH_CONNECTION_TIMEOUT"]
