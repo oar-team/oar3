@@ -382,16 +382,20 @@ $SIG{USR2} = \&chekpoint_signal_handler;
 
 if ($Job->{detach_oarexec} == 1){
     #Detach process from bipbip SSH
-    print("[oarexec $Job_id] I am detaching the oarexec process\n");
+    print("[oarexec $Job_id] I am detaching the oarexec process: follow log at $Tmp_file_prefix/oar.log \n");
 
     if(fork() != 0){
         print(OAR::Tools::get_bipbip_oarexec_rendez_vous());
         # Exit from main oarexec
         exit(0);
     }
+
+    print("[oarexec $Job_id] debug mode is set to ".$Job->{debug_mode}."\n");
+
     # We must redirect STD to close SSH
     open(STDIN, "/dev/zero");
     if ($Job->{debug_mode} > 0){
+        print("Follow log at: $Tmp_file_prefix/oar.log");
         open(STDOUT, ">>$Tmp_file_prefix/oar.log");
         open(STDERR, ">>$Tmp_file_prefix/oar.log");
     }else{

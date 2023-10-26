@@ -424,7 +424,9 @@ def signal_oarexec(
             + " $PROC'"
         )
 
+    tools_logger.debug("Notify oarexec cmd: {}".format(" ".join(cmd)))
     comment = None
+
     if wait:
         try:
             check_output(cmd, stderr=STDOUT, timeout=config["TIMEOUT_SSH"])
@@ -567,6 +569,8 @@ def manage_remote_commands(
             + " ], broadcast input file [ - ], broadcast input close"
         )
 
+        tools_logger.debug("Taktuk command: {}".format(cmd))
+
         # Launch taktuk
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
@@ -596,12 +600,10 @@ def manage_remote_commands(
             return (0, [])
 
         output = out.decode()
-        error = err.decode()
+        # error = err.decode()
 
         if config["DEBUG_REMOTE_COMMANDS"] in ["1", 1, "yes", "YES"]:
             tools_logger.debug("Taktuk output: " + output)
-            if error:
-                tools_logger.debug("Taktuk error: " + error)
 
         for line in output.split("\n"):
             m = re.match(r"^STATUS ([\w\.\-\d]+) (\d+)$", line)

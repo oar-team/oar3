@@ -546,7 +546,7 @@ while (<STDIN>){
 my $cmd_exec = eval($tmp);
 my $pid = fork;
 if($pid == 0){
-    # To be sure that user do not try to do something nasty
+    # To be sure that user does not try to do something nasty
     close(OLDSTDERR);
     close(OLDSTDOUT);
     exec({$shell_executed} $shell_executed,"-c",@{$cmd_exec});

@@ -21,6 +21,7 @@ from oar.lib.job_handling import (
     check_end_of_job,
     get_cpuset_values,
     get_current_moldable_job,
+    get_jids_with_type,
     get_job,
     get_job_challenge,
     get_job_cpuset_name,
@@ -220,10 +221,12 @@ class BipBip(object):
                 ssh_public_key = format_ssh_pub_key(
                     ssh_public_key, cpuset_full_path, job.user, job.user
                 )
+
                 cpuset_data_hash = {
                     "job_id": job.id,
                     "name": cpuset_name,
                     "nodes": nodes_cpuset_fields,
+                    # "evolving_migrate_processes_from": "cpuset name",
                     "cpuset_path": cpuset_path,
                     "ssh_keys": {
                         "public": {
@@ -254,6 +257,20 @@ class BipBip(object):
                     "project": job.project,
                     "log_level": config["LOG_LEVEL"],
                 }
+
+                if "content" in job_types.keys():
+                    logger.debug("Evolving: Job of type content: {}".format(job_types))
+                    sibling_evolving_job = get_jids_with_type(
+                        "%content={}%".format(job_types["content"])
+                    )
+                    logger.debug(
+                        "Evolving we might need to steal processes from : {}".format(
+                            sibling_evolving_job
+                        )
+                    )
+                else:
+                    logger.debug("Job's types: {}".format(job_types))
+
                 taktuk_cmd = config["TAKTUK_CMD"]
 
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
@@ -668,6 +685,7 @@ def main():  # pragma: no cover
                     sys.argv[1], ex, traceback.format_exc()
                 )
             )
+            log.error("Bipbip.run trouble on job {}: {}".format(sys.argv[1], ex))
 
         return bipbip.exit_code
     else:

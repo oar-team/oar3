@@ -155,7 +155,7 @@ class Leon(object):
                         comment = tools.signal_oarexec(
                             head_host, job.id, "TERM", False, openssh_cmd
                         )
-                        logger.warning(comment)
+                        logger.warning("OAREXEC COMMENT: {}".format(comment))
 
             job_arm_leon_timer(session, job.id)
 

@@ -96,6 +96,7 @@ my $Cgroup_directory_collection_links = "/dev/oar_cgroups_links";
 # $Cpuset = {
 #               job_id => id of the corresponding job
 #               name => "cpuset name"
+#               evolving_migrate_processes_from => "cpuset name"
 #               cpuset_path => "relative path in the cpuset FS"
 #               nodes => hostname => [array with the content of the database cpuset field]
 #               ssh_keys => {
@@ -153,6 +154,17 @@ if (defined($Cpuset->{cpuset_path})){
 }
 
 print_log(3,"$ARGV[0]");
+
+# Unpack job types
+my $job_types = "";
+foreach my $key (keys %{$Cpuset->{types}}){
+  my $value = ${$Cpuset->{types}}{$key};
+  $job_types="$key=$value,$job_types";
+}
+$job_types =~ s/,$//;
+
+print_log(3,"detected job types: $job_types");
+
 if ($ARGV[0] eq "init"){
     # Initialize cpuset for this node
     # First, create the tmp oar directory

@@ -2787,3 +2787,16 @@ def change_walltime(session, job_id, new_walltime, message):
     session.commit()
     add_new_event(session, "WALLTIME", job_id, message, to_check="NO")
     session.commit()
+
+
+# TODO: add test
+def get_jids_with_type(session, like_str):
+    """
+    Return the ids of the job with the type matching the string given in parameter.
+
+    :param str like_str: \
+        string formated as a like request in SQL (postgres). For instance: `%content%`.
+    :return: \
+        A list of jobs
+    """
+    return session.query(JobType).filter(JobType.type.like(like_str)).all()
