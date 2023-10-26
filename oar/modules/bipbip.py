@@ -480,7 +480,7 @@ class BipBip(object):
                     return
             # end CHECK
 
-        self.call_server_prologue(session, job, environ={"USER": job.user})
+        self.call_server_prologue(session, job, env={"USER": job.user})
 
         # CALL OAREXEC ON THE FIRST NODE
         pro_epi_timeout = config["PROLOGUE_EPILOGUE_TIMEOUT"]
