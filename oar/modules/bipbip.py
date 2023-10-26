@@ -46,6 +46,7 @@ from oar.lib.tools import (
 
 
 def get_cpuset_job_name(
+    session,
     job_id,
     cpuset_path,
     job_resource_manager_property_db_field=None,
@@ -55,7 +56,7 @@ def get_cpuset_job_name(
     cpuset_full_path = ""
 
     if job_resource_manager_property_db_field is not None:
-        cpuset_name = get_job_cpuset_name(job_id)
+        cpuset_name = get_job_cpuset_name(session, job_id)
         cpuset_field = job_resource_manager_property_db_field
 
     cpuset_full_path = ""
@@ -125,6 +126,7 @@ class BipBip(object):
         )
 
         cpuset_name, cpuset_field, cpuset_full_path = get_cpuset_job_name(
+                session,
             job_id,
             config["CPUSET_PATH"],
             job_resource_manager_property_db_field=job_resource_manager_property_db_field,
@@ -214,11 +216,11 @@ class BipBip(object):
 
         job_types = get_job_types(session, job.id)
         if "noop" in job_types:
-            set_job_state(session, job_id, "Running")
-            logger.debug(
+            set_job_state(session, config, job_id, "Running")
+            self.logger.debug(
                 "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
             )
-            self.call_server_prologue(Job)
+            self.call_server_prologue(session, job, config)
             return
 
         # HERE we must launch oarexec on the first node
@@ -232,6 +234,8 @@ class BipBip(object):
             + " ==> hosts : "
             + str(hosts)
         )
+
+        self.logger.debug(f"types: {job_types.keys()}")
 
         if (job.type == "INTERACTIVE") and (job.reservation == "None"):
             tools.notify_interactif_user(job, "Starting...")
@@ -297,8 +301,8 @@ class BipBip(object):
 
                 # Treat evolving jobs
                 if "content" in job_types.keys():
-                    logger.debug("Evolving: Job of type content: {}".format(job_types))
-                    sibling_evolving_jobs = get_jobs_with_type(
+                    self.logger.debug("Evolving: Job of type content: {}".format(job_types))
+                    sibling_evolving_jobs = get_jobs_with_type(session,
                         "%content={}%".format(job_types["content"])
                     )
 
@@ -315,15 +319,16 @@ class BipBip(object):
                         )
 
                     elif len(sibling_evolving_jobs) == 1:
-                        logger.debug("Found one relevant job to steal process from.")
+                        self.logger.debug("Found one relevant job to steal process from.")
 
                         sibling_cpuset_info = get_cpuset_job_name(
+                                session,
                             sibling_evolving_jobs[0].id,
                             config["CPUSET_PATH"],
                             job_resource_manager_property_db_field=job_resource_manager_property_db_field,
                         )
 
-                        logger.debug(
+                        self.logger.debug(
                             "Evolving we might need to steal processes from job: {}, {}".format(
                                 sibling_evolving_jobs[0].__dict__, sibling_cpuset_info
                             )
@@ -337,7 +342,7 @@ class BipBip(object):
                             "evolving_migrate_processes_from_oarexec_pid_file"
                         ] = get_oar_pid_file_name(sibling_evolving_jobs[0].id)
                 else:
-                    logger.debug("Job's types: {}".format(job_types))
+                    self.logger.debug("Job's types: {}".format(job_types))
 
                 taktuk_cmd = config["TAKTUK_CMD"]
 
@@ -480,7 +485,7 @@ class BipBip(object):
                     return
             # end CHECK
 
-        self.call_server_prologue(session, job, env={"USER": job.user})
+        self.call_server_prologue(session, job, config, env={"USER": job.user})
 
         # CALL OAREXEC ON THE FIRST NODE
         pro_epi_timeout = config["PROLOGUE_EPILOGUE_TIMEOUT"]
@@ -677,7 +682,7 @@ class BipBip(object):
         if self.server_prologue:
             timeout = config["SERVER_PROLOGUE_EPILOGUE_TIMEOUT"]
             cmd = [self.server_prologue, str(job.id)]
-            environ = os.environ | environ
+            environ = os.environ | env
             try:
                 child = tools.Popen(cmd, env=env)
                 return_code = child.wait(timeout)

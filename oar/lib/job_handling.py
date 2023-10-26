@@ -2493,7 +2493,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
             add_new_event(session, ev_type, job_id, msg)
         else:
             ev_type, msg, hosts = event
-            add_new_event_with_host(ev_type, job_id, msg, hosts)
+            add_new_event_with_host(session, ev_type, job_id, msg, hosts)
 
     # Just to force commit (from OAR2, useful for OAR3 ?)
     session.commit()
@@ -2800,6 +2800,21 @@ def get_jids_with_type(session, like_str):
         A list of jobs
     """
     return map(
-        lambda job: get_job(job.id),
+        lambda job: get_job(session, job.id),
+        session.query(JobType).filter(JobType.type.like(like_str)).all(),
+    )
+
+# TODO: add test
+def get_jobs_with_type(session, like_str):
+    """
+    Return the ids of the job with the type matching the string given in parameter.
+
+    :param str like_str: \
+        string formated as a like request in SQL (postgres). For instance: `%content%`.
+    :return: \
+        A list of jobs
+    """
+    return map(
+        lambda job: get_job(session, job.id),
         session.query(JobType).filter(JobType.type.like(like_str)).all(),
     )

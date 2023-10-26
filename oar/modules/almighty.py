@@ -31,7 +31,6 @@ logger.info("Start Almighty")
 # TODO
 # send_log_by_email("Start OAR server","[Almighty] Start Almighty");
 
-
 if "OARDIR" in os.environ:
     binpath = os.environ["OARDIR"]
 else:
@@ -195,12 +194,13 @@ class Almighty(object):
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
         ip_addr_server = socket.gethostbyname(self.config["SERVER_HOSTNAME"])
+        address_complete = "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
         try:
             self.appendice.bind(
-                "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
+                    address_complete
             )
         except Exception as e:
-            logger.error(f"Failed to activate appendice endpoint: {e}")
+            logger.error(f"Failed to activate appendice endpoint on {address_complete}: {e}")
             sys.exit(1)
 
         self.set_appendice_timeout(read_commands_timeout)
