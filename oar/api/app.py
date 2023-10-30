@@ -9,9 +9,9 @@ from oar.lib.globals import init_config, init_oar
 
 from .routers import frontend, job, media, proxy, resource, stress_factor
 
-# from oar import VERSION
-# from oar.lib import config, db
-
+SECRET_KEY = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # from oar.api import API_VERSION
 

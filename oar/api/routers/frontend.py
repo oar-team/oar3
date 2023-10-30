@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+from datetime import timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from passlib.apache import HtpasswdFile
@@ -97,3 +99,67 @@ def authentication(
         return {"basic authentication": "valid"}
 
     raise HTTPException(status_code=400, detail="basic authentication is not validated")
+
+
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "fakehashedsecret",
+        "disabled": False,
+    },
+    "alice": {
+        "username": "alice",
+        "full_name": "Alice Wonderson",
+        "email": "alice@example.com",
+        "hashed_password": "fakehashedalice",
+        "disabled": True,
+    },
+}
+
+class User(BaseModel):
+    username: str
+    disabled: bool | None = None
+
+
+def fake_decode_token(token):
+    return User(
+        username=token + "fakedecoded"
+    )
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    user = fake_decode_token(token)
+    return user
+
+
+@router.get("/me")
+async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user
+
+
+class UserInDB(User):
+    hashed_password: str
+
+def fake_hash_password(password: str):
+    return "fakehashed" + password
+
+
+@router.post("/token")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    user_dict = fake_users_db.get(form_data.username)
+    if not user_dict:
+        raise HTTPException(status_code=400, detail=f"1: Incorrect username or password {form_data.password}, {form_data.username}")
+    user = UserInDB(**user_dict)
+    hashed_password = fake_hash_password(form_data.password)
+    if not hashed_password == user.hashed_password:
+        raise HTTPException(status_code=400, detail=f"2: Incorrect username or password {form_data}")
+
+    return {"access_token": user.username, "token_type": "bearer"}
