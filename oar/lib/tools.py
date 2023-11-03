@@ -316,6 +316,8 @@ def pingchecker_exec_command(
     output = out.decode()
     error = err.decode()  # noqa TODO: not used
 
+    log.debug("out: {output}, err: {error}")
+
     for line in output.split("\n"):
         host = filter_output(*(line, ip2hostname))
         if host and host in bad_hosts:
@@ -970,11 +972,12 @@ def get_oarexecuser_script_for_oarsub(
     return script
 
 
-def check_process(pid):
+def check_process(pid, logger):
     """Check for the existence process."""
     try:
         os.kill(pid, 0)
-    except OSError:
+    except OSError as error:
+        logger.info(f"checking process error: {error}")
         return False
     else:
         return True

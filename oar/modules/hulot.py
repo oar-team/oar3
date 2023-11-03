@@ -45,12 +45,19 @@ from multiprocessing import Pool, TimeoutError
 from typing import List, Union
 
 import zmq
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar.lib.configuration import Configuration
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import (
+    get_logger,
+    init_and_get_session,
+    init_config,
+    init_logger,
+    init_oar,
+)
 from oar.lib.node import (
     change_node_state,
     get_alive_nodes_with_jobs,
@@ -233,7 +240,7 @@ class Hulot(object):
         # my $count_cycles;
         #
 
-    def run(self, session, loop=True):
+    def run(self, loop=True):
         logger = self.logger
         config = self.config
 
@@ -245,12 +252,18 @@ class Hulot(object):
         keepalive: dict[str, dict[str, Union[List[str], int]]] = self.keepalive
         count_cycles: int = 1
 
-        # wait db at launch
-        try:
-            wait_db_ready(get_alive_nodes_with_jobs, args=[session])
-        except Exception as e:
-            logger.error(f"Failed to contact database: {e}")
-            return 1
+        def wait_db():
+            # wait db at launch
+            try:
+                session = init_and_get_session(config)
+                wait_db_ready(get_alive_nodes_with_jobs, args=[session])
+            except Exception as e:
+                logger.error(f"Failed to contact database: {e}")
+                exit(1)
+
+            return session
+
+        session = wait_db()
 
         while True:
             self.window_forker.check_executors(
@@ -637,9 +650,15 @@ class WindowForker(object):
 
 
 def main():  # pragma: no cover
-    hulot = Hulot()
+    config = init_config()
+
+    logger = get_logger("oar.modules.hulot", config=config, forward_stderr=True)
+
+    hulot = Hulot(config, logger)
+
     if hulot.exit_code:
         return hulot.exit_code
+
     return hulot.run()
 
 

@@ -24,7 +24,7 @@ class Configuration(dict):
         "SQLALCHEMY_MAX_OVERFLOW": None,
         "LOG_LEVEL": 3,
         "LOG_FILE": ":stderr:",
-        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s",
+        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s::%(funcName)s:%(lineno)d]: %(message)s",
         "OAR_SSH_CONNECTION_TIMEOUT": 120,
         "SERVER_HOSTNAME": "localhost",
         "SERVER_PORT": "6666",
