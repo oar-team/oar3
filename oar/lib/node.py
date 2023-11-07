@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from typing import List
+
 from sqlalchemy import and_, distinct, func, or_, text
 
 import oar.lib.tools as tools
@@ -65,9 +67,10 @@ def search_idle_nodes(session, date):
 
     busy_nodes = {}  # TODO can be remove ? to replace by busy_nodes = result
     for network_address in result:
+        logger.debug(f"{network_address}")
         busy_nodes[network_address[0]] = True
 
-    result = (
+    query = (
         session.query(Resource.network_address, func.max(Resource.last_job_date))
         .filter(Resource.state == "Alive")
         .filter(Resource.network_address != "")
@@ -75,10 +78,13 @@ def search_idle_nodes(session, date):
         .filter(Resource.available_upto < 2147483647)
         .filter(Resource.available_upto > 0)
         .group_by(Resource.network_address)
-        .all()
     )
 
+    logger.debug(f"idle nodes query: {query}")
+    result = query.all()
+    logger.debug(f"idle nodes query: {result}")
     idle_nodes = {}
+
     for x in result:
         network_address, last_job_date = x
         if network_address not in busy_nodes:
@@ -177,15 +183,15 @@ def get_nodes_that_can_be_waked_up(session, date):
     return [r[0] for r in result]
 
 
-def get_nodes_with_given_sql(session, properties):
+def get_nodes_with_given_sql(session, properties) -> List[str]:
     """Gets the nodes list with the given sql properties"""
     result = (
-        session.query(Resource.network_address)
+        session.query(Resource.network_address, Resource.state, Resource.next_state)
         .distinct()
         .filter(text(properties))
         .all()
     )
-    return [r[0] for r in result]
+    return [r for r in result]
 
 
 def set_node_state(session, hostname, state, finaud_tag, config):

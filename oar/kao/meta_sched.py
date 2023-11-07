@@ -783,7 +783,7 @@ def call_internal_scheduler(
     )
 
 
-def nodes_energy_saving(session, config, current_time_sec):
+def nodes_energy_saving(session, config, logger, current_time_sec):
     """
     Energy saving mode.
 
@@ -795,6 +795,8 @@ def nodes_energy_saving(session, config, current_time_sec):
     nodes_2_halt = []
     nodes_2_wakeup = []
 
+    logger.info("Energy saving function")
+
     if (
         ("SCHEDULER_NODE_MANAGER_SLEEP_CMD" in config)
         or (
@@ -805,11 +807,14 @@ def nodes_energy_saving(session, config, current_time_sec):
         ("SCHEDULER_NODE_MANAGER_SLEEP_TIME" in config)
         and ("SCHEDULER_NODE_MANAGER_IDLE_TIME" in config)
     ):
+        logger.info("Looking for node to shutdown")
         # Look at nodes that are unused for a duration
         idle_duration = int(config["SCHEDULER_NODE_MANAGER_IDLE_TIME"])
         sleep_duration = int(config["SCHEDULER_NODE_MANAGER_SLEEP_TIME"])
 
         idle_nodes = search_idle_nodes(session, current_time_sec)
+        logger.debug(f"Idle nodes found: {idle_nodes}")
+
         tmp_time = current_time_sec - idle_duration
 
         # Determine nodes to halt
@@ -826,8 +831,9 @@ def nodes_energy_saving(session, config, current_time_sec):
 
     if ("SCHEDULER_NODE_MANAGER_SLEEP_CMD" in config) or (
         (config["ENERGY_SAVING_INTERNAL"] == "yes")
-        and ("ENERGY_SAVING_NODE_MANAGER_SLEEP_CMD" in config)
+        and ("ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD" in config)
     ):
+        logger.info("Looking for node to wakeup")
         # Get nodes which the scheduler wants to schedule jobs to,
         # but which are in the Absent state, to wake them up
         wakeup_time = int(config["SCHEDULER_NODE_MANAGER_WAKEUP_TIME"])
@@ -1057,7 +1063,9 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     #
     if ("ENERGY_SAVING_MODE" in config) and config["ENERGY_SAVING_MODE"] != "":
         if config["ENERGY_SAVING_MODE"] == "metascheduler_decision_making":
-            nodes_2_change = nodes_energy_saving(session, config, current_time_sec)
+            nodes_2_change = nodes_energy_saving(
+                session, config, logger, current_time_sec
+            )
         elif config["ENERGY_SAVING_MODE"] == "batsim_scheduler_proxy_decision_making":
             nodes_2_change = batsim_sched_proxy.retrieve_pstate_changes_to_apply()
         else:

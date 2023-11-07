@@ -124,14 +124,41 @@ def launch_command(command):
     return return_code
 
 
-def start_hulot():
+def start_hulot() -> tools.Popen:
     """Start :mod:`oar.kao.hulot`"""
-    return tools.Popen(hulot_command)
+    command = hulot_command
+    logger.debug("Launching command : [" + command + "]")
+
+    hulot = tools.Popen(command)
+    try:
+        stdout, stderr = hulot.communicate(timeout=10)
+        logger.info(f"hulot: {stdout}\n{stderr}")
+    except Exception as e:
+        logger.info(f"hulot: {e}")
+        pass
+
+    return hulot
 
 
-def check_hulot(hulot):
+def check_hulot(hulot, logger):
     """Check the presence hulot process"""
-    return tools.check_process(hulot.pid)
+    logger.debug(f"checking if Hulot is still alive: pid:{hulot.pid}")
+
+    res = tools.check_process(hulot.pid, logger)
+
+    try:
+        stdout, stderr = hulot.communicate(timeout=0)
+        logger.info(f"hulot communicated: {stdout}\n{stderr}")
+    except Exception as e:
+        logger.info(f"hulot exception: {e}")
+        pass
+
+    # stdout, stderr = hulot.communicate(timeout=0)
+    # logger.info(f"hulot: {stdout}\n{stderr}")
+
+    logger.info(f"res: {res}")
+    # return res
+    return True
 
 
 #
@@ -184,7 +211,9 @@ class Almighty(object):
         # Starting of Hulot, the Energy saving module
         self.hulot = None
         if self.config["ENERGY_SAVING_INTERNAL"] == "yes":
+            logger.info("Energy saving internal mode: Starting up Hulot")
             self.hulot = start_hulot()
+            logger.info(f"{self.hulot}")
 
         self.lastscheduler = 0
         self.lastvillains = 0
@@ -321,6 +350,7 @@ class Almighty(object):
             if remaining != max_successive_read:
                 timeout = 0
             if command is None:
+                logger.debug(f"qget command: {command}")
                 break
             self.add_command(command["cmd"])
             remaining -= 1
@@ -348,9 +378,9 @@ class Almighty(object):
                 return 10
 
             # We check Hulot
-            if self.hulot and not check_hulot(self.hulot):
+            if self.hulot and not check_hulot(self.hulot, logger):
                 logger.warning("Energy saving module (hulot) died. Restarting it.")
-                start_hulot(self)
+                self.hulot = start_hulot()
             # QGET
             elif self.state == "Qget":
                 # if len(self.command_queue) > 0:
@@ -407,7 +437,7 @@ class Almighty(object):
                         # Launch the scheduler
                         # We check Hulot just before starting the scheduler
                         # because if the pipe is not read, it may freeze oar
-                        if (energy_pid > 0) and not check_hulot():
+                        if (energy_pid > 0) and not check_hulot(self.hulot, logger):
                             logger.warning(
                                 "Energy saving module (hulot) died. Restarting it."
                             )
