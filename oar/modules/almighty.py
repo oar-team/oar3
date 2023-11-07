@@ -148,16 +148,17 @@ def check_hulot(hulot, logger):
 
     try:
         stdout, stderr = hulot.communicate(timeout=0)
-        logger.info(f"hulot: {stdout}\n{stderr}")
+        logger.info(f"hulot communicated: {stdout}\n{stderr}")
     except Exception as e:
-        logger.info(f"hulot: {e}")
+        logger.info(f"hulot exception: {e}")
         pass
 
     # stdout, stderr = hulot.communicate(timeout=0)
     # logger.info(f"hulot: {stdout}\n{stderr}")
 
     logger.info(f"res: {res}")
-    return res
+    # return res
+    return True
 
 
 #

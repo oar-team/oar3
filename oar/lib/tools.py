@@ -316,7 +316,7 @@ def pingchecker_exec_command(
     output = out.decode()
     error = err.decode()  # noqa TODO: not used
 
-    log.debug("out: {output}, err: {error}")
+    log.debug(f"out: {output}, err: {error}")
 
     for line in output.split("\n"):
         host = filter_output(*(line, ip2hostname))

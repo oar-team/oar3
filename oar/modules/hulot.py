@@ -45,19 +45,12 @@ from multiprocessing import Pool, TimeoutError
 from typing import List, Union
 
 import zmq
-from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar.lib.configuration import Configuration
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
-from oar.lib.globals import (
-    get_logger,
-    init_and_get_session,
-    init_config,
-    init_logger,
-    init_oar,
-)
+from oar.lib.globals import get_logger, init_and_get_session, init_config, init_oar
 from oar.lib.node import (
     change_node_state,
     get_alive_nodes_with_jobs,
@@ -235,12 +228,13 @@ class Hulot(object):
             config["ENERGY_SAVING_WINDOW_FORKER_SIZE"],
             config["ENERGY_SAVING_WINDOW_TIMEOUT"],
             config,
+            logger,
         )
         # TODO
         # my $count_cycles;
         #
 
-    def run(self, loop=True):
+    def run(self, session=None, loop=True):
         logger = self.logger
         config = self.config
 
@@ -263,7 +257,8 @@ class Hulot(object):
 
             return session
 
-        session = wait_db()
+        if session is None:
+            session = wait_db()
 
         while True:
             self.window_forker.check_executors(
@@ -406,7 +401,9 @@ class Hulot(object):
             for node, cmd_info in nodes_list_to_remind.items():
                 if node not in nodes_list_command_running:
                     # move this node from reminded list to list to process
-                    logger.debug(f"Adding '{node} => {cmd_info}' to list to process.")
+                    logger.debug(
+                        f"Adding '{node} => {cmd_info}' to list to process to remind."
+                    )
                     nodes_list_to_process[node] = {
                         "command": cmd_info["command"],
                         "timeout": -1,
@@ -543,7 +540,7 @@ class Hulot(object):
         return 0
 
 
-def command_executor(cmd_node, config):
+def command_executor(cmd_node, config, logger):
     command, node = cmd_node
     command_to_exec = 'echo "' + node + '" | '
     if command == "HALT":
@@ -560,9 +557,10 @@ def command_executor(cmd_node, config):
 
 
 class WindowForker(object):
-    def __init__(self, window_size, timeout, config):
+    def __init__(self, window_size, timeout, config, logger):
         self.config = config
         self.timeout = timeout
+        self.logger = logger
         self.pool = Pool(processes=window_size)
         self.executors = {}
 
@@ -594,12 +592,16 @@ class WindowForker(object):
             cmd, node = cmd_node
             # FIXME: Async code here ?!
             self.executors[
-                self.pool.apply_async(command_executor, (cmd_node, self.config))
+                self.pool.apply_async(
+                    command_executor, (cmd_node, self.config, self.logger)
+                )
             ] = (
                 node,
                 cmd,
                 tools.get_date(session),
             )
+
+        self.logger.debug(f"wtf: {self.executors}")
 
     def check_executors(self, session, config, nodes_list_running):
         executors_toRemove = []
@@ -607,10 +609,12 @@ class WindowForker(object):
             session,
         )
         for executor, data in self.executors.items():
+            self.logger.debug(f"Executor output: {executor}: {data}")
             node, cmd, launching_date = data
             if executor.ready():  # TODO executor.successful()
                 executors_toRemove.append(executor)
                 exit_status = executor.get()
+
                 if exit_status != 0:
                     # Suspect node if error
                     change_node_state(session, node, "Suspected", config)
