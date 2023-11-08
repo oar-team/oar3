@@ -14,4 +14,5 @@ passlib
 pyyaml
 escapism
 toml
-
+rich
+clustershell

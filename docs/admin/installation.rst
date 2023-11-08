@@ -51,24 +51,34 @@ ______________________________
         apt-get install gcc make tar python-docutils
 
         # Common dependencies
-        apt-get install perl perl-base openssh-client openssh-server libdbi-perl libsort-versions-perl
+        apt-get install perl perl-base openssh-client openssh-server libdbi-perl libsort-versions-perl libterm-ui-perl
 
         # PostgreSQL dependencies
         apt-get install postgresql postgresql-client libdbd-pg-perl
 
         # Python3 dependencies
-        apt-get install python3 python3-sqlalchemy python3-alembic \
-        python3-click python3-flask \
+        apt-get install python3 \
+        python3-alembic python3-click python3-flask \
         python3-passlib python3-psutil python3-requests \
         python3-simplejson python3-sqlalchemy-utils  \
         python3-tabulate python3-toml python3-yaml \
-        python3-zmq python3-psycopg2 python3-fastapi
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
 
         # Install procset
-        dpkg -i <path-to-procset>.deb
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
+
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
 
         # Then install oar node package
         dpkg -i python3-oar_*.deb oar-common_*.deb oar-server_*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
+
 
 Installation from the tarball
 _____________________________
@@ -313,22 +323,32 @@ ______________________________
 **Instructions**
 
 *For the Debian like systems*::
+
         # Install dependencies
 
         apt-get update && \
         apt-get install -y python3 perl \
-        python3-sqlalchemy python3-alembic \
+        python3-alembic \
         python3-click python3-flask \
         python3-passlib python3-psutil python3-requests \
         python3-simplejson python3-sqlalchemy-utils  \
         python3-tabulate python3-toml python3-yaml \
-        python3-zmq python3-psycopg2 python3-fastapi
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
 
         # Install procset
-        dpkg -i <path-to-procset>.deb
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
+
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
 
         # Then install oar node package
         dpkg -i python3-oar_*.deb oar-common_*.deb oar-user_*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
 
 
 Installation from the tarball
@@ -433,19 +453,28 @@ ______________________________
 *First install OAR3 dependencies*::
 
         apt-get update && \
-        apt-get install -y python3 perl \
-        python3-sqlalchemy python3-alembic \
+        apt-get install -y python3 perl python3-alembic \
         python3-click python3-flask \
         python3-passlib python3-psutil python3-requests \
         python3-simplejson python3-sqlalchemy-utils  \
         python3-tabulate python3-toml python3-yaml \
-        python3-zmq python3-psycopg2 python3-fastapi
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
 
         # Install procset
-        dpkg -i <path-to-procset>.deb
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
 
-        # Then install oar node package along with its dependencies
-        dpkg -i python3-oar_*.deb oar-common_*.deb oar-node_*.deb
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
+
+        # Then install oar node package
+        dpkg -i python3-oar_*.deb oar-common_*.deb oar-node*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
+
 
 Installation from the tarball (sources)
 _______________________________________
