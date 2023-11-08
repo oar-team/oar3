@@ -25,10 +25,16 @@ from subprocess import (  # noqa
 
 import psutil
 import zmq
+from sqlalchemy import text
 
-from oar.lib import config, db, get_logger
-from oar.lib import logger as log
 from oar.lib.event import add_new_event
+
+# from oar.lib import config, db
+from oar.lib.globals import get_logger, init_config
+
+# from oar.lib import logger as log
+# FIXME:Global config
+config = init_config()
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -39,7 +45,6 @@ oar2_almighty_socket = None
 
 
 def notify_user(job, state, msg):  # pragma: no cover
-
     if job.notify:
         tags = ["RUNNING", "END", "ERROR", "INFO", "SUSPENDED", "RESUMING"]
         m = re.match(r"^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$", job.notify)
@@ -116,7 +121,7 @@ def send_mail(job, mail_address, subject, msg_content):  # pragma: no cover
     s.quit()
 
 
-def create_almighty_socket():  # pragma: no cover
+def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: no cover
     global zmq_context
     global almighty_socket
 
@@ -124,16 +129,16 @@ def create_almighty_socket():  # pragma: no cover
         zmq_context = zmq.Context()
 
     almighty_socket = zmq_context.socket(zmq.PUSH)
-    almighty_socket.connect(
-        "tcp://" + config["SERVER_HOSTNAME"] + ":" + config["APPENDICE_SERVER_PORT"]
-    )
+    almighty_socket.connect("tcp://" + server_hostname + ":" + server_port)
 
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
 def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
 
     if not almighty_socket:
-        create_almighty_socket()
+        create_almighty_socket(
+            config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
+        )
 
     message = {"cmd": cmd}
     if job_id:
@@ -286,7 +291,7 @@ def pingchecker(hosts):  # pragma: no cover
 
 
 def pingchecker_exec_command(
-    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log
+    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=tools_logger
 ):  # pragma: no cover
     log.debug("[PingChecker] command to run : {}".format(cmd))
 
@@ -311,6 +316,8 @@ def pingchecker_exec_command(
     output = out.decode()
     error = err.decode()  # noqa TODO: not used
 
+    log.debug(f"out: {output}, err: {error}")
+
     for line in output.split("\n"):
         host = filter_output(*(line, ip2hostname))
         if host and host in bad_hosts:
@@ -330,7 +337,7 @@ def send_log_by_email(title, message):  # pragma: no cover
     return
 
 
-def exec_with_timeout(cmd, timeout=config["TIMEOUT_SSH"]):  # pragma: no cover
+def exec_with_timeout(cmd, timeout=None):  # pragma: no cover
     # Launch admin script
     error_msg = ""
     try:
@@ -605,13 +612,14 @@ def manage_remote_commands(
     return (0, [])
 
 
-def get_date():  # pragma: no cover
-    if db.engine.dialect.name == "sqlite":
+def get_date(session):  # pragma: no cover
+    dialect = session.bind.dialect.name
+    if dialect == "sqlite":
         req = "SELECT strftime('%s','now')"
     else:
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
-    result = db.session.execute(req).scalar()
+    result = session.execute(text(req)).scalar()
     return int(result)
 
 
@@ -804,7 +812,7 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
     return formated_key
 
 
-def get_private_ssh_key_file_name(cpuset_name):
+def get_private_ssh_key_file_name(cpuset_name, config):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return config["OAREXEC_DIRECTORY"] + "/" + cpuset_name + ".jobkey"
 
@@ -890,7 +898,7 @@ def resources2dump_perl(resources):
 
 
 def get_oarexecuser_script_for_oarsub(
-    job, job_walltime, node_file, shell, resource_file
+    config, job, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
     """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
@@ -964,11 +972,12 @@ def get_oarexecuser_script_for_oarsub(
     return script
 
 
-def check_process(pid):
-    """ Check for the existence process. """
+def check_process(pid, logger):
+    """Check for the existence process."""
     try:
         os.kill(pid, 0)
-    except OSError:
+    except OSError as error:
+        logger.info(f"checking process error: {error}")
         return False
     else:
         return True

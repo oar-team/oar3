@@ -307,7 +307,6 @@ def minimal_bench_kamelot_intern(nb_jobs=10):
 
 
 def launch_scheduler(scheduler="kamelot", queue="default", nb_jobs=10, timeout=300):
-
     now = time.time()
 
     initial_time_sec = now
@@ -346,7 +345,6 @@ def mock_tcp_socket(port, host):
 
 
 def launch_meta_scheduler(scheduler="kao", timeout=300):
-
     now = time.time()
 
     # initial_time_sec = now
@@ -382,7 +380,6 @@ def launch_meta_scheduler(scheduler="kao", timeout=300):
 def minimal_bench_scheduler(
     scheduler="kamelot", queue="default", nb_jobs=10, timeout=300
 ):
-
     create_resources()
     create_jobs(nb_jobs)
 
@@ -398,7 +395,6 @@ def simple_bench_scheduler(
     job_nb_resources_list=[2],
     file_res=None,
 ):
-
     nb_cpus = 2
     nb_cores = 16
 
@@ -461,7 +457,6 @@ def simple_bench_from_csv(
     replays=[],
     file_res=None,
 ):
-
     # Write header
     if file_res:
         file_res.write("scheduler nb_job nb_resources time nb_job_scheduled\n")

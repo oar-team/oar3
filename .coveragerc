@@ -5,8 +5,11 @@ parallel = true
 omit=
 	oar/cli/db/*
 	oar/kao/coorm.py
+	oar/kao/bataar.py
+	oar/kao/batsim_sched_proxy.py
 	oar/tools/__init__.py
 	oar/cli/oar2trace.py
+	oar/cli/_oarbench.py
 
 [report]
 exclude_lines =

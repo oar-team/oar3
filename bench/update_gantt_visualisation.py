@@ -57,7 +57,6 @@ def update_gantt_visualization_redis():
 
 
 def save_assigns_bulk_0(jobs, resource_set):
-
     if len(jobs) > 0:
         mld_id_start_time_s = []
         mld_id_rid_s = []
@@ -129,7 +128,7 @@ def bench_job_same(nb_job_exp=10, job_size=100, save_assign="default"):
     print("# bench: ", save_assign)
     print("# nb_j, job_size, time")
     for j in range(nb_job_exp):
-        nb_j = 2 ** j
+        nb_j = 2**j
         jobs = generate_jobs(nb_j, job_size)
         start = time.time()
         # getattr(oar.kao.job, "save_assigns_bulk")(jobs, rs)

@@ -28,14 +28,14 @@ class Platform(object):
     def __init__(self):
         pass
 
-    def resource_set(self):
-        return ResourceSet()
+    def resource_set(self, session=None, config=None):
+        return ResourceSet(session, config)
 
     def get_time(self):
         return int(time.time())
 
-    def get_waiting_jobs(self, queue, reservation="None"):
-        return get_waiting_jobs(queue, reservation)
+    def get_waiting_jobs(self, queue, reservation="None", session=None):
+        return get_waiting_jobs(session, queue, reservation)
 
     def get_data_jobs(self, *args):
         return get_data_jobs(*args)
@@ -66,7 +66,6 @@ class Platform(object):
         return self.env.now
 
     def get_waiting_jobs_simu(self, queue):
-
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []
@@ -147,7 +146,6 @@ class SimuPlatform(Platform):
         print("get_sum_accounting_by_user NOT IMPLEMENTED")
 
     def get_waiting_jobs(self, queue):
-
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []

@@ -99,7 +99,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 def to_json(obj, **kwargs):
-    """Dumps object to json string. """
+    """Dumps object to json string."""
     kwargs.setdefault("ensure_ascii", False)
     kwargs.setdefault("cls", JSONEncoder)
     kwargs.setdefault("indent", 4)
@@ -217,7 +217,8 @@ def render_query(statement, bind=None, reindent=True):
         return raw_sql
 
 
-def merge_dicts(*dict_args):
+# TODO/FIXME: function never used (so disabling coverage)
+def merge_dicts(*dict_args):  # pragma: no cover
     """Merge given dicts into a new dict."""
     result = {}
     for dictionary in dict_args:
@@ -225,7 +226,8 @@ def merge_dicts(*dict_args):
     return result
 
 
-def get_table_name(name):
+# TODO/FIXME: function never used (so disabling coverage)
+def get_table_name(name):  # pragma: no cover
     def _join(match):
         word = match.group()
         if len(word) > 1:
@@ -235,7 +237,8 @@ def get_table_name(name):
     return re.compile(r"([A-Z]+)(?=[a-z0-9])").sub(_join, name).lstrip("_")
 
 
-def print_query_results(results, name=None):
+# TODO/FIXME: function never used (so disabling coverage)
+def print_query_results(results, name=None):  # pragma: no cover
     if name:
         print(name)
         print("-" * len(name))

@@ -1,11 +1,11 @@
 # coding: utf-8
+# flake8: noqa (TO rework)
 import pytest
 import redis
 import zmq
 
 import oar.lib.tools  # for monkeypatching
 from oar.kao.meta_sched import meta_schedule
-from oar.lib import config, db
 from oar.lib.job_handling import insert_job
 from oar.lib.tools import get_date
 
@@ -61,7 +61,7 @@ def minimal_db_initialization(request):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
@@ -77,7 +77,6 @@ def monkeypatch_tools(request, monkeypatch):
     reason="Needs batsim which is currently disabled because of a pybatsim installation issue with poetry"
 )
 def test_simple_submission(monkeypatch):
-
     now = str(get_date())
 
     # 2:1484687842.0|1484687842.0:S:1

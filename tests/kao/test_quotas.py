@@ -8,14 +8,16 @@ from procset import ProcSet
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import Slot, SlotSet
-from oar.lib import config, get_logger
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import JobPseudo
 from oar.lib.resource import ResourceSet
+
+config, engine, log = init_oar(no_db=True)
 
 # import pdb
 
 config["LOG_FILE"] = ":stderr:"
-logger = get_logger("oar.test")
+# logger = get_logger("oar.test")
 
 """
     quotas[queue, project, job_type, user] = [int, int, float];
@@ -157,7 +159,6 @@ def test_quotas_one_job_rule_nb_res_2():
 
 
 def test_quotas_four_jobs_rule_1():
-
     Quotas.enabled = True
     Quotas.default_rules = {
         ("*", "*", "*", "/"): [16, -1, -1],
@@ -214,11 +215,10 @@ def test_quotas_four_jobs_rule_1():
 
 
 def test_quotas_three_jobs_rule_1():
-
     Quotas.enabled = True
     Quotas.default_rules = {
-        ("*", "*", "*", "/"): [16, -1, -1],
-        ("default", "*", "*", "*"): [-1, -1, 2000],
+        ("*", "*", "*", "/"): [8, -1, -1],
+        # ("default", "*", "*", "*"): [-1, -1, 2000],
     }
 
     res = ProcSet(*[(1, 32)])
@@ -262,7 +262,6 @@ def test_quotas_three_jobs_rule_1():
 
 
 def test_quotas_two_job_rules_nb_res_quotas_file():
-
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
 
@@ -272,7 +271,7 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
             '{"quotas": {"*,*,*,toto": [1,-1,-1],"*,*,*,john": [150,-1,-1]}}'
         )
 
-    Quotas.enable()
+    Quotas.enable(config)
 
     res = ProcSet(*[(1, 32)])
     ResourceSet.default_itvs = res
@@ -314,7 +313,6 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
 
 
 def test_quotas_two_jobs_job_type_proc():
-
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
 
@@ -322,7 +320,7 @@ def test_quotas_two_jobs_job_type_proc():
     with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
         quotas_fd.write('{"quotas": {"*,*,yop,*": [-1,1,-1]}, "job_types": ["yop"]}')
 
-    Quotas.enable()
+    Quotas.enable(config)
 
     print(Quotas.default_rules, Quotas.job_types)
 

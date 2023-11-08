@@ -1,7 +1,7 @@
 import pytest
 
 import oar.lib.tools  # for monkeypatching
-from oar.lib import config
+from oar.api.dependencies import get_config
 from oar.lib.job_handling import insert_job
 
 fake_call_retcodes = []
@@ -30,21 +30,20 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def oar_conf(request):
+def oar_conf(request, setup_config):
+    config, _, db = setup_config
     config["PROXY"] = "traefik"
-
-    @request.addfinalizer
-    def remove_fairsharing():
-        config["PROXY"] = "no"
+    yield config
+    config["PROXY"] = "no"
 
 
-def test_proxy_no_auth(client):
+def test_proxy_no_auth(client, setup_config, minimal_db_initialization):
     res = client.get("/proxy/{job_id}".format(job_id=11111111111111111))
     print(res.json())
     assert res.status_code == 403
 
 
-def test_proxy_no_jobid(client):
+def test_proxy_no_jobid(client, setup_config, minimal_db_initialization):
     res = client.get(
         "/proxy/{job_id}".format(job_id=11111111111111111),
         headers={"x-remote-ident": "bob"},
@@ -53,11 +52,16 @@ def test_proxy_no_jobid(client):
     assert res.status_code == 404
 
 
-def test_proxy_no_proxy_file(client):
+def test_proxy_no_proxy_file(client, setup_config, minimal_db_initialization):
     global fake_call_retcodes
     fake_call_retcodes = [1]
 
-    job_id = insert_job(res=[(60, [("resource_id=4", "")])], properties="", user="bob")
+    job_id = insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        user="bob",
+    )
     res = client.get(
         "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
     )
@@ -65,11 +69,14 @@ def test_proxy_no_proxy_file(client):
     assert res.status_code == 404
 
 
-def test_proxy(client):
+def test_proxy(client, oar_conf, setup_config, minimal_db_initialization):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0]
 
+    client.app.dependency_overrides[get_config] = lambda: oar_conf
+
     job_id = insert_job(
+        minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
         user="bob",
@@ -86,6 +93,6 @@ def test_proxy(client):
         "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
     )
 
-    print(res)
+    print(res._content)
     # import pdb; pdb.set_trace()
     assert res.status_code == 500

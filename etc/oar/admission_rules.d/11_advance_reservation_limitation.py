@@ -20,7 +20,7 @@ if reservation_date:
     else:
         max_nb_resa = 2
         nb_resa = len(
-            db.query(Job.id)
+            session.query(Job.id)
             .filter(Job.user == user)
             .filter(or_(Job.reservation == "toSchedule", Job.reservation == "Schedule"))
             .filter(or_(Job.state == "Waiting", Job.state == "Hold"))

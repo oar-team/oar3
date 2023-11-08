@@ -42,14 +42,14 @@ class MigrationContext(Context):
 
     @cached_property
     def current_models(self):
-        """ Return a namespace with all mapping classes"""
+        """Return a namespace with all mapping classes"""
         from oar.lib.models import all_models  # avoid a circular import
 
         return dict(all_models())
 
     @cached_property
     def current_tables(self):
-        """ Return a namespace with all tables classes"""
+        """Return a namespace with all tables classes"""
         self.current_db.reflect()
         sorted_tables = self.current_db.metadata.sorted_tables
         return dict((t.name, t) for t in sorted_tables)

@@ -228,9 +228,9 @@ if ($ARGV[0] eq "init"){
             # after setting it will give "1-2,5-8"
             my $job_cpuset_cpus_cmd = '/run/current-system/sw/bin/echo '.join(",",@Cpuset_cpus).' | /run/current-system/sw/bin/cat > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpus';
             if (exists($Cpuset->{'compute_thread_siblings'}) and lc($Cpuset->{'compute_thread_siblings'}) eq "yes") {
-                # If COMPUTE_THREAD_SIBLINGS="yes" in oar.conf, that means that the OAR DB has not info about the hyper 
+                # If COMPUTE_THREAD_SIBLINGS="yes" in oar.conf, that means that the OAR DB has not info about the hyper
                 # thread siblings, so we have compute it here.
-                $job_cpuset_cpus_cmd = 'for i in '.join(" ", map {s/,/ /gr} @Cpuset_cpus).'; do /run/current-system/sw/bin/cat /sys/devices/system/cpu/cpu$i/topology/thread_siblings_list; done | paste -sd, -" > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpus';
+                $job_cpuset_cpus_cmd = 'for i in '.join(" ", map {s/,/ /gr} @Cpuset_cpus).'; do /run/current-system/sw/bin/cat /sys/devices/system/cpu/cpu$i/topology/thread_siblings_list; done | paste -sd, - > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpus';
             }
             system('set -e
                     for d in '.$Cgroup_directory_collection_links.'/*; do
@@ -392,6 +392,18 @@ if ($ARGV[0] eq "init"){
         if (open(ENVFILE, "> $Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env")){
             my $job_name = "";
             $job_name = $Cpuset->{job_name} if defined($Cpuset->{job_name});
+
+            my %types;
+            %types = %{$Cpuset->{types}};
+
+            # Unpack job types
+            my $job_types = "";
+            foreach my $key (keys %types){
+              my $value = $types{$key};
+              $job_types="$key=$value;$job_types";
+            }
+            $job_types =~ s/;$//;
+
             my $filecontent = <<"EOF";
 export OAR_JOBID='$Cpuset->{job_id}'
 export OAR_ARRAYID='$Cpuset->{array_id}'
@@ -399,6 +411,7 @@ export OAR_ARRAYINDEX='$Cpuset->{array_index}'
 export OAR_USER='$Cpuset->{user}'
 export OAR_WORKDIR='$Cpuset->{launching_directory}'
 export OAR_JOB_NAME='$job_name'
+export OAR_JOB_TYPES='$job_types'
 export OAR_PROJECT_NAME='$Cpuset->{project}'
 export OAR_STDOUT='$Cpuset->{stdout_file}'
 export OAR_STDERR='$Cpuset->{stderr_file}'
@@ -509,7 +522,7 @@ EOF
                         done
                     fi
                 done');
-        
+
         # Locking around the cleanup of the cpuset for that user, to prevent a creation to occure at the same time
         # which would allow race condition for the dirty-user-based clean-up mechanism
         if (open(LOCK,">", $Cpuset_lock_file.$Cpuset->{user})){
@@ -604,7 +617,7 @@ EOF
             }
             flock(LOCK,LOCK_UN) or die "flock failed: $!\n";
             close(LOCK);
-        } 
+        }
         print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
         unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
         print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}");

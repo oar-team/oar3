@@ -3,10 +3,14 @@
 import pytest
 import zmq
 
-from oar.lib import config
+from oar.lib.globals import init_oar
+
+# from oar.lib import config
 from oar.modules.appendice_proxy import AppendiceProxy
 
 from ..fakezmq import FakeZmq
+
+config, db, log = init_oar(no_db=True)
 
 fakezmq = FakeZmq()
 
@@ -33,7 +37,6 @@ def setup(request):
 
 
 def test_appendice_proxy_simple(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["yop"]
 
     appendice_proxy = AppendiceProxy()
@@ -43,7 +46,6 @@ def test_appendice_proxy_simple(monkeypatch):
 
 
 def test_appendice_proxy_OAREXEC(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["OAREXEC_10_2_N_34"]
 
     appendice_proxy = AppendiceProxy()
@@ -57,7 +59,6 @@ def test_appendice_proxy_OAREXEC(monkeypatch):
 
 
 def test_appendice_proxy_OARRUNJOB(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["OARRUNJOB_42"]
 
     appendice_proxy = AppendiceProxy()
@@ -67,7 +68,6 @@ def test_appendice_proxy_OARRUNJOB(monkeypatch):
 
 
 def test_appendice_proxy_LEONEXTERMINATE(monkeypatch):
-
     fakezmq.recv_msgs[0] = ["LEONEXTERMINATE_42"]
 
     appendice_proxy = AppendiceProxy()

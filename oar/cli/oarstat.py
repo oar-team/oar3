@@ -3,20 +3,29 @@ import datetime
 import re
 import sys
 from json import dumps
+from typing import Generator, List
 
 import click
+from ClusterShell.NodeSet import NodeSet
+from rich import box
+from rich.console import Console
+from rich.padding import Padding
+from rich.table import Table
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import db
 from oar.lib.accounting import (
     get_accounting_summary,
     get_accounting_summary_byproject,
     get_last_project_karma,
 )
+from oar.lib.basequery import BaseQueryCollection
 from oar.lib.event import get_jobs_events
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
+    get_job_cpuset_name,
     get_job_resources_properties,
     get_jobs_state,
 )
@@ -28,6 +37,8 @@ from oar.lib.tools import (
 )
 
 from .utils import CommandReturns
+
+console = Console()
 
 click.disable_unicode_literals_warning = True
 
@@ -48,46 +59,199 @@ STATE2CHAR = {
 }
 
 
-def print_jobs(legacy, jobs, json=False):
+def get_job_full(session, jobs) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "Job id",
+        "State",
+        "User",
+        "Duration",
+        "System message",
+    ]
+    # First yield the headers
+    yield headers
 
-    now = tools.get_date()
+    now = tools.get_date(session)
+    for job in jobs:
+        # Compute job duration
+        duration = 0
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
 
-    if legacy and not json:
-        print(
-            "Job id    S User     Duration          System message\n"
-            + "--------- - -------- ----------------- ------------------------------------------------"
-        )
-        now = tools.get_date()
+        # !! It must be consistent wih `header_columns`
+        job_line = [
+            str(job.id),
+            STATE2CHAR[job.state],
+            str(job.user),
+            str(datetime.timedelta(seconds=duration)),
+            str(job.message),
+        ]
+
+        yield job_line
+
+
+def get_table_lines_jobs(session, jobs, arg) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "Job id",
+        "State",
+        "User",
+        "Duration",
+        "System message",
+        "Queue",
+    ]
+
+    if "resources" in arg and arg["resources"]:
+        headers.append("Network addresses")
+
+    # First yield the headers
+    yield headers
+
+    now = tools.get_date(session)
+    for job in jobs:
+        # Compute job duration
+        duration = 0
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
+
+        # !! It must be consistent wih `header_columns`
+        job_line = [
+            str(job.id),
+            job.state,
+            str(job.user),
+            str(datetime.timedelta(seconds=duration)),
+            str(job.message),
+            str(job.queue_name),
+        ]
+
+        if "resources" in arg and hasattr(job, "network_adresses"):
+            job_line.append(str(job.network_adresses))
+
+        yield job_line
+
+
+def gather_all_user_accounting(session, items, arg) -> List[str]:
+    # The headers to print
+    headers: List[str] = [
+        "User",
+        "First window starts",
+        "Last window ends",
+        "Asked (seconds)",
+        "Used (seconds)",
+    ]
+    # First yield the headers
+    yield headers
+
+    for user, consumption_user in items:
+        asked = 0
+        if "ASKED" in consumption_user:
+            asked = consumption_user["ASKED"]
+        used = 0
+        if "USED" in consumption_user:
+            used = consumption_user["USED"]
+
+        begin = local_to_sql(consumption_user["begin"])
+        end = local_to_sql(consumption_user["end"])
+
+        yield [
+            user,
+            str(begin),
+            str(end),
+            str(asked),
+            str(used),
+        ]
+
+
+def print_table(
+    session,
+    objects: List[any],
+    gather_prop: Generator[List[str], None, None],
+    min_column_size: int = 7,
+    extra_arg={},
+):
+    """
+    Use Rich to print a table in the terminal
+    """
+    table = Table(title="")
+    lines_generator = gather_prop(session, objects, extra_arg)
+
+    # The first yielded value should be the header list
+    lines = [next(lines_generator)]
+    for line in lines[0]:
+        table.add_column(line)
+
+    # Loop through the job lines
+    for line in lines_generator:
+        table.add_row(*line)
+
+    table.box = box.SIMPLE_HEAD
+    table.row_styles = ["none", "dim"]
+    console.print(table)
+
+
+def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
+    console = Console()
+    queryCollection = BaseQueryCollection(session)
+
+    if full or show_resources:
+        res = queryCollection.get_assigned_jobs_resources(jobs)
         for job in jobs:
-            duration = 0
-            if job.start_time:
-                if now > job.start_time:
-                    if job.state in ["Running", "Launching", "Finishing"]:
-                        duration = now - job.start_time
-                    elif job.stop_time != 0:
-                        duration = job.stop_time - job.start_time
-                    else:
-                        duration = -1
+            if job.id in res:
+                nodes = NodeSet.fromlist(
+                    [str(res.network_address) for res in res[job.id]]
+                )
+                job.network_adresses = nodes
 
-            print(
-                "{:9}".format(str(job.id))
-                + " "
-                + STATE2CHAR[job.state]
-                + " "
-                + "{:8}".format(str(job.user))
-                + " "
-                + "{:>10}".format(str(datetime.timedelta(seconds=duration)))
-                + " "
-                + "{:48}".format(job.message)
-            )
-    elif json:
-        # TODO to enhance
-        print(dumps([j.to_dict() for j in jobs]))
+    if json:
+        to_dump = {}
+        # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
+        jobs_properties = [
+            {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
+        ]
+
+        if json:
+            for job in jobs_properties:
+                to_dump[job["id"]] = job
+
+            console.print_json(dumps(to_dump))
+
+    elif legacy and full:
+        for job in jobs:
+            console.print(f"id: {job.id}")
+            attributes = [
+                key
+                for key in vars(job)
+                if not key.startswith("_") and key != "id" and job.__dict__[key]
+            ]
+            for attribute in attributes:
+                console.print(
+                    Padding(
+                        "{} = {}".format(attribute, str(job.__dict__[attribute])),
+                        (0, 4),
+                    )
+                )
+            console.print()
+    elif legacy:
+        print_table(
+            session, jobs, get_table_lines_jobs, extra_arg={"resources": show_resources}
+        )
     else:
         print(jobs)
 
 
-def print_accounting(cmd_ret, accounting, user, sql_property):
+def print_accounting(session, cmd_ret, accounting, user, sql_property, json=False):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
@@ -98,7 +262,9 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
         d1_local = sql_to_local(date1)
         d2_local = sql_to_local(date2)
 
-        consumptions = get_accounting_summary(d1_local, d2_local, user, sql_property)
+        consumptions = get_accounting_summary(
+            session, d1_local, d2_local, user, sql_property
+        )
         # import pdb; pdb.set_trace()
         # One user output
         if user:
@@ -136,7 +302,7 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
             print("By project consumption:")
 
             consumptions_by_project = get_accounting_summary_byproject(
-                d1_local, d2_local, user
+                session, d1_local, d2_local, user
             )
             for project, consumptions_proj in consumptions_by_project.items():
                 print("  " + project + ":")
@@ -158,85 +324,111 @@ def print_accounting(cmd_ret, accounting, user, sql_property):
                     )
                 )
 
-                last_karma = get_last_project_karma(user, project, d2_local)
+                last_karma = get_last_project_karma(session, user, project, d2_local)
                 if last_karma:
                     m = re.match(r".*Karma\s*\=\s*(\d+\.\d+)", last_karma)
                     if m:
                         print("{:>28}: {}".format("Last Karma", m.group(1)))
         # All users array output
         else:
-            print(
-                "User       First window starts  Last window ends     Asked (seconds)  Used (seconds)"
-            )
-            print(
-                "---------- -------------------- -------------------- ---------------- ----------------"
-            )
-            for user, consumption_user in consumptions.items():
-                asked = 0
-                if "ASKED" in consumption_user:
-                    asked = consumption_user["ASKED"]
-                used = 0
-                if "USED" in consumption_user:
-                    used = consumption_user["USED"]
-
-                begin = local_to_sql(consumption_user["begin"])
-                end = local_to_sql(consumption_user["end"])
-
-                print(
-                    "{:>10} {:>20} {:>20} {:>16} {:>16}".format(
-                        user, begin, end, asked, used
-                    )
-                )
+            print_table(session, consumptions.items(), gather_all_user_accounting)
     else:
         cmd_ret.error("Bad syntax for --accounting", 1, 1)
         cmd_ret.exit()
 
 
-def print_events(cmd_ret, job_ids, array_id):
+def print_events(session, cmd_ret, job_ids, array_id, json):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
+
     if job_ids:
-        events = get_jobs_events(job_ids)
-        for ev in events:
-            print(
-                "{}> [{}] {}: {}".format(
-                    local_to_sql(ev.date), ev.job_id, ev.type, ev.description
-                )
-            )
+        events = get_jobs_events(session, job_ids)
+        if not json:
+
+            def gather_events(_, events, extra_args={}):
+                yield ["Date", "job id", "Type", "Description"]
+                for event in events:
+                    yield [
+                        str(local_to_sql(event.date)),
+                        str(event.job_id),
+                        str(event.type),
+                        str(event.description),
+                    ]
+
+            print_table(session, events, gather_events)
+        else:
+            events_per_jobs = dict()
+            for event in events:
+                if str(event.job_id) not in events_per_jobs:
+                    events_per_jobs[str(event.job_id)] = []
+                event_dict = {
+                    "date": str(local_to_sql(event.date)),
+                    "type": str(event.type),
+                    "description": str(event.description),
+                }
+                events_per_jobs[str(event.job_id)].append(event_dict)
+            print(dumps(events_per_jobs))
+
     else:
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(cmd_ret, job_ids, array_id):
+def print_properties(session, cmd_ret, job_ids, array_id, json):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
-    if job_ids:
+        job_ids = get_array_job_ids(session, array_id)
 
+    if job_ids:
+        # Gather a list of [(Resource, job_id), ...]
         resources_properties = [
-            p for job_id in job_ids for p in get_job_resources_properties(job_id)
+            (p, job_id)
+            for job_id in job_ids
+            for p in get_job_resources_properties(session, job_id)
         ]
-        for resource_properties in resources_properties:
-            print_comma = False
-            for prop, value in resource_properties.to_dict().items():
-                if print_comma:
-                    print(" , ", end="")
-                else:
-                    print_comma = True
-                if not check_resource_system_property(prop):
-                    print("{} = '{}'".format(prop, value), end="")
-                else:
-                    print_comma = False
-            print()
+
+        # For each job, construct the list of its resources properties
+        properties_for_job = dict()
+        for resource_properties, job_id in resources_properties:
+            if job_id not in properties_for_job:
+                properties_for_job[job_id] = []
+
+            properties_for_job[job_id].append(
+                {
+                    prop: value
+                    for prop, value in resource_properties.to_dict().items()
+                    if not check_resource_system_property(prop)
+                }
+            )
+
+        # If json, the `properties_for_job` is ready to be dumped
+        if json:
+            print(dumps(properties_for_job))
+        else:
+            # For normal print, all resources are printed in a new line regardless of their jobs
+            # First flatten the properties into an array
+            all_jobs = [
+                properties
+                for job_id, resources_properties in properties_for_job.items()  # Higher loop
+                for properties in resources_properties  # Sublist
+            ]
+            for properties in all_jobs:
+                property_line = ", ".join(
+                    map(
+                        lambda item: "{} = '{}'".format(item[0], item[1]),
+                        properties.items(),
+                    )
+                )
+                print(property_line)
+
     else:
         cmd_ret.warning("No job ids specified")
 
 
-def print_state(cmd_ret, job_ids, array_id, json):
+def print_state(session, cmd_ret, job_ids, array_id, json):
     # TODO json mode
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
     if job_ids:
-        job_ids_state = get_jobs_state(job_ids)
+        job_ids_state = get_jobs_state(session, job_ids)
         if json:
             json_dict = {}
             for i, job_id_state in enumerate(job_ids_state):
@@ -246,7 +438,7 @@ def print_state(cmd_ret, job_ids, array_id, json):
             # import pdb; pdb.set_trace()
             print(dumps(json_dict))
         else:
-            for job_id_state in get_jobs_state(job_ids):
+            for job_id_state in get_jobs_state(session, job_ids):
                 job_id, state = job_id_state
                 print("{}: {}".format(job_id, state))
     else:
@@ -293,6 +485,9 @@ class UserOption(click.Command):
     "-u", "--user", type=click.STRING, help="show information for this user only"
 )
 @click.option(
+    "-r", "--show-resources", is_flag=True, help="show allocated resources (if any)"
+)
+@click.option(
     "-a",
     "--array",
     type=int,
@@ -308,7 +503,7 @@ class UserOption(click.Command):
     help='show job information between two date-times "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"',
 )
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
-@click.option("-p", "--properties", is_flag=True, help="show job properties")
+@click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
 @click.option(
     "-A",
     "--accounting",
@@ -321,19 +516,16 @@ class UserOption(click.Command):
     type=click.STRING,
     help="restricts display by applying the SQL where clause on the table jobs (ex: \"project = 'p1'\")",
 )
-@click.option(
-    "-F",
-    "--format",
-    type=int,
-    help="select the text output format. Available values 1 an 2",
-)
 @click.option("-J", "--json", is_flag=True, help="print result in JSON format")
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
+@click.pass_context
 def cli(
+    ctx,
     job,
     full,
     state,
     user,
+    show_resources,
     array,
     compact,
     gantt,
@@ -341,27 +533,23 @@ def cli(
     properties,
     accounting,
     sql,
-    format,
     json,
     version,
 ):
-    """Print job information."""
-    job_ids = job
-    array_id = array
 
-    start_time = None
-    stop_time = None
-    if gantt:  # --gantt "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"
-        m = re.match(
-            r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*",
-            gantt,
-        )
-        date1 = m.group(1) + " " + m.group(2)
-        date2 = m.group(3) + " " + m.group(4)
-        start_time = sql_to_local(date1)
-        stop_time = sql_to_local(date2)
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        config, engine, log = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
 
     cmd_ret = CommandReturns(cli)
+
+    queryCollection = BaseQueryCollection(session)
+
     # Print OAR version and exit
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
@@ -370,6 +558,13 @@ def cli(
     if user == "_this_user_":
         user = tools.get_username()
 
+    # if accounting print it and exit
+    if accounting:
+        print_accounting(session, cmd_ret, accounting, user, sql)
+        cmd_ret.exit()
+
+    job_ids = job
+    array_id = array
     if job_ids and array_id:
         cmd_ret.error(
             "Conflicting Job IDs and Array IDs (--array and -j cannot be used together)",
@@ -378,22 +573,32 @@ def cli(
         )
         cmd_ret.exit()
 
-    jobs = None
-    if not accounting and not events and not state:
-        jobs = db.queries.get_jobs_for_user(
+    if events:
+        print_events(session, cmd_ret, job_ids, array_id, json)
+    elif properties:
+        print_properties(session, cmd_ret, job_ids, array_id, json)
+    elif state:
+        print_state(session, cmd_ret, job_ids, array_id, json)
+    else:
+        start_time = None
+        stop_time = None
+        if gantt:  # --gantt "YYYY-MM-DD hh:mm:ss, YYYY-MM-DD hh:mm:ss"
+            m = re.match(
+                r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s+(\d{1,2}:\d{1,2}:\d{1,2})\s*",
+                gantt,
+            )
+            date1 = m.group(1) + " " + m.group(2)
+            date2 = m.group(3) + " " + m.group(4)
+            start_time = sql_to_local(date1)
+            stop_time = sql_to_local(date2)
+
+        jobs = queryCollection.get_jobs_for_user(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
-    if accounting:
-        print_accounting(cmd_ret, accounting, user, sql)
-    elif events:
-        print_events(cmd_ret, job_ids, array_id)
-    elif properties:
-        print_properties(cmd_ret, job_ids, array_id)
-    elif state:
-        print_state(cmd_ret, job_ids, array_id, json)
-    else:
-        if jobs:
-            print_jobs(True, jobs, json)
+        for job in jobs:
+            job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
+
+        print_jobs(session, True, jobs, json, show_resources, full)
 
     cmd_ret.exit()

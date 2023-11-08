@@ -1,0 +1,29 @@
+@startuml
+participant Almighty as alm
+participant MetaScheduler as kao
+participant "OAREnergy" as hulot
+participant "Job launcher" as bipbipc
+participant ExternalModule as ear
+
+alm++
+bipbipc++
+
+alm -> kao++: meta_schedule()
+
+loop queues in queues_by_priority
+kao --> ear: external_metasched(queue, jobs, resources)
+  loop queue in queus
+    kao -> kao: scheduler(jobs, scheduled_jobs, resources)
+  end
+end
+
+kao -> kao: get_jobs_to_launch(current_time)
+kao -> bipbipc: notify_jobs_to_launch([jobs])
+
+alt ENERGY_SAVING == 'activated'
+  kao -> kao: nodes_energy_saving()
+  kao -> hulot: send_decision(node_to_wakeup, node_to_halt)
+end
+
+kao--
+@endumlgo

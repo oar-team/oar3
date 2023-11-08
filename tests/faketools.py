@@ -5,9 +5,13 @@ fake_popen = {"cmd": None, "wait_return_code": 0, "exception": None}
 
 
 class FakePopen(object):
-    def __init__(self, cmd, stdout=None, stderr=None, shell=True):
+    def __init__(self, cmd, env={}, stdout=None, stderr=None, shell=True):
         print("Command: {}".format(cmd))
+        print("Env: {}".format(env))
+
         fake_popen["cmd"] = cmd
+        fake_popen["env"] = env
+
         self.cmd = cmd
         self.pid = 111
 
@@ -38,9 +42,13 @@ class FakeProcess(object):
     def __init__(self, **kargs):
         self.target = kargs["target"]
         self.kwargs = kargs["kwargs"]
+        self.args = kargs["args"]
 
     def start(self):
-        self.target(**self.kwargs)
+        print(self.args)
+        print(self.kwargs)
+        self.target(*self.args, **self.kwargs)
+        # self.target(*self.args)
 
     def join(self):
         pass

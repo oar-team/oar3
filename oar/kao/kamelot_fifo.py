@@ -4,20 +4,19 @@
 import copy
 
 from procset import ProcSet
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
-from oar.lib import config, get_logger
+from oar.lib.globals import get_logger, init_oar
 
-# Initialize some variables to default value or retrieve from oar.conf
-# configuration file *)
+config, db, log = init_oar(no_db=True)
 
 
 logger = get_logger("oar.kamelot_fifo")
 
 
-def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
-
+def schedule_fifo_cycle(session, config, plt, queue="default", hierarchy_use=False):
     assigned_jobs = {}
 
     now = plt.get_time()
@@ -27,7 +26,9 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
     #
     # Retrieve waiting jobs
     #
-    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(queue)
+    waiting_jobs, waiting_jids, nb_waiting_jobs = plt.get_waiting_jobs(
+        queue, session=session
+    )
 
     if nb_waiting_jobs > 0:
         logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
@@ -37,19 +38,23 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
         #
         # Determine Global Resource Intervals
         #
-        resource_set = plt.resource_set()
+        resource_set = plt.resource_set(session, config)
         res_itvs = copy.copy(resource_set.roid_itvs)
 
         #
         # Get  additional waiting jobs' data
         #
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
-        plt.get_data_jobs(waiting_jobs, waiting_jids, resource_set, job_security_time)
+        plt.get_data_jobs(
+            session, waiting_jobs, waiting_jids, resource_set, job_security_time
+        )
 
         #
         # Remove resources used by running job
         #
-        for job in plt.get_scheduled_jobs(resource_set, job_security_time, now):
+        for job in plt.get_scheduled_jobs(
+            session, resource_set, job_security_time, now
+        ):
             if job.state == "Running":
                 res_itvs = res_itvs - job.res_itvs
 
@@ -96,7 +101,7 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
         # Save assignement
         #
         logger.info("save assignement")
-        plt.save_assigns(assigned_jobs, resource_set)
+        plt.save_assigns(session, assigned_jobs, resource_set)
 
     else:
         logger.info("no waiting jobs")
@@ -105,11 +110,20 @@ def schedule_fifo_cycle(plt, queue="default", hierarchy_use=False):
 #
 # Main function
 #
-def main():
+def main(session=None, config=None):
+    if not session:
+        config, engine, log = init_oar(config)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
+    logger = get_logger("oar.kamelot_basic", forward_stderr=True)
+
     config["LOG_FILE"] = "/tmp/oar_kamelot.log"
     logger = get_logger("oar.kamelot_fifo", forward_stderr=True)
     plt = Platform()
-    schedule_fifo_cycle(plt, "default")
+    schedule_fifo_cycle(session, config, plt, "default")
     logger.info("That's all folks")
 
 

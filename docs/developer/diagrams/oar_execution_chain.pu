@@ -1,0 +1,88 @@
+@startuml
+box "Server" #LightBlue
+  participant Leon as leon
+  participant Bipbip as bipbip
+  control "Server's prologue" as sprologue
+  control "Server's epilogue" as sepilogue
+end box
+box "Head Node" #LightGreen
+  control "dedicated sshd" as sshd
+  actor "oar user" as oar
+  actor "job user" as user
+  control "OAREXEC process" as OAREXEC
+  control "Job's prologue" as prologue
+  control "Job's epilogue" as epilogue
+end box
+note over oar
+  oar has a special
+  shell: oarsh_shell
+end note
+
+note over sshd
+  the sshd server must
+  be configured to accept
+  oar related env variables
+end note
+
+bipbip++
+sshd++
+
+bipbip -> sprologue : server prologue
+sprologue++
+bipbip <- sprologue
+sprologue--
+
+sshd --> oar : oarsh_shell
+
+bipbip -> sshd : job_resource_manager_cgroups "init"
+sshd --> oar : oarsh_shell
+note over oar
+  create cpuset
+  for the job
+end note
+
+bipbip -> sshd : launch_oarexec
+
+sshd --> oar : oarsh_shell
+note over oar, user
+  with the environment
+  variable OAR_CPUSET
+  the shell used by oar (oarsh_shell)
+  becomes the job's user
+  and migrates itself to the cpuset
+end note
+
+oar -> oar: Migrate itself to $OAR_CPUSET
+group Inside cpuset
+  oar -> user: Become user $OAR_JOB_USER
+  user -> OAREXEC
+  OAREXEC++
+  OAREXEC -> prologue: execute job's prologue
+  prologue++
+  OAREXEC <- prologue
+  prologue--
+
+  hnote over OAREXEC
+    job executes
+  end hnote
+
+  ' Job terminated
+  OAREXEC -> epilogue: execute job's epilogue
+  epilogue++
+  OAREXEC <- epilogue
+  epilogue--
+  OAREXEC--
+end
+
+
+activate leon
+leon -> sshd : job_resource_manager_cgroups "clean"
+sshd --> oar : oarsh_shell
+
+leon -> sepilogue : server epilogue
+sepilogue++
+leon <- sepilogue
+sepilogue--
+leon--
+
+@endumlgo

@@ -6,14 +6,15 @@ from simpy.events import AnyOf
 
 from oar.kao.kamelot import schedule_cycle
 from oar.kao.platform import Platform
-from oar.lib import config
+from oar.lib.globals import init_config
+
+config = init_config()
 
 config["LOG_FILE"] = ":stderr:"
 
 
 class SimSched(object):
     def __init__(self, res_set, jobs, submission_time_jids, mode_platform="simu"):
-
         self.env = simpy.Environment()
 
         self.platform = Platform(
@@ -38,11 +39,9 @@ class SimSched(object):
         self.env.run()
 
     def sched(self):
-
         next_job_arrival = self.job_arrival()
 
         while True:
-
             print("Wait for job arrivals or job endings", self.env.now)
 
             events = list(self.evt_running_jobs)

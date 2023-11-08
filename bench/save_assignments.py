@@ -10,7 +10,6 @@ from oar.kao.job import JobPseudo, save_assigns
 from oar.kao.simsim import ResourceSetSimu
 from oar.lib import GanttJobsPrediction, config, db
 from oar.lib.interval import itvs2ids
-from oar.lib.psycopg2 import pg_bulk_insert
 
 nb_max_res = 200000
 rs = ResourceSetSimu(rid_o2i=range(nb_max_res))
@@ -48,8 +47,8 @@ def generate_jobs(nb_jobs, size_max, mode="same"):
     return jobs
 
 
-def save_assigns_bulk_0(jobs, resource_set):
-
+# flake8: noqa:
+def save_assigns_bulk_0(jobs, resource_set):  # pragma: no cover
     if len(jobs) > 0:
         mld_id_start_time_s = []
         mld_id_rid_s = []
@@ -148,7 +147,7 @@ def bench_job_same(nb_job_exp=10, job_size=100, save_assign="default"):
     print("# bench: ", save_assign)
     print("# nb_j, job_size, time")
     for j in range(nb_job_exp):
-        nb_j = 2 ** j
+        nb_j = 2**j
         jobs = generate_jobs(nb_j, job_size)
         start = time.time()
         # getattr(oar.kao.job, "save_assigns_bulk")(jobs, rs)

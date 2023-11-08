@@ -1,7 +1,8 @@
+.. _admin-install:
 
 .. warning::
 
-   **THIS DOCUMENTATION IS OUTDATED AND CORESPONDS TO OAR 2.5.X NOT 3.0.0**
+   **THIS DOCUMENTATION IS OUTDATED AND CORRESPONDS TO OAR 2.5.X NOT 3.0.0**
 
 Installation
 ============
@@ -12,12 +13,10 @@ Installation
 Overview
 --------
 
-There are currently 3 methods to install OAR:
+There are currently 2 methods to install OAR:
 
   - from the Debian packages
-  - from the RPM packages
   - from sources
-
 
 Before going further, please have in mind OAR's architecture. A common OAR
 installation is composed of:
@@ -31,106 +30,11 @@ installation is composed of:
     visualisation webapps (monika, drawgantt, ...);
   - optionally an **API server**, which will host OAR restful API service.
 
-Many OAR data are stored and archived in a database: you have the choice to use
-either PostgreSQL or MySQL. We recommend using **PostgreSQL**.
-
+Many OAR data are stored and archived in a a postgresql database.
 
 Beside this documentation, please have a look at **OAR website**:
-http://oar.imag.fr, which also provides a lot of information, espacially in the
+http://oar.imag.fr, which also provides a lot of information, especially in the
 **Download** and **Contribs** sections.
-
-
-Computing nodes
----------------
-
-Installation from the packages
-______________________________
-
-**Instructions**
-
-*For RedHat like systems*::
-
-        # OAR provides a Yum repository.
-        # For more information see: http://oar.imag.fr/download#rpms
-
-        # Install OAR node
-        yum --enablerepo=OAR install oar-node
-
-*For the Debian like systems*::
-
-        # OAR is shipped as part of Debian official distributions (newer versions can be available in backports)
-        # For more info see: http://oar.imag.fr/download#debian
-
-        # Install OAR node
-        apt-get install oar-node
-
-Installation from the tarball
-_____________________________
-
-**Requirements**
-
-*For RedHat like systems*::
-
-          # Build dependencies
-          yum install gcc make tar python-docutils
-
-          # Common dependencies
-          yum install Perl Perl-base openssh
-
-*For Debian like system*::
-
-          # Build dependencies
-          apt-get install gcc make tar python-docutils
-
-          # Common dependencies
-          apt-get install perl perl-base openssh-client openssh-server
-
-**Instructions**
-
-Get the sources::
-
-        OAR_VERSION=2.5.4
-        wget -O - http://oar-ftp.imag.fr/oar/2.5/sources/stable/oar-${OAR_VERSION}.tar.gz | tar xzvf -
-        cd oar-${OAR_VERSION}/
-
-build/install/setup::
-
-        # build
-        make node-build
-        # install
-        make node-install
-        # setup
-        make node-setup
-
-
-Configuration
-_____________
-
-Init.d scripts
-~~~~~~~~~~~~~~
-
-If you have installed OAR from sources, you need to become root user and
-install manually the {init.d,default,sysconfig} scripts present in the folders::
-
-    $PREFIX/share/doc/oar-node/examples/scripts/{init.d,default,sysconfig}
-
-Then you just need to use the script ``/etc/init.d/oar-node`` to start
-the SSH daemon dedicated to oar-node.
-
-SSH setup
-~~~~~~~~~
-
-OAR uses SSH to connect from machine to machine (e.g. from server or frontend to
-nodes or from nodes to nodes), using a dedicated SSH daemon usually running on
-port 6667.
-
-Upon installtion of the OAR server on the server machine, a SSH key pair along with an authorized_keys file is created for the oar user in ``/var/lib/oar/.ssh``. You need to copy that directory from the oar server to the nodes.
-
-Please note that public key in the authorized_keys file must be prefixed with ``environment="OAR_KEY=1"``, e.g.::
-
-      environment="OAR_KEY=1" ssh-rsa AAAAB3NzaC1yc2[...]6mIcqvcwG1K7V6CHLQKHKWo/ root@server
- 
-Also please make sure that the ``/var/lib/oar/.ssh`` directory and contained files have the right ownership (oar.oar) and permissions for SSH to function. 
 
 
 Server
@@ -141,81 +45,81 @@ ______________________________
 
 **Instructions**
 
-*For RedHat like systems*::
+*Dependencies for Debian like system*::
 
-        # OAR provides a Yum repository.
-        # For more information see: http://oar.imag.fr/download#rpms
+        # Build dependencies
+        apt-get install gcc make tar python-docutils
 
-        # Install OAR server for the PostgreSQL backend
-        yum --enablerepo=OAR install oar-server oar-server-pgsql
+        # Common dependencies
+        apt-get install perl perl-base openssh-client openssh-server libdbi-perl libsort-versions-perl libterm-ui-perl
 
-        # or Install OAR server for the MySQL backend
-        yum --enablerepo=OAR install oar-server oar-server-mysql
+        # PostgreSQL dependencies
+        apt-get install postgresql postgresql-client libdbd-pg-perl
 
-*For the Debian like systems*::
+        # Python3 dependencies
+        apt-get install python3 \
+        python3-alembic python3-click python3-flask \
+        python3-passlib python3-psutil python3-requests \
+        python3-simplejson python3-sqlalchemy-utils  \
+        python3-tabulate python3-toml python3-yaml \
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
 
-        # OAR is shipped as part of Debian official distributions (newer versions can be available in backports)
-        # For more info see: http://oar.imag.fr/download#debian
+        # Install procset
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
 
-        # Install OAR server for the PostgreSQL backend
-        apt-get install oar-server oar-server-pgsql
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
 
-        # or Install OAR server for the MySQL backend
-        apt-get install oar-server oar-server-mysql
+        # Then install oar node package
+        dpkg -i python3-oar_*.deb oar-common_*.deb oar-server_*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
+
 
 Installation from the tarball
 _____________________________
 
 **Requirements**
 
-*For RedHat like systems*::
+dependencies:
+        - make
+        - perl (pod2man)
+        - gcc
+        - python3 (with distutils package)
+        - postgres
+        - python3-dev (to build python extension)
+        - `poetry <https://python-poetry.org/docs/#installation>`_
+        - pip3
+        - libpq package
+        - taktuk
 
-        # Add the epel repository (choose the right version depending on your
-        # operating system)
-        yum install epel-release
+**On Debian you can use the following command**::
 
-        # Build dependencies
-        yum install gcc make tar python-docutils
-
-        # Common dependencies
-        yum install Perl Perl-base openssh Perl-DBI perl-Sort-Versions
-
-        # MySQL dependencies
-        yum install mysql-server mysql perl-DBD-MySQL
-
-        # PostgreSQL dependencies
-        yum install postgresql-server postgresql perl-DBD-Pg
-
-*For Debian like system*::
-
-          # Build dependencies
-          apt-get install gcc make tar python-docutils
-
-          # Common dependencies
-          apt-get install perl perl-base openssh-client openssh-server libdbi-perl libsort-versions-perl
-
-          # MySQL dependencies
-          apt-get install mysql-server mysql-client libdbd-mysql-perl
-
-          # PostgreSQL dependencies
-          apt-get install postgresql postgresql-client libdbd-pg-perl
+        apt update && apt install make perl python3 python3-dev python3-pip curl libpq-dev
 
 **Instructions**
 
 Get the sources::
 
-        OAR_VERSION=2.5.4
-        wget -O - http://oar-ftp.imag.fr/oar/2.5/sources/stable/oar-${OAR_VERSION}.tar.gz | tar xzvf -
-        cd oar-${OAR_VERSION}/
+        export OAR_VERSION=3.0.0.dev7
+        wget -O - https://github.com/oar-team/oar3/archive/refs/tags/${OAR_VERSION}.tar.gz | tar xzvf -
+        cd oar3-${OAR_VERSION}
+
+Install the python sources::
+        poetry build && pip install dist/*.whl
 
 Build/Install/Setup the OAR server::
 
         # build
-        make server-build
+        make PREFIX=/usr/local server-build
         # install
-        make server-install
+        make PREFIX=/usr/local server-install
         # setup
-        make server-setup
+        make PREFIX=/usr/local server-setup
 
 Configuration
 _____________
@@ -223,8 +127,27 @@ _____________
 The oar database
 ~~~~~~~~~~~~~~~~
 
+**Install and create the database (postgresql) on debian you can install postgres with the following commands**::
+
+        apt-get update && \
+        apt-get install -y postgresql postgresql-contrib libjson-perl && \
+        apt-get clean
+
+        # Configure the database
+        postgresql_main=$(find /etc/postgresql -name "main") \
+        && sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" ${postgresql_main}/postgresql.conf \
+        && echo "host all all 0.0.0.0/0 md5" >> ${postgresql_main}/pg_hba.conf
+
+        systemctl enable postgresql
+        # Reboot or use systemctl start postgresql
+
+**Install the perl dependencies for the oar database management tool**::
+        # For debian system use
+        apt-get install libdbi-perl perl perl-base libsort-versions-perl libdbd-pg-perl libdatetime-perl libterm-ui-perl
+
+
 Define the database configuration in /etc/oar/oar.conf. You need to set the
-variables ``DB_TYPE, DB_HOSTNAME, DB_PORT, DB_BASE_NAME, DB_BASE_LOGIN,
+variables ``DB_HOSTNAME, DB_PORT, DB_BASE_NAME, DB_BASE_LOGIN,
 DB_BASE_PASSWD, DB_BASE_LOGIN_RO, DB_BASE_PASSWD_RO``::
 
         vi /etc/oar/oar.conf
@@ -316,7 +239,8 @@ server has the address <OAR_SERVER>, you can add the following lines in the
 Using Taktuk
 ~~~~~~~~~~~~
 
-If you want to use taktuk to manage remote administration commands, you have to
+
+OAR3 uses taktuk for remote administration operations; you have to
 install it. You can find information about taktuk from its website:
 http://taktuk.gforge.inria.fr.
 
@@ -398,69 +322,70 @@ ______________________________
 
 **Instructions**
 
-*For RedHat like systems*::
-
-        # OAR provides a Yum repository.
-        # For more information see: http://oar.imag.fr/download#rpms
-
-        # Install OAR user for the PostgreSQL backend
-        yum --enablerepo=OAR install oar-user oar-user-pgsql
-
-        # or Install OAR user for the MySQL backend
-        yum --enablerepo=OAR install oar-user oar-user-mysql
-
 *For the Debian like systems*::
 
-        # OAR is shipped as part of Debian official distributions (newer versions can be available in backports)
-        # For more info see: http://oar.imag.fr/download#debian
+        # Install dependencies
 
-        # Install OAR server for the PostgreSQL backend
-        apt-get install oar-user oar-user-pgsql
+        apt-get update && \
+        apt-get install -y python3 perl \
+        python3-alembic \
+        python3-click python3-flask \
+        python3-passlib python3-psutil python3-requests \
+        python3-simplejson python3-sqlalchemy-utils  \
+        python3-tabulate python3-toml python3-yaml \
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
 
-        # or Install OAR server for the MySQL backend
-        apt-get install oar-user oar-user-mysql
+        # Install procset
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
+
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
+
+        # Then install oar node package
+        dpkg -i python3-oar_*.deb oar-common_*.deb oar-user_*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
+
 
 Installation from the tarball
 _____________________________
 
 **Requirements**
 
-*For RedHat like systems*::
+- python3, pip, poetry and libpq-dev (to build psycopg2)
 
-          # Build dependencies
-          yum install gcc make tar python-docutils
+**On Debian you can use the following command**::
 
-          # Common dependencies
-          yum install Perl Perl-base openssh Perl-DBI
-
-          # MySQL dependencies
-          yum install mysql perl-DBD-MySQL
-
-          # PostgreSQL dependencies
-          yum install postgresql perl-DBD-Pg
-
+        apt update && apt install make perl python3 python3-dev python3-pip curl libpq-dev
 
 *For Debian like system*::
 
           # Build dependencies
-          apt-get install gcc make tar python-docutils
+          apt-get install gcc make tar curl python3
 
           # Common dependencies
           apt-get install perl perl-base openssh-client openssh-server libdbi-perl
-
-          # MySQL dependencies
-          apt-get install mysql-client libdbd-mysql-perl
 
           # PostgreSQL dependencies
           apt-get install postgresql-client libdbd-pg-perl
 
 **Instructions**
 
+On debian systems::
+
+
 Get the sources::
 
-        OAR_VERSION=2.5.4
-        wget -O - http://oar-ftp.imag.fr/oar/2.5/sources/stable/oar-${OAR_VERSION}.tar.gz | tar xzvf -
-        cd oar-${OAR_VERSION}/
+        export OAR_VERSION=3.0.0.dev7
+        wget -O - https://github.com/oar-team/oar3/archive/refs/tags/${OAR_VERSION}.tar.gz | tar xzvf -
+        cd oar3-${OAR_VERSION}
+
+Install the python sources::
+        poetry build && pip install dist/*.whl
 
 Build/Install/setup::
 
@@ -482,13 +407,13 @@ OAR uses SSH to connect from machine to machine (e.g. from server or frontend to
 nodes or from nodes to nodes), using a dedicated SSH daemon usually running on
 port 6667.
 
-Upon installtion of the OAR server on the server machine, a SSH key pair along with an authorized_keys file is created for the oar user in ``/var/lib/oar/.ssh``. You need to copy that directory from the oar server to the frontend (if not the same machine).
+Upon installation of the OAR server on the server machine, a SSH key pair along with an authorized_keys file is created for the oar user in ``/var/lib/oar/.ssh``. You need to copy that directory from the oar server to the frontend (if not the same machine).
 
 Please note that public key in the authorized_keys file must be prefixed with ``environment="OAR_KEY=1"``, e.g.::
 
       environment="OAR_KEY=1" ssh-rsa AAAAB3NzaC1yc2[...]6mIcqvcwG1K7V6CHLQKHKWo/ root@server
- 
-Also please make sure that the ``/var/lib/oar/.ssh`` directory and contained files have the right ownership (oar.oar) and permissions for SSH to function. 
+
+Also please make sure that the ``/var/lib/oar/.ssh`` directory and contained files have the right ownership (oar.oar) and permissions for SSH to function.
 
 Coherent configuration files between server node and user nodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -511,6 +436,104 @@ must configure the SSH server on the frontends nodes with::
 With this configuration, users can launch X11 applications after a 'oarsub -I'
 on the given node or "oarsh -X node12".
 
+Computing nodes
+---------------
+
+Installation from the packages
+______________________________
+
+**Instructions**
+
+*For the Debian like systems*
+
+.. note::
+        OAR3 is not shipped in the official distribution. The packages can be found at : https://github.com/oar-team/oar3/releases/latest.
+        Also download the debian package for `ProcSet <https://gitlab.inria.fr/bleuse/procset.py>`_ (which is an OAR3 dependency).
+
+*First install OAR3 dependencies*::
+
+        apt-get update && \
+        apt-get install -y python3 perl python3-alembic \
+        python3-click python3-flask \
+        python3-passlib python3-psutil python3-requests \
+        python3-simplejson python3-sqlalchemy-utils  \
+        python3-tabulate python3-toml python3-yaml \
+        python3-zmq python3-psycopg2 python3-fastapi \
+        python3-escapism python3-clustershell python3-rich
+
+        # Install procset
+        wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
+        dpkg -i python3-procset_*.deb
+
+        # Install sqlalchemy 2
+        wget http://ftp.de.debian.org/debian/pool/main/s/sqlalchemy/python3-sqlalchemy_2.0.19+ds1-1_all.deb
+        dpkg -i python3-sqlalchemy_2*.deb
+
+        # Then install oar node package
+        dpkg -i python3-oar_*.deb oar-common_*.deb oar-node*.deb
+
+        # Due to usage of experimental packages, you might need to run
+        apt --fix-broken install
+
+
+Installation from the tarball (sources)
+_______________________________________
+
+**Instructions**
+
+dependencies:
+        - make
+        - perl (pod2man)
+        - gcc
+
+Get the sources::
+
+        export OAR_VERSION=3.0.0.dev7
+        wget -O - https://github.com/oar-team/oar3/archive/refs/tags/${OAR_VERSION}.tar.gz | tar xzvf -
+        cd oar3-${OAR_VERSION}
+
+build/install/setup::
+
+        # build
+        make PREFIX=/usr/local node-build
+
+        # install
+        make PREFIX=/usr/local node-install
+
+        # setup
+        make PREFIX=/usr/local node-setup
+
+
+Configuration
+_____________
+
+Init.d scripts
+~~~~~~~~~~~~~~
+
+If you have installed OAR from sources, you need to become root user and
+install manually the {init.d,default,sysconfig} scripts present in the folders::
+
+    $PREFIX/share/oar/oar-node/{init.d,default,sysconfig}/oar-node
+
+Then you just need to use the script ``/etc/init.d/oar-node`` to start
+the SSH daemon dedicated to oar-node.
+
+SSH setup
+~~~~~~~~~
+
+OAR uses SSH to connect from machine to machine (e.g. from server or frontend to
+nodes or from nodes to nodes), using a dedicated SSH daemon usually running on
+port 6667.
+
+Upon installation of the OAR server on the server machine, a SSH key pair along with an authorized_keys file is created for the oar user in ``/var/lib/oar/.ssh``. You need to copy that directory from the oar server to the nodes.
+
+Please note that public key in the authorized_keys file must be prefixed with ``environment="OAR_KEY=1"``, e.g.::
+
+      environment="OAR_KEY=1" ssh-rsa AAAAB3NzaC1yc2[...]6mIcqvcwG1K7V6CHLQKHKWo/ root@server
+
+Also please make sure that the ``/var/lib/oar/.ssh`` directory and contained files have the right ownership (oar.oar) and permissions for SSH to function.
+
+
 API server
 ----------
 
@@ -525,47 +548,27 @@ ______________________________
 
 **Instructions**
 
-*For RedHat like systems*::
-
-        # OAR provides a Yum repository.
-        # For more information see: http://oar.imag.fr/download#rpms
-
-        # Install apache FastCGI and Suexec modules (optional but highly recommended)
-
-        # Install OAR Restful api
-        yum --enablerepo=OAR install oar-restful-api
-
 *For the Debian like systems*::
 
-        # OAR is shipped as part of Debian official distributions (newer versions can be available in backports)
-        # For more info see: http://oar.imag.fr/download#debian
+        apt-get update && \
+        apt-get install -y python3 perl \
+        python3-sqlalchemy python3-alembic \
+        python3-click python3-flask \
+        python3-passlib python3-psutil python3-requests \
+        python3-simplejson python3-sqlalchemy-utils  \
+        python3-tabulate python3-toml python3-yaml \
+        python3-zmq python3-psycopg2 python3-fastapi
 
-        # Install apache FastCGI and Suexec modules (optional but highly recommended)
+        # Install procset
+        dpkg -i <path-to-procset>.deb
 
-        # Install OAR Restful api
-        apt-get install oar-restful-api
+        # Then install oar node package
+        dpkg -i python3-oar_*.deb oar-common_*.deb oar-restful-api_*.deb
 
 Installation from the tarball
 _____________________________
 
 **Requirements**
-
-*For RedHat like systems*::
-
-          # Build dependencies
-          yum install gcc make tar python-docutils
-
-          # Common dependencies
-          yum install perl perl-base perl-DBI perl-CGI perl-JSON perl-YAML perl-libwww-perl httpd
-
-          # Install apache FastCGI and Suexec modules (optional but highly recommended)
-
-          # MySQL dependencies
-          yum install perl-DBD-MySQL
-
-          # PostgreSQL dependencies
-          yum install perl-DBD-Pg
-
 
 *For Debian like system*::
 
@@ -643,6 +646,10 @@ _____________
 
 Visualization server
 --------------------
+
+.. warning::
+
+    This part has been written for OAR2, and hasn't been updated yet.
 
 Description
 ___________

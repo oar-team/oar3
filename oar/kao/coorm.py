@@ -60,7 +60,7 @@ class CoormApplication(object):
         return assign_resources_mld_job_split_slots(slots_set, job, hy, min_start_time)
 
     def submit(self):
-        """ Submit a new OAR job from the Rest API"""
+        """Submit a new OAR job from the Rest API"""
         self.logger.info("Submit a job to the OAR API")
         auth = self.api_credentials
         try:

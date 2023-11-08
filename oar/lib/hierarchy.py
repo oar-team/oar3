@@ -168,6 +168,7 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
 
     """
     # potential available blocks
+    # Filter hierarchy levels that has no available block anyway
     avail_bks = keep_no_empty_scat_bks(itvs, top)
     l_avail_bks = len(avail_bks)
 
@@ -208,7 +209,12 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
             i = 0
             nb_r = 0
             while (i < l_avail_bks) and (nb_r != rqts[h]):
-                r = find_resource_n_h(itvs, hy, rqts, [avail_bks[i]], h + 1, h_bottom)
+                # Current picked level
+                level = avail_bks[i]
+                # Select children of this level to propagate it into the recursive call
+                children = [sub for sub in hy[h + 1] if sub.issubset(level)]
+                r = find_resource_n_h(itvs, hy, rqts, children, h + 1, h_bottom)
+                # print("R: {}".format(r))
                 if len(r) != 0:
                     # win for this top_block
                     itvs_acc = itvs_acc | r

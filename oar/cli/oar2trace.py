@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: TODO: not tested
 
 # TODO: Evalys integration
 # TODO: Complete Job header
@@ -21,7 +22,7 @@ from collections import OrderedDict
 import click
 from sqlalchemy.sql import distinct, func, or_
 
-from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
+from oar.lib.models import AssignedResource, Job, MoldableJobDescription, Resource
 
 click.disable_unicode_literals_warning = True
 
@@ -245,9 +246,7 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
 
 
 def jobs2trace(jobs_metrics, filehandle, unix_start_time, mode, display):
-
     for _, job_metrics in jobs_metrics.items():
-
         if display:
             print(
                 "id: {job_id} submission: {submission_time} start: {start_time} stop: {stop_time} "
@@ -423,7 +422,6 @@ def header_values(first_jobid, last_jobid):
 
 
 def file_header(trace_file, wkld_metadata, mode, first_jobid, last_jobid):
-
     filehandle = open(trace_file, "w")
 
     if mode == "swf":

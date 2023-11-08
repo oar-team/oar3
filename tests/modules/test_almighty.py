@@ -6,11 +6,14 @@ import pytest
 import zmq
 
 import oar.lib.tools
-from oar.lib import config
+
+# from oar.lib import config
 from oar.modules.almighty import Almighty, signal_handler
 
 from ..faketools import FakePopen, fake_call, fake_get_date, fake_popen, set_fake_date
 from ..fakezmq import FakeZmq
+
+# config, db, log, session_factory = init_oar()
 
 fakezmq = FakeZmq()
 
@@ -38,19 +41,21 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup(request):
+def setup(request, setup_config):
+    config, _, _ = setup_config
+
     config["SERVER_HOSTNAME"] = "localhost"
     config["APPENDICE_SERVER_PORT"] = "6670"
     config["BIPBIP_COMMANDER_SERVER"] = "localhost"
     config["BIPBIP_COMMANDER_PORT"] = "6671"
     fakezmq.reset()
 
-    @request.addfinalizer
-    def teardown():
-        del config["SERVER_HOSTNAME"]
-        del config["APPENDICE_SERVER_PORT"]
-        del config["BIPBIP_COMMANDER_SERVER"]
-        del config["BIPBIP_COMMANDER_PORT"]
+    yield config
+
+    del config["SERVER_HOSTNAME"]
+    del config["APPENDICE_SERVER_PORT"]
+    del config["BIPBIP_COMMANDER_SERVER"]
+    del config["BIPBIP_COMMANDER_PORT"]
 
 
 @pytest.mark.parametrize(

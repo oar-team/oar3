@@ -9,7 +9,9 @@ import re
 
 import zmq
 
-from oar.lib import config, get_logger
+from oar.lib.globals import get_logger, init_config
+
+config = init_config()
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
@@ -30,7 +32,7 @@ OAR_EXEC_RUNJOB_LEON = r"(OAREXEC|OARRUNJOB|LEONEXTERMINATE)_(\d+)(.*)"
 #   $3: for OAREXEC: oarexec exit code, job script exit code,
 #                    secret string that identifies the oarexec process (for security)
 
-logger = get_logger("oar.modules.appendice_proxy", forward_stderr=True)
+logger = get_logger("oar.modules.appendice_proxy", config=config, forward_stderr=True)
 logger.info("Start Appendice Proxy")
 
 
@@ -58,7 +60,7 @@ class AppendiceProxy(object):
             client_id, message = self.socket_proxy.recv_multipart()
             msg = message.decode("utf8")
 
-            if msg == u"":
+            if msg == "":
                 logger.info("(de)connexion from from id: %r" % client_id)
             else:
                 msg = msg.rstrip()

@@ -129,7 +129,7 @@ class Context(object):
         if isinstance(exc_value, (click.ClickException, click.Abort)) or self.debug:
             reraise(exc_type, exc_value, tb.tb_next)
         else:
-            sys.stderr.write(u"\nError: %s\n" % exc_value)
+            sys.stderr.write("\nError: %s\n" % exc_value)
             sys.exit(1)
 
 
@@ -156,7 +156,6 @@ re_color_codes = re.compile(r"\033\[(\d;)?\d+m")
 
 
 class AnsiColorFormatter(logging.Formatter):
-
     LEVELS = {
         "WARNING": red(" WARN"),
         "INFO": blue(" INFO"),

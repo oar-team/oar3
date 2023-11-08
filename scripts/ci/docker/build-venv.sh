@@ -6,9 +6,16 @@ source /venv/bin/activate
 
 pip install -U pip
 pip install wheel
-pip --no-cache-dir install poetry
+
+# Install poetry
+curl -sSL https://install.python-poetry.org | python3 # Add poetry to path
+export PATH="/root/.local/bin:$PATH"
+
+poetry --version
+poetry config virtualenvs.create false
+poetry config --list
 
 # Project initialization:
-cd app && POETRY_VIRTUALENVS_CREATE=false poetry install
+cd app && poetry install
 
 find /venv -name "*.pyc" -delete

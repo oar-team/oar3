@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oar"
-version = "3.0.0.dev7"
+version = "3.0.0.dev9"
 description = "OAR: Versatile Resource and Job Manager"
 authors = ["Olivier Richard", "Adrien Faure", "Salem Harrache"]
 license = "GPL-2.0-or-later"
@@ -50,15 +50,15 @@ oar-node-change-state = 'oar.modules.node_change_state:main'
 oar-bipbip = 'oar.modules.bipbip:main'
 oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
 
+
 [tool.poetry.dependencies]
-python = ">=3.7, <4"
-SQLAlchemy-Utils = "^0.37.3"
-SQLAlchemy = ">=1.4"
+python = ">=3.9, <4"
+SQLAlchemy-Utils = ">=0.37.3"
+SQLAlchemy = "^2.0.0"
 alembic = ">1.7.0"
-Flask = ">2.0.0"
-tabulate = "^0.8.9"
+tabulate = ">=0.8.9, <1.0"
 Click = ">=8.0.0"
-pyzmq = "^22.0.3"
+pyzmq = "<25.0, >=22.0.3"
 requests = ">=2.24.0"
 procset = "^1.0"
 simplejson = "^3.17.2"
@@ -67,27 +67,30 @@ passlib = "^1.7.4"
 escapism = "^1.0.1"
 toml = ">0.10.0"
 fastapi = ">0.68.0"
-uvicorn = "^0.14.0"
+uvicorn = ">=0.14.0"
 python-multipart = ">=0.0.5"
 PyYAML = ">=5.0"
 psycopg2 = "^2.8.6"
 #pybatsim = "^3.2.0"
 ptpython = "^3.0.20"
+rich = ">=12.5, <=13.5.5"
+ClusterShell = ">=1.8"
+httpx = ">=0.23.0"
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
 pytest = "^6.2.4"
-pytest-flask = "^1.2.0"
 pytest-cov = "^2.12.0"
 #pytest-console-scripts = "^1.2.0"
 pexpect = "^4.8.0"
 sphinx = "^4.0.2"
-black = "20.8b1"
-isort = "^5.8.0"
-flake8 = "^3.9.2"
+black = "22.6.0"
+isort = "^5.10.1"
+flake8 = "^5.0.4"
 pre-commit = "^2.12.1"
 simpy = "^4.0.1"
 redis = "^3.5.3"
+
 
 [tool.black]
 line-length = 88

@@ -1,47 +1,56 @@
 # -*- coding: utf-8 -*-
 from math import ceil
 
-from flask import abort, current_app
+from fastapi import HTTPException
 
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 
 # from oar.lib.models import (db, Job, Resource)
 from oar.lib.utils import cached_property, row2dict
 
-from .url_utils import replace_query_params
+# from flask import abort, current_app
+# TODO: This whole file is to review since it has been adapted from flask and now use in fastapi.
+# Especially the error handling previously done with abort from flask
+
+
+def paginate(query, offset, limit, error_out=True):
+    if limit is None:
+        raise Exception("Handle this case")
+        # limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+    if error_out and offset < 0:
+        raise HTTPException(status_code=404, detail="Pagination out of bounds")
+
+    return PaginationQuery(query, offset, limit, error_out)
 
 
 class APIQuery(BaseQuery):
-    def get_or_404(self, ident):
-        try:
-            return self.get_or_error(ident)
-        except Exception:
-            abort(404)
+    def __init__(self, session):
+        super(APIQuery, self).__init__(session)
+
+    def get_or_404(self, query, ident):
+        return query.get_or_error(ident)
 
     def first_or_404(self):
-        try:
-            return self.first_or_error()
-        except Exception:
-            abort(404)
+        return self.first_or_error()
 
-    def paginate(self, request, offset, limit, error_out=True):
+    def paginate(self, offset, limit, error_out=True):
         if limit is None:
-            limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
-        if error_out and offset < 0:
-            abort(404)
-        return PaginationQuery(self, request, offset, limit, error_out)
+            raise Exception("Handle this case")
+            # limit = current_app.config.get("API_DEFAULT_MAX_ITEMS_NUMBER")
+        return PaginationQuery(self, offset, limit, error_out)
 
 
 class PaginationQuery(object):
     """Internal helper class returned by :meth:`APIBaseQuery.paginate`."""
 
-    def __init__(self, query, request, offset, limit, error_out):
-        self.request = request
+    def __init__(self, query, offset, limit, error_out):
         self.query = query.limit(limit).offset(offset)
+        print(self.query)
         self.items = self.query.all()
         self.offset = offset
         self.limit = limit
 
+        print("offfset", offset, self.items)
         # No need to count if we're on the first page and there are fewer
         # items than we expected.
         if offset == 0 and len(self.items) < limit:
@@ -50,7 +59,7 @@ class PaginationQuery(object):
             self.total = query.order_by(None).count()
 
         if not self.items and offset != 0 and error_out:
-            abort(404)
+            raise HTTPException(status_code=404, detail="Empty request")
 
     def render(self):
         self.query.render()
@@ -78,49 +87,6 @@ class PaginationQuery(object):
     def has_previous(self):
         """True if a previous page exists."""
         return self.current_page > 1
-
-    @cached_property
-    def next_url(self):
-        """Returns the next url for the current endpoint."""
-        if self.has_next:
-            dict_params = dict(self.request.query_params)
-            # dict_params.update(request.view_args.copy())
-            dict_params["offset"] = self.offset + self.limit
-            dict_params["limit"] = self.limit
-            endpoint_url = self.request.url.path
-            return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def previous_url(self):
-        """Returns the next previous for the current endpoint."""
-        if self.has_previous:
-            dict_params = dict(self.request.query_params)
-            # dict_params.update(request.view_args.copy())
-            dict_params["offset"] = self.offset - self.limit
-            dict_params["limit"] = self.limit
-            endpoint_url = self.request.url.path
-            return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def current_url(self):
-        """Returns the url for the current endpoint."""
-        dict_params = dict(self.request.query_params)
-        # dict_params.update(request.view_args.copy())
-        dict_params["offset"] = self.offset
-        if self.limit > 0:
-            dict_params["limit"] = self.limit
-        endpoint_url = self.request.url.path
-        return replace_query_params(endpoint_url, dict_params)
-
-    @cached_property
-    def links(self):
-        links = []
-        if self.has_previous:
-            links.append({"rel": "previous", "href": self.previous_url})
-        links.append({"rel": "self", "href": self.current_url})
-        if self.has_next:
-            links.append({"rel": "next", "href": self.next_url})
-        return links
 
     def __iter__(self):
         for item in self.items:

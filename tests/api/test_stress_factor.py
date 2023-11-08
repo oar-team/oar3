@@ -40,7 +40,7 @@ def fake_check_output(cmd):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def set_env(request):
+def set_env(request, backup_and_restore_environ_module):
     os.environ["OARDIR"] = "/tmp"
 
 

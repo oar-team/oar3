@@ -12,9 +12,16 @@ import os
 from fastapi import APIRouter, HTTPException
 
 import oar.lib.tools as tools
-from oar.lib import config
+
+# FIXME: gbl config that's bad
+from oar.lib.globals import init_config
 
 from . import TimestampRoute
+
+# from oar.lib import config
+
+
+config = init_config()
 
 router = APIRouter(
     route_class=TimestampRoute,
@@ -31,8 +38,9 @@ if "OARDODO" in config:
     OARDODO_CMD = config["OARDODO"]
 
 
+@router.get("")
 @router.get("/")
-async def index():
+def index():
     stress_factor_script = "/etc/oar/stress_factor.sh"
     if "API_STRESS_FACTOR_SCRIPT" in config:
         stress_factor_script = config["API_STRESS_FACTOR_SCRIPT"]
@@ -51,8 +59,6 @@ async def index():
             stress_factor_value = sf[1]
     if global_stress:
         data[global_stress] = stress_factor_value
-        url = router.prefix
-        data["links"] = [{"rel": "rel", "href": url}]
 
     else:
         raise HTTPException(status_code=404, detail="Unable to retrieve STRESS_FACTOR")

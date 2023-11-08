@@ -2,8 +2,9 @@ import time
 
 import click
 import escapism
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oar.lib import config
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import get_jobs_state
 from oar.rest_api.proxy_utils import (
     acquire_lock,
@@ -26,6 +27,10 @@ from .utils import CommandReturns
 def cli(period):
     """Proxy's rules cleaner which checks if jobs associated to Traefik proxy rule is running if not
     rule is deleted from rules file"""
+    config, engine, log = init_oar()
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+    session = scoped()
 
     cmd_ret = CommandReturns()
     proxy_rules_filename = config["PROXY_TRAEFIK_RULES_FILE"]
@@ -52,7 +57,7 @@ def cli(period):
                 print("job_ids: {}".format(job_ids))
                 if job_ids:
                     flag_to_save = False
-                    for job_id_state in get_jobs_state(job_ids):
+                    for job_id_state in get_jobs_state(session, job_ids):
                         job_id, state = job_id_state
                         if state == "Error" or state == "Terminated":
                             flag_to_save = True

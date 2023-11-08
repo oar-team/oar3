@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
 
-from fastapi import APIRouter, Depends, HTTPException  # ,Request, Header, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from passlib.apache import HtpasswdFile
 
 from oar import VERSION
-from oar.lib import config
+from oar.lib.configuration import Configuration  # ,Request, Header, Depends
 
 from .. import API_VERSION
-from ..dependencies import get_user
+from ..dependencies import get_config, get_user
 from . import TimestampRoute
+
+# from oar.lib import config
+
 
 # from oar.lib import config
 
@@ -22,28 +25,17 @@ router = APIRouter(
 
 
 @router.get("/")
-async def index():
+def index():
     """Get all main url section pages."""
     data = {}
     data["api_version"] = API_VERSION
     data["apilib_version"] = API_VERSION
     data["oar_version"] = VERSION
-    data["links"] = []
-    # endpoints = ('resources', 'jobs', 'config', 'admission_rules')
-    endpoints = ("/resources", "/jobs")
-    for endpoint in endpoints:
-        data["links"].append(
-            {
-                "rel": "collection",
-                "href": endpoint,
-                "title": endpoint,
-            }
-        )
     return data
 
 
 @router.get("/version")
-async def version():
+def version():
     """Give OAR and OAR API version.
     Also gives the timezone of the API server.
     """
@@ -58,7 +50,7 @@ async def version():
 
 
 @router.get("/whoami")
-async def whoami(user: str = Depends(get_user)):
+def whoami(user: str = Depends(get_user)):
     """Give the name of the authenticated user seen by OAR API.
 
     The name for a not authenticated user is the null string.
@@ -67,7 +59,7 @@ async def whoami(user: str = Depends(get_user)):
 
 
 @router.get("/timezone")
-async def timezone():
+def timezone():
     """
     Gives the timezone of the OAR API server.
     The api_timestamp given in each query is an UTC timestamp (epoch unix time).
@@ -78,7 +70,9 @@ async def timezone():
 
 
 @router.get("/authentication")
-async def authentication(basic_user: str, basic_password: str):
+def authentication(
+    basic_user: str, basic_password: str, config: Configuration = Depends(get_config)
+):
     """allow to test is user/password math htpasswd, can be use as workaround
     to avoid popup open on browser, usefull for integrated dashboard"""
 

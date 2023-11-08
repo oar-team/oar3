@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import pprint
 import sys
 from io import open
 
@@ -25,7 +24,7 @@ class Configuration(dict):
         "SQLALCHEMY_MAX_OVERFLOW": None,
         "LOG_LEVEL": 3,
         "LOG_FILE": ":stderr:",
-        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s",
+        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s::%(funcName)s:%(lineno)d]: %(message)s",
         "OAR_SSH_CONNECTION_TIMEOUT": 120,
         "SERVER_HOSTNAME": "localhost",
         "SERVER_PORT": "6666",
@@ -166,9 +165,9 @@ class Configuration(dict):
         except IOError as e:
             e.strerror = "Unable to load configuration file (%s)" % e.strerror
             if silent:
-                from . import logger
+                # from . import logger
 
-                logger.warning(e.strerror)
+                # logger.warning(e.strerror)
                 return False
             else:
                 exc_type, exc_value, tb = sys.exc_info()
@@ -245,4 +244,4 @@ class Configuration(dict):
         return rv
 
     def __str__(self):
-        return pprint.pprint(self)
+        return f"{dict(self)}"

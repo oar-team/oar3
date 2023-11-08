@@ -1,18 +1,20 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 import oar.lib.tools as tools
-from oar.lib import Resource, db
+from oar.api.query import APIQueryCollection, paginate
+from oar.lib.models import Resource
 from oar.lib.resource_handling import (
     get_count_busy_resources,
     remove_resource,
     set_resource_state,
 )
 
-from ..dependencies import need_authentication
+from ..dependencies import get_db, need_authentication
 from ..url_utils import replace_query_params
 from . import TimestampRoute
 
@@ -24,64 +26,14 @@ router = APIRouter(
 )
 
 
-# Dependency
-def get_db():
-    try:
-        # import pdb
-        # pdb.set_trace()
-        yield db.session
-    finally:
-        db.session.close()
-
-
-def attach_links(resource):
-    rel_map = (
-        ("node", "member", "resource_index"),
-        # ("show", "self", "show"),
-        # ("jobs", "collection", "jobs"),
-    )
-    links = []
-    for title, rel, endpoint in rel_map:
-        if title == "node" and "network_address" in resource:
-            url = router.url_path_for(
-                endpoint,
-                network_address=resource["network_address"],
-            )
-            links.append({"rel": rel, "href": url, "title": title})
-        elif title != "node" and "id" in resource:
-            router.url_path_for(endpoint, resource_id=resource["id"])
-            links.append({"rel": rel, "href": url, "title": title})
-    resource["links"] = links
-
-
-def attach_job(job):
-    rel_map = (
-        ("show", "self", "show"),
-        ("nodes", "collection", "nodes"),
-        ("resources", "collection", "resources"),
-    )
-    job["links"] = []
-    for title, rel, endpoint in rel_map:
-        url = "/jobs/{job_id}".format(job_id=job["id"])
-        job["links"].append({"rel": rel, "href": url, "title": title})
-
-
-# @router.get("/")  # , response_model=List[schemas.DynamicResourceSchema])
-# async def resource_index(offset: int = 0, limit: int = 100):
-#     # detailed = "full"
-#     # resources = db.queries.get_resources(None, detailed)
-#     # import pdb; pdb.set_trace()
-#     resources = db.query(Resource).offset(offset).limit(limit).all()
-#     return {"items": resources}
-
-
+@router.get("")
 @router.get("/")
-async def index(
-    request: Request,
+def index(
     offset: int = 0,
     limit: int = 25,
     detailed: bool = Query(False),
     network_address: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
 ):
     """Replie a comment to the post.
 
@@ -95,23 +47,22 @@ async def index(
     :status 302: and then redirects to :http:get:`/resources/(int:resource_id)`
     :status 400: when form parameters are missing
     """
-    query = db.queries.get_resources(network_address, detailed)
-    page = query.paginate(request, offset, limit)
+    queryCollection = APIQueryCollection(db)
+    query = queryCollection.get_resources(network_address, detailed)
+    page = paginate(query, offset, limit)
 
     data = {}
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
     for item in page:
-        # attach_links(item)
         data["items"].append(item)
 
     return data
 
 
 # @router.get("/{resource_id}", response_model=schemas.DynamicResourceSchema)
-# async def get_resource(resource_id: int):
+# def get_resource(resource_id: int):
 #     print("get resources: ", resource_id)
 #     print(db.query(Resource).all())
 #     resource = db.query(Resource).get(resource_id)
@@ -119,33 +70,35 @@ async def index(
 
 
 @router.get("/busy")
-async def busy():
-    return {"busy": get_count_busy_resources()}
+def busy(db: Session = Depends(get_db)):
+    return {"busy": get_count_busy_resources(db)}
 
 
 @router.get("/{resource_id}")
-async def show(resource_id):
-    resource = Resource.query.get_or_404(resource_id)
+def show(resource_id, db: Session = Depends(get_db)):
+    resource = db.query(Resource).get_or_404(resource_id)
     if resource is None:
         raise HTTPException(status_code=404, detail="Resource not found")
     data = {}
     data.update(resource.asdict())
-    attach_links(data)
 
 
 @router.get("/{resource_id}/jobs")
-async def jobs(
-    request: Request, limit: int = 50, offset: int = 0, resource_id: int = None
+def jobs(
+    limit: int = 50,
+    offset: int = 0,
+    resource_id: int = None,
+    db: Session = Depends(get_db),
 ):
-    query = db.queries.get_jobs_resource(resource_id)
-    page = query.paginate(request, offset, limit)
+    queryCollection = APIQueryCollection(db)
+
+    query = queryCollection.get_jobs_resource(resource_id)
+    page = paginate(query, offset, limit)
     data = {}
     data["total"] = page.total
-    data["links"] = page.links
     data["offset"] = offset
     data["items"] = []
     for item in page:
-        attach_job(item)
         data["items"].append(item)
     return data
 
@@ -155,8 +108,11 @@ class StateParameters(BaseModel):
 
 
 @router.post("/{resource_id}/state")
-async def state(
-    resource_id: int, params: StateParameters, user: str = Depends(need_authentication)
+def state(
+    resource_id: int,
+    params: StateParameters,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
 ):
     """POST /resources/<id>/state
     Change the state
@@ -164,8 +120,7 @@ async def state(
     state = params.state
     data = {}
     if (user == "oar") or (user == "root"):
-
-        set_resource_state(resource_id, state, "NO")
+        set_resource_state(db, resource_id, state, "NO")
 
         tools.notify_almighty("ChState")
         tools.notify_almighty("Term")
@@ -179,9 +134,13 @@ async def state(
     return data
 
 
+@router.post("")
 @router.post("/")
-async def create(
-    hostname: str, properties: str, user: str = Depends(need_authentication)
+def create(
+    hostname: str,
+    properties: str,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
 ):
     """POST /resources"""
     props = json.loads(properties)
@@ -190,7 +149,7 @@ async def create(
         resource_fields = {"network_address": hostname}
         resource_fields.update(props)
         ins = Resource.__table__.insert().values(**resource_fields)
-        result = db.session.execute(ins)
+        result = db.execute(ins)
         resource_id = result.inserted_primary_key[0]
         data["id"] = resource_id
         data["uri"] = replace_query_params(
@@ -203,7 +162,11 @@ async def create(
 
 
 @router.delete("/{resource_id}")
-async def delete(resource_id: int, user: str = Depends(need_authentication)):
+def delete(
+    resource_id: int,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
+):
     """DELETE /resources/<id>
     Delete the resource identified by *d)
     """
@@ -215,7 +178,7 @@ async def delete(resource_id: int, user: str = Depends(need_authentication)):
 
     data = {}
     if resource_id:
-        error, error_msg = remove_resource(resource_id, user)
+        error, error_msg = remove_resource(db, resource_id, user)
         data["id"] = resource_id
         if error == 0:
             data["status"] = "Deleted"

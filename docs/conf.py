@@ -28,6 +28,7 @@ AUTHORS = [
     "Michael Mercier",
     "Pierre Neyron",
     "Olivier Richard",
+    "Adrien Faure",
 ]
 suppress_warnings = ["image.nonlocal_uri"]
 
@@ -52,6 +53,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",
     "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
 ]
 autodoc_member_order = "bysource"
 
@@ -63,6 +65,8 @@ templates_path = ["_templates"]
 # The suffix of source filenames.
 source_suffix = ".rst"
 
+todo_include_todos = True
+
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
@@ -70,8 +74,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"OAR next generation"
-copyright = u"{}, OAR Team".format(YEAR)
+project = "OAR next generation"
+copyright = "{}, OAR Team".format(YEAR)
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -228,7 +232,7 @@ latex_documents = [
     (
         "index",
         "oar.tex",
-        u"OAR next generation Documentation",
+        "OAR next generation Documentation",
         ", ".join(AUTHORS),
         "manual",
     ),
@@ -249,7 +253,7 @@ latex_documents = [
 # latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-latex_appendices = ["changes"]
+latex_appendices = ["developer/changes"]
 
 # If false, no module index is generated.
 # latex_domain_indices = True
@@ -259,7 +263,7 @@ latex_appendices = ["changes"]
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "oar", u"OAR next generation Documentation", AUTHORS, 1)]
+man_pages = [("index", "oar", "OAR next generation Documentation", AUTHORS, 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -274,7 +278,7 @@ texinfo_documents = [
     (
         "index",
         "oar",
-        u"OAR next generation Documentation",
+        "OAR next generation Documentation",
         "oar3",
         ", ".join(AUTHORS),
         "One line description of project.",

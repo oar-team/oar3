@@ -42,13 +42,15 @@ import re
 import socket
 import sys
 from multiprocessing import Pool, TimeoutError
+from typing import List, Union
 
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
+from oar.lib.configuration import Configuration
 from oar.lib.database import wait_db_ready
 from oar.lib.event import add_new_event_with_host
+from oar.lib.globals import get_logger, init_and_get_session, init_config, init_oar
 from oar.lib.node import (
     change_node_state,
     get_alive_nodes_with_jobs,
@@ -56,26 +58,8 @@ from oar.lib.node import (
     get_nodes_with_given_sql,
 )
 
+config, db, log = init_oar(no_db=True)
 logger = get_logger("oar.modules.hulot", forward_stderr=True)
-
-
-def check_reminded_list(
-    nodes_list_running, nodes_list_to_remind, nodes_list_to_process
-):
-    # Checks if some nodes in list_to_remind can be processed
-    nodes_toRemove = []
-    for node, cmd_info in nodes_list_to_remind.items():
-        if node not in nodes_list_running:
-            # move this node from reminded list to list to process
-            logger.debug(
-                "Adding '" + node + "=>" + str(cmd_info) + "' to list to process."
-            )
-            nodes_list_to_process[node] = {
-                "command": cmd_info["command"],
-                "timeout": -1,
-            }
-    for node in nodes_toRemove:
-        del nodes_list_to_remind[node]
 
 
 # Fill the timeouts hash with the different timeouts
@@ -115,7 +99,6 @@ def fill_timeouts(str_timeouts):
 
 # Choose a timeout based on the number of nodes to wake up
 def get_timeout(timeouts, nb_nodes):
-
     timeout = timeouts[1]
     # Search for the timeout of the corresponding interval
     for nb in sorted(timeouts.keys()):
@@ -128,7 +111,9 @@ def get_timeout(timeouts, nb_nodes):
 class HulotClient(object):
     """Hulot client part used by metascheduler to interact with Hulot server"""
 
-    def __init__(self):
+    def __init__(self, config, logger):
+        self.logger = logger
+        self.config = config
         # Initialize zeromq context
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUSH)
@@ -154,10 +139,12 @@ class HulotClient(object):
 
 
 class Hulot(object):
-    def __init__(self):
+    def __init__(self, config, logger):
         logger.info("Initiating Hulot, the energy saving module")
+        self.logger = logger
+        self.config: Configuration = config
 
-        self.exit_code = 0
+        self.exit_code: int = 0
         # Intialize zeromq context
         self.context = zmq.Context()
         # IP addr is required when bind function is used on zmq socket
@@ -167,7 +154,7 @@ class Hulot(object):
             self.socket.bind("tcp://" + ip_addr_hulot + ":" + str(config["HULOT_PORT"]))
         except Exception as e:
             logger.error(f"Failed to bind Hulot endpoint: {e}")
-            exit(1)
+            exit(1)  #
 
         # self.executors_socket = self.context.socket(zmq.PULL)
         # try:
@@ -186,10 +173,10 @@ class Hulot(object):
         # if (config['ENERGY_SAVING_WINDOW_FORKER_BYPASS'] == 'no']:
         #    self.max_executors = -1
         # else:
-        self.max_executors = int(config["ENERGY_SAVING_WINDOW_FORKER_SIZE"])
+        self.max_executors: int = int(config["ENERGY_SAVING_WINDOW_FORKER_SIZE"])
 
         # Load state if exists
-        self.nodes_list_running = {}
+        self.nodes_list_command_running = {}
         self.nodes_list_to_remind = {}
         self.hulot_status_dump_name = (
             config["OAR_RUNTIME_DIRECTORY"] + "hulot_status.dump"
@@ -197,7 +184,9 @@ class Hulot(object):
         if os.path.isfile(self.hulot_status_dump_name):
             with open(self.hulot_status_dump_name, "rb") as f:
                 hulot_status_dump = pickle.load(f)
-                self.nodes_list_running = hulot_status_dump["nodes_list_running"]
+                self.nodes_list_command_running = hulot_status_dump[
+                    "nodes_list_running"
+                ]
                 self.nodes_list_to_remind = hulot_status_dump["nodes_list_to_remind"]
 
                 # with open('obj/'+ name + '.pkl', 'wb') as f:
@@ -216,7 +205,7 @@ class Hulot(object):
         # List of nodes corresponding to properties:
         #     $keepalive{<properties>}{"nodes"}=@;
 
-        self.keepalive = {}
+        self.keepalive: dict[str, dict[str, Union[List[str], int]]] = {}
         str_keepalive = config["ENERGY_SAVING_NODES_KEEPALIVE"]
         if not re.match(r".+:\d+,*", str_keepalive):
             logger.error("Syntax error into ENERGY_SAVING_NODES_KEEPALIVE !")
@@ -238,30 +227,45 @@ class Hulot(object):
         self.window_forker = WindowForker(
             config["ENERGY_SAVING_WINDOW_FORKER_SIZE"],
             config["ENERGY_SAVING_WINDOW_TIMEOUT"],
+            config,
+            logger,
         )
         # TODO
         # my $count_cycles;
         #
 
-    def run(self, loop=True):
+    def run(self, session=None, loop=True):
+        logger = self.logger
+        config = self.config
+
         logger.info("Starting Hulot's main loop")
         nodes_list_to_process = {}
         nodes_list_to_remind = self.nodes_list_to_remind
-        nodes_list_running = self.nodes_list_running
-        keepalive = self.keepalive
-        count_cycles = 1
+        #  Node list with active command running (HALT or WAKEUP)
+        nodes_list_command_running = self.nodes_list_command_running
+        keepalive: dict[str, dict[str, Union[List[str], int]]] = self.keepalive
+        count_cycles: int = 1
 
-        # wait db at launch
-        try:
-            wait_db_ready(get_alive_nodes_with_jobs)
-        except Exception as e:
-            logger.error(f"Failed to contact database: {e}")
-            return 1
+        def wait_db():
+            # wait db at launch
+            try:
+                session = init_and_get_session(config)
+                wait_db_ready(get_alive_nodes_with_jobs, args=[session])
+            except Exception as e:
+                logger.error(f"Failed to contact database: {e}")
+                exit(1)
+
+            return session
+
+        if session is None:
+            session = wait_db()
 
         while True:
+            self.window_forker.check_executors(
+                session, config, nodes_list_command_running
+            )
 
-            self.window_forker.check_executors(nodes_list_running)
-
+            # Is this blocking ?
             message = self.socket.recv_json()
 
             command = message["cmd"]
@@ -275,27 +279,42 @@ class Hulot(object):
                 logger.debug("Got request: " + command + " for nodes: " + str(nodes))
 
             # Identify idle and occupied nodes
-            all_occupied_nodes = get_alive_nodes_with_jobs()
+            all_occupied_nodes = get_alive_nodes_with_jobs(session)
+
+            # Gets nodes that are absent and that are available (using available_upto)
             nodes_that_can_be_waked_up = get_nodes_that_can_be_waked_up(
-                tools.get_date()
+                session,
+                tools.get_date(
+                    session
+                ),  # FIXME: should we add a tolerance time period ?
             )
 
+            # For each properties, check if the number of nodes running is
+            # above the minimal number specified in ENERGY_SAVING_NODES_KEEPALIVE
             for properties in keepalive.keys():
-                occupied_nodes = []
-                idle_nodes = []
-                keepalive[properties]["nodes"] = [
-                    p for p in get_nodes_with_given_sql(properties)
-                ]
+                # Tuples containing ("network_address", "state", "next_state")
+                nodes_with_property = get_nodes_with_given_sql(session, properties)
+                # Reset idle number
                 keepalive[properties]["current_idle"] = 0
-                alive_nodes = get_nodes_with_given_sql(
-                    properties + "and (state='Alive' or next_state='Alive')"
-                )
-                for alive_node in alive_nodes:
-                    if alive_node in all_occupied_nodes:
-                        occupied_nodes.append(alive_node)
-                    else:
-                        keepalive[properties]["current_idle"] += 1
-                        idle_nodes.append(alive_node)
+
+                # Keeping track of all nodes with the given property
+                keepalive[properties]["nodes"]: List[str] = [
+                    p[0] for p in nodes_with_property
+                ]
+
+                alive_nodes: List[str] = [
+                    p[0]
+                    for p in nodes_with_property
+                    if p[1] == "Alive" or p[2] == "Alive"
+                ]
+
+                occupied_nodes = [
+                    node for node in alive_nodes if node in all_occupied_nodes
+                ]
+                idle_nodes = [
+                    node for node in alive_nodes if node not in all_occupied_nodes
+                ]
+                keepalive[properties]["current_idle"] = len(idle_nodes)
 
                 logger.debug(
                     "current_idle("
@@ -304,77 +323,70 @@ class Hulot(object):
                     + str(keepalive[properties]["current_idle"])
                 )
 
-                # Wake up some nodes corresponding to properties if needed
-                ok_nodes = (
-                    keepalive[properties]["current_idle"] - keepalive[properties]["min"]
-                )
-                keep_nodes = keepalive[properties]["nodes"]
                 # wakeable_nodes = keep_nodes - occupied_nodes - idle_nodes
-                wakeable_nodes = [
-                    n
-                    for n in keep_nodes
-                    if (n not in occupied_nodes) and (n not in idle_nodes)
+                wakeable_nodes: List[str] = [
+                    node
+                    for node in keepalive[properties]["nodes"]
+                    # nor occupied or idle => absent ?
+                    # FIXME: why not directly use nodes_that_can_be_waken_up
+                    if (node not in occupied_nodes) and (node not in idle_nodes)
                 ]
 
+                # Wake up some nodes corresponding to properties if needed
+                ok_nodes: int = (
+                    keepalive[properties]["current_idle"] - keepalive[properties]["min"]
+                )
+
+                # Ensure the minimum of nodes requirements
                 for node in wakeable_nodes:
                     if ok_nodes >= 0:
                         break
+
                     # we have a good candidate to wake up
                     # now, check if the node has a good status
                     if node in nodes_that_can_be_waked_up:
                         ok_nodes += 1
+
                         # add WAKEUP: node to list of commands if not already
                         # into the current command list
-                        if node not in nodes_list_running:
+                        if node not in nodes_list_command_running:
                             nodes_list_to_process[node] = {
                                 "command": "WAKEUP",
                                 "timeout": -1,
                             }
                             logger.debug(
-                                "Waking up "
-                                + node
-                                + " to satisfy '"
-                                + properties
-                                + "' keepalive (ok_nodes="
-                                + str(ok_nodes)
-                                + ", wakeable_nodes="
-                                + str(len(wakeable_nodes))
-                                + ")"
+                                f"Waking up {node} to satisfy '{properties}' keepalive (ok_nodes={ok_nodes}, wakeable_nodes={len(wakeable_nodes)})"
                             )
                         else:
-                            if nodes_list_running[node]["command"] != "WAKEUP":
+                            # Only to log the fact that this case happened
+                            if nodes_list_command_running[node]["command"] != "WAKEUP":
                                 logger.debug(
-                                    "Wanted to wake up "
-                                    + node
-                                    + " to satisfy '"
-                                    + properties
-                                    + "' keepalive, but a command is already running on this node. "
-                                    + "So doing nothing and waiting for the next cycles to converge."
+                                    f"Wanted to wake up {node} to satisfy '{properties}' keepalive, but a command is already running on this node. So doing nothing and waiting for the next cycles to converge."
                                 )
 
             # Retrieve list of nodes having at least one resource Alive
-            nodes_alive = get_nodes_with_given_sql("state='Alive'")
+            # FIXME: another sql request that could be avoided ?
+            # Moreover, it can lead to inconsistency between the beginning and the end of the same loop
+            nodes_alive = [
+                node[0] for node in get_nodes_with_given_sql(session, "state='Alive'")
+            ]
 
             # Checks if some booting nodes need to be suspected
             nodes_toRemove = []
-            for node, cmd_info in nodes_list_running.items():
+            for node, cmd_info in nodes_list_command_running.items():
                 if cmd_info["command"] == "WAKEUP":
                     if node in nodes_alive:
                         logger.debug(
-                            "Booting node '"
-                            + node
-                            + "' seems now up, so removing it from running list."
+                            f"Booting node '{node}' seems now up, so removing it from running list."
                         )
                         # Remove node from the list running nodes
                         nodes_toRemove.append(node)
-                    elif tools.get_date() > cmd_info["timeout"]:
-                        change_node_state(node, "Suspected", config)
-                        info = (
-                            "Node "
-                            + node
-                            + "was suspected because it did not wake up before the end of the timeout"
+                    elif tools.get_date(session) > cmd_info["timeout"]:
+                        change_node_state(session, node, "Suspected", config)
+                        info = f"Node {node} was suspected because it did not wake up before the end of the timeout"
+                        add_new_event_with_host(
+                            session, "LOG_SUSPECTED", 0, info, [node]
                         )
-                        add_new_event_with_host("LOG_SUSPECTED", 0, info, [node])
                         # Remove suspected node from the list running nodes
                         nodes_toRemove.append(node)
                         # Remove this node from received list (if node is present) because it was suspected
@@ -382,55 +394,51 @@ class Hulot(object):
                             nodes.remove(node)
 
             for node in nodes_toRemove:
-                del nodes_list_running[node]
+                del nodes_list_command_running[node]
 
-            # Check if some nodes in list_to_remind can be processed
-            check_reminded_list(
-                nodes_list_running, nodes_list_to_remind, nodes_list_to_process
-            )
+            # Checks if some nodes in list_to_remind can be processed
+            nodes_toRemove = []
+            for node, cmd_info in nodes_list_to_remind.items():
+                if node not in nodes_list_command_running:
+                    # move this node from reminded list to list to process
+                    logger.debug(
+                        f"Adding '{node} => {cmd_info}' to list to process to remind."
+                    )
+                    nodes_list_to_process[node] = {
+                        "command": cmd_info["command"],
+                        "timeout": -1,
+                    }
+            for node in nodes_toRemove:
+                del nodes_list_to_remind[node]
 
             # Checking if each couple node/command was already received or not
             for node in nodes:
-                node_finded = False
-                node_toAdd = False
                 node_toRemind = False
-                if nodes_list_running:
-                    # Checking
 
-                    for node_running, cmd_info in nodes_list_running.items():
+                # Node will be added if it is not found among the commands
+                node_toAdd = True
+                if nodes_list_command_running:
+                    # Checking
+                    for node_running, cmd_info in nodes_list_command_running.items():
                         if node == node_running:
-                            node_finded = True
+                            # No need to add the node, bc we found it
+                            node_toAdd = False
                             if command != cmd_info["command"]:
                                 # This node is already planned for an other action
                                 # We have to keep in memory this new couple node/command
                                 node_toRemind = True
                             else:
                                 logger.debug(
-                                    "Command '"
-                                    + cmd_info["command"]
-                                    + "' is already running on node '"
-                                    + node
-                                    + "'"
+                                    f"Command '{cmd_info['command']}' is already running on node '{node}'"
                                 )
-
-                    if not node_finded:
-                        node_toAdd = True
-
-                else:
-                    node_toAdd = True
-
                 if node_toAdd:
                     # Adding couple node/command to the list to process
-                    logger.debug(
-                        "Adding '" + node + "=>" + command + "' to list to process"
-                    )
+                    logger.debug(f"Adding '{node}=>{command}' to list to process")
                     nodes_list_to_process[node] = {"command": command, "timeout": -1}
 
                 if node_toRemind:
                     # Adding couple node/command to the list to remind
-                    logger.debug(
-                        "Adding '" + node + "=>" + command + "' to list to remember"
-                    )
+                    logger.debug(f"Adding '{node}=>{command}' to list to remember")
                     nodes_list_to_remind[node] = {"command": command, "timeout": -1}
 
             # Creating command list
@@ -439,7 +447,8 @@ class Hulot(object):
             # Get the timeout taking into account the number of nodes
             # already waking up + the number of nodes to wake up
             timeout = get_timeout(
-                self.timeouts, len(nodes_list_running) + len(nodes_list_to_process)
+                self.timeouts,
+                len(nodes_list_command_running) + len(nodes_list_to_process),
             )
 
             nodes_toRemove_from_list_to_process = []
@@ -447,7 +456,7 @@ class Hulot(object):
                 cmd = cmd_info["command"]
                 if cmd == "WAKEUP":
                     # Save the timeout for the nodes to be processed.
-                    cmd_info["timeout"] = tools.get_date() + timeout
+                    cmd_info["timeout"] = tools.get_date(session) + timeout
                     command_toLaunch.append(("WAKEUP", node))
                 elif cmd == "HALT":
                     # Don't halt nodes that needs to be kept alive
@@ -467,8 +476,8 @@ class Hulot(object):
                                 )
                                 match = True
 
-                                if node in nodes_list_running:
-                                    del nodes_list_running[node]
+                                if node in nodes_list_command_running:
+                                    del nodes_list_command_running[node]
                                 nodes_toRemove_from_list_to_process.append(node)
                     # If the node is ok to be halted
                     if not match:
@@ -479,7 +488,7 @@ class Hulot(object):
                                 prop_info["current_idle"] -= 1
 
                         # Change state node to "Absent" and halt it
-                        change_node_state(node, "Absent", config)
+                        change_node_state(session, node, "Absent", config)
                         logger.debug(
                             "Hulot module puts node '"
                             + node
@@ -502,30 +511,28 @@ class Hulot(object):
             # Launching commands
             if command_toLaunch:
                 logger.debug("Launching commands to nodes")
-                self.window_forker.add_commands_toLaunch(command_toLaunch)
+                self.window_forker.add_commands_toLaunch(session, command_toLaunch)
 
             # Adds to running list last new launched commands
             for node, cmd_info in nodes_list_to_process.items():
-                nodes_list_running[node] = cmd_info
+                nodes_list_command_running[node] = cmd_info
 
             # Cleaning the list to process
             nodes_list_to_process = {}
 
             # From Hulot.pm
-            # Suicide to workaround eventaul memory leaks. Almighty will restart hulot.
+            # Suicide to workaround eventual memory leaks. Almighty will restart hulot.
             # TODO ? do we need it ?
             count_cycles += 1
 
             if count_cycles >= config["ENERGY_MAX_CYCLES_UNTIL_REFRESH"]:
                 # Save state
                 with open(self.hulot_status_dump_name, "wb") as dump_file:
-                    hulot_status_dump_name = {
-                        "nodes_list_running": nodes_list_running,
+                    hulot_status_dump = {
+                        "nodes_list_running": nodes_list_command_running,
                         "nodes_list_to_remind": nodes_list_to_remind,
                     }
-                    pickle.dump(
-                        hulot_status_dump_name, dump_file, pickle.HIGHEST_PROTOCOL
-                    )
+                    pickle.dump(hulot_status_dump, dump_file, pickle.HIGHEST_PROTOCOL)
                 return 42
 
             if not loop:
@@ -533,7 +540,7 @@ class Hulot(object):
         return 0
 
 
-def command_executor(cmd_node):
+def command_executor(cmd_node, config, logger):
     command, node = cmd_node
     command_to_exec = 'echo "' + node + '" | '
     if command == "HALT":
@@ -550,12 +557,14 @@ def command_executor(cmd_node):
 
 
 class WindowForker(object):
-    def __init__(self, window_size, timeout):
+    def __init__(self, window_size, timeout, config, logger):
+        self.config = config
         self.timeout = timeout
+        self.logger = logger
         self.pool = Pool(processes=window_size)
         self.executors = {}
 
-    def add_commands_toLaunch(self, commands):
+    def add_commands_toLaunch(self, session, commands):
         # Build strings to pass to wakeup and shutdown commands
         halt_nodes = []
         wakeup_nodes = []
@@ -568,38 +577,55 @@ class WindowForker(object):
 
         if halt_nodes:
             add_new_event_with_host(
-                "HALT_NODE", 0, "Node " + node + " halt request", halt_nodes
+                session, "HALT_NODE", 0, "Node " + node + " halt request", halt_nodes
             )
         if wakeup_nodes:
             add_new_event_with_host(
-                "WAKEUP_NODE", 0, "Node " + node + " wake-up request", wakeup_nodes
+                session,
+                "WAKEUP_NODE",
+                0,
+                "Node " + node + " wake-up request",
+                wakeup_nodes,
             )
 
         for cmd_node in commands:
             cmd, node = cmd_node
-            self.executors[self.pool.apply_async(command_executor, (cmd_node,))] = (
+            # FIXME: Async code here ?!
+            self.executors[
+                self.pool.apply_async(
+                    command_executor, (cmd_node, self.config, self.logger)
+                )
+            ] = (
                 node,
                 cmd,
-                tools.get_date(),
+                tools.get_date(session),
             )
 
-    def check_executors(self, nodes_list_running):
+        self.logger.debug(f"wtf: {self.executors}")
+
+    def check_executors(self, session, config, nodes_list_running):
         executors_toRemove = []
-        now = tools.get_date()
+        now = tools.get_date(
+            session,
+        )
         for executor, data in self.executors.items():
+            self.logger.debug(f"Executor output: {executor}: {data}")
             node, cmd, launching_date = data
             if executor.ready():  # TODO executor.successful()
                 executors_toRemove.append(executor)
                 exit_status = executor.get()
+
                 if exit_status != 0:
                     # Suspect node if error
-                    change_node_state(node, "Suspected", config)
+                    change_node_state(session, node, "Suspected", config)
                     message = (
                         "Node "
                         + node
                         + " was suspected because an error occurred with a command launched by Hulot"
                     )
-                    add_new_event_with_host("LOG_SUSPECTED", 0, message, [node])
+                    add_new_event_with_host(
+                        session, "LOG_SUSPECTED", 0, message, [node]
+                    )
                 else:
                     if cmd == "HALT":  # WAKEUP case is addressed in main run loop
                         del nodes_list_running[node]
@@ -612,13 +638,15 @@ class WindowForker(object):
                 except TimeoutError:
                     if cmd == "HALT":  # WAKEUP case is addressed in main run loop
                         # Suspect node if error
-                        change_node_state(node, "Suspected", config)
+                        change_node_state(session, node, "Suspected", config)
                         message = (
                             "Node "
                             + node
                             + " was suspected because shutdown command launched by Hulot timeouted"
                         )
-                        add_new_event_with_host("LOG_SUSPECTED", 0, message, [node])
+                        add_new_event_with_host(
+                            session, "LOG_SUSPECTED", 0, message, [node]
+                        )
                         del nodes_list_running[node]
 
         for executor in executors_toRemove:
@@ -626,9 +654,15 @@ class WindowForker(object):
 
 
 def main():  # pragma: no cover
-    hulot = Hulot()
+    config = init_config()
+
+    logger = get_logger("oar.modules.hulot", config=config, forward_stderr=True)
+
+    hulot = Hulot(config, logger)
+
     if hulot.exit_code:
         return hulot.exit_code
+
     return hulot.run()
 
 

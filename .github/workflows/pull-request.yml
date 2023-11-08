@@ -1,0 +1,13 @@
+# From https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+name: OAR3 - test pr if code is sa
+on:
+  pull_request_target:
+    types: [labeled]
+
+jobs:
+    Run-Test:
+      uses: ./.github/workflows/run-tests.yml
+      if: contains(github.event.pull_request.labels.*.name, 'safe to test')
+      secrets:
+        DOCKERTOKEN: ${{ secrets.DOCKERTOKEN }}
+        DOCKERUSER: ${{ secrets.DOCKERUSER }}

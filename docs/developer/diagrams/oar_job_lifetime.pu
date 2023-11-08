@@ -1,0 +1,94 @@
+@startuml
+actor User as user
+
+box "Server" #Azure
+  control Automaton as alm
+  database Database as data
+  control Scheduler as sch
+  control Launchers as bipbip
+end box
+box "Nodes" #MOTIVATION
+  participant "Head node" as head
+  collections Nodes as nodes
+end box
+
+alm++
+user++
+data++
+
+user -> user: oarsub -l nodes=4 mpirun
+activate user
+user -> user: Apply admission rules
+user -> data: Insert job
+user -> alm: notify "Qsub"
+deactivate user
+
+alm -> sch++: Start scheduling
+sch --> data: fetch jobs
+sch -> sch: Scheduling jobs
+sch -> data: insert scheduling result
+
+loop i in ready_jobs
+  sch -> alm: start jobs i
+  note over sch: in our case there is only one job
+end loop
+sch--
+
+alm --> bipbip: start job i
+bipbip -> data : fetch job data such as allocation
+bipbip++
+
+bipbip -> head++ : job_resource_manager "init"
+nodes++
+note right: apply on all nodes
+head--
+nodes--
+
+bipbip -> bipbip : server Prologue
+activate bipbip #PaleTurquoise
+deactivate bipbip
+
+bipbip -> head : launch oarexec
+bipbip--
+activate head #DarkOrange
+
+head -> head++: execute job's prologue
+head--
+
+head -> head: Start user command
+activate head #CornflowerBlue
+head -> nodes : mpirun
+activate nodes #CornflowerBlue
+
+head <--> nodes : MPI_init
+
+...
+
+head <--> nodes : MPI_finalize
+
+head--
+nodes--
+
+head -> head++: execute job's epilogue
+
+deactivate head
+
+head -> alm : user command finished
+head--
+
+alm -> bipbip++ : job finished
+
+bipbip -> bipbip : server Epilogue
+activate bipbip #PaleTurquoise
+deactivate bipbip
+
+bipbip -> head++ : job_resource_manager "clean"
+nodes++
+note right: apply on all nodes
+
+head--
+nodes--
+user--
+bipbip--
+
+@endumlgo
