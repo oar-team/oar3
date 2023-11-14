@@ -302,6 +302,13 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
 @click.option(
     "-C", "--connect", type=int, help="Connect to a reservation in Running state."
 )
+@click.option(
+    "-T",
+    "--api-token",
+    is_flag=True,
+    help="""Get an api token to be authenticated with the rest api
+        This token must be secret and giving this token is the same as giving access to your account.""",
+)
 @click.option("--array", type=int, help="Specify an array job with 'number' subjobs")
 @click.option(
     "--array-param-file",
@@ -415,6 +422,7 @@ def cli(
     resource,
     reservation,
     connect,
+    api_token,
     type,
     checkpoint,
     property,
@@ -511,6 +519,11 @@ def cli(
     # print OAR version
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
+        cmd_ret.exit()
+
+    if api_token:
+        token = create_api_token()
+        cmd_ret.print_(f"OAR_API_TOKEN={token}")
         cmd_ret.exit()
 
     # Check the default name of the key if we have to generate it
