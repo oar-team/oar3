@@ -43,7 +43,10 @@ class WSGIProxyFix(object):
 
 
 def create_app(
-    config: Optional[Configuration] = None, engine=None, root_path: Optional[str] = None, logger=None
+    config: Optional[Configuration] = None,
+    engine=None,
+    root_path: Optional[str] = None,
+    logger=None,
 ):
     """Return the OAR API application instance."""
     app = FastAPI(root_path=root_path)

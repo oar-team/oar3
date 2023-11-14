@@ -23,8 +23,7 @@ oauth2_scheme = HTTPBearer()
 
 
 def get_user(
-    credentials: Annotated[str, Depends(oauth2_scheme)],
-    config=Depends(get_config)
+    credentials: Annotated[str, Depends(oauth2_scheme)], config=Depends(get_config)
 ) -> Optional[str]:
 
     username = None

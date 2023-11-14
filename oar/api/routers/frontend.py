@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from passlib.apache import HtpasswdFile
 
 from oar import VERSION
+
 # from oar.lib.globals import get_logger
 from oar.lib.configuration import Configuration
 
@@ -99,7 +100,5 @@ def authentication(
 
 @router.get("/me")
 async def read_users_me(current_user: Annotated[str, Depends(get_user)]):
-    data = {
-        "user": current_user
-    }
+    data = {"user": current_user}
     return data
