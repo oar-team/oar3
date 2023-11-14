@@ -5,8 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 
-from oar.lib.access_token import ALGORITHM, SECRET_KEY
-from .dependencies import get_logger
+from .dependencies import get_config
 
 oauth2_scheme = HTTPBearer()
 
@@ -25,11 +24,16 @@ oauth2_scheme = HTTPBearer()
 
 def get_user(
     credentials: Annotated[str, Depends(oauth2_scheme)],
-    logger=Depends(get_logger)
+    config=Depends(get_config)
 ) -> Optional[str]:
 
     username = None
     token = credentials.credentials
+
+    # FIXME: HAndlre er
+    SECRET_KEY = config["API_SECRET_KEY"]
+    ALGORITHM = config["API_SECRET_ALGORITHM"]
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("user")

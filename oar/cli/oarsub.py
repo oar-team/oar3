@@ -44,10 +44,10 @@ def init_tcp_server():
     return sock
 
 
-def create_api_token() -> Optional[str]:
+def create_api_token(config) -> Optional[str]:
     luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
     if luser:
-        return create_access_token({"user": luser})
+        return create_access_token({"user": luser}, config)
     else:
         return None
 
@@ -522,7 +522,7 @@ def cli(
         cmd_ret.exit()
 
     if api_token:
-        token = create_api_token()
+        token = create_api_token(config)
         cmd_ret.print_(f"OAR_API_TOKEN={token}")
         cmd_ret.exit()
 
