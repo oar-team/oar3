@@ -47,7 +47,7 @@ class WSGIProxyFix(object):
 
 
 def create_app(
-    config: Optional[Configuration] = None, engine=None, root_path: Optional[str] = None
+    config: Optional[Configuration] = None, engine=None, root_path: Optional[str] = None, logger=None
 ):
     """Return the OAR API application instance."""
     app = FastAPI(root_path=root_path)
@@ -55,16 +55,15 @@ def create_app(
     if not config:
         config = init_config()
 
-    if engine is None:
+    if engine is None and logger is None:
+        config, engine, logger = init_oar(config=config)
+    elif engine is None:
         config, engine, _ = init_oar(config=config)
 
-    session_factory = sessionmaker(bind=engine)
-    # session_factory.configure(**{"query_cls": APIQuery})
-    scoped = scoped_session(session_factory)
-    # session = scoped()
+    logger.info("creating app")
 
-    # db.query_class = APIQuery
-    # db.query_collection_class = APIQueryCollection
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
 
     config.setdefault_config(default_config)
 
@@ -86,6 +85,7 @@ def create_app(
         try:
             request.state.db = scoped()
             request.state.config = config
+            request.state.logger = logger
             response = await call_next(request)
         finally:
             # FIXME: closing the session here causes the ephemeral session to remove all the data

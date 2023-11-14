@@ -6,6 +6,7 @@ import re
 import signal as sysig
 import socket
 import sys
+from typing import Optional
 
 import click
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -13,6 +14,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
+from oar.lib.access_token import create_access_token
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
@@ -40,6 +42,14 @@ def init_tcp_server():
     sock.bind(("0.0.0.0", 0))
     sock.listen(5)
     return sock
+
+
+def create_api_token() -> Optional[str]:
+    luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
+    if luser:
+        return create_access_token({"user": luser})
+    else:
+        return None
 
 
 def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
