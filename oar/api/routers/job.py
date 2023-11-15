@@ -365,6 +365,8 @@ def delete(
     config: Configuration = Depends(get_config),
 ):
     # TODO Get and return error codes ans messages
+    # os.environ["OARDO_USER"] = user
+
     if array:
         cmd_ret = oardel(
             db, config, None, None, None, None, job_id, None, None, None, user, False

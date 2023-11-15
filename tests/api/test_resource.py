@@ -69,7 +69,9 @@ def test_app_resources_jobs(
     assert res.json()["items"][0]["id"] == job_id
 
 
-def test_app_create_resource(client, minimal_db_initialization, setup_config):
+def test_app_create_resource(
+    client, minimal_db_initialization, setup_config, user_tokens
+):
     """POST /resources"""
     config, _, db = setup_config
     props = json.dumps({"cpu": 2, "core": 3})
@@ -77,7 +79,7 @@ def test_app_create_resource(client, minimal_db_initialization, setup_config):
     res = client.post(
         "/resources/",
         params={"hostname": "akira", "properties": props},
-        headers={"x-remote-ident": "oar"},
+        headers={"Authorization": f"Bearer {user_tokens['oar']}"},
     )
 
     r = (
@@ -94,7 +96,9 @@ def test_app_create_resource(client, minimal_db_initialization, setup_config):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_resource_state(client, minimal_db_initialization, setup_config):
+def test_app_resource_state(
+    client, minimal_db_initialization, setup_config, user_tokens
+):
     """POST /resources/<id>/state"""
     config, _, db = setup_config
     minimal_db_initialization.commit()
@@ -109,7 +113,7 @@ def test_app_resource_state(client, minimal_db_initialization, setup_config):
     res = client.post(
         "/resources/{resource_id}/state".format(resource_id=r_id),
         json={"state": "Dead"},
-        headers={"x-remote-ident": "oar"},
+        headers={"Authorization": f"Bearer {user_tokens['oar']}"},
     )
     print(res)
 
@@ -124,7 +128,9 @@ def test_app_resource_state(client, minimal_db_initialization, setup_config):
     assert res.status_code == 200
 
 
-def test_app_resource_delete(client, minimal_db_initialization, setup_config):
+def test_app_resource_delete(
+    client, minimal_db_initialization, setup_config, user_tokens
+):
     """DELETE /resources/<id>"""
     config, _, db = setup_config
     Resource.create(
@@ -134,7 +140,7 @@ def test_app_resource_delete(client, minimal_db_initialization, setup_config):
     first_id = minimal_db_initialization.query(Resource).first().id
     res = client.delete(
         "/resources/{}".format(first_id + nb_res1 - 1),
-        headers={"x-remote-ident": "oar"},
+        headers={"Authorization": f"Bearer {user_tokens['oar']}"},
     )
     nb_res2 = len(minimal_db_initialization.query(Resource).all())
     assert nb_res1 == 11

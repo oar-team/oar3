@@ -7,6 +7,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.api.app import create_app
 from oar.api.dependencies import get_db
+from oar.lib.access_token import create_access_token
 
 # from oar.lib import db
 from oar.lib.database import ephemeral_session
@@ -33,9 +34,22 @@ def assign_node_list(nodes):  # TODO TOREPLACE
 
 @pytest.fixture()
 def fastapi_app(setup_config):
-    config, _, engine = setup_config
-    app = create_app(config=config, engine=engine)
+    config, logger, engine = setup_config
+
+    app = create_app(config=config, engine=engine, logger=logger)
     yield app
+
+
+@pytest.fixture()
+def user_tokens(setup_config):
+    config, _, _ = setup_config
+    tokens = {}
+
+    tokens["user1"] = create_access_token({"user": "user1"}, config)
+    tokens["bob"] = create_access_token({"user": "bob"}, config)
+    tokens["oar"] = create_access_token({"user": "oar"}, config)
+
+    yield tokens
 
 
 @pytest.fixture(scope="function")

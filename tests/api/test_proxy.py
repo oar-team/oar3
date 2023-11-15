@@ -37,22 +37,22 @@ def oar_conf(request, setup_config):
     config["PROXY"] = "no"
 
 
-def test_proxy_no_auth(client, setup_config, minimal_db_initialization):
+def test_proxy_no_auth(client):
     res = client.get("/proxy/{job_id}".format(job_id=11111111111111111))
     print(res.json())
     assert res.status_code == 403
 
 
-def test_proxy_no_jobid(client, setup_config, minimal_db_initialization):
+def test_proxy_no_jobid(client, user_tokens):
     res = client.get(
         "/proxy/{job_id}".format(job_id=11111111111111111),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     assert res.status_code == 404
 
 
-def test_proxy_no_proxy_file(client, setup_config, minimal_db_initialization):
+def test_proxy_no_proxy_file(client, minimal_db_initialization, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [1]
 
@@ -63,13 +63,14 @@ def test_proxy_no_proxy_file(client, setup_config, minimal_db_initialization):
         user="bob",
     )
     res = client.get(
-        "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
+        "/proxy/{job_id}".format(job_id=job_id),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     assert res.status_code == 404
 
 
-def test_proxy(client, oar_conf, setup_config, minimal_db_initialization):
+def test_proxy(client, oar_conf, minimal_db_initialization, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0]
 
@@ -90,7 +91,8 @@ def test_proxy(client, oar_conf, setup_config, minimal_db_initialization):
     ]
 
     res = client.get(
-        "/proxy/{job_id}".format(job_id=job_id), headers={"x-remote-ident": "bob"}
+        "/proxy/{job_id}".format(job_id=job_id),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     print(res._content)

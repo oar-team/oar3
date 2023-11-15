@@ -223,10 +223,12 @@ def test_app_job_post_forbidden(client, minimal_db_initialization):
     assert res.status_code == 403
 
 
-def test_app_job_post(client, minimal_db_initialization):
+def test_app_job_post(client, minimal_db_initialization, user_tokens):
     data = {"resource": [], "command": 'sleep "1"'}
 
-    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
 
     job_ids = minimal_db_initialization.query(Job.id).all()
     print(res.json())
@@ -235,7 +237,7 @@ def test_app_job_post(client, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_delete_1(client, minimal_db_initialization):
+def test_app_jobs_delete_1(client, minimal_db_initialization, user_tokens):
     """POST /jobs/<id>/deletions/new"""
 
     job_id = insert_job(
@@ -244,8 +246,11 @@ def test_app_jobs_delete_1(client, minimal_db_initialization):
         properties="",
         user="bob",
     )
+
+    print(vars(minimal_db_initialization.query(Job).one()))
     res = client.post(
-        "/jobs/{}/deletions/new".format(job_id), headers={"x-remote-ident": "bob"}
+        "/jobs/{}/deletions/new".format(job_id),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     print(res.json())
@@ -261,7 +266,7 @@ def test_app_jobs_delete_1(client, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_delete_2(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_delete_2(client, monkeypatch, minimal_db_initialization, user_tokens):
     """DELETE /jobs/<id>/deletions/new"""
 
     job_id = insert_job(
@@ -270,7 +275,10 @@ def test_app_jobs_delete_2(client, monkeypatch, minimal_db_initialization):
         properties="",
         user="bob",
     )
-    res = client.delete("/jobs/{}".format(job_id), headers={"x-remote-ident": "bob"})
+    res = client.delete(
+        "/jobs/{}".format(job_id),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
+    )
     print(res.json())
     assert res.status_code == 200
     fragjob_id = (
@@ -282,7 +290,7 @@ def test_app_jobs_delete_2(client, monkeypatch, minimal_db_initialization):
     assert res.json()["exit_status"] == 0
 
 
-def test_app_array_delete_1(client, minimal_db_initialization):
+def test_app_array_delete_1(client, minimal_db_initialization, user_tokens):
     """POST /jobs/array/<id>/deletions/new"""
     array_id = 1
     for _ in range(5):
@@ -299,7 +307,7 @@ def test_app_array_delete_1(client, minimal_db_initialization):
     )
     res = client.post(
         url,
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     assert res.status_code == 200
@@ -309,7 +317,9 @@ def test_app_array_delete_1(client, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_array_delete_2(client, monkeypatch, minimal_db_initialization):
+def test_app_array_delete_2(
+    client, monkeypatch, minimal_db_initialization, user_tokens
+):
     """DELETE /jobs/array/<id>/deletions/new"""
     array_id = 1
     for _ in range(5):
@@ -324,7 +334,7 @@ def test_app_array_delete_2(client, monkeypatch, minimal_db_initialization):
         replace_query_params(
             "jobs/{job_id}".format(job_id=array_id), params={"array": True}
         ),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -334,7 +344,9 @@ def test_app_array_delete_2(client, monkeypatch, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_ckeckpoint_1(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_ckeckpoint_1(
+    client, monkeypatch, minimal_db_initialization, user_tokens
+):
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -343,7 +355,7 @@ def test_app_jobs_ckeckpoint_1(client, monkeypatch, minimal_db_initialization):
     )
     res = client.post(
         "/jobs/{job_id}/checkpoints/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -353,7 +365,7 @@ def test_app_jobs_ckeckpoint_1(client, monkeypatch, minimal_db_initialization):
 
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_ckeckpoint_2(
-    client, monkeypatch, minimal_db_initialization, setup_config
+    client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/checkpoints/new"""
     config, _, db = setup_config
@@ -367,7 +379,7 @@ def test_app_jobs_ckeckpoint_2(
     set_job_state(minimal_db_initialization, config, job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/checkpoints/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -375,7 +387,7 @@ def test_app_jobs_ckeckpoint_2(
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_signal_1(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_signal_1(client, monkeypatch, minimal_db_initialization, user_tokens):
     """POST /jobs/<id>/signal/<signal>"""
     job_id = insert_job(
         minimal_db_initialization,
@@ -385,7 +397,7 @@ def test_app_jobs_signal_1(client, monkeypatch, minimal_db_initialization):
     )
     res = client.post(
         "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -395,7 +407,7 @@ def test_app_jobs_signal_1(client, monkeypatch, minimal_db_initialization):
 
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_signal_2(
-    client, setup_config, monkeypatch, minimal_db_initialization
+    client, setup_config, monkeypatch, minimal_db_initialization, user_tokens
 ):
     """POST /jobs/<id>/signal/<signal>"""
     config, _, engine = setup_config
@@ -409,7 +421,7 @@ def test_app_jobs_signal_2(
     set_job_state(minimal_db_initialization, config, job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/signal/{signal}".format(job_id=job_id, signal=12),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -417,7 +429,7 @@ def test_app_jobs_signal_2(
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_hold_1(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_hold_1(client, monkeypatch, minimal_db_initialization, user_tokens):
     """POST /jobs/<id>/holds/new"""
     job_id = insert_job(
         minimal_db_initialization,
@@ -427,7 +439,7 @@ def test_app_jobs_hold_1(client, monkeypatch, minimal_db_initialization):
     )
     res = client.post(
         "/jobs/{job_id}/holds/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -435,7 +447,9 @@ def test_app_jobs_hold_1(client, monkeypatch, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_hold_2(client, monkeypatch, minimal_db_initialization, setup_config):
+def test_app_jobs_hold_2(
+    client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
+):
     """POST /jobs/<id>/holds/new"""
     config, _, db = setup_config
     job_id = insert_job(
@@ -448,7 +462,7 @@ def test_app_jobs_hold_2(client, monkeypatch, minimal_db_initialization, setup_c
     set_job_state(minimal_db_initialization, config, job_id, "Running")
     res = client.post(
         "/jobs/{job_id}/holds/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -457,7 +471,7 @@ def test_app_jobs_hold_2(client, monkeypatch, minimal_db_initialization, setup_c
 
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_rhold_user_not_allowed_1(
-    client, monkeypatch, minimal_db_initialization
+    client, monkeypatch, minimal_db_initialization, user_tokens
 ):
     """POST /jobs/<id>/rhold/new"""
     job_id = insert_job(
@@ -468,7 +482,7 @@ def test_app_jobs_rhold_user_not_allowed_1(
     )
     res = client.post(
         "/jobs/{job_id}/rhold/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -476,7 +490,7 @@ def test_app_jobs_rhold_user_not_allowed_1(
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_rhold_2(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_rhold_2(client, monkeypatch, minimal_db_initialization, user_tokens):
     """POST /jobs/<id>/rhold/new"""
     job_id = insert_job(
         minimal_db_initialization,
@@ -486,7 +500,7 @@ def test_app_jobs_rhold_2(client, monkeypatch, minimal_db_initialization):
     )
     res = client.post(
         "/jobs/{job_id}/rhold/new".format(job_id=job_id),
-        headers={"x-remote-ident": "oar"},
+        headers={"Authorization": f"Bearer {user_tokens['oar']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -494,7 +508,9 @@ def test_app_jobs_rhold_2(client, monkeypatch, minimal_db_initialization):
 
 
 @pytest.mark.usefixtures("monkeypatch_tools")
-def test_app_jobs_resume_bad_nohold(client, monkeypatch, minimal_db_initialization):
+def test_app_jobs_resume_bad_nohold(
+    client, monkeypatch, minimal_db_initialization, user_tokens
+):
     """POST /jobs/<id>/resumptions/new"""
     job_id = insert_job(
         minimal_db_initialization,
@@ -504,7 +520,7 @@ def test_app_jobs_resume_bad_nohold(client, monkeypatch, minimal_db_initializati
     )
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -513,7 +529,7 @@ def test_app_jobs_resume_bad_nohold(client, monkeypatch, minimal_db_initializati
 
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_resume_not_allowed(
-    client, monkeypatch, minimal_db_initialization, setup_config
+    client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/resumptions/new"""
     config, _, _ = setup_config
@@ -526,14 +542,16 @@ def test_app_jobs_resume_not_allowed(
     set_job_state(minimal_db_initialization, config, job_id, "Suspended")
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
     assert res.json()["exit_status"] == 1
 
 
-def test_app_jobs_resume(client, monkeypatch, minimal_db_initialization, setup_config):
+def test_app_jobs_resume(
+    client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
+):
     """POST /jobs/<id>/resumptions/new"""
     config, _, _ = setup_config
     job_id = insert_job(
@@ -545,7 +563,7 @@ def test_app_jobs_resume(client, monkeypatch, minimal_db_initialization, setup_c
     set_job_state(minimal_db_initialization, config, job_id, "Suspended")
     res = client.post(
         "/jobs/{job_id}/resumptions/new".format(job_id=job_id),
-        headers={"x-remote-ident": "oar"},
+        headers={"Authorization": f"Bearer {user_tokens['oar']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -573,34 +591,40 @@ def test_app_jobs_resume(client, monkeypatch, minimal_db_initialization, setup_c
 #           'ids'
 
 
-def test_app_job_post_bug1(client, minimal_db_initialization):
+def test_app_job_post_bug1(client, minimal_db_initialization, user_tokens):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
-    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
     print(res.json())
     assert res.status_code == 200
 
 
-def test_app_job_post_bug2(client, minimal_db_initialization):
+def test_app_job_post_bug2(client, minimal_db_initialization, user_tokens):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {"resource": ["nodes=1,walltime=00:10:0"], "command": 'sleep "1"'}
-    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
     print(res.json())
     assert res.status_code == 200
 
 
-def test_app_job_post_bug3(client, minimal_db_initialization):
+def test_app_job_post_bug3(client, minimal_db_initialization, user_tokens):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
         "command": 'sleep "1"',
     }
-    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
     print(res.json())
     assert res.status_code == 200
 
 
-def test_app_job_post_json(client, minimal_db_initialization):
+def test_app_job_post_json(client, minimal_db_initialization, user_tokens):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
@@ -610,19 +634,21 @@ def test_app_job_post_json(client, minimal_db_initialization):
         "/jobs/",
         json=data,
         # content_type="application/json",
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
 
 
-def test_app_job_post_array(client, minimal_db_initialization):
+def test_app_job_post_array(client, minimal_db_initialization, user_tokens):
     data = {
         "resource": ["nodes=1,walltime=00:10:0"],
         "command": 'sleep "1"',
         "param_file": "param9 9\nparam8 8\nparam7 7",
     }
-    res = client.post("/jobs/", json=data, headers={"x-remote-ident": "bob"})
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
     print(res.__dict__)
     print(res.json())
     job_array_ids = (

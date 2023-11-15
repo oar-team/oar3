@@ -47,7 +47,14 @@ def setup_config(request):
         config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
         config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "localhost")
 
-    config, engine, _ = init_oar(config=config, no_reflect=True)
+    # Config for jwt
+    config[
+        "API_SECRET_KEY"
+    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+    config["API_SECRET_ALGORITHM"] = "HS256"
+    config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
+
+    config, engine, logger = init_oar(config=config, no_reflect=True)
 
     # Model.metadata.drop_all(bind=engine)
     kw = {"nullable": True}
@@ -72,7 +79,7 @@ def setup_config(request):
     # reflect_base(Model.metadata, DeferredReflectionModel, engine)
     DeferredReflectionModel.prepare(engine)
     # db.reflect(Model.metadata, bind=engine)
-    yield config, True, engine
+    yield config, logger, engine
 
     # db.close()
     engine.dispose()

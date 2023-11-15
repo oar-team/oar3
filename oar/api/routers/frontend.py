@@ -12,7 +12,7 @@ from oar.lib.configuration import Configuration
 
 from .. import API_VERSION
 from ..auth import get_user
-from ..dependencies import get_config, get_logger
+from ..dependencies import get_config
 from . import TimestampRoute
 
 router = APIRouter(
