@@ -34,7 +34,7 @@
 
  2.1.3) Metascheduler manage pstate/energy
     - Call retrieve_pstate_changes_to_apply
-    - Trigger pstate changes through Hulot at node granularity
+    - Trigger pstate changes through Greta at node granularity
 
  2.1.4) Metascheduler others steps
     - Resuming/Suspending jobs,

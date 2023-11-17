@@ -70,7 +70,7 @@ setup(
     oar-almighty=oar.modules.almighty:main
     oar-bipbip-commander=oar.modules.bipbip_commander:main
     oar-appendice-proxy=oar.modules.appendice_proxy:main
-    oar-hulot=oar.modules.hulot:main
+    oar-greta=oar.modules.greta:main
     .oarsub=oar.cli.oarsub:cli
     .oarstat=oar.cli.oarstat:cli
     .oardel=oar.cli.oardel:cli

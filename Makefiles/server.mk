@@ -81,7 +81,7 @@ install: build install_shared
 	install -m 0750 $(OARCONFDIR_BINFILES) $(DESTDIR)$(OARCONFDIR)
 	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
-		.oarproperty oar-hulot kao kamelot kamelot-fifo \
+		.oarproperty oar-greta kao kamelot kamelot-fifo \
 		.oarremoveresource .oaraccounting .oarqueue .oarnotify .oarconnect \
 		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume .oarwalltime;\
 	do \

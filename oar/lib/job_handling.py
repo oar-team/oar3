@@ -1147,7 +1147,7 @@ def get_waiting_reservation_jobs_specific_queue(session, queue_name):
 
 
 def update_scheduler_last_job_date(session, date, moldable_id):
-    """used to allow search_idle_nodes to operate for dynamic node management feature (Hulot)"""
+    """used to allow search_idle_nodes to operate for dynamic node management feature (Greta)"""
     dialect = session.bind.dialect.name
 
     if dialect == "sqlite":

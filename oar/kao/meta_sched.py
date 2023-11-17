@@ -71,7 +71,7 @@ from oar.lib.node import (
 from oar.lib.plugins import find_plugin_function
 from oar.lib.queue import get_queues_groupby_priority, stop_queue
 from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
-from oar.modules.hulot import HulotClient
+from oar.modules.greta import GretaClient
 
 # FIXME global config
 # config, _, log = init_oar(no_db=True)
@@ -852,7 +852,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     #. Loops through queues order by priority and call the scheduler
     #. It is also responsible to detect best effort jobs that need to be killed
-    #. If the energy saving mode is enabled, it calls :class:`Hulot`.
+    #. If the energy saving mode is enabled, it calls :class:`Greta`.
     """
     exit_code = 0
 
@@ -1073,12 +1073,12 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                 "Error ENERGY_SAVING_MODE unknown: " + config["ENERGY_SAVING_MODE"]
             )
 
-        hulot = HulotClient(config, logger)
+        greta = GretaClient(config, logger)
 
-        flag_hulot = False
+        flag_greta = False
         timeout_cmd = int(config["SCHEDULER_TIMEOUT"])
 
-        # Command Hulot to halt selected nodes
+        # Command Greta to halt selected nodes
         nodes_2_halt = nodes_2_change["halt"]
         if nodes_2_halt != []:
             logger.debug(
@@ -1086,9 +1086,9 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             )
             # Using the built-in energy saving module to shut down nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                hulot.halt_nodes(nodes_2_halt)
-                # logger.error("Communication problem with the energy saving module (Hulot)\n")
-                flag_hulot = True
+                greta.halt_nodes(nodes_2_halt)
+                # logger.error("Communication problem with the energy saving module (Greta)\n")
+                flag_greta = True
             else:
                 # Not using the built-in energy saving module to shut down nodes
                 cmd = config["SCHEDULER_NODE_MANAGER_SLEEP_CMD"]
@@ -1101,15 +1101,15 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                         + "s) while trying to  poweroff some nodes"
                     )
 
-        # Command Hulot to wake up selected nodes
+        # Command Greta to wake up selected nodes
         nodes_2_wakeup = nodes_2_change["wakeup"]
         if nodes_2_wakeup != []:
             logger.debug("Awaking some nodes: " + str(nodes_2_change))
             # Using the built-in energy saving module to wake up nodes
             if config["ENERGY_SAVING_INTERNAL"] == "yes":
-                hulot.wake_up_nodes(nodes_2_wakeup)
-                # logger.error("Communication problem with the energy saving module (Hulot)")
-                flag_hulot = True
+                greta.wake_up_nodes(nodes_2_wakeup)
+                # logger.error("Communication problem with the energy saving module (Greta)")
+                flag_greta = True
             else:
                 # Not using the built-in energy saving module to wake up nodes
                 cmd = config["SCHEDULER_NODE_MANAGER_WAKE_UP_CMD"]
@@ -1122,10 +1122,10 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                         + "s) while trying to wake-up some nodes "
                     )
 
-        # Send CHECK signal to Hulot if needed
-        if not flag_hulot and (config["ENERGY_SAVING_INTERNAL"] == "yes"):
-            hulot.check_nodes()
-            #    logger.error("Communication problem with the energy saving module (Hulot)")
+        # Send CHECK signal to Greta if needed
+        if not flag_greta and (config["ENERGY_SAVING_INTERNAL"] == "yes"):
+            greta.check_nodes()
+            #    logger.error("Communication problem with the energy saving module (Greta)")
 
     # Retrieve jobs according to their state and excluding job in 'Waiting' state.
     jobs_by_state = get_current_not_waiting_jobs(session)

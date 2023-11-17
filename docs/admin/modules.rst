@@ -187,52 +187,52 @@ This scheduler is the same than
 oar_sched_gantt_with_timesharingand_fairsharing but it implements quotas which
 are configured in "/etc/oar/scheduler_quotas.conf".
 
-Hulot
+Greta
 -----
 
-.. automodule:: oar.modules.hulot
+.. automodule:: oar.modules.greta
   :noindex:
 
 --------------------------------------------------------------------------------
 
-  - Hulot general commands process schema:
+  - Greta general commands process schema:
 
-  .. image:: ../_static/hulot_general_commands_process.png
+  .. image:: ../_static/greta_general_commands_process.png
 
-When Hulot is activated, the metascheduler sends, each time it is executed, a
-list of nodes that need to be woken-up or may be halted. Hulot maintains a
+When Greta is activated, the metascheduler sends, each time it is executed, a
+list of nodes that need to be woken-up or may be halted. Greta maintains a
 list of commands that have already been sent to the nodes and asks to the
 windowforker to actually execute the commands only when it is appropriate.
 A special feature is the "keepalive" of nodes depending on some properties:
-even if the metascheduler asks to shut-down some nodes, it's up to Hulot to
-check if the keepalive constraints are still satisfied. If not, Hulot refuses
+even if the metascheduler asks to shut-down some nodes, it's up to Greta to
+check if the keepalive constraints are still satisfied. If not, Greta refuses
 to halt the corresponding nodes.
 
 --------------------------------------------------------------------------------
 
-  - Hulot checking process schema:
+  - Greta checking process schema:
 
-  .. image:: ../_static/hulot_checking_process.png
+  .. image:: ../_static/greta_checking_process.png
 
-Hulot is called each time the metascheduler is called, to do all the checking
-process. This process is also executed when Hulot receives normal halt or wake-up
-commands from the scheduler. Hulot checks if waking-up nodes are actually Alive
+Greta is called each time the metascheduler is called, to do all the checking
+process. This process is also executed when Greta receives normal halt or wake-up
+commands from the scheduler. Greta checks if waking-up nodes are actually Alive
 or not and suspects the nodes if they haven't woken-up before the timeout.
 It also checks keepalive constraints and decides to wake-up nodes if a constraint
 is no more satisfied (for example because new jobs are running on nodes that are
 now busy, and no more idle).
-Hulot also checks the results of the commands sent by the windowforker and may
+Greta also checks the results of the commands sent by the windowforker and may
 also suspect a node if the command exited with non-zero status.
 
 --------------------------------------------------------------------------------
 
-  - Hulot wake-up process schema
+  - Greta wake-up process schema
 
-  .. image:: ../_static/hulot_wakeup_process.png
+  .. image:: ../_static/greta_wakeup_process.png
 
 --------------------------------------------------------------------------------
 
-  - Hulot shutdown process schema
+  - Greta shutdown process schema
 
-  .. image:: ../_static/hulot_shutdown_process.png
+  .. image:: ../_static/greta_shutdown_process.png
 

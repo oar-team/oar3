@@ -61,8 +61,8 @@ class Configuration(dict):
         "DEPLOY_HOSTNAME": "127.0.0.1",
         "OPENSSH_CMD": "/usr/bin/ssh -p 6667",
         "OAREXEC_DEBUG_MODE": "1",
-        "HULOT_SERVER": "localhost",
-        "HULOT_PORT": 6672,
+        "GRETA_SERVER": "localhost",
+        "GRETA_PORT": 6672,
         # kao
         "METASCHEDULER_MODE": "internal",
         # Tell the metascheduler that it runs into an oar2 installation.
@@ -113,9 +113,9 @@ class Configuration(dict):
         "QUEUE": "default",
         "PROJECT": "default",
         "SIGNAL": 12,
-        # Hulot stuff
-        "HULOT_SERVER": "localhost",
-        "HULOT_PORT": 6672,
+        # Greta stuff
+        "GRETA_SERVER": "localhost",
+        "GRETA_PORT": 6672,
         "ENERGY_SAVING_WINDOW_FORKER_SIZE": 20,
         "ENERGY_SAVING_WINDOW_TIME": 60,
         "ENERGY_SAVING_WINDOW_TIMEOUT": 120,

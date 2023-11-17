@@ -457,16 +457,16 @@ def signal_oarexec(
 
 
 # TODO
-def send_to_hulot(cmd, data):
-    config.setdefault_config({"FIFO_HULOT": "/tmp/oar_hulot_pipe"})
-    fifoname = config["FIFO_HULOT"]
+def send_to_greta(cmd, data):
+    config.setdefault_config({"FIFO_GRETA": "/tmp/oar_greta_pipe"})
+    fifoname = config["FIFO_GRETA"]
     try:
         with open(fifoname, "w") as fifo:
             fifo.write("HALT:%s\n" % data)
             fifo.flush()
     except IOError as e:  # pragma: no cover
         e.strerror = (
-            "Unable to communication with Hulot: %s (%s)" % fifoname % e.strerror
+            "Unable to communication with Greta: %s (%s)" % fifoname % e.strerror
         )
         tools_logger.error(e.strerror)
         return 1

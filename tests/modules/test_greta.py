@@ -10,9 +10,9 @@ import oar.lib.tools as tools
 from oar.lib.database import ephemeral_session
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.models import Resource
-from oar.modules.hulot import (
-    Hulot,
-    HulotClient,
+from oar.modules.greta import (
+    Greta,
+    GretaClient,
     WindowForker,
     command_executor,
     fill_timeouts,
@@ -30,8 +30,8 @@ logger = get_logger("test_sarko")
 
 # Set undefined config value to default one
 DEFAULT_CONFIG = {
-    "HULOT_SERVER": "localhost",
-    "HULOT_PORT": 6672,
+    "GRETA_SERVER": "localhost",
+    "GRETA_PORT": 6672,
     "ENERGY_SAVING_WINDOW_SIZE": 25,
     "ENERGY_SAVING_WINDOW_TIME": 60,
     "ENERGY_SAVING_WINDOW_TIMEOUT": 120,
@@ -137,56 +137,56 @@ def test_get_timeout(setup_config):
 def test_bad_energy_saving_nodes_keepalive_1(setup_config, setup):
     config = setup
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "bad"
-    hulot = Hulot(config, logger)
+    greta = Greta(config, logger)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':0"
-    assert hulot.exit_code == 3
+    assert greta.exit_code == 3
 
 
 def test_bad_energy_saving_nodes_keepalive_2(setup_config, setup):
     config = setup
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':3, bad:bad"
-    hulot = Hulot(config, logger)
+    greta = Greta(config, logger)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':0"
-    assert hulot.exit_code == 2
+    assert greta.exit_code == 2
 
 
-def test_hulot_check_simple(
+def test_greta_check_simple(
     monkeypatch, setup_config, setup, minimal_db_initialization
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
     print("wut?!", minimal_db_initialization)
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_bad_command(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_greta_bad_command(monkeypatch, setup_config, minimal_db_initialization, setup):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "BAD_COMMAND", "nodes": ["localhost0"]}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
     assert exit_code == 1
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_nodes_to_remind(
+def test_greta_check_nodes_to_remind(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
-    hulot = Hulot(config, logger)
-    hulot.nodes_list_to_remind = {"localhost0": {"timeout": -1, "command": "HALT"}}
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    assert "localhost0" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost0"]["command"] == "HALT"
+    greta = Greta(config, logger)
+    greta.nodes_list_to_remind = {"localhost0": {"timeout": -1, "command": "HALT"}}
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    assert "localhost0" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost0"]["command"] == "HALT"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_wakeup_for_min_nodes(
+def test_greta_check_wakeup_for_min_nodes(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
@@ -194,176 +194,176 @@ def test_hulot_check_wakeup_for_min_nodes(
     prev_value = config["ENERGY_SAVING_NODES_KEEPALIVE"]
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':3"
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = prev_value
-    print(hulot.nodes_list_command_running)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
+    print(greta.nodes_list_command_running)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_1(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_greta_halt_1(monkeypatch, setup_config, minimal_db_initialization, setup):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    assert "localhost0" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost0"]["command"] == "HALT"
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    assert "localhost0" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost0"]["command"] == "HALT"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_keepalive(
+def test_greta_halt_keepalive(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     prev_value = config["ENERGY_SAVING_NODES_KEEPALIVE"]
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = "type='default':3"
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
-    hulot = Hulot(config, logger)
+    greta = Greta(config, logger)
     # import pdb; pdb.set_trace()
-    exit_code = hulot.run(minimal_db_initialization, False)
+    exit_code = greta.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_NODES_KEEPALIVE"] = prev_value
-    print(hulot.nodes_list_command_running)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
+    print(greta.nodes_list_command_running)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_1_forker(
+def test_greta_halt_1_forker(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "no"
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost0"]}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "yes"
-    print(hulot.nodes_list_command_running)
-    assert "localhost0" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost0"]["command"] == "HALT"
+    print(greta.nodes_list_command_running)
+    assert "localhost0" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost0"]["command"] == "HALT"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_1(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_greta_wakeup_1(monkeypatch, setup_config, minimal_db_initialization, setup):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_already_timeouted(
+def test_greta_wakeup_already_timeouted(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
-    hulot = Hulot(config, logger)
-    hulot.nodes_list_command_running = {
+    greta = Greta(config, logger)
+    greta.nodes_list_command_running = {
         "localhost2": {"timeout": -1, "command": "WAKEUP"}
     }
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    assert hulot.nodes_list_command_running == {}
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    assert greta.nodes_list_command_running == {}
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_already_pending(
+def test_greta_wakeup_already_pending(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
-    hulot = Hulot(config, logger)
-    hulot.nodes_list_command_running = {
+    greta = Greta(config, logger)
+    greta.nodes_list_command_running = {
         "localhost2": {
             "timeout": tools.get_date(minimal_db_initialization) + 1000,
             "command": "WAKEUP",
         }
     }
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    print(hulot.nodes_list_to_remind)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_to_remind == {}
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    print(greta.nodes_list_to_remind)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert greta.nodes_list_to_remind == {}
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_halt_wakeup_already_pending(
+def test_greta_halt_wakeup_already_pending(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "HALT", "nodes": ["localhost2"]}]
-    hulot = Hulot(config, logger)
-    hulot.nodes_list_command_running = {
+    greta = Greta(config, logger)
+    greta.nodes_list_command_running = {
         "localhost2": {
             "timeout": tools.get_date(minimal_db_initialization) + 1000,
             "command": "WAKEUP",
         }
     }
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    print(hulot.nodes_list_to_remind)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert "localhost2" in hulot.nodes_list_to_remind
-    assert hulot.nodes_list_to_remind["localhost2"]["command"] == "HALT"
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    print(greta.nodes_list_to_remind)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert "localhost2" in greta.nodes_list_to_remind
+    assert greta.nodes_list_to_remind["localhost2"]["command"] == "HALT"
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_check_clean_booted_node(
+def test_greta_check_clean_booted_node(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     fakezmq.recv_msgs[0] = [{"cmd": "CHECK"}]
-    hulot = Hulot(config, logger)
-    hulot.nodes_list_command_running = {
+    greta = Greta(config, logger)
+    greta.nodes_list_command_running = {
         "localhost0": {"timeout": -1, "command": "WAKEUP"}
     }
-    exit_code = hulot.run(minimal_db_initialization, False)
-    print(hulot.nodes_list_command_running)
-    assert hulot.nodes_list_command_running == {}
+    exit_code = greta.run(minimal_db_initialization, False)
+    print(greta.nodes_list_command_running)
+    assert greta.nodes_list_command_running == {}
     assert exit_code == 0
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_wakeup_1_forker(
+def test_greta_wakeup_1_forker(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "no"
     fakezmq.recv_msgs[0] = [{"cmd": "WAKEUP", "nodes": ["localhost2"]}]
-    hulot = Hulot(config, logger)
-    exit_code = hulot.run(minimal_db_initialization, False)
+    greta = Greta(config, logger)
+    exit_code = greta.run(minimal_db_initialization, False)
     config["ENERGY_SAVING_WINDOW_FORKER_BYPASS"] = "yes"
-    print(hulot.nodes_list_command_running)
-    assert "localhost2" in hulot.nodes_list_command_running
-    assert hulot.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
+    print(greta.nodes_list_command_running)
+    assert "localhost2" in greta.nodes_list_command_running
+    assert greta.nodes_list_command_running["localhost2"]["command"] == "WAKEUP"
     assert exit_code == 0
 
 
-def test_hulot_client(monkeypatch, setup_config, minimal_db_initialization, setup):
+def test_greta_client(monkeypatch, setup_config, minimal_db_initialization, setup):
     config = setup
-    hulot_ctl = HulotClient(config, logger)
-    hulot_ctl.check_nodes()
+    greta_ctl = GretaClient(config, logger)
+    greta_ctl.check_nodes()
     assert fakezmq.sent_msgs[0][0] == {"cmd": "CHECK"}
-    hulot_ctl.halt_nodes("localhost")
+    greta_ctl.halt_nodes("localhost")
     assert fakezmq.sent_msgs[0][1] == {"cmd": "HALT", "nodes": "localhost"}
-    hulot_ctl.wake_up_nodes("localhost")
+    greta_ctl.wake_up_nodes("localhost")
     assert fakezmq.sent_msgs[0][2] == {"cmd": "WAKEUP", "nodes": "localhost"}
 
 
-def test_hulot_command_executor(
+def test_greta_command_executor(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
@@ -380,7 +380,7 @@ def yop(a, b=0):
     return a
 
 
-def test_hulot_window_forker_check_executors(
+def test_greta_window_forker_check_executors(
     setup_config, minimal_db_initialization, setup
 ):
     wf = WindowForker(1, 10, setup, logger)
@@ -418,7 +418,7 @@ def test_hulot_window_forker_check_executors(
 
 
 @pytest.mark.usefixtures("minimal_db_initialization")
-def test_hulot_window_forker_check_executors_timeout(
+def test_greta_window_forker_check_executors_timeout(
     setup_config, setup, minimal_db_initialization
 ):
     wf = WindowForker(1, 10, setup, logger)
