@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Optional
 
@@ -8,10 +9,6 @@ from oar.lib.configuration import Configuration
 from oar.lib.globals import init_config, init_oar
 
 from .routers import frontend, job, media, proxy, resource, stress_factor
-
-# from oar import VERSION
-# from oar.lib import config, db
-
 
 # from oar.api import API_VERSION
 
@@ -47,7 +44,10 @@ class WSGIProxyFix(object):
 
 
 def create_app(
-    config: Optional[Configuration] = None, engine=None, root_path: Optional[str] = None
+    config: Optional[Configuration] = None,
+    engine=None,
+    root_path: Optional[str] = None,
+    logger=None,
 ):
     """Return the OAR API application instance."""
     app = FastAPI(root_path=root_path)
@@ -55,17 +55,27 @@ def create_app(
     if not config:
         config = init_config()
 
-    if engine is None:
+    if engine is None and logger is None:
+        config, engine, logger = init_oar(config=config)
+    elif engine is None:
         config, engine, _ = init_oar(config=config)
 
+    logger.info("creating app")
+
     session_factory = sessionmaker(bind=engine)
-    # session_factory.configure(**{"query_cls": APIQuery})
     scoped = scoped_session(session_factory)
-    # session = scoped()
 
-    # db.query_class = APIQuery
-    # db.query_collection_class = APIQueryCollection
+    revoked_tokens = {}
+    if "API_REVOKED_TOKENS" in config:
+        try:
+            revoked_tokens_file = config["API_REVOKED_TOKENS"]
+            content = open(config["API_REVOKED_TOKENS"], "r").read()
 
+            revoked_tokens = json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.error(f"cannot load revoked token file: {revoked_tokens_file} - {e}")
+
+    logger.info(f"Revoked tokens list: {revoked_tokens}")
     config.setdefault_config(default_config)
 
     app.include_router(frontend.router)
@@ -76,7 +86,8 @@ def create_app(
     app.include_router(stress_factor.router)
 
     @app.middleware("http")
-    async def reflect_database(request: Request, call_next):
+    async def tokens_revocations_data(request: Request, call_next):
+        request.state.revoked_tokens = revoked_tokens
         response = await call_next(request)
         return response
 
@@ -86,6 +97,7 @@ def create_app(
         try:
             request.state.db = scoped()
             request.state.config = config
+            request.state.logger = logger
             response = await call_next(request)
         finally:
             # FIXME: closing the session here causes the ephemeral session to remove all the data

@@ -231,7 +231,7 @@ def oardel(
         for job_id in job_ids:
             # TODO array of errors and error messages
             cmd_ret.info("Deleting the job = {} ...".format(job_id))
-            error = frag_job(session, job_id)
+            error = frag_job(session, job_id, user=user)
             error_msg = ""
             if error == -1:
                 error_msg = "Cannot frag {} ; You are not the right user.".format(

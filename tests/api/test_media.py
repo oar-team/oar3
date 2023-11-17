@@ -66,7 +66,7 @@ def test_app_media_ls_file_forbidden(client):
     assert client.get("/media/ls/{path}".format(path="yop")).status_code == 403
 
 
-def test_app_media_ls_file(client):
+def test_app_media_ls_file(client, user_tokens):
     global fake_calls
     fake_calls = []
     global fake_call_retcodes
@@ -80,7 +80,7 @@ def test_app_media_ls_file(client):
     res = client.get(
         "/media/ls/{path}".format(path="yop"),
         params={},
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 200
@@ -91,43 +91,43 @@ def test_app_media_ls_file(client):
     assert len(res.json()["items"]) == 2
 
 
-def test_app_media_get_file_not_exit(client):
+def test_app_media_get_file_not_exit(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [1]
     res = client.get(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.json())
     assert res.status_code == 404
 
 
-def test_app_media_get_file_unreadble(client):
+def test_app_media_get_file_unreadble(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 1]
     res = client.get(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.__dict__)
     assert res.status_code == 403
 
 
-def test_app_media_get_file(client):
+def test_app_media_get_file(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0]
     global fake_check_outputs
     fake_check_outputs = [b"fake content"]
     res = client.get(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 200
     print(res.__dict__)
     assert res._content == b"fake content"
 
 
-def test_app_media_get_file_tail(client):
+def test_app_media_get_file_tail(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0]
     global fake_check_outputs
@@ -135,27 +135,27 @@ def test_app_media_get_file_tail(client):
     res = client.get(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
         params={"tail": 1},
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 200
     print(res._content)
     assert res._content == b"fake content"
 
 
-def test_app_media_post_file_already_exist(client):
+def test_app_media_post_file_already_exist(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0]
     temp_path = "~/tmp/yop"
     res = client.post(
         "/media/",
         files={"file": (temp_path, b"dummy content", "multipart/form-data")},
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.__dict__)
     assert res.status_code == 403
 
 
-def test_app_media_post_file(client):
+def test_app_media_post_file(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [1]
     _, temp_path = mkstemp()
@@ -166,98 +166,100 @@ def test_app_media_post_file(client):
             # (filename, filecontent, "type")
             "file": (temp_path, BytesIO(b"my file contents"), "multipart/form-data")
         },
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     assert res.status_code == 200
 
 
-def test_app_media_delete_file_not_exit(client):
+def test_app_media_delete_file_not_exit(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [1]
     res = client.delete(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 404
 
 
-def test_app_media_delete_file_unreadable(client):
+def test_app_media_delete_file_unreadable(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 1]
     res = client.delete(
-        "/media/?path_filename={}".format("yop"), headers={"x-remote-ident": "bob"}
+        "/media/?path_filename={}".format("yop"),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     print(res.__dict__)
     assert res.status_code == 403
 
 
-def test_app_media_delete_file_rm_error(client):
+def test_app_media_delete_file_rm_error(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0, 1]
 
     res = client.delete(
-        "/media/?path_filename={}".format("yop"), headers={"x-remote-ident": "bob"}
+        "/media/?path_filename={}".format("yop"),
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 501
 
 
-def test_app_media_delete_file(client):
+def test_app_media_delete_file(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0, 0]
     res = client.delete(
         "/media/?path_filename={path_filename}".format(path_filename="yop"),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     assert res.status_code == 204
 
 
-def test_app_media_chmod_file_not_exit(client):
+def test_app_media_chmod_file_not_exit(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [1]
     res = client.post(
         "/media/chmod?path_filename={path_filename}&mode={mode}".format(
             path_filename="yop", mode="755"
         ),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
 
     print(res.__dict__)
     assert res.status_code == 404
 
 
-def test_app_media_chmod_file_not_alnum(client):
+def test_app_media_chmod_file_not_alnum(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0]
     res = client.post(
         "/media/chmod?path_filename={path_filename}&mode={mode}".format(
             path_filename="yop", mode="###"
         ),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 400
 
 
-def test_app_media_chmod_file_chmod_error(client):
+def test_app_media_chmod_file_chmod_error(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 1]
     res = client.post(
         "/media/chmod?path_filename={path_filename}&mode={mode}".format(
             path_filename="yop", mode="755"
         ),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 500
 
 
-def test_app_media_chmod_file_chmod(client):
+def test_app_media_chmod_file_chmod(client, user_tokens):
     global fake_call_retcodes
     fake_call_retcodes = [0, 0]
     res = client.post(
         "/media/chmod?path_filename={path_filename}&mode={mode}".format(
             path_filename="yop", mode="755"
         ),
-        headers={"x-remote-ident": "bob"},
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
     )
     assert res.status_code == 202

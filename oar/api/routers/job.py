@@ -14,7 +14,8 @@ from oar.lib.configuration import Configuration
 from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
-from ..dependencies import get_config, get_db, need_authentication
+from ..auth import need_authentication
+from ..dependencies import get_config, get_db
 
 router = APIRouter(
     # route_class=TimestampRoute,
@@ -50,12 +51,11 @@ def index(
     stop_time: int = None,
     states: List[str] = Query([]),
     array: int = None,
-    job_ids: List[int] = [],
+    job_ids: List[int] = Query([]),
     details: str = None,
     offset: int = 0,
     limit: int = 500,
     db: Session = Depends(get_db),
-    config: Configuration = Depends(get_config),
 ):
 
     queryCollection = APIQueryCollection(db)
@@ -365,6 +365,8 @@ def delete(
     config: Configuration = Depends(get_config),
 ):
     # TODO Get and return error codes ans messages
+    # os.environ["OARDO_USER"] = user
+
     if array:
         cmd_ret = oardel(
             db, config, None, None, None, None, job_id, None, None, None, user, False

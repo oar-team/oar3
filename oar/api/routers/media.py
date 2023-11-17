@@ -28,7 +28,7 @@ from oar.lib.globals import init_config
 # from oar.lib import config
 from oar.lib.tools import PIPE
 
-from ..dependencies import need_authentication
+from ..auth import need_authentication
 from ..url_utils import list_paginate
 from . import TimestampRoute
 

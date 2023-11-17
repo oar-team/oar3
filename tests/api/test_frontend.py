@@ -25,10 +25,10 @@ def test_app_frontend_version(client, setup_config):
 
 def test_app_frontend_whoami(client, setup_config):
     config, _, db = setup_config
+
     res = client.get("/whoami")
     print(res.json())
-    assert res.status_code == 200 and "api_timestamp" in res.json()
-    assert res.json()["authenticated_user"] is None
+    assert res.status_code == 403
 
 
 def test_app_frontend_timezone(client, setup_config):
