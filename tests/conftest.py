@@ -22,6 +22,7 @@ def setup_config(request):
     config = init_config()
 
     config.update(DEFAULT_CONFIG.copy())
+
     tempdir = tempfile.mkdtemp()
     config["LOG_FILE"] = os.path.join("/tmp", "oar.log")
 
@@ -46,13 +47,6 @@ def setup_config(request):
         config["DB_BASE_PASSWD_RO"] = os.environ.get("POSTGRES_PASSWORD", "oar_ro")
         config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
         config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "localhost")
-
-    # Config for jwt
-    config[
-        "API_SECRET_KEY"
-    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
-    config["API_SECRET_ALGORITHM"] = "HS256"
-    config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
 
     config, engine, logger = init_oar(config=config, no_reflect=True)
 

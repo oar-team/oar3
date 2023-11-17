@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Optional
 
@@ -64,6 +65,17 @@ def create_app(
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
+    revoked_tokens = {}
+    if "API_REVOKED_TOKENS" in config:
+        try:
+            revoked_tokens_file = config["API_REVOKED_TOKENS"]
+            content = open(config["API_REVOKED_TOKENS"], "r").read()
+
+            revoked_tokens = json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.error(f"cannot load revoked token file: {revoked_tokens_file} - {e}")
+
+    logger.info(f"Revoked tokens list: {revoked_tokens}")
     config.setdefault_config(default_config)
 
     app.include_router(frontend.router)
@@ -74,7 +86,8 @@ def create_app(
     app.include_router(stress_factor.router)
 
     @app.middleware("http")
-    async def reflect_database(request: Request, call_next):
+    async def tokens_revocations_data(request: Request, call_next):
+        request.state.revoked_tokens = revoked_tokens
         response = await call_next(request)
         return response
 

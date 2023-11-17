@@ -11,7 +11,7 @@ from oar import VERSION
 from oar.lib.configuration import Configuration
 
 from .. import API_VERSION
-from ..auth import get_user
+from ..auth import get_token_data, need_authentication
 from ..dependencies import get_config
 from . import TimestampRoute
 
@@ -49,12 +49,24 @@ def version():
 
 
 @router.get("/whoami")
-def whoami(user: str = Depends(get_user)):
+def whoami(user: str = Depends(get_token_data)):
     """Give the name of the authenticated user seen by OAR API.
 
     The name for a not authenticated user is the null string.
     """
-    return {"authenticated_user": user}
+    return {"authenticated_user": user["user"]}
+
+
+@router.get("/check_token")
+async def read_users_me(
+    current_user: Annotated[str, Depends(get_token_data)],
+    auth_user: str = Depends(need_authentication),
+):
+    data = {"user": current_user["user"], "auth": "Token invalid or revoked"}
+    if auth_user:
+        data["auth"] = "Token valid"
+
+    return data
 
 
 @router.get("/timezone")
@@ -68,6 +80,7 @@ def timezone():
     return {}
 
 
+# FIXME: Is it still needed ?
 @router.get("/authentication")
 def authentication(
     basic_user: str, basic_password: str, config: Configuration = Depends(get_config)
@@ -96,9 +109,3 @@ def authentication(
         return {"basic authentication": "valid"}
 
     raise HTTPException(status_code=400, detail="basic authentication is not validated")
-
-
-@router.get("/me")
-async def read_users_me(current_user: Annotated[str, Depends(get_user)]):
-    data = {"user": current_user}
-    return data

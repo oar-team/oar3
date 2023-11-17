@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import os
+import tempfile
+from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -32,9 +36,47 @@ def assign_node_list(nodes):  # TODO TOREPLACE
     node_list = nodes
 
 
+banned_file = """
+{
+    "global" : "2023-11-16 18:30:00",
+    "revoked" : {
+        "bob" : "2023-11-25 18:30:00"
+    }
+}
+"""
+
+
+def write_banned_file(config):
+
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    banned_file = f"""
+        {{
+            "global" : "{now}",
+            "revoked" : {{
+                "old_token" : "{now}"
+            }}
+        }}
+    """
+
+    # Write content
+    print(f"{banned_file}", file=open(config["API_REVOKED_TOKENS"], "a"))
+
+
 @pytest.fixture()
 def fastapi_app(setup_config):
     config, logger, engine = setup_config
+
+    tempdir = tempfile.mkdtemp()
+    # Config for jwt
+    config[
+        "API_SECRET_KEY"
+    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+    config["API_SECRET_ALGORITHM"] = "HS256"
+    config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
+
+    config["API_REVOKED_TOKENS"] = os.path.join(tempdir, "tokens_revocation.json")
+    write_banned_file(config)
 
     app = create_app(config=config, engine=engine, logger=logger)
     yield app
@@ -45,9 +87,20 @@ def user_tokens(setup_config):
     config, _, _ = setup_config
     tokens = {}
 
+    now = datetime.utcnow()
+    expires_delta = timedelta(minutes=-15)
+    passed_date = now + expires_delta
+
     tokens["user1"] = create_access_token({"user": "user1"}, config)
     tokens["bob"] = create_access_token({"user": "bob"}, config)
     tokens["oar"] = create_access_token({"user": "oar"}, config)
+
+    tokens["globally_revoked_token"] = create_access_token(
+        {"user": "globally_revoked_token"}, config, now=passed_date
+    )
+    tokens["old_token"] = create_access_token(
+        {"user": "old_token"}, config, now=passed_date
+    )
 
     yield tokens
 
