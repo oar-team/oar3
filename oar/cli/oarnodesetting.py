@@ -55,7 +55,7 @@ def set_resources_properties(session, cmd_ret, resources, hostnames, properties)
                 cmd_ret.print_("Set property {} to '{}'...".format(name, value))
                 ret = set_resources_property(session, resources, hostnames, name, value)
                 cmd_ret.print_("{} resource(s) updated.".format(ret))
-                if ret <= 0:
+                if ret < 0:
                     cmd_ret.exit_values.append(9)
         else:
             cmd_ret.warning("Bad property syntax: {}\n".format(name_value))
