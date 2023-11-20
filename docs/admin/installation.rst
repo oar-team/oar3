@@ -65,6 +65,9 @@ ______________________________
         python3-zmq python3-psycopg2 python3-fastapi \
         python3-escapism python3-clustershell python3-rich
 
+        # To execute admin commands on noces
+        apt-get install taktuk
+
         # Install procset
         wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
         dpkg -i python3-procset_*.deb
@@ -110,6 +113,7 @@ Get the sources::
         cd oar3-${OAR_VERSION}
 
 Install the python sources::
+
         poetry build && pip install dist/*.whl
 
 Build/Install/Setup the OAR server::
@@ -239,6 +243,12 @@ server has the address <OAR_SERVER>, you can add the following lines in the
 Using Taktuk
 ~~~~~~~~~~~~
 
+.. note::
+
+   Taktuk is currently the recommended way to run admin commands on nodes.
+   Is should be possible to use other programs such as `clustershell  <https://clustershell.readthedocs.io/en/latest/index.html>`_.
+   Reach us on `github <https://github.com/oar-team/oar3/issues>`_ for questions.
+
 
 OAR3 uses taktuk for remote administration operations; you have to
 install it. You can find information about taktuk from its website:
@@ -247,12 +257,23 @@ http://taktuk.gforge.inria.fr.
 Then, you have to edit your oar configuration file and fill in the related
 parameters:
 
-  - ``TAKTUK_CMD`` (the path to the taktuk command)
-  - ``PINGCHECKER_TAKTUK_ARG_COMMAND`` (the command used to check resources states)
-  - ``SCHEDULER_NODE_MANAGER_SLEEP_CMD`` (command used for halting nodes)
+*Install taktuk*::
+
+        apt-get install taktuk
+
+Then update your `configuration`:
+
+- ``TAKTUK_CMD`` (the path to the taktuk command)
+- ``PINGCHECKER_TAKTUK_ARG_COMMAND`` (the command used to check resources states)
+- ``SCHEDULER_NODE_MANAGER_SLEEP_CMD`` (command used for halting nodes)
 
 CPUSET feature
 ~~~~~~~~~~~~~~
+
+.. warning::
+
+   Currently OAR3 is not compatible with cgroupv2. Make sure your nodes have cgroupv1 enabled.
+   On debian you can set the kernel parameter `systemd.unified_cgroup_hierarchy=0`.
 
 OAR uses the CPUSET features provided by the Linux kernel >= 2.6. This
 enables to restrict user processes to reserved processors only and provides
@@ -375,9 +396,6 @@ _____________________________
 
 **Instructions**
 
-On debian systems::
-
-
 Get the sources::
 
         export OAR_VERSION=3.0.0.dev7
@@ -385,6 +403,7 @@ Get the sources::
         cd oar3-${OAR_VERSION}
 
 Install the python sources::
+
         poetry build && pip install dist/*.whl
 
 Build/Install/setup::
