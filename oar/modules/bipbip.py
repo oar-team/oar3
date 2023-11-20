@@ -656,6 +656,7 @@ def main():  # pragma: no cover
             bipbip.run(session, config)
         except Exception as ex:
             import traceback
+
             log.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
