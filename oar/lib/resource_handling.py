@@ -423,7 +423,6 @@ def get_resource_job_to_frag(session, r_id):
         session.query(JobType.job_id)
         .filter(or_(JobType.type == "cosystem", JobType.type == "noop"))
         .filter(JobType.types_index == "CURRENT")
-        .subquery()
     )
 
     res = (

@@ -32,5 +32,6 @@ def cli(resource):
     if resource_ids:
         for resource_id in resource_ids:
             error, error_msg = remove_resource(session, resource_id)
-            cmd_ret.error(error_msg, error, error)
+            if error != 0:
+                cmd_ret.error(error_msg, error, error)
     cmd_ret.exit()
