@@ -218,7 +218,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             + host_to_connect_via_ssh
         )
         return_code = tools.run(
-            "strace -ff -o /tmp/log.txt " + cmd, shell=True
+            cmd, shell=True
         ).returncode
 
         exit_value = return_code >> 8

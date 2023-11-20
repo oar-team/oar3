@@ -569,6 +569,7 @@ class BipBip(object):
 
             check_end_of_job(
                 session,
+                config,
                 job_id,
                 self.oarexec_reattach_script_exit_value,
                 error,
@@ -655,8 +656,7 @@ def main():  # pragma: no cover
             bipbip.run(session, config)
         except Exception as ex:
             import traceback
-
-            self.logger.error(
+            log.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
                 )
@@ -669,6 +669,4 @@ def main():  # pragma: no cover
 
 if __name__ == "__main__":  # pragma: no cover
     exit_code = main()
-    if exit_code:
-        self.logger.error("Bipbip.run exit code is not null: {}".format(exit_code))
     sys.exit(exit_code)
