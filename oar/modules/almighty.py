@@ -157,8 +157,7 @@ def check_greta(greta, logger):
     # logger.info(f"greta: {stdout}\n{stderr}")
 
     logger.info(f"res: {res}")
-    # return res
-    return True
+    return res
 
 
 #
