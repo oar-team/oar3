@@ -455,6 +455,45 @@ must configure the SSH server on the frontends nodes with::
 With this configuration, users can launch X11 applications after a 'oarsub -I'
 on the given node or "oarsh -X node12".
 
+Admission rules
+~~~~~~~~~~~~~~~
+
+In OAR3 the admission rules can be written as plain files located in `/etc/oar/admission_rules.d` in the **frontend**.
+The files must start with an integer to be read by OAR, to disable a rule simply rename it with a non-integer prefix (for instance `OFF_`).
+
+*Update the oar configuration*::
+
+        # Add the following line to the configuration
+        ADMISSION_RULES_IN_FILES="yes"
+
+The rules are not yet automatically copied during the installation. 
+This is the list of the default admission rules available in `OAR3 repository <https://github.com/oar-team/oar3/tree/master/etc/oar/admission_rules.d>`_. 
+
+*Default admission rules*::
+
+        etc/oar/admission_rules.d
+        ├── 01_default_queue.py
+        ├── 02_prevent_root_oar_toSubmit.py
+        ├── 03_avoid_jobs_on_resources_in_drain_mode.py
+        ├── 04_submit_in_admin_queue.py
+        ├── 05_filter_bad_resources.py
+        ├── 06_besteffort_formatting.py
+        ├── 07_besteffort_advance_reservation.py
+        ├── 08_deploy_formatting.py
+        ├── 09_prevent_deploy_on_non-entire_nodes.py
+        ├── 11_advance_reservation_limitation.py
+        ├── 13_default_walltime.py
+        ├── 14_interactive_max_walltime.py
+        ├── 15_check_types.py
+        ├── OFF_12_perform_action_for_user.py
+        ├── OFF_16_default_resource_property.py
+        ├── OFF_20_job_properties_cpu.py
+        ├── OFF_20_job_properties_cputype.py
+        └── OFF_21_add_sequentiel_constraint.py
+
+
+
+
 Computing nodes
 ---------------
 

@@ -716,3 +716,7 @@ OARSTAT_DEFAULT_OUTPUT_FORMAT=2
 # The API will automatically append .<timestamp>.hdf5
 #API_COLMET_HDF5_PATH_PREFIX="/var/lib/colmet/hdf5/cluster"
 
+
+# Activate admission rules as files
+# The location for AR is /etc/oar/admission_rules.d
+ADMISSION_RULES_IN_FILES="yes"
