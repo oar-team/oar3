@@ -93,7 +93,7 @@ def show(
     config: Configuration = Depends(get_config),
 ):
     queryCollection = APIQueryCollection(db)
-    job = db.query(Job).get(job_id)
+    job = db.get(Job, job_id)
     data = job.asdict()
     if details and job:
         job = Job()
