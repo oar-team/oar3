@@ -258,9 +258,7 @@ def print_jobs(
         print(jobs)
 
 
-def print_accounting(
-    session, cmd_ret, accounting, user, sql_property
-):
+def print_accounting(session, cmd_ret, accounting, user, sql_property):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
