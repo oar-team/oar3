@@ -259,7 +259,7 @@ def print_jobs(
 
 
 def print_accounting(
-    session, cmd_ret, accounting, user, sql_property, format: Optional[str]
+    session, cmd_ret, accounting, user, sql_property
 ):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
