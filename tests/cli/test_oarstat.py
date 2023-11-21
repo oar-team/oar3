@@ -3,6 +3,7 @@ import json
 import re
 
 import pytest
+import yaml
 from click.testing import CliRunner
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -380,6 +381,37 @@ def test_oarstat_properties_json(minimal_db_initialization, setup_config):
     assert len(parsed_json[str(job_id)]) == 2
 
 
+def test_oarstat_properties_yaml(minimal_db_initialization, setup_config):
+    insert_terminated_jobs(minimal_db_initialization, update_accounting=False)
+    job_id = minimal_db_initialization.query(Job.id).first()[0]
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--properties", "--job", str(job_id), "-Y"],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
+    )
+    parsed_yaml = yaml.safe_load(result.output)
+    print(parsed_yaml)
+    assert job_id in parsed_yaml
+    assert len(parsed_yaml[job_id]) == 2
+
+
+def test_oarstat_properties_mutually_exclusive_format(
+    minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization, update_accounting=False)
+    job_id = minimal_db_initialization.query(Job.id).first()[0]
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--properties", "--job", str(job_id), "-Y", "-J"],
+        catch_exceptions=False,
+        obj=minimal_db_initialization,
+    )
+    assert result.exit_code == 2
+
+
 def test_oarstat_state(minimal_db_initialization, setup_config):
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
     runner = CliRunner()
@@ -389,6 +421,22 @@ def test_oarstat_state(minimal_db_initialization, setup_config):
     str_result = result.output
     print(str_result)
     assert re.match(".*Waiting.*", str_result)
+
+
+def test_oarstat_state_yaml(minimal_db_initialization, setup_config):
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["-Y"], obj=minimal_db_initialization, catch_exceptions=False
+    )
+    str_result = result.output
+    try:
+        parsed_json = yaml.safe_load(str_result)
+        assert len(parsed_json) == 2
+    except ValueError:
+        assert False
+    assert result.exit_code == 0
 
 
 def test_oarstat_state_json(minimal_db_initialization, setup_config):

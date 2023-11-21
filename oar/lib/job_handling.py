@@ -1152,9 +1152,10 @@ def update_scheduler_last_job_date(session, date, moldable_id):
 
     if dialect == "sqlite":
         subquery = (
-            session.query(AssignedResource.resource_id)
-            .filter_by(moldable_id=moldable_id)
-            .subquery()
+            session.query(AssignedResource.resource_id).filter_by(
+                moldable_id=moldable_id
+            )
+            # .subquery()
         )
         session.query(Resource).filter(Resource.id.in_(subquery)).update(
             {Resource.last_job_date: date}, synchronize_session=False
