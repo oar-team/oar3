@@ -49,12 +49,17 @@ def version():
 
 
 @router.get("/whoami")
-def whoami(user: str = Depends(get_token_data)):
+def whoami(data: str = Depends(get_token_data)):
     """Give the name of the authenticated user seen by OAR API.
 
     The name for a not authenticated user is the null string.
     """
-    return {"authenticated_user": user["user"]}
+    user = ""
+
+    if data:
+        user = data["user"]
+
+    return {"authenticated_user": user}
 
 
 @router.get("/check_token")
