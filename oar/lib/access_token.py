@@ -21,8 +21,6 @@ def create_access_token(
 
     to_encode.update({"exp": expire, "date": f"{now.strftime('%Y-%m-%d %H:%M:%S')}"})
 
-    print(to_encode)
-
     # to get a string like this run:
     # openssl rand -hex 32
     secret_key = config.get("API_SECRET_KEY", None)
