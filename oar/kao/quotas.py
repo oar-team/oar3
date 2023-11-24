@@ -746,15 +746,28 @@ class Quotas(object):
         return (True, "quotas ok", "", 0)
 
     @staticmethod
-    def check_slots_quotas(slots, sid_left, sid_right, job, job_nb_resources, duration):
+    def check_slots_quotas(
+        slots,
+        sid_left: int,
+        sid_right: int,
+        job,
+        job_nb_resources: int,
+        duration: int,
+    ):
         # loop over slot_set
-        slots_quotas = Quotas(slots[sid_left].quotas.rules)
+        slots_quotas: dict[int, Quotas] = {}
 
         sid = sid_left
         while True:
             slot = slots[sid]
+
+            if slot.quotas_rules_id not in slots_quotas:
+                slots_quotas[slot.quotas_rules_id] = Quotas(slots[sid].quotas.rules)
+
+            quotas = slots_quotas[slot.quotas_rules_id]
+
             # slot.quotas.show_counters('check_slots_quotas, b e: ' + str(slot.b) + ' ' + str(slot.e))
-            slots_quotas.combine(slot.quotas)
+            quotas.combine(slot.quotas)
 
             if sid == sid_right:
                 break
@@ -763,11 +776,16 @@ class Quotas(object):
                 if slot.next and (
                     slot.quotas_rules_id != slots[slot.next].quotas_rules_id
                 ):
-                    return (False, "different quotas rules over job's time", "", 0)
+                    logger.debug("job on two different quotas periods")
 
-        # print('slots b e :' + str(slots[sid_left].b) + " " + str(slots[sid_right].e))
-        slots_quotas.update(job, job_nb_resources, duration)
-        return slots_quotas.check(job)
+        for id, quotas in slots_quotas.items():
+            quotas.update(job, job_nb_resources, duration)
+            res = quotas.check(job)
+            if not res[0]:
+                return res
+
+        # return last one that should be a success anyway
+        return res
 
     def set_rules(self, rules_id):
         """Use for temporal calendar, when rules must be change from default"""

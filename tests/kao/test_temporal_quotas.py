@@ -604,3 +604,105 @@ def test_temporal_quotas_window_time_limit_reached(oar_conf):
 
     assert j1.res_set == ProcSet(*[(1, 24)])
     assert j2.res_set == ProcSet()
+
+
+# Testing jobs over multiple periods
+def test_temporal_quots_multi_periods_nb_resources(oar_conf):
+    config = oar_conf
+    config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
+    Quotas.enabled = True
+
+    rules = {
+        "periodical": [
+            ["* * * *", "quotas_1", "test1"],
+        ],
+        "oneshot": [],
+        "quotas_1": {"*,*,*,/": [24, -1, -1]},
+        "quotas_2": {"*,*,*,/": [8, -1, -1]},
+    }
+
+    res = ProcSet(*[(1, 32)])
+    ResourceSet.default_itvs = ProcSet(*res)
+
+    now = datetime.utcnow()
+
+    now_str = (now + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M")
+    then_str = (now + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M")
+
+    rules["oneshot"].append([now_str, then_str, "quotas_2", "not important"])
+
+    Quotas.calendar = Calendar(rules, config)
+
+    t0 = now
+    t1 = t0 + timedelta(seconds=14 * 86400)  # - 1
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), int(t0.timestamp()), int(t1.timestamp())))
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    # Job on two quotas period that should pass now
+    # because it respects the two quotas periods
+    j = JobPseudo(id=2, queue="default", user="toto", project="")
+    j.simple_req(("node", 1), 300, res)
+
+    # Job that doesn't pass the oneshot period (and there for should be delayed)
+    j1 = JobPseudo(id=3, queue="default", user="toto2", project="")
+    j1.simple_req(("node", 2), 300, res)
+
+    schedule_id_jobs_ct(all_ss, {j.id: j, j1.id: j1}, hy, [j.id, j1.id], 20)
+
+    print(f"job id: {j.id} starts at {datetime.fromtimestamp(j.start_time)}")
+
+    assert int(j.start_time) - int(t0.timestamp()) == 0
+    assert int(j1.start_time) - int(t0.timestamp()) > 0
+
+
+# Testing jobs over multiple periods
+def test_temporal_quots_multi_periods_nb_jobs(oar_conf):
+    config = oar_conf
+    config["QUOTAS_PERIOD"] = 3 * 7 * 86400  # 3 weeks
+    Quotas.enabled = True
+
+    rules = {
+        "periodical": [
+            ["* * * *", "quotas_1", "test1"],
+        ],
+        "oneshot": [],
+        "quotas_1": {"*,*,*,/": [-1, 2, -1]},
+        "quotas_2": {"*,*,*,/": [-1, 1, -1]},
+    }
+
+    res = ProcSet(*[(1, 32)])
+    ResourceSet.default_itvs = ProcSet(*res)
+
+    now = datetime.utcnow()
+
+    now_str = (now + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M")
+    then_str = (now + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M")
+
+    rules["oneshot"].append([now_str, then_str, "quotas_2", "not important"])
+
+    Quotas.calendar = Calendar(rules, config)
+
+    t0 = now
+    t1 = t0 + timedelta(seconds=14 * 86400)  # - 1
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*res), int(t0.timestamp()), int(t1.timestamp())))
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    # Job on two quotas period that should pass now
+    # because it respects the two quotas periods
+    j = JobPseudo(id=2, queue="default", user="toto", project="")
+    j.simple_req(("node", 1), 300, res)
+
+    # Job that doesn't pass the oneshot period (and there for should be delayed)
+    j1 = JobPseudo(id=3, queue="default", user="toto", project="")
+    j1.simple_req(("node", 2), 300, res)
+
+    schedule_id_jobs_ct(all_ss, {j.id: j, j1.id: j1}, hy, [j.id, j1.id], 20)
+
+    print(f"job id: {j.id} starts at {datetime.fromtimestamp(j.start_time)}")
+
+    assert int(j.start_time) - int(t0.timestamp()) == 0
+    assert int(j1.start_time) - int(t0.timestamp()) > 0
