@@ -67,7 +67,7 @@ class Calendar(object):
         if "periodical" in json_quotas:
             default = None
             for p in json_quotas["periodical"]:
-                if p[0] == "*,*,*,*" or p[0] == "default":
+                if p[0] == "* * * *" or p[0] == "default":
                     default = self.quotas_rules2id[p[1]]
                 else:
                     self.periodical_fromJson(p)
@@ -87,7 +87,7 @@ class Calendar(object):
                             t,
                             t1 - t,
                             default,
-                            "*,*,*,*",
+                            "* * * *",
                         )
                         self.nb_periodicals += 1
                     t = t1 + duration

@@ -57,7 +57,7 @@ rules_example_simple = {
 
 rules_default_example = {
     "periodical": [
-        ["*,*,*,*", "quotas_night_weekend", "workdays"],
+        ["* * * *", "quotas_night_weekend", "workdays"],
         ["08:00-19:00 mon-fri * *", "quotas_workday", "workdays"],
     ],
     "quotas_workday": {"*,*,*,john": [100, -1, -1], "*,projA,*,*": [200, -1, -1]},
@@ -66,7 +66,7 @@ rules_default_example = {
 
 rules_only_default_example = {
     "periodical": [
-        ["*,*,*,*", "quotas_workday", "workdays"],
+        ["* * * *", "quotas_workday", "workdays"],
     ],
     "quotas_workday": {
         "*,*,*,john": [100, -1, -1],
