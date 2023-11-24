@@ -97,7 +97,7 @@ class Calendar(object):
                         t,
                         7 * 86400 - t,
                         default,
-                        "*,*,*,*",
+                        "* * * *",
                     )
                     self.nb_periodicals += 1
                 # reorder the all

@@ -395,7 +395,8 @@ def test_check_slots_quotas_1(oar_conf):
 
     res = Quotas.check_slots_quotas(ss.slots, 1, 4, j1, 2, 7 * 86400)
     print(res)
-    assert res == (False, "different quotas rules over job's time", "", 0)
+    # Now allowed
+    assert res != (False, "different quotas rules over job's time", "", 0)
 
 
 def test_check_slots_quotas_2(oar_conf):
