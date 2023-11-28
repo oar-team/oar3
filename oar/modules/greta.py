@@ -15,12 +15,12 @@ commands are started at a time.
 This module is responsible of waking up / shutting down nodes
 when the scheduler decides it (writes it on a named pipe)
 
-`CHECK` command is sent on the zmq PULL socket to :mod:`oar.modules.hulot` from different modules:
+`CHECK` command is sent on the zmq PULL socket to :mod:`oar.modules.greta` from different modules:
 
 - By :mod:`oar.kao.meta_sched` if there is no node to wake up / shut down in order.
     - to check timeout and check memorized nodes list <TODO>
     - to check booting nodes status
-- TOFINISH: Hulot will integrate window guarded launching processes
+- TOFINISH: Greta will integrate window guarded launching processes
 - By windowForker module:
     - to avoid zombie process
     - to messages received in queue (IPC)
@@ -59,7 +59,7 @@ from oar.lib.node import (
 )
 
 config, db, log = init_oar(no_db=True)
-logger = get_logger("oar.modules.hulot", forward_stderr=True)
+logger = get_logger("oar.modules.greta", forward_stderr=True)
 
 
 # Fill the timeouts hash with the different timeouts
@@ -108,8 +108,8 @@ def get_timeout(timeouts, nb_nodes):
     return timeout
 
 
-class HulotClient(object):
-    """Hulot client part used by metascheduler to interact with Hulot server"""
+class GretaClient(object):
+    """Greta client part used by metascheduler to interact with Greta server"""
 
     def __init__(self, config, logger):
         self.logger = logger
@@ -119,13 +119,13 @@ class HulotClient(object):
         self.socket = self.context.socket(zmq.PUSH)
         self.socket.setsockopt(
             zmq.LINGER, 5000
-        )  # To allow client program exit if Hulot is not ready
+        )  # To allow client program exit if Greta is not ready
         try:
             self.socket.connect(
-                "tcp://" + config["HULOT_SERVER"] + ":" + str(config["HULOT_PORT"])
+                "tcp://" + config["GRETA_SERVER"] + ":" + str(config["GRETA_PORT"])
             )
         except Exception as e:
-            logger.error(f"Failed to connect to Hulot: {e}")
+            logger.error(f"Failed to connect to Greta: {e}")
             exit(1)
 
     def check_nodes(self):
@@ -138,9 +138,9 @@ class HulotClient(object):
         self.socket.send_json({"cmd": "WAKEUP", "nodes": nodes})
 
 
-class Hulot(object):
+class Greta(object):
     def __init__(self, config, logger):
-        logger.info("Initiating Hulot, the energy saving module")
+        logger.info("Initiating Greta, the energy saving module")
         self.logger = logger
         self.config: Configuration = config
 
@@ -148,19 +148,19 @@ class Hulot(object):
         # Intialize zeromq context
         self.context = zmq.Context()
         # IP addr is required when bind function is used on zmq socket
-        ip_addr_hulot = socket.gethostbyname(config["HULOT_SERVER"])
+        ip_addr_greta = socket.gethostbyname(config["GRETA_SERVER"])
         self.socket = self.context.socket(zmq.PULL)
         try:
-            self.socket.bind("tcp://" + ip_addr_hulot + ":" + str(config["HULOT_PORT"]))
+            self.socket.bind("tcp://" + ip_addr_greta + ":" + str(config["GRETA_PORT"]))
         except Exception as e:
-            logger.error(f"Failed to bind Hulot endpoint: {e}")
+            logger.error(f"Failed to bind Greta endpoint: {e}")
             exit(1)  #
 
         # self.executors_socket = self.context.socket(zmq.PULL)
         # try:
         #    self.socket.bind('ipc://tmp/oar_executor_notification')
         # except:
-        #    logger.error('Failed to bind Hulot endpoint to receive executor notifications')
+        #    logger.error('Failed to bind Greta endpoint to receive executor notifications')
         #    exit(1)
 
         # self.executors_socket.RCVTIMEO = 0 # Set to non-blocking socket
@@ -178,20 +178,20 @@ class Hulot(object):
         # Load state if exists
         self.nodes_list_command_running = {}
         self.nodes_list_to_remind = {}
-        self.hulot_status_dump_name = (
-            config["OAR_RUNTIME_DIRECTORY"] + "hulot_status.dump"
+        self.greta_status_dump_name = (
+            config["OAR_RUNTIME_DIRECTORY"] + "greta_status.dump"
         )
-        if os.path.isfile(self.hulot_status_dump_name):
-            with open(self.hulot_status_dump_name, "rb") as f:
-                hulot_status_dump = pickle.load(f)
-                self.nodes_list_command_running = hulot_status_dump[
+        if os.path.isfile(self.greta_status_dump_name):
+            with open(self.greta_status_dump_name, "rb") as f:
+                greta_status_dump = pickle.load(f)
+                self.nodes_list_command_running = greta_status_dump[
                     "nodes_list_running"
                 ]
-                self.nodes_list_to_remind = hulot_status_dump["nodes_list_to_remind"]
+                self.nodes_list_to_remind = greta_status_dump["nodes_list_to_remind"]
 
                 # with open('obj/'+ name + '.pkl', 'wb') as f:
                 #
-            os.remove(self.hulot_status_dump_name)
+            os.remove(self.greta_status_dump_name)
 
         # Init keepalive values ie construct a hash:
         #      sql properties => number of nodes to keepalive
@@ -238,7 +238,7 @@ class Hulot(object):
         logger = self.logger
         config = self.config
 
-        logger.info("Starting Hulot's main loop")
+        logger.info("Starting Greta's main loop")
         nodes_list_to_process = {}
         nodes_list_to_remind = self.nodes_list_to_remind
         #  Node list with active command running (HALT or WAKEUP)
@@ -490,7 +490,7 @@ class Hulot(object):
                         # Change state node to "Absent" and halt it
                         change_node_state(session, node, "Absent", config)
                         logger.debug(
-                            "Hulot module puts node '"
+                            "Greta module puts node '"
                             + node
                             + "' in energy saving mode (state: Absent/StandBy)"
                         )
@@ -520,19 +520,19 @@ class Hulot(object):
             # Cleaning the list to process
             nodes_list_to_process = {}
 
-            # From Hulot.pm
-            # Suicide to workaround eventual memory leaks. Almighty will restart hulot.
+            # From Greta.pm
+            # Suicide to workaround eventual memory leaks. Almighty will restart greta.
             # TODO ? do we need it ?
             count_cycles += 1
 
             if count_cycles >= config["ENERGY_MAX_CYCLES_UNTIL_REFRESH"]:
                 # Save state
-                with open(self.hulot_status_dump_name, "wb") as dump_file:
-                    hulot_status_dump = {
+                with open(self.greta_status_dump_name, "wb") as dump_file:
+                    greta_status_dump = {
                         "nodes_list_running": nodes_list_command_running,
                         "nodes_list_to_remind": nodes_list_to_remind,
                     }
-                    pickle.dump(hulot_status_dump, dump_file, pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(greta_status_dump, dump_file, pickle.HIGHEST_PROTOCOL)
                 return 42
 
             if not loop:
@@ -621,7 +621,7 @@ class WindowForker(object):
                     message = (
                         "Node "
                         + node
-                        + " was suspected because an error occurred with a command launched by Hulot"
+                        + " was suspected because an error occurred with a command launched by Greta"
                     )
                     add_new_event_with_host(
                         session, "LOG_SUSPECTED", 0, message, [node]
@@ -642,7 +642,7 @@ class WindowForker(object):
                         message = (
                             "Node "
                             + node
-                            + " was suspected because shutdown command launched by Hulot timeouted"
+                            + " was suspected because shutdown command launched by Greta timeouted"
                         )
                         add_new_event_with_host(
                             session, "LOG_SUSPECTED", 0, message, [node]
@@ -656,14 +656,14 @@ class WindowForker(object):
 def main():  # pragma: no cover
     config = init_config()
 
-    logger = get_logger("oar.modules.hulot", config=config, forward_stderr=True)
+    logger = get_logger("oar.modules.greta", config=config, forward_stderr=True)
 
-    hulot = Hulot(config, logger)
+    greta = Greta(config, logger)
 
-    if hulot.exit_code:
-        return hulot.exit_code
+    if greta.exit_code:
+        return greta.exit_code
 
-    return hulot.run()
+    return greta.run()
 
 
 if __name__ == "__main__":  # pragma: no cover

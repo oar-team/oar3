@@ -24,7 +24,7 @@ click.disable_unicode_literals_warning = True
 
 
 def check_property_name(cmd_ret, prop_name, quiet=False):
-    if not prop_name.isalpha():
+    if not prop_name.isascii():
         if not quiet:
             cmd_ret.error("'{}' is not a valid property name".format(prop_name))
         return True

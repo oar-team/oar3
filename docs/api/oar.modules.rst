@@ -47,10 +47,10 @@ oar.modules.finaud
    :undoc-members:
    :show-inheritance:
 
-oar.modules.hulot
+oar.modules.greta
 ------------------------
 
-.. automodule:: oar.modules.hulot
+.. automodule:: oar.modules.greta
    :members:
    :undoc-members:
    :show-inheritance:

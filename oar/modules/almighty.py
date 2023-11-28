@@ -55,7 +55,7 @@ nodeChangeState_command = os.path.join(binpath, "oar-node-change-state")
 
 proxy_appendice_command = os.path.join(binpath, "oar-appendice-proxy")
 bipbip_commander = os.path.join(binpath, "oar-bipbip-commander")
-hulot_command = os.path.join(binpath, "oar-hulot")
+greta_command = os.path.join(binpath, "oar-greta")
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -124,41 +124,40 @@ def launch_command(command):
     return return_code
 
 
-def start_hulot() -> tools.Popen:
-    """Start :mod:`oar.kao.hulot`"""
-    command = hulot_command
+def start_greta() -> tools.Popen:
+    """Start :mod:`oar.kao.greta`"""
+    command = greta_command
     logger.debug("Launching command : [" + command + "]")
 
-    hulot = tools.Popen(command)
+    greta = tools.Popen(command)
     try:
-        stdout, stderr = hulot.communicate(timeout=10)
-        logger.info(f"hulot: {stdout}\n{stderr}")
+        stdout, stderr = greta.communicate(timeout=10)
+        logger.info(f"greta: {stdout}\n{stderr}")
     except Exception as e:
-        logger.info(f"hulot: {e}")
+        logger.info(f"greta: {e}")
         pass
 
-    return hulot
+    return greta
 
 
-def check_hulot(hulot, logger):
-    """Check the presence hulot process"""
-    logger.debug(f"checking if Hulot is still alive: pid:{hulot.pid}")
+def check_greta(greta, logger):
+    """Check the presence greta process"""
+    logger.debug(f"checking if Greta is still alive: pid:{greta.pid}")
 
-    res = tools.check_process(hulot.pid, logger)
+    res = tools.check_process(greta.pid, logger)
 
     try:
-        stdout, stderr = hulot.communicate(timeout=0)
-        logger.info(f"hulot communicated: {stdout}\n{stderr}")
+        stdout, stderr = greta.communicate(timeout=0)
+        logger.info(f"greta communicated: {stdout}\n{stderr}")
     except Exception as e:
-        logger.info(f"hulot exception: {e}")
+        logger.info(f"greta exception: {e}")
         pass
 
-    # stdout, stderr = hulot.communicate(timeout=0)
-    # logger.info(f"hulot: {stdout}\n{stderr}")
+    # stdout, stderr = greta.communicate(timeout=0)
+    # logger.info(f"greta: {stdout}\n{stderr}")
 
     logger.info(f"res: {res}")
-    # return res
-    return True
+    return res
 
 
 #
@@ -208,12 +207,12 @@ class Almighty(object):
 
         self.set_appendice_timeout(read_commands_timeout)
 
-        # Starting of Hulot, the Energy saving module
-        self.hulot = None
+        # Starting of Greta, the Energy saving module
+        self.greta = None
         if self.config["ENERGY_SAVING_INTERNAL"] == "yes":
-            logger.info("Energy saving internal mode: Starting up Hulot")
-            self.hulot = start_hulot()
-            logger.info(f"{self.hulot}")
+            logger.info("Energy saving internal mode: Starting up Greta")
+            self.greta = start_greta()
+            logger.info(f"{self.greta}")
 
         self.lastscheduler = 0
         self.lastvillains = 0
@@ -377,10 +376,10 @@ class Almighty(object):
                 # TODO: send_log_by_email("Stop OAR server", "[Almighty] Stop Almighty")
                 return 10
 
-            # We check Hulot
-            if self.hulot and not check_hulot(self.hulot, logger):
-                logger.warning("Energy saving module (hulot) died. Restarting it.")
-                self.hulot = start_hulot()
+            # We check Greta
+            if self.greta and not check_greta(self.greta, logger):
+                logger.warning("Energy saving module (greta) died. Restarting it.")
+                self.greta = start_greta()
             # QGET
             elif self.state == "Qget":
                 # if len(self.command_queue) > 0:
@@ -435,14 +434,14 @@ class Almighty(object):
                         self.state = "Scheduler"
                     elif check_result == 0:
                         # Launch the scheduler
-                        # We check Hulot just before starting the scheduler
+                        # We check Greta just before starting the scheduler
                         # because if the pipe is not read, it may freeze oar
-                        if (energy_pid > 0) and not check_hulot(self.hulot, logger):
+                        if (energy_pid > 0) and not check_greta(self.greta, logger):
                             logger.warning(
-                                "Energy saving module (hulot) died. Restarting it."
+                                "Energy saving module (greta) died. Restarting it."
                             )
                             time.sleep(5)
-                            start_hulot()
+                            start_greta()
 
                         scheduler_result = self.meta_scheduler()
                         self.lastscheduler = tools.get_time()

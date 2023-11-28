@@ -12,7 +12,8 @@ from oar.lib.configuration import Configuration
 # from oar.lib import config
 from oar.lib.job_handling import get_job
 
-from ..dependencies import get_config, get_db, need_authentication
+from ..auth import need_authentication
+from ..dependencies import get_config, get_db
 from ..proxy_utils import (
     acquire_lock,
     add_traefik_rule,

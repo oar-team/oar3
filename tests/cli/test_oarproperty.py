@@ -79,7 +79,7 @@ def test_oarproperty_add_error1(minimal_db_initialization, setup_config):
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["-a", "f#a:ncy"],
+        ["-a", "f#a:ncy²"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, engine, config),
     )

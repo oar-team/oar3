@@ -40,7 +40,7 @@ install: install_shared
 	install -m 0755 $(SRCDIR)/tools/oarprint $(DESTDIR)$(BINDIR)/oarprint
 	for file in oar-almighty oar-appendice-proxy oar-bipbip-commander \
 		oar-sarko oar-finaud oar-leon oar-bipbip oar-node-change-state \
-		.oarproperty oar-hulot kao kamelot kamelot-fifo \
+		.oarproperty oar-greta kao kamelot kamelot-fifo \
 		.oarremoveresource .oaraccounting .oarconnect \
 		.oarnodes .oardel .oarstat .oarsub .oarhold .oarresume .oarwalltime;\
 	do \

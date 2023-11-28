@@ -2,8 +2,8 @@
 import datetime
 import re
 import sys
-from json import dumps
-from typing import Generator, List
+from json import dumps as json_dumps
+from typing import Generator, List, Optional
 
 import click
 from ClusterShell.NodeSet import NodeSet
@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
 from sqlalchemy.orm import scoped_session, sessionmaker
+from yaml import dump as yaml_dump
 
 import oar.lib.tools as tools
 from oar import VERSION
@@ -36,6 +37,7 @@ from oar.lib.tools import (
     sql_to_local,
 )
 
+from . import MutuallyExclusiveOption
 from .utils import CommandReturns
 
 console = Console()
@@ -201,7 +203,9 @@ def print_table(
     console.print(table)
 
 
-def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
+def print_jobs(
+    session, legacy, jobs, format: Optional[str], show_resources=False, full=False
+):
     console = Console()
     queryCollection = BaseQueryCollection(session)
 
@@ -214,18 +218,21 @@ def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
                 )
                 job.network_adresses = nodes
 
-    if json:
+    if format:
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
         jobs_properties = [
             {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
         ]
 
-        if json:
-            for job in jobs_properties:
-                to_dump[job["id"]] = job
+        for job in jobs_properties:
+            to_dump[job["id"]] = job
 
-            console.print_json(dumps(to_dump))
+        if format == "json":
+            console.print_json(json_dumps(to_dump))
+
+        if format == "yaml":
+            console.print(yaml_dump(to_dump))
 
     elif legacy and full:
         for job in jobs:
@@ -251,7 +258,7 @@ def print_jobs(session, legacy, jobs, json, show_resources=False, full=False):
         print(jobs)
 
 
-def print_accounting(session, cmd_ret, accounting, user, sql_property, json=False):
+def print_accounting(session, cmd_ret, accounting, user, sql_property):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
@@ -337,13 +344,13 @@ def print_accounting(session, cmd_ret, accounting, user, sql_property, json=Fals
         cmd_ret.exit()
 
 
-def print_events(session, cmd_ret, job_ids, array_id, json):
+def print_events(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     if array_id:
         job_ids = get_array_job_ids(session, array_id)
 
     if job_ids:
         events = get_jobs_events(session, job_ids)
-        if not json:
+        if not format:
 
             def gather_events(_, events, extra_args={}):
                 yield ["Date", "job id", "Type", "Description"]
@@ -367,13 +374,17 @@ def print_events(session, cmd_ret, job_ids, array_id, json):
                     "description": str(event.description),
                 }
                 events_per_jobs[str(event.job_id)].append(event_dict)
-            print(dumps(events_per_jobs))
+
+            if format == "json":
+                print(json_dumps(events_per_jobs))
+            if format == "yaml":
+                print(yaml_dump(events_per_jobs))
 
     else:
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(session, cmd_ret, job_ids, array_id, json):
+def print_properties(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     if array_id:
         job_ids = get_array_job_ids(session, array_id)
 
@@ -400,8 +411,10 @@ def print_properties(session, cmd_ret, job_ids, array_id, json):
             )
 
         # If json, the `properties_for_job` is ready to be dumped
-        if json:
-            print(dumps(properties_for_job))
+        if format and format == "json":
+            print(json_dumps(properties_for_job))
+        elif format and format == "yaml":
+            print(yaml_dump(properties_for_job))
         else:
             # For normal print, all resources are printed in a new line regardless of their jobs
             # First flatten the properties into an array
@@ -423,20 +436,24 @@ def print_properties(session, cmd_ret, job_ids, array_id, json):
         cmd_ret.warning("No job ids specified")
 
 
-def print_state(session, cmd_ret, job_ids, array_id, json):
+def print_state(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     # TODO json mode
     if array_id:
         job_ids = get_array_job_ids(session, array_id)
     if job_ids:
         job_ids_state = get_jobs_state(session, job_ids)
-        if json:
+        if format:
             json_dict = {}
             for i, job_id_state in enumerate(job_ids_state):
                 job_id, state = job_id_state
                 json_dict[str(job_id)] = state
                 # print('"{}" : "{}"{}'.format(job_id, state, comma))
             # import pdb; pdb.set_trace()
-            print(dumps(json_dict))
+            if format == "json":
+                print(json_dumps(json_dict))
+            if format == "yaml":
+                print(yaml_dump(json_dict))
+
         else:
             for job_id_state in get_jobs_state(session, job_ids):
                 job_id, state = job_id_state
@@ -516,7 +533,22 @@ class UserOption(click.Command):
     type=click.STRING,
     help="restricts display by applying the SQL where clause on the table jobs (ex: \"project = 'p1'\")",
 )
-@click.option("-J", "--json", is_flag=True, help="print result in JSON format")
+@click.option(
+    "-J",
+    "--json",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["yaml"],
+    help="print result in JSON format",
+)
+@click.option(
+    "-Y",
+    "--yaml",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["json"],
+    help="print result in YAML format",
+)
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
 @click.pass_context
 def cli(
@@ -534,6 +566,7 @@ def cli(
     accounting,
     sql,
     json,
+    yaml,
     version,
 ):
 
@@ -563,6 +596,12 @@ def cli(
         print_accounting(session, cmd_ret, accounting, user, sql)
         cmd_ret.exit()
 
+    format = None
+    if json:
+        format = "json"
+    if yaml:
+        format = "yaml"
+
     job_ids = job
     array_id = array
     if job_ids and array_id:
@@ -574,11 +613,11 @@ def cli(
         cmd_ret.exit()
 
     if events:
-        print_events(session, cmd_ret, job_ids, array_id, json)
+        print_events(session, cmd_ret, job_ids, array_id, format)
     elif properties:
-        print_properties(session, cmd_ret, job_ids, array_id, json)
+        print_properties(session, cmd_ret, job_ids, array_id, format)
     elif state:
-        print_state(session, cmd_ret, job_ids, array_id, json)
+        print_state(session, cmd_ret, job_ids, array_id, format)
     else:
         start_time = None
         stop_time = None
@@ -599,6 +638,6 @@ def cli(
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
 
-        print_jobs(session, True, jobs, json, show_resources, full)
+        print_jobs(session, True, jobs, format, show_resources, full)
 
     cmd_ret.exit()

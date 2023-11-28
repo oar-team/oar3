@@ -28,7 +28,7 @@ fakezmq = FakeZmq()
 fakezmq.reset()
 
 quotas_simple_temporal_rules = {
-    "periodical": [["*,*,*,*", "quotas_1", "default"]],
+    "periodical": [["* * * *", "quotas_1", "default"]],
     "quotas_1": {"*,*,*,/": [1, -1, -1]},
     "quotas_2": {"*,*,*,/": [-1, -1, -1]},
 }

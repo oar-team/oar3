@@ -65,6 +65,9 @@ ______________________________
         python3-zmq python3-psycopg2 python3-fastapi \
         python3-escapism python3-clustershell python3-rich
 
+        # To execute admin commands on noces
+        apt-get install taktuk
+
         # Install procset
         wget http://ftp.de.debian.org/debian/pool/main/p/python-procset/python3-procset_1.0-2_all.deb
         dpkg -i python3-procset_*.deb
@@ -110,6 +113,7 @@ Get the sources::
         cd oar3-${OAR_VERSION}
 
 Install the python sources::
+
         poetry build && pip install dist/*.whl
 
 Build/Install/Setup the OAR server::
@@ -239,6 +243,12 @@ server has the address <OAR_SERVER>, you can add the following lines in the
 Using Taktuk
 ~~~~~~~~~~~~
 
+.. note::
+
+   Taktuk is currently the recommended way to run admin commands on nodes.
+   Is should be possible to use other programs such as `clustershell  <https://clustershell.readthedocs.io/en/latest/index.html>`_.
+   Reach us on `github <https://github.com/oar-team/oar3/issues>`_ for questions.
+
 
 OAR3 uses taktuk for remote administration operations; you have to
 install it. You can find information about taktuk from its website:
@@ -247,12 +257,23 @@ http://taktuk.gforge.inria.fr.
 Then, you have to edit your oar configuration file and fill in the related
 parameters:
 
-  - ``TAKTUK_CMD`` (the path to the taktuk command)
-  - ``PINGCHECKER_TAKTUK_ARG_COMMAND`` (the command used to check resources states)
-  - ``SCHEDULER_NODE_MANAGER_SLEEP_CMD`` (command used for halting nodes)
+*Install taktuk*::
+
+        apt-get install taktuk
+
+Then update your `configuration`:
+
+- ``TAKTUK_CMD`` (the path to the taktuk command)
+- ``PINGCHECKER_TAKTUK_ARG_COMMAND`` (the command used to check resources states)
+- ``SCHEDULER_NODE_MANAGER_SLEEP_CMD`` (command used for halting nodes)
 
 CPUSET feature
 ~~~~~~~~~~~~~~
+
+.. warning::
+
+   Currently OAR3 is not compatible with cgroupv2. Make sure your nodes have cgroupv1 enabled.
+   On debian you can set the kernel parameter `systemd.unified_cgroup_hierarchy=0`.
 
 OAR uses the CPUSET features provided by the Linux kernel >= 2.6. This
 enables to restrict user processes to reserved processors only and provides
@@ -296,7 +317,7 @@ To activate this feature, you have to:
 
 You need to restart OAR each time you change an ``ENERGY_*`` variable.
 More informations are available inside the oar.conf file itself. For more
-details about the mechanism, take a look at the "Hulot" module documentation.
+details about the mechanism, take a look at the "Greta" module documentation.
 
 Disabling SELinux
 ~~~~~~~~~~~~~~~~~
@@ -375,9 +396,6 @@ _____________________________
 
 **Instructions**
 
-On debian systems::
-
-
 Get the sources::
 
         export OAR_VERSION=3.0.0.dev7
@@ -385,6 +403,7 @@ Get the sources::
         cd oar3-${OAR_VERSION}
 
 Install the python sources::
+
         poetry build && pip install dist/*.whl
 
 Build/Install/setup::
@@ -435,6 +454,45 @@ must configure the SSH server on the frontends nodes with::
 
 With this configuration, users can launch X11 applications after a 'oarsub -I'
 on the given node or "oarsh -X node12".
+
+Admission rules
+~~~~~~~~~~~~~~~
+
+In OAR3 the admission rules can be written as plain files located in `/etc/oar/admission_rules.d` in the **frontend**.
+The files must start with an integer to be read by OAR, to disable a rule simply rename it with a non-integer prefix (for instance `OFF_`).
+
+*Update the oar configuration*::
+
+        # Add the following line to the configuration
+        ADMISSION_RULES_IN_FILES="yes"
+
+The rules are not yet automatically copied during the installation. 
+This is the list of the default admission rules available in `OAR3 repository <https://github.com/oar-team/oar3/tree/master/etc/oar/admission_rules.d>`_. 
+
+*Default admission rules*::
+
+        etc/oar/admission_rules.d
+        ├── 01_default_queue.py
+        ├── 02_prevent_root_oar_toSubmit.py
+        ├── 03_avoid_jobs_on_resources_in_drain_mode.py
+        ├── 04_submit_in_admin_queue.py
+        ├── 05_filter_bad_resources.py
+        ├── 06_besteffort_formatting.py
+        ├── 07_besteffort_advance_reservation.py
+        ├── 08_deploy_formatting.py
+        ├── 09_prevent_deploy_on_non-entire_nodes.py
+        ├── 11_advance_reservation_limitation.py
+        ├── 13_default_walltime.py
+        ├── 14_interactive_max_walltime.py
+        ├── 15_check_types.py
+        ├── OFF_12_perform_action_for_user.py
+        ├── OFF_16_default_resource_property.py
+        ├── OFF_20_job_properties_cpu.py
+        ├── OFF_20_job_properties_cputype.py
+        └── OFF_21_add_sequentiel_constraint.py
+
+
+
 
 Computing nodes
 ---------------

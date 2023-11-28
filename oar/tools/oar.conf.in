@@ -504,7 +504,7 @@ ENERGY_SAVING_INTERNAL="no"
 #ENERGY_SAVING_NODES_KEEPALIVE="type='default':10"
 # Example 2: keep alive 4 nodes on the paradent cluster AND 6 nodes on the 
 # paraquad cluster AND 2 nodes accepting besteffort
-#ENERGY_SAVING_NODES_KEEPALIVE="cluster='paradent':4 & cluster='paraquad':6 & besteffort='YES':2"
+#ENERGY_SAVING_NODES_KEEPALIVE="cluster='paradent':4,cluster='paraquad':6,besteffort='YES':2"
 # By default, keepalive is disabled:
 #ENERGY_SAVING_NODES_KEEPALIVE="type='default':0"
 
@@ -716,3 +716,7 @@ OARSTAT_DEFAULT_OUTPUT_FORMAT=2
 # The API will automatically append .<timestamp>.hdf5
 #API_COLMET_HDF5_PATH_PREFIX="/var/lib/colmet/hdf5/cluster"
 
+
+# Activate admission rules as files
+# The location for AR is /etc/oar/admission_rules.d
+ADMISSION_RULES_IN_FILES="yes"

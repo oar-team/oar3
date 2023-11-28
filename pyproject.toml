@@ -21,7 +21,7 @@ oar-database-manage = 'oar.cli.db.commands.manage:cli'
 oar-almighty = 'oar.modules.almighty:main'
 oar-bipbip-commander = 'oar.modules.bipbip_commander:main'
 oar-appendice-proxy = 'oar.modules.appendice_proxy:main'
-oar-hulot = 'oar.modules.hulot:main'
+oar-greta = 'oar.modules.greta:main'
 '.oarsub' = 'oar.cli.oarsub:cli'
 '.oarstat' = 'oar.cli.oarstat:cli'
 '.oardel' = 'oar.cli.oardel:cli'
@@ -63,7 +63,7 @@ requests = ">=2.24.0"
 procset = "^1.0"
 simplejson = "^3.17.2"
 psutil = "^5.8.0"
-passlib = "^1.7.4"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 escapism = "^1.0.1"
 toml = ">0.10.0"
 fastapi = ">0.68.0"
@@ -76,6 +76,8 @@ ptpython = "^3.0.20"
 rich = ">=12.5, <=13.5.5"
 ClusterShell = ">=1.8"
 httpx = ">=0.23.0"
+bcrypt = "^4.0.1"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 
 [tool.poetry.dev-dependencies]
 zerorpc = "^0.6.3"
@@ -91,6 +93,9 @@ pre-commit = "^2.12.1"
 simpy = "^4.0.1"
 redis = "^3.5.3"
 
+
+[tool.poetry.group.docs.dependencies]
+sphinx-rtd-theme = "^1.3.0"
 
 [tool.black]
 line-length = 88

@@ -6,6 +6,7 @@ import re
 import signal as sysig
 import socket
 import sys
+from typing import Optional
 
 import click
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -13,6 +14,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.cli.oardel import oardel
+from oar.lib.access_token import create_access_token
 from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_current_moldable_job,
@@ -40,6 +42,14 @@ def init_tcp_server():
     sock.bind(("0.0.0.0", 0))
     sock.listen(5)
     return sock
+
+
+def create_api_token(config) -> Optional[str]:
+    luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
+    if luser:
+        return create_access_token({"user": luser}, config)
+    else:
+        return None
 
 
 def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
@@ -207,9 +217,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             + " via the node "
             + host_to_connect_via_ssh
         )
-        return_code = tools.run(
-            "strace -ff -o /tmp/log.txt " + cmd, shell=True
-        ).returncode
+        return_code = tools.run(cmd, shell=True).returncode
 
         exit_value = return_code >> 8
         if exit_value == 2:
@@ -291,6 +299,13 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
 )
 @click.option(
     "-C", "--connect", type=int, help="Connect to a reservation in Running state."
+)
+@click.option(
+    "-T",
+    "--api-token",
+    is_flag=True,
+    help="""Get an api token to be authenticated with the rest api
+        This token must be secret and giving this token is the same as giving access to your account.""",
 )
 @click.option("--array", type=int, help="Specify an array job with 'number' subjobs")
 @click.option(
@@ -405,6 +420,7 @@ def cli(
     resource,
     reservation,
     connect,
+    api_token,
     type,
     checkpoint,
     property,
@@ -501,6 +517,11 @@ def cli(
     # print OAR version
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
+        cmd_ret.exit()
+
+    if api_token:
+        token = create_api_token(config)
+        cmd_ret.print_(f"OAR_API_TOKEN={token}")
         cmd_ret.exit()
 
     # Check the default name of the key if we have to generate it
@@ -643,7 +664,11 @@ def cli(
     # Launch the checked submission
     (error, job_id_lst) = submission.submit(session, config)
 
-    if error[0] != 0:
+    # Admission rule failed
+    if error[0] == -2:
+        cmd_ret.print_(f"# ADMISSION RULE> {error[1]}")
+        cmd_ret.exit(1)
+    elif error[0] != 0:
         cmd_ret.error("unamed error", 0, error)  # TODO
         cmd_ret.exit()
 

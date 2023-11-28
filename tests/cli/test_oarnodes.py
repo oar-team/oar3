@@ -3,6 +3,7 @@ import json
 import re
 
 import pytest
+import yaml
 from click.testing import CliRunner
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -80,7 +81,9 @@ def test_oarnodes_event_json(minimal_db_initialization, setup_config):
         cli,
         ["--events", "1970-01-01 01:20:00", "--json"],
         obj=(minimal_db_initialization, config),
+        catch_exceptions=False,
     )
+    print(vars(result))
     data = json.loads(result.output)
     assert re.match(r".*fake_event.*", data["localhost"][0]["description"])
 
@@ -165,6 +168,19 @@ def test_oarnodes_list_state_json(minimal_db_initialization, setup_config):
     print(result.output)
     assert re.match(r".*localhost.*", result.output)
     assert re.match(r".*akira.*", result.output)
+
+
+def test_oarnodes_list_state_yaml(minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    Resource.create(minimal_db_initialization, network_address="akira")
+    minimal_db_initialization.commit()
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["-l", "--yaml"], obj=(minimal_db_initialization, config)
+    )
+
+    data = yaml.safe_load(result.output)
+    assert len(data) == 2
 
 
 def test_oarnodes_simple(minimal_db_initialization, setup_config):
