@@ -664,7 +664,11 @@ def cli(
     # Launch the checked submission
     (error, job_id_lst) = submission.submit(session, config)
 
-    if error[0] != 0:
+    # Admission rule failed
+    if error[0] == -2:
+        cmd_ret.print_(f"# ADMISSION RULE> {error[1]}")
+        cmd_ret.exit(1)
+    elif error[0] != 0:
         cmd_ret.error("unamed error", 0, error)  # TODO
         cmd_ret.exit()
 

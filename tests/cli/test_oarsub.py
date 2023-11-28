@@ -646,11 +646,30 @@ def test_oarsub_reservation_granted(
         ["--reservation", "1970-01-01 01:20:00"],
         obj=(minimal_db_initialization, config),
     )
-    print(result.output)
-    print(result.output.split("\n")[3])
+    print(f"{result.output} \n fin")
 
     assert re.match(r".*GRANTED.*", result.output.split("\n")[3])
     assert result.exit_code == 0
+
+
+def test_oarsub_fail_ar(monkeypatch, minimal_db_initialization, setup_config):
+    config, _, _ = setup_config
+    AdmissionRule.create(
+        minimal_db_initialization,
+        rule="""raise Exception(
+                    "try again"
+                )""",
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-q default", '"sleep 1"'],
+        obj=(minimal_db_initialization, config),
+        catch_exceptions=False,
+    )
+
+    print(result.output)
+    assert result.exit_code == 1
 
 
 def test_oarsub_array_index(monkeypatch, minimal_db_initialization, setup_config):

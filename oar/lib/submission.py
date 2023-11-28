@@ -1080,8 +1080,9 @@ def add_micheline_jobs(
     if ("ADMISSION_RULES_IN_FILES" in config) and (
         config["ADMISSION_RULES_IN_FILES"] == "yes"
     ):
+
         # Read admission_rules from files
-        rules_dir = "/etc/oar/admission_rules.d/"
+        rules_dir = config.get("ADMISSION_RULES_PATH", "/etc/oar/admission_rules.d/")
         file_names = os.listdir(rules_dir)
 
         file_names.sort()
@@ -1114,7 +1115,7 @@ def add_micheline_jobs(
         err = sys.exc_info()
         error = (
             -2,
-            str(err[1]) + ", a failed admission rule prevented submitting the job.",
+            f"A failed admission rule prevented submitting the job: {err[1]}.",
         )
         return (error, [])
 
