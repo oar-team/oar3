@@ -552,8 +552,12 @@ def command_executor(cmd_node, config, logger):
             logger.error("ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD is undefined")
         command_to_exec += config["ENERGY_SAVING_NODE_MANAGER_WAKE_UP_CMD"]
 
-    exit_code = tools.call(command_to_exec, shell=True)
-    return exit_code
+    logger.debug(f"Start executor command: {command_to_exec}")
+    result = tools.run(command_to_exec, shell=True, capture_output=True)
+
+    logger.debug(f"called: {result}")
+
+    return result.returncode
 
 
 class WindowForker(object):
