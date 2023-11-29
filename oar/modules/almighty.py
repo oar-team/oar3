@@ -147,16 +147,11 @@ def check_greta(greta, logger):
     res = tools.check_process(greta.pid, logger)
 
     try:
-        stdout, stderr = greta.communicate(timeout=0)
-        logger.info(f"greta communicated: {stdout}\n{stderr}")
+        greta.communicate(timeout=0)
     except Exception as e:
-        logger.info(f"greta exception: {e}")
+        logger.debug(f"{vars(e)}")
         pass
 
-    # stdout, stderr = greta.communicate(timeout=0)
-    # logger.info(f"greta: {stdout}\n{stderr}")
-
-    logger.info(f"res: {res}")
     return res
 
 
