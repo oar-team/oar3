@@ -10,6 +10,7 @@ omit=
 	oar/tools/__init__.py
 	oar/cli/oar2trace.py
 	oar/cli/_oarbench.py
+	oar/cli/oarproxycleaner.py
 
 [report]
 exclude_lines =

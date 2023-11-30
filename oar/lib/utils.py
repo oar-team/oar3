@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import copy
-import datetime
-import decimal
 import os
 import re
 import sys
 from collections import OrderedDict
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
-
-import simplejson as json
 
 basestring = (str, bytes)
 integer_types = (int,)
@@ -76,35 +72,6 @@ def is_bytes(x):
 
 def callable(obj):
     return isinstance(obj, Callable)
-
-
-class JSONEncoder(json.JSONEncoder):
-    """JSON Encoder class that handles conversion for a number of types not
-    supported by the default json library, especially the sqlalchemy objects.
-
-    :returns: object that can be converted to json
-    """
-
-    def default(self, obj):
-        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
-            return obj.isoformat()
-        elif isinstance(obj, (decimal.Decimal)):
-            return to_unicode(obj)
-        elif hasattr(obj, "asdict") and callable(getattr(obj, "asdict")):
-            return obj.asdict()
-        elif hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict")):
-            return obj.to_dict()
-        else:
-            return json.JSONEncoder.default(self, obj)
-
-
-def to_json(obj, **kwargs):
-    """Dumps object to json string."""
-    kwargs.setdefault("ensure_ascii", False)
-    kwargs.setdefault("cls", JSONEncoder)
-    kwargs.setdefault("indent", 4)
-    kwargs.setdefault("separators", (",", ": "))
-    return json.dumps(obj, **kwargs)
 
 
 def touch(fname, times=None):
