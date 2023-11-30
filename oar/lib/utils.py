@@ -37,7 +37,8 @@ def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
 
 
-def to_unicode(obj, encoding="utf-8"):
+# No cover because not used in oar but in db management
+def to_unicode(obj, encoding="utf-8"):  # pragma: no cover
     """
     Convert ``obj`` to unicode"""
     # unicode support
@@ -88,7 +89,8 @@ class SimpleNamespace(dict):
         self.__dict__ = self
 
 
-class CachedProperty(object):
+class CachedProperty(object):  # pragma: no cover
+    # No cover because only used in cli/db
     """A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
     property."""
@@ -143,7 +145,7 @@ class ResultProxyIter(list):
     next = __next__
 
 
-def try_convert_decimal(raw_value):
+def try_convert_decimal(raw_value):  # pragma: no cover
     """Try to convert ``value`` to a decimal."""
     value = to_unicode(raw_value)
     try:

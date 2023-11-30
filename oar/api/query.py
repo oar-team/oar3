@@ -64,26 +64,22 @@ class PaginationQuery(object):
     def render(self):
         self.query.render()
 
-    @cached_property
     def current_page(self):
         """The number of the current page (1 indexed)"""
         if self.limit > 0 and self.offset > 0:
             return int(ceil(self.offset / float(self.limit))) + 1
         return 1
 
-    @cached_property
     def pages(self):
         """The total number of pages"""
         if self.total > 0 and self.limit > 0:
             return int(ceil(self.total / float(self.limit)))
         return 1
 
-    @cached_property
     def has_next(self):
         """True if a next page exists."""
         return self.current_page < self.pages
 
-    @cached_property
     def has_previous(self):
         """True if a previous page exists."""
         return self.current_page > 1
