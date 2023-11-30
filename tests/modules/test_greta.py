@@ -1,5 +1,6 @@
 # coding: utf-8
 import time
+from unittest import mock
 
 import pytest
 import zmq
@@ -48,16 +49,27 @@ DEFAULT_CONFIG = {
 called_command = ""
 
 
-def fake_call(cmd, shell):
+def fake_call(cmd, shell, capture_output=None):
     global called_command
     called_command = cmd
     return 0
+
+
+def fake_run(cmd, shell, capture_output=None):
+    global called_command
+    called_command = cmd
+
+    res_mocked = mock.MagicMock()
+    res_mocked.returncode = 0
+
+    return res_mocked
 
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(zmq, "Context", FakeZmq)
     monkeypatch.setattr(oar.lib.tools, "call", fake_call)
+    monkeypatch.setattr(oar.lib.tools, "run", fake_run)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
 
 
@@ -367,8 +379,8 @@ def test_greta_command_executor(
     monkeypatch, setup_config, minimal_db_initialization, setup
 ):
     config = setup
-    assert command_executor(("HALT", "node1"), config, logger) == 0
     print(called_command)
+    assert command_executor(("HALT", "node1"), config, logger) == 0
     assert called_command == 'echo "node1" | sleep_cmd'
     assert command_executor(("WAKEUP", "node1"), config, logger) == 0
     print(called_command)
