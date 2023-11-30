@@ -48,6 +48,50 @@ def print_info(*objs):
     print("# INFO: ", *objs, file=sys.stderr)
 
 
+def apply_admission_rules(session, config, job_parameters, rule=None):
+    # Retrieve Micheline's rules
+    str_rules = ""
+    if ("ADMISSION_RULES_IN_FILES" in config) and (
+        config["ADMISSION_RULES_IN_FILES"] == "yes"
+    ):
+
+        if rule:
+            regex = rule
+        else:
+            regex = r"^\d+_.*"
+
+        # Read admission_rules from files
+        rules_dir = config.get("ADMISSION_RULES_PATH", "/etc/oar/admission_rules.d/")
+
+        file_names = os.listdir(rules_dir)
+
+        file_names.sort()
+        for file_name in file_names:
+            if re.match(regex, file_name):
+                with open(rules_dir + file_name, "r") as rule_file:
+                    for line in rule_file:
+                        str_rules += line
+    else:
+        # Retrieve Micheline's rules from database
+        rules = (
+            session.query(AdmissionRule.rule)
+            .filter(AdmissionRule.enabled == "YES")
+            .order_by(AdmissionRule.priority, AdmissionRule.id)
+            .all()
+        )
+        str_rules = "\n".join([r[0] for r in rules])
+
+    ar_dict = {"session": session}
+
+    for key, value in globals().items():
+        ar_dict[key] = value
+
+    # Apply rules
+    code = compile(str_rules, "<string>", "exec")
+
+    exec(code, ar_dict, job_parameters.__dict__)
+
+
 def job_key_management(
     config,
     use_job_key,
@@ -1075,42 +1119,8 @@ def add_micheline_jobs(
         # TODO print Warning
         job_parameters.types.remove("no_quotas")
 
-    # Retrieve Micheline's rules
-    str_rules = ""
-    if ("ADMISSION_RULES_IN_FILES" in config) and (
-        config["ADMISSION_RULES_IN_FILES"] == "yes"
-    ):
-
-        # Read admission_rules from files
-        rules_dir = config.get("ADMISSION_RULES_PATH", "/etc/oar/admission_rules.d/")
-        file_names = os.listdir(rules_dir)
-
-        file_names.sort()
-        for file_name in file_names:
-            if re.match(r"^\d+_.*", file_name):
-                with open(rules_dir + file_name, "r") as rule_file:
-                    for line in rule_file:
-                        str_rules += line
-    else:
-        # Retrieve Micheline's rules from database
-        rules = (
-            session.query(AdmissionRule.rule)
-            .filter(AdmissionRule.enabled == "YES")
-            .order_by(AdmissionRule.priority, AdmissionRule.id)
-            .all()
-        )
-        str_rules = "\n".join([r[0] for r in rules])
-
-    ar_dict = {"session": session}
-
-    for key, value in globals().items():
-        ar_dict[key] = value
-
-    # Apply rules
-    code = compile(str_rules, "<string>", "exec")
-
     try:
-        exec(code, ar_dict, job_parameters.__dict__)
+        apply_admission_rules(session, config, job_parameters)
     except Exception:
         err = sys.exc_info()
         error = (
