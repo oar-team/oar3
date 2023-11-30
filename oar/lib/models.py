@@ -20,7 +20,7 @@ from sqlalchemy.orm.state import InstanceState
 
 from oar.lib.database import Database
 
-from .utils import reraise, to_json
+from .utils import reraise
 
 # from .globals import db
 
@@ -74,12 +74,6 @@ class BaseModel(object):
         return data
 
     asdict = to_dict
-
-    def to_json(self, **kwargs):
-        """Dump `self` to json string."""
-        kwargs.setdefault("ignore_keys", ())
-        obj = self.to_dict(kwargs.pop("ignore_keys"))
-        return to_json(obj, **kwargs)
 
     def __iter__(self):
         """Return an iterable that supports .next()"""

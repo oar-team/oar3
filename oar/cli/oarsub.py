@@ -247,13 +247,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             )
 
         if (luser != job.user) and (luser != "oar"):
-            cmd_ret.error(
-                "User mismatch for job "
-                + str(job_id)
-                + " (job user is "
-                + job.user
-                + "."
-            )
+            cmd_ret.error(f"User mismatch for job {job_id} (job user is {job.user})")
         cmd_ret.exit(20)
 
     cmd_ret.exit(0)
