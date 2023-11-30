@@ -1,6 +1,5 @@
 # coding: utf-8
 import os
-import re
 
 import pytest
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -8,16 +7,19 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
 from oar.lib.models import Queue, Resource
-from oar.lib.submission import estimate_job_nb_resources  # noqa: F401
-from oar.lib.submission import JobParameters, check_reservation
-from oar.lib.tools import sql_to_duration  # noqa: F401
+from oar.lib.submission import JobParameters, apply_admission_rules, check_reservation
 
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    config, _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
+
+    config["ADMISSION_RULES_IN_FILES"] = "yes"
+    config["ADMISSION_RULES_PATH"] = (
+        os.path.dirname(__file__) + "/etc/oar/admission_rules.d/"
+    )
 
     with ephemeral_session(scoped, engine, bind=engine) as session:
         # add some resources
@@ -26,6 +28,11 @@ def minimal_db_initialization(request, setup_config):
 
         Queue.create(session, name="default")
         yield session
+
+    config["ADMISSION_RULES_IN_FILES"] = "no"
+    config["ADMISSION_RULES_PATH"] = (
+        os.path.dirname(__file__) + "/etc/oar/admission_rules.d/"
+    )
 
 
 def default_job_parameters(config, **kwargs):
@@ -60,39 +67,9 @@ def default_job_parameters(config, **kwargs):
     return JobParameters(config, **default_job_params)
 
 
-def apply_admission_rules(session, config, job_parameters, rule=None):
-    if rule:
-        regex = rule
-    else:
-        regex = r"(^|^OFF_)\d+_.*"
-    # Read admission_rules
-    rules_dir = os.path.dirname(__file__) + "/etc/oar/admission_rules.d/"
-    file_names = os.listdir(rules_dir)
-
-    file_names.sort()
-    rules = ""
-    for file_name in file_names:
-        if re.match(regex, file_name):
-            with open(rules_dir + file_name, "r") as rule_file:
-                for line in rule_file:
-                    rules += line
-
-    # Apply rules
-    print("------{}-------\n".format(file_name), rules, "---------------\n")
-    code = compile(rules, "<string>", "exec")
-    # exec(code, job_parameters.__dict__)
-    # exec(code, globals(), job_parameters.__dict__)
-    glob = globals()
-    glob.update({"session": session, "config": session})
-    exec(
-        code,
-        glob,
-        job_parameters.__dict__,
-    )
-
-
 def test_01_default_queue(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
+
     job_parameters = default_job_parameters(
         config,
     )
@@ -108,6 +85,7 @@ def test_02_prevent_root_oar_toSubmit_ok(minimal_db_initialization, setup_config
 
 def test_02_prevent_root_oar_toSubmit_bad(minimal_db_initialization, setup_config):
     config, _, _ = setup_config
+
     job_parameters = default_job_parameters(config, user="oar")
     with pytest.raises(Exception):
         apply_admission_rules(minimal_db_initialization, config, job_parameters)
@@ -139,6 +117,7 @@ def test_05_filter_bad_resources(minimal_db_initialization, setup_config):
         config,
         resource=["/nodes=2/cpu=10+{lic_type = 'mathlab'}/state=2, walltime = 60"],
     )
+
     with pytest.raises(Exception):
         apply_admission_rules(minimal_db_initialization, config, job_parameters)
 
@@ -247,7 +226,7 @@ def test_16_default_resource_property(minimal_db_initialization, setup_config):
     job_parameters = default_job_parameters(
         config, resource=["/nodes=2/core=10+{lic='yop'}/n=1, walltime=14:00:00"]
     )
-    apply_admission_rules(minimal_db_initialization, config, job_parameters)
+    apply_admission_rules(minimal_db_initialization, config, job_parameters, r"^OFF_.*")
     print(job_parameters.resource_request[0][0][1]["property"])
     assert job_parameters.resource_request[0][0][0]["property"] == "type='default'"
     assert (
