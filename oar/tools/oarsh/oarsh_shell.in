@@ -20,6 +20,28 @@ JOBENVFILE="$OAR_RUNTIME_DIRECTORY/${OAR_CPUSET##*/}.env"
 OLDUMASK=$(umask)
 umask 0022
 
+# $1 = Name for cgroup name (systemd transient scope)
+# $2,$3,... = PIDs to add
+# Add PIDS into the cgroup $1
+function add_process_to_cgroup_v2() {
+    [ "$1" = "undef" ] && return
+    ######################
+    # Cgroup assignation #
+    ###########################################################################
+    user_jobid=$(basename $1) # /oar/user1_1 -> user1_1
+    CGROUPNAME="oar.slice/$user_jobid.scope"
+    if [ ! -f /sys/fs/cgroup/$CGROUPNAME/cgroup.procs ]; then
+        echo "oarsh: Cannot find cgroup.procs file: /sys/fs/cgroup/$CGROUPNAME/cgroup.procs" 1>&2
+        exit 61
+    fi
+    shift
+
+    # Add each processes to the right OAR cgroups
+    for p in $@; do
+      $OARDIR/oardodo/oardodo sh -c "echo $p > /sys/fs/cgroup/$CGROUPNAME/cgroup.procs" || return 1
+    done
+}
+
 # $1 = Name of the cpuset
 # $2,$3,... = PIDs to add
 # Add PIDS into the cpuset $1
@@ -63,12 +85,12 @@ then
     # It must be oar
     if [ "$OAR_CPUSET" != "" ]
     then
-        add_process_to_cpuset $OAR_CPUSET $$ $PPID || exit 62
+        add_process_to_cgroup_v2 $OAR_CPUSET $$ $PPID || exit 62
         [ -r "$JOBENVFILE" ] && source $JOBENVFILE
     fi
     $OARDIR/oardodo/oardodo renice 0 $$ $PPID > /dev/null 2>&1
     export SHELL=$DEFAULT_SHELL
-    
+
     umask $OLDUMASK
     exec $DEFAULT_SHELL "$@"
     echo "oarsh: exec failed" 1>&2
@@ -79,8 +101,8 @@ else
         echo "oarsh: OAR_CPUSET variable is empty; Is your sshd right configured with 'AcceptEnv OAR_CPUSET OAR_JOB_USER' on all computing nodes?" 1>&2
         exit 63
     fi
-    add_process_to_cpuset $OAR_CPUSET $$ $PPID || exit 62
-    
+    add_process_to_cgroup_v2 $OAR_CPUSET $$ $PPID || exit 62
+
     #Manage display
     if [ -n "$DISPLAY" ]
     then
@@ -115,4 +137,3 @@ fi
 
 echo "oarsh: Really bad error" 1>&2
 exit 67
-

@@ -163,7 +163,7 @@ if [ "$OARSH_BYPASS_WHOLE_SECURITY" != "0" ]; then
 fi
 
 # -1- try connection using a user provided job key file for a job using the job key mechanism
-if [ -n "$OAR_JOB_KEY_FILE" ] 
+if [ -n "$OAR_JOB_KEY_FILE" ]
 then
     # first, get rid of remaining unused jobkey files if any...
     for f in $OAR_RUNTIME_DIRECTORY/oarsh.jobkey.*; do
@@ -187,8 +187,8 @@ then
 fi
 
 
-# -2- try connection using a job key pushed by OAR for a job using the job key mechanism. 
-# (oarsh is run from one of the node of the job) 
+# -2- try connection using a job key pushed by OAR for a job using the job key mechanism.
+# (oarsh is run from one of the node of the job)
 TMP_JOB_KEY_FILE="$OAR_RUNTIME_DIRECTORY/$OARDO_USER.jobkey"
 if [ -r $TMP_JOB_KEY_FILE ]; then
     umask $OLDUMASK
@@ -197,13 +197,15 @@ if [ -r $TMP_JOB_KEY_FILE ]; then
     exit 4
 fi
 
-if [ "$CPUSET_PATH" != "" ]; then
+if [ "$CPUSET_PATH" != "" ]; then #TODO adapt for cgroupv2
     if [ -r /proc/self/cpuset ]; then
         if [ -n "$GET_CURRENT_CPUSET_CMD" ]; then
             OAR_CPUSET=$(bash -c "$GET_CURRENT_CPUSET_CMD")
         else
-            OAR_CPUSET=$(< /proc/self/cpuset)
-        fi
+            OAR_CPUSET=$(< /proc/self/cpuset) #Support for cgroup-v1 and cgroup-v2
+            USER_JOB_ID=$(basename $OAR_CPUSET)
+            OAR_CPUSET="/oar/${USER_JOB_ID%.*}" # Remove .scope in cgroup-v2
+         fi
         if [ "${OAR_CPUSET%/*}" == "$CPUSET_PATH" ] || [ "${OAR_CPUSET%/*}" == "$CPUSET_PATH/" ]; then
             JOB_KEY_FILE="$OAR_RUNTIME_DIRECTORY/${OAR_CPUSET##*/}.jobkey"
             if [ -r $JOB_KEY_FILE ]; then
