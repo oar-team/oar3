@@ -1,6 +1,7 @@
 import sys
+from ast import List
 
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from oar.kao.karma import karma_jobs_sorting
 from oar.kao.multifactor_priority import multifactor_jobs_sorting
@@ -8,6 +9,7 @@ from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
+from oar.lib.configuration import Configuration
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import NO_PLACEHOLDER, JobPseudo
 from oar.lib.plugins import find_plugin_function
@@ -56,7 +58,13 @@ def jobs_sorting(session, config, queues, now, waiting_jids, waiting_jobs, plt):
 
 
 def internal_schedule_cycle(
-    session, config, plt, now, all_slot_sets, job_security_time, queues
+    session: Session,
+    config: Configuration,
+    plt: Platform,
+    now: int,
+    all_slot_sets,
+    job_security_time: int,
+    queues,
 ):
     resource_set = plt.resource_set(session, config)
 
@@ -104,7 +112,13 @@ def internal_schedule_cycle(
         logger.info("no waiting jobs")
 
 
-def schedule_cycle(session, config, plt, now, queues=["default"]):
+def schedule_cycle(
+    session: Session,
+    config: Configuration,
+    plt: Platform,
+    now: int,
+    queues: List[str] = ["default"],
+):
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
             now, " ".join([q for q in queues])
@@ -202,7 +216,7 @@ def schedule_cycle(session, config, plt, now, queues=["default"]):
 #
 # Main function
 #
-def main(session=None, config=None):
+def main(session: Session = None, config: Configuration = None):
     if not session:
         config, engine = init_oar(config)
 

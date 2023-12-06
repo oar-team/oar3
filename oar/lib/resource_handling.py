@@ -1,8 +1,10 @@
 # coding: utf-8
 """ Functions to handle resource"""
 import os
+from typing import Any, List
 
 from sqlalchemy import distinct, func, or_, text
+from sqlalchemy.orm import Session
 
 import oar.lib.tools as tools
 from oar.lib.event import add_new_event, is_an_event_exists
@@ -487,7 +489,9 @@ def get_resource_max_value_of_property(session, property_name):
     return session.query(func.max(propery_field)).scalar()
 
 
-def get_resources_state(session, resource_ids):
+def get_resources_state(
+    session: Session, resource_ids: List[int]
+) -> List[dict[int, Any]]:
     date = tools.get_date(session)
     result = (
         session.query(Resource.id, Resource.state, Resource.available_upto)
@@ -507,7 +511,7 @@ def get_resources_state(session, resource_ids):
 
 
 def get_count_busy_resources(
-    session,
+    session: Session,
 ):
     active_moldable_job_ids = session.query(Job.assigned_moldable_job).filter(
         Job.state.in_(("toLaunch", "Running", "Resuming"))
@@ -520,7 +524,9 @@ def get_count_busy_resources(
     return count_busy_resources
 
 
-def resources_creation(session, node_name, nb_nodes, nb_core=1, vfactor=1):
+def resources_creation(
+    session: Session, node_name: str, nb_nodes: int, nb_core: int = 1, vfactor: int = 1
+):
     for i in range(nb_nodes * nb_core * vfactor):
         Resource.create(
             session,

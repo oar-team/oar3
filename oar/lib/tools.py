@@ -7,6 +7,7 @@ import signal
 import socket
 import string
 import time
+from ast import List
 from multiprocessing import Process  # noqa use via tools.getpass (simplify mocking)
 from pwd import getpwnam  # noqa use via tools.getpass (simplify mocking)
 from socket import gethostname
@@ -22,10 +23,12 @@ from subprocess import (  # noqa
     check_output,
     run,
 )
+from typing import Optional
 
 import psutil
 import zmq
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from oar.lib.event import add_new_event
 
@@ -133,7 +136,9 @@ def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: n
 
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
-def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
+def notify_almighty(
+    cmd: str, job_id: Optional[int] = None, args: Optional[List[str]] = None
+) -> bool:  # pragma: no cover
 
     if not almighty_socket:
         create_almighty_socket(
@@ -612,7 +617,7 @@ def manage_remote_commands(
     return (0, [])
 
 
-def get_date(session):  # pragma: no cover
+def get_date(session: Session):  # pragma: no cover
     dialect = session.bind.dialect.name
     if dialect == "sqlite":
         req = "SELECT strftime('%s','now')"
@@ -643,7 +648,7 @@ def hms_str_to_duration(hms_str):
         return 3600 * int(hms[0]) + 60 * int(hms[1]) + int(hms[2])
 
 
-def sql_to_local(date):
+def sql_to_local(date) -> int:
     """Converts a date specified in the format used by the sql database to an
     integer local time format
     Date 'year mon mday hour min sec'"""

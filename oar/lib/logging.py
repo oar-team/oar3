@@ -7,10 +7,12 @@ from logging import (
     WARN,
     FileHandler,
     Formatter,
+    Logger,
     NullHandler,
     StreamHandler,
     getLogger,
 )
+from typing import Optional
 
 from .utils import touch
 
@@ -20,7 +22,7 @@ LEVELS = {0: ERROR, 1: WARN, 2: INFO, 3: DEBUG}
 STREAM_HANDLER = {"stdout": None, "stderr": None}
 
 
-def create_logger(config):
+def create_logger(config) -> Logger:
     """Creates a new logger object."""
     # from . import config
 
@@ -53,7 +55,9 @@ def create_logger(config):
     return logger
 
 
-def get_global_stream_handler(config, output="stderr"):
+def get_global_stream_handler(
+    config, output="stderr"
+) -> dict[str, Optional[StreamHandler]]:
     # from . import config
 
     global STREAM_HANDLER

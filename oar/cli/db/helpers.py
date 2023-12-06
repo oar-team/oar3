@@ -55,7 +55,7 @@ def load_configuration_file(ctx, param, value):
         return config
 
 
-def default_database_url():
+def default_database_url():  # pragma: no cover
     try:
         return config.get_sqlalchemy_uri()
     except Exception:
