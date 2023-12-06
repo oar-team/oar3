@@ -28,7 +28,7 @@ class Hierarchy(object):
                 raise Exception("Hierarchy description must be provided")
 
 
-def keep_no_empty_scat_bks(itvs, itvss_ref):
+def keep_no_empty_scat_bks(itvs: ProcSet, itvss_ref):
     """
     Filter :class:`ProcSet` from itvss_ref that has no element in `itvs`
 

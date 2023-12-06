@@ -3,15 +3,18 @@
 # QUEUES MANAGEMENT
 # TODO is_waiting_job_specific_queue_present($$);
 from itertools import groupby
+from typing import List
+
+from sqlalchemy.orm import Session
 
 from oar.lib.models import Queue
 
 
-def get_all_queue_by_priority(session):
+def get_all_queue_by_priority(session: Session) -> List[Queue]:
     return session.query(Queue).order_by(Queue.priority.desc()).all()
 
 
-def get_queues_groupby_priority(session):
+def get_queues_groupby_priority(session: Session) -> Queue:
     """Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
     queues_ordered = session.query(Queue).order_by(Queue.priority.desc()).all()
     res = []
@@ -24,7 +27,7 @@ def get_queues_groupby_priority(session):
     return res
 
 
-def stop_queue(session, name):
+def stop_queue(session: Session, name: str):
     """Stop a queue"""
     session.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "notActive"}, synchronize_session=False
@@ -32,7 +35,7 @@ def stop_queue(session, name):
     session.commit()
 
 
-def start_queue(session, name):
+def start_queue(session: Session, name: str):
     """Start a queue"""
     session.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "Active"}, synchronize_session=False
@@ -41,7 +44,7 @@ def start_queue(session, name):
 
 
 def stop_all_queues(
-    session,
+    session: Session,
 ):
     """Stop all queues"""
     session.query(Queue).update({Queue.state: "notActive"}, synchronize_session=False)
@@ -49,21 +52,21 @@ def stop_all_queues(
 
 
 def start_all_queues(
-    session,
+    session: Session,
 ):
     """Start all queues"""
     session.query(Queue).update({Queue.state: "Active"}, synchronize_session=False)
     session.commit()
 
 
-def create_queue(session, name, priority, policy):
+def create_queue(session: Session, name: str, priority: int, policy: str):
     Queue.create(
         session, name=name, priority=priority, scheduler_policy=policy, state="Active"
     )
     session.commit()
 
 
-def change_queue(session, name, priority, policy):
+def change_queue(session: Session, name: str, priority: int, policy: str):
     session.query(Queue).filter(Queue.name == name).update(
         {Queue.priority: priority, Queue.scheduler_policy: policy},
         synchronize_session=False,
@@ -71,6 +74,6 @@ def change_queue(session, name, priority, policy):
     session.commit()
 
 
-def remove_queue(session, name):
+def remove_queue(session: Session, name: str):
     session.query(Queue).filter(Queue.name == name).delete(synchronize_session=False)
     session.commit()

@@ -3,6 +3,7 @@
 Scheduling functions used by :py:mod:`oar.kao.kamelot`.
 """
 import copy
+from typing import Any, Tuple
 
 from procset import ProcSet
 
@@ -11,6 +12,7 @@ from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
+from oar.lib.models import Job
 
 # for quotas
 from oar.lib.resource import ResourceSet
@@ -115,7 +117,7 @@ def find_resource_hierarchies_job(itvs_slots, hy_res_rqts, hy):
 
 
 def find_first_suitable_contiguous_slots_quotas(
-    slots_set: SlotSet, job, res_rqt, hy, min_start_time: int
+    slots_set: SlotSet, job, res_rqt: Tuple[int, int, Any], hy, min_start_time: int
 ):
     """
     Loop through time slices from a :py:class:`oar.kao.slot.SlotSet` that are long enough for the job's walltime.
@@ -327,7 +329,9 @@ def find_first_suitable_contiguous_slots(
     )
 
 
-def assign_resources_mld_job_split_slots(slots_set: SlotSet, job, hy, min_start_time):
+def assign_resources_mld_job_split_slots(
+    slots_set: SlotSet, job: Job, hy, min_start_time
+):
     """
     According to a resources a :class:`SlotSet` find the time and the resources to launch a job.
     This function supports the moldable jobs. In case of multiple moldable job corresponding to the request

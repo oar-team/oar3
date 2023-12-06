@@ -3,8 +3,10 @@
 from typing import List
 
 from sqlalchemy import and_, distinct, func, or_, text
+from sqlalchemy.orm import Session
 
 import oar.lib.tools as tools
+from oar.lib.configuration import Configuration
 from oar.lib.globals import get_logger
 from oar.lib.models import (
     AssignedResource,
@@ -26,7 +28,7 @@ logger = get_logger("oar.lib.node")
 
 
 # TODO change name
-def get_all_resources_on_node(session, hostname):
+def get_all_resources_on_node(session: Session, hostname: str):
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
         session.query(Resource.id).filter(Resource.network_address == hostname).all()
@@ -34,7 +36,7 @@ def get_all_resources_on_node(session, hostname):
     return [r[0] for r in result]
 
 
-def get_resources_of_nodes(session, hostnames):
+def get_resources_of_nodes(session: Session, hostnames: str) -> List[Resource]:
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
         session.query(Resource)
@@ -45,7 +47,7 @@ def get_resources_of_nodes(session, hostnames):
     return result
 
 
-def get_nodes_with_state(session, nodes):
+def get_nodes_with_state(session: Session, nodes: List[str]) -> List[Resource]:
     result = (
         session.query(Resource.network_address, Resource.state)
         .filter(Resource.network_address.in_(tuple(nodes)))
@@ -54,7 +56,7 @@ def get_nodes_with_state(session, nodes):
     return result
 
 
-def search_idle_nodes(session, date):
+def search_idle_nodes(session: Session, date: int) -> dict[str, int]:
     result = (
         session.query(distinct(Resource.network_address))
         .filter(Resource.id == GanttJobsResource.resource_id)
@@ -94,7 +96,7 @@ def search_idle_nodes(session, date):
 
 
 # TODO MOVE TO GANTT
-def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
+def get_gantt_hostname_to_wake_up(session: Session, date: int, wakeup_time: int):
     """Get hostname that we must wake up to launch jobs"""
     hostnames = (
         session.query(Resource.network_address)
@@ -118,7 +120,7 @@ def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
     return hosts
 
 
-def get_next_job_date_on_node(session, hostname):
+def get_next_job_date_on_node(session: Session, hostname: str):
     result = (
         session.query(func.min(GanttJobsPrediction.start_time))
         .filter(Resource.network_address == hostname)
@@ -129,7 +131,7 @@ def get_next_job_date_on_node(session, hostname):
     return result
 
 
-def get_last_wake_up_date_of_node(session, hostname):
+def get_last_wake_up_date_of_node(session: Session, hostname: str):
     result = (
         session.query(EventLog.date)
         .filter(EventLogHostname.event_id == EventLog.id)
@@ -143,7 +145,7 @@ def get_last_wake_up_date_of_node(session, hostname):
 
 
 def get_alive_nodes_with_jobs(
-    session,
+    session: Session,
 ):
     """Returns the list of occupied nodes"""
     result = (
@@ -172,7 +174,7 @@ def get_alive_nodes_with_jobs(
     return [r[0] for r in result]
 
 
-def get_nodes_that_can_be_waked_up(session, date):
+def get_nodes_that_can_be_waked_up(session: Session, date: int):
     """Returns the list nodes that can be waked up from to the given date"""
     result = (
         session.query(distinct(Resource.network_address))
@@ -183,7 +185,7 @@ def get_nodes_that_can_be_waked_up(session, date):
     return [r[0] for r in result]
 
 
-def get_nodes_with_given_sql(session, properties) -> List[str]:
+def get_nodes_with_given_sql(session: Session, properties: List[str]) -> List[str]:
     """Gets the nodes list with the given sql properties"""
     result = (
         session.query(Resource.network_address, Resource.state, Resource.next_state)
@@ -194,7 +196,9 @@ def get_nodes_with_given_sql(session, properties) -> List[str]:
     return [r for r in result]
 
 
-def set_node_state(session, hostname, state, finaud_tag, config):
+def set_node_state(
+    session: Session, hostname: str, state: str, finaud_tag: str, config: Configuration
+):
     """Sets the state field of some node identified by its hostname in the session.
     - parameters : base, hostname, state, finaudDecision
     - side effects : changes the state value in some field of the nodes table"""
@@ -291,7 +295,7 @@ def set_node_state(session, hostname, state, finaud_tag, config):
     session.commit()
 
 
-def set_node_nextState(session, hostname, next_state):
+def set_node_nextState(session: Session, hostname: str, next_state: str) -> int:
     """Sets the nextState field of a node identified by its network_address"""
     nb_matched = (
         session.query(Resource)
@@ -305,14 +309,14 @@ def set_node_nextState(session, hostname, next_state):
     return nb_matched
 
 
-def change_node_state(session, node, state, config):
+def change_node_state(session: Session, node: str, state, config: Configuration):
     """Changes node state and notify central automaton"""
     set_node_nextState(session, node, state)
     tools.notify_almighty("ChState")
 
 
 def get_finaud_nodes(
-    session,
+    session: Session,
 ):
     """Return the list of network address nodes for Finaud"""
     # TODO: session.query(Resource).distinct(Resource.network_address) should not properly work with SQLITE
@@ -335,8 +339,8 @@ def get_finaud_nodes(
 
 
 def get_current_assigned_nodes(
-    session,
-):
+    session: Session,
+) -> List[str]:
     """Returns the current nodes"""
     results = (
         session.query(distinct(Resource.network_address))
@@ -348,7 +352,9 @@ def get_current_assigned_nodes(
     return [r[0] for r in results]
 
 
-def update_node_nextFinaudDecision(session, network_address, finaud_decision):
+def update_node_nextFinaudDecision(
+    session: Session, network_address: str, finaud_decision: str
+):
     # Update nextFinaudDecision field
     session.query(Resource).filter(Resource.network_address == network_address).update(
         {Resource.next_finaud_decision: finaud_decision}, synchronize_session=False
@@ -356,7 +362,7 @@ def update_node_nextFinaudDecision(session, network_address, finaud_decision):
     session.commit()
 
 
-def get_node_job_to_frag(session, hostname):
+def get_node_job_to_frag(session: Session, hostname: str) -> List[int]:
     # same as get_node_job but excepts cosystem jobs
     subq = (
         session.query(JobType.job_id)
@@ -383,13 +389,13 @@ def get_node_job_to_frag(session, hostname):
 
 
 def get_all_network_address(
-    session,
-):
+    session: Session,
+) -> List[str]:
     res = session.query(distinct(Resource.network_address)).all()
     return [r[0] for r in res]
 
 
-def get_resources_state_for_host(session, host):
+def get_resources_state_for_host(session: Session, host: str):
     resource_ids = [
         r[0]
         for r in session.query(Resource.id)

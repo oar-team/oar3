@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-from logging import getLogger
+from logging import Logger, getLogger
+from typing import Optional, Tuple
 
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from oar.lib.models import Model
 
@@ -14,7 +15,7 @@ from .logging import create_logger, get_global_stream_handler
 from .models import DeferredReflectionModel, setup_db
 
 
-def init_config():
+def init_config() -> Configuration:
     config = Configuration()
 
     if "OARCONFFILE" in os.environ:  # pragma: no cover
@@ -25,14 +26,14 @@ def init_config():
     return config
 
 
-def init_logger(config=None):
+def init_logger(config=None) -> Logger:
     if not config:
         config = init_config()
 
     return create_logger(config)
 
 
-def get_logger(*args, config=None, **kwargs):
+def get_logger(*args, config=None, **kwargs) -> Logger:
     """Returns sub logger once the root logger is configured."""
 
     logger = init_logger(config)
@@ -63,7 +64,9 @@ def init_db(config, no_reflect=False) -> Engine:
     return engine
 
 
-def init_oar(config=None, no_db=False, no_reflect=False):
+def init_oar(
+    config=None, no_db=False, no_reflect=False
+) -> Tuple[Configuration, Optional[Engine], Logger]:
     if not config:
         config = init_config()
 
@@ -74,7 +77,7 @@ def init_oar(config=None, no_db=False, no_reflect=False):
         return config, engine
 
 
-def init_and_get_session(config=None):
+def init_and_get_session(config: Optional[Configuration] = None) -> Session:
     if not config:
         config = init_config()
 
@@ -82,5 +85,4 @@ def init_and_get_session(config=None):
 
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
-
     return scoped()

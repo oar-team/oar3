@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
+from typing import Any
+
 from sqlalchemy import func, or_, text
+from sqlalchemy.orm import Session
 
 from oar.lib.models import (
     Accounting,
@@ -14,7 +17,13 @@ from oar.lib.models import (
 # get_sum_accounting_window() -> see Karma.py
 
 
-def get_accounting_summary(session, start_time, stop_time, user="", sql_property=""):
+def get_accounting_summary(
+    session: Session,
+    start_time: int,
+    stop_time: int,
+    user: str = "",
+    sql_property: str = "",
+) -> dict[Any, Any]:
     """Get an array of consumptions by users
     p.arams: start date, ending date, optional user"""
 
@@ -52,8 +61,13 @@ def get_accounting_summary(session, start_time, stop_time, user="", sql_property
 
 
 def get_accounting_summary_byproject(
-    session, start_time, stop_time, user="", limit="", offset=""
-):
+    session: Session,
+    start_time: int,
+    stop_time: int,
+    user: str = "",
+    limit: str = "",
+    offset: str = "",
+) -> dict[Any, Any]:
     """ "Get an array of consumptions by project for a given user
     params: start date, ending date, user"""
 
@@ -93,15 +107,15 @@ def get_accounting_summary_byproject(
 
 
 def update_accounting(
-    session,
-    start_time,
-    stop_time,
-    window_size,
-    user,
-    project,
-    queue_name,
-    c_type,
-    nb_resources,
+    session: Session,
+    start_time: int,
+    stop_time: int,
+    window_size: int,
+    user: str,
+    project: str,
+    queue_name: str,
+    c_type: str,
+    nb_resources: int,
 ):
     """Insert accounting data in table accounting
     # params : start date in second, stop date in second, window size, user, queue, type(ASKED or USED)
@@ -135,7 +149,14 @@ def update_accounting(
 
 
 def add_accounting_row(
-    session, window_start, window_stop, user, project, queue_name, c_type, consumption
+    session: Session,
+    window_start: int,
+    window_stop: int,
+    user: str,
+    project: str,
+    queue_name: str,
+    c_type: str,
+    consumption: str,
 ):
     # Insert or update one row according to consumption
 
@@ -213,7 +234,7 @@ def add_accounting_row(
         )
 
 
-def check_accounting_update(session, window_size):
+def check_accounting_update(session: Session, window_size: int):
     """Check jobs that are not treated in accounting table
     params : base, window size"""
 
@@ -290,7 +311,7 @@ def check_accounting_update(session, window_size):
 
 
 def delete_all_from_accounting(
-    session,
+    session: Session,
 ):
     """Empty the table accounting and update the jobs table."""
     session.query(Accounting).delete(synchronize_session=False)
@@ -298,7 +319,7 @@ def delete_all_from_accounting(
     session.commit()
 
 
-def delete_accounting_windows_before(session, window_stop):
+def delete_accounting_windows_before(session: Session, window_stop: int):
     """Remove windows from accounting."""
     session.query(Accounting).filter(Accounting.window_stop <= window_stop).delete(
         synchronize_session=False
@@ -306,7 +327,7 @@ def delete_accounting_windows_before(session, window_stop):
     session.commit()
 
 
-def get_last_project_karma(session, user, project, date):
+def get_last_project_karma(session: Session, user: str, project: str, date: int):
     """Get the last project Karma of user at a given date
     params: user, project, date"""
 

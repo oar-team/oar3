@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from io import open
+from typing import Any
 
 from .exceptions import InvalidConfiguration
 from .utils import reraise, try_convert_decimal
@@ -133,7 +134,12 @@ class Configuration(dict):
         self.load_file(self.DEFAULT_CONFIG_FILE, silent=silent)
 
     def load_file(
-        self, filename, comment_char="#", strip_quotes=True, silent=False, clear=False
+        self,
+        filename: str,
+        comment_char: str = "#",
+        strip_quotes: bool = True,
+        silent: bool = False,
+        clear: bool = False,
     ):
         """Updates the values in the config from a config file.
         :param filename: the filename of the config.  This can either be an
@@ -175,7 +181,7 @@ class Configuration(dict):
 
         return True
 
-    def get_sqlalchemy_uri(self, read_only=False):
+    def get_sqlalchemy_uri(self, read_only: bool = False):  # pragma: no cover
         if read_only:
             login = "base_login_ro"
             passwd = "base_passwd_ro"
@@ -199,12 +205,14 @@ class Configuration(dict):
             keys = tuple(("DB_%s" % i.upper() for i in e.args))
             raise InvalidConfiguration("Cannot find %s" % keys)
 
-    def setdefault_config(self, default_config):
+    def setdefault_config(self, default_config: dict[str, Any]):
         # import pdb; pdb.set_trace()
         for k, v in default_config.items():
             self.setdefault(k, v)
 
-    def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
+    def get_namespace(
+        self, namespace: str, lowercase: bool = True, trim_namespace: bool = True
+    ):
         """Returns a dictionary containing a subset of configuration options
         that match the specified namespace/prefix. Example usage::
 
@@ -243,5 +251,5 @@ class Configuration(dict):
             rv[key] = v
         return rv
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{dict(self)}"

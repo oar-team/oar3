@@ -26,7 +26,7 @@ def find_plugin_function(group: str, name: str):
     return None
 
 
-def find_plugin_for_entry_point(entry_point_name):
+def find_plugin_for_entry_point(entry_point_name: str):
     """Yield the tuples (name, class) of registered extra functions for a given entry point."""
     for entry_point in entry_points(group=entry_point_name):
         yield entry_point.name, entry_point.load()

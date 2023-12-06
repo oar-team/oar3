@@ -1,12 +1,17 @@
 # coding: utf-8
 
+from typing import List, Optional
+
 from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 
 from oar.lib import tools
 from oar.lib.models import EventLog, EventLogHostname
 
 
-def add_new_event(session, ev_type, job_id, description, to_check="YES"):
+def add_new_event(
+    session: Session, ev_type: str, job_id: int, description: str, to_check: str = "YES"
+):
     """Add a new entry in event_log table"""
     event_data = EventLog(
         type=ev_type,
@@ -19,7 +24,9 @@ def add_new_event(session, ev_type, job_id, description, to_check="YES"):
     session.commit()
 
 
-def add_new_event_with_host(session, ev_type, job_id, description, hostnames):
+def add_new_event_with_host(
+    session: Session, ev_type: str, job_id: int, description: str, hostnames: List[str]
+):
     ins = EventLog.__table__.insert().values(
         {
             "type": ev_type,
@@ -40,7 +47,7 @@ def add_new_event_with_host(session, ev_type, job_id, description, hostnames):
     session.commit()
 
 
-def is_an_event_exists(session, job_id, event):
+def is_an_event_exists(session: Session, job_id: int, event: str):
     res = (
         session.query(func.count(EventLog.id))
         .filter(EventLog.job_id == job_id)
@@ -50,7 +57,7 @@ def is_an_event_exists(session, job_id, event):
     return res
 
 
-def get_job_events(session, job_id):
+def get_job_events(session: Session, job_id: int):
     """Get events for the specified job"""
     result = (
         session.query(EventLog)
@@ -61,7 +68,7 @@ def get_job_events(session, job_id):
     return result
 
 
-def get_jobs_events(session, job_ids):
+def get_jobs_events(session: Session, job_ids: List[int]):
     """Get events for the specified jobs"""
     result = (
         session.query(EventLog)
@@ -72,7 +79,7 @@ def get_jobs_events(session, job_ids):
     return result
 
 
-def get_to_check_events(session):
+def get_to_check_events(session: Session):
     """ "Get all events with toCheck field on YES"""
     result = (
         session.query(EventLog)
@@ -83,7 +90,7 @@ def get_to_check_events(session):
     return result
 
 
-def check_event(session, event_type, job_id):
+def check_event(session: Session, event_type: str, job_id: int):
     """Turn the field toCheck into NO"""
     session.query(EventLog).filter(EventLog.job_id == job_id).filter(
         EventLog.type == event_type
@@ -93,7 +100,7 @@ def check_event(session, event_type, job_id):
     session.commit()
 
 
-def get_hostname_event(session, event_id):
+def get_hostname_event(session: Session, event_id: int):
     """Get hostnames corresponding to an event Id"""
     res = (
         session.query(EventLogHostname.hostname)
@@ -103,7 +110,9 @@ def get_hostname_event(session, event_id):
     return [h[0] for h in res]
 
 
-def get_events_for_hostname_from(session, host, date=None):
+def get_events_for_hostname_from(
+    session: Session, host: str, date: Optional[int] = None
+) -> List[EventLog]:
     """Get events for the hostname given as parameter
     If date is given, returns events since that date, else return the 30 last events.
     """
