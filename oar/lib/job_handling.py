@@ -4,6 +4,7 @@ import copy
 import os
 import random
 import re
+from oar.lib.resource import ResourceSet
 
 from procset import ProcSet
 from sqlalchemy import distinct, func, insert, text
@@ -689,7 +690,7 @@ def save_assigns_(session, jobs, resource_set):
 
 
 # def save_assigns_span(jobs, resource_set):
-def save_assigns(session, jobs, resource_set):  # span version
+def save_assigns(session, jobs, resource_set: ResourceSet):  # span version
     # http://docs.sqlalchemy.org/en/rel_0_9/core/dml.html#sqlalchemy.sql.expression.Insert.values
     if len(jobs) > 0:
         logger.debug("nb job to save: " + str(len(jobs)))
@@ -715,6 +716,7 @@ def save_assigns(session, jobs, resource_set):  # span version
                         )
                     ]
                 )
+                logger.info(f"grep span: {mld_id_rid_s}")
                 msg = job_message(session, j, nb_resources=len(riods))
                 message_updates[j.id] = msg
 
@@ -825,26 +827,6 @@ def set_jobs_start_time(session, tuple_jids, start_time):
     session.commit()
 
 
-# NO USED
-def add_resource_jobs_pairs(session, tuple_mld_ids):  # pragma: no cover
-    resources_mld_ids = (
-        session.query(GanttJobsResource)
-        .filter(GanttJobsResource.job_id.in_(tuple_mld_ids))
-        .all()
-    )
-
-    assigned_resources = [
-        {
-            "moldable_job_id": res_mld_id.moldable_id,
-            "resource_id": res_mld_id.resource_id,
-        }
-        for res_mld_id in resources_mld_ids
-    ]
-
-    session.execute(AssignedResource.__table__.insert(), assigned_resources)
-    session.commit()
-
-
 def add_resource_job_pairs(session, moldable_id):
     """Set, in DB, the resource_ids attributed to job. It used during job's launch preparation."""
     resources_mld_ids = (
@@ -853,13 +835,15 @@ def add_resource_job_pairs(session, moldable_id):
         .all()
     )
 
+    print(f"{resources_mld_ids}")
+
     assigned_resources = [
         {
             "moldable_job_id": res_mld_id.moldable_id,
-            "resource_id": res_mld_id.resource_id + i,
+            "resource_id": res_mld_id.resource_id,
+            "span": res_mld_id.span
         }
         for res_mld_id in resources_mld_ids
-        for i in range(res_mld_id.span)
     ]
 
     session.execute(AssignedResource.__table__.insert(), assigned_resources)

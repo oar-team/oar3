@@ -191,8 +191,10 @@ class BaseQueryCollection(object):
         return query.order_by(Resource.id.asc())
 
     def groupby_jobs_resources(self, jobs, query):
+
         jobs_resources = dict(((job.id, []) for job in jobs))
         for job_id, resource in query:
+            print(f"{resource.id} {resource.network_address}")
             jobs_resources[job_id].append(resource)
         return jobs_resources
 
@@ -208,7 +210,8 @@ class BaseQueryCollection(object):
                 AssignedResource,
                 Job.assigned_moldable_job == AssignedResource.moldable_id,
             )
-            .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(Resource.id >= AssignedResource.resource_id)
+            .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
             .filter(Job.id.in_([job.id for job in jobs]))
             .order_by(Job.id.asc())
         )
