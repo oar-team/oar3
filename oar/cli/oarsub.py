@@ -440,6 +440,7 @@ def cli(
     """Submit a job to OAR batch scheduler."""
 
     ctx = click.get_current_context()
+
     if ctx.obj:
         session, config = ctx.obj
     else:

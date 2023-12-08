@@ -7,7 +7,6 @@ import signal
 import socket
 import string
 import time
-from ast import List
 from multiprocessing import Process  # noqa use via tools.getpass (simplify mocking)
 from pwd import getpwnam  # noqa use via tools.getpass (simplify mocking)
 from socket import gethostname
@@ -23,7 +22,7 @@ from subprocess import (  # noqa
     check_output,
     run,
 )
-from typing import Optional
+from typing import List, Optional
 
 import psutil
 import zmq

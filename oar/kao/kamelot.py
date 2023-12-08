@@ -1,5 +1,5 @@
 import sys
-from ast import List
+from typing import List
 
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 

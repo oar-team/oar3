@@ -1367,21 +1367,6 @@ pyyaml = ">=5.1"
 virtualenv = ">=20.10.0"
 
 [[package]]
-name = "procset"
-version = "1.0"
-description = "Toolkit to manage sets of closed intervals."
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "procset-1.0-py3-none-any.whl", hash = "sha256:6804d642f59bc4a88046c34fe42840e09d72b71d5504678c0b09ac0de1b98af9"},
-    {file = "procset-1.0.tar.gz", hash = "sha256:10921a4fe902822b6d4c94691abbf1965a29bc81157215f1a9092305e21fc146"},
-]
-
-[package.extras]
-test = ["coverage", "interval-set", "pytest", "pytest-cov"]
-
-[[package]]
 name = "prompt-toolkit"
 version = "3.0.40"
 description = "Library for building powerful interactive command lines in Python"
@@ -2732,4 +2717,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4"
-content-hash = "cde12e2d2227cb39fb3e3bd883eab8d0497475aec2e10d85a910875fb4c2f1b0"
+content-hash = "0d3edce11cba191e6c2c19508ac453836cf986b2ff20b93be8a299203ee982a7"

@@ -26,14 +26,14 @@ def init_config() -> Configuration:
     return config
 
 
-def init_logger(config=None) -> Logger:
+def init_logger(config: Optional[Configuration] = None) -> Logger:
     if not config:
         config = init_config()
 
     return create_logger(config)
 
 
-def get_logger(*args, config=None, **kwargs) -> Logger:
+def get_logger(*args, config: Optional[Configuration] = None, **kwargs) -> Logger:
     """Returns sub logger once the root logger is configured."""
 
     logger = init_logger(config)
@@ -50,7 +50,7 @@ def get_logger(*args, config=None, **kwargs) -> Logger:
     return sublogger
 
 
-def init_db(config, no_reflect=False) -> Engine:
+def init_db(config: Optional[Configuration], no_reflect: bool = False) -> Engine:
     db = Database(config)
 
     engine = EngineConnector(db).get_engine()
@@ -65,7 +65,9 @@ def init_db(config, no_reflect=False) -> Engine:
 
 
 def init_oar(
-    config=None, no_db=False, no_reflect=False
+    config: Optional[Configuration] = None,
+    no_db: bool = False,
+    no_reflect: bool = False,
 ) -> Tuple[Configuration, Optional[Engine], Logger]:
     if not config:
         config = init_config()
