@@ -13,14 +13,16 @@ from sqlalchemy import (  # , exc
     Text,
     inspect,
     text,
+    ForeignKey,
 )
 from sqlalchemy.ext.declarative import DeferredReflection
-from sqlalchemy.orm import DeclarativeMeta, declarative_base
+from sqlalchemy.orm import DeclarativeMeta, declarative_base, Mapped, relationship, mapped_column
 from sqlalchemy.orm.state import InstanceState
+from typing import List
 
 from oar.lib.database import Database
 
-from .utils import reraise
+from .utils import reraise, to_json
 
 # from .globals import db
 
@@ -74,6 +76,12 @@ class BaseModel(object):
         return data
 
     asdict = to_dict
+
+    def to_json(self, **kwargs):
+        """Dump `self` to json string."""
+        kwargs.setdefault("ignore_keys", ())
+        obj = self.to_dict(kwargs.pop("ignore_keys"))
+        return to_json(obj, **kwargs)
 
     def __iter__(self):
         """Return an iterable that supports .next()"""
@@ -335,9 +343,10 @@ class JobType(Model):
     __tablename__ = "job_types"
 
     id = Column("job_type_id", Integer, primary_key=True)
-    job_id = Column(Integer, index=True, server_default="0")
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.job_id"))
     type = Column(String(255), index=True, server_default="")
     types_index = Column(String(7), index=True, server_default="CURRENT")
+    job: Mapped["Job"] = relationship(back_populates="types")
 
 
 class Resource(DeferredReflectionModel):
@@ -402,6 +411,7 @@ class Job(DeferredReflectionModel):
     stderr_file = Column(Text, nullable=True)
     resubmit_job_id = Column(Integer, server_default="0")
     suspended = Column(String(3), index=True, server_default="NO")
+    types: Mapped[List["JobType"]] = relationship( back_populates="job", cascade="all" )
 
 
 class MoldableJobDescription(Model):

@@ -9,6 +9,7 @@ from .models import (
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
     Job,
+    JobType,
     MoldableJobDescription,
     Resource,
 )
@@ -131,7 +132,8 @@ class BaseQuery:
         return query.outerjoin(
             MoldableJobDescription,
             Job.assigned_moldable_job == MoldableJobDescription.id,
-        ).join(unionquery, Job.id == unionquery.c.job_id)
+        ).join(unionquery, Job.id == unionquery.c.job_id,
+        ).join(JobType, Job.id == JobType.job_id)
 
 
 class BaseQueryCollection(object):
