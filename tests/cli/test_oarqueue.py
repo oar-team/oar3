@@ -13,7 +13,7 @@ from oar.lib.queue import create_queue
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -24,7 +24,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -32,7 +32,7 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "bob"
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
@@ -40,7 +40,7 @@ def test_oarqueue_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
@@ -50,7 +50,7 @@ def test_oarqueue_void(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_enable(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
@@ -62,7 +62,7 @@ def test_oarqueue_enable(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_disable(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
@@ -74,7 +74,7 @@ def test_oarqueue_disable(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_enable_all(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(cli, ["-E"], obj=(minimal_db_initialization, config))
@@ -84,7 +84,7 @@ def test_oarqueue_enable_all(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_disable_all(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(cli, ["-D"], obj=(minimal_db_initialization, config))
@@ -94,7 +94,7 @@ def test_oarqueue_disable_all(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_add(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
@@ -110,7 +110,7 @@ def test_oarqueue_add(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_change(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(
@@ -123,7 +123,7 @@ def test_oarqueue_change(minimal_db_initialization, setup_config):
 
 
 def test_oarqueue_remove(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     create_queue(minimal_db_initialization, "admin", 10, "kamelot")
     assert len(minimal_db_initialization.query(Queue).all()) == 2

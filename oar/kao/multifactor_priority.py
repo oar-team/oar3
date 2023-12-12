@@ -3,7 +3,7 @@ import yaml
 from oar.kao.karma import evaluate_jobs_karma
 from oar.lib.globals import get_logger, init_oar
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.kao.priorty")
 
 

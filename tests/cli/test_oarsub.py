@@ -124,7 +124,7 @@ def set_env(request, backup_and_restore_environ_module):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -151,7 +151,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_oarsub_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     print(vars(result))
@@ -162,7 +162,7 @@ def test_oarsub_void(minimal_db_initialization, setup_config):
 
 
 def test_oarsub_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -170,11 +170,15 @@ def test_oarsub_version(minimal_db_initialization, setup_config):
 
 
 def test_oarsub_sleep_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-q default", '"sleep 1"'], obj=(minimal_db_initialization, config)
+        cli,
+        ["-q default", '"sleep 1"'],
+        obj=(minimal_db_initialization, config),
+        catch_exceptions=False,
     )
+
     print(result.output)
 
     # job = db['Job'].query.one()
@@ -188,7 +192,7 @@ def test_oarsub_sleep_1(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_oarsub_sleep_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -207,7 +211,7 @@ def test_oarsub_sleep_2(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_oarsub_admission_name_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     AdmissionRule.create(minimal_db_initialization, rule="name='yop'")
     runner = CliRunner()
     result = runner.invoke(
@@ -221,7 +225,7 @@ def test_oarsub_admission_name_1(monkeypatch, minimal_db_initialization, setup_c
 
 
 def test_oarsub_parameters(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -247,7 +251,7 @@ def test_oarsub_parameters(monkeypatch, minimal_db_initialization, setup_config)
 
 
 def test_oarsub_directory(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -262,7 +266,7 @@ def test_oarsub_directory(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_oarsub_stdout_stderr(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -277,7 +281,7 @@ def test_oarsub_stdout_stderr(monkeypatch, minimal_db_initialization, setup_conf
 
 
 def test_oarsub_admission_queue_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     AdmissionRule.create(
         minimal_db_initialization, rule=("if user == 'yop':" "    queue= 'default'")
     )
@@ -296,7 +300,7 @@ def test_oarsub_admission_queue_1(monkeypatch, minimal_db_initialization, setup_
 def test_oarsub_sleep_not_enough_resources_1(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -316,7 +320,7 @@ def test_oarsub_sleep_not_enough_resources_1(
 def test_oarsub_sleep_property_error(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -330,7 +334,7 @@ def test_oarsub_sleep_property_error(
 def test_oarsub_property_does_not_exist(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -346,7 +350,7 @@ def test_oarsub_property_does_not_exist(
 
 
 def test_oarsub_sleep_queue_error(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -358,7 +362,7 @@ def test_oarsub_sleep_queue_error(monkeypatch, minimal_db_initialization, setup_
 
 
 def test_oarsub_interactive_reservation_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-I", "-r", "2018-02-06 14:48:0"], obj=(minimal_db_initialization, config)
@@ -370,7 +374,7 @@ def test_oarsub_interactive_reservation_error(minimal_db_initialization, setup_c
 def test_oarsub_interactive_desktop_computing_error(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-I", "-t desktop_computing"], obj=(minimal_db_initialization, config)
@@ -383,7 +387,7 @@ def test_oarsub_interactive_desktop_computing_error(
 
 
 def test_oarsub_interactive_noop_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-I", "-t noop"], obj=(minimal_db_initialization, config)
@@ -393,7 +397,7 @@ def test_oarsub_interactive_noop_error(minimal_db_initialization, setup_config):
 
 
 def test_oarsub_connect_noop_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-C 1234", "-t noop"], obj=(minimal_db_initialization, config)
@@ -406,7 +410,7 @@ def test_oarsub_connect_noop_error(minimal_db_initialization, setup_config):
 
 
 def test_oarsub_scanscript_1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_popen_process_stdout
     fake_popen_process_stdout = (
         "#Funky job\n"
@@ -425,7 +429,7 @@ def test_oarsub_scanscript_1(minimal_db_initialization, setup_config):
 
 
 def test_oarsub_multiple_types(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -443,7 +447,7 @@ def test_oarsub_multiple_types(monkeypatch, minimal_db_initialization, setup_con
 def test_oarsub_connect_job_function(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
@@ -456,7 +460,7 @@ def test_oarsub_connect_job_function(
 def test_oarsub_connect_job_function_bad_user(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "yop"
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
@@ -471,7 +475,7 @@ def test_oarsub_connect_job_function_bad_user(
 def test_oarsub_connect_job_function_noop(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(minimal_db_initialization, 1, types=["noop"])[0]
@@ -485,7 +489,7 @@ def test_oarsub_connect_job_function_noop(
 def test_oarsub_connect_job_function_cosystem(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(minimal_db_initialization, 1, types=["cosystem"])[0]
@@ -498,7 +502,7 @@ def test_oarsub_connect_job_function_cosystem(
 def test_oarsub_connect_job_function_deploy(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
     job_id = insert_running_jobs(minimal_db_initialization, 1, types=["deploy"])[0]
@@ -512,7 +516,7 @@ def test_oarsub_connect_job_function_deploy(
 def test_oarsub_connect_job_function_returncode(
     return_code, exit_values, monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_run_return_code
     fake_run_return_code = return_code << 8
     os.environ["OARDO_USER"] = "oar"
@@ -525,7 +529,7 @@ def test_oarsub_connect_job_function_returncode(
 
 
 def test_oarsub_resubmit_bad_user(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "iznogoud"
     job_id = insert_terminated_jobs(minimal_db_initialization, False, 1)[0]
     print(job_id)
@@ -540,7 +544,7 @@ def test_oarsub_resubmit_bad_user(monkeypatch, minimal_db_initialization, setup_
 
 
 def test_oarsub_resubmit(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "zozo"
     job_id = insert_terminated_jobs(minimal_db_initialization, False, 1)[0]
     # Insert challenge and ssh_keys
@@ -561,7 +565,7 @@ def test_oarsub_resubmit(monkeypatch, minimal_db_initialization, setup_config):
 def test_oarsub_parameters_file_error(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # TODO not the good error
     runner = CliRunner()
     result = runner.invoke(
@@ -580,7 +584,7 @@ def test_oarsub_parameters_file_error(
 def test_oarsub_interactive_bad_job(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_connection_msg
     fake_connection_msg = b"BAD JOB_"
     runner = CliRunner()
@@ -594,7 +598,7 @@ def test_oarsub_interactive_bad_job(
 def test_oarsub_interactive_array_param_file(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     print(f"{config}")
     result = runner.invoke(
@@ -607,7 +611,7 @@ def test_oarsub_interactive_array_param_file(
 
 
 def test_oarsub_interactive_array(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-I", "--array", "2"], obj=(minimal_db_initialization, config)
@@ -621,7 +625,7 @@ def test_oarsub_interactive_array(monkeypatch, minimal_db_initialization, setup_
 def test_oarsub_reservation_rejected(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -637,7 +641,7 @@ def test_oarsub_reservation_rejected(
 def test_oarsub_reservation_granted(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_connection_msg
     fake_connection_msg = b"GOOD RESERVATION_"
     runner = CliRunner()
@@ -653,7 +657,7 @@ def test_oarsub_reservation_granted(
 
 
 def test_oarsub_fail_ar(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     AdmissionRule.create(
         minimal_db_initialization,
         rule="""raise Exception(
@@ -673,7 +677,7 @@ def test_oarsub_fail_ar(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_oarsub_array_index(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["--array", "3", "foo_command"], obj=(minimal_db_initialization, config)

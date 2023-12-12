@@ -42,7 +42,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     config["SERVER_HOSTNAME"] = "localhost"
     config["APPENDICE_SERVER_PORT"] = "6670"

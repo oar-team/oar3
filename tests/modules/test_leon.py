@@ -9,13 +9,13 @@ from oar.lib.job_handling import insert_job
 from oar.lib.models import AssignedResource, EventLog, FragJob, Job, Resource
 from oar.modules.leon import Leon
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("test_leon")
 
 
 @pytest.fixture(scope="module", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -46,7 +46,7 @@ def test_leon_void(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Leon needs of job id
     leon = Leon(
         config,
@@ -61,7 +61,7 @@ def test_leon_simple(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -75,7 +75,7 @@ def test_leon_simple_not_job_id_int(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     leon = Leon(config, logger, "zorglub")
     leon.run(minimal_db_initialization)
     print(leon.exit_code)
@@ -86,7 +86,7 @@ def test_leon_exterminate_jobid(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -116,7 +116,7 @@ def test_leon_exterminate(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -142,7 +142,7 @@ def test_leon_get_jobs_to_kill_waiting(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -171,7 +171,7 @@ def test_leon_get_jobs_to_kill_terminated(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -198,7 +198,7 @@ def test_leon_get_jobs_to_kill_noop(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -226,7 +226,7 @@ def test_leon_get_jobs_to_kill_running(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -252,7 +252,7 @@ def test_leon_get_jobs_to_kill_running_deploy(
     minimal_db_initialization,
     setup_config,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],

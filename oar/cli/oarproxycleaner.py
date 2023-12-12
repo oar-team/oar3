@@ -27,7 +27,8 @@ from .utils import CommandReturns
 def cli(period):
     """Proxy's rules cleaner which checks if jobs associated to Traefik proxy rule is running if not
     rule is deleted from rules file"""
-    config, engine, log = init_oar()
+    config, engine = init_oar()
+
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
     session = scoped()

@@ -15,7 +15,7 @@ from .test_db_fairshare import generate_accountings
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -27,7 +27,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="module", autouse=True)
 def oar_conf(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["JOB_PRIORITY"] = "MULTIFACTOR"
 
     yield config

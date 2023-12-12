@@ -175,7 +175,7 @@ class Leon(object):
 
 
 def main():  # pragma: no cover
-    config, engine, log = init_oar()
+    config, engine = init_oar()
 
     leon = Leon(config, logger, sys.argv[1:])
 

@@ -15,7 +15,7 @@ from oar.lib.models import EventLog, Queue, Resource
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -34,7 +34,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -42,14 +42,14 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
 def test_oarhold_simple_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "Zorglub"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -60,7 +60,7 @@ def test_oarhold_simple_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_simple(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -77,7 +77,7 @@ def test_oarhold_simple(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_array(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=11
     )
@@ -95,7 +95,7 @@ def test_oarhold_array(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_array_nojob(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -108,7 +108,7 @@ def test_oarhold_array_nojob(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_sql(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=11
     )
@@ -126,7 +126,7 @@ def test_oarhold_sql(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_sql_nojob(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
@@ -138,7 +138,7 @@ def test_oarhold_sql_nojob(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_job_types_cosystem(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -154,7 +154,7 @@ def test_oarhold_job_types_cosystem(minimal_db_initialization, setup_config):
 
 
 def test_oarhold_job_types_deploy(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], types=["deploy"]
     )

@@ -112,7 +112,7 @@ def compare_slots_val_ref(slots, v):
 
 @pytest.fixture(scope="module", autouse=True)
 def oar_conf(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     config["QUOTAS"] = "yes"
     # config["QUOTAS_PERIOD"] =  3*7*86400 # 3 weeks

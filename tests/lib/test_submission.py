@@ -38,7 +38,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -102,7 +102,7 @@ def create_hierarchy(request, setup_config, minimal_db_initialization):
 # flake8: noqa: EF811 (function used in fixtures)
 @pytest.fixture(scope="function")
 def active_quotas(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     print("active_quotas")
     config["QUOTAS"] = "yes"
 
@@ -147,7 +147,7 @@ def default_job_parameters(config, resource_request):
 
 
 def test_add_micheline_jobs_1(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
@@ -169,7 +169,7 @@ def test_add_micheline_jobs_1(setup_config, minimal_db_initialization):
 
 
 def test_add_micheline_jobs_2(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -226,7 +226,7 @@ def test_add_micheline_jobs_no_quotas_1(
 def test_add_micheline_jobs_quotas_admin(
     setup_config, minimal_db_initialization, active_quotas
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     import_job_key_inline = ""
     import_job_key_file = ""
@@ -255,7 +255,7 @@ def test_add_micheline_jobs_quotas_admin(
 
 
 def test_add_micheline_simple_array_job(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     prev_conf0 = config["OARSUB_DEFAULT_RESOURCES"]
     prev_conf1 = config["OARSUB_NODES_RESOURCES"]
 
@@ -301,7 +301,7 @@ def test_add_micheline_simple_array_job(setup_config, minimal_db_initialization)
 
 
 def test_scan_script(monkeypatch_tools, setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_popen_process_stdout
     fake_popen_process_stdout = (
         "#Funky job\n"
@@ -362,7 +362,7 @@ def test_scan_script(monkeypatch_tools, setup_config, minimal_db_initialization)
 
 
 def test_job_parameter_notify(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     job_parameters.notify = "mail:name@domain.com"
     error = job_parameters.check_parameters()
@@ -370,7 +370,7 @@ def test_job_parameter_notify(setup_config, minimal_db_initialization):
 
 
 def test_job_parameter_notify_badexec(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, None)
     job_parameters.notify = "exec:/path/to/script args rogue$*"
     error = job_parameters.check_parameters()
@@ -443,7 +443,7 @@ def test_estimate_job_nb_resources(
     setup_config,
     minimal_db_initialization,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     from oar.lib.submission import estimate_job_nb_resources
 
     request = [

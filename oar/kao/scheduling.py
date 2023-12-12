@@ -15,7 +15,7 @@ from oar.lib.job_handling import ALLOW, JobPseudo
 # for quotas
 from oar.lib.resource import ResourceSet
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.kamelot", forward_stderr=True)
 
 

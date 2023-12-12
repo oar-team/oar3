@@ -11,7 +11,7 @@ from oar.lib.models import Job, Queue, Resource
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -47,7 +47,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function")
 def config_suspend_resume(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["JUST_BEFORE_RESUME_EXEC_FILE"] = "true"
     config["SUSPEND_RESUME_SCRIPT_TIMEOUT"] = "1"
 

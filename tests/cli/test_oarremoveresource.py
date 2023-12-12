@@ -12,7 +12,7 @@ from oar.lib.models import Queue, Resource
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -26,14 +26,14 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_oarremoveresource_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 2
 
 
 def test_oarremoveresource_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "Zorglub"
     runner = CliRunner()
     result = runner.invoke(cli, ["1"], obj=(minimal_db_initialization, config))
@@ -41,7 +41,7 @@ def test_oarremoveresource_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oarremoveresource_not_dead(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     first_id = minimal_db_initialization.query(Resource).first().id
     runner = CliRunner()
@@ -52,7 +52,7 @@ def test_oarremoveresource_not_dead(minimal_db_initialization, setup_config):
 
 
 def test_oarremoveresource_no_resource(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
@@ -60,7 +60,7 @@ def test_oarremoveresource_no_resource(minimal_db_initialization, setup_config):
 
 
 def test_oarremoveresource_simple(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     runner = CliRunner()
     Resource.create(

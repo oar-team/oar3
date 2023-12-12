@@ -23,7 +23,7 @@ _day2week_offset = {
     "sun": 6,
 }
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.kao.quotas")
 
 

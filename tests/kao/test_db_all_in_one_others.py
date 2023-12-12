@@ -12,7 +12,7 @@ from oar.lib.tools import get_date
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -69,7 +69,7 @@ def _test_db_timesharing_1(monkeypatch):
 
 
 def test_db_timesharing_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -99,7 +99,7 @@ def test_db_timesharing_2(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_timesharing_3(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(
         minimal_db_initialization,
     )
@@ -131,7 +131,7 @@ def test_db_timesharing_3(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_properties_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -155,7 +155,7 @@ def test_db_properties_1(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_properties_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -182,7 +182,7 @@ def test_db_properties_2(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_properties_3(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -235,7 +235,7 @@ def _test_db_placeholder_1(monkeypatch, minimal_db_initialization, setup_config)
 
 
 def test_db_placeholder_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -261,7 +261,7 @@ def test_db_placeholder_2(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_moldable_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(
         minimal_db_initialization,
     )
@@ -285,7 +285,7 @@ def test_db_moldable_1(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_moldable_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(
         minimal_db_initialization,
     )
@@ -309,7 +309,7 @@ def test_db_moldable_2(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_suspended_duration_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=3", "")])],

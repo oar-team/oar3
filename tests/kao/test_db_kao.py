@@ -9,7 +9,7 @@ from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
 from oar.lib.models import Job, Queue, Resource
 
-config, engine, log = init_oar(no_db=True)
+config, engine = init_oar(no_db=True)
 
 logger = get_logger("oar.kao")
 
@@ -25,7 +25,7 @@ def setup(request):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -59,7 +59,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_db_kao_simple_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -74,7 +74,7 @@ def test_db_kao_simple_1(monkeypatch, minimal_db_initialization, setup_config):
 
 
 def test_db_kao_moldable(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # First moldable job should never pass because there is not enough resources.
     insert_job(
         minimal_db_initialization,

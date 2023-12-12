@@ -4,7 +4,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.lib.database import ephemeral_session
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.job_handling import insert_job
 from oar.lib.models import (
     AssignedResource,
@@ -16,8 +16,6 @@ from oar.lib.models import (
     ResourceLog,
 )
 from oar.modules.sarko import Sarko
-
-_, _, log = init_oar(no_db=True)
 
 logger = get_logger("test_sarko")
 
@@ -39,7 +37,7 @@ def fake_signal_oarexec(host, job_id, signal_name, detach, openssh_cmd):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -73,7 +71,7 @@ def assign_resources(session, job_id):
 
 
 def test_sarko_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # print("yop")
     # for j in minimal_db_initializationquery(Job).all():
     #    print(j)
@@ -85,7 +83,7 @@ def test_sarko_void(minimal_db_initialization, setup_config):
 
 def test_sarko_job_walltime_reached(minimal_db_initialization, setup_config):
     """date > (start_time + max_time):"""
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -110,7 +108,7 @@ def test_sarko_job_walltime_reached(minimal_db_initialization, setup_config):
 
 def test_sarko_job_to_checkpoint(minimal_db_initialization, setup_config):
     """(date >= (start_time + max_time - job.checkpoint))"""
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -140,7 +138,7 @@ def test_sarko_job_to_checkpoint(minimal_db_initialization, setup_config):
 
 
 def test_sarko_timer_armed_job_terminated(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -166,7 +164,7 @@ def test_sarko_timer_armed_job_terminated(minimal_db_initialization, setup_confi
 
 
 def test_sarko_timer_armed_job_running(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -186,7 +184,7 @@ def test_sarko_timer_armed_job_running(minimal_db_initialization, setup_config):
 
 
 def test_sarko_timer_armed_job_refrag(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -212,7 +210,7 @@ def test_sarko_timer_armed_job_refrag(minimal_db_initialization, setup_config):
 
 
 def test_sarko_timer_armed_job_exterminate(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -240,7 +238,7 @@ def test_sarko_timer_armed_job_exterminate(minimal_db_initialization, setup_conf
 
 
 def test_sarko_dead_switch_time_none(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["DEAD_SWITCH_TIME"] = "100"
     sarko = Sarko(config, logger)
     sarko.run(
@@ -250,7 +248,7 @@ def test_sarko_dead_switch_time_none(minimal_db_initialization, setup_config):
 
 
 def test_sarko_dead_switch_time_one(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["DEAD_SWITCH_TIME"] = "100"
 
     resources = minimal_db_initialization.query(Resource).all()
@@ -276,7 +274,7 @@ def test_sarko_dead_switch_time_one(minimal_db_initialization, setup_config):
 
 
 def test_sarko_expired_resources(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     resources = minimal_db_initialization.query(Resource).all()
     r_id = resources[0].id
 

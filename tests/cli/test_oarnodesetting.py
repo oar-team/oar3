@@ -24,7 +24,7 @@ def fake_notify_almighty(notification):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -42,7 +42,7 @@ def monkeypatch_tools(request, monkeypatch, minimal_db_initialization, setup_con
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -50,7 +50,7 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_simple(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-a"], obj=(minimal_db_initialization, config))
     print(result.exception)
@@ -64,7 +64,7 @@ def test_oarnodesetting_simple(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_core_cpu(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-a", "-p core=1", "-p cpu=2"], obj=(minimal_db_initialization, config)
@@ -81,7 +81,7 @@ def test_oarnodesetting_core_cpu(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-r", "1"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -89,7 +89,7 @@ def test_oarnodesetting_error_1(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_2(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -101,7 +101,7 @@ def test_oarnodesetting_error_2(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_3(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -113,7 +113,7 @@ def test_oarnodesetting_error_3(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_4(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-r", "1", "--drain", "midoff"], obj=(minimal_db_initialization, config)
@@ -123,7 +123,7 @@ def test_oarnodesetting_error_4(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_error_5(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli, ["-r", "1", "--add"], obj=(minimal_db_initialization, config)
@@ -133,7 +133,7 @@ def test_oarnodesetting_error_5(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_sql_drain(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
@@ -147,7 +147,7 @@ def test_oarnodesetting_sql_drain(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_drain_off(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost", drain="YES")
     resource = minimal_db_initialization.query(Resource).one()
     print(resource.drain)
@@ -163,7 +163,7 @@ def test_oarnodesetting_drain_off(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_sql_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
@@ -177,7 +177,7 @@ def test_oarnodesetting_sql_void(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_system_property_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
@@ -192,7 +192,7 @@ def test_oarnodesetting_system_property_error(minimal_db_initialization, setup_c
 def test_oarnodesetting_malformed_property_error(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     runner = CliRunner()
     result = runner.invoke(
@@ -205,7 +205,7 @@ def test_oarnodesetting_malformed_property_error(
 
 
 def test_oarnodesetting_sql_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for _ in range(2):
         Resource.create(
             minimal_db_initialization, network_address="localhost", state="Absent"
@@ -222,7 +222,7 @@ def test_oarnodesetting_sql_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_sql_state1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for _ in range(2):
         Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
@@ -237,7 +237,7 @@ def test_oarnodesetting_sql_state1(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_host_by_file_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     here = os.path.abspath(os.path.dirname(__file__))
     filename = os.path.join(here, "data", "hostfile.txt")
     for _ in range(2):
@@ -255,7 +255,7 @@ def test_oarnodesetting_host_by_file_state(minimal_db_initialization, setup_conf
 
 
 def test_oarnodesetting_hosts_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(
         minimal_db_initialization, network_address="localhost0", state="Absent"
     )
@@ -277,7 +277,7 @@ def test_oarnodesetting_hosts_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_hosts_state1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(
         minimal_db_initialization, network_address="localhost0", state="Absent"
     )
@@ -299,7 +299,7 @@ def test_oarnodesetting_hosts_state1(minimal_db_initialization, setup_config):
 
 
 def test_oarnodesetting_last_property_value(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost", core="1")
     Resource.create(minimal_db_initialization, network_address="localhost", core="2")
     minimal_db_initialization.commit()
@@ -314,7 +314,7 @@ def test_oarnodesetting_last_property_value(minimal_db_initialization, setup_con
 def test_oarnodesetting_last_property_value_error0(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
@@ -331,7 +331,7 @@ def test_oarnodesetting_last_property_value_error0(
 def todo_test_oarnodesetting_last_property_value_error1(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
@@ -344,7 +344,7 @@ def todo_test_oarnodesetting_last_property_value_error1(
 
 
 def test_oarnodesetting_maintenance_on_nowait(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()
     last_available_upto = (
@@ -366,7 +366,7 @@ def test_oarnodesetting_maintenance_on_nowait(minimal_db_initialization, setup_c
 
 
 def test_oarnodesetting_maintenance_off_nowait(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(
         minimal_db_initialization,
         network_address="localhost",
@@ -392,7 +392,7 @@ def test_oarnodesetting_maintenance_off_nowait(minimal_db_initialization, setup_
 def test_oarnodesetting_maintenance_on_wait_timeout(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for _ in range(10):
         Resource.create(minimal_db_initialization, network_address="localhost")
     minimal_db_initialization.commit()

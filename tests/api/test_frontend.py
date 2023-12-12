@@ -6,14 +6,14 @@ from oar.api import API_VERSION
 
 
 def test_app_frontend_index(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     res = client.get("/")
     print(res.json)
     assert res.status_code == 200 and "api_timestamp" in res.json()
 
 
 def test_app_frontend_version(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     res = client.get("/version")
     print(res.json())
     assert res.status_code == 200 and "api_timestamp" in res.json()
@@ -24,7 +24,7 @@ def test_app_frontend_version(client, setup_config):
 
 
 def test_app_frontend_whoami(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
 
     res = client.get("/whoami")
     print(res.json())
@@ -32,7 +32,7 @@ def test_app_frontend_whoami(client, setup_config):
 
 
 def test_app_frontend_timezone(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     res = client.get("/timezone")
     print(res.json())
     assert res.status_code == 200 and "api_timestamp" in res.json()
@@ -40,7 +40,7 @@ def test_app_frontend_timezone(client, setup_config):
 
 
 def test_app_frontend_authentication(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     _, htpasswd_filename = mkstemp()
     config["HTPASSWD_FILE"] = htpasswd_filename
 
@@ -55,7 +55,7 @@ def test_app_frontend_authentication(client, setup_config):
 
 
 def test_app_frontend_authentication_wrong_passwd(client, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     _, htpasswd_filename = mkstemp()
     config["HTPASSWD_FILE"] = htpasswd_filename
 

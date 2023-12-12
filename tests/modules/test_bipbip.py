@@ -44,7 +44,7 @@ def fake_manage_remote_commands(
 
 @pytest.fixture(scope="function", autouse=True)
 def builtin_config(request, setup_config):
-    config, db, engine = setup_config
+    config, _ = setup_config
 
     config.setdefault_config(
         {"CPUSET_PATH": "/oar", "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD": "cpuset"}
@@ -55,7 +55,7 @@ def builtin_config(request, setup_config):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -88,7 +88,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_bipbip_void(setup_config, minimal_db_initialization):
-    config, db, engine = setup_config
+    config, engine = setup_config
     bipbip = BipBip([], config)
     bipbip.run(minimal_db_initialization, config)
     print(bipbip.exit_code)
@@ -96,7 +96,7 @@ def test_bipbip_void(setup_config, minimal_db_initialization):
 
 
 def test_bipbip_simple(setup_config, minimal_db_initialization):
-    config, db, engine = setup_config
+    config, engine = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )

@@ -12,7 +12,7 @@ from oar.lib.models import DeferredReflectionModel
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -21,7 +21,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, engine, config))
     print(result.exception)
@@ -33,7 +33,7 @@ def test_version(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_add(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
 
     runner = CliRunner()
     result = runner.invoke(
@@ -58,7 +58,7 @@ def test_oarproperty_add(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_simple_error(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
 
     result = runner.invoke(
@@ -75,7 +75,7 @@ def test_oarproperty_simple_error(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_add_error1(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -92,7 +92,7 @@ def test_oarproperty_add_error1(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_add_error2(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -109,7 +109,7 @@ def test_oarproperty_add_error2(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_add_error3(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -127,7 +127,7 @@ def test_oarproperty_add_error3(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oarproperty_list(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -147,7 +147,7 @@ def test_oarproperty_list(minimal_db_initialization, setup_config):
     reason="messing up with resource table has other side effects in tests..."
 )
 def test_oarproperty_delete(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
 
     DeferredReflectionModel.prepare(engine)
@@ -166,7 +166,7 @@ def test_oarproperty_delete(minimal_db_initialization, setup_config):
 )
 @pytest.mark.skip
 def test_oarproperty_rename(minimal_db_initialization, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     runner = CliRunner()
 
     result = runner.invoke(

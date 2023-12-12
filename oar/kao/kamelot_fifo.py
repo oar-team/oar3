@@ -10,7 +10,7 @@ from oar.kao.platform import Platform
 from oar.kao.scheduling_basic import find_resource_hierarchies_job
 from oar.lib.globals import get_logger, init_oar
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 
 
 logger = get_logger("oar.kamelot_fifo")
@@ -112,7 +112,7 @@ def schedule_fifo_cycle(session, config, plt, queue="default", hierarchy_use=Fal
 #
 def main(session=None, config=None):
     if not session:
-        config, engine, log = init_oar(config)
+        config, engine = init_oar(config)
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)

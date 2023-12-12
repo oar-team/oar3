@@ -15,7 +15,7 @@ from oar.lib.plugins import find_plugin_function
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.kamelot")
 
 
@@ -204,7 +204,7 @@ def schedule_cycle(session, config, plt, now, queues=["default"]):
 #
 def main(session=None, config=None):
     if not session:
-        config, engine, log = init_oar(config)
+        config, engine = init_oar(config)
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)

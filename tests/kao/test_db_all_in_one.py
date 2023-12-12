@@ -36,7 +36,7 @@ quotas_simple_temporal_rules = {
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -64,7 +64,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="function")
 def active_quotas(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["QUOTAS"] = "yes"
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
@@ -85,7 +85,7 @@ def active_quotas(request, setup_config):
 
 @pytest.fixture(scope="function")
 def active_energy_saving(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Some tests modify this value. We register the initial value and reset it
     # after the test so it doesn't break other tests.
     initial_energy_saving_internal = config["ENERGY_SAVING_INTERNAL"]
@@ -175,7 +175,7 @@ def setup(request):
 
 
 def test_db_all_in_one_simple_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -204,7 +204,7 @@ def test_db_all_in_one_ar_different_moldable_id(
     # add one job
     from oar.lib.models import Job, MoldableJobDescription
 
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     dummy_job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=6", "")])], properties=""
@@ -239,7 +239,7 @@ def test_db_all_in_one_ar_different_moldable_id(
 def test_db_all_in_one_ar_1(monkeypatch, minimal_db_initialization, setup_config):
     # add one job
 
-    config, _, _ = setup_config
+    config, _ = setup_config
     job = insert_and_sched_ar(
         minimal_db_initialization, config, get_date(minimal_db_initialization) + 10
     )
@@ -496,7 +496,7 @@ def test_db_all_in_one_temporal_quotas_AR_2(
 
 
 def test_db_all_in_one_AR_2(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job = insert_and_sched_ar(
         minimal_db_initialization, config, get_date(minimal_db_initialization) - 1000
     )
@@ -505,7 +505,7 @@ def test_db_all_in_one_AR_2(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_AR_3(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     job = insert_and_sched_ar(minimal_db_initialization, config, now + 1000)
     new_start_time = now - 2000
@@ -525,7 +525,7 @@ def test_db_all_in_one_AR_3(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_AR_4(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     job = insert_and_sched_ar(minimal_db_initialization, config, now + 10)
     new_start_time = now - 20
@@ -544,7 +544,7 @@ def test_db_all_in_one_AR_4(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_AR_5(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     job = insert_and_sched_ar(minimal_db_initialization, config, now + 10)
     new_start_time = now - 20
@@ -569,7 +569,7 @@ def test_db_all_in_one_AR_5(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_AR_6(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     job = insert_and_sched_ar(minimal_db_initialization, config, now + 10, 600)
     new_start_time = now - 350
@@ -592,7 +592,7 @@ def test_db_all_in_one_AR_6(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_AR_7(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     insert_job(
         minimal_db_initialization,
@@ -610,7 +610,7 @@ def test_db_all_in_one_AR_7(monkeypatch, minimal_db_initialization, setup_config
 
 
 def test_db_all_in_one_BE(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Queue.create(
         minimal_db_initialization,
         name="besteffort",
@@ -848,7 +848,7 @@ def test_db_all_in_one_simple_2(
     setup_config,
     backup_and_restore_environ_function,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -876,7 +876,7 @@ def test_db_all_in_one_simple_2(
 def test_db_all_in_one_simple_interactive_waiting_1(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )

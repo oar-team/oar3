@@ -21,7 +21,7 @@ def fake_pingchecker(hosts):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -42,7 +42,7 @@ def monkeypatch_tools(
 
 
 def test_finaud_void(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     finaud = Finaud(config)
     finaud.run(minimal_db_initialization)
     print(finaud.return_value)
@@ -50,7 +50,7 @@ def test_finaud_void(setup_config, minimal_db_initialization):
 
 
 def test_finaud_one_bad_node(setup_config, minimal_db_initialization):
-    config, _, _ = setup_config
+    config, _ = setup_config
     set_fake_bad_nodes(["localhost0"])
     finaud = Finaud(config)
     finaud.run(minimal_db_initialization)
@@ -70,7 +70,7 @@ def test_finaud_one_bad_node(setup_config, minimal_db_initialization):
 def test_finaud_one_suspected_node_is_not_bad(setup_config, minimal_db_initialization):
     # resources = db.query(Resource).all()
     # import pdb; pdb.set_trace()
-    config, _, _ = setup_config
+    config, _ = setup_config
     minimal_db_initialization.query(Resource).filter(
         Resource.network_address == "localhost0"
     ).update(

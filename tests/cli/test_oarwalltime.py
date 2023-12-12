@@ -24,7 +24,7 @@ def fake_notify_almighty(notification):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -57,7 +57,7 @@ def finalizer(request):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -65,14 +65,14 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oardel_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
 
 
 def test_oardel_disabled(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["666666"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -81,7 +81,7 @@ def test_oardel_disabled(minimal_db_initialization, setup_config):
 
 
 def test_oardel_unexisting_job(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
     runner = CliRunner()
     result = runner.invoke(cli, ["666666"], obj=(minimal_db_initialization, config))
@@ -91,7 +91,7 @@ def test_oardel_unexisting_job(minimal_db_initialization, setup_config):
 
 
 def test_oardel_not_running_job1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -106,7 +106,7 @@ def test_oardel_not_running_job1(minimal_db_initialization, setup_config):
 
 
 def test_oardel_request_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "toto"
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
     job_id = insert_job(
@@ -125,7 +125,7 @@ def test_oardel_request_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oardel_request_not_running(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "alice"
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
 
@@ -145,7 +145,7 @@ def test_oardel_request_not_running(minimal_db_initialization, setup_config):
 
 
 def test_oardel_request(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "alice"
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
     job_id = insert_running_jobs(minimal_db_initialization, 1, user="alice")[0]
@@ -174,7 +174,7 @@ def test_oardel_request(minimal_db_initialization, setup_config):
 
 
 def test_walltime_container_job(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "alice"
     config["WALLTIME_CHANGE_ENABLED"] = "YES"
     job_id = insert_running_jobs(

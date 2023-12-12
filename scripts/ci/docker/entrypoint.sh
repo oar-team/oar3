@@ -14,6 +14,6 @@ touch /etc/oar/oar.conf
 
 chown $CONTAINER_UID:$CONTAINER_GID /etc/oar
 
-wait-for-it -t 120 ${POSTGRES_HOST}:5432
+# wait-for-it -t 120 ${POSTGRES_HOST}:5432
 
-setpriv --reuid=$CONTAINER_UID --regid=$CONTAINER_GID --init-groups "$@"
+"$@"

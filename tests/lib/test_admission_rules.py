@@ -12,7 +12,7 @@ from oar.lib.submission import JobParameters, apply_admission_rules, check_reser
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    config, _, engine = setup_config
+    config, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -68,7 +68,7 @@ def default_job_parameters(config, **kwargs):
 
 
 def test_01_default_queue(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     job_parameters = default_job_parameters(
         config,
@@ -78,13 +78,13 @@ def test_01_default_queue(minimal_db_initialization, setup_config):
 
 
 def test_02_prevent_root_oar_toSubmit_ok(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, user="alice")
     apply_admission_rules(minimal_db_initialization, config, job_parameters)
 
 
 def test_02_prevent_root_oar_toSubmit_bad(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     job_parameters = default_job_parameters(config, user="oar")
     with pytest.raises(Exception):
@@ -94,7 +94,7 @@ def test_02_prevent_root_oar_toSubmit_bad(minimal_db_initialization, setup_confi
 def test_03_avoid_jobs_on_resources_in_drain_mode(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config,
     )
@@ -103,14 +103,14 @@ def test_03_avoid_jobs_on_resources_in_drain_mode(
 
 
 def test_04_submit_in_admin_queue(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, user="yop", queue="admin")
     with pytest.raises(Exception):
         apply_admission_rules(minimal_db_initialization, config, job_parameters)
 
 
 def test_05_filter_bad_resources(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # job_parameters.resource_request
     # [([{'property': '', 'resources': [{'resource': 'switch', 'value': '2'}, {'resource': 'resource_id', 'value': '10'}]}, {'property': "lic_type = 'mathlab'", 'resources': [{'resource': 'state', 'value': '2'}]}], 216000)]
     job_parameters = default_job_parameters(
@@ -123,7 +123,7 @@ def test_05_filter_bad_resources(minimal_db_initialization, setup_config):
 
 
 def test_06_formatting_besteffort(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, queue="besteffort")
     apply_admission_rules(minimal_db_initialization, config, job_parameters, r"06.*")
     assert job_parameters.types == ["besteffort"]
@@ -139,7 +139,7 @@ def test_06_formatting_besteffort(minimal_db_initialization, setup_config):
 
 
 def test_07_besteffort_advance_reservation(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config,
         queue="besteffort",
@@ -150,7 +150,7 @@ def test_07_besteffort_advance_reservation(minimal_db_initialization, setup_conf
 
 
 def test_08_formatting_deploy(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config, properties="yop=yop", types=["deploy"], resource=["network_address=1"]
     )
@@ -159,7 +159,7 @@ def test_08_formatting_deploy(minimal_db_initialization, setup_config):
 
 
 def test_09_prevent_deploy_on_non_entire_nodes(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config, types=["deploy"], resource=["/cpu=2, walltime = 60"]
     )
@@ -173,7 +173,7 @@ def test_09_prevent_deploy_on_non_entire_nodes(minimal_db_initialization, setup_
 
 
 def test_11_advance_reservation_limitation(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=2", "")])],
@@ -194,7 +194,7 @@ def test_11_advance_reservation_limitation(minimal_db_initialization, setup_conf
 
 
 def test_13_default_walltime(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(config, resource=["/nodes=2/cpu=10"])
 
     apply_admission_rules(minimal_db_initialization, config, job_parameters)
@@ -203,7 +203,7 @@ def test_13_default_walltime(minimal_db_initialization, setup_config):
 
 
 def test_14_interactive_max_walltime(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config, job_type="INTERACTIVE", resource=["/nodes=2/core=10, walltime=14:00:00"]
     )
@@ -213,7 +213,7 @@ def test_14_interactive_max_walltime(minimal_db_initialization, setup_config):
 
 
 def test_15_check_types(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config, types=["idempotent", "cosystem=bug"]
     )
@@ -222,7 +222,7 @@ def test_15_check_types(minimal_db_initialization, setup_config):
 
 
 def test_16_default_resource_property(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config, resource=["/nodes=2/core=10+{lic='yop'}/n=1, walltime=14:00:00"]
     )
@@ -236,7 +236,7 @@ def test_16_default_resource_property(minimal_db_initialization, setup_config):
 
 
 def test_20_job_properties_cputype(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config,
     )
@@ -256,7 +256,7 @@ def test_20_job_properties_cputype(minimal_db_initialization, setup_config):
 
 
 def test_21_add_sequential_constraint(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_parameters = default_job_parameters(
         config,
         resource=["resource_id=2,walltime=50:00:00", "resource_id=12,walltime=1:00:00"],

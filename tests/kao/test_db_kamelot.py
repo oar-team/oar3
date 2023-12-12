@@ -13,7 +13,7 @@ from oar.lib.models import GanttJobsPrediction, GanttJobsResource, Resource
 
 @pytest.fixture(scope="function", autouse=False)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -27,7 +27,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_db_kamelot_1(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default", time.time()]
     main(session=minimal_db_initialization, config=config)
@@ -37,7 +37,7 @@ def test_db_kamelot_1(minimal_db_initialization, setup_config):
 
 
 def test_db_kamelot_2(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default"]
     main(session=minimal_db_initialization, config=config)
@@ -47,7 +47,7 @@ def test_db_kamelot_2(minimal_db_initialization, setup_config):
 
 
 def test_db_kamelot_3(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot"]
     main(session=minimal_db_initialization, config=config)
@@ -58,7 +58,7 @@ def test_db_kamelot_3(minimal_db_initialization, setup_config):
 
 @pytest.fixture(scope="function", autouse=False)
 def properties_init(request, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for i in range(4):
         Resource.create(minimal_db_initialization, network_address="localhost")
 
@@ -78,7 +78,7 @@ def properties_init(request, minimal_db_initialization, setup_config):
 
 
 def test_db_kamelot_4(properties_init, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     properties_init, session = properties_init
     old_sys_argv = sys.argv
     sys.argv = ["test_kamelot", "default", time.time()]

@@ -10,7 +10,7 @@ from oar.lib.job_handling import (
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed
 from oar.lib.walltime import get_conf, update_walltime_change_request
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 
 logger = get_logger("oar.kao.walltime_change")
 

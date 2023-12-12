@@ -67,12 +67,11 @@ def init_oar(config=None, no_db=False, no_reflect=False):
     if not config:
         config = init_config()
 
-    logger = create_logger(config)
     if no_db:
-        return config, None, logger
+        return config, None
     else:
         engine = init_db(config, no_reflect=no_reflect)
-        return config, engine, logger
+        return config, engine
 
 
 def init_and_get_session(config=None):

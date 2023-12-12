@@ -15,7 +15,7 @@ from oar.lib.models import FragJob, JobStateLog, Queue, Resource
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -35,7 +35,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(
         cli,
@@ -48,7 +48,7 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oardel_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     assert result.exit_code == 1
@@ -57,7 +57,7 @@ def test_oardel_void(minimal_db_initialization, setup_config):
 def test_oardel_simple(
     minimal_db_initialization, setup_config, backup_and_restore_environ_function
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -74,7 +74,7 @@ def test_oardel_simple(
 
 
 def test_oardel_simple_cosystem(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization,
@@ -94,7 +94,7 @@ def test_oardel_simple_cosystem(minimal_db_initialization, setup_config):
 
 
 def test_oardel_simple_deploy(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization,
@@ -110,7 +110,7 @@ def test_oardel_simple_deploy(minimal_db_initialization, setup_config):
 
 
 def test_oardel_simple_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "Zorglub"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -121,7 +121,7 @@ def test_oardel_simple_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oardel_array(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     array_id = 1234  # Arbitrarily chosen
     for _ in range(5):
@@ -141,7 +141,7 @@ def test_oardel_array(minimal_db_initialization, setup_config):
 
 
 def test_oardel_array_nojob(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -154,7 +154,7 @@ def test_oardel_array_nojob(minimal_db_initialization, setup_config):
 
 
 def test_oardel_sql(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], array_id=11
     )
@@ -167,7 +167,7 @@ def test_oardel_sql(minimal_db_initialization, setup_config):
 
 
 def test_oardel_sql_nojob(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
     result = runner.invoke(
@@ -180,7 +180,7 @@ def test_oardel_sql_nojob(minimal_db_initialization, setup_config):
 def test_oardel_force_terminate_finishing_job_bad_user(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "Zorglub"
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -195,7 +195,7 @@ def test_oardel_force_terminate_finishing_job_bad_user(
 def test_oardel_force_terminate_finishing_job_not_finishing(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -210,7 +210,7 @@ def test_oardel_force_terminate_finishing_job_not_finishing(
 def test_oardel_force_terminate_finishing_job_too_early(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization,
@@ -227,7 +227,7 @@ def test_oardel_force_terminate_finishing_job_too_early(
 
 
 def test_oardel_force_terminate_finishing_job(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization,
@@ -256,7 +256,7 @@ def test_oardel_force_terminate_finishing_job(minimal_db_initialization, setup_c
 
 
 def test_oardel_besteffort_bad_user(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "Zorglub"
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -267,7 +267,7 @@ def test_oardel_besteffort_bad_user(minimal_db_initialization, setup_config):
 
 
 def test_oardel_besteffort_not_running(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(minimal_db_initialization, res=[(60, [("resource_id=4", "")])])
     runner = CliRunner()
@@ -280,7 +280,7 @@ def test_oardel_besteffort_not_running(minimal_db_initialization, setup_config):
 
 
 def test_oardel_remove_besteffort(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization,
@@ -298,7 +298,7 @@ def test_oardel_remove_besteffort(minimal_db_initialization, setup_config):
 
 
 def test_oardel_add_besteffort(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], state="Running"

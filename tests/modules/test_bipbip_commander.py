@@ -28,7 +28,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request, setup_config):
-    setup_config, _, engine = setup_config
+    setup_config, engine = setup_config
     setup_config["SERVER_HOSTNAME"] = "localhost"
     setup_config["APPENDICE_SERVER_PORT"] = "6670"
     setup_config["BIPBIP_COMMANDER_SERVER"] = "localhost"
@@ -71,7 +71,7 @@ def test_bipbip_commander_LEONEXTERMINATE(setup_config, setup):
 
 
 def test_bipbip_commander_LEONEXTERMINATE2(setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     fakezmq.recv_msgs[0] = [
         {"job_id": 10, "cmd": "LEONEXTERMINATE"},
         {"job_id": 10, "cmd": "LEONEXTERMINATE"},
