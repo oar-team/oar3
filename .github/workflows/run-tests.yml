@@ -33,7 +33,7 @@ jobs:
           matrix:
             images:
               # Configuration for bullseye
-              - { PYTHON_IMAGE: "python:3.9", POSTGRES_IMAGE: "postgres:13" }
+              - { PYTHON_IMAGE: "python:3.10", POSTGRES_IMAGE: "postgres:13" }
       steps:
         - name: Check out repository code
           uses: actions/checkout@v2
