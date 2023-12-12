@@ -11,7 +11,7 @@ from oar.lib.models import EventLog
 
 @pytest.fixture(scope="function", autouse=False)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -51,7 +51,7 @@ def monkeypatch_tools(request, monkeypatch):
     ],
 )
 def test_check_end_of_job(error, event_type, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     config["OAREXEC_DIRECTORY"] = "/tmp/foo"
     job_id = insert_job(
@@ -76,7 +76,7 @@ def test_check_end_of_job(error, event_type, minimal_db_initialization, setup_co
 
 
 def test_get_data_jobs_moldable(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Create a moldable job
     test_jobs = []
     job_id = insert_job(

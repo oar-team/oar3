@@ -93,7 +93,7 @@ def schedule_cycle(session, config, plt, queues=["default"]):
 #
 def main(session=None, config=None):
     if not session:
-        config, engine, log = init_oar(config)
+        config, engine = init_oar(config)
 
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)

@@ -6,11 +6,12 @@ from fastapi import FastAPI, Request, Response
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oar.lib.configuration import Configuration
-from oar.lib.globals import init_config, init_oar
+from oar.lib.globals import get_logger, init_config, init_oar
 
 from .routers import frontend, job, media, proxy, resource, stress_factor
 
 # from oar.api import API_VERSION
+logger = get_logger("rest_api")
 
 default_config = {
     "API_TRUST_IDENT": 1,
@@ -47,7 +48,6 @@ def create_app(
     config: Optional[Configuration] = None,
     engine=None,
     root_path: Optional[str] = None,
-    logger=None,
 ):
     """Return the OAR API application instance."""
     app = FastAPI(root_path=root_path)
@@ -55,10 +55,8 @@ def create_app(
     if not config:
         config = init_config()
 
-    if engine is None and logger is None:
-        config, engine, logger = init_oar(config=config)
-    elif engine is None:
-        config, engine, _ = init_oar(config=config)
+    if engine is None:
+        config, engine = init_oar(config=config)
 
     logger.info("creating app")
 

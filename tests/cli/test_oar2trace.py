@@ -14,7 +14,7 @@ NB_NODES = 5
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -27,7 +27,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_oar2trace_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-p"])
     assert result.exit_code == 1
@@ -36,7 +36,7 @@ def test_oar2trace_void(minimal_db_initialization, setup_config):
 # flake8: noqa: F401 (TODO)
 @pytest.mark.skip(reason="wip (not working)")
 def test_oar2trace_simple(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(res=[(100, [("resource_id=3", "")])])
 
     meta_schedule("internal")

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from oar.lib.basequery import BaseQuery, BaseQueryCollection
 
 # from oar.lib.models import (db, Job, Resource)
-from oar.lib.utils import cached_property, row2dict
+from oar.lib.utils import row2dict
 
 # from flask import abort, current_app
 # TODO: This whole file is to review since it has been adapted from flask and now use in fastapi.

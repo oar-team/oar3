@@ -7,7 +7,7 @@ from oar.kao.simsim import JobSimu, ResourceSetSimu, SimSched, SWFWorkload
 
 
 def _test_simsim_1(setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Set undefined config value to default one
     DEFAULT_CONFIG = {
         "HIERARCHY_LABELS": "resource_id,network_address",

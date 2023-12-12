@@ -640,7 +640,7 @@ class BipBip(object):
 
 
 def main():  # pragma: no cover
-    config, engine, log = init_oar()
+    config, engine = init_oar()
 
     # Create a session maker
     session_factory = sessionmaker(bind=engine)

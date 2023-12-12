@@ -17,7 +17,7 @@ from oar.lib.node import (
     update_node_nextFinaudDecision,
 )
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.modules.finaud", forward_stderr=True)
 logger.debug("Start Finaud")
 

@@ -16,7 +16,7 @@ from oar.lib.models import Accounting, GanttJobsPrediction, Job, Resource
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -26,7 +26,7 @@ def minimal_db_initialization(request, setup_config):
 
 @pytest.fixture(scope="module", autouse=True)
 def oar_conf(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config["JOB_PRIORITY"] = "FAIRSHARE"
 
     @request.addfinalizer
@@ -89,7 +89,7 @@ def generate_accountings(
 
 
 def test_db_fairsharing(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     print("Test_db_fairsharing")
 
     print("DB_BASE_FILE: ", config["DB_BASE_FILE"])

@@ -11,10 +11,12 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.exc import ProgrammingError
 
 # from oar.lib import config, db
-from oar.lib.globals import init_config, init_oar
+from oar.lib.globals import get_logger, init_config, init_oar
 from oar.lib.models import DeferredReflectionModel, Model
 
 from . import DEFAULT_CONFIG
+
+logger = get_logger("conftest", forward_stderr=False)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -48,7 +50,7 @@ def setup_config(request):
         config["DB_BASE_LOGIN_RO"] = os.environ.get("POSTGRES_USER_RO", "oar_ro")
         config["DB_HOSTNAME"] = os.environ.get("POSTGRES_HOST", "localhost")
 
-    config, engine, logger = init_oar(config=config, no_reflect=True)
+    config, engine = init_oar(config=config, no_reflect=True)
 
     # Model.metadata.drop_all(bind=engine)
     kw = {"nullable": True}
@@ -73,7 +75,7 @@ def setup_config(request):
     # reflect_base(Model.metadata, DeferredReflectionModel, engine)
     DeferredReflectionModel.prepare(engine)
     # db.reflect(Model.metadata, bind=engine)
-    yield config, logger, engine
+    yield config, engine
 
     # db.close()
     engine.dispose()

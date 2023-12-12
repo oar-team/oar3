@@ -27,7 +27,7 @@ NB_JOBS = 5
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 

@@ -36,7 +36,7 @@ def fake_exec_with_timeout(args, timeout):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -74,7 +74,7 @@ def assign_resources(session, job_id):
 
 
 def test_node_change_state_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     node_change_state = NodeChangeState(config)
     node_change_state.run(minimal_db_initialization)
     print(node_change_state.exit_code)
@@ -100,14 +100,14 @@ def base_test_node_change(
 
 
 def test_node_change_state_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     base_test_node_change(minimal_db_initialization, config, "EXTERMINATE_JOB", "Error")
 
 
 def test_node_change_state_job_idempotent_exitcode_25344(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -127,14 +127,14 @@ def test_node_change_state_job_idempotent_exitcode_25344(
 
 
 def test_node_change_state_job_switch_to_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     base_test_node_change(
         minimal_db_initialization, config, "SWITCH_INTO_ERROR_STATE", "Error"
     )
 
 
 def test_node_change_state_job_epilogue_error(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     base_test_node_change(
         minimal_db_initialization, config, "EPILOGUE_ERROR", "Terminated"
     )
@@ -143,7 +143,7 @@ def test_node_change_state_job_epilogue_error(minimal_db_initialization, setup_c
 def test_node_change_state_job_FRAG_JOB_REQUEST(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     base_test_node_change(
         minimal_db_initialization, config, "FRAG_JOB_REQUEST", "Waiting"
     )
@@ -152,7 +152,7 @@ def test_node_change_state_job_FRAG_JOB_REQUEST(
 def test_node_change_state_PING_CHECKER_NODE_SUSPECTED(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -175,7 +175,7 @@ def test_node_change_state_PING_CHECKER_NODE_SUSPECTED(
 def test_node_change_state_job_scheduled_prologue_error(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -194,7 +194,7 @@ def test_node_change_state_job_scheduled_prologue_error(
 def test_node_change_state_job_check_toresubmit(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -217,7 +217,7 @@ def test_node_change_state_job_check_toresubmit(
 
 
 def test_node_change_state_job_suspend_resume(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -243,7 +243,7 @@ def test_node_change_state_job_suspend_resume(minimal_db_initialization, setup_c
 def test_node_change_state_job_suspend_resume_error(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_exec_with_timeout_return
     fake_exec_with_timeout_return = "foo_msg_error"
 
@@ -275,7 +275,7 @@ def test_node_change_state_job_suspend_resume_error(
 def test_node_change_state_job_suspend_resume_suspend_tag0(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     global fake_manage_remote_commands_return
     fake_manage_remote_commands_return = (0, [])
 
@@ -307,7 +307,7 @@ def test_node_change_state_job_suspend_resume_suspend_tag0(
 def test_node_change_state_job_suspend_resume_waiting_interactive(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -324,7 +324,7 @@ def test_node_change_state_job_suspend_resume_waiting_interactive(
 def test_node_change_state_job_suspend_resume_resuming(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -339,7 +339,7 @@ def test_node_change_state_job_suspend_resume_resuming(
 def test_node_change_state_job_suspend_resume_suspend(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -354,7 +354,7 @@ def test_node_change_state_job_suspend_resume_suspend(
 def test_node_change_state_job_suspend_resume_hold(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -367,7 +367,7 @@ def test_node_change_state_job_suspend_resume_hold(
 
 
 def test_node_change_state_resource_suspected(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     minimal_db_initialization.query(Resource).filter(
         Resource.network_address == "localhost0"
     ).update({Resource.next_state: "Suspected"}, synchronize_session=False)
@@ -382,7 +382,7 @@ def test_node_change_state_resource_suspected(minimal_db_initialization, setup_c
 
 
 def test_node_change_state_resource_dead(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     minimal_db_initialization.query(Resource).filter(
         Resource.network_address == "localhost0"
     ).update({Resource.next_state: "Dead"}, synchronize_session=False)
@@ -401,7 +401,6 @@ def test_node_change_state_resource_dead_assigned(
 ):
     (
         config,
-        _,
         _,
     ) = setup_config
     (job_id, moldable_id) = insert_job(
@@ -441,7 +440,7 @@ def test_node_change_state_job_cosystem(minimal_db_initialization, setup_config)
     """
     Check that noop, and cosystem jobs are not killed. But other jobs are.
     """
-    setup_config, _, _ = setup_config
+    setup_config, _ = setup_config
     cosystem_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=2", "")])],

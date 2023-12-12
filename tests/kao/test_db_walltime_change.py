@@ -11,13 +11,13 @@ from oar.lib.models import EventLog, Queue, Resource, WalltimeChange
 
 from ..helpers import insert_running_jobs
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.kao.walltime_change")
 
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -31,7 +31,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_process_walltime_change_requests_void(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     plt = Platform()
     process_walltime_change_requests(minimal_db_initialization, config, plt)
     assert not minimal_db_initialization.query(
@@ -42,7 +42,7 @@ def test_process_walltime_change_requests_void(minimal_db_initialization, setup_
 def test_process_walltime_change_requests_job_not_running(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     plt = Platform()
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
@@ -61,7 +61,7 @@ def test_process_walltime_change_requests_job_not_running(
     reason="bug raises with sqlite database",
 )
 def test_process_walltime_change_requests(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     plt = Platform()
     job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
     WalltimeChange.create(minimal_db_initialization, job_id=job_id, pending=3663)
@@ -94,7 +94,7 @@ def test_process_walltime_change_requests(minimal_db_initialization, setup_confi
 def test_process_walltime_change_requests_inner(
     minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     plt = Platform()
 
     # Create container job

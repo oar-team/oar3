@@ -509,7 +509,7 @@ class NodeChangeState(object):
 
 
 def main():
-    config, engine, log = init_oar()
+    config, engine = init_oar()
 
     session_factory = sessionmaker(bind=engine)
     # Legacy call

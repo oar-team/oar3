@@ -26,7 +26,7 @@ def set_env(request, backup_and_restore_environ_module):
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -45,7 +45,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_oarconnect_connect(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     os.environ["OARDO_USER"] = "oar"
     os.environ["DISPLAY"] = ""
     runner = CliRunner()
@@ -64,7 +64,7 @@ def test_oarconnect_connect(monkeypatch, minimal_db_initialization, setup_config
 def test_oarconnect_connect_bad_user(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
 
     os.environ["OARDO_USER"] = "tata"
     os.environ["DISPLAY"] = ""

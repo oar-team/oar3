@@ -76,7 +76,7 @@ def test_app_jobs_get_all_paginate(client, minimal_db_initialization):
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_get_one_details(client, minimal_db_initialization, setup_config):
     """GET /jobs/<id>?details=true"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -89,7 +89,7 @@ def test_app_jobs_get_one_details(client, minimal_db_initialization, setup_confi
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_get_resources(client, minimal_db_initialization, setup_config):
     """GET /jobs/<id>/resources"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id = insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -118,7 +118,7 @@ def test_app_jobs_get_user(client, minimal_db_initialization):
 
 
 def test_app_jobs_get_state(client, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -184,7 +184,7 @@ def test_app_jobs_get_array(client, minimal_db_initialization):
 @pytest.mark.skip(reason="debug pending")
 @pytest.mark.usefixtures("monkeypatch_tools")
 def test_app_jobs_get_from_to_ar(client, minimal_db_initialization, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     t0 = tools.get_date()  # noqa
     insert_job(
         minimal_db_initialization,
@@ -368,7 +368,7 @@ def test_app_jobs_ckeckpoint_2(
     client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/checkpoints/new"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -410,7 +410,7 @@ def test_app_jobs_signal_2(
     client, setup_config, monkeypatch, minimal_db_initialization, user_tokens
 ):
     """POST /jobs/<id>/signal/<signal>"""
-    config, _, engine = setup_config
+    config, engine = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -451,7 +451,7 @@ def test_app_jobs_hold_2(
     client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/holds/new"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -532,7 +532,7 @@ def test_app_jobs_resume_not_allowed(
     client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/resumptions/new"""
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -553,7 +553,7 @@ def test_app_jobs_resume(
     client, monkeypatch, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /jobs/<id>/resumptions/new"""
-    config, _, _ = setup_config
+    config, _ = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],

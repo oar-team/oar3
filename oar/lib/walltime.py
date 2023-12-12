@@ -16,7 +16,7 @@ from oar.lib.job_handling import (
 from oar.lib.models import WalltimeChange
 from oar.lib.tools import duration_to_sql, duration_to_sql_signed, hms_to_duration
 
-config, engine, log = init_oar(no_db=True)
+config, engine = init_oar(no_db=True)
 
 logger = get_logger("oar.lib.walltime")
 

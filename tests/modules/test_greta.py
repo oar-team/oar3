@@ -24,7 +24,7 @@ from ..fakezmq import FakeZmq
 
 fakezmq = FakeZmq()
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 
 logger = get_logger("test_sarko")
 
@@ -75,7 +75,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     config.setdefault_config(DEFAULT_CONFIG)
     fakezmq.reset()
 
@@ -93,7 +93,7 @@ def setup(request, setup_config):
 
 @pytest.fixture(scope="function")
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 

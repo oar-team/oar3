@@ -324,7 +324,7 @@ def cli(
         session, config = ctx.obj
 
     else:
-        config, engine, log = init_oar()
+        config, engine = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()

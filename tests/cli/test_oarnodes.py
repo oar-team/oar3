@@ -18,7 +18,7 @@ NB_LINES_PER_NODE = 1  # network_address: localhost\n resource_id: 1\n state: Al
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
     with ephemeral_session(scoped, engine, bind=engine) as session:
@@ -29,7 +29,7 @@ def minimal_db_initialization(request, setup_config):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -38,7 +38,7 @@ def test_version(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_event_no_date(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     add_new_event_with_host(
         minimal_db_initialization, "TEST", 1, "fake_event", ["localhost"]
     )
@@ -55,7 +55,7 @@ def test_oarnodes_event_no_date(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_event(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     add_new_event_with_host(
         minimal_db_initialization, "TEST", 1, "fake_event", ["localhost"]
     )
@@ -72,7 +72,7 @@ def test_oarnodes_event(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_event_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     add_new_event_with_host(
         minimal_db_initialization, "TEST", 1, "fake_event", ["localhost"]
     )
@@ -89,7 +89,7 @@ def test_oarnodes_event_json(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_resource_ids_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     rid = [r[0] for r in minimal_db_initialization.query(Resource.id).all()]
     runner = CliRunner()
     result = runner.invoke(
@@ -102,7 +102,7 @@ def test_oarnodes_resource_ids_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_resource_ids_state_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     rid = [r[0] for r in minimal_db_initialization.query(Resource.id).all()]
     runner = CliRunner()
     result = runner.invoke(
@@ -115,7 +115,7 @@ def test_oarnodes_resource_ids_state_json(minimal_db_initialization, setup_confi
 
 
 def test_oarnodes_hosts_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="akira", state="Absent")
     minimal_db_initialization.commit()
     runner = CliRunner()
@@ -127,7 +127,7 @@ def test_oarnodes_hosts_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_hosts_state_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="akira", state="Absent")
     Resource.create(
         minimal_db_initialization,
@@ -148,7 +148,7 @@ def test_oarnodes_hosts_state_json(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_list_state(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="akira")
     minimal_db_initialization.commit()
     runner = CliRunner()
@@ -158,7 +158,7 @@ def test_oarnodes_list_state(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_list_state_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="akira")
     minimal_db_initialization.commit()
     runner = CliRunner()
@@ -171,7 +171,7 @@ def test_oarnodes_list_state_json(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_list_state_yaml(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     Resource.create(minimal_db_initialization, network_address="akira")
     minimal_db_initialization.commit()
     runner = CliRunner()
@@ -184,7 +184,7 @@ def test_oarnodes_list_state_yaml(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_simple(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, obj=(minimal_db_initialization, config))
     lines = re.findall(r".*localhost.*", result.output)
@@ -193,7 +193,7 @@ def test_oarnodes_simple(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_simple_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["--json"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -202,7 +202,7 @@ def test_oarnodes_simple_json(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_sql(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for _ in range(2):
         Resource.create(minimal_db_initialization, network_address="akira")
     minimal_db_initialization.commit()
@@ -219,7 +219,7 @@ def test_oarnodes_sql(minimal_db_initialization, setup_config):
 
 
 def test_oarnodes_sql_json(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     for _ in range(2):
         Resource.create(minimal_db_initialization, network_address="akira")
     minimal_db_initialization.commit()

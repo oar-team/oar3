@@ -58,7 +58,7 @@ from oar.lib.node import (
     get_nodes_with_given_sql,
 )
 
-config, db, log = init_oar(no_db=True)
+config, db = init_oar(no_db=True)
 logger = get_logger("oar.modules.greta", forward_stderr=True)
 
 

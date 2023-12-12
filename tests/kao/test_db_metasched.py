@@ -23,7 +23,7 @@ from oar.lib.tools import get_date
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -64,7 +64,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_db_metasched_simple_1(monkeypatch, minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
@@ -81,7 +81,7 @@ def test_db_metasched_simple_1(monkeypatch, minimal_db_initialization, setup_con
 
 def test_db_metasched_ar_1(monkeypatch, minimal_db_initialization, setup_config):
     # add one job
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     # sql_now = local_to_sql(now)
 
@@ -107,7 +107,7 @@ def schedule_some_ar(request, monkeypatch, minimal_db_initialization, setup_conf
     """
     Go back in the past thanks to monkeypatching time, and create an advanced reservation
     """
-    config, _, _ = setup_config
+    config, _ = setup_config
     in_the_future = get_date(minimal_db_initialization)
     monkeypatch.setattr(oar.lib.tools, "get_date", lambda x: 100)
 
@@ -143,7 +143,7 @@ def assign_resources(session, job_id):
 def test_db_metasched_ar_check_kill_be(
     monkeypatch, schedule_some_ar, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     environ["USER"] = "root"  # Allow to frag jobs
     now = get_date(minimal_db_initialization)
 
@@ -168,7 +168,7 @@ def test_db_metasched_ar_check_kill_be(
 def test_db_metasched_ar_check_kill_be_security_time(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     environ["USER"] = "root"  # Allow to frag jobs
     config["SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION"] = 120
 
@@ -208,7 +208,7 @@ def test_db_metasched_ar_check_kill_be_security_time(
 def test_db_metasched_ar_check_no_be_security_time(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     environ["USER"] = "root"  # Allow to frag jobs
     config["SCHEDULER_BESTEFFORT_KILL_DURATION_BEFORE_RESERVATION"] = 60
 
@@ -251,7 +251,7 @@ def test_call_external_scheduler_fails(
     setup_config,
     backup_and_restore_environ_function,
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Ensure that we don't find an external scheduler
     environ["OARDIR"] = "/dev/null"
     meta_schedule(minimal_db_initialization, config, mode="external")
@@ -269,7 +269,7 @@ def test_call_external_scheduler_fails(
 def test_db_metasched_be_released_for_job(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     environ["USER"] = "root"  # Allow to frag jobs
 
     now = get_date(minimal_db_initialization)
@@ -307,7 +307,7 @@ def test_db_metasched_ar_2(monkeypatch, minimal_db_initialization, setup_config)
     Test multiple AR reservation in the same metaschedule.
     The first and third job should be scheduled, wheres
     """
-    config, _, _ = setup_config
+    config, _ = setup_config
     in_the_future = get_date(minimal_db_initialization)
 
     # Mock so the first metaschedule is in the "past"

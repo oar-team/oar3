@@ -8,7 +8,7 @@ from oar.lib.models import Resource
 
 
 def test_get_all(client, minimal_db_initialization, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     print("hello!")
     response = client.get("/resources/")
     print(response)
@@ -18,7 +18,7 @@ def test_get_all(client, minimal_db_initialization, setup_config):
 
 
 def test_get_paginate(client, minimal_db_initialization, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     params = {"offset": "0", "limit": "5"}
     response = client.get("/resources/", params=params)
     assert response.status_code == 200
@@ -29,7 +29,7 @@ def test_app_resources_get_details_paginate(
     client, minimal_db_initialization, setup_config
 ):
     """GET /resources/details w/ pagination"""
-    config, _, db = setup_config
+    config, db = setup_config
     res1 = client.get("/resources/", params={"offset": 0, "limit": 5, "detailed": True})
     res2 = client.get("/resources/", params={"detailed": True, "offset": 7, "limit": 5})
     assert len(res1.json()["items"]) == 5
@@ -40,7 +40,7 @@ def test_app_resources_get_details_paginate(
 
 def test_app_resources_nodes(client, minimal_db_initialization, setup_config):
     """GET /resources/nodes/<network_address>"""
-    config, _, db = setup_config
+    config, db = setup_config
     res = client.get("/resources", params={"network_address": "localhost2"})
     print(res.json())
     assert len(res.json()["items"]) == 2
@@ -52,7 +52,7 @@ def test_app_resources_jobs(
     client, minimal_db_initialization, monkeypatch, setup_config
 ):
     """GET /resources/<id>/jobs"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
@@ -73,7 +73,7 @@ def test_app_create_resource(
     client, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /resources"""
-    config, _, db = setup_config
+    config, db = setup_config
     props = json.dumps({"cpu": 2, "core": 3})
 
     res = client.post(
@@ -100,7 +100,7 @@ def test_app_resource_state(
     client, minimal_db_initialization, setup_config, user_tokens
 ):
     """POST /resources/<id>/state"""
-    config, _, db = setup_config
+    config, db = setup_config
     minimal_db_initialization.commit()
     first_id = minimal_db_initialization.query(Resource).first().id
     r_id = first_id + 4
@@ -132,7 +132,7 @@ def test_app_resource_delete(
     client, minimal_db_initialization, setup_config, user_tokens
 ):
     """DELETE /resources/<id>"""
-    config, _, db = setup_config
+    config, db = setup_config
     Resource.create(
         minimal_db_initialization, network_address="localhost", state="Dead"
     )
@@ -153,7 +153,7 @@ def test_app_busy_resources(
     client, minimal_db_initialization, monkeypatch, setup_config
 ):
     """GET /resources/used"""
-    config, _, db = setup_config
+    config, db = setup_config
     job_id0 = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],

@@ -16,7 +16,7 @@ from ..helpers import insert_terminated_jobs
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -35,7 +35,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 def test_version(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     runner = CliRunner()
     result = runner.invoke(cli, ["-V"], obj=(minimal_db_initialization, config))
     print(result.output)
@@ -46,7 +46,7 @@ def test_version(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_simple_oaraccounting(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
     runner.invoke(oaraccounting, obj=(minimal_db_initialization, config))
@@ -68,7 +68,7 @@ def test_simple_oaraccounting(minimal_db_initialization, setup_config):
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
 def test_oaraccounting_reinitialize(minimal_db_initialization, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     runner = CliRunner()
     result = runner.invoke(
@@ -90,7 +90,7 @@ def test_oaraccounting_reinitialize(minimal_db_initialization, setup_config):
 def test_oaraccounting_delete_before(
     monkeypatch, minimal_db_initialization, setup_config
 ):
-    config, _, _ = setup_config
+    config, _ = setup_config
     insert_terminated_jobs(minimal_db_initialization)
     accounting1 = minimal_db_initialization.query(Accounting).all()
     runner = CliRunner()

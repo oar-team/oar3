@@ -65,7 +65,7 @@ def write_banned_file(config):
 
 @pytest.fixture()
 def fastapi_app(setup_config):
-    config, logger, engine = setup_config
+    config, engine = setup_config
 
     tempdir = tempfile.mkdtemp()
     # Config for jwt
@@ -78,13 +78,13 @@ def fastapi_app(setup_config):
     config["API_REVOKED_TOKENS"] = os.path.join(tempdir, "tokens_revocation.json")
     write_banned_file(config)
 
-    app = create_app(config=config, engine=engine, logger=logger)
+    app = create_app(config=config, engine=engine)
     yield app
 
 
 @pytest.fixture()
 def user_tokens(setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     tokens = {}
 
     now = datetime.utcnow()
@@ -107,7 +107,6 @@ def user_tokens(setup_config):
 
 @pytest.fixture(scope="function")
 def client(fastapi_app, minimal_db_initialization, setup_config):
-    config, _, db = setup_config
     with TestClient(fastapi_app) as app:
         # override the get_db dependency to inject the test session
         fastapi_app.dependency_overrides[get_db] = lambda: minimal_db_initialization
@@ -138,7 +137,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="function")
 def minimal_db_initialization(setup_config, monkeypatch_tools):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 

@@ -31,7 +31,7 @@ def monkeypatch_tools(request, monkeypatch):
 
 @pytest.fixture(scope="module", autouse=True)
 def oar_conf(request, setup_config):
-    config, _, db = setup_config
+    config, db = setup_config
     config["PROXY"] = "traefik"
     yield config
     config["PROXY"] = "no"

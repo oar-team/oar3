@@ -195,7 +195,7 @@ def cli(list, type, add, varchar, delete, rename, quiet, version):
         (session, engine, config) = ctx.obj
         # engine = session.get_bind()
     else:
-        config, engine, log = init_oar()
+        config, engine = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
