@@ -52,7 +52,7 @@ oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
 
 
 [tool.poetry.dependencies]
-python = ">=3.9, <4"
+python = ">=3.10, <4"
 SQLAlchemy-Utils = ">=0.37.3"
 SQLAlchemy = "^2.0.0"
 alembic = ">1.7.0"
