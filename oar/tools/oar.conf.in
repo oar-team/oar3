@@ -744,7 +744,7 @@ ADMISSION_RULES_IN_FILES="yes"
 # Phoenix is an external tool that is run periodically from crontab
 
 # File where phoenix saves it's state
-#PHOENIX_DBFILE=/var/lib/oar/phoenix/oar_phoenix.db
+# PHOENIX_STATUS_FILE=/var/lib/oar/phoenix/oar_phoenix.state
 
 # Directory where logfiles are created in case of problems
 # PHOENIX_LOGDIR="/var/lib/oar/phoenix/"
