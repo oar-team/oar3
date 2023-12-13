@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import time
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -13,6 +14,16 @@ from oar.lib.node import get_alive_nodes_with_jobs, get_nodes_with_given_sql
 # Get config variables and sets defaults if not defined into the oar.conf file
 
 config = init_config()
+
+PHOENIX_STATUS_FILE: str
+PHOENIX_LOGDIR: str
+PHOENIX_SOFT_REBOOTCMD: str
+PHOENIX_SOFT_TIMEOUT: int
+PHOENIX_HARD_REBOOTCMD: str
+PHOENIX_HARD_TIMEOUT: int
+PHOENIX_MAX_REBOOTS: int
+PHOENIX_CMD_TIMEOUT: int
+PHOENIX_BROKEN_NODES: str
 
 # File where phoenix saves it's state
 if "PHOENIX_STATUS_FILE" not in config:
@@ -74,7 +85,7 @@ logging.basicConfig(filename=PHOENIX_LOGDIR + "/oar_phoenix.log", level=logging.
 
 
 # Function to get a DB session on OAR DB
-def wait_db():
+def wait_db() -> Any:
     try:
         session = init_and_get_session(config)
         wait_db_ready(get_alive_nodes_with_jobs, args=[session])
@@ -85,7 +96,7 @@ def wait_db():
 
 
 # Function to send a unix command with timeout and log date in the logfile
-def send_cmd(cmd):
+def send_cmd(cmd: str) -> Optional[str]:
     try:
         current_time = time.strftime("%Y-%m-%d %H:%M:%S")
         process = subprocess.Popen(
@@ -107,19 +118,19 @@ def send_cmd(cmd):
 
 
 # Load the PHOENIX_STATUS_FILE file
-def load_status(file):
+def load_status(file: str) -> Dict:
     with open(file, "r") as yamlfile:
         return yaml.safe_load(yamlfile)
 
 
 # Export status to file
-def save_status(file, ref):
+def save_status(file: str, ref: Dict) -> None:
     with open(file, "w") as yamlfile:
         yaml.dump(ref, yamlfile)
 
 
 # Initialize STATUS file
-def init_status(file):
+def init_status(file: str) -> None:
     if not os.path.exists(file):
         with open(file, "w") as new_file:
             new_file.write("")  # Create an empty file if it doesn't exist
@@ -130,7 +141,7 @@ def init_status(file):
 
 
 # Remove nodes that are no longer broken from DB
-def clean_status(status, broken_nodes):
+def clean_status(status: Dict, broken_nodes: List) -> None:
     broken_nodes = [node[0] for node in broken_nodes]
     for node in list(status):
         if node not in broken_nodes:
@@ -138,7 +149,7 @@ def clean_status(status, broken_nodes):
 
 
 # Get nodes to soft_reboot
-def get_nodes_to_soft_reboot(status, broken_nodes):
+def get_nodes_to_soft_reboot(status: Dict, broken_nodes: List) -> List:
     nodes = []
     c = 0
     for node in broken_nodes:
@@ -151,7 +162,7 @@ def get_nodes_to_soft_reboot(status, broken_nodes):
 
 
 # Get nodes to hard_reboot
-def get_nodes_to_hard_reboot(status, broken_nodes):
+def get_nodes_to_hard_reboot(status: Dict, broken_nodes: List) -> List:
     nodes = []
     c = 0
     for node in broken_nodes:
@@ -165,7 +176,7 @@ def get_nodes_to_hard_reboot(status, broken_nodes):
 
 
 # Soft reboot nodes
-def soft_reboot_nodes(status, nodes):
+def soft_reboot_nodes(status: Dict, nodes: List) -> None:
     current_time = time.strftime("%Y-%m-%d %H:%M:%S")
     for node in nodes:
         logging.info(f"{current_time} - Soft rebooting the broken node {node}")
@@ -175,7 +186,7 @@ def soft_reboot_nodes(status, nodes):
 
 
 # Hard reboot nodes
-def hard_reboot_nodes(status, nodes):
+def hard_reboot_nodes(status: Dict, nodes: List) -> None:
     current_time = time.strftime("%Y-%m-%d %H:%M:%S")
     for node in nodes:
         logging.info(f"{current_time} - Hard rebooting the broken node {node}")
@@ -185,13 +196,19 @@ def hard_reboot_nodes(status, nodes):
         send_cmd(cmd)
 
 
-init_status(PHOENIX_STATUS_FILE)
-status = load_status(PHOENIX_STATUS_FILE)
-session = wait_db()
-broken_nodes = get_nodes_with_given_sql(session, PHOENIX_BROKEN_NODES)
-clean_status(status, broken_nodes)
-nodes = get_nodes_to_soft_reboot(status, broken_nodes)
-soft_reboot_nodes(status, nodes)
-nodes = get_nodes_to_hard_reboot(status, broken_nodes)
-hard_reboot_nodes(status, nodes)
-save_status(PHOENIX_STATUS_FILE, status)
+# Main function
+def main() -> None:
+    init_status(PHOENIX_STATUS_FILE)
+    status = load_status(PHOENIX_STATUS_FILE)
+    session = wait_db()
+    broken_nodes = get_nodes_with_given_sql(session, PHOENIX_BROKEN_NODES)
+    clean_status(status, broken_nodes)
+    nodes = get_nodes_to_soft_reboot(status, broken_nodes)
+    soft_reboot_nodes(status, nodes)
+    nodes = get_nodes_to_hard_reboot(status, broken_nodes)
+    hard_reboot_nodes(status, nodes)
+    save_status(PHOENIX_STATUS_FILE, status)
+
+
+if __name__ == "__main__":
+    main()
