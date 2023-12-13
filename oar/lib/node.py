@@ -119,6 +119,33 @@ def get_gantt_hostname_to_wake_up(session: Session, date: int, wakeup_time: int)
     hosts = [h_tpl[0] for h_tpl in hostnames]
     return hosts
 
+
+# TODO fail merge
+# def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
+#     """Get hostname that we must wake up to launch jobs"""
+#     # get save assignement
+#     hostnames = (
+#         session.query(Resource.network_address)
+#         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
+#         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
+#         .filter(Job.id == MoldableJobDescription.job_id)
+#         .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
+#         .filter(Job.state == "Waiting")
+#         .filter(Resource.id == GanttJobsResource.resource_id)
+#         .filter(Resource.state == "Absent")
+#         .filter(Resource.network_address != "")
+#         .filter(Resource.type == "default")
+#         .filter(
+#             (GanttJobsPrediction.start_time + MoldableJobDescription.walltime)
+#             <= Resource.available_upto
+#         )
+#         .group_by(Resource.network_address)
+#         .all()
+#     )
+#     hosts = [h_tpl[0] for h_tpl in hostnames]
+#     return hosts
+
+
 def get_gantt_hostname_to_wake_up_(session, date, wakeup_time):
     """Get hostname that we must wake up to launch jobs"""
     hostnames = (
@@ -143,37 +170,7 @@ def get_gantt_hostname_to_wake_up_(session, date, wakeup_time):
     return hosts
 
 
-def get_gantt_hostname_to_wake_up(session, date, wakeup_time):
-    """Get hostname that we must wake up to launch jobs"""
-    # get save assignement
-
-    hostnames = (
-        session.query(Resource.network_address)
-        .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
-        .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
-        .filter(Job.id == MoldableJobDescription.job_id)
-        .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
-        .filter(Job.state == "Waiting")
-        .filter(Resource.id == GanttJobsResource.resource_id)
-        .filter(Resource.state == "Absent")
-        .filter(Resource.network_address != "")
-        .filter(Resource.type == "default")
-        .filter(
-            (GanttJobsPrediction.start_time + MoldableJobDescription.walltime)
-            <= Resource.available_upto
-        )
-        .group_by(Resource.network_address)
-        .all()
-    )
-    hosts = [h_tpl[0] for h_tpl in hostnames]
-    return hosts
-
-<<<<<<< HEAD
 def get_next_job_date_on_node(session: Session, hostname: str):
-=======
-
-def get_next_job_date_on_node(session, hostname):
->>>>>>> ec4caec ([test] clean after rebase)
     result = (
         session.query(func.min(GanttJobsPrediction.start_time))
         .filter(Resource.network_address == hostname)
@@ -203,8 +200,11 @@ def get_alive_nodes_with_jobs(
     """Returns the list of occupied nodes"""
     result = (
         session.query(distinct(Resource.network_address))
-        .filter(Resource.id == AssignedResource.resource_id)
-        .filter(AssignedResource.moldable_id == MoldableJobDescription.id)
+        # .filter(AssignedResource.moldable_id == MoldableJobDescription.id)
+        .filter(
+            Resource.id >= AssignedResource.resource_id,
+            Resource.id < AssignedResource.resource_id + AssignedResource.span,
+        )
         .filter(MoldableJobDescription.job_id == Job.id)
         .filter(
             Job.state.in_(
@@ -398,7 +398,8 @@ def get_current_assigned_nodes(
     results = (
         session.query(distinct(Resource.network_address))
         .filter(AssignedResource.index == "CURRENT")
-        .filter(Resource.id == AssignedResource.resource_id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .filter(Resource.type == "default")
         .all()
     )
@@ -428,7 +429,10 @@ def get_node_job_to_frag(session: Session, hostname: str) -> List[int]:
         .filter(AssignedResource.index == "CURRENT")
         .filter(MoldableJobDescription.index == "CURRENT")
         .filter(Resource.network_address == hostname)
-        .filter(AssignedResource.resource_id == Resource.id)
+        .filter(
+            Resource.id >= AssignedResource.resource_id,
+            Resource.id < AssignedResource.resource_id + AssignedResource.span,
+        )
         .filter(AssignedResource.moldable_id == MoldableJobDescription.id)
         .filter(MoldableJobDescription.job_id == Job.id)
         .filter(Job.state != "Terminated")

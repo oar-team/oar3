@@ -4,7 +4,6 @@ import copy
 import os
 import random
 import re
-from oar.lib.resource import ResourceSet
 
 from procset import ProcSet
 from sqlalchemy import distinct, func, insert, text
@@ -36,6 +35,7 @@ from oar.lib.models import (
     WalltimeChange,
 )
 from oar.lib.plugins import find_plugin_function
+from oar.lib.resource import ResourceSet
 from oar.lib.resource_handling import (
     get_current_resources_with_suspended_job,
     update_current_scheduler_priority,
@@ -841,7 +841,7 @@ def add_resource_job_pairs(session, moldable_id):
         {
             "moldable_job_id": res_mld_id.moldable_id,
             "resource_id": res_mld_id.resource_id,
-            "span": res_mld_id.span
+            "span": res_mld_id.span,
         }
         for res_mld_id in resources_mld_ids
     ]
@@ -1209,9 +1209,12 @@ def update_scheduler_last_job_date(session, date, moldable_id):
     else:
         session.query(Resource).filter(
             AssignedResource.moldable_id == moldable_id
-        ).filter(Resource.id == AssignedResource.resource_id).update(
+        ).filter(Resource.id >= AssignedResource.resource_id).filter(
+            Resource.id < AssignedResource.resource_id + AssignedResource.span
+        ).update(
             {Resource.last_job_date: date}, synchronize_session=False
         )
+
     session.commit()
 
 
@@ -1445,7 +1448,8 @@ def get_cpuset_values(session, config, cpuset_field, moldable_id):
     results = (
         session.query(Resource.network_address, getattr(Resource, cpuset_field))
         .filter(AssignedResource.moldable_id == moldable_id)
-        .filter(AssignedResource.resource_id == Resource.id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .filter(Resource.network_address != "")
         .filter(text(sql_where_string))
         .group_by(Resource.network_address, getattr(Resource, cpuset_field))
@@ -1605,7 +1609,8 @@ def get_job_current_hostnames(session, job_id):
         session.query(distinct(Resource.network_address))
         .filter(AssignedResource.index == "CURRENT")
         .filter(MoldableJobDescription.index == "CURRENT")
-        .filter(AssignedResource.resource_id == Resource.id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .filter(MoldableJobDescription.id == AssignedResource.moldable_id)
         .filter(MoldableJobDescription.job_id == job_id)
         .filter(Resource.network_address != "")
@@ -1980,7 +1985,8 @@ def get_job_host_log(session, moldable_id):
     res = (
         session.query(distinct(Resource.network_address))
         .filter(AssignedResource.moldable_id == moldable_id)
-        .filter(Resource.id == AssignedResource.resource_id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
         .all()
@@ -2623,6 +2629,7 @@ def get_timer_armed_job(
 
 def archive_some_moldable_job_nodes(session, config, moldable_id, hosts):
     """Sets the index fields to LOG in the table assigned_resources"""
+    # TODO
     if config["DB_TYPE"] == "Pg":
         session.query(AssignedResource).filter(
             AssignedResource.moldable_id == moldable_id
@@ -2641,6 +2648,8 @@ def get_job_resources_properties(session, job_id):
         .filter(Job.id == job_id)
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
         .filter(AssignedResource.resource_id == Resource.id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .order_by(Resource.id)
         .all()
     )

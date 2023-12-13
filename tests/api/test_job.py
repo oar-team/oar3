@@ -4,7 +4,7 @@ import pytest
 from oar.api.url_utils import replace_query_params
 from oar.kao.meta_sched import meta_schedule
 from oar.lib.job_handling import insert_job, set_job_state
-from oar.lib.models import FragJob, Job
+from oar.lib.models import AssignedResource, FragJob, Job
 
 
 def test_jobs_index(client, minimal_db_initialization):
@@ -78,7 +78,7 @@ def test_app_jobs_get_one_details(client, minimal_db_initialization, setup_confi
     """GET /jobs/<id>?details=true"""
     config, db = setup_config
     job_id = insert_job(
-        minimal_db_initialization, res=[(60, [("resource_id=8", "")])], properties=""
+        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
     )
     meta_schedule(minimal_db_initialization, config, "internal")
     res = client.get("/jobs/{}?details=true".format(job_id))
@@ -95,6 +95,11 @@ def test_app_jobs_get_resources(client, minimal_db_initialization, setup_config)
     )
     meta_schedule(minimal_db_initialization, config, "internal")
     res = client.get("/jobs/{}/resources".format(job_id))
+
+    for ar in minimal_db_initialization.query(AssignedResource).all():
+        print(vars(ar))
+
+    print(res.json())
     assert len(res.json()["items"]) == 4
 
 

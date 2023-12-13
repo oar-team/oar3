@@ -210,8 +210,10 @@ class BaseQueryCollection(object):
                 AssignedResource,
                 Job.assigned_moldable_job == AssignedResource.moldable_id,
             )
-            .filter(Resource.id >= AssignedResource.resource_id)
-            .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
+            .filter(
+                Resource.id >= AssignedResource.resource_id,
+                Resource.id < AssignedResource.resource_id + AssignedResource.span,
+            )
             .filter(Job.id.in_([job.id for job in jobs]))
             .order_by(Job.id.asc())
         )
@@ -230,7 +232,10 @@ class BaseQueryCollection(object):
                 AssignedResource,
                 Job.assigned_moldable_job == AssignedResource.moldable_id,
             )
-            .join(Resource, Resource.id == AssignedResource.resource_id)
+            .filter(
+                Resource.id >= AssignedResource.resource_id,
+                Resource.id < AssignedResource.resource_id + AssignedResource.span,
+            )
             # .filter(job_id_column == job.id)
         )
         return query
@@ -255,7 +260,10 @@ class BaseQueryCollection(object):
         db = self.session
         query = (
             db.query(Job)
-            .filter(AssignedResource.resource_id == resource_id)
+            .filter(
+                Resource.id >= AssignedResource.resource_id,
+                Resource.id < AssignedResource.resource_id + AssignedResource.span,
+            )
             .filter(MoldableJobDescription.id == AssignedResource.moldable_id)
             .filter(MoldableJobDescription.job_id == Job.id)
         )

@@ -202,7 +202,10 @@ def remove_resource(session, resource_id, user=None):
     if state == "Dead":
         results = (
             session.query(Job.id, Job.assigned_moldable_job)
-            .filter(AssignedResource.resource_id == resource_id)
+            .filter(
+                Resource.id >= AssignedResource.resource_id,
+                Resource.id < AssignedResource.resource_id + AssignedResource.span,
+            )
             .filter(AssignedResource.moldable_id == Job.assigned_moldable_job)
             .all()
         )
@@ -256,7 +259,10 @@ def get_current_assigned_job_resources(session, moldable_id):
         session.query(Resource)
         .filter(AssignedResource.index == "CURRENT")
         .filter(AssignedResource.moldable_id == moldable_id)
-        .filter(Resource.id == AssignedResource.resource_id)
+        .filter(
+            Resource.id >= AssignedResource.resource_id,
+            Resource.id < AssignedResource.resource_id + AssignedResource.span,
+        )
         .all()
     )
     return res
@@ -314,7 +320,8 @@ def update_resource_nextFinaudDecision(session, resource_id, finaud_decision):
 
 def update_scheduler_last_job_date(session, date, moldable_id):
     session.query(Resource).filter(AssignedResource.moldable_id == moldable_id).filter(
-        AssignedResource.resource_id == Resource.resource_id
+        Resource.id >= AssignedResource.resource_id,
+        Resource.id < AssignedResource.resource_id + AssignedResource.span,
     ).update({Resource.last_job_date: date}, synchronize_session=False)
 
 
@@ -380,7 +387,11 @@ def update_current_scheduler_priority(session, config, job, value, state):
                     session.query(distinct(getattr(Resource, f)))
                     .filter(AssignedResource.index == "CURRENT")
                     .filter(AssignedResource.moldable_id == job.assigned_moldable_job)
-                    .filter(AssignedResource.resource_id == Resource.id)
+                    .filter(
+                        Resource.id >= AssignedResource.resource_id,
+                        Resource.id
+                        < AssignedResource.resource_id + AssignedResource.span,
+                    )
                     .all()
                 )
 
@@ -516,12 +527,17 @@ def get_count_busy_resources(
     active_moldable_job_ids = session.query(Job.assigned_moldable_job).filter(
         Job.state.in_(("toLaunch", "Running", "Resuming"))
     )
-    count_busy_resources = (
-        session.query(func.count(distinct(AssignedResource.resource_id)))
-        .filter(AssignedResource.moldable_id.in_(active_moldable_job_ids))
-        .scalar()
-    )
-    return count_busy_resources
+    count_busy_resources: List[AssignedResource] = (
+        session.query(AssignedResource).filter(
+            AssignedResource.moldable_id.in_(active_moldable_job_ids)
+        )
+    ).all()
+
+    total = 0
+    for resource in count_busy_resources:
+        total += resource.span
+
+    return total
 
 
 def resources_creation(

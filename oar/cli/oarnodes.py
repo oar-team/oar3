@@ -55,7 +55,8 @@ def get_resources_for_job(session):
     res = (
         session.query(Resource, Job)
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
-        .filter(AssignedResource.resource_id == Resource.id)
+        .filter(Resource.id >= AssignedResource.resource_id)
+        .filter(Resource.id < AssignedResource.resource_id + AssignedResource.span)
         .filter(Job.state == "Running")
         .order_by(Resource.id)
         .all()
