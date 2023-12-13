@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import logging
 import os
 import subprocess
 import time
@@ -9,15 +10,15 @@ from oar.lib.database import wait_db_ready
 from oar.lib.globals import init_and_get_session, init_config
 from oar.lib.node import get_alive_nodes_with_jobs, get_nodes_with_given_sql
 
-config = init_config()
-
 # Get config variables and sets defaults if not defined into the oar.conf file
 
+config = init_config()
+
 # File where phoenix saves it's state
-if "PHOENIX_DBFILE" not in config:
-    PHOENIX_DBFILE = "/var/lib/oar/phoenix/oar_phoenix.db"
+if "PHOENIX_STATUS_FILE" not in config:
+    PHOENIX_STATUS_FILE = "/var/lib/oar/phoenix/oar_phoenix.state"
 else:
-    PHOENIX_DBFILE = config["PHOENIX_DBFILE"]
+    PHOENIX_STATUS_FILE = config["PHOENIX_DBFILE"]
 
 # Directory where logfiles are created in case of problems
 if "PHOENIX_LOGDIR" not in config:
@@ -68,6 +69,10 @@ else:
     PHOENIX_BROKEN_NODES = config["PHOENIX_BROKEN_NODES"]
 
 
+# Set up logging
+logging.basicConfig(filename=PHOENIX_LOGDIR + "/oar_phoenix.log", level=logging.INFO)
+
+
 # Function to get a DB session on OAR DB
 def wait_db():
     try:
@@ -83,62 +88,61 @@ def wait_db():
 def send_cmd(cmd):
     try:
         current_time = time.strftime("%Y-%m-%d %H:%M:%S")
-        with open(f"{PHOENIX_LOGDIR}/oar_phoenix.log", "a") as logfile:
-            process = subprocess.Popen(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            try:
-                stdout, stderr = process.communicate(timeout=PHOENIX_CMD_TIMEOUT)
-                res = stdout.decode("utf-8") if stdout else stderr.decode("utf-8")
-                if res:
-                    logfile.write(f"{current_time} - {res}\n")
-                else:
-                    logfile.write(f"{current_time} - Command executed, no output\n")
-            except subprocess.TimeoutExpired:
-                logfile.write(f"{current_time} - Command timed out!\n")
-                process.kill()
-                return "Timed out!"
+        process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=PHOENIX_CMD_TIMEOUT)
+            res = stdout.decode("utf-8") if stdout else stderr.decode("utf-8")
+            if res:
+                logging.info(f"{current_time} - {res}")
+            else:
+                logging.info(f"{current_time} - Command executed, no output")
+        except subprocess.TimeoutExpired:
+            logging.info(f"{current_time} - Command timed out!")
+            process.kill()
+            return "Timed out!"
     except Exception as e:
         return f"Exception occurred: {str(e)}"
 
 
-# Load the DB file
-def load_db(file):
+# Load the PHOENIX_STATUS_FILE file
+def load_status(file):
     with open(file, "r") as yamlfile:
         return yaml.safe_load(yamlfile)
 
 
-# Export DB to file
-def save_db(file, ref):
+# Export status to file
+def save_status(file, ref):
     with open(file, "w") as yamlfile:
         yaml.dump(ref, yamlfile)
 
 
-# Initialize DB file
-def init_db(file):
+# Initialize STATUS file
+def init_status(file):
     if not os.path.exists(file):
         with open(file, "w") as new_file:
             new_file.write("")  # Create an empty file if it doesn't exist
 
     if not os.path.getsize(file):
         empty_hash = {}
-        save_db(file, empty_hash)
+        save_status(file, empty_hash)
 
 
 # Remove nodes that are no longer broken from DB
-def clean_db(db, broken_nodes):
+def clean_status(status, broken_nodes):
     broken_nodes = [node[0] for node in broken_nodes]
-    for node in list(db):
+    for node in list(status):
         if node not in broken_nodes:
-            del db[node]
+            del status[node]
 
 
 # Get nodes to soft_reboot
-def get_nodes_to_soft_reboot(db, broken_nodes):
+def get_nodes_to_soft_reboot(status, broken_nodes):
     nodes = []
     c = 0
     for node in broken_nodes:
-        if node[0] not in db:
+        if node[0] not in status:
             c += 1
             nodes.append(node[0])
         if c >= PHOENIX_MAX_REBOOTS:
@@ -147,12 +151,12 @@ def get_nodes_to_soft_reboot(db, broken_nodes):
 
 
 # Get nodes to hard_reboot
-def get_nodes_to_hard_reboot(db, broken_nodes):
+def get_nodes_to_hard_reboot(status, broken_nodes):
     nodes = []
     c = 0
     for node in broken_nodes:
-        if node[0] in db and "soft_reboot" in db[node[0]]:
-            if time.time() > db[node[0]]["soft_reboot"] + PHOENIX_SOFT_TIMEOUT:
+        if node[0] in status and "soft_reboot" in status[node[0]]:
+            if time.time() > status[node[0]]["soft_reboot"] + PHOENIX_SOFT_TIMEOUT:
                 c += 1
                 nodes.append(node[0])
         if c >= PHOENIX_MAX_REBOOTS:
@@ -161,37 +165,33 @@ def get_nodes_to_hard_reboot(db, broken_nodes):
 
 
 # Soft reboot nodes
-def soft_reboot_nodes(db, nodes):
-    logfile = open(f"{PHOENIX_LOGDIR}/oar_phoenix.log", "a")
+def soft_reboot_nodes(status, nodes):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S")
     for node in nodes:
-        logfile.write(f"{current_time} - Soft rebooting the broken node {node}\n")
-        logfile.close()
+        logging.info(f"{current_time} - Soft rebooting the broken node {node}")
         cmd = PHOENIX_SOFT_REBOOTCMD.replace("{NODENAME}", node)
-        db[node] = {"soft_reboot": time.time()}
+        status[node] = {"soft_reboot": time.time()}
         send_cmd(cmd)
 
 
 # Hard reboot nodes
-def hard_reboot_nodes(db, nodes):
-    logfile = open(f"{PHOENIX_LOGDIR}/oar_phoenix.log", "a")
+def hard_reboot_nodes(status, nodes):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S")
     for node in nodes:
-        logfile.write(f"{current_time} - Hard rebooting the broken node {node}\n")
-        logfile.close()
+        logging.info(f"{current_time} - Hard rebooting the broken node {node}")
         cmd = PHOENIX_HARD_REBOOTCMD.replace("{NODENAME}", node)
-        del db[node]
-        db[node] = {"hard_reboot": time.time()}
+        del status[node]
+        status[node] = {"hard_reboot": time.time()}
         send_cmd(cmd)
 
 
-init_db(PHOENIX_DBFILE)
-db = load_db(PHOENIX_DBFILE)
+init_status(PHOENIX_STATUS_FILE)
+status = load_status(PHOENIX_STATUS_FILE)
 session = wait_db()
 broken_nodes = get_nodes_with_given_sql(session, PHOENIX_BROKEN_NODES)
-clean_db(db, broken_nodes)
-nodes = get_nodes_to_soft_reboot(db, broken_nodes)
-soft_reboot_nodes(db, nodes)
-nodes = get_nodes_to_hard_reboot(db, broken_nodes)
-hard_reboot_nodes(db, nodes)
-save_db(PHOENIX_DBFILE, db)
+clean_status(status, broken_nodes)
+nodes = get_nodes_to_soft_reboot(status, broken_nodes)
+soft_reboot_nodes(status, nodes)
+nodes = get_nodes_to_hard_reboot(status, broken_nodes)
+hard_reboot_nodes(status, nodes)
+save_status(PHOENIX_STATUS_FILE, status)
