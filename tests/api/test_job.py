@@ -628,7 +628,7 @@ def test_app_job_post_json(client, minimal_db_initialization, user_tokens):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
     data = {
         "resource": ["nodes=1,walltime=00:10:0", "nodes=2,walltime=00:5:0"],
-        "command": 'sleep "prout"',
+        "command": 'sleep "toto"',
     }
     res = client.post(
         "/jobs/",
@@ -660,3 +660,19 @@ def test_app_job_post_array(client, minimal_db_initialization, user_tokens):
     )
     print(job_array_ids)
     assert res.status_code == 200
+
+
+def test_app_job_post_ar(
+    client, minimal_db_initialization, with_admission_rules, user_tokens
+):
+    # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
+    data = {"resource": [], "command": 'sleep "1"', "types": ["failing_type"]}
+
+    res = client.post(
+        "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}
+    )
+
+    job_ids = minimal_db_initialization.query(Job.id).all()
+
+    assert job_ids == []
+    assert res.status_code == 418
