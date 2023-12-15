@@ -675,4 +675,4 @@ def test_app_job_post_ar(
     job_ids = minimal_db_initialization.query(Job.id).all()
 
     assert job_ids == []
-    assert res.status_code == 418
+    assert res.status_code == 403
