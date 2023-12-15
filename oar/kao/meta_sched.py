@@ -927,6 +927,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     for queues in get_queues_groupby_priority(session):
         extra_metasched_func(
+            session,
             prev_queues,
             plt,
             scheduled_jobs,
