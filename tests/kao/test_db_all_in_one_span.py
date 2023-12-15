@@ -36,7 +36,7 @@ quotas_simple_temporal_rules = {
 
 @pytest.fixture(scope="function", autouse=True)
 def minimal_db_initialization(request, setup_config):
-    _, _, engine = setup_config
+    _, engine = setup_config
     session_factory = sessionmaker(bind=engine)
     scoped = scoped_session(session_factory)
 
@@ -85,7 +85,7 @@ def active_quotas(request, setup_config):
 
 @pytest.fixture(scope="function")
 def active_energy_saving(request, setup_config):
-    config, _, _ = setup_config
+    config, _ = setup_config
     # Some tests modify this value. We register the initial value and reset it
     # after the test so it doesn't break other tests.
     initial_energy_saving_internal = config["ENERGY_SAVING_INTERNAL"]
@@ -311,7 +311,7 @@ def test_next_job_date_on_node(
 
 def test_db_metasched_ar_1(monkeypatch, minimal_db_initialization, setup_config):
     # add one job
-    config, _, _ = setup_config
+    config, _ = setup_config
     now = get_date(minimal_db_initialization)
     print(f"now: {now}")
     # sql_now = local_to_sql(now)

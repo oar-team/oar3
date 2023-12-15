@@ -59,7 +59,10 @@ def get_nodes_with_state(session: Session, nodes: List[str]) -> List[Resource]:
 def search_idle_nodes(session: Session, date: int) -> dict[str, int]:
     result = (
         session.query(distinct(Resource.network_address))
-        .filter(Resource.id == GanttJobsResource.resource_id)
+        .filter(
+            Resource.id >= GanttJobsResource.resource_id,
+            Resource.id < GanttJobsResource.resource_id + GanttJobsResource.span,
+        )
         .filter(GanttJobsPrediction.start_time <= date)
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
@@ -105,7 +108,10 @@ def get_gantt_hostname_to_wake_up(session: Session, date: int, wakeup_time: int)
         .filter(Job.id == MoldableJobDescription.job_id)
         .filter(GanttJobsPrediction.start_time <= date + wakeup_time)
         .filter(Job.state == "Waiting")
-        .filter(Resource.id == GanttJobsResource.resource_id)
+        .filter(
+            Resource.id >= GanttJobsResource.resource_id,
+            Resource.id < GanttJobsResource.resource_id + GanttJobsResource.span,
+        )
         .filter(Resource.state == "Absent")
         .filter(Resource.network_address != "")
         .filter(Resource.type == "default")
@@ -174,7 +180,10 @@ def get_next_job_date_on_node(session: Session, hostname: str):
     result = (
         session.query(func.min(GanttJobsPrediction.start_time))
         .filter(Resource.network_address == hostname)
-        .filter(GanttJobsResource.resource_id == Resource.id)
+        .filter(
+            Resource.id >= AssignedResource.resource_id,
+            Resource.id < AssignedResource.resource_id + AssignedResource.span,
+        )
         .filter(GanttJobsPrediction.moldable_id == GanttJobsResource.moldable_id)
         .scalar()
     )

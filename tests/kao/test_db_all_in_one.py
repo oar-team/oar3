@@ -15,7 +15,7 @@ from oar.kao.meta_sched import meta_schedule
 from oar.kao.quotas import Quotas
 from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job, set_job_state, set_jobs_start_time
-from oar.lib.models import GanttJobsPrediction, Job, Queue, Resource
+from oar.lib.models import GanttJobsPrediction, GanttJobsResource, Job, Queue, Resource
 from oar.lib.tools import get_date, local_to_sql
 
 from ..fakezmq import FakeZmq
@@ -770,6 +770,10 @@ def test_db_all_in_one_sleep_node_1(
     meta_schedule(minimal_db_initialization, config, "internal")
 
     job = minimal_db_initialization.query(Job).one()
+
+    for g in minimal_db_initialization.query(GanttJobsResource).all():
+        print(g.span, g.resource_id)
+
     print(job.state)
     print(node_list)
     assert job.state == "toLaunch"
