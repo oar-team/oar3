@@ -155,3 +155,20 @@ def minimal_db_initialization(setup_config, monkeypatch_tools):
             Resource.create(session, network_address="localhost" + str(int(i / 2)))
 
         yield session
+
+
+@pytest.fixture(scope="function", autouse=False)
+def with_admission_rules(request, setup_config):
+    config, _ = setup_config
+
+    config["ADMISSION_RULES_IN_FILES"] = "yes"
+    config["ADMISSION_RULES_PATH"] = os.path.join(
+        os.path.dirname(__file__), "..", "lib/etc/oar/admission_rules.d/"
+    )
+
+    yield
+
+    config["ADMISSION_RULES_IN_FILES"] = "no"
+    config["ADMISSION_RULES_PATH"] = os.path.join(
+        "..", os.path.dirname(__file__), "etc/oar/admission_rules.d/"
+    )

@@ -329,12 +329,14 @@ def submit(
 
     error = job_parameters.check_parameters()
     if error[0] != 0:
+        print(error)
         raise HTTPException(status_code=501)
-        pass  # TODO
 
     submission = Submission(job_parameters)
 
     (error, job_id_lst) = submission.submit(db, config)
+    if error[0] == -2:
+        raise HTTPException(status_code=418, detail=error[1])
 
     # TODO Enhance
     data = {}
