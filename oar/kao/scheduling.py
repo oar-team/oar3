@@ -34,7 +34,7 @@ def set_slots_with_prev_scheduled_jobs(
     for job in jobs:
         logger.debug("job.id:" + str(job.id))
         if ((not filter_besteffort) and ("besteffort" in job.types)) or (
-            (not only_besteffort) and (not ("besteffort" in job.types))
+            (not only_besteffort) and ("besteffort" not in job.types)
         ):
             if "container" in job.types:
                 # t_e = job.start_time + job.walltime - job_security_time

@@ -17,7 +17,7 @@ from oar.kao.helpers import extract_find_assign_args
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 
 # from oar.lib.utils import render_query
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.models import (
     AssignedResource,
     Challenge,

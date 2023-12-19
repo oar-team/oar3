@@ -591,7 +591,7 @@ class SlotSet:
         if job.ph == PLACEHOLDER:
             slot.ph_itvs[job.ph_name] = copy.copy(job.res_set)
 
-        if hasattr(slot, "quotas") and not ("container" in job.types):
+        if hasattr(slot, "quotas") and "container" not in job.types:
             slot.quotas.update(job)
             # slot.quotas.show_counters()
 

@@ -24,7 +24,7 @@ from oar.lib.job_handling import (
     get_job_types,
     resubmit_job,
 )
-from oar.lib.models import Job, Model
+from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation, lstrip_none
 from oar.lib.tools import get_oarexecuser_script_for_oarsub
 

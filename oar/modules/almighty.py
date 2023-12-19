@@ -23,6 +23,9 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_config
 
+# TODO: should not be global
+config = init_config()
+
 # Everything is run by oar user (The real uid of this process.)
 os.environ["OARDO_UID"] = str(os.geteuid())
 

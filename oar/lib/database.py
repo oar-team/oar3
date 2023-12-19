@@ -3,16 +3,10 @@ import threading
 import time
 from contextlib import contextmanager
 
-import sqlalchemy
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-from sqlalchemy import create_engine, inspect  # , exc
+from sqlalchemy import create_engine  # , exc
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.orm import class_mapper, sessionmaker
-from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.pool import StaticPool
 
-from .utils import cached_property
 
 __all__ = ["Database"]
 
