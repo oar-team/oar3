@@ -23,9 +23,6 @@ import zmq
 import oar.lib.tools as tools
 from oar.lib.globals import get_logger, init_config
 
-# TODO: should not be global
-config = init_config()
-
 # Everything is run by oar user (The real uid of this process.)
 os.environ["OARDO_UID"] = str(os.geteuid())
 
@@ -43,20 +40,18 @@ else:
     )
     os.environ["OARDIR"] = binpath
 
-meta_sched_command = config["META_SCHED_CMD"]
-m = re.match(r"^\/", meta_sched_command)
-if not m:
-    meta_sched_command = os.path.join(binpath, meta_sched_command)
 
-if "LEON_COMMAND" in config:
-    leon_command = config["LEON_COMMAND"]
-else:
-    leon_command = os.path.join(binpath, "oar-leon")
+leon_command = os.path.join(binpath, "oar-leon")
+check_for_villains_command = os.path.join(binpath, "oar-sarko")
+check_for_node_changes = os.path.join(binpath, "oar-finaud")
+nodeChangeState_command = os.path.join(binpath, "oar-node-change-state")
 
-if "CHECK_FOR_VILLAINS_COMMAND" in config:
-    check_for_villains_command = config["CHECK_FOR_VILLAINS_COMMAND"]
-else:
-    check_for_villains_command = os.path.join(binpath, "oar-sarko")
+# Legacy OAR2
+# leon_command = binpath + 'Leon'
+# check_for_villains_command = binpath + 'sarko'
+# check_for_node_changes = binpath + 'finaud'
+# nodeChangeState_command = binpath + 'NodeChangeState'
+# nodeChangeState_command = 'true'
 
 proxy_appendice_command = os.path.join(binpath, "oar-appendice-proxy")
 bipbip_commander = os.path.join(binpath, "oar-bipbip-commander")
@@ -197,13 +192,12 @@ class Almighty(object):
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
         ip_addr_server = socket.gethostbyname(self.config["SERVER_HOSTNAME"])
-        address_complete = "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
         try:
             self.appendice.bind(
-                    address_complete
+                "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
             )
         except Exception as e:
-            logger.error(f"Failed to activate appendice endpoint on {address_complete}: {e}")
+            logger.error(f"Failed to activate appendice endpoint: {e}")
             sys.exit(1)
 
         self.set_appendice_timeout(read_commands_timeout)
