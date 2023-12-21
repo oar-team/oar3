@@ -2,6 +2,8 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Load
 
+from oar.lib.job_handling import parse_job_type
+
 # from . import db
 from .exceptions import DoesNotExist
 from .models import (
@@ -9,6 +11,7 @@ from .models import (
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
     Job,
+    JobType,
     MoldableJobDescription,
     Resource,
 )
@@ -213,6 +216,27 @@ class BaseQueryCollection(object):
             .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
+
+    def get_jobs_types(self, jobs):
+        """Returns the list of assigned resources associated to the job passed
+        in parameter."""
+        db = self.session
+
+        results = (
+            db.query(JobType)
+            .filter(JobType.job_id.in_([job.id for job in jobs]))
+            .order_by(JobType.job_id)
+            .all()
+        )
+
+        from itertools import groupby
+
+        res = {}
+        for job_id, group_types in groupby(results, lambda type: type.job_id):
+            types_map = parse_job_type([j.type for j in list(group_types)])
+            res[job_id] = types_map
+
+        return res
 
     def get_assigned_one_job_resources(self, job):
         """Returns the list of assigned resources associated to the job passed

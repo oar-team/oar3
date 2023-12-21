@@ -563,3 +563,28 @@ def test_oarstat_job_id_error(minimal_db_initialization, setup_config):
     except ValueError:
         assert False
     assert result.exit_code == 0
+
+
+def test_oarstat_job_types(minimal_db_initialization, setup_config):
+    jid = insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        user="toto",
+        types=["inner=4", "cosystem"],
+        properties="",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-j", f"{jid}", "-f"],
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
+    )
+    print(result.output)
+    for line in result.output.splitlines():
+        if line.startswith("    types = "):
+            line = line.strip()
+            assert line == "types = inner=4, cosystem"
+
+    assert result.exit_code == 0

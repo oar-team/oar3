@@ -218,6 +218,17 @@ def print_jobs(
                 )
                 job.network_adresses = nodes
 
+        jobs_types = queryCollection.get_jobs_types(jobs)
+        for job in jobs:
+            if job.id in jobs_types:
+                types = []
+                for job_type, value in jobs_types[job.id].items():
+                    if type(value) == bool:
+                        types.append(f"{job_type}")
+                    else:
+                        types.append(f"{job_type}={value}")
+                job.types = ", ".join(types)
+
     if format:
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
