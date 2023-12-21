@@ -24,7 +24,16 @@ def test_jobs_get_all(client, minimal_db_initialization):
 
 def test_app_jobs_details(client, minimal_db_initialization):
     insert_job(
-        minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        types=["be", "test=value"],
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        types=["cosystem"],
     )
     res = client.get("/jobs?details=details")
 
@@ -676,3 +685,25 @@ def test_app_job_post_ar(
 
     assert job_ids == []
     assert res.status_code == 403
+
+
+def test_app_jobs_details_check_types(client, minimal_db_initialization):
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        types=["be", "test=value"],
+    )
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        types=["cosystem"],
+    )
+    res = client.get("/jobs?details=details")
+
+    print(res.json(), len(res.json()))
+
+    assert res.json()["items"][0]["types"]["test"] == "value"
+    assert res.json()["items"][0]["types"]["be"]
+    assert res.json()["items"][1]["types"]["cosystem"]

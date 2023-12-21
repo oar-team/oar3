@@ -4,6 +4,7 @@ import copy
 import os
 import random
 import re
+from typing import List
 
 from procset import ProcSet
 from sqlalchemy import distinct, func, insert, text
@@ -1572,13 +1573,9 @@ def get_job_current_hostnames(session, job_id):
     return [r[0] for r in results]
 
 
-def get_job_types(session, job_id):
-    """Returns a hash table with all types for the given job ID."""
-
-    results = session.query(JobType.type).filter(JobType.job_id == job_id).all()
+def parse_job_type(job_types: List[str]):
     res = {}
-    for t in results:
-        typ = t[0]
+    for typ in job_types:
         match = re.match(r"^\s*(token)\s*\:\s*(\w+)\s*=\s*(\d+)\s*$", typ)
         if match:
             res[match.group(1)] = {match.group(2): match.group(3)}
@@ -1588,6 +1585,16 @@ def get_job_types(session, job_id):
                 res[match.group(1)] = match.group(2)
             else:
                 res[typ] = True
+    return res
+
+
+def get_job_types(session, job_id):
+    """Returns a hash table with all types for the given job ID."""
+
+    results = session.query(JobType.type).filter(JobType.job_id == job_id).all()
+    # Pay attention to the comma that unpack the tuple of one element return by the request
+    res = parse_job_type([t for t, in results])
+
     return res
 
 

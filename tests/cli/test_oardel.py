@@ -79,12 +79,15 @@ def test_oardel_simple_cosystem(minimal_db_initialization, setup_config):
     job_id = insert_job(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
-        types=["cosystem"],
+        types=["cosystem", "lol"],
         state="Running",
     )
     runner = CliRunner()
     result = runner.invoke(
-        cli, ["-s", "USR1", str(job_id)], obj=(minimal_db_initialization, config)
+        cli,
+        ["-s", "USR1", str(job_id)],
+        obj=(minimal_db_initialization, config),
+        catch_exceptions=True,
     )
     print(result.output)
     import traceback

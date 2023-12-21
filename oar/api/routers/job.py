@@ -25,6 +25,11 @@ router = APIRouter(
 )
 
 
+def attach_types(job, job_types):
+    if job["id"] in job_types:
+        job["types"] = job_types[job["id"]]
+
+
 def attach_resources(job, jobs_resources):
     job["resources"] = []
     for resource in jobs_resources[job["id"]]:
@@ -75,9 +80,11 @@ def index(
 
     if details:
         jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
+        jobs_types = queryCollection.get_jobs_types(page.items)
         pass
     for item in page:
         if details:
+            attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
         data["items"].append(item)
