@@ -51,6 +51,14 @@ Automated package generation with github action
 The workflow defined in `.github/workflows/debian-generation.yml` is triggered when a new tag starting with 3 (e.g. 3.0.0.dev3) is pushed.
 It will automatically create a github release, generate the debian packages and attach it to the `release page of github`_.
 
+The chain of actions to take to create a release is (IN THIS ORDER):
+
+- Create a commit for the release (with message `bump to <new version>`)
+- Then, merge the debian/3.0 branch with the new commit.
+- Push the master and the debian branch.
+- Wait for CI to pass.
+- Now, you can tag the master commit with `<new version>` and then push the tag.
+
 .. warning::
   Before pushing the tag, ensure that the branches containing the debian packages are up to date. Otherwise the generated packages will contain the old release.
 
