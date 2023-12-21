@@ -42,7 +42,7 @@ from oar.lib.tools import (
 
 # _, db, logger = init_oar()
 
-# logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
 
 def get_cpuset_job_name(
@@ -753,12 +753,12 @@ def main():  # pragma: no cover
         except Exception as ex:
             import traceback
 
-            log.error(
+            logger.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
                 )
             )
-            log.error("Bipbip.run trouble on job {}: {}".format(sys.argv[1], ex))
+            logger.error("Bipbip.run trouble on job {}: {}".format(sys.argv[1], ex))
 
         return bipbip.exit_code
     else:
