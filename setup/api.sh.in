@@ -10,6 +10,7 @@ api_setup() {
         ${OARCONFDIR}/apache2/oar-restful-api.conf \
         0600 ${WWWUSER}
 
+    # Still needed for nixos-compose flavor?
     install_conffile \
         ${SHAREDIR}/oarapi.wsgi \
         ${CGIDIR}/oarapi/oarapi.wsgi \
@@ -20,11 +21,16 @@ api_setup() {
          ${OARCONFDIR}/stress_factor.sh \
          0700 ${OAROWNER}
 
+    install_conffile \
+         ${SHAREDIR}/oarapi.service \
+         ${SYSTEMD_CONFDIR}/oarapi.service \
+         0644 root
+
     # Install the apache2 configuration file
     #
-    # Starting with Debian8, Apache configs are managed using a2enconf/a2disconf/a2query -c, 
+    # Starting with Debian8, Apache configs are managed using a2enconf/a2disconf/a2query -c,
     # and stored in the conf-{available,enabled} directories
-    if a2query -c > /dev/null 2>&1; then 
+    if a2query -c > /dev/null 2>&1; then
         if [ -L  ${APACHECONFDIR}/conf-available/oar-api.conf ]; then
             rm ${APACHECONFDIR}/conf-available/oar-api.conf
         elif [ -f ${APACHECONFDIR}/conf-available/oar-api.conf ]; then
@@ -42,8 +48,8 @@ api_setup() {
         fi
         if [ ! -e ${APACHECONFDIR}/conf.d/oar-restful-api.conf ]; then
             ln -s ${OARCONFDIR}/apache2/oar-restful-api.conf ${APACHECONFDIR}/conf.d/oar-restful-api.conf
-        fi 
+        fi
     fi
-    
-    set_rights ${CGIDIR}/oarapi                  0755 ${OAROWNER} ${OAROWNERGROUP}
+
+    #set_rights ${CGIDIR}/oarapi                  0755 ${OAROWNER} ${OAROWNERGROUP}
 }
