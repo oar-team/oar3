@@ -1,34 +1,15 @@
-OAR restfull API requires a mean of running fastcgi scripts, as the OAR user.
-Apache2 fastcgi and suexec modules can be used, but implies some constraints on the apache configuration, suggesting to setup a dedicated virtual host on port 6668.
+OAR restfull API runs as a fastapi application provided by a Uvicorn server.
+Apache2 is pre-configured to run a reverse-proxy to the uvicorn server to expose the API to the outside world. The provided configuration may need some usual tunning as the installation of a valid SSL certificate, filtering,...
+
 See the oar-restful-api apache configuration file for more details.
 
-If you are not pleased with that virtual host setup, you can consider the following other options:
-- Install the oar-restful-api package on a dedicated host (e.g. not on the same host as the oar-web-status package).
-- Adapt the shipped Apache configuration to setup the OAR API in a hostname based virtual host.
-- Adapt other CGI scripts to suexec (scripts and their parent directories must be owned and must be run by the oar user)
+To enable the reverse proxy configuration, you should send the following commands:
 
-In any case, some more configuration is needed to get oar-restful-api with fastcgi and suexec working on Debian:
-
-0/ Install the required packages
-Package libapache2-mod-wsgi-py3 must be installed.
-Package apache2-suexec-custom must be installed in order to be able to change the suexec execution directory.
-
-1/ Configure the apache2-suexec-custom package
-
-Change the first line of the /etc/apache2/suexec/www-data file to "/usr/lib/cgi-bin/oarapi".
-
-2/ Enable wsgi and suexec Apache module
-
-# a2enmod wsgi
-# a2enmod suexec
-
-3/ Grant access to the API from more hosts
-
-By default, the OAR API can only be accessed from localhost. Look at the /etc/oar/apache/oar-restful-api.conf configuration file to allow connections from other hosts.
-
-4/ Enable the oar-restful-api configuration and restart Apache
-
-# a2enconf oar-restful-api
-# systemctl restart apache2
+  a2enmod ssl
+  a2ensite default-ssl.conf
+  a2enmod proxy
+  a2enmod proxy_http
+  a2enconf oar-restful-api
+  systemctl restart apache2
 
 You should be all set !
