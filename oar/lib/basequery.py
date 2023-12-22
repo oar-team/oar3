@@ -218,7 +218,7 @@ class BaseQueryCollection(object):
         return self.groupby_jobs_resources(jobs, query)
 
     def get_jobs_types(self, jobs):
-        """Returns the list of assigned resources associated to the job passed
+        """Returns the list of types associated to the jobs passed
         in parameter."""
         db = self.session
 
