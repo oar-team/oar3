@@ -23,4 +23,4 @@ while r:
         time.sleep(0.25)
 
 # The root path must be defined according to the nginx/apache configuration
-app = create_app(config=config, root_path="%%RESTAPI_ROOTDIR%%/")
+app = create_app(config=config, root_path="%%RESTAPI_ROOTPATH%%/")
