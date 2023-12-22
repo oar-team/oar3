@@ -44,3 +44,6 @@ export CGIDIR?=$(WWWROOTDIR)/cgi-bin
 export XAUTHCMDPATH?=/usr/bin/xauth
 export OARSHCMD?=oarsh_oardo
 
+export RESTAPI_ROOTPATH?=/oarapi
+export RESTAPI_PORT?=6665
+export SYSTEMD_CONFDIR?=/etc/systemd/system

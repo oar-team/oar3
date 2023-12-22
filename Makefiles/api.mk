@@ -6,8 +6,6 @@ SRCDIR=oar
 
 # OARDIR_BINFILES = $(SRCDIR)/oarapi.pl
 
-RESTAPI_ROOTPATH=/oarapi
-
 SHAREDIR_FILES = $(SRCDIR)/../setup/apache2/apache2.conf.in \
 		   $(SRCDIR)/../setup/uvicorn/main.py.in\
 		   $(SRCDIR)/../setup/uvicorn/log.ini.in\

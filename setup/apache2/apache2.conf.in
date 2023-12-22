@@ -1,5 +1,5 @@
 # Apache2 configuration for the OAR API
 
-Redirect          /oarapi     /oarapi/
-ProxyPass         /oarapi/    http://localhost:%%RESTAPI_PORT%%/
-ProxyPassReverse  /oarapi/      http://localhost:%%RESTAPI_PORT%%/
+Redirect          /%%RESTAPI_ROOTPATH%%     /%%RESTAPI_ROOTPATH%%/
+ProxyPass         /%%RESTAPI_ROOTPATH%%/    http://localhost:%%RESTAPI_PORT%%/
+ProxyPassReverse  /%%RESTAPI_ROOTPATH%%/      http://localhost:%%RESTAPI_PORT%%/
