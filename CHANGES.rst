@@ -8,7 +8,7 @@ Changelog
 Version 3.0.0.dev12
 -------------------
 
-Unreleased
+Released on December 22, 2023
 
 - Add types of jobs to oarstat details (cli or api)
 - Fix unpacking init_oar into Finaud
