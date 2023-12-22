@@ -20,7 +20,7 @@ Section: python
 Depends: ${misc:Depends},
          ${python3:Depends},
          python3-procset,
-         python3-psycopg2,        
+         python3-psycopg2,
          python3-sqlalchemy,
          python3-sqlalchemy-utils,
          python3-alembic,
@@ -30,7 +30,7 @@ Depends: ${misc:Depends},
          python3-zmq,
          python3-requests,
          python3-simplejson,
-         python3-psutil 
+         python3-psutil
 Description: OAR batch scheduler library package
  OAR is a versatile resource and task manager (also called a batch scheduler)
  for clusters and other computing infrastructures.
@@ -146,13 +146,15 @@ Depends: ${misc:Depends},
          ${shlibs:Depends},
          ${perl:Depends},
          oar-user,
-         apache2 | httpd-cgi
+         apache2,
+         uvicorn,
+         python3-fastapi (>= 0.101.0-1)
 Suggests: oar-doc,
           oar-server,
           apache2,
           apache2-suexec-custom
 Description: OAR web services
  OAR is a versatile resource and task manager (also called a batch scheduler)
- for clusters and other computing infrastructures   
+ for clusters and other computing infrastructures
  .
  This package installs a RESTful API for oar users.
