@@ -252,27 +252,18 @@ def submit(
         stagein-md5sum=<md5sum>   Set the stagein file md5sum
 
 
-        Input yaml example
-        ---
-        stdout: /tmp/outfile
-        command: /usr/bin/id;echo "OK"
-        resource: /nodes=2/cpu=1
-        workdir: ~bzizou/tmp
-        type:
-        - besteffort
-        - timesharing
-        use-job-key: 1
+        Input json example
+        {
+            "command": "sleep 3600",
+            "resource": ["/cpu=1,walltime=0:10:0"],
+            "project": "test",
+            "type": ["devel"]
+        }
 
-
-        Output yaml example
-        ---
-        api_timestamp: 1332323792
-        cmd_output: |
-          [ADMISSION RULE] Modify resource description with type constraints
-          OAR_JOB_ID=4
-        id: 4
-
-        Note: up to now yaml is no supported, only json and html form.
+        Output example
+        {
+           "id": 113
+        }
 
     """
     initial_request = ""  # TODO Json version ?
