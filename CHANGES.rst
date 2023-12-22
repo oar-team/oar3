@@ -5,6 +5,18 @@
 Changelog
 =========
 
+Version 3.0.0.dev12
+-------------------
+
+Unreleased
+
+- Add types of jobs to oarstat details (cli or api)
+- Fix unpacking init_oar into Finaud
+- New Phoenix version (python rewrite and variables now into oar.conf)
+- Admission rules errors return explicit 403 into API
+- Misc code enhancements (typing, tests, global logger)
+- Replaced REST API apache config by uvicorn + reverse proxy
+
 Version 3.0.0.dev11
 -------------------
 

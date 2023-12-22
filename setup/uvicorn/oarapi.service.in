@@ -1,0 +1,15 @@
+[Unit]
+Description=Oar api
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=%%SHAREDIR%%
+LimitNOFILE=4096
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/uvicorn main:app --host localhost --port %%RESTAPI_PORT%% --log-config %%SHAREDIR%%/log.ini
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
