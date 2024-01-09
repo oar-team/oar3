@@ -5,6 +5,14 @@
 Changelog
 =========
 
+Version 3.0.0.dev13
+-------------------
+
+Unreleased
+
+- Fixed default WORKDIR into oarsub (to current directory)
+
+
 Version 3.0.0.dev12
 -------------------
 
