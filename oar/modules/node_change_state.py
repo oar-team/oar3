@@ -319,6 +319,7 @@ class NodeChangeState(object):
             # Check if we must notify the user
             if event.type == "FRAG_JOB_REQUEST":
                 tools.notify_user(
+                    session,
                     job,
                     "INFO",
                     "Your job was asked to be deleted - " + event.description,
