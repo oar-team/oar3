@@ -610,7 +610,7 @@ def cli(
 
     # Connect to a reservation
     if connect:
-        exit(connect_job(connect, 0, openssh_cmd, cmd_ret))
+        exit(connect_job(session, config, connect, 0, openssh_cmd, cmd_ret))
 
     submission = Submission(job_parameters)
 
