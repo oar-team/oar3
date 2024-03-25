@@ -154,7 +154,19 @@ class BaseQueryCollection(object):
             user, from_time, to_time, states, job_ids, array_id, sql_property
         )
 
-    def get_gantt_prediction(self, horizon):
+    def get_gantt_prediction(self, horizon_now, horizon_then):
+        query = (
+            db.query(Job)
+            .join(MoldableJobDescription, Job.id == MoldableJobDescription.id)
+            .filter(Job.queue_name == "default")
+            .filter(Job.stop_time == 0)
+            .filter(Job.state.in_(["Finishing", "Running", "Waiting", "Launching", "toLaunch"]))
+            .filter(Job.start_time - 60 <= horizon_now)
+            .filter(Job.start_time + MoldableJobDescription.walltime >= horizon_then)
+        )
+        return query
+
+    def _get_gantt_prediction(self, horizon):
         columns = ("job_id", "start_time", "moldable_walltime", "message")
         query = (
             # db.query(Job, MoldableJobDescription)
@@ -162,10 +174,19 @@ class BaseQueryCollection(object):
             .join(MoldableJobDescription, Job.id == MoldableJobDescription.id)
             .filter(Job.queue_name == "default")
             .filter(Job.stop_time == 0)
-            # .filter(Job.state.in_(["Running", "Waiting", "Launching", "toLaunch"]))
-            .filter(Job.state.in_(["Waiting", "Launching", "toLaunch"]))
+            .filter(Job.state.in_(["Finishing", "Running", "Waiting", "Launching", "toLaunch"]))
+            # .filter(Job.state.in_(["Waiting", "Launching", "toLaunch"]))
             .filter(Job.start_time - 60 <= horizon)
             .filter(Job.start_time + MoldableJobDescription.walltime >= horizon)
+        )
+        return query
+
+    def get_cigri_completions(self, previous_cycle, now):
+        query = (
+            db.query(Job)
+            .filter(Job.queue_name == "besteffort")
+            .filter(Job.state.in_(["Terminated"]))
+            .filter(Job.stop_time > previous_cycle)
         )
         return query
         

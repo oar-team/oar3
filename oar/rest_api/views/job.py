@@ -330,14 +330,25 @@ def show(job_id, detailed=None):
     attach_links(g.data)
 
 @app.route("/gantt", methods=["GET"])
-@app.route("/gantt/<int:horizon>", methods=["GET"])
-def gantt(horizon=0):
+@app.route("/gantt/<int:horizon_now>/<int:horizon_then>", methods=["GET"])
+def gantt(horizon_now=0, horizon_then=0):
     now = int(time.time())
-    time_horizon = now + horizon
-    query = db.queries.get_gantt_prediction(time_horizon)
+    time_horizon_now = now + horizon_now
+    time_horizon_then = now + horizon_then
+    query = db.queries.get_gantt_prediction(time_horizon_now, time_horizon_then)
     data = query.all()
     g.data["now"] = now
-    g.data["horizon"] = time_horizon
+    g.data["horizon_now"] = time_horizon_now
+    g.data["horizon_then"] = time_horizon_then
+    g.data["items"] = data
+
+@app.route("/cigri_completions/<int:cycle_duration>", methods=["GET"])
+def cigri_completions(cycle_duration):
+    now = int(time.time())
+    previous_cycle = now - cycle_duration
+    query = db.queries.get_cigri_completions(previous_cycle, now)
+    data = query.all()
+    g.data["now"] = now
     g.data["items"] = data
 
 
