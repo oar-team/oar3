@@ -427,17 +427,15 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
         # Dependencies
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
+            # a dependency with job in Error is ignored (same behavior that OAR2)
             if state == "Error":
                 logger.info(
                     "job("
                     + str(jid_dep)
                     + ") in dependencies for job("
                     + str(jid)
-                    + ") is in error state"
+                    + ") is in error state, it's ignored"
                 )
-                # TODO  set job to ERROR"
-                to_skip = True
-                break
             elif state == "Waiting":
                 # determine endtime
                 if jid_dep in jobs:
