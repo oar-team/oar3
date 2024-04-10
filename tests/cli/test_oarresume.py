@@ -32,7 +32,7 @@ def minimal_db_initialization(request, setup_config):
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(
-        oar.lib.tools, "notify_user", lambda job, state, msg: len(state + msg)
+        oar.lib.tools, "notify_user", lambda session, job, state, msg: len(state + msg)
     )
 
 
