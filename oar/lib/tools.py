@@ -46,7 +46,7 @@ bipbip_commander_socket = None
 oar2_almighty_socket = None
 
 
-def notify_user(session,job, state, msg):  # pragma: no cover
+def notify_user(session, job, state, msg):  # pragma: no cover
     if job.notify:
         tags = ["RUNNING", "END", "ERROR", "INFO", "SUSPENDED", "RESUMING"]
         m = re.match(r"^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$", job.notify)
@@ -100,7 +100,9 @@ def notify_user(session,job, state, msg):  # pragma: no cover
                         p.kill()
                         msg = "User notification failed: ssh timeout (cmd: " + cmd + ")"
                         tools_logger.error(msg)
-                        add_new_event(session, "USER_EXEC_NOTIFICATION_ERROR", job.id, msg)
+                        add_new_event(
+                            session, "USER_EXEC_NOTIFICATION_ERROR", job.id, msg
+                        )
                         return False
 
                     msg = "Launched user notification command : " + cmd
