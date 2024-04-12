@@ -20,6 +20,14 @@ JOBENVFILE="$OAR_RUNTIME_DIRECTORY/${OAR_CPUSET##*/}.env"
 OLDUMASK=$(umask)
 umask 0022
 
+# Check if we are using systemd
+if [ -f /etc/oar/use_systemd ]
+then
+  SYSTEMD=1
+else
+  SYSTEMD=0
+fi
+
 # $1 = Name of the cpuset
 # $2,$3,... = PIDs to add
 # Add PIDS into the cpuset $1
@@ -28,28 +36,45 @@ function add_process_to_cpuset() {
     ######################
     # CPUSET assignation #
     ###########################################################################
-    CPUSETNAME=$1
-    if [ ! -w /dev/cpuset/$CPUSETNAME/tasks ]; then
-        echo "oarsh: Cannot find cpuset file : /dev/cpuset/$CPUSETNAME/tasks" 1>&2
-        exit 61
-    fi
-    shift
-
-    # Add each processes to the right OAR cgroups
-    for p in $@; do
-        if [ -r $CPUSET_MOUNT_POINT/cpuset/$CPUSETNAME/tasks ]; then
-            # Feed at least cpuset (security)
-            $OARDIR/oardodo/oardodo sh -c "echo $p > $CPUSET_MOUNT_POINT/cpuset/$CPUSETNAME/tasks" || return 1
-            for c in $CPUSET_MOUNT_POINT/*; do
-                if [ "$c" != "$CPUSET_MOUNT_POINT/cpuset" -a -r "$c/$CPUSETNAME/tasks" ]; then
-                    $OARDIR/oardodo/oardodo sh -c "echo $p > $c/$CPUSETNAME/tasks" || return 1
-                fi
-            done
-        else
-            # Old behaviour without cgroups (just cpuset)
-            $OARDIR/oardodo/oardodo sh -c "echo $p > /dev/cpuset/$CPUSETNAME/tasks" || return 1
+    if [ "$SYSTEMD" = "1" ]
+    then
+        echo "oarsh: Using systemd" 1>&2
+        SLICE=${1##*/}.slice
+	PROCS_FILE="/sys/fs/cgroup/systemd/$SLICE/cgroup.procs"
+        if [ ! -f $PROCS_FILE ]; then
+            echo "oarsh: Cannot find cpuset file : $PROCS_FILE" 1>&2
+            exit 61
         fi
-    done
+        shift
+
+	# Add each processes to the right OAR cgroups
+        for p in $@; do
+	  $OARDIR/oardodo/oardodo sh -c "echo $p > $PROCS_FILE" || return 1
+        done
+    else
+        CPUSETNAME=$1
+        if [ ! -w /dev/cpuset/$CPUSETNAME/tasks ]; then
+            echo "oarsh: Cannot find cpuset file : /dev/cpuset/$CPUSETNAME/tasks" 1>&2
+            exit 61
+        fi
+        shift
+
+        # Add each processes to the right OAR cgroups
+        for p in $@; do
+            if [ -r $CPUSET_MOUNT_POINT/cpuset/$CPUSETNAME/tasks ]; then
+                # Feed at least cpuset (security)
+                $OARDIR/oardodo/oardodo sh -c "echo $p > $CPUSET_MOUNT_POINT/cpuset/$CPUSETNAME/tasks" || return 1
+                for c in $CPUSET_MOUNT_POINT/*; do
+                    if [ "$c" != "$CPUSET_MOUNT_POINT/cpuset" -a -r "$c/$CPUSETNAME/tasks" ]; then
+                        $OARDIR/oardodo/oardodo sh -c "echo $p > $c/$CPUSETNAME/tasks" || return 1
+                    fi
+                done
+            else
+                # Old behaviour without cgroups (just cpuset)
+                $OARDIR/oardodo/oardodo sh -c "echo $p > /dev/cpuset/$CPUSETNAME/tasks" || return 1
+            fi
+        done
+    fi
     ###########################################################################
 }
 
@@ -68,7 +93,7 @@ then
     fi
     $OARDIR/oardodo/oardodo renice 0 $$ $PPID > /dev/null 2>&1
     export SHELL=$DEFAULT_SHELL
-    
+
     umask $OLDUMASK
     exec $DEFAULT_SHELL "$@"
     echo "oarsh: exec failed" 1>&2
@@ -80,7 +105,7 @@ else
         exit 63
     fi
     add_process_to_cpuset $OAR_CPUSET $$ $PPID || exit 62
-    
+
     #Manage display
     if [ -n "$DISPLAY" ]
     then
