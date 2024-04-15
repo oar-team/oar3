@@ -36,11 +36,22 @@ function add_process_to_cpuset() {
     ######################
     # CPUSET assignation #
     ###########################################################################
+
+    # Systemd feature
     if [ "$SYSTEMD" = "1" ]
     then
         echo "oarsh: Using systemd" 1>&2
         SLICE=${1##*/}.slice
-	PROCS_FILE="/sys/fs/cgroup/systemd/$SLICE/cgroup.procs"
+        SERVICE=${1##*/}.service
+	# Cgroup check
+	if [ -f "/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs" ]
+	then
+	  # Cgroup v2 procsfile found
+	  PROCS_FILE="/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs"
+        else
+	  # We are probably using cgroup v1
+	  PROCS_FILE="/sys/fs/cgroup/systemd/$SLICE/cgroup.procs"
+	fi
         if [ ! -f $PROCS_FILE ]; then
             echo "oarsh: Cannot find cpuset file : $PROCS_FILE" 1>&2
             exit 61
@@ -51,6 +62,8 @@ function add_process_to_cpuset() {
         for p in $@; do
 	  $OARDIR/oardodo/oardodo sh -c "echo $p > $PROCS_FILE" || return 1
         done
+
+    # Original cgroup v1 feature
     else
         CPUSETNAME=$1
         if [ ! -w /dev/cpuset/$CPUSETNAME/tasks ]; then

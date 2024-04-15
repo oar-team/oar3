@@ -160,6 +160,21 @@ if (!defined($Cpuset->{log_level})){
   exit_myself(2,"Bad SSH hashtable transfered");
 }
 $Log_level = $Cpuset->{log_level};
+
+# Features override per node
+if (-e '/etc/oar/exclude_from_mem_cg') {
+  $Enable_mem_cg = "NO";
+  print_log(3,"File /etc/oar/exclude_from_mem_cg found. Force disabled mem cgroup.");
+}
+if (-e '/etc/oar/exclude_from_devices_isolation') {
+  $Enable_devices_cg = "NO";
+  print_log(3,"File /etc/oar/exclude_from_devices_isolation found. Force disabled GPU isolation.");
+}
+if (-e "/etc/oar/disable_numa_nodes") {
+  $Cpuset_cg_mem_nodes = "all";
+  print_log(3,"File /etc/oar/disable_numa_nodes found: all numa nodes will be allowed.");
+}
+
 my $Cpuset_path_job;
 my @Cpuset_cpus;
 my $Oardocker_node_cg_path = "";
@@ -178,16 +193,6 @@ if (defined($Cpuset->{cpuset_path})){
 
 print_log(3,"$ARGV[0]");
 
-# Features exclusion
-if (-e '/etc/oar/exclude_from_mem_cg') {
-  $Enable_mem_cg = "NO";
-  $Cpuset_cg_mem_nodes = "all";
-  print_log(3,"File /etc/oar/exclude_from_mem_cg found. Force disabled mem cgroup.");
-}
-if (-e '/etc/oar/exclude_from_devices_isolation') {
-  $Enable_devices_cg = "NO";
-  print_log(3,"File /etc/oar/exclude_from_devices_isolation found. Force disabled GPU isolation.");
-}
 
 
 if ($ARGV[0] eq "init"){
@@ -277,23 +282,44 @@ if ($ARGV[0] eq "init"){
         # HT threads siblings, so we have compute it here.
         my $job_cpuset_cpus=system_with_log('for i in '.join(" ", map {s/,/ /gr} @Cpuset_cpus).'; do cat /sys/devices/system/cpu/cpu$i/topology/thread_siblings_list; done | paste -sd, -');
       }
+
+      # Systemd feature
       if ($Enable_systemd eq "YES") {
+
         # Create transcient systemd slice and set properties
-        system_with_log('oardodo systemd-run --uid='.$Cpuset->{user}.' --slice '.$Cpuset->{name}.' -p Delegate=yes sleep infinity')
+        print_log(3,"Creating ".$Cpuset->{name}.".slice transcient systemd slice");
+        system_with_log('oardodo systemd-run --uid='.$Cpuset->{user}.' --slice '.$Cpuset->{name}.' --unit '.$Cpuset->{name}.' -p Delegate=yes sleep infinity')
           and exit_myself(5,"Failed to create transcient systemd slice $Cpuset->{name}");
-        system_with_log('oardodo systemctl set-property '.$Cpuset->{user}.'.slice \
+        system_with_log('oardodo systemctl set-property '.$Cpuset->{name}.'.slice \
                            AllowedCPUs="'.$job_cpuset_cpus.'" \
                            AllowedMemoryNodes=""')
-          and exit_myself(5,"Failed to set properties on systemd slice $Cpuset->{name}");
-        print_log(3,"Created ".$Cpuset->{name}.".slice transcient systemd slice");
-          # TODO: set memory property
+          and exit_myself(5,"Failed to set cpu properties of systemd slice $Cpuset->{name}");
+
+        # Setting numa nodes property
+        if ($Cpuset_cg_mem_nodes eq "cpu"){
+          print_log(3,"Setting memory nodes of systemd slice $Cpuset->{name}");
+          system_with_log('set -e
+            MEM=
+            for c in '."@Cpuset_cpus".'; do
+              for n in /sys/devices/system/node/node* ; do
+              if [ -r "$n/cpu$c" ]; then
+                MEM=$(basename $n | sed s/node//g),$MEM
+              fi
+              done
+            done
+            oardodo systemctl set-property '.$Cpuset->{name}.'.slice \
+              AllowedMemoryNodes="$MEM"')
+          and exit_myself(5,"Failed to feed the mem nodes of systemd slice $Cpuset->{name}");
+        }
+ 
+      # Cgroup v1 feature
       }else{
         my $job_cpuset_cpus_cmd = '/bin/echo '.$job_cpuset_cpus.' | cat > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpus';
         system_with_log('set -e
           for d in '.$Cgroup_directory_collection_links.'/*; do
-          oardodo mkdir -p $d/'.$Cpuset_path_job.'
-          oardodo chown -R oar $d/'.$Cpuset_path_job.'
-          /bin/echo 0 | cat > $d/'.$Cpuset_path_job.'/notify_on_release
+            oardodo mkdir -p $d/'.$Cpuset_path_job.'
+            oardodo chown -R oar $d/'.$Cpuset_path_job.'
+            /bin/echo 0 | cat > $d/'.$Cpuset_path_job.'/notify_on_release
           done
           /bin/echo 0 | cat > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpu_exclusive
           '.$job_cpuset_cpus_cmd)
@@ -304,16 +330,16 @@ if ($ARGV[0] eq "init"){
         } else {
           system_with_log('set -e
             for d in '.$Cgroup_directory_collection_links.'/*; do
-            MEM=
-            for c in '."@Cpuset_cpus".'; do
-            for n in /sys/devices/system/node/node* ; do
-            if [ -r "$n/cpu$c" ]; then
-            MEM=$(basename $n | sed s/node//g),$MEM
-            fi
+              MEM=
+              for c in '."@Cpuset_cpus".'; do
+                for n in /sys/devices/system/node/node* ; do
+                if [ -r "$n/cpu$c" ]; then
+                  MEM=$(basename $n | sed s/node//g),$MEM
+                fi
+                done
+              done
             done
-            done
-            done
-          echo $MEM > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.mems')
+            echo $MEM > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.mems')
           and exit_myself(5,"Failed to feed the mem nodes to cpuset $Cpuset_path_job");
         }
       }
@@ -663,6 +689,8 @@ EOF
     if ($Enable_systemd eq "YES") {
       print_log(2,"Systemd cleaning partial support: no dirty-user-based cleaning for now");
       system_with_log('oardodo systemctl kill -s 9 '.$Cpuset->{name}.'.slice')
+        and exit_myself(6,'Failed to kill processes of '.$Cpuset->{name}.'.slice');
+      system_with_log('oardodo systemctl stop '.$Cpuset->{name}.'.slice')
         and exit_myself(6,'Failed to stop '.$Cpuset->{name}.'.slice');
     }else{
       if (defined($Cpuset_path_job)){
