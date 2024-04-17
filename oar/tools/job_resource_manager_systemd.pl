@@ -43,7 +43,9 @@
 #     - [systemd] You can ENABLE systemd support, which includes cgroupv2
 #                 support. When activated, the cpuset code is disabled and
 #                 replaced by systemd calls. To enable it, you need to create
-#                 an empty file '/etc/oar/use_systemd' on the nodes.
+#                 an empty file '/etc/oar/use_systemd' on the nodes to be 
+#                 managed by systemd, or set-up $Enable_systemd = "YES" for
+#                 using systemd by default on every nodes.
 # Usage:
 # This script is deployed from the server and executed as oar on the nodes
 # ARGV[0] can have two different values:
@@ -199,16 +201,22 @@ if ($ARGV[0] eq "init"){
   ###############################################################################
   # Node initialization: run on all the nodes of the job before the job starts
   ###############################################################################
-  # Initialize cpuset or systemd slice for this node
+
+  ### Initialize cpuset or systemd slice for this node ###
+
   # First, create the tmp oar directory
   if (!(((-d $Cpuset->{oar_tmp_directory}) and (-O $Cpuset->{oar_tmp_directory})) or (mkdir($Cpuset->{oar_tmp_directory})))){
     exit_myself(13,"Directory $Cpuset->{oar_tmp_directory} does not exist and cannot be created");
   }
 
   if (defined($Cpuset_path_job)){
+
+    # SYSTEMD
     if ($Enable_systemd eq "YES") {
       # Using systemd, no cpuset init required
       print_log(3,"Using systemd");
+
+    # CGROUPS V1
     }else{
       if (open(LOCKFILE,"> $Cpuset->{oar_tmp_directory}/job_manager_lock_file")){
         flock(LOCKFILE,LOCK_EX) or exit_myself(17,"flock failed: $!");
@@ -265,8 +273,9 @@ if ($ARGV[0] eq "init"){
       }
     }
 
+    ### Cgroup or systemd slice creation ###
+
     # Be careful with the physical_package_id. Is it corresponding to the memory bank?
-    # Create job cgroup
     # Locking around the creation of the cpuset for that user, to prevent race condition during the dirty-user-based cleanup
     if (open(LOCK,">", $Cpuset_lock_file.$Cpuset->{user})){
       flock(LOCK,LOCK_EX) or die "flock failed: $!\n";
@@ -283,7 +292,7 @@ if ($ARGV[0] eq "init"){
         my $job_cpuset_cpus=system_with_log('for i in '.join(" ", map {s/,/ /gr} @Cpuset_cpus).'; do cat /sys/devices/system/cpu/cpu$i/topology/thread_siblings_list; done | paste -sd, -');
       }
 
-      # Systemd feature
+      # SYSTEMD
       if ($Enable_systemd eq "YES") {
 
         # Create transcient systemd slice and set properties
@@ -312,7 +321,7 @@ if ($ARGV[0] eq "init"){
           and exit_myself(5,"Failed to feed the mem nodes of systemd slice $Cpuset->{name}");
         }
  
-      # Cgroup v1 feature
+      # CGROUP V1
       }else{
         my $job_cpuset_cpus_cmd = '/bin/echo '.$job_cpuset_cpus.' | cat > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/cpuset.cpus';
         system_with_log('set -e
@@ -349,42 +358,70 @@ if ($ARGV[0] eq "init"){
       exit_myself(16,"[cpuset_manager] Error opening $Cpuset_lock_file");
     }
 
+    ### Special features ###
+
+    my $node_cpus_file=$Cgroup_directory_collection_links."/cpuset/cpuset.cpus";
+    my $job_cpus_file=$Cgroup_directory_collection_links."/cpuset/".$Cpuset_path_job."/cpuset.cpus";
+    # Set cgroups cpus file location for the systemd feature
     if ($Enable_systemd eq "YES") {
-      # TODO: set other properties of the systemd slice (devices, net_cls, memory,...)
-      print_log(2,"Warning: systemd is a work in progress, some features may be missing");
+      # cgroup v2
+      $node_cpus_file=$OS_cgroups_path.'/cpuset.cpus.effective';
+      $job_cpus_file=$OS_cgroups_path.'/'.$Cpuset->{name}.'.slice/cpuset.cpus';
+      # cgroup v1
+      if (not -e $job_cpus_file) {
+        $node_cpus_file=$OS_cgroups_path.'/cpuset/cpuset.cpus';
+        $job_cpus_file=$OS_cgroups_path.'/systemd/'.$Cpuset->{name}.'.slice/cpuset.cpus';
+      }
+    }
+
+    # Compute the actual job cpus (@Cpuset_cpus may not have the HT included, depending on the OAR resources definiton)
+    my @job_cpus;
+      if (open(CPUS, $job_cpus_file)){
+      my $str = <CPUS>;
+      chop($str);
+      $str =~ s/\-/\.\./g;
+      @job_cpus = eval($str);
+      close(CPUS);
     }else{
+      exit_myself(5,"Failed to retrieve the cpu list of the job $job_cpus_file");
+    }
 
-      # Compute the actual job cpus (@Cpuset_cpus may not have the HT included, depending on the OAR resources definiton)
-      my @job_cpus;
-      if (open(CPUS, $Cgroup_directory_collection_links."/cpuset/".$Cpuset_path_job."/cpuset.cpus")){
-        my $str = <CPUS>;
-        chop($str);
-        $str =~ s/\-/\.\./g;
-        @job_cpus = eval($str);
-        close(CPUS);
-      }else{
-        exit_myself(5,"Failed to retrieve the cpu list of the job $Cgroup_directory_collection_links/cpuset/$Cpuset_path_job/cpuset.cpus");
-      }
-      # Get all the cpus of the node
-      my @node_cpus;
-      if (open(CPUS, $Cgroup_directory_collection_links."/cpuset/cpuset.cpus")){
-        my $str = <CPUS>;
-        chop($str);
-        $str =~ s/\-/\.\./g;
-        @node_cpus = eval($str);
-        close(CPUS);
-      }else{
-        exit_myself(5,"Failed to retrieve the cpu list of the node $Cgroup_directory_collection_links/cpuset/cpuset.cpus");
-      }
+    # Get all the cpus of the node
+    my @node_cpus;
+    if (open(CPUS, $node_cpus_file)){
+      my $str = <CPUS>;
+      chop($str);
+      $str =~ s/\-/\.\./g;
+      @node_cpus = eval($str);
+      close(CPUS);
+    }else{
+      exit_myself(5,"Failed to retrieve the cpu list of the node $node_cpus_file");
+    }
 
-      # Tag network packets from processes of this job
-      if ($Enable_net_cls_cg eq "YES") {
+    # Tag network packets from processes of this job
+    if ($Enable_net_cls_cg eq "YES") {
+      # SYSTEMD                      
+      if ($Enable_systemd eq "YES") {
+        print_log(2,"No support for network packets tagging with systemd feature");
+      # CGROUP v1
+      }else{
         system_with_log( '/bin/echo '.$Cpuset->{job_id}.' | cat > '.$Cgroup_directory_collection_links.'/net_cls/'.$Cpuset_path_job.'/net_cls.classid')
           and exit_myself(5,"Failed to tag network packets of the cgroup $Cpuset_path_job");
       }
-      # Put a share for IO disk corresponding of the ratio between the number
-      # of cpus of this cgroup and the number of cpus of the node
-      if ($Enable_blkio_cg eq "YES") {
+    }
+
+    # Put a share for IO disk corresponding of the ratio between the number
+    # of cpus of this cgroup and the number of cpus of the node
+    if ($Enable_blkio_cg eq "YES") {
+      # SYSTEMD                      
+      if ($Enable_systemd eq "YES") {
+        # Not yet tested! (check if it works and if it has not the problems of the TODO bellow with cgroup v1)
+        my $IO_ratio = sprintf("%.0f",(($#job_cpus + 1) / ($#node_cpus + 1) * 10000)) ;
+        system_with_log('oardodo systemctl set-property '.$Cpuset->{name}.'.slice \           
+                         IOWeight='.$IO_ratio)                                            
+          and exit_myself(5,"Failed to set IOweight of systemd slice $Cpuset->{name}"); 
+      # CGROUP v1
+      }else{
         my $IO_ratio = sprintf("%.0f",(($#job_cpus + 1) / ($#node_cpus + 1) * 1000)) ;
         # TODO: Need to do more tests to validate so remove this feature
         #       Some values are not working when echoing, force value to 1000 for now.
@@ -392,8 +429,17 @@ if ($ARGV[0] eq "init"){
         system_with_log( '/bin/echo '.$IO_ratio.' | cat > '.$Cgroup_directory_collection_links.'/blkio/'.$Cpuset_path_job.'/blkio.weight')
           and exit_myself(5,"Failed to set the blkio.weight to $IO_ratio");
       }
-      # Manage GPU devices
-      if ($Enable_devices_cg eq "YES"){
+    }
+ 
+
+    # Manage GPU devices
+    if ($Enable_devices_cg eq "YES"){
+      # SYSTEMD                      
+      if ($Enable_systemd eq "YES") {
+        # TODO
+        print_log(2,"No support for devices filtering with systemd feature (WIP)");
+      # CGROUP v1
+      }else{
         # Nvidia GPU
         my @devices_deny = ();
         opendir(my($dh), "/dev") or exit_myself(5,"Failed to open /dev directory for Enable_devices_cg feature");
@@ -514,9 +560,19 @@ if ($ARGV[0] eq "init"){
             }
           }
         }
-      } # if ($Enable_devices_cg eq "YES")
+      }
+    } # if ($Enable_devices_cg eq "YES")
 
-      # Assign the corresponding share of memory if memory cgroup enabled.
+
+
+    # SYSTEMD
+    if ($Enable_systemd eq "YES") {
+      print_log(2,"Warning: systemd is a work in progress, some features may be missing");
+
+    # CGROUPS V1
+    }else{
+
+           # Assign the corresponding share of memory if memory cgroup enabled.
       if ($Enable_mem_cg eq "YES"){
         my $mem_global_kb;
         if (open(MEM, "/proc/meminfo")){
