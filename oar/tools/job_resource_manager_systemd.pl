@@ -505,7 +505,6 @@ if ($ARGV[0] eq "init"){
             $systemd_devices.='DeviceAllow="'.$dev.' rwm"'." ";
             print_log(3,"Allowing $dev device into systemd slice $Cpuset->{name}");
           }
-          print_log(3,$systemd_devices);
           system_with_log('oardodo systemctl set-property '.$Cpuset->{name}.'.slice '.$systemd_devices)                                            
             and exit_myself(5,"Failed to set devices filtering of systemd slice $Cpuset->{name} : \"$systemd_devices\""); 
         }
@@ -628,35 +627,36 @@ if ($ARGV[0] eq "init"){
     } # if ($Enable_devices_cg eq "YES")
 
 
-
-    # SYSTEMD
-    if ($Enable_systemd eq "YES") {
-      print_log(2,"Warning: systemd is a work in progress, some features may be missing");
-
-    # CGROUPS V1
-    }else{
-
-           # Assign the corresponding share of memory if memory cgroup enabled.
-      if ($Enable_mem_cg eq "YES"){
-        my $mem_global_kb;
-        if (open(MEM, "/proc/meminfo")){
-          while (my $line = <MEM>){
-            if ($line =~ /^MemTotal:\s+(\d+)\skB$/){
-              $mem_global_kb = $1 * 1024;
-              last;
-            }
+    # Assign the corresponding share of memory if memory cgroup enabled.
+    if ($Enable_mem_cg eq "YES"){
+      my $mem_global_kb;
+      if (open(MEM, "/proc/meminfo")){
+        while (my $line = <MEM>){
+          if ($line =~ /^MemTotal:\s+(\d+)\skB$/){
+            $mem_global_kb = $1 * 1024;
+            last;
           }
-          close(MEM);
-        }else{
-          exit_myself(5,"Failed to retrieve the global memory from /proc/meminfo");
         }
-        exit_myself(5,"Failed to parse /proc/meminfo to retrive MemTotal") if (!defined($mem_global_kb));
-        my $mem_kb = sprintf("%.0f", (($#job_cpus + 1) / ($#node_cpus + 1) * $mem_global_kb));
+        close(MEM);
+      }else{
+        exit_myself(5,"Failed to retrieve the global memory from /proc/meminfo");
+      }
+      exit_myself(5,"Failed to parse /proc/meminfo to retrive MemTotal") if (!defined($mem_global_kb));
+      my $mem_kb = sprintf("%.0f", (($#job_cpus + 1) / ($#node_cpus + 1) * $mem_global_kb));
+ 
+     # SYSTEMD
+      if ($Enable_systemd eq "YES") {
+        print_log(2,"Warning: systemd is a work in progress, some features may be missing");
+        system_with_log('oardodo systemctl set-property '.$Cpuset->{name}.'.slice MemoryMax='.$mem_kb.'K')                                            
+          and exit_myself(5,"Failed to set MemoryMax of systemd slice $Cpuset->{name}: $mem_kb"."K"); 
+
+      # CGROUPS V1
+      }else{
         system_with_log('/bin/echo '.$mem_kb.' | cat > '.$Cgroup_directory_collection_links.'/memory/'.$Cpuset_path_job.'/memory.limit_in_bytes')
           and exit_myself(5,"Failed to set the memory.limit_in_bytes to $mem_kb");
       }
 
-    } # End else ($Enable_systemd eq "YES")
+    } # End else ($Enable_mem_cg eq "YES")
 
     # Create file used in the user jobs (environment variables, node files, ...)
     ## Feed the node file
