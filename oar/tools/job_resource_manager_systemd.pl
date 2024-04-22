@@ -214,7 +214,10 @@ if ($ARGV[0] eq "init"){
     # SYSTEMD
     if ($Enable_systemd eq "YES") {
       # Using systemd, no cpuset init required
+      # 
       print_log(3,"Using systemd");
+      # Replace "-" from cpuset name as systemd interprets them as "/"
+      $Cpuset->{name}=~ s/\-/_/g;
 
     # CGROUPS V1
     }else{
@@ -369,6 +372,7 @@ if ($ARGV[0] eq "init"){
       $job_cpus_file=$OS_cgroups_path.'/'.$Cpuset->{name}.'.slice/cpuset.cpus';
       # cgroup v1
       if (not -e $job_cpus_file) {
+        print_log(2,"Warning: cgroups v2 files not found, guessing cgroup v1 hierarchy...");
         $node_cpus_file=$OS_cgroups_path.'/cpuset/cpuset.cpus';
         $job_cpus_file=$OS_cgroups_path.'/systemd/'.$Cpuset->{name}.'.slice/cpuset.cpus';
       }
@@ -743,6 +747,11 @@ EOF
 
     # Clean cpuset on this node
     if ($Enable_systemd eq "YES") {
+
+      # Replace "-" from cpuset name as systemd interprets them as "/"
+      $Cpuset->{name}=~ s/\-/_/g;
+      
+      # Cleaning
       print_log(2,"Systemd cleaning partial support: no dirty-user-based cleaning for now");
       system_with_log('oardodo systemctl kill -s 9 '.$Cpuset->{name}.'.slice')
         and exit_myself(6,'Failed to kill processes of '.$Cpuset->{name}.'.slice');
