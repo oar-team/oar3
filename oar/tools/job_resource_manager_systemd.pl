@@ -438,23 +438,84 @@ if ($ARGV[0] eq "init"){
 
     # Manage GPU devices
     if ($Enable_devices_cg eq "YES"){
+
+      opendir(my($dh), "/dev") or exit_myself(5,"Failed to open /dev directory for Enable_devices_cg feature");
+
+      # Get the list of NVIDIA or AMD GPU devices
+      my $nvidia_gpus=0; # nvidia flag
+      my @devices = ();
+      my @other_devices = ();
+      my @files = grep { /nvidia/ } readdir($dh);
+      foreach (@files){
+        if ($_ =~ /nvidia(\d+)/){
+          $nvidia_gpus=1;
+          print_log(3,"Found Nvidia device /dev/nvidia".$1);
+          push (@devices, $1);
+        }else{
+          push (@other_devices, "/dev/".$_);
+        }
+      }
+
+      # Get the list of AMD (or other types) GPU devices
+      # if we don't get nvidia devices, we suppose that we have AMD devices
+      my $amd_gpus=0; # AMD flag
+      if ($nvidia_gpus == 0) {      
+        @files = grep { /dev\/dri/ } readdir($dh);
+        foreach (@files){
+          if ($_ =~ /card(\d+)/){
+            $amd_gpus=1;
+            print_log(3,"Found GPU device /dev/dri/card".$1);
+            push (@devices, $1);
+          }else{
+            push (@other_devices, "/dev/dri/".$_);
+          }
+        }
+      }
+      closedir($dh);
+
+
       # SYSTEMD                      
       if ($Enable_systemd eq "YES") {
-        # TODO
-        print_log(2,"No support for devices filtering with systemd feature (WIP)");
+        my $gpu_device_prefix = "";
+        if ($nvidia_gpus == 1) {
+          $gpu_device_prefix = "/dev/nvidia";
+          push (@other_devices, "/dev/nvidia-caps/nvidia-cap1");
+          push (@other_devices, "/dev/nvidia-caps/nvidia-cap2");
+        }elsif ($amd_gpus == 1) {
+          # Not tested!
+          $gpu_device_prefix = "/dev/drm/card";
+        }else{
+          print_log(3,"No GPU devices found");
+        }
+        if ($nvidia_gpus == 1 or $amd_gpus == 1) { 
+          my $systemd_devices="DevicePolicy=closed ";
+          foreach my $r (@{$Cpuset->{'resources'}}){
+            if (($r->{type} eq "default") and
+              ($r->{network_address} eq "$ENV{TAKTUK_HOSTNAME}") and
+              ($r->{'gpudevice'} ne '')
+            ){
+              @devices = grep { $_ ==  $r->{'gpudevice'} } @devices;
+            }
+          }
+          foreach my $dev (@devices) {
+            $systemd_devices.='DeviceAllow="'.$gpu_device_prefix.''.$dev.' rwm"'." ";
+            print_log(3,"Allowing $gpu_device_prefix"."$dev device into systemd slice $Cpuset->{name}");
+          }
+          foreach my $dev (@other_devices) {
+            $systemd_devices.='DeviceAllow="'.$dev.' rwm"'." ";
+            print_log(3,"Allowing $dev device into systemd slice $Cpuset->{name}");
+          }
+          print_log(3,$systemd_devices);
+          system_with_log('oardodo systemctl set-property '.$Cpuset->{name}.'.slice '.$systemd_devices)                                            
+            and exit_myself(5,"Failed to set devices filtering of systemd slice $Cpuset->{name} : \"$systemd_devices\""); 
+        }
+ 
+
       # CGROUP v1
       }else{
         # Nvidia GPU
-        my @devices_deny = ();
-        opendir(my($dh), "/dev") or exit_myself(5,"Failed to open /dev directory for Enable_devices_cg feature");
-        my @files = grep { /nvidia/ } readdir($dh);
-        foreach (@files){
-          if ($_ =~ /nvidia(\d+)/){
-            push (@devices_deny, $1);
-          }
-        }
-        closedir($dh);
-        if ($#devices_deny > -1){
+       my @devices_deny=@devices;
+       if ($#devices_deny > -1){
           # now remove from denied devices our reserved devices
           foreach my $r (@{$Cpuset->{'resources'}}){
             if (($r->{type} eq "default") and
@@ -474,7 +535,6 @@ if ($ARGV[0] eq "init"){
         # Nvidia MIG
         my $have_nvidia=1;
         @devices_deny = ();
-        #opendir($dh, "/proc/driver/nvidia/capabilities") or exit_myself(5,"Failed to open /proc/driver/nvidia/capabilities directory for Enable_devices_cg feature");
         opendir($dh, "/proc/driver/nvidia/capabilities") or $have_nvidia=0;
         if ($have_nvidia == 1){
           @files = grep { /gpu/ } readdir($dh);
@@ -900,7 +960,7 @@ sub exit_myself($$){
   my $exit_code = shift;
   my $str = shift;
 
-  warn("[job_resource_manager_cgroups][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][ERROR] $str\n");
+  warn("[job_resource_manager_systemd][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][ERROR] $str\n");
   exit($exit_code);
 }
 
@@ -910,7 +970,7 @@ sub print_log($$){
   my $str = shift;
 
   if ($l <= $Log_level){
-    print("[job_resource_manager_cgroups][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][DEBUG] $str\n");
+    print("[job_resource_manager_systemd][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][DEBUG] $str\n");
   }
 }
 # Run a command after printing it in the logs if OAR log level ≥ 4
