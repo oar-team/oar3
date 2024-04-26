@@ -26,6 +26,7 @@ then
   SYSTEMD=1
   # "-" are replaced by "_" as systemd interprets them as "/"
   OAR_CPUSET=${OAR_CPUSET/-/_}
+  OAR_CPUSET=${OAR_CPUSET/./_}
 else
   SYSTEMD=0
 fi

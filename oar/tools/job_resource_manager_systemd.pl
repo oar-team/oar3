@@ -179,6 +179,7 @@ if (-e "/etc/oar/disable_numa_nodes") {
 
 my $Cpuset_path_job;
 my @Cpuset_cpus;
+my $Systemd_prefix="oar.";
 my $Oardocker_node_cg_path = "";
 # Get the data structure only for this node
 if (defined($Cpuset->{cpuset_path})){
@@ -196,11 +197,11 @@ if (defined($Cpuset->{cpuset_path})){
 print_log(3,"$ARGV[0]");
 
 
+###############################################################################
+# Node initialization: run on all the nodes of the job before the job starts
+###############################################################################
 
 if ($ARGV[0] eq "init"){
-  ###############################################################################
-  # Node initialization: run on all the nodes of the job before the job starts
-  ###############################################################################
 
   ### Initialize cpuset or systemd slice for this node ###
 
@@ -216,8 +217,10 @@ if ($ARGV[0] eq "init"){
       # Using systemd, no cpuset init required
       # 
       print_log(3,"Using systemd");
-      # Replace "-" from cpuset name as systemd interprets them as "/"
+      # Replace "-" and "." from cpuset name as systemd interprets them
       $Cpuset->{name}=~ s/\-/_/g;
+      $Cpuset->{name}=~ s/\./_/g;
+      $Cpuset->{name}=$Systemd_prefix.$Cpuset->{name};
 
     # CGROUPS V1
     }else{
@@ -775,180 +778,213 @@ EOF
       exit_myself(10,"Error opening $Cpuset->{ssh_keys}->{public}->{file_name}");
     }
   }
+
+
+
+###############################################################################
+# Node cleaning: run on all the nodes of the job after the job ends
+###############################################################################
+
 }elsif ($ARGV[0] eq "clean"){
-    ###############################################################################
-    # Node cleaning: run on all the nodes of the job after the job ends
-    ###############################################################################
-    # delete ssh key files
-    if ($Cpuset->{ssh_keys}->{private}->{key} ne ""){
-      # private key
-      unlink($Cpuset->{ssh_keys}->{private}->{file_name});
+  # delete ssh key files
+  if ($Cpuset->{ssh_keys}->{private}->{key} ne ""){
+    # private key
+    unlink($Cpuset->{ssh_keys}->{private}->{file_name});
 
-      # public key
-      if (open(PUB,"+<", $Cpuset->{ssh_keys}->{public}->{file_name})){
-        flock(PUB,LOCK_EX) or exit_myself(17,"flock failed: $!");
-        seek(PUB,0,0) or exit_myself(18,"seek failed: $!");
-        #Change file on the fly
-        my $out = "";
-        while (<PUB>){
-          if (($_ ne "\n") and ($_ ne $Cpuset->{ssh_keys}->{public}->{key})){
-            $out .= $_;
-          }
+    # public key
+    if (open(PUB,"+<", $Cpuset->{ssh_keys}->{public}->{file_name})){
+      flock(PUB,LOCK_EX) or exit_myself(17,"flock failed: $!");
+      seek(PUB,0,0) or exit_myself(18,"seek failed: $!");
+      #Change file on the fly
+      my $out = "";
+      while (<PUB>){
+        if (($_ ne "\n") and ($_ ne $Cpuset->{ssh_keys}->{public}->{key})){
+          $out .= $_;
         }
-        if (!(seek(PUB,0,0) and print(PUB $out) and truncate(PUB,tell(PUB)))){
-          exit_myself(12,"Error changing $Cpuset->{ssh_keys}->{public}->{file_name}");
-        }
-        flock(PUB,LOCK_UN) or exit_myself(17,"flock failed: $!");
-        close(PUB);
-      }else{
-        exit_myself(11,"Error opening $Cpuset->{ssh_keys}->{public}->{file_name}");
       }
-    }
-
-    # Clean cpuset on this node
-    if ($Enable_systemd eq "YES") {
-
-      # Replace "-" from cpuset name as systemd interprets them as "/"
-      $Cpuset->{name}=~ s/\-/_/g;
-      
-      # Cleaning
-      print_log(2,"Systemd cleaning partial support: no dirty-user-based cleaning for now");
-      system_with_log('oardodo systemctl kill -s 9 '.$Cpuset->{name}.'.slice')
-        and exit_myself(6,'Failed to kill processes of '.$Cpuset->{name}.'.slice');
-      system_with_log('oardodo systemctl stop '.$Cpuset->{name}.'.slice')
-        and exit_myself(6,'Failed to stop '.$Cpuset->{name}.'.slice');
+      if (!(seek(PUB,0,0) and print(PUB $out) and truncate(PUB,tell(PUB)))){
+        exit_myself(12,"Error changing $Cpuset->{ssh_keys}->{public}->{file_name}");
+      }
+      flock(PUB,LOCK_UN) or exit_myself(17,"flock failed: $!");
+      close(PUB);
     }else{
-      if (defined($Cpuset_path_job)){
-        system_with_log('echo THAWED > '.$Cgroup_directory_collection_links.'/freezer/'.$Cpuset_path_job.'/freezer.state
-          for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'; do
-          if [ -d $d ]; then
-          PROCESSES=$(cat $d/tasks)
-          while [ "$PROCESSES" != "" ]; do
-          oardodo kill -9 $PROCESSES > /dev/null 2>&1
-          PROCESSES=$(cat $d/tasks)
-          done
-          fi
-          done');
+      exit_myself(11,"Error opening $Cpuset->{ssh_keys}->{public}->{file_name}");
+    }
+  }
 
-        # Locking around the cleanup of the cpuset for that user, to prevent a creation to occure at the same time
-        # which would allow race condition for the dirty-user-based clean-up mechanism
-        if (open(LOCK,">", $Cpuset_lock_file.$Cpuset->{user})){
-          flock(LOCK,LOCK_EX) or die "flock failed: $!\n";
-          system_with_log('if [ -w '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/memory.force_empty ]; then
-            echo 0 > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/memory.force_empty
-            fi
-            for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'; do
+  # Kill tasks on this node
+
+  # SYSTEMD
+  if ($Enable_systemd eq "YES") {
+
+    # Replace "-" and "." from cpuset name as systemd interprets them
+    $Cpuset->{name}=~ s/\-/_/g;
+    $Cpuset->{name}=~ s/\./_/g;
+    $Cpuset->{name}=$Systemd_prefix.$Cpuset->{name};
+    
+    # Cleaning
+    print_log(2,"Systemd cleaning...");
+
+    # (disabled as it caused timeouts... need more test with frozen cgroups)
+    #system_with_log('oardodo systemctl thaw '.$Cpuset->{name}.'.slice')
+    #  and exit_myself(6,'Failed to thaw processes of '.$Cpuset->{name}.'.slice');
+
+    system_with_log('oardodo systemctl kill -s 9 '.$Cpuset->{name}.'.slice')
+      and exit_myself(6,'Failed to kill processes of '.$Cpuset->{name}.'.slice');
+
+    system_with_log('oardodo systemctl stop '.$Cpuset->{name}.'.slice; sleep 5')
+      and exit_myself(6,'Failed to stop '.$Cpuset->{name}.'.slice');
+
+     # TODO: add a check of the slice to wait for it to be actualy inactive (and remove the sleep above)
+
+  # CGROUPv1
+  }elsif(defined($Cpuset_path_job)){
+    system_with_log('echo THAWED > '.$Cgroup_directory_collection_links.'/freezer/'.$Cpuset_path_job.'/freezer.state
+          for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'; do
             if [ -d $d ]; then
-            [ -w $d/memory.force_empty ] && echo 0 > $d/memory.force_empty
-            while ! oardodo rmdir $d ; do
-            cat $d/tasks | xargs -n1 ps -fh -p 1>&2
-            echo retry in 1s... 1>&2
-            sleep 1
-            done
+              PROCESSES=$(cat $d/tasks)
+              while [ "$PROCESSES" != "" ]; do
+                oardodo kill -9 $PROCESSES > /dev/null 2>&1
+                PROCESSES=$(cat $d/tasks)
+              done
             fi
-            done
-            for d in '.$Cgroup_directory_collection_links.'/*/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/*/'.$Cpuset_path_job.'; do
-            if [ -d $d ]; then
-            [ -w $d/memory.force_empty ] && echo 0 > $d/memory.force_empty
-            oardodo rmdir $d > /dev/null 2>&1
-            fi
-            done')
+          done');
+  }
+
+  # Locking around the cleanup of the cpuset for that user, to prevent a creation to occure at the same time
+  # which would allow race condition for the dirty-user-based clean-up mechanism
+  if (open(LOCK,">", $Cpuset_lock_file.$Cpuset->{user})){
+    flock(LOCK,LOCK_EX) or die "flock failed: $!\n";
+
+    # Cgroup cleaning
+    # SYSTEMD
+    if ($Enable_systemd eq "YES") {
+      # Systemd should already have cleaned the cgroups
+    # CGROUPv1
+    }elsif(defined($Cpuset_path_job)){
+      system_with_log('if [ -w '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/memory.force_empty ]; then
+                             echo 0 > '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/memory.force_empty
+                           fi
+                           for d in '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/cpuset/'.$Cpuset_path_job.'; do
+                             if [ -d $d ]; then
+                               [ -w $d/memory.force_empty ] && echo 0 > $d/memory.force_empty
+                               while ! oardodo rmdir $d ; do
+                                 cat $d/tasks | xargs -n1 ps -fh -p 1>&2
+                                 echo retry in 1s... 1>&2
+                                 sleep 1
+                               done
+                             fi
+                           done
+                           for d in '.$Cgroup_directory_collection_links.'/*/'.$Cpuset_path_job.'/* '.$Cgroup_directory_collection_links.'/*/'.$Cpuset_path_job.'; do
+                             if [ -d $d ]; then
+                               [ -w $d/memory.force_empty ] && echo 0 > $d/memory.force_empty
+                               oardodo rmdir $d > /dev/null 2>&1
+                             fi
+                           done')
           # Uncomment this line if you want to use several network_address properties
           # which are the same physical computer (linux kernel)
           # and exit(0)
             and exit_myself(6,"Failed to delete the cpuset $Cpuset_path_job");
+    }
 
-          # dirty-user-based cleanup: do cleanup only if that is the last job of the user on that host.
-          my @cpusets = ();
-          my @other_cpusets = ();
-          if (opendir(DIR, $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/')) {
-            @cpusets = grep { /^$Cpuset->{user}_\d+$/ } readdir(DIR);
-            closedir DIR;
-          } else {
-            exit_myself(18,"Can't opendir: $Cgroup_directory_collection_links/cpuset/$Cpuset->{cpuset_path}");
-          }
-          if (opendir(DIR, $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/')) {
-            @other_cpusets = grep { /^.*_\d+$/ } readdir(DIR);
-            closedir DIR;
-          } else {
-            exit_myself(18,"Can't opendir: $Cgroup_directory_collection_links/cpuset/$Cpuset->{cpuset_path}");
-          }
+    # dirty-user-based cleanup: do cleanup only if that is the last job of the user on that host.
+    my @cpusets = ();
+    my @other_cpusets = ();
 
-          if ($#cpusets < 0) {
-            # No other jobs on this node at this time
-
-            # Reboot if uptime > max_uptime
-            if ( $#other_cpusets < 0 and $uptime > $max_uptime and $max_uptime > 0 and not -e "/etc/oar/dont_reboot") {
-              print_log(3,"Max uptime reached, rebooting node.");
-              system("/usr/lib/oar/oardodo/oardodo /sbin/reboot");
-              exit(0);
-            }
-
-            my $useruid=getpwnam($Cpuset->{user});
-            if (not defined($useruid)){
-              print_log(3,"Cannot get information from user '$Cpuset->{user}' job #'$Cpuset->{job_id}' (line 481)");
-            }
-            my $ipcrm_args="";
-            if (open(IPCMSG,"< /proc/sysvipc/msg")) {
-              <IPCMSG>;
-              while (<IPCMSG>) {
-                if (/^\s*\d+\s+(\d+)(?:\s+\d+){5}\s+$useruid(?:\s+\d+){6}/) {
-                  $ipcrm_args .= " -q $1";
-                  print_log(3,"Found IPC MSG for user $useruid: $1.");
-                }
-              }
-              close (IPCMSG);
-            } else {
-              print_log(3,"Cannot open /proc/sysvipc/msg: $!.");
-            }
-            if (open(IPCSHM,"< /proc/sysvipc/shm")) {
-              <IPCSHM>;
-              while (<IPCSHM>) {
-                if (/^\s*\d+\s+(\d+)(?:\s+\d+){5}\s+$useruid(?:\s+\d+){6}/) {
-                  $ipcrm_args .= " -m $1";
-                  print_log(3,"Found IPC SHM for user $useruid: $1.");
-                }
-              }
-              close (IPCSHM);
-            } else {
-              print_log(3,"Cannot open /proc/sysvipc/shm: $!.");
-            }
-            if (open(IPCSEM,"< /proc/sysvipc/sem")) {
-              <IPCSEM>;
-              while (<IPCSEM>) {
-                if (/^\s*[\d\-]+\s+(\d+)(?:\s+\d+){2}\s+$useruid(?:\s+\d+){5}/) {
-                  $ipcrm_args .= " -s $1";
-                  print_log(3,"Found IPC SEM for user $useruid: $1.");
-                }
-              }
-              close (IPCSEM);
-            } else {
-              print_log(3,"Cannot open /proc/sysvipc/sem: $!.");
-            }
-            if ($ipcrm_args) {
-              print_log (3,"Purging SysV IPC: ipcrm $ipcrm_args.");
-              system_with_log("OARDO_BECOME_USER=$Cpuset->{user} oardodo ipcrm $ipcrm_args");
-            }
-            print_log (3,"Purging @Tmp_dir_to_clear.");
-            system_with_log('for d in '."@Tmp_dir_to_clear".'; do
-              oardodo find $d -user '.$Cpuset->{user}.' -delete
-              [ -x '.$Fstrim_cmd.' ] && oardodo '.$Fstrim_cmd.' $d > /dev/null 2>&1
-              done
-              ');
-          } else {
-            print_log(3,"Not purging SysV IPC and /tmp as $Cpuset->{user} still has a job running on this host.");
-          }
-          flock(LOCK,LOCK_UN) or die "flock failed: $!\n";
-          close(LOCK);
-        }
-        print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
-        unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
-        print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}");
-        unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}");
-        print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}_resources");
-        unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}_resources");
+    # Get the number of other jobs for the user and for others
+    # SYSTEMD
+    if ($Enable_systemd eq "YES") {                    
+      @cpusets = system_with_log("systemctl list-units oar.".$Cpuset->{user}."_*.slice --plain --legend=0 --state=active");
+      @other_cpusets = system_with_log("systemctl list-units oar.*.slice --plain --legend=0 --state=active");
+    # CGROUPv1
+    }elsif(defined($Cpuset_path_job)){
+      if (opendir(DIR, $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/')) {
+        @cpusets = grep { /^$Cpuset->{user}_\d+$/ } readdir(DIR);
+        closedir DIR;
+      } else {
+        exit_myself(18,"Can't opendir: $Cgroup_directory_collection_links/cpuset/$Cpuset->{cpuset_path}");
       }
-    } # End else ($Enable_systemd eq "YES")
+      if (opendir(DIR, $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/')) {
+        @other_cpusets = grep { /^.*_\d+$/ } readdir(DIR);
+        closedir DIR;
+      } else {
+        exit_myself(18,"Can't opendir: $Cgroup_directory_collection_links/cpuset/$Cpuset->{cpuset_path}");
+      }
+    }
+
+    if ($#cpusets < 0) {
+      # No other jobs on this node at this time
+
+      # Reboot if uptime > max_uptime
+      if ( $#other_cpusets < 0 and $uptime > $max_uptime and $max_uptime > 0 and not -e "/etc/oar/dont_reboot") {
+        print_log(3,"Max uptime reached, rebooting node.");
+        system("/usr/lib/oar/oardodo/oardodo /sbin/reboot");
+        exit(0);
+      }
+
+      my $useruid=getpwnam($Cpuset->{user});
+      if (not defined($useruid)){
+        print_log(3,"Cannot get information from user '$Cpuset->{user}' job #'$Cpuset->{job_id}'");
+      }
+      my $ipcrm_args="";
+      if (open(IPCMSG,"< /proc/sysvipc/msg")) {
+        <IPCMSG>;
+        while (<IPCMSG>) {
+          if (/^\s*\d+\s+(\d+)(?:\s+\d+){5}\s+$useruid(?:\s+\d+){6}/) {
+            $ipcrm_args .= " -q $1";
+            print_log(3,"Found IPC MSG for user $useruid: $1.");
+          }
+        }
+        close (IPCMSG);
+      } else {
+        print_log(3,"Cannot open /proc/sysvipc/msg: $!.");
+      }
+      if (open(IPCSHM,"< /proc/sysvipc/shm")) {
+        <IPCSHM>;
+        while (<IPCSHM>) {
+          if (/^\s*\d+\s+(\d+)(?:\s+\d+){5}\s+$useruid(?:\s+\d+){6}/) {
+            $ipcrm_args .= " -m $1";
+            print_log(3,"Found IPC SHM for user $useruid: $1.");
+          }
+        }
+        close (IPCSHM);
+      } else {
+        print_log(3,"Cannot open /proc/sysvipc/shm: $!.");
+      }
+      if (open(IPCSEM,"< /proc/sysvipc/sem")) {
+        <IPCSEM>;
+        while (<IPCSEM>) {
+          if (/^\s*[\d\-]+\s+(\d+)(?:\s+\d+){2}\s+$useruid(?:\s+\d+){5}/) {
+            $ipcrm_args .= " -s $1";
+            print_log(3,"Found IPC SEM for user $useruid: $1.");
+          }
+        }
+        close (IPCSEM);
+      } else {
+        print_log(3,"Cannot open /proc/sysvipc/sem: $!.");
+      }
+      if ($ipcrm_args) {
+        print_log (3,"Purging SysV IPC: ipcrm $ipcrm_args.");
+        system_with_log("OARDO_BECOME_USER=$Cpuset->{user} oardodo ipcrm $ipcrm_args");
+      }
+      print_log (3,"Purging @Tmp_dir_to_clear.");
+      system_with_log('for d in '."@Tmp_dir_to_clear".'; do
+                         oardodo find $d -user '.$Cpuset->{user}.' -delete
+                         [ -x '.$Fstrim_cmd.' ] && oardodo '.$Fstrim_cmd.' $d > /dev/null 2>&1
+                       done
+                      ');
+    } else {
+      print_log(3,"Not purging SysV IPC and /tmp as $Cpuset->{user} still has a job running on this host.");
+    }
+    flock(LOCK,LOCK_UN) or die "flock failed: $!\n";
+    close(LOCK);
+  }
+  print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
+  unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{name}.env");
+  print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}");
+  unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}");
+  print_log(3,"Remove file $Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}_resources");
+  unlink("$Cpuset->{oar_tmp_directory}/$Cpuset->{job_id}_resources");
 }else{
   exit_myself(3,"Bad command line argument $ARGV[0]");
 }
