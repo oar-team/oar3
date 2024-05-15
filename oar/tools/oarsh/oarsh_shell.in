@@ -1,5 +1,4 @@
 #!/bin/bash
-# $Id$
 # This is the shell program used with the oarsh script.
 # It adds its own process in the cpuset OAR_CPUSET and launches
 # the shell or the script of the user OAR_JOB_USER.
@@ -23,12 +22,12 @@ umask 0022
 # Check if we are using systemd
 if [ -f /etc/oar/use_systemd ]
 then
-  SYSTEMD=1
-  # "-" are replaced by "_" as systemd interprets them as "/"
-  OAR_CPUSET=${OAR_CPUSET/-/_}
-  OAR_CPUSET=${OAR_CPUSET/./_}
+    SYSTEMD=1
+    # "-" are replaced by "_" as systemd interprets them as "/"
+    OAR_CPUSET=${OAR_CPUSET/-/_}
+    OAR_CPUSET=${OAR_CPUSET/./_}
 else
-  SYSTEMD=0
+    SYSTEMD=0
 fi
 
 # $1 = Name of the cpuset
@@ -46,24 +45,24 @@ function add_process_to_cpuset() {
         echo "oarsh: Using systemd" 1>&2
         SLICE=${1##*/}.slice
         SERVICE=${1##*/}.service
-	# Cgroup check
-	if [ -f "/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs" ]
-	then
-	  # Cgroup v2 procsfile found
-	  PROCS_FILE="/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs"
-        else
-	  # We are probably using cgroup v1
-	  PROCS_FILE="/sys/fs/cgroup/systemd/$SLICE/cgroup.procs"
-	fi
+        # Cgroup check
+        if [ -f "/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs" ]
+        then
+            # Cgroup v2 procsfile found
+            PROCS_FILE="/sys/fs/cgroup/$SLICE/$SERVICE/cgroup.procs"
+            else
+            # We are probably using cgroup v1
+            PROCS_FILE="/sys/fs/cgroup/systemd/$SLICE/cgroup.procs"
+        fi
         if [ ! -f $PROCS_FILE ]; then
             echo "oarsh: Cannot find cpuset file : $PROCS_FILE" 1>&2
             exit 61
         fi
         shift
 
-	# Add each processes to the right OAR cgroups
+        # Add each processes to the right OAR cgroups
         for p in $@; do
-	  $OARDIR/oardodo/oardodo sh -c "echo $p > $PROCS_FILE" || return 1
+            $OARDIR/oardodo/oardodo sh -c "echo $p > $PROCS_FILE" || return 1
         done
 
     # Original cgroup v1 feature
