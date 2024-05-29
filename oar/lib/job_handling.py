@@ -587,8 +587,6 @@ def get_gantt_jobs_to_launch(
         .filter(Job.id == MoldableJobDescription.job_id)
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
-        .filter(Resource.id == GanttJobsResource.resource_id)
-        .filter(Resource.state == "Alive")
         .all()
     )
 
