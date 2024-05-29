@@ -347,10 +347,14 @@ def test_db_metasched_ar_2(monkeypatch, minimal_db_initialization, setup_config)
     monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
 
 
-def test_db_metasched_bug_toLaunch_absent(monkeypatch, minimal_db_initialization, setup_config):
+def test_db_metasched_bug_toLaunch_absent(
+    monkeypatch, minimal_db_initialization, setup_config
+):
     config, _ = setup_config
 
-    Resource.create(minimal_db_initialization, network_address="localhost", state="Absent")
+    Resource.create(
+        minimal_db_initialization, network_address="localhost", state="Absent"
+    )
 
     insert_job(
         minimal_db_initialization, res=[(60, [("resource_id=6", "")])], properties=""
