@@ -20,7 +20,7 @@ class ResourceSet(object):
         self.nb_resources_not_dead = 0
         self.nb_resources_default_not_dead = 0
 
-        self.nb_resources = 0 # TOREMOVE
+        self.nb_resources = 0  # TOREMOVE
         self.nb_resources_default = 0
 
         # prepare resource order/indirection stuff
@@ -76,7 +76,7 @@ class ResourceSet(object):
                     self.nb_resources_default_not_dead += 1
 
             if (r.state == "Alive") or (r.state == "Absent"):
-                self.nb_resources += 1 # TOREMOVE, NOT USE ?
+                self.nb_resources += 1  # TOREMOVE, NOT USE ?
                 rid = int(r.id)
                 roids.append(roid)
                 if r.type == "default":
@@ -105,7 +105,7 @@ class ResourceSet(object):
                     suspendable_roids.append(roid)
 
                 # fill absent resources set
-                if (r.state == "Absent"):
+                if r.state == "Absent":
                     self.nb_absent += 1
                     absent_roids.append(roid)
 
@@ -114,7 +114,7 @@ class ResourceSet(object):
         # global ordered resources intervals
         # print roids
         self.roid_itvs = ProcSet(*roids)  # TODO
-        self.absent_roid_itvs =  ProcSet(*absent_roids)
+        self.absent_roid_itvs = ProcSet(*absent_roids)
 
         if "id" in hy_roid:
             hy_roid["resource_id"] = hy_roid["id"]
