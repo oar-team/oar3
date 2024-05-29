@@ -1029,8 +1029,10 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     # Filter jobs that are not yet ready to be scheduled, but present because of the
     # kill_duration_before_reservation=kill_duration_before_reservation parameter
+    # filter on date and test that all resource is not absent (alive)
     jobs_to_launch_lst = filter(
-        lambda j: j.start_time <= current_time_sec,
+        lambda j: (j.start_time <= current_time_sec)
+        and ((resource_set.absent_roid_itvs & j.res_set) == ProcSet()),
         jobs_to_launch_with_security_time_lst,
     )
 
