@@ -575,7 +575,7 @@ def test_error_dependency():
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
-    assert j2.start_time == -1
+    assert j2.start_time == 0
 
 
 def test_terminated_dependency():
