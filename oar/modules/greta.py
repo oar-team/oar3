@@ -509,7 +509,9 @@ class Greta(object):
             # (disable HALT cmd to satisfy keepAlive condition)
 
             for node in nodes_toRemove_from_list_to_process:
-                del nodes_list_to_process[node]
+                n = nodes_list_to_process.get(node, None)
+                if n:
+                    del nodes_list_to_process[node]
 
             # Launching commands
             if command_toLaunch:
@@ -675,7 +677,7 @@ def main():  # pragma: no cover
     try:
         status=greta.run()
     except Exception as err:
-        logger.debug(f"Unexpected {err=}, {type(err)=}; {traceback.format_exc()}")
+        logger.error(f"Unexpected {err=}, {type(err)=}; {traceback.format_exc()}")
         raise
 
     return status
