@@ -41,10 +41,9 @@ import pickle
 import re
 import socket
 import sys
+import traceback
 from multiprocessing import Pool, TimeoutError
 from typing import List, Union
-
-import traceback
 
 import zmq
 
@@ -538,11 +537,11 @@ class Greta(object):
                         "nodes_list_to_remind": nodes_list_to_remind,
                     }
                     pickle.dump(greta_status_dump, dump_file, pickle.HIGHEST_PROTOCOL)
-                logger.debug(f"Max cycles reached: suicide. bye bye.")
+                logger.debug("Max cycles reached: suicide. bye bye.")
                 return 42
 
             if not loop:
-                logger.debug(f"Exiting main loop normally.")
+                logger.debug("Exiting main loop normally.")
                 break
         return 0
 
@@ -675,12 +674,13 @@ def main():  # pragma: no cover
         return greta.exit_code
 
     try:
-        status=greta.run()
+        status = greta.run()
     except Exception as err:
         logger.error(f"Unexpected {err=}, {type(err)=}; {traceback.format_exc()}")
         raise
 
     return status
+
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
