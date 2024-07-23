@@ -7,7 +7,7 @@ from oar.kao.kao import main
 from oar.lib.database import ephemeral_session
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.models import Job, Queue, Resource
+from oar.lib.models import Job, Queue, Resource, GanttJobsResource, GanttJobsPrediction, AssignedResource
 
 config, engine = init_oar(no_db=True)
 
@@ -91,3 +91,20 @@ def test_db_kao_moldable(monkeypatch, minimal_db_initialization, setup_config):
     print(job.state)
 
     assert job.state == "toLaunch"
+
+
+def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config):
+    config, _ = setup_config
+    insert_job(
+        minimal_db_initialization, types=["envelope"], res=[(60, [("resource_id=0", "")])], properties=""
+    )
+    job = minimal_db_initialization.query(Job).one()
+    print("job state:", job.state)
+
+    main(minimal_db_initialization, config)
+
+    job = minimal_db_initialization.query(Job).one()
+    assert job.state == "toLaunch"
+
+    res = minimal_db_initialization.query(AssignedResource).one()
+    assert res.resource_id == 0

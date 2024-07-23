@@ -14,8 +14,8 @@ from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
 from oar.lib.models import Job
 
-# for quotas
-from oar.lib.resource import ResourceSet
+# for quotas and job envelope
+from oar.lib.resource import ResourceSet, MAX_NB_RESOURCES
 
 config, db = init_oar(no_db=True)
 logger = get_logger("oar.kamelot", forward_stderr=True)
@@ -424,6 +424,17 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
         min_start_time = -1
         to_skip = False
+
+        if "envelope" in job.types:
+            logger.info("Job envelope, no resources is needed")
+            mld_id, walltime, _ = job.mld_res_rqts[0]
+            job.moldable_id = mld_id
+            # Correspond to null resources (resource_id = 0 in database)
+            job.res_set = ProcSet(MAX_NB_RESOURCES-1)
+            # Start job immediately
+            job.start_time = 0
+            job.walltime = walltime
+            break
         # Dependencies
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
