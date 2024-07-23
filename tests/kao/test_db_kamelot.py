@@ -84,7 +84,34 @@ def test_db_kamelot_4(properties_init, minimal_db_initialization, setup_config):
     sys.argv = ["test_kamelot", "default", time.time()]
     main(session=minimal_db_initialization, config=config)
     sys.argv = old_sys_argv
-    req = session.query(GanttJobsResource).all()
 
+    req = session.query(GanttJobsResource).all()
     for alloc in req:
+        print(alloc)
         assert alloc.resource_id not in properties_init
+
+
+
+@pytest.fixture(scope="function", autouse=False)
+def minimal_db_envelope(request, setup_config):
+    _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        for i in range(5):
+            Resource.create(session, network_address="localhost")
+
+        insert_job(session, types=["envelope"], res=[(60, [("resource_id=0", "")])], properties="")
+
+        yield session
+
+def test_db_kamelot_envelope(minimal_db_envelope, setup_config):
+    config, _ = setup_config
+    old_sys_argv = sys.argv
+    sys.argv = ["test_kamelot", "default", time.time()]
+    main(session=minimal_db_envelope, config=config)
+    sys.argv = old_sys_argv
+
+    res = minimal_db_envelope.query(GanttJobsResource).one()
+    assert res.resource_id == 0
