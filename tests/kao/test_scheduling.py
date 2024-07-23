@@ -9,6 +9,7 @@ from oar.kao.scheduling import (
 from oar.kao.slot import Slot, SlotSet
 from oar.lib.globals import init_config
 from oar.lib.job_handling import JobPseudo
+from oar.lib.resource import MAX_NB_RESOURCES
 
 config = init_config()
 
@@ -792,3 +793,28 @@ def test_schedule_timesharing1():
     print("j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time)
 
     assert j1.start_time == j2.start_time
+
+
+def test_schedule_id_jobs_ct_envelope():
+    v = [(0, 100, ProcSet(*[(1, 32)]))]
+
+    res = ProcSet(*[(1, 32)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(
+        id=1,
+        types={"envelope"},
+        deps=[],
+        key_cache={},
+        mld_res_rqts=[(1, 60, [([("resource_id", 0)], ProcSet(*res))])],
+        ts=False,
+        ph=0,
+    )
+
+    schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
+
+    # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
+    assert j1.res_set == ProcSet(MAX_NB_RESOURCES-1)
+    assert compare_slots_val_ref(ss, v) is True
