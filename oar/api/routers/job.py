@@ -335,6 +335,8 @@ def submit(
     (error, job_id_lst) = submission.submit(db, config)
     if error[0] == -2:
         raise HTTPException(status_code=403, detail=error[1])
+    elif error[0] != 0:
+        raise HTTPException(status_code=400, detail=error[1])
 
     # TODO Enhance
     data = {}
