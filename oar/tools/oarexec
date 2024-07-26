@@ -103,14 +103,14 @@ sub run_script($$$) {
 sub quit_oarexec($$){
     my $exit_value = shift;
     my $job_data = shift;
-    
+
     if ($job_data->{detach_oarexec} == 1){
         # We must contact Almighty
         my $max_wait_time = 900;
         my $wait_time = 30;
         my $max_retry = 48;
         my $nb_retry = 0;
-    
+
         while (1){
             my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
             my $string = sprintf("%02d:%02d:%02d", $hour,$min,$sec);
@@ -135,7 +135,7 @@ sub quit_oarexec($$){
             }
         }
     }
-    
+
     exit($exit_value);
 }
 
@@ -196,7 +196,7 @@ sub send_kill_signal_to_myself($){
 # Append a string to a file owned by a user
 sub append_string_to_user_file($$$$){
     my ($user, $file, $dir, $str) = @_;
-   
+
     $str = "## OAR [".strftime("%F %T",localtime())."] $str ##";
     system({"bash"} "bash","-c","echo '$str' | OARDO_BECOME_USER=$user oardodo bash --noprofile --norc -c \"cd '$dir' && tee -a '$file'\"");
 }
@@ -304,9 +304,9 @@ my $stdin_script_to_send;
 my $oardo_become_user = $Job->{job_user};
 if ( $Job->{mode} eq "PASSIVE" ){
     my $str;
-    ($str, $stdin_script_to_send) = OAR::Tools::get_oarexecuser_perl_script_for_oarexec($Node_file,$Job_id,$Job->{array_id},$Job->{array_index},$Job->{user},$shell,$Job->{launching_directory},$Job->{stdout_file},$Job->{stderr_file},$Res_file,$Job->{name},$Job->{project},$Job->{walltime},$Job->{walltime_seconds},$Job->{job_env},$Job->{command});
+    ($str, $stdin_script_to_send) = OAR::Tools::get_oarexecuser_perl_script_for_oarexec($Node_file,$Job_id,$Job->{array_id},$Job->{array_index},$Job->{user},$shell,$Job->{launching_directory},$Job->{stdout_file},$Job->{stderr_file},$Res_file,$Job->{name},$Job->{project},$Job->{walltime},$Job->{walltime_seconds},$Job->{job_env},,$Job->{types},$Job->{command});
     @cmd = ("oardodo","perl","-e",$str);
-    if ((defined($Job->{types}->{deploy}) or defined($Job->{types}->{cosystem})) and defined($Job->{deploy_cosystem_job_exec_system})) {
+    if ((defined($Job->{types}->{deploy}) or defined($Job->{types}->{cosystem}) or defined($Job->{types}->{envelope})) and defined($Job->{deploy_cosystem_job_exec_system})) {
         if ($Job->{deploy_cosystem_job_exec_system} eq "systemd-run") {
             $oardo_become_user = "";
             @cmd = ("oardodo","systemd-run","-q","--uid=$uid","--scope","--collect","--slice=user-$uid.slice","perl","-e",$str);
@@ -335,7 +335,7 @@ autoflush pipe_child_read 1;
 
 sub child_signal_handler {
     $SIG{CHLD} = \&child_signal_handler;
-    
+
     my $wait_pid_ret ;
     while (($wait_pid_ret = waitpid(-1,WNOHANG)) > 0){
         my $exit_value = $? >> 8;
@@ -439,7 +439,7 @@ if ($Job->{mode} eq "PASSIVE"){
     pipe(pipe_stdin_read,pipe_stdin_write);
     autoflush pipe_stdin_write 1;
     autoflush pipe_stdin_read 1;
-    #print("[oarexec] Launch the command: $cmd\n");
+    #print("[oarexec] Launch the command: @cmd\n");
     $pid = fork;
     if($pid == 0){
         #CHILD
@@ -451,7 +451,7 @@ if ($Job->{mode} eq "PASSIVE"){
                 exit(-1);
             }
         }
-        # Setup the environment for the job script execution 
+        # Setup the environment for the job script execution
         $SIG{CHLD} = 'DEFAULT';
         $SIG{TERM} = 'DEFAULT';
         $SIG{INT}  = 'DEFAULT';
@@ -466,7 +466,7 @@ if ($Job->{mode} eq "PASSIVE"){
         close(STDOUT);
         # Redirect script output into the pipe
         open(STDOUT, ">& pipe_script_write");
-        
+
         # Use the child STDIN to send the user command
         close(pipe_stdin_write);
         close(STDIN);
@@ -507,7 +507,7 @@ my $user_cmd_pid = -1;
 while (($line_read != $pid) and ($Stop_signal == 0) and ($stop_loop == 0)){
     print("[oarexec] wait end of child process or kill notification\n");
     select($rin_tmp = $rin, undef, undef, undef);
-    
+
     if (vec($rin_tmp, fileno(pipe_script_read), 1)){
         ($res_read,$line_read) = OAR::Tools::read_socket_line(\*pipe_script_read,1);
         if (($res_read == 1) and ($line_read eq "")){
@@ -583,7 +583,7 @@ while (($line_read != $pid) and ($Stop_signal == 0) and ($stop_loop == 0)){
             }
             $user_signal = 1;
         }
-    }    
+    }
 }
 
 $SIG{CHLD} = 'DEFAULT';
@@ -630,4 +630,3 @@ if ($Kill_myself == 1){
 }else{
     quit_oarexec(0+$Oarexec_exit_code,$Job);
 }
-
