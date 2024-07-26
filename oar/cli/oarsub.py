@@ -60,22 +60,25 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
     luser = os.environ["OARDO_USER"] if "OARDO_USER" in os.environ else None
 
     job = get_job(session, job_id)
+    types = get_job_types(session, job_id)
 
     if ((luser == job.user) or (luser == "oar")) and (job.state == "Running"):
-        types = get_job_types(session, job_id)
         # No operation job type
         if "noop" in types:
             cmd_ret.warning(" It is not possible to connect to a NOOP job.")
             cmd_ret.exit(17)
 
         hosts = get_job_current_hostnames(session, job_id)
-        host_to_connect_via_ssh = hosts[0]
+        if hosts:
+            host_to_connect_via_ssh = hosts[0]
 
         # Deploy, cosystem and no host part
         if "cosystem" in types or not hosts:
             host_to_connect_via_ssh = config["COSYSTEM_HOSTNAME"]
         elif "deploy" in types:
             host_to_connect_via_ssh = config["DEPLOY_HOSTNAME"]
+        elif "envelope" in types:
+            host_to_connect_via_ssh = config["ENVELOPE_HOSTNAME"]
 
         # cpuset part
         cpuset_field = config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
@@ -86,6 +89,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             and cpuset_path
             and ("cosystem" not in types)
             and ("deploy" not in types)
+            and ("envelope" not in types)
             and hosts
         ):
             os.environ["OAR_CPUSET"] = (
@@ -153,7 +157,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
         )
 
         script = get_oarexecuser_script_for_oarsub(
-            config, job, moldable.walltime, node_file, shell, resource_file
+            config, job, types, moldable.walltime, node_file, shell, resource_file
         )
 
         cmd = openssh_cmd

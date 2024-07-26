@@ -106,6 +106,10 @@ class BipBip(object):
 
         hosts = get_job_current_hostnames(session, job_id)
         job = get_job(session, job_id)
+        job_types = get_job_types(session, job.id)
+
+        if "envelope" in job_types.keys():
+            hosts = [config["ENVELOPE_HOSTNAME"]]
 
         # Check if we must treate the end of a oarexec
         if self.oarexec_reattach_exit_value and job.state in [
@@ -176,13 +180,12 @@ class BipBip(object):
         resources = get_current_assigned_job_resources(
             session, job.assigned_moldable_job
         )
+
         resources_data_str = ", 'resources' => " + resources2dump_perl(resources) + "}"
 
         mold_job_description = get_current_moldable_job(
             session, job.assigned_moldable_job
         )
-
-        job_types = get_job_types(session, job.id)
 
         # HERE we must launch oarexec on the first node
         self.logger.debug(
@@ -199,9 +202,11 @@ class BipBip(object):
         if (job.type == "INTERACTIVE") and (job.reservation == "None"):
             tools.notify_interactif_user(job, "Starting...")
 
+        # Execute JOB_RESOURCE_MANAGER on allocated nodes
         if (
             ("deploy" not in job_types.keys())
             and ("cosystem" not in job_types.keys())
+            and ("envelope" not in job_types.keys())
             and (len(hosts) > 0)
         ):
             bad = []
@@ -401,6 +406,11 @@ class BipBip(object):
         prologue_exec_file = config["PROLOGUE_EXEC_FILE"]
         epilogue_exec_file = config["EPILOGUE_EXEC_FILE"]
 
+        deploy_cosystem_job_exec_system = config["DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM"]
+        if (deploy_cosystem_job_exec_system != "none") and  (deploy_cosystem_job_exec_system != "system-run"):
+            logger.error(f"Invalid configuration for DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM: '{deploy_cosystem_job_exec_system}' is not supported")
+            # Don't exit, because it (could ?)/causes the job to be stuck in 'Launching' state.
+
         modules_dir, _ = os.path.split(__file__)
 
         oarexec_files = (
@@ -417,6 +427,8 @@ class BipBip(object):
             head_node = config["COSYSTEM_HOSTNAME"]
         elif "deploy" in job_types.keys():
             head_node = config["DEPLOY_HOSTNAME"]
+        elif "envelope" in job_types.keys():
+            head_node = config["ENVELOPE_HOSTNAME"]
 
         almighty_hostname = config["SERVER_HOSTNAME"]
         if re.match(r"\s*localhost.*$", almighty_hostname) or re.match(
@@ -469,6 +481,7 @@ class BipBip(object):
             "pro_epi_timeout": pro_epi_timeout,
             "prologue": prologue_exec_file,
             "epilogue": epilogue_exec_file,
+            "deploy_cosystem_job_exec_system": deploy_cosystem_job_exec_system,
             "tmp_directory": config["OAREXEC_DIRECTORY"],
             "detach_oarexec": config["DETACH_JOB_FROM_SERVER"],
             "cpuset_full_path": oarexec_cpuset_path,
@@ -479,6 +492,8 @@ class BipBip(object):
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
         data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
 
+        #self.logger.debug(data_to_transfer_str)
+
         error = 50
 
         # timeout = pro_epi_timeout + config['BIPBIP_OAREXEC_HASHTABLE_SEND_TIMEOUT'] + config['TIMEOUT_SSH']
@@ -487,6 +502,7 @@ class BipBip(object):
             cpuset_full_path
             and ("cosystem" not in job_types.keys())
             and ("deploy" not in job_types.keys())
+            and ("envelope" not in job_types.keys())
             and (len(hosts) > 0)
         ):
             # for oarsh_shell connection

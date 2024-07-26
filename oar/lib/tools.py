@@ -889,9 +889,12 @@ def limited_dict2hash_perl(d):
 
 def resources2dump_perl(resources):
     a = "["
-    for resource in resources:
-        a = a + limited_dict2hash_perl(resource.to_dict()) + ","
-    return a[:-1] + "]"
+    if resources:
+        for resource in resources:
+            a = a + limited_dict2hash_perl(resource.to_dict()) + ","
+        return a[:-1] + "]"
+    else:
+        return "[ ]"
     # TODO selection only needed resource fields
     # def resource2hash_perl(resouces):
     #     h = '{'
@@ -905,7 +908,7 @@ def resources2dump_perl(resources):
 
 
 def get_oarexecuser_script_for_oarsub(
-    config, job, job_walltime, node_file, shell, resource_file
+        config, job, job_types, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
     """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
@@ -915,6 +918,13 @@ def get_oarexecuser_script_for_oarsub(
         oar_proxy_base_url_varenv = "export OAR_PROXY_BASE_URL={};".format(
             config["OAR_PROXY_BASE_URL"]
         )
+
+    str_job_types = ""
+    for name_type, value_type in job_types.items():
+        if type(value_type) == bool:
+            value_type = str(int(value_type))
+        str_job_types += f"{name_type}={value_type},"
+    str_job_types = str_job_types[:-1]
 
     script = (
         'if [ "a\$TERM" == "a" ] || [ "x\$TERM" == "xunknown" ]; then export TERM=xterm; fi;'
@@ -960,6 +970,9 @@ def get_oarexecuser_script_for_oarsub(
         + "export OAR_JOB_WALLTIME_SECONDS="
         + str(job_walltime)
         + ";"
+        + 'export OAR_JOB_TYPES="'
+        + str_job_types
+        + '";'
         + oar_proxy_base_url_varenv
         + 'export SHELL="'
         + shell
