@@ -69,7 +69,7 @@ class NodeChangeState(object):
                 "Check events for the job " + str(job_id) + " with type " + event.type
             )
             job = get_job(session, job_id)
-
+            job_types = get_job_types(session, job_id)
             # Check if we must resubmit the idempotent jobs
             # User must specify that his job is idempotent and exit from hos script with the exit code 99.
             # So, after a successful checkpoint, if the job is resubmitted then all will go right
@@ -78,7 +78,7 @@ class NodeChangeState(object):
                 (event.type == "SWITCH_INTO_TERMINATE_STATE")
                 or (event.type == "SWITCH_INTO_ERROR_STATE")
             ) and (job.exit_code and (job.exit_code >> 8) == 99):
-                job_types = get_job_types(session, job_id)
+                job_types = get_job_types(session, job_id) #TOREMOVE
                 if "idempotent" in job_types.keys():
                     if (
                         job.reservation == "None"
@@ -177,7 +177,7 @@ class NodeChangeState(object):
                 "CPUSET_CLEAN_ERROR",
                 "FORCE_TERMINATE_FINISHING_JOB",
             ]
-            # import pdb; pdb.set_trace()
+
             if event.type in type_to_check:
                 hosts = []
                 finaud_tag = "NO"
@@ -193,18 +193,23 @@ class NodeChangeState(object):
                     hosts = get_hostname_event(session, event.id)
                 else:
                     hosts = get_job_host_log(session, job.assigned_moldable_job)
-                    if event.type not in type_to_check_cpuset_LT_error:
-                        hosts = [hosts[0]]
+                    if hosts:
+                        if event.type not in type_to_check_cpuset_LT_error:
+                            hosts = [hosts[0]]
+                        else:
+                            # If we exterminate a job and the cpuset feature is configured
+                            # then the CPUSET clean will tell us which nodes are dead
+                            if ("JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config) and (
+                                    event.type == "EXTERMINATE_JOB"
+                            ):
+                                hosts = []
+                        add_new_event_with_host(
+                            session, "LOG_SUSPECTED", 0, event.description, hosts
+                        )
                     else:
-                        # If we exterminate a job and the cpuset feature is configured
-                        # then the CPUSET clean will tell us which nodes are dead
-                        if ("JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config) and (
-                            event.type == "EXTERMINATE_JOB"
-                        ):
-                            hosts = []
-                    add_new_event_with_host(
-                        session, "LOG_SUSPECTED", 0, event.description, hosts
-                    )
+                        # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
+                        if "envelope" in job_types.keys():
+                            logger.warning(f"Job {job_id} is an envelope, event {event.type} is not handled")
 
                 if len(hosts) > 0:
                     already_treated_hosts = {}
@@ -265,7 +270,11 @@ class NodeChangeState(object):
                 "CANNOT_CREATE_TMP_DIRECTORY",
                 "LAUNCHING_OAREXEC_TIMEOUT",
             ]
-            if event.type in type_to_check:
+            # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
+            if "envelope" in job_types.keys():
+                logger.warning(f"Job {job_id} is an envelope, event {event.type} is not handled")
+
+            if event.type in type_to_check and not ("envelope" in job_types.keys()):
                 if (
                     job.reservation == "None"
                     and job.type == "PASSIVE"

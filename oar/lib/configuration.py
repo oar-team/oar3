@@ -52,6 +52,7 @@ class Configuration(dict):
         "MONITOR_FILE_SENSOR": "/etc/oar/oarmonitor_sensor.pl",
         "SUSPEND_RESUME_FILE_MANAGER": "/etc/oar/suspend_resume_manager.pl",
         "OAR_SSH_AUTHORIZED_KEYS_FILE": ".ssh/authorized_keys",
+        "DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM": "none",
         "NODE_FILE_DB_FIELD": "network_address",
         "NODE_FILE_DB_FIELD_DISTINCT_VALUES": "resource_id",
         "NOTIFY_TCP_SOCKET_ENABLED": 1,
