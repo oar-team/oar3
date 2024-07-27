@@ -795,13 +795,15 @@ def test_schedule_timesharing1():
     assert j1.start_time == j2.start_time
 
 
-def test_schedule_id_jobs_ct_envelope():
+def test_schedule_envelope():
     v = [(0, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
-    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+    hy = {
+        "resource_id": [ProcSet(x) for x in range(1,32+1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
 
     j1 = JobPseudo(
         id=1,
@@ -817,4 +819,42 @@ def test_schedule_id_jobs_ct_envelope():
 
     # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
     assert j1.res_set == ProcSet(MAX_NB_RESOURCES-1)
+    assert compare_slots_val_ref(ss, v) is True
+
+def test_schedule_envelope_leaflet_1():
+    v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
+
+    res = ProcSet(*[(1, 32)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {
+        "resource_id": [ProcSet(x) for x in range(1,32+1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    }
+
+    j1 = JobPseudo(
+        id=1,
+        types={"envelope"},
+        deps=[],
+        key_cache={},
+        mld_res_rqts=[(1, 25, [([("resource_id", 0)], ProcSet(*res))])],
+        ts=False,
+        ph=0,
+    )
+
+    j2 = JobPseudo(
+        id=2,
+        types={"leaflet=1"},
+        deps=[],
+        key_cache={},
+        mld_res_rqts=[(1, 20, [([("node", 1)], ProcSet(*res))])],
+        ts=False,
+        ph=0,
+    )
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1,2], 5)
+
+    # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
+    assert j1.res_set == ProcSet(MAX_NB_RESOURCES-1)
+    assert j2.res_set == ProcSet((1, 8))
     assert compare_slots_val_ref(ss, v) is True
