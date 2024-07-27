@@ -802,8 +802,9 @@ def test_schedule_envelope():
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
     hy = {
-        "resource_id": [ProcSet(x) for x in range(1,32+1)],
-        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+        "resource_id": [ProcSet(x) for x in range(1, 32 + 1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]],
+    }
 
     j1 = JobPseudo(
         id=1,
@@ -818,8 +819,9 @@ def test_schedule_envelope():
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
-    assert j1.res_set == ProcSet(MAX_NB_RESOURCES-1)
+    assert j1.res_set == ProcSet(MAX_NB_RESOURCES - 1)
     assert compare_slots_val_ref(ss, v) is True
+
 
 def test_schedule_envelope_leaflet_1():
     v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
@@ -828,8 +830,8 @@ def test_schedule_envelope_leaflet_1():
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
     all_ss = {"default": ss}
     hy = {
-        "resource_id": [ProcSet(x) for x in range(1,32+1)],
-        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+        "resource_id": [ProcSet(x) for x in range(1, 32 + 1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]],
     }
 
     j1 = JobPseudo(
@@ -852,9 +854,9 @@ def test_schedule_envelope_leaflet_1():
         ph=0,
     )
 
-    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1,2], 5)
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 5)
 
     # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
-    assert j1.res_set == ProcSet(MAX_NB_RESOURCES-1)
+    assert j1.res_set == ProcSet(MAX_NB_RESOURCES - 1)
     assert j2.res_set == ProcSet((1, 8))
     assert compare_slots_val_ref(ss, v) is True
