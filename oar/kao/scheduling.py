@@ -15,7 +15,7 @@ from oar.lib.job_handling import ALLOW, JobPseudo
 from oar.lib.models import Job
 
 # for quotas and job envelope
-from oar.lib.resource import ResourceSet, MAX_NB_RESOURCES
+from oar.lib.resource import MAX_NB_RESOURCES, ResourceSet
 
 config, db = init_oar(no_db=True)
 logger = get_logger("oar.kamelot", forward_stderr=True)
@@ -152,7 +152,7 @@ def find_first_suitable_contiguous_slots_quotas(
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+    for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
         sid_left = slot_begin.id
@@ -260,7 +260,7 @@ def find_first_suitable_contiguous_slots_no_quotas(
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+    for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
         sid_left = slot_begin.id
@@ -430,11 +430,12 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
             mld_id, walltime, _ = job.mld_res_rqts[0]
             job.moldable_id = mld_id
             # Correspond to null resources (resource_id = 0 in database)
-            job.res_set = ProcSet(MAX_NB_RESOURCES-1)
+            job.res_set = ProcSet(MAX_NB_RESOURCES - 1)
             # Start job immediately
             job.start_time = 0
             job.walltime = walltime
-            break
+            continue
+
         # Dependencies
         for j_dep in job.deps:
             jid_dep, state, exit_code = j_dep
