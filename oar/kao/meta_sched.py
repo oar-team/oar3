@@ -135,7 +135,9 @@ def gantt_init_with_running_jobs(
         ["Running", "toLaunch", "Launching", "Finishing", "Suspended", "Resuming"],
         resource_set,
     )
-    plt.save_assigns(session, current_jobs, resource_set)  # TODO to verify
+    # Save assigns of current_jobs in Gantt_predictions table so jobs will be in be
+    # scheduled_jobs. Could be remove it Redis is used #TODO
+    plt.save_assigns(session, current_jobs, resource_set)
 
     #
     #  Resource availabilty (Available_upto field) is integrated through pseudo job
