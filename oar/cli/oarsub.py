@@ -338,7 +338,6 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
 @click.option(
     "-d",
     "--directory",
-    default=os.getcwd(),
     type=click.STRING,
     help="Specify the directory where to launch the command (default is current directory)",
 )
