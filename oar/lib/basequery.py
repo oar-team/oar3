@@ -7,6 +7,7 @@ from oar.lib.job_handling import parse_job_type
 # from . import db
 from .exceptions import DoesNotExist
 from .models import (
+    EventLog,
     AssignedResource,
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
@@ -199,6 +200,12 @@ class BaseQueryCollection(object):
             jobs_resources[job_id].append(resource)
         return jobs_resources
 
+    def groupby_jobs_events(self, jobs, query):
+        jobs_events = dict(((job.id, []) for job in jobs))
+        for job_id, event in query:
+            jobs_events[job_id].append(event)
+        return jobs_events
+
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
@@ -253,6 +260,35 @@ class BaseQueryCollection(object):
             )
             .join(Resource, Resource.id == AssignedResource.resource_id)
             # .filter(job_id_column == job.id)
+        )
+        return query
+
+    def get_jobs_events(self, jobs):
+        """Returns the list of events associated to the job passed
+        in parameter."""
+        db = self.session
+        columns = (EventLog.id, EventLog.date, EventLog.description, EventLog.type, EventLog.to_check, EventLog.job_id)
+        query = (
+            db.query(Job.id, EventLog)
+            .options(Load(EventLog).load_only(*columns))
+            .join(
+                EventLog,
+                Job.id == EventLog.job_id,
+            )
+            .filter(Job.id.in_([job.id for job in jobs]))
+            .order_by(Job.id.asc())
+        )
+        return self.groupby_jobs_resources(jobs, query)
+
+    def get_one_job_events(self, job):
+        """Returns the list of events associated to the job passed
+        in parameter."""
+        db = self.session
+        columns = (EventLog.id, EventLog.date, EventLog.description, EventLog.type, EventLog.to_check, EventLog.job_id)
+        query = (
+            db.query(EventLog)
+            .options(Load(EventLog).load_only(*columns))
+            .filter_by(job_id = job.id)
         )
         return query
 

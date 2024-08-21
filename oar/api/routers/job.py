@@ -29,13 +29,15 @@ def attach_types(job, job_types):
     if job["id"] in job_types:
         job["types"] = job_types[job["id"]]
 
+def attach_events(job, job_events):
+    if job["id"] in job_events:
+        job["events"] = job_events[job["id"]]
 
 def attach_resources(job, jobs_resources):
     job["resources"] = []
     for resource in jobs_resources[job["id"]]:
         resource = resource.asdict(ignore_keys=("network_address",))
         job["resources"].append(resource)
-
 
 def attach_nodes(job, jobs_resources):
     job["nodes"] = []
@@ -81,12 +83,14 @@ def index(
     if details:
         jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
         jobs_types = queryCollection.get_jobs_types(page.items)
+        job_events = queryCollection.get_jobs_events(page.items)
         pass
     for item in page:
         if details:
             attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
+            attach_events(item, job_events)
         data["items"].append(item)
 
     return data
@@ -107,6 +111,8 @@ def show(
         job.id = job_id
         job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
+        job_events = queryCollection.get_jobs_events([job])
+        attach_events(data, job_events)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -144,6 +150,29 @@ def get_resources(
 
     for item in page:
         data["items"].append(item[1])
+
+    return data
+
+@router.get("/{job_id}/events")
+def get_events(
+    job_id: int,
+    offset: int = 0,
+    limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    queryCollection = APIQueryCollection(db)
+    job = Job()
+    job.id = job_id
+    query = queryCollection.get_one_job_events(job)
+    page = paginate(query, offset, limit)
+    data = {}
+    data["total"] = page.total
+    data["offset"] = offset
+    data["items"] = []
+
+    for item in page:
+        data["items"].append(item)
 
     return data
 
