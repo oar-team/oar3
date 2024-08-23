@@ -14,7 +14,9 @@ def compare_slots_val_ref(slots: SlotSet, v):
         # slot = slots[sid]
         (b, e, itvs) = v[i]
         if (slot.b != b) or (slot.e != e) or not (slot.itvs == itvs):
-            print("NOT EQUAL", slot.b, b, slot.e, e, slot.itvs, itvs)
+            print(
+                f"NOT EQUAL (test/ref): begin: {slot.b}, {b}, end: {slot.e}, {e}, itvs: {slot.itvs}, {itvs}"
+            )
             return False
         i += 1
     return True
@@ -143,11 +145,13 @@ def test_bug_split_slots():
 
 
 def test_add_split_slots_jobs_one_job():
-    v = [(5, 14, ProcSet(*[(10, 50)])), (15, MAX_TIME, ProcSet())]
+    v = [(10, 14, ProcSet(*[(10, 50)])), (15, MAX_TIME, ProcSet())]
 
     ss = SlotSet((ProcSet(*[]), 10))
-    print()
+
     print(ss)
+    print()
+
     j = JobPseudo(
         id=1, start_time=5, walltime=10, res_set=ProcSet(*[(10, 50)]), ts=False, ph=0
     )
@@ -207,9 +211,15 @@ def test_add_split_slots_jobs_2_jobs_2():
         id=2, start_time=20, walltime=200, res_set=ProcSet(*[(40, 50)]), ts=False, ph=0
     )
 
-    ss.split_slots_jobs([j2, j1], False)
+    # ss.split_slots_jobs([j2], False)
 
+    # print(ss)
+
+    # ss.split_slots_jobs([j1], False)
+    ss.split_slots_jobs([j2, j1], False)
+    print()
     print(ss)
+
     assert compare_slots_val_ref(ss, v)
 
 
@@ -351,7 +361,7 @@ def test_traverse(start, end, answer):
 
     ss = SlotSet(slots)
 
-    for (slot, check_id) in zip(ss.traverse_id(start, end), answer):
+    for slot, check_id in zip(ss.traverse_id(start, end), answer):
         assert slot.id == check_id
 
 
@@ -418,3 +428,131 @@ def test_split_at_after(date):
     ss.split_at_after(1, date)
 
     check_slot_integrity(ss)
+
+
+def test_split_slots_jobs_job_1():
+    """
+        ┌────────────────┐
+    ┌───│───┐            │
+    │   │   │            │
+    │   │   │            │
+    │   │   │            │
+    └───│───┘            │
+        └────────────────┘
+    """
+    v = [(10, 24, ProcSet(*[(1, 9), (21, 32)])), (25, 50, ProcSet(*[(1, 32)]))]
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=5,
+        walltime=20,
+        res_set=ProcSet(*[(10, 20)]),
+        moldable_id=1,
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 10, 50))
+
+    print(ss)
+    ss.split_slots_jobs([j1])
+    # ss.split_slots(1, 1, j1)
+    print()
+    print(ss)
+    assert compare_slots_val_ref(ss, v)
+
+
+def test_split_slots_jobs_job_2():
+    """
+               ┌────────────────┐
+    ┌───────┐  │                │
+    │       │  │                │
+    │       │  │                │
+    │       │  │                │
+    └───────┘  │                │
+               └────────────────┘
+    """
+    v = [(40, 100, ProcSet(*[(1, 32)]))]
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=5,
+        walltime=20,
+        res_set=ProcSet(*[(10, 20)]),
+        moldable_id=1,
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 40, 100))
+
+    print(ss)
+    ss.split_slots_jobs([j1])
+    # ss.split_slots(1, 1, j1)
+    print()
+    print(ss)
+    assert compare_slots_val_ref(ss, v)
+
+
+def test_split_slots_jobs_job_3():
+    """
+    ┌────────────────┐
+    │            ┌───│───┐
+    │            │   │   │
+    │            │   │   │
+    │            │   │   │
+    │            └───│───┘
+    └────────────────┘
+    """
+    v = [(10, 44, ProcSet(*[(1, 32)])), (45, 50, ProcSet(*[(1, 9), (21, 32)]))]
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=45,
+        walltime=20,
+        res_set=ProcSet(*[(10, 20)]),
+        moldable_id=1,
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 10, 50))
+
+    print(ss)
+    ss.split_slots_jobs([j1])
+    # ss.split_slots(1, 1, j1)
+    print()
+    print(ss)
+    assert compare_slots_val_ref(ss, v)
+
+
+def test_split_slots_jobs_job_4():
+    """
+    ┌────────────────┐
+    │                │  ┌───────┐
+    │                │  │       │
+    │                │  │       │
+    │                │  │       │
+    │                │  └───────┘
+    └────────────────┘
+    """
+    v = [(10, 50, ProcSet(*[(1, 32)]))]
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=60,
+        walltime=20,
+        res_set=ProcSet(*[(10, 20)]),
+        moldable_id=1,
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 10, 50))
+
+    print(ss)
+    ss.split_slots_jobs([j1])
+    # ss.split_slots(1, 1, j1)
+    print()
+    print(ss)
+    assert compare_slots_val_ref(ss, v)

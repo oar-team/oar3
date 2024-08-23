@@ -152,7 +152,7 @@ def find_first_suitable_contiguous_slots_quotas(
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+    for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
         sid_left = slot_begin.id
@@ -260,7 +260,7 @@ def find_first_suitable_contiguous_slots_no_quotas(
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
-    for (slot_begin, slot_end) in slots_set.traverse_with_width(
+    for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
         sid_left = slot_begin.id
@@ -374,7 +374,7 @@ def assign_resources_mld_job_split_slots(
             prev_t_finish = t_finish
             prev_res_set = res_set
             prev_res_rqt = res_rqt
-            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_range(
+            (prev_sid_left, prev_sid_right) = slots_set.get_encompassing_slots(
                 prev_start_time, prev_t_finish
             )
 
@@ -417,6 +417,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
 
     #    for k,job in jobs.items():
     # print("*********j_id:", k, job.mld_res_rqts[0])
+
+    # logger.debug(f"SlotSet Default (Before):\n{slots_sets['default']}")
 
     for jid in id_jobs:
         logger.debug("Schedule job:" + str(jid))
@@ -515,3 +517,8 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     )
                     # slot.show()
                     slots_sets[ss_name] = SlotSet(slot)
+
+    # logger.debug(f"SlotSet Default (After):\n{slots_sets['default']}")
+    # for jid in id_jobs:
+    #     job = jobs[jid]
+    #     logger.debug(f"Job id:{jid}, start_time: {job.start_time}, res_set: {job.res_set}")
