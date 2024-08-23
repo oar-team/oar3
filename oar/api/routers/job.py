@@ -29,15 +29,18 @@ def attach_types(job, job_types):
     if job["id"] in job_types:
         job["types"] = job_types[job["id"]]
 
+
 def attach_events(job, job_events):
     if job["id"] in job_events:
         job["events"] = job_events[job["id"]]
+
 
 def attach_resources(job, jobs_resources):
     job["resources"] = []
     for resource in jobs_resources[job["id"]]:
         resource = resource.asdict(ignore_keys=("network_address",))
         job["resources"].append(resource)
+
 
 def attach_nodes(job, jobs_resources):
     job["nodes"] = []
@@ -64,7 +67,6 @@ def index(
     limit: int = 500,
     db: Session = Depends(get_db),
 ):
-
     queryCollection = APIQueryCollection(db)
 
     # import pdb; pdb.set_trace()
@@ -152,6 +154,7 @@ def get_resources(
         data["items"].append(item[1])
 
     return data
+
 
 @router.get("/{job_id}/events")
 def get_events(
@@ -351,8 +354,6 @@ def submit(
         stderr=sp.stderr,
         hold=sp.hold,
     )
-
-    # import pdb; pdb.set_trace()
 
     error = job_parameters.check_parameters()
     if error[0] != 0:
