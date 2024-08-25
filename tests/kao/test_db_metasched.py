@@ -128,7 +128,7 @@ def schedule_some_ar(request, monkeypatch, minimal_db_initialization, setup_conf
     monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
 
 
-def assign_resources(session, job_id):
+def assign_resources(session, job_id, nb_resources=4):
     moldable = (
         session.query(MoldableJobDescription)
         .filter(MoldableJobDescription.job_id == job_id)
@@ -139,7 +139,7 @@ def assign_resources(session, job_id):
         {Job.assigned_moldable_job: moldable.id}, synchronize_session=False
     )
     resources = session.query(Resource).all()
-    for r in resources[:4]:
+    for r in resources[:nb_resources]:
         AssignedResource.create(session, moldable_id=moldable.id, resource_id=r.id)
 
 
@@ -291,7 +291,7 @@ def test_db_metasched_be_released_for_job(
     meta_schedule(minimal_db_initialization, config)
     monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
 
-    # Insert a running best effort jobs with some assigned resources
+    # Insert a job
     insert_job(
         minimal_db_initialization,
         res=[(500, [("resource_id=4", "")])],
@@ -392,3 +392,32 @@ def test_db_metasched_walltime_change(
     print(walltime_change.pending, walltime_change.granted)
     assert walltime_change.granted == 600
     assert walltime_change.pending == 0
+
+# def test_for_dev(monkeypatch, minimal_db_initialization, setup_config):
+#     config, _ = setup_config
+
+#     now = get_date(minimal_db_initialization)
+
+#     # Insert a running job
+#     job1_id = insert_job(
+#         minimal_db_initialization,
+#         res=[(500, [("resource_id=4", "")])],
+#         start_time=now - 250,
+#         state="Running",
+#     )
+#     assign_resources(minimal_db_initialization, job1_id)
+
+
+#     job2_id = insert_job(
+#         minimal_db_initialization, res=[(60, [("resource_id=4", "")])], properties=""
+#     )
+
+#     #job = minimal_db_initialization.query(Job).one()
+
+#     #print("job state:", job.state)
+
+#     meta_schedule(minimal_db_initialization, config)
+
+#     # job = minimal_db_initialization.query(Job).one()
+#     # print(job.state)
+#     # assert job.state == "toLaunch"
