@@ -846,7 +846,7 @@ def test_schedule_envelope_leaflet_1():
 
     j2 = JobPseudo(
         id=2,
-        types={"leaflet=1"},
+        types={"leaflet": "1"},
         deps=[],
         key_cache={},
         mld_res_rqts=[(1, 20, [([("node", 1)], ProcSet(*res))])],
@@ -860,3 +860,49 @@ def test_schedule_envelope_leaflet_1():
     assert j1.res_set == ProcSet(MAX_NB_RESOURCES - 1)
     assert j2.res_set == ProcSet((1, 8))
     assert compare_slots_val_ref(ss, v) is True
+
+
+def test_schedule_superseded_1():
+    # v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
+
+    res = ProcSet(*[(1, 32)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {
+        "resource_id": [ProcSet(x) for x in range(1, 32 + 1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]],
+    }
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=1,
+        walltime=10,
+        res_set=ProcSet(*[(4, 20)]),
+        types={},
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 100))
+    all_ss = {"default": ss}
+
+    set_slots_with_prev_scheduled_jobs(all_ss, [j1], 10)
+
+    j2 = JobPseudo(
+        id=2,
+        types={"supersed": "1"},
+        deps=[],
+        key_cache={},
+        mld_res_rqts=[(1, 20, [([("node", 2)], ProcSet(*res))])],
+        ts=False,
+        ph=0,
+        superseded=j1,
+    )
+    schedule_id_jobs_ct(all_ss, {2: j2}, hy, [2], 5)
+
+    # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
+    print(f"j2.start_time: {j2.start_time} j2.res_set: {j2.res_set}")
+    # import pdb; pdb.set_trace()
+    assert j2.start_time == 1
+    assert j2.res_set == ProcSet((1, 16))
+    # assert compare_slots_val_ref(ss, v) is True

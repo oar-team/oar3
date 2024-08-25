@@ -8,7 +8,13 @@ from typing import Any, Tuple
 from procset import ProcSet
 
 from oar.kao.quotas import Quotas
-from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
+from oar.kao.slot import (
+    Slot,
+    SlotSet,
+    intersec_itvs_slots,
+    intersec_superseded_itvs_slots,
+    intersec_ts_ph_itvs_slots,
+)
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.hierarchy import find_resource_hierarchies_scattered
 from oar.lib.job_handling import ALLOW, JobPseudo
@@ -182,6 +188,12 @@ def find_first_suitable_contiguous_slots_quotas(
         else:
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
 
+        # TODO: CHECK Supersed + Quotas combination
+        if job.superseded:
+            itvs_avail = intersec_superseded_itvs_slots(
+                slots, sid_left, sid_right, job.superseded
+            )
+
         if job.find:
             beginning_slotset = (
                 True if (sid_left == 1) and (slots_set.begin == slots[1].b) else False
@@ -272,6 +284,11 @@ def find_first_suitable_contiguous_slots_no_quotas(
             )
         else:
             itvs_avail = intersec_itvs_slots(slots, slot_begin.id, slot_end.id)
+
+        if job.superseded:
+            itvs_avail = intersec_superseded_itvs_slots(
+                slots, sid_left, sid_right, job.superseded
+            )
 
         if job.find:
             itvs = job.find_func(

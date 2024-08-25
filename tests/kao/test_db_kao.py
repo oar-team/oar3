@@ -7,7 +7,12 @@ from oar.kao.kao import main
 from oar.lib.database import ephemeral_session
 from oar.lib.globals import get_logger, init_oar
 from oar.lib.job_handling import insert_job
-from oar.lib.models import Job, Queue, Resource, GanttJobsResource, GanttJobsPrediction, AssignedResource
+from oar.lib.models import (  # GanttJobsPrediction,; GanttJobsResource,
+    AssignedResource,
+    Job,
+    Queue,
+    Resource,
+)
 
 config, engine = init_oar(no_db=True)
 
@@ -96,10 +101,14 @@ def test_db_kao_moldable(monkeypatch, minimal_db_initialization, setup_config):
 def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config):
     config, _ = setup_config
     insert_job(
-        minimal_db_initialization, types=["envelope"], res=[(60, [("resource_id=0", "")])], properties=""
+        minimal_db_initialization,
+        types=["envelope"],
+        res=[(60, [("resource_id=0", "")])],
+        properties="",
     )
-    job = minimal_db_initialization.query(Job).one()
-    print("job state:", job.state)
+
+    # job = minimal_db_initialization.query(Job).one()
+    # print("job state:", job.state)
 
     main(minimal_db_initialization, config)
 
@@ -108,3 +117,33 @@ def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config)
 
     res = minimal_db_initialization.query(AssignedResource).one()
     assert res.resource_id == 0
+
+
+def test_db_kao_envelope_2(monkeypatch, minimal_db_initialization, setup_config):
+    config, _ = setup_config
+
+    j1_id = insert_job(
+        minimal_db_initialization,
+        types=["envelope"],
+        res=[(60, [("resource_id=0", "")])],
+        properties="",
+    )
+
+    j2_id = insert_job(
+        minimal_db_initialization,
+        types=[f"leaflet={j1_id}"],
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+    )
+
+    # jobs = minimal_db_initialization.query(Job).all()
+    # print("job state:", job.state)
+
+    main(minimal_db_initialization, config)
+
+    jobs = {job.id: job for job in minimal_db_initialization.query(Job).all()}
+
+    assert jobs[j1_id].state == "toLaunch"
+    # It seems better envelope must be running be launch leaflet job.
+    # This situation could be easily avoid by checking before db insert
+    assert jobs[j2_id].state == "toLaunch"

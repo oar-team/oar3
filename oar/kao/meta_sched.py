@@ -108,12 +108,12 @@ def gantt_init_with_running_jobs(
     session, config, plt, initial_time_sec, job_security_time
 ):
     """
-    Initialize gantt tables with scheduled reservation jobs, Running jobs,
+    Initialize Gantt tables with scheduled reservation jobs, Running jobs,
     toLaunch jobs and Launching jobs.
 
     :param oar.kao.platform.Platform plt: \
         Scheduling Platform to schedule jobs.
-    :param int scheduled_jobs: \
+    :param int initial_time_sec: \
         Time from which to schedule.
     :param int job_security_time: \
         Job security time.

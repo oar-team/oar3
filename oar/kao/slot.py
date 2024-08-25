@@ -65,7 +65,7 @@ class Slot(object):
         self.id = id
         self.prev = prev
         self.next = next
-        if type(itvs) == ProcSet:
+        if itvs is ProcSet:
             self.itvs = itvs
         else:
             self.itvs = ProcSet(*itvs)
@@ -189,6 +189,32 @@ def intersec_ts_ph_itvs_slots(
     return itvs_acc
 
 
+def intersec_superseded_itvs_slots(
+    slots: Dict[int, Slot], sid_left: int, sid_right: int, job: Job
+) -> ProcSet:
+    sid = sid_left
+    itvs_acc = slots[sid].itvs
+
+    if (
+        job.start_time <= slots[sid].b
+        and (job.start_time + job.walltime) >= slots[sid].b
+    ):
+        itvs_acc = itvs_acc | job.res_set
+
+    while sid != sid_right:
+        sid = slots[sid].next
+
+        if (
+            job.start_time <= slots[sid].b
+            and (job.start_time + job.walltime) >= slots[sid].b
+        ):
+            itvs_acc = itvs_acc & (slots[sid].itvs | job.res_set)
+        else:
+            itvs_acc = itvs_acc & slots[sid].itvs
+
+    return itvs_acc
+
+
 class SlotSet:
     """
     :class:`SlotSet` holds a linked list of slots and provides utilities for their manipulation.
@@ -222,14 +248,14 @@ class SlotSet:
         """
         self.last_id: int = 1
         # The first (earlier) slot has identifier one.
-        if type(slots) == dict:
+        if slots is dict:
             self.slots: Dict[int, Slot] = slots
             s = slots[1]
             self.begin: int = s.b
             while s.next != 0:
                 s = slots[s.next]
             self.last_id = s.id
-        elif type(slots) == tuple:
+        elif slots is tuple:
             itvs, b = slots
             self.begin: int = b
             self.slots: Dict[int, Slot] = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
