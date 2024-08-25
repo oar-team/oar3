@@ -408,7 +408,7 @@ def check_reservation_jobs(
             slots_set = all_slot_sets[ss_name]
 
             t_e = job.start_time + walltime - job_security_time
-            sid_left, sid_right = slots_set.get_encompassing_range(job.start_time, t_e)
+            sid_left, sid_right = slots_set.get_encompassing_slots(job.start_time, t_e)
 
             slots = slots_set.slots
 
@@ -940,8 +940,8 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
         )
 
         logger.debug(
-            "Queue(s): {},  Launching scheduler, at time: {} ".format(
-                " ".join([q.name for q in queues]), initial_time_sql
+            "Queue(s): {},  Launching scheduler, at time: {}, ({})".format(
+                " ".join([q.name for q in queues]), initial_time_sql, initial_time_sec
             )
         )
 
@@ -1031,11 +1031,17 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     # Filter jobs that are not yet ready to be scheduled, but present because of the
     # kill_duration_before_reservation=kill_duration_before_reservation parameter
     # filter on date and test that all resource is not absent (alive)
-    jobs_to_launch_lst = filter(
-        lambda j: (j.start_time <= current_time_sec)
-        and ((resource_set.absent_roid_itvs & j.res_set) == ProcSet()),
-        jobs_to_launch_with_security_time_lst,
-    )
+    jobs_to_launch_lst = [
+        job
+        for job in filter(
+            lambda j: (j.start_time <= current_time_sec)
+            and ((resource_set.absent_roid_itvs & j.res_set) == ProcSet()),
+            jobs_to_launch_with_security_time_lst,
+        )
+    ]
+
+    # for job in jobs_to_launch_lst:
+    #    logger.debug(f"TOLAUNCH Job id:{job.id}, start_time: {job.start_time}, now: {current_time_sec}")
 
     if (
         check_besteffort_jobs_to_kill(

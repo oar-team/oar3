@@ -795,6 +795,37 @@ def test_schedule_timesharing1():
     assert j1.start_time == j2.start_time
 
 
+def test_schedule_error_2():
+    res = ProcSet(*[(1, 16)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+
+    j1 = JobPseudo(id=1, start_time=10, walltime=600, res_set=ProcSet(*[(1, 8)]))
+
+    nodes_set = [[(2 * i + 1, 2 * i + 2)] for i in range(8)]
+    hy = {"node": [ProcSet(*x) for x in nodes_set]}
+
+    ss.split_slots_jobs([j1])
+
+    j5 = JobPseudo(
+        id=5,
+        mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
+    )
+    j6 = JobPseudo(
+        id=6,
+        mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
+    )
+
+    print(ss)
+
+    schedule_id_jobs_ct(all_ss, {5: j5, 6: j6}, hy, [5, 6], 20)
+
+    for j in [j5, j6]:
+        print(f"jid: {j.id}, start_time: {j.start_time}, res_set: {j.res_set}")
+
+    print(ss)
+
+
 def test_schedule_envelope():
     v = [(0, 100, ProcSet(*[(1, 32)]))]
 

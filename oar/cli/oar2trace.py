@@ -22,6 +22,7 @@ from collections import OrderedDict
 import click
 from sqlalchemy.sql import distinct, func, or_
 
+from oar.lib.globals import init_oar
 from oar.lib.models import AssignedResource, Job, MoldableJobDescription, Resource
 
 click.disable_unicode_literals_warning = True
@@ -525,8 +526,6 @@ def cli(
     oar2trace --db-url 'postgresql://oar:oar@server/oar' -m owf
 
     """
-    # import pdb; pdb.set_trace()
-
     display = p
     jobids_range = None
 
@@ -539,9 +538,10 @@ def cli(
         db_name = db_url.split("/")[-1]
         db_server = (db_url.split("/")[-2]).split("@")[-1]
     else:
-        db_name = "oar"
-        db_server = "localhost"
-
+        _, engine = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
     try:
         jobids_range = db.query(
             func.max(Job.id).label("max"), func.min(Job.id).label("min")
