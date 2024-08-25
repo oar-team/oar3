@@ -95,6 +95,8 @@ class JobPseudo(object):
     user = ""
     project = ""
     no_quotas = False
+    res_set = None
+    superseded_job = None
 
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
