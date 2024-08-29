@@ -164,7 +164,9 @@ def _test_bipbip_toLaunch(
         AssignedResource.create(session, moldable_id=moldable_id[0], resource_id=0)
     else:
         for r in resources[:4]:
-            AssignedResource.create(session, moldable_id=moldable_id[0], resource_id=r.id)
+            AssignedResource.create(
+                session, moldable_id=moldable_id[0], resource_id=r.id
+            )
             print(r.id, r.network_address)
     session.commit()
 
@@ -359,6 +361,7 @@ def test_bipbip_running_oarexec_reattachexit_bad_value(
         args=["bug", "2", "foo1"],
     )
     assert bipbip.exit_code == 2
+
 
 def test_bipbip_toLaunch_envelope(minimal_db_initialization, builtin_config):
     _, bipbip = _test_bipbip_toLaunch(

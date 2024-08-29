@@ -61,6 +61,7 @@ class Configuration(dict):
         "DEBUG_REMOTE_COMMANDS": "YES",
         "COSYSTEM_HOSTNAME": "127.0.0.1",
         "DEPLOY_HOSTNAME": "127.0.0.1",
+        "ENVELOPE_HOSTNAME": "127.0.0.1",
         "OPENSSH_CMD": "/usr/bin/ssh -p 6667",
         "OAREXEC_DEBUG_MODE": "1",
         "GRETA_SERVER": "localhost",

@@ -189,6 +189,31 @@ def intersec_ts_ph_itvs_slots(
     return itvs_acc
 
 
+def intersec_supersed_itvs_slots(
+    slots: Dict[int, Slot], sid_left: int, sid_right: int, job: Job
+) -> ProcSet:
+    sid = sid_left
+    itvs_acc = slots[sid].itvs
+
+    if (
+        job.start_time <= slots[sid].b
+        and (job.start_time + job.walltime) >= slots[sid].b
+    ):
+        itvs_acc = itvs_acc | job.res_set
+
+    while sid != sid_right:
+        sid = slots[sid].next
+
+        if (
+            job.start_time <= slots[sid].b
+            and (job.start_time + job.walltime) >= slots[sid].b
+        ):
+            itvs_acc = itvs_acc & (slots[sid].itvs | job.res_set)
+        else:
+            itvs_acc = itvs_acc & slots[sid].itvs
+
+    return itvs_acc
+
 class SlotSet:
     """
     :class:`SlotSet` holds a linked list of slots and provides utilities for their manipulation.

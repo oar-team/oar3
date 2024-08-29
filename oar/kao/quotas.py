@@ -558,7 +558,7 @@ class Quotas(object):
         user = job.user
 
         # TOREMOVE ?
-        if hasattr(job, "res_set"):
+        if hasattr(job, "res_set") and job.res_set:
             if not hasattr(self, "nb_res"):
                 job.nb_res = len(job.res_set & ResourceSet.default_itvs)
                 nb_resources = job.nb_res
