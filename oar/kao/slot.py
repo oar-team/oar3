@@ -189,7 +189,7 @@ def intersec_ts_ph_itvs_slots(
     return itvs_acc
 
 
-def intersec_superseded_itvs_slots(
+def intersec_supersed_itvs_slots(
     slots: Dict[int, Slot], sid_left: int, sid_right: int, job: Job
 ) -> ProcSet:
     sid = sid_left

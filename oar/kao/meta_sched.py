@@ -152,6 +152,7 @@ def gantt_init_with_running_jobs(
         j.res_set = itvs
         j.ts = False
         j.ph = NO_PLACEHOLDER
+        j.supersed = None
 
         pseudo_jobs.append(j)
 

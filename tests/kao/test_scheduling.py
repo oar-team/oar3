@@ -893,7 +893,7 @@ def test_schedule_envelope_leaflet_1():
     assert compare_slots_val_ref(ss, v) is True
 
 
-def test_schedule_superseded_1():
+def test_schedule_supersed_1():
     # v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
@@ -927,7 +927,7 @@ def test_schedule_superseded_1():
         mld_res_rqts=[(1, 20, [([("node", 2)], ProcSet(*res))])],
         ts=False,
         ph=0,
-        superseded=j1,
+        supersed=j1,
     )
     schedule_id_jobs_ct(all_ss, {2: j2}, hy, [2], 5)
 

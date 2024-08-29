@@ -12,7 +12,7 @@ from oar.kao.slot import (
     Slot,
     SlotSet,
     intersec_itvs_slots,
-    intersec_superseded_itvs_slots,
+    intersec_supersed_itvs_slots,
     intersec_ts_ph_itvs_slots,
 )
 from oar.lib.globals import get_logger, init_oar
@@ -189,9 +189,9 @@ def find_first_suitable_contiguous_slots_quotas(
             itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
 
         # TODO: CHECK Supersed + Quotas combination
-        if job.superseded:
-            itvs_avail = intersec_superseded_itvs_slots(
-                slots, sid_left, sid_right, job.superseded
+        if job.supersed:
+            itvs_avail = intersec_supersed_itvs_slots(
+                slots, sid_left, sid_right, job.supersed
             )
 
         if job.find:
@@ -285,9 +285,9 @@ def find_first_suitable_contiguous_slots_no_quotas(
         else:
             itvs_avail = intersec_itvs_slots(slots, slot_begin.id, slot_end.id)
 
-        if job.superseded:
-            itvs_avail = intersec_superseded_itvs_slots(
-                slots, sid_left, sid_right, job.superseded
+        if job.supersed:
+            itvs_avail = intersec_supersed_itvs_slots(
+                slots, sid_left, sid_right, job.supersed
             )
 
         if job.find:

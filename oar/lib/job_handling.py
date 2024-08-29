@@ -96,7 +96,7 @@ class JobPseudo(object):
     project = ""
     no_quotas = False
     res_set = None
-    superseded_job = None
+    supersed = None  # Job id of superseded
 
     def __init__(self, **kwargs):
         self.mld_res_rqts = []
@@ -172,6 +172,8 @@ def get_jobs_types(session, jids, jobs):
             job.find_func = find_plugin_function("oar.find_func", funcname)
         elif t == "no_quotas":
             job.no_quotas = True
+        elif t == "supersed":
+            job.supersed = t_v[1]
         else:
             if len(t_v) == 2:
                 v = t_v[1]
@@ -307,6 +309,7 @@ def get_data_jobs(
                 job.assign = False
                 job.find = False
                 job.no_quotas = False
+                job.supersed = None
 
             prev_mld_id = moldable_id
             prev_j_id = j_id
@@ -391,6 +394,7 @@ def get_data_jobs(
     job.assign = False
     job.find = False
     job.no_quotas = False
+    job.supersed = None
 
     get_jobs_types(session, jids, jobs)
     get_current_jobs_dependencies(session, jobs)
@@ -454,6 +458,7 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
                 job.assign = False
                 job.find = False
                 job.no_quotas = False
+                job.supersed = None
                 if job.suspended == "YES":
                     job.walltime += get_job_suspended_sum_duration(session, job.id, now)
 
