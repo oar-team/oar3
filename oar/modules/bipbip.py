@@ -40,7 +40,7 @@ from oar.lib.tools import (
 
 # _, db, logger = init_oar()
 
-# logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
 
 class BipBip(object):
@@ -186,6 +186,14 @@ class BipBip(object):
         mold_job_description = get_current_moldable_job(
             session, job.assigned_moldable_job
         )
+
+        if "noop" in job_types:
+            set_job_state(session, config, job_id, "Running")
+            self.logger.debug(
+                "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
+            )
+            self.call_server_prologue(session, job, config)
+            return
 
         # HERE we must launch oarexec on the first node
         self.logger.debug(
@@ -407,8 +415,12 @@ class BipBip(object):
         epilogue_exec_file = config["EPILOGUE_EXEC_FILE"]
 
         deploy_cosystem_job_exec_system = config["DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM"]
-        if (deploy_cosystem_job_exec_system != "none") and  (deploy_cosystem_job_exec_system != "system-run"):
-            logger.error(f"Invalid configuration for DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM: '{deploy_cosystem_job_exec_system}' is not supported")
+        if (deploy_cosystem_job_exec_system != "none") and (
+            deploy_cosystem_job_exec_system != "system-run"
+        ):
+            logger.error(
+                f"Invalid configuration for DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM: '{deploy_cosystem_job_exec_system}' is not supported"
+            )
             # Don't exit, because it (could ?)/causes the job to be stuck in 'Launching' state.
 
         modules_dir, _ = os.path.split(__file__)
@@ -492,7 +504,7 @@ class BipBip(object):
         data_to_transfer_str = limited_dict2hash_perl(data_to_transfer)
         data_to_transfer_str = data_to_transfer_str[:-1] + resources_data_str
 
-        #self.logger.debug(data_to_transfer_str)
+        # self.logger.debug(data_to_transfer_str)
 
         error = 50
 
@@ -666,7 +678,7 @@ def main():  # pragma: no cover
     # Create a session
     session = scoped()
 
-    logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+    # logger = get_logger("oar.modules.bipbip", forward_stderr=True)
 
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:], config)
