@@ -8,7 +8,7 @@ Changelog
 Version 3.0.0.dev14
 -------------------
 
-Released on December 22, 2023
+Released on September 06, 2024
 
 - Fixed performance issues when database is growing
 - Start/stop for oar-server now from systemd (this fixes issues with processes still running after a stop)
