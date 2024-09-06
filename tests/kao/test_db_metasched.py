@@ -58,7 +58,7 @@ def monkeypatch_tools(request, monkeypatch):
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
     )
     monkeypatch.setattr(
-        oar.lib.tools, "notify_user", lambda job, state, msg: len(state + msg)
+        oar.lib.tools, "notify_user", lambda session, job, state, msg: len(state + msg)
     )
     monkeypatch.setattr(oar.lib.tools, "notify_bipbip_commander", lambda json_msg: True)
 
@@ -345,3 +345,27 @@ def test_db_metasched_ar_2(monkeypatch, minimal_db_initialization, setup_config)
 
     # Restore the get date function
     monkeypatch.setattr(oar.lib.tools, "get_date", get_date)
+
+
+def test_db_metasched_bug_toLaunch_absent(
+    monkeypatch, minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+
+    Resource.create(
+        minimal_db_initialization, network_address="localhost", state="Absent"
+    )
+
+    insert_job(
+        minimal_db_initialization, res=[(60, [("resource_id=6", "")])], properties=""
+    )
+
+    job = minimal_db_initialization.query(Job).one()
+
+    print("job state:", job.state)
+
+    meta_schedule(minimal_db_initialization, config)
+
+    job = minimal_db_initialization.query(Job).one()
+    print(job.state)
+    assert job.state == "Waiting"

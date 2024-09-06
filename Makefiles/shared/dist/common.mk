@@ -5,6 +5,7 @@ export PREFIX?=/usr/local
 export RUNDIR?=/var/run
 export LOGDIR?=/var/log
 export INITDIR?=$(ETCDIR)/init.d
+export SYSTEMDIR?=$(ETCDIR)/systemd/system
 export CRONDIR?=$(ETCDIR)/cron.d
 export CRONHOURLYDIR?=$(ETCDIR)/cron.hourly
 export LOGROTATEDIR?=$(ETCDIR)/logrotate.d

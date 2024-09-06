@@ -125,7 +125,7 @@ def monkeypatch_tools(request, monkeypatch):
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
     )
     monkeypatch.setattr(
-        oar.lib.tools, "notify_user", lambda job, state, msg: len(state + msg)
+        oar.lib.tools, "notify_user", lambda session, job, state, msg: len(state + msg)
     )
     monkeypatch.setattr(
         oar.lib.tools,

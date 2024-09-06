@@ -1,6 +1,8 @@
 # Limit the number of reservations that a user can do.
 # (overrided on user basis using the file: ~oar/unlimited_reservation.users)
 
+from sqlalchemy.sql import or_
+
 if reservation_date:
     unlimited = False
     try:

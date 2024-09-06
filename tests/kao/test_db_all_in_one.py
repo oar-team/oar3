@@ -154,7 +154,7 @@ def monkeypatch_tools(request, monkeypatch):
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
     )
     monkeypatch.setattr(
-        oar.lib.tools, "notify_user", lambda job, state, msg: len(state + msg)
+        oar.lib.tools, "notify_user", lambda session, job, state, msg: len(state + msg)
     )
     monkeypatch.setattr(
         oar.lib.tools,
@@ -264,7 +264,7 @@ def test_db_all_in_one_quotas_1(
         config,
         """{
             "quotas": {
-                "*,*,*,/": [-1, -1, -1], 
+                "*,*,*,/": [-1, -1, -1],
                 "/,*,*,*": [-1, 1, 5]
                 }
             }""",  # The second rule should be applicated

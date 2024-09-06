@@ -30,6 +30,11 @@ def attach_types(job, job_types):
         job["types"] = job_types[job["id"]]
 
 
+def attach_events(job, job_events):
+    if job["id"] in job_events:
+        job["events"] = job_events[job["id"]]
+
+
 def attach_resources(job, jobs_resources):
     job["resources"] = []
     for resource in jobs_resources[job["id"]]:
@@ -62,7 +67,6 @@ def index(
     limit: int = 500,
     db: Session = Depends(get_db),
 ):
-
     queryCollection = APIQueryCollection(db)
 
     # import pdb; pdb.set_trace()
@@ -81,12 +85,14 @@ def index(
     if details:
         jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
         jobs_types = queryCollection.get_jobs_types(page.items)
+        job_events = queryCollection.get_jobs_events(page.items)
         pass
     for item in page:
         if details:
             attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
+            attach_events(item, job_events)
         data["items"].append(item)
 
     return data
@@ -107,6 +113,8 @@ def show(
         job.id = job_id
         job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
+        job_events = queryCollection.get_jobs_events([job])
+        attach_events(data, job_events)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -144,6 +152,30 @@ def get_resources(
 
     for item in page:
         data["items"].append(item[1])
+
+    return data
+
+
+@router.get("/{job_id}/events")
+def get_events(
+    job_id: int,
+    offset: int = 0,
+    limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    queryCollection = APIQueryCollection(db)
+    job = Job()
+    job.id = job_id
+    query = queryCollection.get_one_job_events(job)
+    page = paginate(query, offset, limit)
+    data = {}
+    data["total"] = page.total
+    data["offset"] = offset
+    data["items"] = []
+
+    for item in page:
+        data["items"].append(item)
 
     return data
 
@@ -252,27 +284,18 @@ def submit(
         stagein-md5sum=<md5sum>   Set the stagein file md5sum
 
 
-        Input yaml example
-        ---
-        stdout: /tmp/outfile
-        command: /usr/bin/id;echo "OK"
-        resource: /nodes=2/cpu=1
-        workdir: ~bzizou/tmp
-        type:
-        - besteffort
-        - timesharing
-        use-job-key: 1
+        Input json example
+        {
+            "command": "sleep 3600",
+            "resource": ["/cpu=1,walltime=0:10:0"],
+            "project": "test",
+            "type": ["devel"]
+        }
 
-
-        Output yaml example
-        ---
-        api_timestamp: 1332323792
-        cmd_output: |
-          [ADMISSION RULE] Modify resource description with type constraints
-          OAR_JOB_ID=4
-        id: 4
-
-        Note: up to now yaml is no supported, only json and html form.
+        Output example
+        {
+           "id": 113
+        }
 
     """
     initial_request = ""  # TODO Json version ?
@@ -332,8 +355,6 @@ def submit(
         hold=sp.hold,
     )
 
-    # import pdb; pdb.set_trace()
-
     error = job_parameters.check_parameters()
     if error[0] != 0:
         print(error)
@@ -344,6 +365,8 @@ def submit(
     (error, job_id_lst) = submission.submit(db, config)
     if error[0] == -2:
         raise HTTPException(status_code=403, detail=error[1])
+    elif error[0] != 0:
+        raise HTTPException(status_code=400, detail=error[1])
 
     # TODO Enhance
     data = {}

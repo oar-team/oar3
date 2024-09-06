@@ -16,10 +16,11 @@ class ResourceSet(object):
 
     def __init__(self, session, config):
         self.nb_resources_all = 0
+        self.nb_absent = 0
         self.nb_resources_not_dead = 0
         self.nb_resources_default_not_dead = 0
 
-        self.nb_resources = 0
+        self.nb_resources = 0  # TOREMOVE
         self.nb_resources_default = 0
 
         # prepare resource order/indirection stuff
@@ -56,6 +57,7 @@ class ResourceSet(object):
         self.available_upto = {}
 
         roids = []
+        absent_roids = []
         default_rids = []
 
         self.roid_2_network_address = {}
@@ -74,7 +76,7 @@ class ResourceSet(object):
                     self.nb_resources_default_not_dead += 1
 
             if (r.state == "Alive") or (r.state == "Absent"):
-                self.nb_resources += 0
+                self.nb_resources += 1  # TOREMOVE, NOT USE ?
                 rid = int(r.id)
                 roids.append(roid)
                 if r.type == "default":
@@ -102,11 +104,17 @@ class ResourceSet(object):
                 if r.type in res_suspend_types:
                     suspendable_roids.append(roid)
 
+                # fill absent resources set
+                if r.state == "Absent":
+                    self.nb_absent += 1
+                    absent_roids.append(roid)
+
             self.roid_2_network_address[roid] = r.network_address
 
         # global ordered resources intervals
         # print roids
         self.roid_itvs = ProcSet(*roids)  # TODO
+        self.absent_roid_itvs = ProcSet(*absent_roids)
 
         if "id" in hy_roid:
             hy_roid["resource_id"] = hy_roid["id"]

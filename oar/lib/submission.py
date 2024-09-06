@@ -888,7 +888,7 @@ def add_micheline_subjob(
         return (error, -1)
 
     # Add admin properties to the job
-    if hasattr(job_parameters, "properties_applied_after_validation:"):
+    if hasattr(job_parameters, "properties_applied_after_validation"):
         if properties:
             properties = (
                 "("
@@ -1106,7 +1106,7 @@ def add_micheline_simple_array_job(
     )
 
     # Add admin properties to the job
-    if hasattr(job_parameters, "properties_applied_after_validation:"):
+    if hasattr(job_parameters, "properties_applied_after_validation"):
         if properties:
             properties = (
                 "("

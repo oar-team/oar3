@@ -305,7 +305,7 @@ def check_accounting_update(session: Session, window_size: int):
             nb_resources,
         )
 
-        session.query(Job).update({Job.accounted: "YES"}, synchronize_session=False)
+        session.query(Job).filter(Job.accounted == "NO").update({Job.accounted: "YES"}, synchronize_session=False)
 
     session.commit()
 

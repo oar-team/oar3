@@ -338,6 +338,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
 @click.option(
     "-d",
     "--directory",
+    default=os.getcwd(),
     type=click.STRING,
     help="Specify the directory where to launch the command (default is current directory)",
 )
@@ -609,7 +610,7 @@ def cli(
 
     # Connect to a reservation
     if connect:
-        exit(connect_job(connect, 0, openssh_cmd, cmd_ret))
+        exit(connect_job(session, config, connect, 0, openssh_cmd, cmd_ret))
 
     submission = Submission(job_parameters)
 

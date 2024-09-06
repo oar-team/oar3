@@ -5,6 +5,26 @@
 Changelog
 =========
 
+Version 3.0.0.dev14
+-------------------
+
+Released on December 22, 2023
+
+- Fixed performance issues when database is growing
+- Start/stop for oar-server now from systemd (this fixes issues with processes still running after a stop)
+
+Version 3.0.0.dev13
+-------------------
+
+Released on August 28, 2024
+
+- Fixed default WORKDIR into oarsub (to current directory): #42
+- Fixed several scheduling issues: #47 #54 #61
+- Fixed REST API issues:  #59 and commits b03df94, b2313f0
+- Fixed oarsub -C : #46
+- Fixed Ernergy Saving: #53 and commits 0988318
+- Fixed submission.py : #51
+
 Version 3.0.0.dev12
 -------------------
 

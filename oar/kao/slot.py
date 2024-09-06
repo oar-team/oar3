@@ -65,7 +65,7 @@ class Slot(object):
         self.id = id
         self.prev = prev
         self.next = next
-        if type(itvs) == ProcSet:
+        if type(itvs) is ProcSet:
             self.itvs = itvs
         else:
             self.itvs = ProcSet(*itvs)
@@ -222,21 +222,26 @@ class SlotSet:
         """
         self.last_id: int = 1
         # The first (earlier) slot has identifier one.
-        if type(slots) == dict:
+        if type(slots) is dict:
             self.slots: Dict[int, Slot] = slots
             s = slots[1]
             self.begin: int = s.b
             while s.next != 0:
                 s = slots[s.next]
             self.last_id = s.id
-        elif type(slots) == tuple:
+            self.end: int = s.e
+
+        elif type(slots) is tuple:
             itvs, b = slots
             self.begin: int = b
             self.slots: Dict[int, Slot] = {1: Slot(1, 0, 0, itvs, b, MAX_TIME)}
+            self.end: int = MAX_TIME
+
         else:
             # Given slots is, in fact, one slot
             self.slots = {1: slots}
             self.begin = slots.b
+            self.end = slots.e
 
         # cache the last sid_left given for by walltime => not used
         # cache the last sid_left given for same previous job
@@ -392,8 +397,9 @@ class SlotSet:
         :returns: \
             Tuple[int, int]: return the two slots, starting with the new one.
         """
-        if slot_id == 0:
-            return (0, 0)
+
+        # There is not slot_id 0
+        assert slot_id != 0
 
         slot = self.slots[slot_id]
 
@@ -450,9 +456,8 @@ class SlotSet:
         :returns: \
             Tuple[int, int]: return the two slots, starting with the new one.
         """
-        # Cannot split slot_id 0
-        if slot_id == 0:
-            return (0, 0)
+        # There is not slot_id 0
+        assert slot_id != 0
 
         # Find the slot
         slot = self.slots[slot_id]
@@ -509,6 +514,24 @@ class SlotSet:
                 break
 
         return (first_slot, last_slot)
+
+    def get_encompassing_slots(
+        self, t_begin: int, t_end: int, first_id=None
+    ) -> Tuple[int, int]:
+        if first_id:
+            sid_left = first_id
+        else:
+            sid_left = self.first().id
+
+        while self.slots[sid_left].e < t_begin:
+            sid_left = self.slots[sid_left].next
+
+        sid_right = sid_left
+
+        while self.slots[sid_right].e < t_end and self.slots[sid_right].next != 0:
+            sid_right = self.slots[sid_right].next
+
+        return (sid_left, sid_right)
 
     def traverse_id(self, start: int = 0, end: int = 0) -> Generator[Slot, None, None]:
         """loop between the slot_id start and slot_id end.
@@ -573,9 +596,6 @@ class SlotSet:
 
     # Transform given slot to B slot (substract job resources)
     def sub_slot_during_job(self, slot: Slot, job: Job):
-        # slot.b = max(slot.b, job.start_time)
-        # slot.e = min(slot.e, job.start_time + job.walltime - 1)
-
         slot.itvs = slot.itvs - job.res_set
         if job.ts:
             if job.ts_user not in slot.ts_itvs:
@@ -595,10 +615,8 @@ class SlotSet:
             slot.quotas.update(job)
             # slot.quotas.show_counters()
 
-    #  Transform given slot to B slot
+    #  Transform given slot from B slot (substract job resources)
     def add_slot_during_job(self, slot: Slot, job: Job):
-        slot.b = max(slot.b, job.start_time)
-        slot.e = min(slot.e, job.start_time + job.walltime - 1)
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
             slot.itvs = slot.itvs | job.res_set
         if job.ts:
@@ -618,95 +636,6 @@ class SlotSet:
 
         # PLACEHOLDER / ALLOWED need not to considered in this case
 
-    def extend(self, date):
-        first = self.first()
-        last = self.last()
-
-        if date >= first.b and date <= last.e:
-            # Lets fail will see later what is best to do
-            assert False
-
-        elif date < first.b:
-            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), date, first.b - 1)
-            first.prev = new_slot.id
-            self.slots[new_slot.id] = new_slot
-            self.copy_intervals_set(first.id, new_slot.id)
-
-            return new_slot.id
-        elif date > last.e:
-            new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), last.e, date)
-            first.prev = new_slot.id
-            self.slots[new_slot.id] = new_slot
-            self.copy_intervals_set(first.id, new_slot.id)
-
-            return new_slot.id
-
-    def add_front(self, date: int, inplace=False) -> int:
-        first = self.first()
-        assert date < first.b
-        if inplace:
-            first.b = date
-            return first.id
-
-        new_slot = Slot(self.new_id(), 0, first.id, ProcSet(), date, first.b - 1)
-        first.prev = new_slot.id
-        self.slots[new_slot.id] = new_slot
-        self.copy_intervals_set(first.id, new_slot.id)
-
-        return new_slot.id
-
-    def add_back(self, date: int, inplace=False) -> int:
-        last = self.last()
-        assert date > last.e
-
-        if inplace:
-            last.e = date
-            return last.id
-
-        new_slot = Slot(self.new_id(), last.id, 0, ProcSet(), last.e, date)
-        last.next = new_slot.id
-
-        self.slots[new_slot.id] = new_slot
-        self.copy_intervals_set(last.id, new_slot.id)
-
-        return new_slot.id
-
-    def extend_range(
-        self, begin: int, end: int, inplace: bool = False
-    ) -> Tuple[Optional[int], Optional[int]]:
-        """Extend the slot set considering a time range (useful to insert a new job)
-
-        :param begin (int): begin time to insert
-        :param end (int): end time to insert
-
-        :return Tuple[int, int]: return the newly created slot if any
-        """
-        first = self.first()
-        last = self.last()
-
-        first_id = None
-        last_id = None
-
-        assert begin < end
-
-        if end < first.b:
-            # both end and begin are before the beginning of the slot set
-            # this adding on in front is sufficient
-            last_id = first_id = self.add_front(begin, inplace)
-        elif begin > last.e:
-            # both end and begin are after the end of the slot set
-            # this adding on in back is sufficient
-            last_id = first_id = self.add_back(end, inplace)
-        else:
-            # Otherwise we check and add both if needed
-            if begin < first.b:
-                first_id = self.add_front(begin, inplace)
-
-            if end > last.e:
-                last_id = self.add_back(end, inplace)
-
-        return (first_id, last_id)
-
     def split_slots(self, sid_left: int, sid_right: int, job: Job, sub: bool = True):
         """
         Split slot accordingly to a job resource assignment.
@@ -723,22 +652,10 @@ class SlotSet:
         Generate A slot - slot before job's begin
         """
 
-        # First check if we need to increase the size of the slotset
-        if sid_left == 0 or sid_right == 0:
-            (new_first, new_last) = self.extend_range(
-                job.start_time, job.start_time + job.walltime, inplace=True
-            )
-
-            if sid_left == 0:
-                sid_left = new_first
-
-            if sid_right == 0:
-                sid_right = new_last
-
-        if sid_left != 0 and self.slots[sid_left].b != job.start_time:
+        if self.slots[sid_left].b < job.start_time:
             (_, sid_left) = self.split_at_before(sid_left, job.start_time)
 
-        if sid_right != 0 and self.slots[sid_right].e != job.start_time + job.walltime:
+        if self.slots[sid_right].e > job.start_time + job.walltime:
             (sid_right, _) = self.split_at_after(
                 sid_right, job.start_time + job.walltime
             )
@@ -757,17 +674,19 @@ class SlotSet:
         Jobs must be sorted by start_time.
         It used in to insert previously scheduled jobs in slots or container jobs.
         """
-        if not sub:
-            # for adding resources we need to inverse the chronological order
-            ordered_jobs.reverse()
-
+        first_id = self.first().id
+        # import pdb; pdb.set_trace()
         for job in ordered_jobs:
             # Find first slot
-            (left_sid_2_split, right_sid_2_split) = self.get_encompassing_range(
-                job.start_time, job.start_time + job.walltime
-            )
+            if (not ((job.start_time + job.walltime) < self.begin)) and (
+                not (job.start_time > self.end)
+            ):
+                (left_sid_2_split, right_sid_2_split) = self.get_encompassing_slots(
+                    job.start_time, job.start_time + job.walltime, first_id
+                )
+                first_id = left_sid_2_split
 
-            self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
+                self.split_slots(left_sid_2_split, right_sid_2_split, job, sub)
 
     def temporal_quotas_split_slot(
         self, slot: Slot, quotas_rules_id: int, remaining_duration: int

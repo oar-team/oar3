@@ -587,8 +587,6 @@ def get_gantt_jobs_to_launch(
         .filter(Job.id == MoldableJobDescription.job_id)
         .filter(MoldableJobDescription.id == GanttJobsPrediction.moldable_id)
         .filter(GanttJobsResource.moldable_id == GanttJobsPrediction.moldable_id)
-        .filter(Resource.id == GanttJobsResource.resource_id)
-        .filter(Resource.state == "Alive")
         .all()
     )
 
@@ -740,7 +738,7 @@ def get_current_jobs_dependencies(session, jobs):
 def get_current_not_waiting_jobs(
     session,
 ):
-    jobs = session.query(Job).filter(Job.state != "Waiting").all()
+    jobs = session.query(Job).filter(Job.state in ('Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing')).all()
     jobs_by_state = {}
     for job in jobs:
         if job.state not in jobs_by_state:
@@ -1697,11 +1695,11 @@ def set_job_state(session, config, jid, state):
         ):
             job = session.query(Job).filter(Job.id == jid).one()
             if state == "Suspend":
-                tools.notify_user(job, "SUSPENDED", "Job is suspended.")
+                tools.notify_user(session, job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
-                tools.notify_user(job, "RESUMING", "Job is resuming.")
+                tools.notify_user(session, job, "RESUMING", "Job is resuming.")
             elif state == "Running":
-                tools.notify_user(job, "RUNNING", "Job is running.")
+                tools.notify_user(session, job, "RUNNING", "Job is running.")
             elif state == "toLaunch":
                 update_current_scheduler_priority(session, config, job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
@@ -1718,7 +1716,7 @@ def set_job_state(session, config, jid, state):
                     )
 
                 if state == "Terminated":
-                    tools.notify_user(job, "END", "Job stopped normally.")
+                    tools.notify_user(session, job, "END", "Job stopped normally.")
                 else:
                     # Verify if the job was suspended and if the resource
                     # property suspended is updated
@@ -1738,7 +1736,10 @@ def set_job_state(session, config, jid, state):
                         session.commit()
 
                     tools.notify_user(
-                        job, "ERROR", "Job stopped abnormally or an OAR error occured."
+                        session,
+                        job,
+                        "ERROR",
+                        "Job stopped abnormally or an OAR error occured.",
                     )
 
                 update_current_scheduler_priority(session, config, job, "-2", "STOP")

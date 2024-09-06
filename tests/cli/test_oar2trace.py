@@ -7,7 +7,7 @@ from oar.cli.oar2trace import cli
 from oar.kao.meta_sched import meta_schedule
 from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job, set_job_state
-from oar.lib.models import Resource
+from oar.lib.models import Job, Resource
 
 NB_NODES = 5
 
@@ -37,17 +37,14 @@ def test_oar2trace_void(minimal_db_initialization, setup_config):
 @pytest.mark.skip(reason="wip (not working)")
 def test_oar2trace_simple(minimal_db_initialization, setup_config):
     config, _ = setup_config
-    insert_job(res=[(100, [("resource_id=3", "")])])
+    insert_job(minimal_db_initialization, res=[(100, [("resource_id=3", "")])])
 
-    meta_schedule("internal")
-    job = db["Job"].query.one()
+    meta_schedule(minimal_db_initialization, config)
 
-    set_job_state(job.id, "Terminated")
+    job = minimal_db_initialization.query(Job).one()
+
+    set_job_state(minimal_db_initialization, config, job.id, "Terminated")
 
     runner = CliRunner()
     result = runner.invoke(cli, ["-p"])
     assert result.exit_code == 0
-
-    import pdb
-
-    pdb.set_trace()

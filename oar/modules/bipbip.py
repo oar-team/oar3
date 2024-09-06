@@ -650,6 +650,8 @@ def main():  # pragma: no cover
     # Create a session
     session = scoped()
 
+    logger = get_logger("oar.modules.bipbip", forward_stderr=True)
+
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:], config)
         try:
@@ -657,7 +659,7 @@ def main():  # pragma: no cover
         except Exception as ex:
             import traceback
 
-            log.error(
+            logger.error(
                 "Bipbip.run trouble on job {}: {}\n{}".format(
                     sys.argv[1], ex, traceback.format_exc()
                 )
