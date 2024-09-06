@@ -43,7 +43,7 @@ SHAREDIR_FILES = $(SRCDIR)/tools/job_resource_manager.pl \
 
 DEFAULTDIR_FILES = setup/default/oar-server.in
 
-SYSTEMD_FILES = setup/systemd/system/oar-server.service.in
+SYSTEMD_FILES = setup/systemd/oar-server.service.in
 
 CRONDIR_FILES = setup/cron.d/oar-server.in
 
