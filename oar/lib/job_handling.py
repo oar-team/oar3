@@ -738,7 +738,7 @@ def get_current_jobs_dependencies(session, jobs):
 def get_current_not_waiting_jobs(
     session,
 ):
-    jobs = session.query(Job).filter(Job.state != "Waiting").all()
+    jobs = session.query(Job).filter(Job.state in ('Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing')).all()
     jobs_by_state = {}
     for job in jobs:
         if job.state not in jobs_by_state:
