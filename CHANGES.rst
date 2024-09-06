@@ -5,6 +5,14 @@
 Changelog
 =========
 
+Version 3.0.0.dev14
+-------------------
+
+Unreleased
+
+- Fixed performance issues when database is growing
+- Start/stop for oar-server now from systemd (this fixes issues with processes still running after a stop)
+
 Version 3.0.0.dev13
 -------------------
 
