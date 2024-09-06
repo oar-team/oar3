@@ -1,0 +1,13 @@
+[Unit]
+Description=OAR resources manager
+After=postgresql.service
+After=mysql.service
+
+[Service]
+Environment=OARDIR=%%OARDIR%%
+ExecStart=%%OARDIR%%/oar-almighty
+User=oar
+WorkingDirectory=%%OARHOMEDIR%%
+
+[Install]
+WantedBy=default.target
