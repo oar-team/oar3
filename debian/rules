@@ -48,7 +48,7 @@ override_dh_auto_install:
 	# oar-server
 	#cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/init.d/oar-server > debian/oar-server.init
 	#cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/default/oar-server > debian/oar-server.default
-	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/systemd/system/oar-server > debian/oar-server.service
+	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/systemd/system/oar-server.service > debian/oar-server.service
 	cat $(CURDIR)/$(INSTALLDIR)/oar-server/usr/share/oar/oar-server/cron.d/oar-server > debian/oar-server.cron.d
 	# oar-node
 	cat $(CURDIR)/$(INSTALLDIR)/oar-node/usr/share/oar/oar-node/init.d/oar-node > debian/oar-node.init
