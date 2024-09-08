@@ -157,9 +157,6 @@ def _test_bipbip_toLaunch(
     # import pdb; pdb.set_trace()
     resources = session.query(Resource).all()
 
-    print("yop")
-    print(resources)
-
     if "envelope" in types:
         AssignedResource.create(session, moldable_id=moldable_id[0], resource_id=0)
     else:
@@ -366,6 +363,14 @@ def test_bipbip_running_oarexec_reattachexit_bad_value(
 def test_bipbip_toLaunch_envelope(minimal_db_initialization, builtin_config):
     _, bipbip = _test_bipbip_toLaunch(
         minimal_db_initialization, builtin_config, types=["envelope"]
+    )
+    print(bipbip.exit_code)
+    assert bipbip.exit_code == 0
+
+
+def test_bipbip_toLaunch_supersed(minimal_db_initialization, builtin_config):
+    _, bipbip = _test_bipbip_toLaunch(
+        minimal_db_initialization, builtin_config, types=["supersed=1"]
     )
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0

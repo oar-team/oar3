@@ -33,6 +33,7 @@ from oar.lib.resource_handling import get_current_assigned_job_resources
 from oar.lib.tools import (
     TimeoutExpired,
     format_ssh_pub_key,
+    get_oar_pid_file_name,
     get_private_ssh_key_file_name,
     limited_dict2hash_perl,
     resources2dump_perl,
@@ -207,9 +208,29 @@ class BipBip(object):
             + str(hosts)
         )
 
+        if job_types:
+            self.logger.debug(f"job_types: {job_types})")
+
         if (job.type == "INTERACTIVE") and (job.reservation == "None"):
             tools.notify_interactif_user(job, "Starting...")
 
+        if "supersed" in job_types.keys():
+            migrate_jobid = job_types["supersed"]
+            # if not cpuset_full_path:
+            #     msg = f"Cannot launch job {job.id} with type supersed={migrate_jobid}: cpuset_full_path is empty"
+            #     self.logger.error(msg)
+            #     raise Exception(msg)
+            # else:
+            #     migrate_cpusetpath = cpuset__path.replace(f"_{job.id}", f"_{migrate_jobid}")
+            migrate_cpusetpath = cpuset_name.replace(f"_{job.id}", f"_{migrate_jobid}")
+            self.logger.debug(
+                f"migrate_cpusetpath: {migrate_cpusetpath}, cpuset_name: {cpuset_name}"
+            )
+            migrate_oarexec_pid_file = get_oar_pid_file_name(migrate_jobid)
+
+        else:
+            migrate_cpusetpath = "undef"
+            migrate_oarexec_pid_file = "undef"
         # Execute JOB_RESOURCE_MANAGER on allocated nodes
         if (
             ("deploy" not in job_types.keys())
@@ -264,6 +285,8 @@ class BipBip(object):
                     "walltime_seconds": "undef",
                     "walltime": "undef",
                     "project": job.project,
+                    "migrate_processes_from_cpusetpath": migrate_cpusetpath,
+                    "migrate_processes_from_oarexec_pid_file": migrate_oarexec_pid_file,
                     "log_level": config["LOG_LEVEL"],
                 }
                 taktuk_cmd = config["TAKTUK_CMD"]
@@ -286,7 +309,7 @@ class BipBip(object):
                         + cpuset_file
                     )
                     self.logger.error(msg)
-                    events.append(("CPUSET_MANAGER_FILE", msg, None))
+                    add_new_event(session, "CPUSET_MANAGER_FILE", job_id, msg)
                 else:
                     bad = bad + bad_hosts
                     event_type = "CPUSET_ERROR"
