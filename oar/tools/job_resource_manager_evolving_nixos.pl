@@ -485,11 +485,14 @@ EOF
         }
     }
 
+    print_log(3,"Migration is needed ");
     # Finally steal processes if needed.
     if(!($Cpuset->{migrate_processes_from_cpusetpath} eq "undef") and (-d $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/'.$Cpuset->{migrate_processes_from_cpusetpath} )) {
         my $Cpuset_migrate_from;
         my $Previous_oarexec_pid_file;
         my $Previous_oarexec_pid;
+
+        print_log(3,"Processus to migrate");
 
         $Previous_oarexec_pid_file = $Cpuset->{migrate_processes_from_oarexec_pid_file};
         $Cpuset_migrate_from = $Cpuset->{cpuset_path}.'/'.$Cpuset->{migrate_processes_from_cpusetpath};
@@ -504,25 +507,44 @@ EOF
             $Previous_oarexec_pid = "-1";
         }
 
-        print_log(3, "Migrate processes from " . $Cpuset_migrate_from . " to ours. Old oarexec pid was: $Previous_oarexec_pid.");
+        print_log(3, "Migrate processes from  $Cpuset_migrate_from  to ours. Old oarexec pid was: $Previous_oarexec_pid.");
+        print_log(3, "Cgroup_directory_collection_links $Cgroup_directory_collection_links");
+        print_log(3, "Cpuset_path_job $Cpuset_path_job");
 
-        system('set -ux
-            echo "all cgroups: '.join(' ',@cgroup_list).'"
+        system('set -e
             for cg_path in '.$Cgroup_directory_collection_links.'/* ; do
                 cg=$(basename $cg_path)
                 echo "Treat cgroup: $cg"
                 for d in '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_migrate_from.'; do
                     if [ -f "$d/tasks" ]; then
-                        echo "migration ! yaouh: $d"
-                        PROCESSES=$(/run/current-system/sw/bin/cat $d/tasks | grep -v -E "\b+'.$Previous_oarexec_pid.'\b+" | head -n 1)
-                        while [ "$PROCESSES" != "" ]; do
-                            echo "write into: '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks"
-                            OARDO_BECOME_USER=root oardodo /run/current-system/sw/bin/echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks
-                            PROCESSES=$(/run/current-system/sw/bin/cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
-                        done
+                        echo "migrating: $d"
+                        while read p; do
+                            if [ "$p" != '.$Previous_oarexec_pid.' ]; then
+                                 echo "migrate $p "  '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks
+                                 OARDO_BECOME_USER=root oardodo sh -c "/run/current-system/sw/bin/echo $p  >> '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks"
+                            fi
+                        done < "$d/tasks"
                     fi
                 done
-            done');
+            done
+        ');
+        # system('set -ux
+        #     echo "all cgroups: '.join(' ',@cgroup_list).'"
+        #     for cg_path in '.$Cgroup_directory_collection_links.'/* ; do
+        #         cg=$(basename $cg_path)
+        #         echo "Treat cgroup: $cg"
+        #         for d in '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_migrate_from.'; do
+        #             if [ -f "$d/tasks" ]; then
+        #                 echo "migration ! yaouh: $d"
+        #                 PROCESSES=$(/run/current-system/sw/bin/cat $d/tasks | /run/current-system/sw/bin/grep -v -E "\b+'.$Previous_oarexec_pid.'\b+" | head -n 1)
+        #                 while [ "$PROCESSES" != "" ]; do
+        #                     echo "write into: '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks"
+        #                     OARDO_BECOME_USER=root oardodo /run/current-system/sw/bin/echo "$PROCESSES" >> '.$Cgroup_directory_collection_links.'/$cg/'.$Cpuset_path_job.'/tasks
+        #                     PROCESSES=$(/run/current-system/sw/bin/cat $d/tasks | grep -v '.$Previous_oarexec_pid.' | head -n 1)
+        #                 done
+        #             fi
+        #         done
+        #     done');
     } else {
         print_log(3, "No processes to steal, maybe " . $Cgroup_directory_collection_links.'/cpuset/'.$Cpuset->{cpuset_path}.'/'.$Cpuset->{migrate_processes_from_cpusetpath} . " is empty ?");
     }
@@ -689,6 +711,6 @@ sub print_log($$){
     my $str = shift;
 
     if ($l <= $Log_level){
-        print("[job_resource_manager_cgroups][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][DEBUG] $str\n");
+        print("[job_resource_manager_evoling][$Cpuset->{job_id}][$ENV{TAKTUK_HOSTNAME}][DEBUG] $str\n");
     }
 }
