@@ -139,7 +139,7 @@ def get_waiting_jobs(session, queues, reservation="None"):
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
 
 
-def get_jobs_types(session, jids, jobs):
+def get_jobs_types(session, jids, jobs, scheduled_jobs={}):
     jobs_types = {}
     for j_type in session.query(JobType).filter(JobType.job_id.in_(tuple(jids))):
         jid = j_type.job_id
@@ -173,7 +173,10 @@ def get_jobs_types(session, jids, jobs):
         elif t == "no_quotas":
             job.no_quotas = True
         elif t == "supersed":
-            job.supersed = t_v[1]
+            jid_to_supersed = int(t_v[1])
+            # TODO limitation: only already scheduled (running or AR Job ?) jobs are considered
+            if jid_to_supersed in scheduled_jobs.keys():
+                job.supersed = scheduled_jobs[jid_to_supersed]
         else:
             if len(t_v) == 2:
                 v = t_v[1]
@@ -211,7 +214,13 @@ def set_jobs_cache_keys(session, jobs):
 
 
 def get_data_jobs(
-    session, jobs, jids, resource_set, job_security_time, besteffort_duration=0
+    session,
+    jobs,
+    jids,
+    resource_set,
+    job_security_time,
+    besteffort_duration=0,
+    scheduled_jobs={},
 ):
     """
     oarsub -q test \
@@ -396,7 +405,7 @@ def get_data_jobs(
     job.no_quotas = False
     job.supersed = None
 
-    get_jobs_types(session, jids, jobs)
+    get_jobs_types(session, jids, jobs, scheduled_jobs)
     get_current_jobs_dependencies(session, jobs)
     set_jobs_cache_keys(session, jobs)
 
@@ -500,7 +509,7 @@ def get_scheduled_jobs(session, resource_set, job_security_time, now):
         session, result, resource_set, job_security_time, now
     )
 
-    return jobs_lst
+    return jobs_lst, jobs
 
 
 def get_after_sched_no_AR_jobs(

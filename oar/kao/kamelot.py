@@ -65,6 +65,7 @@ def internal_schedule_cycle(
     all_slot_sets,
     job_security_time: int,
     queues,
+    scheduled_jobs_dict,
 ):
     resource_set = plt.resource_set(session, config)
 
@@ -84,7 +85,13 @@ def internal_schedule_cycle(
         # Get  additional waiting jobs' data
         #
         plt.get_data_jobs(
-            session, waiting_jobs, waiting_jids, resource_set, job_security_time
+            session,
+            waiting_jobs,
+            waiting_jids,
+            resource_set,
+            job_security_time,
+            0,
+            scheduled_jobs_dict,
         )
 
         waiting_ordered_jids = jobs_sorting(
@@ -178,7 +185,7 @@ def schedule_cycle(
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(
+        scheduled_jobs, scheduled_jobs_dict = plt.get_scheduled_jobs(
             session, resource_set, job_security_time, now
         )
 
@@ -232,7 +239,6 @@ def main(session: Session = None, config: Configuration = None):
         Quotas.enable(plt.resource_set())
 
     logger.debug("argv..." + str(sys.argv))
-
     if len(sys.argv) > 2:
         schedule_cycle(session, config, plt, int(float(sys.argv[2])), [sys.argv[1]])
     elif len(sys.argv) == 2:

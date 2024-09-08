@@ -289,6 +289,12 @@ def find_first_suitable_contiguous_slots_no_quotas(
             itvs_avail = intersec_supersed_itvs_slots(
                 slots, sid_left, sid_right, job.supersed
             )
+        # jid_to_supersed = int(job.supersed)
+        # if jid_to_supersed in scheduled_jobs.keys():
+        #     job_supersed = scheduled_jobs[jid_to_supersed]
+        #     itvs_avail = intersec_supersed_itvs_slots(
+        #         slots, sid_left, sid_right, job_supersed
+        #     )
 
         if job.find:
             itvs = job.find_func(

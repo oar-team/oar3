@@ -164,7 +164,7 @@ def gantt_init_with_running_jobs(
     #
     # TODO?: Remove resources of the type specified in
     # SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE
-    scheduled_jobs = plt.get_scheduled_jobs(
+    scheduled_jobs, scheduled_jobs_dict = plt.get_scheduled_jobs(
         session, resource_set, job_security_time, initial_time_sec
     )
 
@@ -189,7 +189,7 @@ def gantt_init_with_running_jobs(
             filter_besteffort,
         )
 
-    return (all_slot_sets, scheduled_jobs, besteffort_rid2job)
+    return (all_slot_sets, scheduled_jobs, scheduled_jobs_dict, besteffort_rid2job)
 
 
 def notify_to_run_job(config, jid):
@@ -361,6 +361,7 @@ def check_reservation_jobs(
     queue_name: str,
     all_slot_sets: Dict[str, SlotSet],
     current_time_sec,
+    scheduled_jobs,
 ):
     """Processing of new Advance Reservations"""
 
@@ -375,7 +376,15 @@ def check_reservation_jobs(
 
     if nb_ar_jobs > 0:
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
-        plt.get_data_jobs(session, ar_jobs, ar_jids, resource_set, job_security_time)
+        plt.get_data_jobs(
+            session,
+            ar_jobs,
+            ar_jids,
+            resource_set,
+            job_security_time,
+            0,
+            scheduled_jobs,
+        )
 
         logger.debug("Try and schedule new Advance Reservations")
         for jid in ar_jids:
@@ -761,7 +770,15 @@ def call_batsim_sched_proxy(
 
 
 def call_internal_scheduler(
-    session, config, plt, scheduled_jobs, all_slot_sets, job_security_time, queues, now
+    session,
+    config,
+    plt,
+    scheduled_jobs,
+    scheduled_jobs_dict,
+    all_slot_sets,
+    job_security_time,
+    queues,
+    now,
 ):
     """
     Internal scheduling phase. The scheduler is not loaded from an external command,
@@ -782,6 +799,7 @@ def call_internal_scheduler(
         all_slot_sets,
         job_security_time,
         [q.name for q in queues],
+        scheduled_jobs_dict,
     )
 
 
@@ -898,7 +916,12 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     gantt_init_results = gantt_init_with_running_jobs(
         session, config, plt, initial_time_sec, job_security_time
     )
-    all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
+    (
+        all_slot_sets,
+        scheduled_jobs,
+        scheduled_jobs_dict,
+        besteffort_rid2jid,
+    ) = gantt_init_results
     resource_set = plt.resource_set(session=session, config=config)
 
     # Path for user of external schedulers
@@ -958,6 +981,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                 config,
                 plt,
                 scheduled_jobs,
+                scheduled_jobs_dict,
                 all_slot_sets,
                 job_security_time,
                 active_queues,
@@ -981,8 +1005,11 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                     queue.name,
                     all_slot_sets,
                     current_time_sec,
+                    scheduled_jobs_dict,
                 )
         else:
+            # TODO: Warnning  scheduled_jobs_dict not provided to
+            # call_external_scheduler and batsim_sched_proxy
             for queue in active_queues:
                 if mode == "external":  # pragma: no cover
                     call_external_scheduler(
