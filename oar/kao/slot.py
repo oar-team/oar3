@@ -276,7 +276,6 @@ class SlotSet:
 
         # Slots must be splitted according to Quotas' calendar if applied and the first has not
         # rules affected
-        # import pdb; pdb.set_trace()
         if Quotas.calendar and (self.slots[1].quotas_rules_id == -1):
             i = 1
             quotas_rules_id, remaining_duration = Quotas.calendar.rules_at(self.begin)
@@ -701,7 +700,6 @@ class SlotSet:
         It used in to insert previously scheduled jobs in slots or container jobs.
         """
         first_id = self.first().id
-        # import pdb; pdb.set_trace()
         for job in ordered_jobs:
             # Find first slot
             if (not ((job.start_time + job.walltime) < self.begin)) and (
@@ -721,7 +719,6 @@ class SlotSet:
         assert Quotas.calendar is not None
 
         while True:
-            # import pdb; pdb.set_trace()
             # slot is included in actual quotas_rules
             slot_duration = (slot.e - slot.b) + 1
             if slot_duration <= remaining_duration:
