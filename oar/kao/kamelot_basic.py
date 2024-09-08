@@ -13,7 +13,6 @@ logger = get_logger("oar.kamelot_basic")
 
 def schedule_cycle(session, config, plt, queues=["default"]):
     now = plt.get_time()
-
     logger.info("Begin scheduling....", now)
 
     #
@@ -62,7 +61,7 @@ def schedule_cycle(session, config, plt, queues=["default"]):
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
         #
-        scheduled_jobs = plt.get_scheduled_jobs(
+        scheduled_jobs, _ = plt.get_scheduled_jobs(
             session, resource_set, job_security_time, now
         )
 
@@ -101,7 +100,6 @@ def main(session=None, config=None):
 
     logger = get_logger("oar.kamelot_basic", forward_stderr=True)
     plt = Platform()
-
     schedule_cycle(session, config, plt)
     logger.info("That's all folks")
 

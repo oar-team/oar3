@@ -52,9 +52,10 @@ def schedule_fifo_cycle(session, config, plt, queue="default", hierarchy_use=Fal
         #
         # Remove resources used by running job
         #
-        for job in plt.get_scheduled_jobs(
+        scheduled_jobs, _ = plt.get_scheduled_jobs(
             session, resource_set, job_security_time, now
-        ):
+        )
+        for job in scheduled_jobs:
             if job.state == "Running":
                 res_itvs = res_itvs - job.res_itvs
 
