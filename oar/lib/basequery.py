@@ -170,6 +170,7 @@ class BaseQueryCollection(object):
                 Job.user,
                 Job.submission_time,
                 Job.state,
+                Job.exit_code,
             )
             query = db.query(Job).options(Load(Job).load_only(*columns))
 

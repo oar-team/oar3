@@ -27,6 +27,7 @@ from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_cpuset_name,
+    get_job_exit_status_code,
     get_job_resources_properties,
     get_jobs_state,
 )
@@ -648,6 +649,7 @@ def cli(
 
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
+            job.exit_status_code = str(get_job_exit_status_code(session, job.id, job=job))
 
         print_jobs(session, True, jobs, format, show_resources, full)
 
