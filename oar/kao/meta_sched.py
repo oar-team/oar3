@@ -1044,6 +1044,18 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                     current_time_sec,
                 )
 
+    extra_metasched_func(
+        session,
+        prev_queues,
+        plt,
+        scheduled_jobs,
+        all_slot_sets,
+        job_security_time,
+        None,
+        initial_time_sec,
+        extra_metasched_config,
+    )
+
     (
         jobs_to_launch_with_security_time,
         jobs_to_launch_with_security_time_lst,
