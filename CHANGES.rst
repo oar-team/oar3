@@ -5,6 +5,13 @@
 Changelog
 =========
 
+Version 3.0.0.dev15
+-------------------
+
+Unreleased
+
+- Fixed API launcher bug introduced into 3.0.0.dev13
+
 Version 3.0.0.dev14
 -------------------
 
