@@ -3,7 +3,9 @@ import sys
 
 from oar.lib.tools import get_date
 from oar.api.app import create_app
-from oar.lib.globals import init_oar, init_and_get_session, init_config, get_logger = True
+from oar.lib.globals import init_oar, init_and_get_session, init_config, get_logger
+
+r = True
 
 config = init_config()
 

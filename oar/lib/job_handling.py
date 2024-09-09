@@ -754,7 +754,25 @@ def get_current_jobs_dependencies(session, jobs):
 def get_current_not_waiting_jobs(
     session,
 ):
-    jobs = session.query(Job).filter(Job.state in ('Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing')).all()
+    jobs = (
+        session.query(Job)
+        .filter(
+            Job.state.in_(
+                (
+                    "Hold",
+                    "toLaunch",
+                    "toError",
+                    "toAckReservation",
+                    "Launching",
+                    "Running",
+                    "Suspended",
+                    "Resuming",
+                    "Finishing",
+                )
+            )
+        )
+        .all()
+    )
     jobs_by_state = {}
     for job in jobs:
         if job.state not in jobs_by_state:
@@ -1991,6 +2009,30 @@ def get_job_cpuset_name(session, job_id, job=None):
         user = job.user
 
     return user + "_" + str(job_id)
+
+
+def convert_status_code(code):
+    if code is None:
+        return None
+
+    exit_value = code >> 8
+    exit_kill = code & 127
+
+    if exit_value != 0:
+        return exit_value
+    else:
+        return exit_kill
+
+
+def get_job_exit_status_code(session, job_id, job=None):
+    """Get the converted exit code for the given job"""
+    if job is None:
+        code_tuple = session.query(Job.exit_code).filter(Job.id == job_id).one()
+        code = code_tuple[0]
+    else:
+        code = job.exit_code
+
+    return convert_status_code(code)
 
 
 def job_fragged(session, job_id):

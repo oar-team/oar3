@@ -13,6 +13,7 @@ from oar.cli.oarresume import oarresume
 from oar.lib.configuration import Configuration
 from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
+from oar.lib.job_handling import convert_status_code
 
 from ..auth import need_authentication
 from ..dependencies import get_config, get_db
@@ -52,6 +53,11 @@ def attach_nodes(job, jobs_resources):
             job["nodes"].append(node)
             network_addresses.append(node["network_address"])
 
+def attach_exit_status(job):
+    if 'exit_code' in job and job["exit_code"] is not None:
+      job["exit_status_code"] = convert_status_code(job["exit_code"])
+    else:
+      job["exit_status_code"] = None
 
 @router.get("")
 @router.get("/")
@@ -88,6 +94,7 @@ def index(
         job_events = queryCollection.get_jobs_events(page.items)
         pass
     for item in page:
+        attach_exit_status(item)
         if details:
             attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
@@ -108,6 +115,7 @@ def show(
     queryCollection = APIQueryCollection(db)
     job = db.get(Job, job_id)
     data = job.asdict()
+    attach_exit_status(data)
     if details and job:
         job = Job()
         job.id = job_id
