@@ -11,6 +11,7 @@ Version 3.0.0.dev15
 Unreleased
 
 - Fixed API launcher bug introduced into 3.0.0.dev13
+- Added 'exit_status_code' job information (converted as exit status or kill signal, like bash exit status)
 
 Version 3.0.0.dev14
 -------------------
