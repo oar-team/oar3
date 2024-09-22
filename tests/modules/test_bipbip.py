@@ -5,7 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
 from oar.lib.database import ephemeral_session
-from oar.lib.job_handling import insert_job
+from oar.lib.job_handling import get_job_cpuset_name, insert_job
 from oar.lib.models import (
     AssignedResource,
     Challenge,
@@ -129,6 +129,7 @@ def _test_bipbip_toLaunch(
             properties="",
             command="yop",
             state=state,
+            user="l_impertinent_survolte",
             stdout_file="poy",
             stderr_file="yop",
             types=types,
@@ -374,3 +375,15 @@ def test_bipbip_toLaunch_supersed(minimal_db_initialization, builtin_config):
     )
     print(bipbip.exit_code)
     assert bipbip.exit_code == 0
+
+
+def test_bipbip_toLaunch_leaflet(minimal_db_initialization, builtin_config):
+    job_id, bipbip = _test_bipbip_toLaunch(
+        minimal_db_initialization, builtin_config, types=["leaflet=12345"]
+    )
+    print(bipbip.exit_code)
+    assert bipbip.exit_code == 0
+    assert (
+        get_job_cpuset_name(minimal_db_initialization, job_id)
+        == "l_impertinent_survolte_12345"
+    )
