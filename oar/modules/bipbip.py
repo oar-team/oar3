@@ -82,11 +82,21 @@ class BipBip(object):
             "NODE_FILE_DB_FIELD_DISTINCT_VALUES"
         ]
 
+        # Get job's info
+        # TODO: job's info SHOULD be cached (Redis) at least or given as parameter (json / encoded) ?
+        job = get_job(session, job_id)
+        job_types = get_job_types(session, job.id)
+
+        job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
+            session, job_id
+        )
+        hosts = get_job_current_hostnames(session, job_id)
+
         cpuset_field = ""
         cpuset_name = ""
         if "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config:
             cpuset_field = config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
-            cpuset_name = get_job_cpuset_name(session, job_id)
+            cpuset_name = get_job_cpuset_name(session, job_id, job, job_types)
 
         cpuset_file = config["JOB_RESOURCE_MANAGER_FILE"]
         if not re.match(r"^\/", cpuset_file):
@@ -100,14 +110,6 @@ class BipBip(object):
         cpuset_path = config["CPUSET_PATH"]
         if cpuset_path and cpuset_name:
             cpuset_full_path = cpuset_path + "/" + cpuset_name
-
-        job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
-            session, job_id
-        )
-
-        hosts = get_job_current_hostnames(session, job_id)
-        job = get_job(session, job_id)
-        job_types = get_job_types(session, job.id)
 
         if "envelope" in job_types.keys():
             hosts = [config["ENVELOPE_HOSTNAME"]]
@@ -214,7 +216,9 @@ class BipBip(object):
         if (job.type == "INTERACTIVE") and (job.reservation == "None"):
             tools.notify_interactif_user(job, "Starting...")
 
-        if "supersed" in job_types.keys():
+        # Job w/ "leaflet" type does not need to trigger process migration because it will/should
+        # share the same cpuset "$user_$envelope_id"
+        if "supersed" in job_types.keys() and "leaflet" not in job_types.keys():
             migrate_jobid = job_types["supersed"]
             # if not cpuset_full_path:
             #     msg = f"Cannot launch job {job.id} with type supersed={migrate_jobid}: cpuset_full_path is empty"
@@ -248,7 +252,8 @@ class BipBip(object):
                 nodes_cpuset_fields = get_cpuset_values(
                     session, config, cpuset_field, job.assigned_moldable_job
                 )
-
+            # import pdb; pdb.set_trace()
+            self.logger.debug(f"xxxxxxxxxxxxx cpuset_name: {cpuset_name}")
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 ssh_public_key = format_ssh_pub_key(
                     ssh_public_key, cpuset_full_path, job.user, job.user

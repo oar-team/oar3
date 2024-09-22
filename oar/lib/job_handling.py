@@ -1999,7 +1999,7 @@ def suspend_job_action(session, config, job_id, moldable_id):
     session.commit()
 
 
-def get_job_cpuset_name(session, job_id, job=None):
+def get_job_cpuset_name(session, job_id, job=None, job_types=None):
     """Get the cpuset name for the given job"""
     user = None
     if job is None:
@@ -2008,7 +2008,14 @@ def get_job_cpuset_name(session, job_id, job=None):
     else:
         user = job.user
 
-    return user + "_" + str(job_id)
+    if job_types is None:
+        job_types = get_job_types(session, job_id)
+
+    cpuset_id = job_id
+    if "leaflet" in job_types.keys():
+        cpuset_id = job_types["leaflet"]
+
+    return f"{user}_{cpuset_id}"
 
 
 def convert_status_code(code):
