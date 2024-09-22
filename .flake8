@@ -10,7 +10,8 @@ exclude=
   docs,
   *egg,
   # The sources in this folder are evaluated at runtime
-  etc/oar/admission_rules.d
+  etc/oar/admission_rules.d/*
+  etc/oar/admission_rules.d/15_check_types.py
   # TODO: finish cleaning of oarsub and bipbip
   oar/modules/bipbip.py
   oar/cli/oarsub.py
