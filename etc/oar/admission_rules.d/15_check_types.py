@@ -12,9 +12,11 @@ if types:
     r11 = "^noop(?:=standby)?$"
     r12 = "^envelope$"
     r13 = "^leaflet=\\w+$"
+    r14 = "^supersed=\\w+$"
 
     all_re = re.compile(
-        "(%s|%s|%s|%s|%s|%s|%s|%s|%s|%s)" % (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13)
+        "(%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s)"
+        % (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14)
     )
 
     for t in types:
