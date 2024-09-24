@@ -131,7 +131,7 @@ def minimal_db_initialization(request, setup_config):
     with ephemeral_session(scoped, engine, bind=engine) as session:
         # add some resources
         for i in range(5):
-            Resource.create(session, network_address="localhost")
+            Resource.create(session, network_address=f"localhost{i}")
 
         Queue.create(session, name="default")
         yield session
@@ -315,6 +315,28 @@ def test_oarsub_sleep_not_enough_resources_1(
         -5,
         "There are not enough resources for your request",
     )
+
+
+def test_oarsub_sleep_property_sql(
+    monkeypatch, minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        # ["-q default", "-l resource_id=1", "-p network_address='localhost2'", '"sleep 1"'], #OK
+        [
+            "-q default",
+            "-l resource_id=1",
+            "-p network_address in ('localhost2', 'localhost1')",
+            '"sleep 1"',
+        ],  # OK
+        obj=(minimal_db_initialization, config),
+    )
+
+    print(result.output)
+    assert result.exit_code == 0
 
 
 def test_oarsub_sleep_property_error(
