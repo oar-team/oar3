@@ -111,9 +111,6 @@ class BipBip(object):
         if cpuset_path and cpuset_name:
             cpuset_full_path = cpuset_path + "/" + cpuset_name
 
-        if "envelope" in job_types.keys():
-            hosts = [config["ENVELOPE_HOSTNAME"]]
-
         # Check if we must treate the end of a oarexec
         if self.oarexec_reattach_exit_value and job.state in [
             "Launching",
@@ -239,7 +236,6 @@ class BipBip(object):
         if (
             ("deploy" not in job_types.keys())
             and ("cosystem" not in job_types.keys())
-            and ("envelope" not in job_types.keys())
             and (len(hosts) > 0)
         ):
             bad = []
@@ -252,8 +248,8 @@ class BipBip(object):
                 nodes_cpuset_fields = get_cpuset_values(
                     session, config, cpuset_field, job.assigned_moldable_job
                 )
-            # import pdb; pdb.set_trace()
-            self.logger.debug(f"xxxxxxxxxxxxx cpuset_name: {cpuset_name}")
+
+            self.logger.debug(f"cpuset_name: {cpuset_name}")
             if nodes_cpuset_fields and len(nodes_cpuset_fields) > 0:
                 ssh_public_key = format_ssh_pub_key(
                     ssh_public_key, cpuset_full_path, job.user, job.user
@@ -467,8 +463,6 @@ class BipBip(object):
             head_node = config["COSYSTEM_HOSTNAME"]
         elif "deploy" in job_types.keys():
             head_node = config["DEPLOY_HOSTNAME"]
-        elif "envelope" in job_types.keys():
-            head_node = config["ENVELOPE_HOSTNAME"]
 
         almighty_hostname = config["SERVER_HOSTNAME"]
         if re.match(r"\s*localhost.*$", almighty_hostname) or re.match(
@@ -542,7 +536,6 @@ class BipBip(object):
             cpuset_full_path
             and ("cosystem" not in job_types.keys())
             and ("deploy" not in job_types.keys())
-            and ("envelope" not in job_types.keys())
             and (len(hosts) > 0)
         ):
             # for oarsh_shell connection

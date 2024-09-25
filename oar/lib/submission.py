@@ -293,7 +293,6 @@ def apply_admission_rules(
     if ("ADMISSION_RULES_IN_FILES" in config) and (
         config["ADMISSION_RULES_IN_FILES"] == "yes"
     ):
-
         if rule:
             regex = rule
         else:
@@ -881,17 +880,9 @@ def add_micheline_subjob(
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
 
-    if "envelope" in job_parameters.types:
-        error = (0,)
-        resource_desc, walltime = resource_request[0]
-        if not walltime:
-            walltime = str(config["DEFAULT_JOB_WALLTIME"])
-        estimated_nb_resources = [(0, walltime)]
-    else:
-        error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-            session, config, resource_request, properties
-        )
-
+    error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
+        session, config, resource_request, properties
+    )
     if error[0] != 0:
         return (error, -1)
 

@@ -78,7 +78,7 @@ class NodeChangeState(object):
                 (event.type == "SWITCH_INTO_TERMINATE_STATE")
                 or (event.type == "SWITCH_INTO_ERROR_STATE")
             ) and (job.exit_code and (job.exit_code >> 8) == 99):
-                job_types = get_job_types(session, job_id) #TOREMOVE
+                job_types = get_job_types(session, job_id)  # TOREMOVE
                 if "idempotent" in job_types.keys():
                     if (
                         job.reservation == "None"
@@ -199,17 +199,15 @@ class NodeChangeState(object):
                         else:
                             # If we exterminate a job and the cpuset feature is configured
                             # then the CPUSET clean will tell us which nodes are dead
-                            if ("JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config) and (
-                                    event.type == "EXTERMINATE_JOB"
-                            ):
+                            if (
+                                "JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD" in config
+                            ) and (event.type == "EXTERMINATE_JOB"):
                                 hosts = []
                         add_new_event_with_host(
                             session, "LOG_SUSPECTED", 0, event.description, hosts
                         )
-                    else:
-                        # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
-                        if "envelope" in job_types.keys():
-                            logger.warning(f"Job {job_id} is an envelope, event {event.type} is not handled")
+                    # else:
+                    # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
 
                 if len(hosts) > 0:
                     already_treated_hosts = {}
@@ -270,11 +268,9 @@ class NodeChangeState(object):
                 "CANNOT_CREATE_TMP_DIRECTORY",
                 "LAUNCHING_OAREXEC_TIMEOUT",
             ]
-            # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
-            if "envelope" in job_types.keys():
-                logger.warning(f"Job {job_id} is an envelope, event {event.type} is not handled")
 
-            if event.type in type_to_check and not ("envelope" in job_types.keys()):
+            # TODO recheck w/ OAR2 version to support other job_types (cosystem, noop, deploy)
+            if event.type in type_to_check:
                 if (
                     job.reservation == "None"
                     and job.type == "PASSIVE"

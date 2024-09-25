@@ -9,7 +9,6 @@ from oar.kao.scheduling import (
 from oar.kao.slot import Slot, SlotSet
 from oar.lib.globals import init_config
 from oar.lib.job_handling import JobPseudo
-from oar.lib.resource import MAX_NB_RESOURCES
 
 config = init_config()
 
@@ -827,7 +826,7 @@ def test_schedule_error_2():
 
 
 def test_schedule_envelope():
-    v = [(0, 100, ProcSet(*[(1, 32)]))]
+    v = [(0, 59, ProcSet(*[(2, 32)])), (60, 100, ProcSet(*[(1, 32)]))]
 
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
@@ -842,7 +841,7 @@ def test_schedule_envelope():
         types={"envelope"},
         deps=[],
         key_cache={},
-        mld_res_rqts=[(1, 60, [([("resource_id", 0)], ProcSet(*res))])],
+        mld_res_rqts=[(1, 60, [([("resource_id", 1)], ProcSet(*res))])],
         ts=False,
         ph=0,
     )
@@ -850,12 +849,16 @@ def test_schedule_envelope():
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
     # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
-    assert j1.res_set == ProcSet(MAX_NB_RESOURCES - 1)
+    assert j1.res_set == ProcSet((1, 1))
     assert compare_slots_val_ref(ss, v) is True
 
 
 def test_schedule_envelope_leaflet_1():
-    v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
+    v = [
+        (0, 19, ProcSet(*[(2, 8), (17, 32)])),
+        (20, 24, ProcSet(*[(2, 32)])),
+        (25, 100, ProcSet(*[(1, 32)])),
+    ]
 
     res = ProcSet(*[(1, 32)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
@@ -870,7 +873,7 @@ def test_schedule_envelope_leaflet_1():
         types={"envelope"},
         deps=[],
         key_cache={},
-        mld_res_rqts=[(1, 25, [([("resource_id", 0)], ProcSet(*res))])],
+        mld_res_rqts=[(1, 25, [([("resource_id", 1)], ProcSet(*res))])],
         ts=False,
         ph=0,
     )
@@ -887,9 +890,8 @@ def test_schedule_envelope_leaflet_1():
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 5)
 
-    # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
-    assert j1.res_set == ProcSet(MAX_NB_RESOURCES - 1)
-    assert j2.res_set == ProcSet((1, 8))
+    assert j1.res_set == ProcSet(1)
+    assert j2.res_set == ProcSet((9, 16))
     assert compare_slots_val_ref(ss, v) is True
 
 
@@ -936,4 +938,63 @@ def test_schedule_supersed_1():
     # import pdb; pdb.set_trace()
     assert j2.start_time == 1
     assert j2.res_set == ProcSet((1, 16))
+    # assert compare_slots_val_ref(ss, v) is True
+
+
+def test_schedule_leaflet_supersed():
+    # v = [(0, 19, ProcSet(*[(9, 32)])), (20, 100, ProcSet(*[(1, 32)]))]
+
+    res = ProcSet(*[(1, 32)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {
+        "resource_id": [ProcSet(x) for x in range(1, 32 + 1)],
+        "node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]],
+    }
+
+    j1 = JobPseudo(
+        id=1,
+        start_time=1,
+        walltime=1000,
+        res_set=ProcSet(*[(0, 0)]),
+        types={"envelope"},
+        deps=[],
+        key_cache={},
+        ts=False,
+        ph=0,
+    )
+
+    j2 = JobPseudo(
+        id=2,
+        start_time=1,
+        walltime=10,
+        res_set=ProcSet(*[(4, 20)]),
+        types={"leaflet": "1"},
+        ts=False,
+        ph=0,
+    )
+
+    ss = SlotSet(Slot(1, 0, 0, ProcSet(*[(1, 32)]), 1, 100))
+    all_ss = {"default": ss}
+
+    set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 10)
+
+    j3 = JobPseudo(
+        id=3,
+        types={"leaflet": "1", "supersed": "2"},
+        # types={ "supersed": "2"},
+        deps=[],
+        key_cache={},
+        mld_res_rqts=[(1, 20, [([("node", 4)], ProcSet(*res))])],
+        ts=False,
+        ph=0,
+        supersed=j2,
+    )
+    schedule_id_jobs_ct(all_ss, {3: j3}, hy, [3], 5)
+
+    # MAX_NB_RESOURCES-1 correspond to null resource (resource_id = 0 in database)
+    print(f"j3.start_time: {j3.start_time} j3.res_set: {j3.res_set}")
+    # import pdb; pdb.set_trace()
+    assert j3.start_time == 1
+    assert j3.res_set == ProcSet((1, 32))
     # assert compare_slots_val_ref(ss, v) is True
