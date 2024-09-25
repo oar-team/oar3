@@ -103,7 +103,7 @@ def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config)
     insert_job(
         minimal_db_initialization,
         types=["envelope"],
-        res=[(60, [("resource_id=0", "")])],
+        res=[(60, [("resource_id=1", "")])],
         properties="",
     )
 
@@ -116,7 +116,7 @@ def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config)
     assert job.state == "toLaunch"
 
     res = minimal_db_initialization.query(AssignedResource).one()
-    assert res.resource_id == 0
+    assert res.resource_id == 1
 
 
 def test_db_kao_envelope_2(monkeypatch, minimal_db_initialization, setup_config):
@@ -125,7 +125,7 @@ def test_db_kao_envelope_2(monkeypatch, minimal_db_initialization, setup_config)
     j1_id = insert_job(
         minimal_db_initialization,
         types=["envelope"],
-        res=[(60, [("resource_id=0", "")])],
+        res=[(60, [("resource_id=1", "")])],
         properties="",
     )
 
@@ -147,3 +147,11 @@ def test_db_kao_envelope_2(monkeypatch, minimal_db_initialization, setup_config)
     # It seems better envelope must be running be launch leaflet job.
     # This situation could be easily avoid by checking before db insert
     assert jobs[j2_id].state == "toLaunch"
+
+    res = minimal_db_initialization.query(AssignedResource).all()
+    for r in res:
+        print(r)
+
+    res = minimal_db_initialization.query(Resource).all()
+    for r in res:
+        print(r)

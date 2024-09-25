@@ -77,8 +77,6 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             host_to_connect_via_ssh = config["COSYSTEM_HOSTNAME"]
         elif "deploy" in types:
             host_to_connect_via_ssh = config["DEPLOY_HOSTNAME"]
-        elif "envelope" in types:
-            host_to_connect_via_ssh = config["ENVELOPE_HOSTNAME"]
 
         # cpuset part
         cpuset_field = config["JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD"]
@@ -89,7 +87,6 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
             and cpuset_path
             and ("cosystem" not in types)
             and ("deploy" not in types)
-            and ("envelope" not in types)
             and hosts
         ):
             os.environ["OAR_CPUSET"] = (
