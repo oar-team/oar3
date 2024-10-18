@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 from io import open
 from typing import Any
@@ -125,6 +126,8 @@ class Configuration(dict):
         "ENERGY_SAVING_NODE_MANAGER_WAKEUP_TIMEOUT": 900,
         "ENERGY_MAX_CYCLES_UNTIL_REFRESH": 5000,
         "ENERGY_SAVING_NODES_KEEPALIVE": "type='default':0",
+        # User level mode control
+        "USER_MODE": "NO",
     }
 
     def __init__(self, defaults=None):
@@ -133,7 +136,10 @@ class Configuration(dict):
         dict.__init__(self, defaults)
 
     def load_default_config(self, silent=True):
-        self.load_file(self.DEFAULT_CONFIG_FILE, silent=silent)
+        config_file = self.DEFAULT_CONFIG_FILE
+        if "OAR_CONFIG_FILE" in os.environ:
+            config_file = os.environ["OAR_CONFIG_FILE"]
+        self.load_file(config_file, silent=silent)
 
     def load_file(
         self,
@@ -208,7 +214,6 @@ class Configuration(dict):
             raise InvalidConfiguration("Cannot find %s" % keys)
 
     def setdefault_config(self, default_config: dict[str, Any]):
-        # import pdb; pdb.set_trace()
         for k, v in default_config.items():
             self.setdefault(k, v)
 
