@@ -124,7 +124,14 @@
               pkgs.mkShell {
                   packages = with pkgs; [ pre-commit ] ++ pythonEnv;
               };
-
+            oarShell = let
+                pythonEnv = with pkgs.python3Packages; [
+                    self.defaultPackage.${system}
+                ];
+            in
+              pkgs.mkShell {
+                  packages =  with pkgs; [ litecli ] ++ pythonEnv;
+              };
         };
 
     });
