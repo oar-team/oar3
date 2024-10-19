@@ -48,6 +48,7 @@
                 python-jose
                 passlib
                 bcrypt
+                tomli
             ];
         };
         packageName = "oar";
@@ -130,6 +131,7 @@
                     sphinx
                     sphinx-rtd-theme
                     flake8
+                    tomli
                 ];
             in
               pkgs.mkShell {
