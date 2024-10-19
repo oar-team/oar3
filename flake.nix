@@ -48,6 +48,7 @@
                 python-jose
                 passlib
                 bcrypt
+                tomli
             ];
         };
         packageName = "oar";
@@ -119,6 +120,7 @@
                     simpy
                     redis
                     clustershell
+                    tomli
                 ];
             in
               pkgs.mkShell {
