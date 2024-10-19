@@ -861,10 +861,6 @@ class BipBip(object):
             # "cpuset_full_path": oarexec_cpuset_path,
         }
 
-        ###########cTODO
-        cmd = "true oarexec-usermode"
-        self.logger.debug(cmd)
-
         def data_to_oar_env(data: dict[str, any]) -> dict[str, str]:
             """
             Simply transform the data supposed to be transferred to oarexec into a more OARish format for the server prologue environment.
@@ -906,9 +902,11 @@ class BipBip(object):
         with open(filename_oarexec_job_data_filename, "wb") as f:
             pickle.dump(data_to_transfer, f)
 
-        tools.Popen(
-            ["oar/tools/oarexec-usermode.py", filename_oarexec_job_data_filename]
+        oarexec_usermode_cmd = config.get(
+            "OAREXEC_USERMODE_COMMAND", "oarexec-usermode"
         )
+
+        tools.Popen([oarexec_usermode_cmd, filename_oarexec_job_data_filename])
 
         set_job_state(session, config, job_id, "Running")
 
