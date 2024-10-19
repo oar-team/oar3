@@ -5,6 +5,8 @@ import signal
 import sys
 from datetime import datetime
 
+from ClusterShell.NodeSet import NodeSet
+
 import oar.lib.tools as tools
 
 oarexec_pid_file_name = "pid_of_oarexec_for_jobId_"
@@ -77,6 +79,8 @@ def main():
     resources = job_data["resources"]
     # create node set file
 
+    nodeset = NodeSet()
+    nb_resource = 0
     with open(f"{tmp_directory}/{job_id}", "w") as node_file:
         tmp_res = []
         tmp_already_there = {}
@@ -92,44 +96,60 @@ def main():
                     tmp_already_there[distinct_value] = 1
 
         for res in sorted(tmp_res):
+            nodeset.add(res)
             node_file.write(res + "\n")
+            nb_resource += 1
 
     # create resource set file
     # TODO
     # with  open(f"{tmp_directory}/{job_id}_resources"", "w") as resource_file:
+    name = ""
+    if job_data["name"]:
+        name = job_data["name"]
 
-    # write resources file
+    project = ""
+    if job_data["project"]:
+        project = job_data["project"]
 
+    # TODO to complete and to check
     env = os.environ.copy()
     env["OAR_JOB_ID"] = str(job_id)
-    # env["OAR_JOB_WALLTIME_SECONDS"] = job_data[""] 3600
-    # env["OAR_ARRAY_INDEX"] = job_data[""] 1
+    env["OAR_NODESET"] = str(nodeset)
+    env["OAR_JOB_WALLTIME_SECONDS"] = str(job_data["walltime_seconds"])
+    env["OAR_ARRAY_INDEX"] = str(job_data["array_index"])
     # env["OAR_O_WORKDIR"] = job_data[""] /home/orichard
-    # env["OAR_WORKING_DIRECTORY"] = job_data[""] /home/orichard
-    # env["OAR_JOBID"] = job_data[""] 2363862
-    # env["OAR_STDERR"] = job_data[""] <interactive shell>
-    # env["OAR_NODE_FILE"] = job_data[""] /var/lib/oar/2363862
+    # env["OAR_WORKING_DIRECTORY"] = job_data[""] /home/
+    env["OAR_JOBID"] = str(job_id)
+    env["OAR_NODE_FILE"] = f"{tmp_directory}/{job_id}"
     # env["OAR_RESOURCE_FILE"] = job_data[""] /var/lib/oar/2363862
-    # env["OAR_STDOUT"] = job_data[""] <interactive shell>
-    # env["OAR_ARRAY_ID"] = job_data[""] 2363862
     # env["OAR_RESOURCE_PROPERTIES_FILE"] = job_data[""] /var/lib/oar/2363862_resources
     # env["OAR_KEY"] = job_data[""] 1
-    # env["OAR_JOB_ID"] = job_data[""] 2363862
     # env["OAR_FILE_NODES"] = job_data[""] /var/lib/oar/2363862
-    # env["OAR_JOB_NAME"] = job_data[""]
-    # env["OAR_CPUSET"] = job_data[""] /oar/orichard_2363862
+    env["OAR_JOB_NAME"] = name
     # env["OAR_JOB_WALLTIME"] = job_data[""] 1:0:0
-    # env["OAR_USER"] = job_data[""] orichard
-    # env["OAR_PROJECT_NAME"] = job_data[""] datamove
-    # env["OAR_ARRAYID"] = job_data[""] 2363862
-    # env["OAR_NODEFILE"] = job_data[""] /var/lib/oar/2363862
-    # env["OAR_ARRAYINDEX"] = job_data[""] 1
+    env["OAR_USER"] = job_data["job_user"]
+    env["OAR_PROJECT_NAME"] = project
+    env["OAR_ARRAYID"] = str(job_data["array_id"])
+    env["OAR_ARRAY_ID"] = str(job_data["array_id"])
+    env["OAR_NODEFILE"] = f"{tmp_directory}/{job_id}"
+    env["OAR_ARRAYINDEX"] = str(job_data["array_index"])
     # env["OAR_WORKDIR"] = job_data[""] /home/orichard
+
+    env["OAR_NUMBER_RESOURCE"] = str(nb_resource)
+    nb_node = len(nodeset)
+    env["OAR_NUMBER_NODE"] = str(nb_node)
+    env["OAR_RATIO_RESOURCE_NODE"] = str(int(nb_resource / nb_node))
 
     if job_data["mode"] == "PASSIVE":
         command = job_data["command"]
-        stdout_fd = open(f"{launching_directory}/{job_data['stdout_file']}", "w")
-        stderr_fd = open(f"{launching_directory}/{job_data['stderr_file']}", "w")
+        stdout_filename = f"{launching_directory}/{job_data['stdout_file']}"
+        stderr_filename = f"{launching_directory}/{job_data['stderr_file']}"
+
+        stdout_fd = open(stdout_filename, "w")
+        stderr_fd = open(stderr_filename, "w")
+
+        env["OAR_STDOUT"] = stdout_filename
+        env["OAR_STDERR"] = stderr_filename
 
         print(f"[{now()}][oarexec] launch {command}")
 
