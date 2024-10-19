@@ -49,7 +49,8 @@ oar-leon = 'oar.modules.leon:main'
 oar-node-change-state = 'oar.modules.node_change_state:main'
 oar-bipbip = 'oar.modules.bipbip:main'
 oar-proxy-cleaner = 'oar.cli.oarproxycleaner:cli'
-oar-usermode = 'oar.cli.oar-usermode:main'
+oar-usermode = 'oar.cli.oar_usermode:cli'
+oarexec-usermode = 'oar.tools.oarexec_usermode:main'
 
 [tool.poetry.dependencies]
 python = ">=3.10, <4"

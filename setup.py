@@ -44,7 +44,15 @@ setup(
     url="https://github.com/oar-team/oar3",
     packages=find_packages(exclude=["tests"]),
     package_dir={"oar": "oar"},
-    package_data={"oar": ["tools/*.pl", "tools/*.pm", "tools/*.sh", "tools/oarexec"]},
+    package_data={
+        "oar": [
+            "tools/*.pl",
+            "tools/*.pm",
+            "tools/*.sh",
+            "tools/oarexec",
+            "tools/oar_usermode.conf",
+        ]
+    },
     install_requires=get_requirements("base"),
     extras_require=extras_require,
     include_package_data=True,
@@ -97,5 +105,7 @@ setup(
     oar-node-change-state=oar.modules.node_change_state:main
     oar-bipbip=oar.modules.bipbip:main
     oar-proxy-cleaner=oar.cli.oarproxycleaner:cli
+    oar-usermode=oar.cli.oar_usermode:cli
+    oarexec-usermode=oar.tools.oarexec_usermode:main
     """,
 )
