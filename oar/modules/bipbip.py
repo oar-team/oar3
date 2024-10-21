@@ -897,7 +897,9 @@ class BipBip(object):
         ##########################################################################
         self.logger.debug(f"Run OAREXEC_USERMODE {job_id}")
 
-        filename_oarexec_job_data_filename = f"oarexec_job_data_{job_id}.pkl"
+        filename_oarexec_job_data_filename = (
+            f"{config['OAREXEC_JOB_DATA_DIRECTORY']}/exec_job_data_{job_id}.pkl"
+        )
 
         with open(filename_oarexec_job_data_filename, "wb") as f:
             pickle.dump(data_to_transfer, f)
