@@ -176,7 +176,7 @@ class BipbipCommander(object):
                 len(self.bipbip_leon_commands_to_run) > 0
                 and len(self.bipbip_leon_executors.keys()) <= self.Max_bipbip_processes
             ):
-                self.logger.debug("some job to run!")
+                self.logger.debug("Some BipBip or Leon executor to run !")
                 command = self.bipbip_leon_commands_to_run.pop(0)
                 job_id = command["job_id"]
                 flag_exec = True
@@ -188,7 +188,7 @@ class BipbipCommander(object):
                         flag_exec = False
                         # requeue command
                         self.logger.debug(
-                            "A process is already running for the job "
+                            "A BipBip or Leon executor is already running for the job "
                             + str(job_id)
                             + ". We requeue: "
                             + str(command)
@@ -197,7 +197,7 @@ class BipbipCommander(object):
 
                 if flag_exec:
                     # exec
-                    self.logger.info("starting a new bl executor")
+                    self.logger.info("Starting a new BipBip or Leon executor")
                     executor = tools.Process(
                         target=bipbip_leon_executor,
                         args=(
@@ -227,7 +227,7 @@ class BipbipCommander(object):
             if self.bipbip_leon_commands_to_run == []:
                 self.set_notification_timeout(-1)
             else:
-                self.set_notification_timeout(500)
+                self.set_notification_timeout(100)
 
             if not loop:
                 break
