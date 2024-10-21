@@ -65,7 +65,7 @@ greta_command = os.path.join(binpath, "oar-greta")
 # dramatically (because it blocks only when nothing else is to be done).
 # Nevertheless it is closely related to the precision at which the
 # internal counters are checked
-read_commands_timeout = 5 * 1000  # in ms
+read_commands_timeout = 10 * 1000  # in ms
 
 # This parameter sets the number of pending commands read from
 # appendice before proceeding with internal work
@@ -377,13 +377,12 @@ class Almighty(object):
                 self.greta = start_greta()
             # QGET
             elif self.state == "Qget":
-                # if len(self.command_queue) > 0:
-                # self.read_commands(0)
-                #    pass
-                # else:
-                self.read_commands(read_commands_timeout)
+                # Execute commands already in queue if any before read news ones
+                if self.command_queue == []:
+                    self.read_commands(read_commands_timeout)
 
-                logger.debug("Command queue : " + str(self.command_queue))
+                logger.debug("Command queue: " + str(self.command_queue))
+
                 command = self.command_queue.pop(0)
                 # Remove useless 'Time' command to enhance reactivity
                 if command == "Time" and self.command_queue != []:
@@ -420,43 +419,48 @@ class Almighty(object):
                     self.lastscheduler + self.scheduler_min_time_between_2_calls
                 ):
                     self.scheduler_wanted = 0
+                    # We put  nodeChangeState() / self.state = "Change node state" after scheduler
+                    # to enhance reactivity, "Change node state" is done after schduling rounc
                     # First, check pending events
-                    check_result = nodeChangeState()
-                    if check_result == 2:
-                        self.state = "Leon"
-                        self.add_command("Term")
-                    elif check_result == 1:
+                    #
+                    # check_result = nodeChangeState()
+                    # if check_result == 2:
+                    #     self.state = "Leon"
+                    #     self.add_command("Term")
+                    # elif check_result == 1:
+                    #     self.state = "Scheduler"
+                    # elif check_result == 0:
+                    # Launch the scheduler
+                    # We check Greta just before starting the scheduler
+                    # because if the pipe is not read, it may freeze oar
+                    if (energy_pid > 0) and not check_greta(self.greta, logger):
+                        logger.warning(
+                            "Energy saving module (greta) died. Restarting it."
+                        )
+                        time.sleep(5)
+                        start_greta()
+
+                    scheduler_result = self.meta_scheduler()
+                    self.lastscheduler = tools.get_time()
+                    if scheduler_result == 0:
+                        # Change node state moved here after Scheduling (TODO: to remove if extensive test)
+                        # self.state = "Time update"
+                        self.state = "Change node state"
+                    elif scheduler_result == 1:
                         self.state = "Scheduler"
-                    elif check_result == 0:
-                        # Launch the scheduler
-                        # We check Greta just before starting the scheduler
-                        # because if the pipe is not read, it may freeze oar
-                        if (energy_pid > 0) and not check_greta(self.greta, logger):
-                            logger.warning(
-                                "Energy saving module (greta) died. Restarting it."
-                            )
-                            time.sleep(5)
-                            start_greta()
-
-                        scheduler_result = self.meta_scheduler()
-                        self.lastscheduler = tools.get_time()
-                        if scheduler_result == 0:
-                            self.state = "Time update"
-                        elif scheduler_result == 1:
-                            self.state = "Scheduler"
-                        elif scheduler_result == 2:
-                            self.state = "Leon"
-                        else:
-                            logger.error(
-                                "Scheduler returned an unknown value : scheduler_result"
-                            )
-                            finishTag = 1
-
+                    elif scheduler_result == 2:
+                        self.state = "Leon"
                     else:
                         logger.error(
-                            "nodeChangeState_command returned an unknown value."
+                            "Scheduler returned an unknown value : scheduler_result"
                         )
                         finishTag = 1
+
+                    # else:
+                    #     logger.error(
+                    #         "nodeChangeState_command returned an unknown value."
+                    #     )
+                    #     finishTag = 1
                 else:
                     self.scheduler_wanted = 1
                     self.state = "Time update"
