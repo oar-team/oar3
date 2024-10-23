@@ -141,7 +141,6 @@ def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: n
 def notify_almighty(
     cmd: str, job_id: Optional[int] = None, args: Optional[List[str]] = None
 ) -> bool:  # pragma: no cover
-
     if not almighty_socket:
         create_almighty_socket(
             config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
@@ -203,17 +202,12 @@ def notify_interactif_user(job, message):  # pragma: no cover
 def notify_tcp_socket(addr, port, message):  # pragma: no cover
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    tools_logger.debug("notify_tcp_socket:" + addr + ":" + port + ", msg:" + message)
+    tools_logger.debug(f"notify_tcp_socket: {addr}:{port}, msg: {message}")
     try:
         tcp_socket.connect((addr, int(port)))
     except socket.error as exc:
         tools_logger.error(
-            "notify_tcp_socket: Connection to "
-            + addr
-            + ":"
-            + port
-            + " raised exception socket.error: "
-            + str(exc)
+            f"notify_tcp_socket: Connection to {addr}:{port} raised exception socket.error: {exc}"
         )
         return 0
     message += "\n"
@@ -908,7 +902,7 @@ def resources2dump_perl(resources):
 
 
 def get_oarexecuser_script_for_oarsub(
-        config, job, job_types, job_walltime, node_file, shell, resource_file
+    config, job, job_types, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
     """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
@@ -921,7 +915,7 @@ def get_oarexecuser_script_for_oarsub(
 
     str_job_types = ""
     for name_type, value_type in job_types.items():
-        if type(value_type) == bool:
+        if isinstance(value_type, bool):
             value_type = str(int(value_type))
         str_job_types += f"{name_type}={value_type},"
     str_job_types = str_job_types[:-1]

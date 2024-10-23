@@ -7,6 +7,7 @@ The job execution is handled by the program OAREXEC executed by bipbip.
 If a prologue script is defined, bipbib executes it before.
 """
 import os
+import pickle
 import re
 import socket
 import sys
@@ -629,6 +630,336 @@ class BipBip(object):
             )
         return
 
+    def run_usermode(self, session, config):
+        job_id = self.job_id
+        if not job_id:
+            self.exit_code = 1
+            return
+
+        node_file_db_field = config["NODE_FILE_DB_FIELD"]
+        node_file_db_field_distinct_values = config[
+            "NODE_FILE_DB_FIELD_DISTINCT_VALUES"
+        ]
+
+        # Get job's info
+        # TODO: job's info SHOULD be cached (Redis) at least or given as parameter (json / encoded) ?
+        job = get_job(session, job_id)
+        job_types = get_job_types(session, job.id)
+
+        job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
+            session, job_id
+        )
+        hosts = get_job_current_hostnames(session, job_id)
+
+        # Check if we must treate the end of a oarexec
+        if self.oarexec_reattach_exit_value and job.state in [
+            "Launching",
+            "Running",
+            "Suspended",
+            "Resuming",
+        ]:
+            self.logger.debug(
+                "["
+                + str(job.id)
+                + "] OAREXEC end: "
+                + self.oarexec_reattach_exit_value
+                + " "
+                + self.oarexec_reattach_script_exit_value
+            )
+
+            try:
+                self.oarexec_reattach_exit_vint = int(self.oarexec_reattach_exit_value)
+
+            except ValueError:
+                self.logger.error(
+                    "["
+                    + str(job.id)
+                    + "] Bad argument for bipbip : "
+                    + self.oarexec_reattach_exit_value
+                )
+                self.exit_code = 2
+                return
+
+            if self.oarexec_challenge == job_challenge:
+                check_end_of_job(
+                    session,
+                    config,
+                    job_id,
+                    self.oarexec_reattach_script_exit_value,
+                    self.oarexec_reattach_exit_vint,
+                    hosts,
+                    job.user,
+                    job.launching_directory,
+                    self.server_epilogue,
+                )
+                return
+            else:
+                msg = (
+                    "Bad challenge from oarexec, perhaps a pirate attack??? ("
+                    + self.oarexec_challenge
+                    + "/"
+                    + job_challenge
+                    + ")."
+                )
+                self.logger.error("[" + str(job.id) + "] " + msg)
+                add_new_event(session, "BIPBIP_CHALLENGE", job_id, msg)
+                self.exit_code = 2
+                return
+
+        if job.state == "toLaunch":
+            # Tell that the launching process is initiated
+            set_job_state(session, config, job_id, "Launching")
+            job.state = "Launching"
+        else:
+            self.logger.warning(
+                "[" + str(job.id) + "] Job already treated or deleted in the meantime"
+            )
+            self.exit_code = 1
+            return
+
+        resources = get_current_assigned_job_resources(
+            session, job.assigned_moldable_job
+        )
+
+        # resources_data_str = ", 'resources' => " + resources2dump_perl(resources) + "}"
+
+        mold_job_description = get_current_moldable_job(
+            session, job.assigned_moldable_job
+        )
+
+        if "noop" in job_types:
+            set_job_state(session, config, job_id, "Running")
+            self.logger.debug(
+                "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
+            )
+            self.call_server_prologue(session, job, config)
+            return
+
+        # HERE we must launch oarexec on the first node
+        self.logger.debug(
+            "["
+            + str(job.id)
+            + "] User: "
+            + job.user
+            + "; Command: "
+            + job.command
+            + " ==> hosts : "
+            + str(hosts)
+        )
+
+        if job_types:
+            self.logger.debug(f"job_types: {job_types})")
+
+        if (job.type == "INTERACTIVE") and (job.reservation == "None"):
+            tools.notify_interactif_user(job, "Starting...")
+
+        # Job w/ "leaflet" type does not need to trigger process migration because it will/should
+        # share the same cpuset "$user_$envelope_id"
+        if "supersed" in job_types.keys() and "leaflet" not in job_types.keys():
+            migrate_jobid = job_types["supersed"]
+            # if not cpuset_full_path:
+            #     msg = f"Cannot launch job {job.id} with type supersed={migrate_jobid}: cpuset_full_path is empty"
+            #     self.logger.error(msg)
+            #     raise Exception(msg)
+            # else:
+            #     migrate_cpusetpath = cpuset__path.replace(f"_{job.id}", f"_{migrate_jobid}")
+            migrate_cpusetpath = cpuset_name.replace(f"_{job.id}", f"_{migrate_jobid}")
+            self.logger.debug(
+                f"migrate_cpusetpath: {migrate_cpusetpath}, cpuset_name: {cpuset_name}"
+            )
+            migrate_oarexec_pid_file = get_oar_pid_file_name(migrate_jobid)
+
+        else:
+            migrate_cpusetpath = "undef"
+            migrate_oarexec_pid_file = "undef"
+        # Execute JOB_RESOURCE_MANAGER on allocated nodes
+        if (
+            ("deploy" not in job_types.keys())
+            and ("cosystem" not in job_types.keys())
+            and (len(hosts) > 0)
+        ):
+            bad = []
+            event_type = ""
+            ####################################
+            # NO CPUSET PART w/ USER MODE #
+            ###################################
+
+            # NO Check nodes
+
+        self.call_server_prologue(session, job, config)
+
+        #
+        # CALL OAREXEC ON THE FIRST NODE
+        #
+        pro_epi_timeout = config["PROLOGUE_EPILOGUE_TIMEOUT"]
+        prologue_exec_file = config["PROLOGUE_EXEC_FILE"]
+        epilogue_exec_file = config["EPILOGUE_EXEC_FILE"]
+
+        deploy_cosystem_job_exec_system = config["DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM"]
+        if (deploy_cosystem_job_exec_system != "none") and (
+            deploy_cosystem_job_exec_system != "system-run"
+        ):
+            logger.error(
+                f"Invalid configuration for DEPLOY_COSYSTEM_JOB_EXEC_SYSTEM: '{deploy_cosystem_job_exec_system}' is not supported"
+            )
+            # Don't exit, because it (could ?)/causes the job to be stuck in 'Launching' state.
+
+        head_node = None
+        if hosts:
+            head_node = hosts[0]
+
+        # deploy, cosystem and no host part
+        if ("cosystem" in job_types.keys()) or (len(hosts) == 0):
+            head_node = config["COSYSTEM_HOSTNAME"]
+        elif "deploy" in job_types.keys():
+            head_node = config["DEPLOY_HOSTNAME"]
+
+        almighty_hostname = config["SERVER_HOSTNAME"]
+        if re.match(r"\s*localhost.*$", almighty_hostname) or re.match(
+            r"^\s*127.*$", almighty_hostname
+        ):
+            almighty_hostname = socket.gethostname()
+
+        self.logger.debug("[" + str(job.id) + "] Execute oarexec-usermode")
+
+        job_challenge, _, _ = get_job_challenge(session, job_id)
+
+        if node_file_db_field_distinct_values == "resource_id":
+            node_file_db_field_distinct_values = "id"
+
+        data_to_transfer = {
+            "job_id": job.id,
+            "array_id": job.array_id,
+            "array_index": job.array_index,
+            "stdout_file": job.stdout_file.replace("%jobid%", str(job.id)),
+            "stderr_file": job.stderr_file.replace("%jobid%", str(job.id)),
+            "launching_directory": job.launching_directory,
+            "job_env": job.env,
+            "node_file_db_fields": node_file_db_field,
+            "node_file_db_fields_distinct_values": node_file_db_field_distinct_values,
+            "user": job.user,
+            "job_user": job.user,
+            "types": job_types,
+            "name": job.name,
+            "project": job.project,
+            "reservation": job.reservation,
+            "walltime_seconds": mold_job_description.walltime,
+            "command": job.command,
+            "challenge": job_challenge,
+            "almighty_hostname": almighty_hostname,
+            "almighty_port": config["SERVER_PORT"],
+            "checkpoint_signal": job.checkpoint_signal,
+            "debug_mode": config["OAREXEC_DEBUG_MODE"],
+            "mode": job.type,
+            "pro_epi_timeout": pro_epi_timeout,
+            "prologue": prologue_exec_file,
+            "epilogue": epilogue_exec_file,
+            "deploy_cosystem_job_exec_system": deploy_cosystem_job_exec_system,
+            "tmp_directory": config["OAREXEC_DIRECTORY"],
+            "detach_oarexec": config["DETACH_JOB_FROM_SERVER"],
+            "resources": [dict(r) for r in resources]
+            # "cpuset_full_path": oarexec_cpuset_path,
+        }
+
+        def data_to_oar_env(data: dict[str, any]) -> dict[str, str]:
+            """
+            Simply transform the data supposed to be transferred to oarexec into a more OARish format for the server prologue environment.
+            """
+            new_env = dict()
+            new_env["OAR_JOB_ID"] = str(data["job_id"])
+            new_env["OAR_JOB_ARRAY_ID"] = str(data["array_id"])
+            new_env["OAR_ARRAY_INDEX"] = str(data["array_index"])
+            new_env["OAR_USER"] = str(data["user"])
+            new_env["OAR_JOB_NAME"] = str(data["name"])
+            new_env["OAR_JOB_WALLTIME_SECONDS"] = str(data["walltime_seconds"])
+            new_env["OAR_JOB_COMMAND"] = str(data["command"])
+
+            new_env["OAR_JOB_TYPES"] = ";".join(
+                [
+                    f"{k}=1" if v == True else f"{k}={v}"
+                    for k, v in data["types"].items()
+                ]
+            )
+            return new_env
+
+        self.call_server_prologue(
+            session, job, config, env=data_to_oar_env(data_to_transfer)
+        )
+
+        # NOOP jobs
+        if "noop" in job_types:
+            set_job_state(session, config, job_id, "Running")
+            self.logger.debug(
+                "[" + str(job.id) + "] User: " + job.user + " Set NOOP job to Running"
+            )
+            return
+
+        ##########################################################################
+        self.logger.debug(f"Run OAREXEC_USERMODE {job_id}")
+
+        filename_oarexec_job_data_filename = (
+            f"{config['OAREXEC_JOB_DATA_DIRECTORY']}/exec_job_data_{job_id}.pkl"
+        )
+
+        with open(filename_oarexec_job_data_filename, "wb") as f:
+            pickle.dump(data_to_transfer, f)
+
+        oarexec_usermode_cmd = config.get(
+            "OAREXEC_USERMODE_COMMAND", "oarexec-usermode"
+        )
+
+        tools.Popen([oarexec_usermode_cmd, filename_oarexec_job_data_filename])
+
+        set_job_state(session, config, job_id, "Running")
+
+        # ssh-oarexec exist error
+        # if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
+
+        #     set_job_state(session, config, job_id, "Running")
+
+        #     # Notify interactive oarsub
+        #     if (job.type == "INTERACTIVE") and (job.reservation == "None"):
+        #         self.logger.debug(
+        #             "["
+        #             + str(job.id)
+        #             + "] Interactive request ;Answer to the client Qsub -I"
+        #         )
+        #         if not tools.notify_interactif_user(job, "GOOD JOB"):
+        #             addr, port = job.info_type.split(":")
+        #             self.logger.error(
+        #                 "["
+        #                 + str(job.id)
+        #                 + "] Frag job because oarsub cannot be notified by the frontend on host {addr}:{port}. Check your network and firewall configuration\n".format(
+        #                     addr=addr, port=port
+        #                 )
+        #             )
+        #             tools.notify_almighty("Qdel")
+        #             return
+        #     self.logger.debug("[" + str(job.id) + "] Exit from bipbip normally")
+        # else:
+        #     # TODO: OAR3 only use detached OAREXEC
+        #     #        child.expect('OAREXEC_SCRIPT_EXIT_VALUE\s*(\d+|N)', timeout=pro_epi_timeout)
+        #     #        exit_script_value = child.match.group(1)
+        #     #    except exceptions.TIMEOUT as e:
+        #     #        pass
+        #     if (job.type == "INTERACTIVE") and (job.reservation == "None"):
+        #         tools.notify_interactif_user(
+        #             job, "ERROR: an error occured on the first job node"
+        #         )
+
+        #     check_end_of_job(
+        #         session,
+        #         config,
+        #         job_id,
+        #         self.oarexec_reattach_script_exit_value,
+        #         error,
+        #         hosts,
+        #         job.user,
+        #         job.launching_directory,
+        #         self.server_epilogue,
+        #     )
+        return
+
     def call_server_prologue(self, session, job, config, env={}):
         # PROLOGUE EXECUTED ON OAR SERVER #
         # Script is executing with job id in arguments
@@ -704,7 +1035,10 @@ def main():  # pragma: no cover
     if len(sys.argv) > 1:
         bipbip = BipBip(sys.argv[1:], config)
         try:
-            bipbip.run(session, config)
+            if config["USER_MODE"] == "NO":
+                bipbip.run(session, config)
+            else:
+                bipbip.run_usermode(session, config)
         except Exception as ex:
             import traceback
 

@@ -2401,6 +2401,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
         ("deploy" not in job_types.keys())
         and ("cosystem" not in job_types.keys())
         and ("noop" not in job_types.keys())
+        and (config["USER_MODE"] == "NO")
     ):
         ###############
         # CPUSET PART #
@@ -2529,6 +2530,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
         and (config["ACTIVATE_PINGCHECKER_AT_JOB_END"] == "yes")
         and ("deploy" not in job_types.keys())
         and ("noop" not in job_types.keys())
+        and (config["USER_MODE"] == "NO")
     ):
         hosts = get_job_current_hostnames(job_id)
         logger.debug(
