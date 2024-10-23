@@ -65,7 +65,7 @@ greta_command = os.path.join(binpath, "oar-greta")
 # dramatically (because it blocks only when nothing else is to be done).
 # Nevertheless it is closely related to the precision at which the
 # internal counters are checked
-read_commands_timeout = 10 * 1000  # in ms
+read_commands_timeout = 5 * 1000  # in ms
 
 # This parameter sets the number of pending commands read from
 # appendice before proceeding with internal work
