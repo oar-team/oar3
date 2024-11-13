@@ -43,7 +43,6 @@ def oardel(
     user=None,
     cli=True,
 ):
-
     cmd_ret = CommandReturns(cli)
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
@@ -75,10 +74,17 @@ def oardel(
             return cmd_ret
 
     if checkpoint or signal:
+        if signal:
+            user_signal = signal
+            signal = "SIGURG"
+        else:
+            user_signal = None
+
         for job_id in job_ids:
             if checkpoint:
                 tag = "CHECKPOINT"
                 cmd_ret.print_("Checkpointing the job {} ...".format(job_id))
+                signal = "SIGUSR2"
             else:
                 tag = "SIG"
                 cmd_ret.print_(
@@ -110,17 +116,17 @@ def oardel(
                     host_to_connect = hosts[0]
                 timeout_ssh = config["OAR_SSH_CONNECTION_TIMEOUT"]
 
-                error = tools.signal_oarexec(
+                error_command = tools.signal_oarexec(
                     host_to_connect,
                     job_id,
-                    "SIGUSR2",
+                    signal,
                     timeout_ssh,
                     config["OPENSSH_CMD"],
-                    "",
+                    user_signal=user_signal,
                 )
-                if error != 0:
+                if error_command:
                     cmd_ret.print_("ERROR")
-                    if error == 3:
+                    if 0 == 0:  # error == 3: TODO
                         comment = (
                             "Cannot contact {}, operation timouted ({} s).".format(
                                 host_to_connect, timeout_ssh
