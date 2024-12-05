@@ -132,7 +132,7 @@ def monkeypatch_tools(request, monkeypatch):
         "fork_and_feed_stdin",
         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes),
     )
-    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
+    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x, user_signal: 0)
 
 
 @pytest.fixture(scope="function")

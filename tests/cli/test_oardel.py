@@ -31,7 +31,7 @@ def minimal_db_initialization(request, setup_config):
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
-    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
+    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x, user_signal: 0)
 
 
 def test_version(minimal_db_initialization, setup_config):
