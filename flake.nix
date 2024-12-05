@@ -88,6 +88,14 @@
                     simpy
                     redis
                     clustershell
+
+                    # Dev dependencies
+                    isort
+                    flake8
+
+                    # Docs
+                    sphinx
+                    sphinx-rtd-theme
                 ];
             in
               pkgs.mkShell {
