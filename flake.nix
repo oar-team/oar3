@@ -96,6 +96,7 @@
                     # Docs
                     sphinx
                     sphinx-rtd-theme
+                    flake8
                 ];
             in
               pkgs.mkShell {

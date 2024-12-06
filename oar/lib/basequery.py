@@ -7,8 +7,8 @@ from oar.lib.job_handling import parse_job_type
 # from . import db
 from .exceptions import DoesNotExist
 from .models import (
-    EventLog,
     AssignedResource,
+    EventLog,
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
     Job,
@@ -268,7 +268,14 @@ class BaseQueryCollection(object):
         """Returns the list of events associated to the job passed
         in parameter."""
         db = self.session
-        columns = (EventLog.id, EventLog.date, EventLog.description, EventLog.type, EventLog.to_check, EventLog.job_id)
+        columns = (
+            EventLog.id,
+            EventLog.date,
+            EventLog.description,
+            EventLog.type,
+            EventLog.to_check,
+            EventLog.job_id,
+        )
         query = (
             db.query(Job.id, EventLog)
             .options(Load(EventLog).load_only(*columns))
@@ -285,11 +292,18 @@ class BaseQueryCollection(object):
         """Returns the list of events associated to the job passed
         in parameter."""
         db = self.session
-        columns = (EventLog.id, EventLog.date, EventLog.description, EventLog.type, EventLog.to_check, EventLog.job_id)
+        columns = (
+            EventLog.id,
+            EventLog.date,
+            EventLog.description,
+            EventLog.type,
+            EventLog.to_check,
+            EventLog.job_id,
+        )
         query = (
             db.query(EventLog)
             .options(Load(EventLog).load_only(*columns))
-            .filter_by(job_id = job.id)
+            .filter_by(job_id=job.id)
         )
         return query
 

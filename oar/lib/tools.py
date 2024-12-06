@@ -141,7 +141,6 @@ def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: n
 def notify_almighty(
     cmd: str, job_id: Optional[int] = None, args: Optional[List[str]] = None
 ) -> bool:  # pragma: no cover
-
     if not almighty_socket:
         create_almighty_socket(
             config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]

@@ -26,7 +26,6 @@ def test_invalid_token(client):
     [("bob", 200), ("globally_revoked_token", 401), ("old_token", 401)],
 )
 def test_token_revocation(client, user_tokens, user, status_code):
-
     res = client.get(
         "/check_token",
         headers={"Authorization": f"Bearer {user_tokens[user]}"},

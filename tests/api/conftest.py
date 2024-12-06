@@ -47,7 +47,6 @@ banned_file = """
 
 
 def write_banned_file(config):
-
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     banned_file = f"""

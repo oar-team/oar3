@@ -313,7 +313,6 @@ class Calendar(object):
         return (rules_id, remaining_duration)
 
     def show(self, t=None, begin=None, end=None, check=True, json=False):
-
         t_epoch = None
         if t:
             try:
