@@ -794,7 +794,6 @@ def test_schedule_timesharing1():
     assert j1.start_time == j2.start_time
 
 
-<<<<<<< HEAD
 def test_schedule_error_2():
     res = ProcSet(*[(1, 16)])
     ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))

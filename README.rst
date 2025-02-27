@@ -2,8 +2,8 @@
 OAR: Versatile Resource and Job Manager
 =======================================
 
-.. image:: https://github.com/oar-team/oar3/actions/workflows/.github/workflows/run-tests.yml/badge.svg
-    :target: https://github.com/oar-team/oar3/actions
+.. image:: https://github.com/oar-team/oar3/actions/workflows/run-tests.yml/badge.svg?branch=master
+    :target: https://github.com/oar-team/oar3/actions/workflows/run-tests.yml?query=branch%3Amaster
     :alt: CI Status
 
 .. image:: http://codecov.io/github/oar-team/oar3/coverage.svg?branch=master
