@@ -15,7 +15,6 @@ oauth2_scheme = HTTPBearer()
 def get_token_data(
     credentials: Annotated[str, Depends(oauth2_scheme)], config=Depends(get_config)
 ) -> Optional[dict]:
-
     token = credentials.credentials
 
     # FIXME: HAndlre er

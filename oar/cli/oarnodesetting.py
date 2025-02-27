@@ -399,7 +399,6 @@ def cli(
     last_property_value,
     version,
 ):
-
     ctx = click.get_current_context()
     if ctx.obj:
         (session, config) = ctx.obj

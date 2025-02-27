@@ -783,7 +783,6 @@ def test_db_all_in_one_sleep_node_1(
 def test_db_all_in_one_wakeup_node_energy_saving_internal_1(
     monkeypatch, minimal_db_initialization, setup_config, active_energy_saving
 ):
-
     config = active_energy_saving
 
     config["ENERGY_SAVING_INTERNAL"] = "yes"

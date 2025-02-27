@@ -18,7 +18,6 @@ def minimal_db_initialization(request, setup_config):
     scoped = scoped_session(session_factory)
 
     with ephemeral_session(scoped, engine, bind=engine) as session:
-
         Queue.create(session, name="default", scheduler_policy="kao", state="unkown")
         yield session
 

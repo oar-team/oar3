@@ -120,7 +120,16 @@
                     simpy
                     redis
                     clustershell
+
                     tomli
+
+                    # Dev dependencies
+                    isort
+                    flake8
+
+                    # Docs
+                    sphinx
+                    sphinx-rtd-theme
                 ];
             in
               pkgs.mkShell {
