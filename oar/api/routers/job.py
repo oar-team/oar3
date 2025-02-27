@@ -208,12 +208,21 @@ class SumbitParameters(BaseModel):
     stderr: Optional[str] = None
     hold: Optional[bool] = None
     checkpoint: int = 0
-    types: Optional[List[str]] = Body(None, alias="type")
+    # TODO: follow resolution of https://github.com/fastapi/fastapi/issues/10286
+    # validation_alias is used as workaround when issue will be resolved it should
+    # be removable
+    types: Optional[List[str]] = Body(None, alias="type", validation_alias="type")
     dependencies: Optional[List[int]] = Body(None, alias="after")
-    import_job_key_inline: Optional[str] = Body(None, alias="import-job-key-inline")
-    export_job_key_to_file: Optional[str] = Body(None, alias="export-job-key-to-file")
+    import_job_key_inline: Optional[str] = Body(
+        None, alias="import-job-key-inline", validation_alias="import-job-key-inline"
+    )
+    export_job_key_to_file: Optional[str] = Body(
+        None, alias="export-job-key-to-file", validation_alias="export-job-key-to-file"
+    )
     import_job_key_from_file: Optional[str] = Body(
-        None, alias="import-job-key-from-file"
+        None,
+        alias="import-job-key-from-file",
+        validation_alias="import-job-key-from-file",
     )
     properties: Optional[str] = Body(None, alias="property")
     use_job_key: bool = Body(False, alias="use-job-key")
