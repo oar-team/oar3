@@ -24,10 +24,10 @@ class TimestampRoute(APIRoute):
                 and response.headers["content-type"] == "application/json"
             ):
                 data = json.loads(response.body)
-                print(data)
+                # print(data)
                 data["api_timestamp"] = timestamp
                 data["api_timezone"] = "UTC"
-                response.body = json.dumps(data)
+                response.body = json.dumps(data).encode("utf-8")
                 # Update the content-length
                 response.headers["content-length"] = str(len(response.body))
 
