@@ -68,7 +68,7 @@ psutil = "^5.8.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 escapism = "^1.0.1"
 toml = ">0.10.0"
-fastapi = ">0.68.0"
+fastapi = "<=0.95.1"
 uvicorn = ">=0.14.0"
 python-multipart = ">=0.0.5"
 PyYAML = ">=5.0"

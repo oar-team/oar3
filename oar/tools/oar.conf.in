@@ -310,6 +310,21 @@ HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 #
 #KAMELOT_GET_RESOURCES_HIERARCHY_MODE="default"
 
+# Set-up the preferred order for jobs processed by the scheduling.
+# Default is FIFO.
+# FIFO :
+#   First In First Out
+# FAIRSHARING
+#   Ordering based on an accounting window, with the compute of a "Karma" value.
+#   The variables SCHEDULER_FAIRSHARING_* can be configured to tune the Karma.
+# MULTIFACTOR:
+#   Multifactor scheduling
+# CUSTOM:
+#   Custom, using a plugin.
+#   CUSTOM_JOB_SORTING and CUSTOM_JOB_SORTING_CONFIG must also be configured
+#
+JOB_PRIORITY=FIFO
+
 ##############################################
 
 ###############################################################
@@ -480,6 +495,12 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 #   from electric peeks
 # Possible values are "yes" and "no"
 ENERGY_SAVING_INTERNAL="no"
+
+# The internal energy saving module is "GRETA" 
+# Communication port of GRETA wan be changed here.
+# Default: localhost on 6672
+#GRETA_SERVER = localhost
+#GRETA_PORT = 6672
 
 # Path to the script used by the energy saving module to wake up nodes.
 # This command is executed from the oar server host.

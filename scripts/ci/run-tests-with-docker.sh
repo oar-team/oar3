@@ -16,7 +16,7 @@ echo "--------------------------------------------------------------------------
 
 docker_compose() {
     cd $ROOT_PROJECT
-    docker-compose "$@"
+    docker compose "$@"
 }
 
 set -e

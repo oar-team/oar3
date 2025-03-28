@@ -293,7 +293,6 @@ def apply_admission_rules(
     if ("ADMISSION_RULES_IN_FILES" in config) and (
         config["ADMISSION_RULES_IN_FILES"] == "yes"
     ):
-
         if rule:
             regex = rule
         else:

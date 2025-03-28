@@ -91,7 +91,6 @@ def backup_and_restore_environ_function(request):
     """
     old_environ = dict(os.environ)
     try:
-
         yield
 
     finally:
@@ -106,7 +105,6 @@ def backup_and_restore_environ_module(request):
     """
     old_environ = dict(os.environ)
     try:
-
         yield
 
     finally:

@@ -142,7 +142,6 @@ def period_weekstart():
 
 
 def test_calendar_periodical_fromJson(oar_conf):
-
     calendar = Calendar(rules_example_full, oar_conf)
     print()
     calendar.show()

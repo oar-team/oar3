@@ -420,7 +420,6 @@ def test_node_change_state_resource_dead_assigned(
 
 
 def assign_resources_with_range(session, job_id, from_, to_):
-
     moldable = (
         session.query(MoldableJobDescription)
         .filter(MoldableJobDescription.job_id == job_id)

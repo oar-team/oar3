@@ -581,7 +581,6 @@ def cli(
     yaml,
     version,
 ):
-
     ctx = click.get_current_context()
     if ctx.obj:
         session = ctx.obj
@@ -649,7 +648,9 @@ def cli(
 
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
-            job.exit_status_code = str(get_job_exit_status_code(session, job.id, job=job))
+            job.exit_status_code = str(
+                get_job_exit_status_code(session, job.id, job=job)
+            )
 
         print_jobs(session, True, jobs, format, show_resources, full)
 

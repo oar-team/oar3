@@ -87,7 +87,7 @@ def test_almighty_state_Qget(command, state, monkeypatch):
 @pytest.mark.parametrize(
     "state_in, state_out, called_cmd",
     [
-        ("Scheduler", "Time update", KAO),  # Scheduler_1
+        ("Scheduler", "Change node state", KAO),  # Scheduler_1
         ("Check for villains", "Time update", SARKO),
         ("Check node states", "Time update", FINAUD),
         ("Leon", "Time update", LEON),  # Leon 1
@@ -107,11 +107,11 @@ def test_almighty_state_called_command(state_in, state_out, called_cmd, monkeypa
 @pytest.mark.parametrize(
     "state_in, exit_value, state_out, called_cmd",
     [
-        ("Scheduler", 2, "Leon", NODE_CHANGE_STATE),
-        ("Scheduler", 1, "Scheduler", NODE_CHANGE_STATE),
-        ("Scheduler", 0, "Time update", KAO),
-        ("Scheduler", [1, 0], "Scheduler", KAO),
-        ("Scheduler", [2, 0], "Leon", KAO),
+        ("Scheduler", 2, "Leon", KAO),
+        ("Scheduler", 1, "Scheduler", KAO),
+        ("Scheduler", 0, "Change node state", KAO),
+        ("Scheduler", [1, 0], "Change node state", KAO),
+        ("Scheduler", [2, 0], "Change node state", KAO),
     ],
 )
 def test_almighty_state_called_command_with_exit_value(

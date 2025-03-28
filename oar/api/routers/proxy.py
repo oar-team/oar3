@@ -41,7 +41,6 @@ def proxy(
     db: Session = Depends(get_db),
     config: Configuration = Depends(get_config),
 ):
-
     if "OARDIR" not in os.environ:
         os.environ["OARDIR"] = "/usr/local/lib/oar"
 
