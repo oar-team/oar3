@@ -1,6 +1,7 @@
 
 api_setup() {
     mkdir -p ${OARCONFDIR}/apache2 || true
+    mkdir -p ${CGIDIR}/oarapi || true
     # Check for an old configuration file
     if [ -f ${OARCONFDIR}/apache-api.conf ]; then
         mv ${OARCONFDIR}/apache-api.conf ${OARCONFDIR}/apache2/oar-restful-api.conf
