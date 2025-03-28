@@ -5,6 +5,13 @@
 Changelog
 =========
 
+Version 3.0.0.dev16
+-------------------
+
+Unreleased
+
+- Fixed oarapi installation issue
+
 Version 3.0.0.dev15
 -------------------
 
