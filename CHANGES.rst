@@ -11,6 +11,7 @@ Version 3.0.0.dev16
 Unreleased
 
 - Fixed oarapi installation issue
+- Oarnodes now prints standby state 
 
 Version 3.0.0.dev15
 -------------------
