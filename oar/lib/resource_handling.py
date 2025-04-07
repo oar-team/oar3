@@ -501,9 +501,11 @@ def get_resources_state(
     )
     res = [
         {
-            r.id: "Standby"
-            if (r.state == "Absent") and (r.available_upto >= date)
-            else r.state
+            r.id: (
+                "Standby"
+                if (r.state == "Absent") and (r.available_upto >= date)
+                else r.state
+            )
         }
         for r in result
     ]
@@ -530,7 +532,7 @@ def resources_creation(
     for i in range(nb_nodes * nb_core * vfactor):
         Resource.create(
             session,
-            network_address=f"{node_name}{int(i/(nb_core * vfactor)+1)}",
+            network_address=f"{node_name}{int(i / (nb_core * vfactor) + 1)}",
             cpuset=i % nb_core,
             state="Alive",
         )

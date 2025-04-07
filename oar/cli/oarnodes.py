@@ -236,7 +236,7 @@ def print_resources_table(
         color = ""
         now = tools.get_date(session)
         if resource.state == "Absent" and resource.available_upto >= now:
-            color= "yellow"
+            color = "yellow"
         elif resource.state != "Alive":
             color = "red"
 
