@@ -124,7 +124,9 @@ def show(
         job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
         job_events = queryCollection.get_jobs_events([job])
+        jobs_types = queryCollection.get_jobs_types([job])
         attach_events(data, job_events)
+        attach_types(data, jobs_types)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
