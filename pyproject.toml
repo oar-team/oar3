@@ -13,6 +13,7 @@ classifiers=[
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Clustering",
 ]
+package-mode = false
 
 [tool.poetry.scripts]
 oar-database-migrate = 'oar.cli.db.commands.migrate:cli'
