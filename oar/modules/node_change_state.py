@@ -308,7 +308,7 @@ class NodeChangeState(object):
                         # Launch suspend command on all nodes
                         self.suspend_job(session, job, event)
 
-                elif event.type == "RESUME_JOB" and job.state == "Suspend":
+                elif event.type == "RESUME_JOB" and job.state == "Suspended":
                     set_job_state(session, config, job_id, "Resuming")
                     tools.notify_almighty("Qresume")
 

@@ -1727,7 +1727,7 @@ def set_job_state(session, config, jid, state):
             or state == "Resuming"
         ):
             job = session.query(Job).filter(Job.id == jid).one()
-            if state == "Suspend":
+            if state == "Suspended":
                 tools.notify_user(session, job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
                 tools.notify_user(session, job, "RESUMING", "Job is resuming.")
