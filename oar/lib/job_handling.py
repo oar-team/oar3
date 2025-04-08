@@ -1674,12 +1674,27 @@ def log_job(session, job):  # pragma: no cover
 
 
 def set_job_state(session, config, jid, state):
+    states = [
+        "toLaunch",
+        "toError",
+        "toAckReservation",
+        "Launching",
+        "Running",
+        "Finishing",
+        "Waiting",
+        "Hold",
+        "Suspended",
+        "Resuming",
+    ]
+    try:
+        states.remove(state)
+    except:
+        pass
+
     result = (
         session.query(Job)
         .filter(Job.id == jid)
-        .filter(Job.state != "Error")
-        .filter(Job.state != "Terminated")
-        .filter(Job.state != state)
+        .filter(Job.state.in_(tuple(states)))
         .update({Job.state: state}, synchronize_session=False)
     )
     session.commit()
@@ -1775,7 +1790,7 @@ def set_job_state(session, config, jid, state):
 
     else:
         logger.warning(
-            "Job is already termindated or in error or wanted state, job_id: "
+            "Job is already terminated or in error or wanted state, job_id: "
             + str(jid)
             + ", wanted state: "
             + state

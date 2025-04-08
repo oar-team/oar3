@@ -407,7 +407,7 @@ def update_current_scheduler_priority(session, config, job, value, state):
                 job.id,
                 "Scheduler priority for job "
                 + str(job.id)
-                + "updated ("
+                + " updated ("
                 + sched_priority
                 + ")",
             )
@@ -501,11 +501,9 @@ def get_resources_state(
     )
     res = [
         {
-            r.id: (
-                "Standby"
-                if (r.state == "Absent") and (r.available_upto >= date)
-                else r.state
-            )
+            r.id: "Standby"
+            if (r.state == "Absent") and (r.available_upto >= date)
+            else r.state
         }
         for r in result
     ]
