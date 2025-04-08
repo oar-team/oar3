@@ -13,6 +13,7 @@ Unreleased
 - Fixed oarapi installation issue
 - Oarnodes now prints standby state 
 - Added misssing "types" array from /jobs/{id} (issue #43)
+- Oarstat did not display some jobs (issue #48)
 
 Version 3.0.0.dev15
 -------------------
