@@ -126,3 +126,7 @@ exclude = '''
 profile = "black"
 src_paths = ["oar", "tests"]
 skip = ["tests/lib/etc", ".venv"]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
