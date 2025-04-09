@@ -229,6 +229,24 @@ class BaseQueryCollection(object):
         )
         return self.groupby_jobs_resources(jobs, query)
 
+    def get_jobs_walltime(self, jobs):
+        """Get the walltime of the assigned jobs"""
+        db = self.session
+
+        query = (
+            db.query(Job.id, MoldableJobDescription)
+            .join(
+                MoldableJobDescription,
+                Job.assigned_moldable_job == MoldableJobDescription.id,
+            )
+            .filter(Job.id.in_([job.id for job in jobs]))
+            .order_by(Job.id.asc())
+        )
+        res = {}
+        for job_id, moldable_job in query:
+            res[job_id] = moldable_job.walltime
+        return res
+
     def get_jobs_types(self, jobs):
         """Returns the list of types associated to the jobs passed
         in parameter."""

@@ -197,6 +197,11 @@ def print_jobs(
                         types.append(f"{job_type}={value}")
                 job.types = ", ".join(types)
 
+        jobs_walltime = queryCollection.get_jobs_walltime(jobs)
+        for job in jobs:
+            if job.id in jobs_walltime:
+                job.walltime = jobs_walltime[job.id]
+
     if format:
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
