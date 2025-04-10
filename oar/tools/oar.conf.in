@@ -390,7 +390,7 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 # does not conflict with the next jobs.                                   #
 ###############################################################################
 #
-# Activation of the feature, set to "yes" to activate (global setting, cannot be used per queue)
+# Activation of the feature, set to "YES" to activate (global setting, cannot be used per queue)
 # Default is "no", disabled
 #WALLTIME_CHANGE_ENABLED="no"
 
