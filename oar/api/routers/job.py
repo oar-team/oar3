@@ -66,6 +66,12 @@ def attach_exit_status(job):
         job["exit_status_code"] = None
 
 
+def remove_null_fields(job):
+    for k in list(job.keys()):
+        if job[k] is None:
+            del job[k]
+
+
 @router.get("")
 @router.get("/")
 def index(
@@ -110,6 +116,7 @@ def index(
             attach_events(item, job_events)
             attach_walltime(item, job_walltime)
         data["items"].append(item)
+        remove_null_fields(item)
 
     return data
 
@@ -140,6 +147,7 @@ def show(
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
+    remove_null_fields(data)
     return data
 
 

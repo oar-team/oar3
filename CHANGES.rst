@@ -15,6 +15,8 @@ Unreleased
 - Added misssing "types" array from /jobs/{id} (issue #43)
 - Oarstat did not display some jobs (issue #48)
 - Performance fix (#63)
+- Karma is now recorded and printed by oarstat and oarapi (#65)
+- Null valued fields are removed from the /jobs api output
 
 Version 3.0.0.dev15
 -------------------
