@@ -4,7 +4,7 @@ CREATE TABLE schema (
   version VARCHAR( 255 ) NOT NULL,
   name VARCHAR( 255 ) NOT NULL
 );
-INSERT INTO schema VALUES ('2.6.0','');
+INSERT INTO schema VALUES ('3.0.0','');
 
 CREATE TABLE accounting (
   window_start integer NOT NULL ,
@@ -229,6 +229,7 @@ CREATE TABLE jobs (
   stderr_file text ,
   resubmit_job_id integer NOT NULL default '0',
   suspended varchar(3) check (suspended in ('YES','NO')) NOT NULL default 'NO',
+  last_karma real,
   PRIMARY KEY  (job_id)
 );
 CREATE INDEX state ON jobs (state);

@@ -628,6 +628,7 @@ def job_message(session, job, nb_resources=None):
     message = ",".join(message_list)
     if hasattr(job, "karma"):
         message += " " + "(Karma={})".format(job.karma)
+        set_job_last_karma(session, job.id, job.karma)
 
     return message
 
@@ -1143,6 +1144,16 @@ def set_job_resa_state(session, job_id, state):
 def set_job_message(session, job_id, message):
     session.query(Job).filter(Job.id == job_id).update(
         {Job.message: message}, synchronize_session=False
+    )
+    session.commit()
+
+
+def set_job_last_karma(session, job_id, last_karma):
+    """Update the last_karma value of a job into database
+    parameter : database ref, job id, karma value
+    """
+    session.query(Job).filter(Job.id == job_id).update(
+        {Job.last_karma: last_karma}, synchronize_session=False
     )
     session.commit()
 
