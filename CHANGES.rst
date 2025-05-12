@@ -17,6 +17,7 @@ Unreleased
 - Performance fix (#63)
 - Karma is now recorded and printed by oarstat and oarapi (#65)
 - Null valued fields are removed from the /jobs api output
+- Added /get_new_token API entry to re-generate JWT 
 
 Version 3.0.0.dev15
 -------------------
