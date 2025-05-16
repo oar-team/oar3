@@ -239,7 +239,7 @@ CREATE INDEX queue_name ON jobs (queue_name);
 CREATE INDEX accounted ON jobs (accounted);
 CREATE INDEX suspended ON jobs (suspended);
 CREATE INDEX job_array_id ON jobs (array_id);
-
+CREATE INDEX assigned_moldable_job ON jobs (assigned_moldable_job);
 
 CREATE TABLE moldable_job_descriptions (
   moldable_id bigserial,
