@@ -18,6 +18,7 @@ Unreleased
 - Karma is now recorded and printed by oarstat and oarapi (#65)
 - Null valued fields are removed from the /jobs api output
 - Added /get_new_token API entry to re-generate JWT 
+- Added cgroup-v2 support through systemd
 
 Version 3.0.0.dev15
 -------------------
