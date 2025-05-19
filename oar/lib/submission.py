@@ -130,7 +130,10 @@ class JobParameters:
         if self.array:
             self.array_nb = self.array
         else:
-            self.array_nb = 1
+            if self.array_param_file:
+                self.read_array_param_file()
+            else:
+                self.array_nb = 1
 
         if not self.queue:
             self.queue = config["QUEUE"]
