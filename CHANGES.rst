@@ -19,6 +19,7 @@ Unreleased
 - Null valued fields are removed from the /jobs api output
 - Added /get_new_token API entry to re-generate JWT 
 - Added cgroup-v2 support through systemd
+- Fixed a bug with oarsub -S and array-param-file 
 
 Version 3.0.0.dev15
 -------------------
