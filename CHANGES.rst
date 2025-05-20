@@ -8,7 +8,7 @@ Changelog
 Version 3.0.0.dev16
 -------------------
 
-Unreleased
+Released on May 20, 2025
 
 - Fixed oarapi installation issue
 - Oarnodes now prints standby state 
