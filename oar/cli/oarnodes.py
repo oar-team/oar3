@@ -234,7 +234,10 @@ def print_resources_table(
                     row.append("")
 
         color = ""
-        if resource.state != "Alive":
+        now = tools.get_date(session)
+        if resource.state == "Absent" and resource.available_upto >= now:
+            color = "yellow"
+        elif resource.state != "Alive":
             color = "red"
 
         table.add_row(*row, style=color)
@@ -273,7 +276,8 @@ def print_resources_nodes_infos(
             print(yaml_dump([r.to_dict() for r in resources]))
 
 
-def cluster_summary(nodes_list, res_to_jobs):
+def cluster_summary(nodes_list, res_to_jobs, session):
+    now = tools.get_date(session)
     console = Console()
     sum_table = Table(expand=False)
 
@@ -294,7 +298,10 @@ def cluster_summary(nodes_list, res_to_jobs):
 
         bar_style = "bar.back"
         node_color = "blue"
-        if node_state != "Alive":
+        if node_state == "Absent" and first_resources.available_upto >= now:
+            bar_style = "yellow"
+            node_color = "yellow"
+        elif node_state != "Alive":
             bar_style = "dark_red"
             node_color = "dark_red"
 
@@ -339,6 +346,8 @@ def cluster_summary(nodes_list, res_to_jobs):
         )
         progress.advance(0, number_of_free_resources)
 
+        if node_state == "Absent" and first_resources.available_upto >= now:
+            node_state = "Standby"
         sum_table.add_row(
             f"[{node_color}]{net}",
             f"{node_state}",
@@ -465,7 +474,7 @@ def oarnodes(
     elif summary:
         node_list = get_resources_grouped_by_network_address(session, nodes)
         res_to_jobs = get_resources_for_job(session)
-        cluster_summary(node_list, res_to_jobs)
+        cluster_summary(node_list, res_to_jobs, session)
     elif state:
         if resource_ids:
             print_resources_states(session, resource_ids, format)

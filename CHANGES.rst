@@ -5,13 +5,31 @@
 Changelog
 =========
 
-Version 3.0.0.dev15
+Version 3.0.0.dev16
 -------------------
 
 Unreleased
 
+- Fixed oarapi installation issue
+- Oarnodes now prints standby state 
+- Added misssing "types" array from /jobs/{id} (issue #43)
+- Oarstat did not display some jobs (issue #48)
+- Performance fix (#63)
+- Karma is now recorded and printed by oarstat and oarapi (#65)
+- Null valued fields are removed from the /jobs api output
+- Added /get_new_token API entry to re-generate JWT 
+- Added cgroup-v2 support through systemd
+
+Version 3.0.0.dev15
+-------------------
+
+Released on March 28, 2025
+
 - Fixed API launcher bug introduced into 3.0.0.dev13
 - Added 'exit_status_code' job information (converted as exit status or kill signal, like bash exit status)
+- Tests fixed
+- Fixed user signal sending into oardel
+- oar.conf minor changes (cleaning, added greta vars)
 
 Version 3.0.0.dev14
 -------------------

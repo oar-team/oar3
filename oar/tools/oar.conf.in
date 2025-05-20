@@ -401,7 +401,7 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 # does not conflict with the next jobs.                                   #
 ###############################################################################
 #
-# Activation of the feature, set to "yes" to activate (global setting, cannot be used per queue)
+# Activation of the feature, set to "YES" to activate (global setting, cannot be used per queue)
 # Default is "no", disabled
 #WALLTIME_CHANGE_ENABLED="no"
 
@@ -608,7 +608,7 @@ JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD="cpuset"
 # Name of the perl script that manages cpuset.
 # (default is %%OARCONFDIR%%/job_resource_manager.pl which handles the linux kernel
 # cpuset, job keys, clean processes, ...)
-JOB_RESOURCE_MANAGER_FILE="%%OARCONFDIR%%/job_resource_manager_cgroups.pl"
+JOB_RESOURCE_MANAGER_FILE="%%OARCONFDIR%%/job_resource_manager_systemd.pl"
 
 # Path of the relative directory where the cpusets will be created on each
 # nodes(same value than in /proc/self/cpuset).

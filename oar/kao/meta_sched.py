@@ -564,7 +564,7 @@ def check_besteffort_jobs_to_kill(
                     fragged_jobs.append(be_job.id)
                     return_code = 1
 
-    logger.debug("End precessing of besteffort jobs to kill\n")
+    logger.debug("End processing of besteffort jobs to kill\n")
 
     return return_code
 

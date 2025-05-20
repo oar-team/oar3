@@ -36,6 +36,11 @@ def attach_events(job, job_events):
         job["events"] = job_events[job["id"]]
 
 
+def attach_walltime(job, job_walltime):
+    if job["id"] in job_walltime:
+        job["walltime"] = job_walltime[job["id"]]
+
+
 def attach_resources(job, jobs_resources):
     job["resources"] = []
     for resource in jobs_resources[job["id"]]:
@@ -59,6 +64,12 @@ def attach_exit_status(job):
         job["exit_status_code"] = convert_status_code(job["exit_code"])
     else:
         job["exit_status_code"] = None
+
+
+def remove_null_fields(job):
+    for k in list(job.keys()):
+        if job[k] is None:
+            del job[k]
 
 
 @router.get("")
@@ -94,6 +105,7 @@ def index(
         jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
         jobs_types = queryCollection.get_jobs_types(page.items)
         job_events = queryCollection.get_jobs_events(page.items)
+        job_walltime = queryCollection.get_jobs_walltime(page.items)
         pass
     for item in page:
         attach_exit_status(item)
@@ -102,7 +114,9 @@ def index(
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
             attach_events(item, job_events)
+            attach_walltime(item, job_walltime)
         data["items"].append(item)
+        remove_null_fields(item)
 
     return data
 
@@ -124,11 +138,16 @@ def show(
         job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
         job_events = queryCollection.get_jobs_events([job])
+        jobs_types = queryCollection.get_jobs_types([job])
+        jobs_walltime = queryCollection.get_jobs_walltime([job])
         attach_events(data, job_events)
+        attach_types(data, jobs_types)
+        attach_walltime(data, jobs_walltime)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
+    remove_null_fields(data)
     return data
 
 

@@ -7,7 +7,6 @@ from oar.kao.slot import Slot, SlotSet
 
 
 class Timer(object):
-
     """
     From http://www.huyng.com/posts/python-performance-analysis/
     """

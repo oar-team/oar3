@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from passlib.apache import HtpasswdFile
 
 from oar import VERSION
+from oar.lib.access_token import create_access_token
 
 # from oar.lib.globals import get_logger
 from oar.lib.configuration import Configuration
@@ -72,6 +73,18 @@ async def read_users_me(
         data["auth"] = "Token valid"
 
     return data
+
+
+@router.get("/get_new_token")
+async def get_token(
+    current_user: Annotated[str, Depends(get_token_data)],
+    auth_user: str = Depends(need_authentication),
+    config: Configuration = Depends(get_config),
+):
+    if auth_user:
+        token = create_access_token({"user": current_user["user"]}, config)
+
+    return {"OAR_API_TOKEN": token}
 
 
 @router.get("/timezone")

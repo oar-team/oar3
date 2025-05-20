@@ -28,6 +28,7 @@ class TimestampRoute(APIRoute):
                 data["api_timestamp"] = timestamp
                 data["api_timezone"] = "UTC"
                 response.body = json.dumps(data).encode("utf-8")
+
                 # Update the content-length
                 response.headers["content-length"] = str(len(response.body))
 

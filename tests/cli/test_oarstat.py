@@ -154,6 +154,7 @@ def test_oarstat_full(minimal_db_initialization, setup_config):
             job_user="Toto",
             command="oarsub -l ",
             message="Relatively long message",
+            last_karma=0.12,
         )
         assign_resources(minimal_db_initialization, id)
 
