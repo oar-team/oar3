@@ -71,6 +71,7 @@ class BaseQuery:
             ]
             if from_time or to_time or job_ids or array_id:
                 states.append("Terminated")
+                states.append("Error")
 
         c1_from, c2_from, c3_from = None, None, None
         if from_time is not None:
@@ -111,7 +112,10 @@ class BaseQuery:
         q1 = (
             db.query(Job.id.label("job_id"))
             .distinct()
-            .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
+            .filter(
+                (Job.assigned_moldable_job == 0)
+                | (Job.assigned_moldable_job == AssignedResource.moldable_id)
+            )
             .filter(MoldableJobDescription.job_id == Job.id)
         )
         q1 = apply_commons_filters(q1, c1_from, c1_to)
@@ -224,6 +228,24 @@ class BaseQueryCollection(object):
             .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
+
+    def get_jobs_walltime(self, jobs):
+        """Get the walltime of the assigned jobs"""
+        db = self.session
+
+        query = (
+            db.query(Job.id, MoldableJobDescription)
+            .join(
+                MoldableJobDescription,
+                Job.assigned_moldable_job == MoldableJobDescription.id,
+            )
+            .filter(Job.id.in_([job.id for job in jobs]))
+            .order_by(Job.id.asc())
+        )
+        res = {}
+        for job_id, moldable_job in query:
+            res[job_id] = moldable_job.walltime
+        return res
 
     def get_jobs_types(self, jobs):
         """Returns the list of types associated to the jobs passed

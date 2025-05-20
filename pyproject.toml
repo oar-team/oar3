@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oar"
-version = "3.0.0.dev15"
+version = "3.0.0.dev16"
 description = "OAR: Versatile Resource and Job Manager"
 authors = ["Olivier Richard", "Adrien Faure", "Salem Harrache","Bruno Bzeznik"]
 license = "GPL-2.0-or-later"
@@ -13,6 +13,7 @@ classifiers=[
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Clustering",
 ]
+package-mode = false
 
 [tool.poetry.scripts]
 oar-database-migrate = 'oar.cli.db.commands.migrate:cli'
@@ -125,7 +126,3 @@ exclude = '''
 profile = "black"
 src_paths = ["oar", "tests"]
 skip = ["tests/lib/etc", ".venv"]
-
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"

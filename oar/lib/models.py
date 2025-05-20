@@ -6,6 +6,7 @@ from sqlalchemy import (  # , exc
     BigInteger,
     CheckConstraint,
     Column,
+    Float,
     Index,
     Integer,
     String,
@@ -402,6 +403,7 @@ class Job(DeferredReflectionModel):
     stderr_file = Column(Text, nullable=True)
     resubmit_job_id = Column(Integer, server_default="0")
     suspended = Column(String(3), index=True, server_default="NO")
+    last_karma = Column(Float, nullable=True)
 
 
 class MoldableJobDescription(Model):

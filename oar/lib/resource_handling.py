@@ -407,7 +407,7 @@ def update_current_scheduler_priority(session, config, job, value, state):
                 job.id,
                 "Scheduler priority for job "
                 + str(job.id)
-                + "updated ("
+                + " updated ("
                 + sched_priority
                 + ")",
             )
@@ -530,7 +530,7 @@ def resources_creation(
     for i in range(nb_nodes * nb_core * vfactor):
         Resource.create(
             session,
-            network_address=f"{node_name}{int(i/(nb_core * vfactor)+1)}",
+            network_address=f"{node_name}{int(i / (nb_core * vfactor) + 1)}",
             cpuset=i % nb_core,
             state="Alive",
         )

@@ -344,7 +344,7 @@ def test_node_change_state_job_suspend_resume_suspend(
         minimal_db_initialization,
         res=[(60, [("resource_id=4", "")])],
         properties="",
-        state="Suspend",
+        state="Suspended",
     )
     base_test_node_change(
         minimal_db_initialization, config, "RESUME_JOB", "Resuming", job_id

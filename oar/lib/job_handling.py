@@ -628,6 +628,7 @@ def job_message(session, job, nb_resources=None):
     message = ",".join(message_list)
     if hasattr(job, "karma"):
         message += " " + "(Karma={})".format(job.karma)
+        set_job_last_karma(session, job.id, job.karma)
 
     return message
 
@@ -1143,6 +1144,16 @@ def set_job_resa_state(session, job_id, state):
 def set_job_message(session, job_id, message):
     session.query(Job).filter(Job.id == job_id).update(
         {Job.message: message}, synchronize_session=False
+    )
+    session.commit()
+
+
+def set_job_last_karma(session, job_id, last_karma):
+    """Update the last_karma value of a job into database
+    parameter : database ref, job id, karma value
+    """
+    session.query(Job).filter(Job.id == job_id).update(
+        {Job.last_karma: last_karma}, synchronize_session=False
     )
     session.commit()
 
@@ -1674,12 +1685,27 @@ def log_job(session, job):  # pragma: no cover
 
 
 def set_job_state(session, config, jid, state):
+    states = [
+        "toLaunch",
+        "toError",
+        "toAckReservation",
+        "Launching",
+        "Running",
+        "Finishing",
+        "Waiting",
+        "Hold",
+        "Suspended",
+        "Resuming",
+    ]
+    try:
+        states.remove(state)
+    except:
+        pass
+
     result = (
         session.query(Job)
         .filter(Job.id == jid)
-        .filter(Job.state != "Error")
-        .filter(Job.state != "Terminated")
-        .filter(Job.state != state)
+        .filter(Job.state.in_(tuple(states)))
         .update({Job.state: state}, synchronize_session=False)
     )
     session.commit()
@@ -1712,7 +1738,7 @@ def set_job_state(session, config, jid, state):
             or state == "Resuming"
         ):
             job = session.query(Job).filter(Job.id == jid).one()
-            if state == "Suspend":
+            if state == "Suspended":
                 tools.notify_user(session, job, "SUSPENDED", "Job is suspended.")
             elif state == "Resuming":
                 tools.notify_user(session, job, "RESUMING", "Job is resuming.")
@@ -1775,7 +1801,7 @@ def set_job_state(session, config, jid, state):
 
     else:
         logger.warning(
-            "Job is already termindated or in error or wanted state, job_id: "
+            "Job is already terminated or in error or wanted state, job_id: "
             + str(jid)
             + ", wanted state: "
             + state

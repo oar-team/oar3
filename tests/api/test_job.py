@@ -675,7 +675,7 @@ def test_app_job_post_admission_rules_error(
     client, minimal_db_initialization, with_admission_rules, user_tokens
 ):
     # BUG oarapi -d {"resource":"nodes=1,walltime=00:10:0", "command":"sleep 600"}
-    data = {"resource": [], "command": 'sleep "1"', "type": ["failing_type"]}
+    data = {"resource": [], "command": 'sleep "1"', "types": ["failing_type"]}
 
     res = client.post(
         "/jobs/", json=data, headers={"Authorization": f"Bearer {user_tokens['bob']}"}

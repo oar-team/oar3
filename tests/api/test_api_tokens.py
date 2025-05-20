@@ -36,3 +36,15 @@ def test_token_revocation(client, user_tokens, user, status_code):
     if res.status_code != 200:
         data = json.loads(res.content)
         assert data["detail"] == "Token not valid anymore (revoked by an admin)"
+
+
+def test_token_renew(client, user_tokens):
+    res = client.get(
+        "/get_new_token",
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
+    )
+
+    assert res.status_code == 200
+
+    data = json.loads(res.content)
+    assert data["OAR_API_TOKEN"] is not None

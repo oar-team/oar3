@@ -5,6 +5,22 @@
 Changelog
 =========
 
+Version 3.0.0.dev16
+-------------------
+
+Released on May 20, 2025
+
+- Fixed oarapi installation issue
+- Oarnodes now prints standby state 
+- Added misssing "types" array from /jobs/{id} (issue #43)
+- Oarstat did not display some jobs (issue #48)
+- Performance fix (#63)
+- Karma is now recorded and printed by oarstat and oarapi (#65)
+- Null valued fields are removed from the /jobs api output
+- Added /get_new_token API entry to re-generate JWT 
+- Added cgroup-v2 support through systemd
+- Fixed a bug with oarsub -S and array-param-file 
+
 Version 3.0.0.dev15
 -------------------
 

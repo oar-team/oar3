@@ -592,7 +592,7 @@ def manage_remote_commands(
                 str_to_transfer.encode("utf8"), timeout=(2 * config["TIMEOUT_SSH"])
             )
         except TimeoutExpired:
-            tools_logger.error("Popen.comminicate TimeoutExpired")
+            tools_logger.error("Popen.communicate TimeoutExpired")
             p.kill()
             # m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
             return (0, [])

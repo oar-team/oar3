@@ -62,43 +62,6 @@ STATE2CHAR = {
 }
 
 
-def get_job_full(session, jobs) -> List[str]:
-    # The headers to print
-    headers: List[str] = [
-        "Job id",
-        "State",
-        "User",
-        "Duration",
-        "System message",
-    ]
-    # First yield the headers
-    yield headers
-
-    now = tools.get_date(session)
-    for job in jobs:
-        # Compute job duration
-        duration = 0
-        if job.start_time:
-            if now > job.start_time:
-                if job.state in ["Running", "Launching", "Finishing"]:
-                    duration = now - job.start_time
-                elif job.stop_time != 0:
-                    duration = job.stop_time - job.start_time
-                else:
-                    duration = -1
-
-        # !! It must be consistent wih `header_columns`
-        job_line = [
-            str(job.id),
-            STATE2CHAR[job.state],
-            str(job.user),
-            str(datetime.timedelta(seconds=duration)),
-            str(job.message),
-        ]
-
-        yield job_line
-
-
 def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
@@ -119,7 +82,7 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     now = tools.get_date(session)
     for job in jobs:
         # Compute job duration
-        duration = 0
+        duration = -1
         if job.start_time:
             if now > job.start_time:
                 if job.state in ["Running", "Launching", "Finishing"]:
@@ -128,13 +91,17 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
                     duration = job.stop_time - job.start_time
                 else:
                     duration = -1
+        if duration >= 0:
+            duration_string = str(datetime.timedelta(seconds=duration))
+        else:
+            duration_string = "-"
 
         # !! It must be consistent wih `header_columns`
         job_line = [
             str(job.id),
             job.state,
             str(job.user),
-            str(datetime.timedelta(seconds=duration)),
+            duration_string,
             str(job.message),
             str(job.queue_name),
         ]
@@ -229,6 +196,11 @@ def print_jobs(
                     else:
                         types.append(f"{job_type}={value}")
                 job.types = ", ".join(types)
+
+        jobs_walltime = queryCollection.get_jobs_walltime(jobs)
+        for job in jobs:
+            if job.id in jobs_walltime:
+                job.walltime = jobs_walltime[job.id]
 
     if format:
         to_dump = {}
