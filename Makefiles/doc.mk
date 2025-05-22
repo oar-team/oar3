@@ -14,7 +14,7 @@ install: build  build-html-doc install_shared
 	install -d $(DESTDIR)$(DOCDIR)/scripts
 	install -d $(DESTDIR)$(DOCDIR)/scripts/job_resource_manager
 
-	install -m 0644 $(SRCDIR)/tools/job_resource_manager.pl $(DESTDIR)$(DOCDIR)/scripts/job_resource_manager/
+	install -m 0644 $(SRCDIR)/tools/job_resource_manager_systemd.pl $(DESTDIR)$(DOCDIR)/scripts/job_resource_manager/
 
 	install -m 0644 $(SRCDIR)/../scripts/oar_prologue $(DESTDIR)$(DOCDIR)/scripts/prologue_epilogue/
 	install -m 0644 $(SRCDIR)/../scripts/oar_epilogue $(DESTDIR)$(DOCDIR)/scripts/prologue_epilogue/
