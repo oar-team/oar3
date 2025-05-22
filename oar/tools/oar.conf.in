@@ -595,7 +595,7 @@ ENERGY_SAVING_INTERNAL="no"
 JOB_RESOURCE_MANAGER_PROPERTY_DB_FIELD="cpuset"
 
 # Name of the perl script that manages cpuset.
-# (default is %%OARCONFDIR%%/job_resource_manager.pl which handles the linux kernel
+# (default is %%OARCONFDIR%%/job_resource_manager_systemd.pl which handles the linux kernel
 # cpuset, job keys, clean processes, ...)
 JOB_RESOURCE_MANAGER_FILE="%%OARCONFDIR%%/job_resource_manager_systemd.pl"
 
