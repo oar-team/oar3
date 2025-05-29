@@ -166,21 +166,6 @@ class BaseQueryCollection(object):
         )
         return query
 
-    def _get_gantt_prediction(self, horizon):
-        columns = ("job_id", "start_time", "moldable_walltime", "message")
-        query = (
-            # db.query(Job, MoldableJobDescription)
-            db.query(Job)
-            .join(MoldableJobDescription, Job.id == MoldableJobDescription.id)
-            .filter(Job.queue_name == "default")
-            .filter(Job.stop_time == 0)
-            .filter(Job.state.in_(["Finishing", "Running", "Waiting", "Launching", "toLaunch"]))
-            # .filter(Job.state.in_(["Waiting", "Launching", "toLaunch"]))
-            .filter(Job.start_time - 60 <= horizon)
-            .filter(Job.start_time + MoldableJobDescription.walltime >= horizon)
-        )
-        return query
-
     def get_cigri_completions(self, previous_cycle, now):
         query = (
             db.query(Job)
@@ -189,7 +174,6 @@ class BaseQueryCollection(object):
             .filter(Job.stop_time > previous_cycle)
         )
         return query
-        
 
     def get_resources(self, network_address, detailed=True):
         if detailed:
