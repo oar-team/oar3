@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import copy
-import datetime
-import decimal
 import os
 import re
 import sys
 from collections import OrderedDict
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
-
-import simplejson as json
 
 basestring = (str, bytes)
 integer_types = (int,)
@@ -41,7 +37,8 @@ def with_metaclass(meta, base=object):
     return meta("NewBase", (base,), {})
 
 
-def to_unicode(obj, encoding="utf-8"):
+# No cover because not used in oar but in db management
+def to_unicode(obj, encoding="utf-8"):  # pragma: no cover
     """
     Convert ``obj`` to unicode"""
     # unicode support
@@ -78,35 +75,6 @@ def callable(obj):
     return isinstance(obj, Callable)
 
 
-class JSONEncoder(json.JSONEncoder):
-    """JSON Encoder class that handles conversion for a number of types not
-    supported by the default json library, especially the sqlalchemy objects.
-
-    :returns: object that can be converted to json
-    """
-
-    def default(self, obj):
-        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
-            return obj.isoformat()
-        elif isinstance(obj, (decimal.Decimal)):
-            return to_unicode(obj)
-        elif hasattr(obj, "asdict") and callable(getattr(obj, "asdict")):
-            return obj.asdict()
-        elif hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict")):
-            return obj.to_dict()
-        else:
-            return json.JSONEncoder.default(self, obj)
-
-
-def to_json(obj, **kwargs):
-    """Dumps object to json string."""
-    kwargs.setdefault("ensure_ascii", False)
-    kwargs.setdefault("cls", JSONEncoder)
-    kwargs.setdefault("indent", 4)
-    kwargs.setdefault("separators", (",", ": "))
-    return json.dumps(obj, **kwargs)
-
-
 def touch(fname, times=None):
     dirname = "/".join(fname.split("/")[:-1])
     if not os.path.exists(dirname):
@@ -121,7 +89,8 @@ class SimpleNamespace(dict):
         self.__dict__ = self
 
 
-class CachedProperty(object):
+class CachedProperty(object):  # pragma: no cover
+    # No cover because only used in cli/db
     """A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
     property."""
@@ -176,7 +145,7 @@ class ResultProxyIter(list):
     next = __next__
 
 
-def try_convert_decimal(raw_value):
+def try_convert_decimal(raw_value):  # pragma: no cover
     """Try to convert ``value`` to a decimal."""
     value = to_unicode(raw_value)
     try:
@@ -217,7 +186,8 @@ def render_query(statement, bind=None, reindent=True):
         return raw_sql
 
 
-def merge_dicts(*dict_args):
+# TODO/FIXME: function never used (so disabling coverage)
+def merge_dicts(*dict_args):  # pragma: no cover
     """Merge given dicts into a new dict."""
     result = {}
     for dictionary in dict_args:
@@ -225,7 +195,8 @@ def merge_dicts(*dict_args):
     return result
 
 
-def get_table_name(name):
+# TODO/FIXME: function never used (so disabling coverage)
+def get_table_name(name):  # pragma: no cover
     def _join(match):
         word = match.group()
         if len(word) > 1:
@@ -235,7 +206,8 @@ def get_table_name(name):
     return re.compile(r"([A-Z]+)(?=[a-z0-9])").sub(_join, name).lstrip("_")
 
 
-def print_query_results(results, name=None):
+# TODO/FIXME: function never used (so disabling coverage)
+def print_query_results(results, name=None):  # pragma: no cover
     if name:
         print(name)
         print("-" * len(name))

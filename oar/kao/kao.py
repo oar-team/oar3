@@ -1,17 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 from oar.kao.meta_sched import meta_schedule
-from oar.lib import config, get_logger
-
-logger = get_logger("oar.kao")
+from oar.lib.globals import init_oar
 
 
-def main():
-    logger.info("Starting Kao Meta Scheduler")
-    return meta_schedule(config["METASCHEDULER_MODE"])
+def main(session=None, config=None):
+    if not session:
+        config, engine = init_oar(config)
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
+    return meta_schedule(session, config, config["METASCHEDULER_MODE"])
 
 
 if __name__ == "__main__":  # pragma: no cover
-    logger = get_logger("oar.kao", forward_stderr=True)
     main()

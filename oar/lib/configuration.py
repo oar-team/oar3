@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import pprint
 import sys
 from io import open
+from typing import Any
 
 from .exceptions import InvalidConfiguration
 from .utils import reraise, try_convert_decimal
@@ -25,7 +25,7 @@ class Configuration(dict):
         "SQLALCHEMY_MAX_OVERFLOW": None,
         "LOG_LEVEL": 3,
         "LOG_FILE": ":stderr:",
-        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s]: %(message)s",
+        "LOG_FORMAT": "[%(levelname)8s] [%(asctime)s] [%(name)s::%(funcName)s:%(lineno)d]: %(message)s",
         "OAR_SSH_CONNECTION_TIMEOUT": 120,
         "SERVER_HOSTNAME": "localhost",
         "SERVER_PORT": "6666",
@@ -62,8 +62,8 @@ class Configuration(dict):
         "DEPLOY_HOSTNAME": "127.0.0.1",
         "OPENSSH_CMD": "/usr/bin/ssh -p 6667",
         "OAREXEC_DEBUG_MODE": "1",
-        "HULOT_SERVER": "localhost",
-        "HULOT_PORT": 6672,
+        "GRETA_SERVER": "localhost",
+        "GRETA_PORT": 6672,
         # kao
         "METASCHEDULER_MODE": "internal",
         # Tell the metascheduler that it runs into an oar2 installation.
@@ -114,9 +114,9 @@ class Configuration(dict):
         "QUEUE": "default",
         "PROJECT": "default",
         "SIGNAL": 12,
-        # Hulot stuff
-        "HULOT_SERVER": "localhost",
-        "HULOT_PORT": 6672,
+        # Greta stuff
+        "GRETA_SERVER": "localhost",
+        "GRETA_PORT": 6672,
         "ENERGY_SAVING_WINDOW_FORKER_SIZE": 20,
         "ENERGY_SAVING_WINDOW_TIME": 60,
         "ENERGY_SAVING_WINDOW_TIMEOUT": 120,
@@ -134,7 +134,12 @@ class Configuration(dict):
         self.load_file(self.DEFAULT_CONFIG_FILE, silent=silent)
 
     def load_file(
-        self, filename, comment_char="#", strip_quotes=True, silent=False, clear=False
+        self,
+        filename: str,
+        comment_char: str = "#",
+        strip_quotes: bool = True,
+        silent: bool = False,
+        clear: bool = False,
     ):
         """Updates the values in the config from a config file.
         :param filename: the filename of the config.  This can either be an
@@ -166,9 +171,9 @@ class Configuration(dict):
         except IOError as e:
             e.strerror = "Unable to load configuration file (%s)" % e.strerror
             if silent:
-                from . import logger
+                # from . import logger
 
-                logger.warning(e.strerror)
+                # logger.warning(e.strerror)
                 return False
             else:
                 exc_type, exc_value, tb = sys.exc_info()
@@ -176,7 +181,7 @@ class Configuration(dict):
 
         return True
 
-    def get_sqlalchemy_uri(self, read_only=False):
+    def get_sqlalchemy_uri(self, read_only: bool = False):  # pragma: no cover
         if read_only:
             login = "base_login_ro"
             passwd = "base_passwd_ro"
@@ -200,12 +205,14 @@ class Configuration(dict):
             keys = tuple(("DB_%s" % i.upper() for i in e.args))
             raise InvalidConfiguration("Cannot find %s" % keys)
 
-    def setdefault_config(self, default_config):
+    def setdefault_config(self, default_config: dict[str, Any]):
         # import pdb; pdb.set_trace()
         for k, v in default_config.items():
             self.setdefault(k, v)
 
-    def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
+    def get_namespace(
+        self, namespace: str, lowercase: bool = True, trim_namespace: bool = True
+    ):
         """Returns a dictionary containing a subset of configuration options
         that match the specified namespace/prefix. Example usage::
 
@@ -244,5 +251,5 @@ class Configuration(dict):
             rv[key] = v
         return rv
 
-    def __str__(self):
-        return pprint.pprint(self)
+    def __str__(self) -> str:
+        return f"{dict(self)}"

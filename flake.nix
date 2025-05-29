@@ -1,27 +1,58 @@
 {
-  description = "nixos-compose";
+  description = "oar";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
+    kapack.url = "github:oar-team/nur-kapack?ref=master";
+    kapack.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, kapack }:
 
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-
-        app = pkgs.poetry2nix.mkPoetryApplication {
-          projectDir = ./.;
-          propagatedBuildInputs = [ ];
-          editablePackageSources = {
-             oar = ./.;
-          };
+        kapackpkgs = kapack.packages.${system};
+        app = pkgs.python3Packages.buildPythonPackage {
+            pname = "oar";
+            version = "3.0.0";
+            format = "pyproject";
+            src = ./.;
+            nativeBuildInputs = with pkgs;  [ poetry python3Packages.poetry-core ];
+            propagatedBuildInputs = with pkgs.python3Packages; [
+                poetry-core
+                pyzmq
+                requests
+                alembic
+                kapackpkgs.procset
+                click
+                simplejson
+                flask
+                tabulate
+                psutil
+                sqlalchemy-utils
+                psycopg2
+                passlib
+                escapism
+                toml
+                fastapi
+                uvicorn
+                pyyaml
+                ptpython
+                python-multipart
+                importlib-metadata
+                clustershell
+                rich
+                httpx
+                python-jose
+                passlib
+                bcrypt
+            ];
         };
-
         packageName = "oar";
       in {
+          #pythonEnv = pkgs.python3.withPackages(ps: [ ]);
         packages.${packageName} = app;
         packages.documentation = pkgs.stdenv.mkDerivation {
           pname = "oar3-documentation";
@@ -46,16 +77,65 @@
 
         defaultPackage = self.packages.${system}.${packageName};
 
-        devShell = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            (poetry2nix.mkPoetryEnv { projectDir = self; })
-            # Install the entry point and the plugins
-            (poetry2nix.mkPoetryApplication { projectDir = self; })
-            python3Packages.sphinx_rtd_theme
-            poetry
-            postgresql
-            pre-commit
-          ];
+        devShells = {
+            old = pkgs.mkShell {
+                LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
+                buildInputs = with pkgs; [
+                    (poetry2nix.mkPoetryEnv { projectDir = self; })
+                    # Install the entry point and the plugins
+                    # Which is not needed anymore bc the plugins are on a new repo
+                    # (poetry2nix.mkPoetryApplication { projectDir = self; })
+                    python3Packages.sphinx_rtd_theme
+                    poetry
+                    postgresql
+                    pre-commit
+                ];
+            };
+            default = let
+                pythonEnv = with pkgs.python3Packages; [
+                    pytest
+                    pyzmq
+                    requests
+                    alembic
+                    click
+                    simplejson
+                    flask
+                    tabulate
+                    psutil
+                    sqlalchemy-utils
+                    psycopg2
+                    passlib
+                    escapism
+                    toml
+                    fastapi
+                    uvicorn
+                    pyyaml
+                    ptpython
+                    python-multipart
+                    python-jose
+                    kapackpkgs.procset
+                    rich
+                    pexpect
+                    simpy
+                    redis
+                    clustershell
+                    httpx
+
+                    # Dev dependencies
+                    isort
+                    flake8
+
+                    # Docs
+                    sphinx
+                    sphinx-rtd-theme
+                    flake8
+                ];
+            in
+              pkgs.mkShell {
+                  packages = with pkgs; [ pre-commit ] ++ pythonEnv;
+              };
+
         };
+
     });
 }

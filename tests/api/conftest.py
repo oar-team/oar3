@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import os
+import tempfile
+from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools  # for monkeypatching
-from oar.api.query import APIQuery
-from oar.lib import db
-from oar.lib.basequery import BaseQuery
+from oar.api.app import create_app
+from oar.api.dependencies import get_db
+from oar.lib.access_token import create_access_token
+
+# from oar.lib import db
+from oar.lib.database import ephemeral_session
+from oar.lib.models import Queue, Resource
 
 
 def ordered(obj):
@@ -27,64 +36,138 @@ def assign_node_list(nodes):  # TODO TOREPLACE
     node_list = nodes
 
 
+banned_file = """
+{
+    "global" : "2023-11-16 18:30:00",
+    "revoked" : {
+        "bob" : "2023-11-25 18:30:00"
+    }
+}
+"""
+
+
+def write_banned_file(config):
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    banned_file = f"""
+        {{
+            "global" : "{now}",
+            "revoked" : {{
+                "old_token" : "{now}"
+            }}
+        }}
+    """
+
+    # Write content
+    print(f"{banned_file}", file=open(config["API_REVOKED_TOKENS"], "a"))
+
+
 @pytest.fixture()
-def fastapi_app():
-    from oar.api.app import create_app
+def fastapi_app(setup_config):
+    config, engine = setup_config
 
-    app = create_app()
+    tempdir = tempfile.mkdtemp()
+    # Config for jwt
+    config[
+        "API_SECRET_KEY"
+    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+    config["API_SECRET_ALGORITHM"] = "HS256"
+    config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
 
-    # force to use APIQuery needed when all tests are launched and previous ones have set BaseQuery
-    db.sessionmaker.configure(query_cls=APIQuery)
+    config["API_REVOKED_TOKENS"] = os.path.join(tempdir, "tokens_revocation.json")
+    write_banned_file(config)
 
+    app = create_app(config=config, engine=engine)
     yield app
 
-    db.sessionmaker.configure(query_cls=BaseQuery)
-
 
 @pytest.fixture()
-def client(fastapi_app):
+def user_tokens(setup_config):
+    config, _ = setup_config
+    tokens = {}
+
+    now = datetime.utcnow()
+    expires_delta = timedelta(minutes=-15)
+    passed_date = now + expires_delta
+
+    tokens["user1"] = create_access_token({"user": "user1"}, config)
+    tokens["bob"] = create_access_token({"user": "bob"}, config)
+    tokens["oar"] = create_access_token({"user": "oar"}, config)
+
+    tokens["globally_revoked_token"] = create_access_token(
+        {"user": "globally_revoked_token"}, config, now=passed_date
+    )
+    tokens["old_token"] = create_access_token(
+        {"user": "old_token"}, config, now=passed_date
+    )
+
+    yield tokens
+
+
+@pytest.fixture(scope="function")
+def client(fastapi_app, minimal_db_initialization, setup_config):
     with TestClient(fastapi_app) as app:
+        # override the get_db dependency to inject the test session
+        fastapi_app.dependency_overrides[get_db] = lambda: minimal_db_initialization
+
         yield app
+
+        del fastapi_app.dependency_overrides[get_db]
 
 
 @pytest.fixture(scope="function", autouse=False)
 def monkeypatch_tools(request, monkeypatch):
-    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda: None)
+    monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(oar.lib.tools, "notify_bipbip_commander", lambda x: True)
     monkeypatch.setattr(
         oar.lib.tools, "notify_tcp_socket", lambda addr, port, msg: len(msg)
     )
     monkeypatch.setattr(
-        oar.lib.tools, "notify_user", lambda job, state, msg: len(state + msg)
+        oar.lib.tools, "notify_user", lambda session, job, state, msg: len(state + msg)
     )
     monkeypatch.setattr(
         oar.lib.tools,
         "fork_and_feed_stdin",
         lambda cmd, timeout_cmd, nodes: assign_node_list(nodes),
     )
-    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x: 0)
-
-
-@pytest.fixture(scope="function", autouse=False)
-def monkeypatch_scoped_session(request, monkeypatch):
-    from sqlalchemy.util import ScopedRegistry
-
-    monkeypatch.setattr(
-        db.session,
-        "registry",
-        ScopedRegistry(db.session.session_factory, lambda: request.node.name),
-    )
+    monkeypatch.setattr(oar.lib.tools, "signal_oarexec", lambda *x, user_signal: 0)
 
 
 @pytest.fixture(scope="function")
-def minimal_db_initialization(client, monkeypatch_tools, monkeypatch_scoped_session):
-    with db.session(ephemeral=True):
-        db["Queue"].create(
-            name="default", priority=3, scheduler_policy="kamelot", state="Active"
+def minimal_db_initialization(setup_config, monkeypatch_tools):
+    _, engine = setup_config
+    session_factory = sessionmaker(bind=engine)
+    scoped = scoped_session(session_factory)
+
+    with ephemeral_session(scoped, engine, bind=engine) as session:
+        Queue.create(
+            session,
+            name="default",
+            priority=3,
+            scheduler_policy="kamelot",
+            state="Active",
         )
+
         # add some resources
         for i in range(10):
-            db["Resource"].create(network_address="localhost" + str(int(i / 2)))
+            Resource.create(session, network_address="localhost" + str(int(i / 2)))
 
-        yield
+        yield session
+
+
+@pytest.fixture(scope="function", autouse=False)
+def with_admission_rules(request, setup_config):
+    config, _ = setup_config
+
+    config["ADMISSION_RULES_IN_FILES"] = "yes"
+    config["ADMISSION_RULES_PATH"] = os.path.join(
+        os.path.dirname(__file__), "..", "lib/etc/oar/admission_rules.d/"
+    )
+
+    yield
+
+    config["ADMISSION_RULES_IN_FILES"] = "no"
+    config["ADMISSION_RULES_PATH"] = os.path.join(
+        "..", os.path.dirname(__file__), "etc/oar/admission_rules.d/"
+    )

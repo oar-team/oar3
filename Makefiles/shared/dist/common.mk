@@ -5,6 +5,7 @@ export PREFIX?=/usr/local
 export RUNDIR?=/var/run
 export LOGDIR?=/var/log
 export INITDIR?=$(ETCDIR)/init.d
+export SYSTEMDIR?=$(ETCDIR)/systemd/system
 export CRONDIR?=$(ETCDIR)/cron.d
 export CRONHOURLYDIR?=$(ETCDIR)/cron.hourly
 export LOGROTATEDIR?=$(ETCDIR)/logrotate.d
@@ -44,3 +45,6 @@ export CGIDIR?=$(WWWROOTDIR)/cgi-bin
 export XAUTHCMDPATH?=/usr/bin/xauth
 export OARSHCMD?=oarsh_oardo
 
+export RESTAPI_ROOTPATH?=/oarapi
+export RESTAPI_PORT?=6665
+export SYSTEMD_CONFDIR?=/etc/systemd/system

@@ -1,6 +1,8 @@
 # Limit the number of reservations that a user can do.
 # (overrided on user basis using the file: ~oar/unlimited_reservation.users)
 
+from sqlalchemy.sql import or_
+
 if reservation_date:
     unlimited = False
     try:
@@ -20,7 +22,7 @@ if reservation_date:
     else:
         max_nb_resa = 2
         nb_resa = len(
-            db.query(Job.id)
+            session.query(Job.id)
             .filter(Job.user == user)
             .filter(or_(Job.reservation == "toSchedule", Job.reservation == "Schedule"))
             .filter(or_(Job.state == "Waiting", Job.state == "Hold"))

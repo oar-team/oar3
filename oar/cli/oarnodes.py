@@ -13,7 +13,8 @@
 # -*- coding: utf-8 -*-
 import itertools
 import sys
-from json import dumps
+from json import dumps as json_dumps
+from typing import Optional
 
 import click
 import rich
@@ -24,11 +25,15 @@ from rich.padding import Padding
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Column, Table
+from sqlalchemy.orm import scoped_session, sessionmaker
+from yaml import dump as yaml_dump
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import AssignedResource, Job, Resource, db
+from oar.cli import MutuallyExclusiveOption
 from oar.lib.event import get_events_for_hostname_from
+from oar.lib.globals import init_oar
+from oar.lib.models import AssignedResource, Job, Model, Resource
 from oar.lib.node import (
     get_all_network_address,
     get_resources_of_nodes,
@@ -46,9 +51,9 @@ from .utils import CommandReturns
 click.disable_unicode_literals_warning = True
 
 
-def get_resources_for_job():
+def get_resources_for_job(session):
     res = (
-        db.query(Resource, Job)
+        session.query(Resource, Job)
         .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
         .filter(AssignedResource.resource_id == Resource.id)
         .filter(Job.state == "Running")
@@ -60,10 +65,10 @@ def get_resources_for_job():
     return grouped
 
 
-def get_resources_grouped_by_network_address(hostnames=[]):
+def get_resources_grouped_by_network_address(session, hostnames=[]):
     """Return the current resources on node whose hostname is passed in parameter"""
     result = (
-        db.query(Resource)
+        session.query(Resource)
         .filter(Resource.network_address.in_(hostnames))
         .order_by(Resource.network_address, Resource.id)
         .all()
@@ -74,9 +79,9 @@ def get_resources_grouped_by_network_address(hostnames=[]):
     return grouped
 
 
-def print_events(date, hostnames, json):
+def print_events(session, date, hostnames, format: Optional[str] = None):
     console = Console()
-    if not json:
+    if not format:
         table = Table()
         table.box = rich.box.SIMPLE_HEAD
         table.row_styles = ["none", "dim"]
@@ -88,7 +93,7 @@ def print_events(date, hostnames, json):
         table.add_column("Description")
 
         for hostname in hostnames:
-            events = get_events_for_hostname_from(hostname, date)
+            events = get_events_for_hostname_from(session, hostname, date)
             for ev in events:
                 table.add_row(
                     str(local_to_sql(ev.date)),
@@ -102,48 +107,68 @@ def print_events(date, hostnames, json):
     else:
         hosts_events = {
             hostname: [
-                ev.to_dict() for ev in get_events_for_hostname_from(hostname, date)
+                ev.to_dict()
+                for ev in get_events_for_hostname_from(session, hostname, date)
             ]
             for hostname in hostnames
         }
-        console.print_json(dumps(hosts_events))
+        if format == "json":
+            console.print_json(json_dumps(hosts_events))
+        elif format == "yaml":
+            console.print(yaml_dump(hosts_events))
 
 
-def print_resources_states(resource_ids, json):
-    resource_states = get_resources_state(resource_ids)
-    if not json:
+def print_resources_states(session, resource_ids, format: Optional[str] = None):
+    resource_states = get_resources_state(session, resource_ids)
+    if not format:
         for resource_state in resource_states:
             resource_id, state = resource_state.popitem()
             print("{}: {}".format(resource_id, state))
     else:
-        print(dumps(resource_states))
+        if format == "json":
+            print(json_dumps(resource_states))
+        elif format == "yaml":
+            print(yaml_dump(resource_states))
 
 
-def print_resources_states_for_hosts(hostnames, json, show_jobs=False):
-    if not json:
-        node_list = get_resources_grouped_by_network_address(hostnames)
-        res_to_jobs = get_resources_for_job()
+def print_resources_states_for_hosts(
+    session, hostnames, format: Optional[str] = None, show_jobs=False
+):
+    if not format:
+        node_list = get_resources_grouped_by_network_address(session, hostnames)
+        res_to_jobs = get_resources_for_job(session)
         cluster_details(node_list, res_to_jobs, False)
     else:
         hosts_states = [
-            {hostname: get_resources_state_for_host(hostname)} for hostname in hostnames
+            {hostname: get_resources_state_for_host(session, hostname)}
+            for hostname in hostnames
         ]
-        print(dumps(hosts_states))
+        if format == "json":
+            print(json_dumps(hosts_states))
+        elif format == "yaml":
+            print(yaml_dump(hosts_states))
 
 
-def print_all_hostnames(nodes, json):
-    if not json:
+def print_all_hostnames(nodes, format: Optional[str] = None):
+    if not format:
         for hostname in nodes:
             print(hostname)
     else:
-        print(dumps(nodes))
+        if format == "json":
+            print(json_dumps(nodes))
+        elif format == "yaml":
+            print(yaml_dump(nodes))
 
 
 # INFO: function to change if you want to change the user std output
-def print_resources_flat_way(cmd_ret, resources):
-    now = tools.get_date()
+def print_resources_flat_way(session, cmd_ret, resources):
+    now = tools.get_date(session)
 
-    properties = [column.name for column in db[Resource.__tablename__].columns]
+    # Load reflected table
+    Model.metadata.reflect(bind=session.get_bind())
+    columns = Model.metadata.tables["resources"].columns
+
+    properties = [column.name for column in columns]
 
     for resource in resources:
         cmd_ret.print_("network_address: " + resource.network_address)
@@ -167,7 +192,7 @@ def print_resources_flat_way(cmd_ret, resources):
 
 
 def print_resources_table(
-    cmd_ret, resources, properties_to_display=["cpu"], show_all=False
+    cmd_ret, session, resources, properties_to_display=["cpu"], show_all=False
 ):
     table = Table()
     table.box = rich.box.SIMPLE_HEAD
@@ -179,10 +204,13 @@ def print_resources_table(
     table.add_column("Available upto")
     show_properties = properties_to_display or show_all
 
+    Model.metadata.reflect(bind=session.get_bind())
+    columns = Model.metadata.tables["resources"].columns
+
     if show_properties:
         properties = [
             column.name
-            for column in db[Resource.__tablename__].columns
+            for column in columns
             if not check_resource_system_property(column.name)
             and (column.name in properties_to_display or show_all)
         ]
@@ -206,7 +234,10 @@ def print_resources_table(
                     row.append("")
 
         color = ""
-        if resource.state != "Alive":
+        now = tools.get_date(session)
+        if resource.state == "Absent" and resource.available_upto >= now:
+            color = "yellow"
+        elif resource.state != "Alive":
             color = "red"
 
         table.add_row(*row, style=color)
@@ -217,25 +248,36 @@ def print_resources_table(
 
 
 def print_resources_nodes_infos(
-    cmd_ret, properties, show_all_properties, resources, nodes, json
+    session,
+    cmd_ret,
+    properties,
+    show_all_properties,
+    resources,
+    nodes,
+    format: Optional[str] = None,
 ):
     # import pdb; pdb.set_trace()
     if nodes:
-        resources = get_resources_of_nodes(nodes)
+        resources = get_resources_of_nodes(session, nodes)
 
-    if not json:
+    if not format:
         print_resources_table(
             cmd_ret,
+            session,
             resources,
             properties,
             show_all_properties,
         )
         # print_resources_flat_way(cmd_ret, resources)
     else:
-        print(dumps([r.to_dict() for r in resources]))
+        if format == "json":
+            print(json_dumps([r.to_dict() for r in resources]))
+        elif format == "yaml":
+            print(yaml_dump([r.to_dict() for r in resources]))
 
 
-def cluster_summary(nodes_list, res_to_jobs):
+def cluster_summary(nodes_list, res_to_jobs, session):
+    now = tools.get_date(session)
     console = Console()
     sum_table = Table(expand=False)
 
@@ -256,7 +298,10 @@ def cluster_summary(nodes_list, res_to_jobs):
 
         bar_style = "bar.back"
         node_color = "blue"
-        if node_state != "Alive":
+        if node_state == "Absent" and first_resources.available_upto >= now:
+            bar_style = "yellow"
+            node_color = "yellow"
+        elif node_state != "Alive":
             bar_style = "dark_red"
             node_color = "dark_red"
 
@@ -301,6 +346,8 @@ def cluster_summary(nodes_list, res_to_jobs):
         )
         progress.advance(0, number_of_free_resources)
 
+        if node_state == "Absent" and first_resources.available_upto >= now:
+            node_state = "Standby"
         sum_table.add_row(
             f"[{node_color}]{net}",
             f"{node_state}",
@@ -380,6 +427,8 @@ def cluster_details(node_list, res_to_jobs, show_jobs=False):
 
 
 def oarnodes(
+    session,
+    config,
     nodes,
     properties,
     show_all_properties,
@@ -389,21 +438,28 @@ def oarnodes(
     list_nodes,
     events,
     sql,
-    json,
+    json: bool,
+    yaml: bool,
     version,
     detailed=False,
 ):
     cmd_ret = CommandReturns(cli)
+
+    format = None
+    if json:
+        format = "json"
+    elif yaml:
+        format = "yaml"
 
     if version:
         cmd_ret.print_("OAR version : " + VERSION)
         return cmd_ret
 
     if (not nodes and not (resource_ids or sql)) or list_nodes:
-        nodes = get_all_network_address()
+        nodes = get_all_network_address(session)
 
     if sql:
-        sql_resource_ids = get_resources_with_given_sql(sql)
+        sql_resource_ids = get_resources_with_given_sql(session, sql)
         if not sql_resource_ids:
             cmd_ret.warning(
                 "There are no resource(s) for this SQL WHERE clause ({})".format(sql),
@@ -414,27 +470,27 @@ def oarnodes(
     if events:
         if events == "_events_without_date_":
             events = None  # To display the 30's latest events
-        print_events(events, nodes, json)
+        print_events(session, events, nodes, format)
     elif summary:
-        node_list = get_resources_grouped_by_network_address(nodes)
-        res_to_jobs = get_resources_for_job()
-        cluster_summary(node_list, res_to_jobs)
+        node_list = get_resources_grouped_by_network_address(session, nodes)
+        res_to_jobs = get_resources_for_job(session)
+        cluster_summary(node_list, res_to_jobs, session)
     elif state:
         if resource_ids:
-            print_resources_states(resource_ids, json)
+            print_resources_states(session, resource_ids, format)
         else:
             # cluster_details(node_list, res_to_jobs)
-            print_resources_states_for_hosts(nodes, json)
+            print_resources_states_for_hosts(session, nodes, format)
     elif list_nodes:
-        print_all_hostnames(nodes, json)
+        print_all_hostnames(nodes, format)
     elif resource_ids or sql:
-        resources = get_resources_from_ids(resource_ids)
+        resources = get_resources_from_ids(session, resource_ids)
         print_resources_nodes_infos(
-            cmd_ret, properties, show_all_properties, resources, None, json
+            session, cmd_ret, properties, show_all_properties, resources, None, format
         )
     elif nodes:
         print_resources_nodes_infos(
-            cmd_ret, properties, show_all_properties, None, nodes, json
+            session, cmd_ret, properties, show_all_properties, None, nodes, format
         )
     else:
         cmd_ret.print_("No nodes to display...")
@@ -501,7 +557,20 @@ class EventsOption(click.Command):
     help="show the events recorded for a node either since the date given as parameter or the last 30 ones if date is not provided.",
 )
 @click.option(
-    "-J", "--json", is_flag=True, default=False, help="print result in JSON format"
+    "-J",
+    "--json",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["yaml"],
+    help="print result in JSON format",
+)
+@click.option(
+    "-Y",
+    "--yaml",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["json"],
+    help="print result in YAML format",
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
 def cli(
@@ -515,12 +584,25 @@ def cli(
     events,
     sql,
     json,
+    yaml,
     version,
     cli=True,
 ):
     """Display informations about nodes."""
+    ctx = click.get_current_context()
+    if ctx.obj:
+        (session, config) = ctx.obj
+    else:
+        config, engine = init_oar()
+
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
     properties = property
     cmd_ret = oarnodes(
+        session,
+        config,
         nodes,
         properties,
         show_all_properties,
@@ -531,6 +613,7 @@ def cli(
         events,
         sql,
         json,
+        yaml,
         version,
     )
     cmd_ret.exit()

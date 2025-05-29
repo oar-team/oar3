@@ -28,14 +28,14 @@ class Platform(object):
     def __init__(self):
         pass
 
-    def resource_set(self):
-        return ResourceSet()
+    def resource_set(self, session=None, config=None):
+        return ResourceSet(session, config)
 
     def get_time(self):
         return int(time.time())
 
-    def get_waiting_jobs(self, queue, reservation="None"):
-        return get_waiting_jobs(queue, reservation)
+    def get_waiting_jobs(self, queue, reservation="None", session=None):
+        return get_waiting_jobs(session, queue, reservation)
 
     def get_data_jobs(self, *args):
         return get_data_jobs(*args)

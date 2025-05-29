@@ -2,8 +2,8 @@
 import datetime
 import re
 import sys
-from json import dumps
-from typing import Generator, List
+from json import dumps as json_dumps
+from typing import Generator, List, Optional
 
 import click
 from ClusterShell.NodeSet import NodeSet
@@ -11,19 +11,23 @@ from rich import box
 from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
+from sqlalchemy.orm import scoped_session, sessionmaker
+from yaml import dump as yaml_dump
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import db
 from oar.lib.accounting import (
     get_accounting_summary,
     get_accounting_summary_byproject,
     get_last_project_karma,
 )
+from oar.lib.basequery import BaseQueryCollection
 from oar.lib.event import get_jobs_events
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     get_array_job_ids,
     get_job_cpuset_name,
+    get_job_exit_status_code,
     get_job_resources_properties,
     get_jobs_state,
 )
@@ -34,6 +38,7 @@ from oar.lib.tools import (
     sql_to_local,
 )
 
+from . import MutuallyExclusiveOption
 from .utils import CommandReturns
 
 console = Console()
@@ -57,44 +62,7 @@ STATE2CHAR = {
 }
 
 
-def get_job_full(jobs) -> List[str]:
-    # The headers to print
-    headers: List[str] = [
-        "Job id",
-        "State",
-        "User",
-        "Duration",
-        "System message",
-    ]
-    # First yield the headers
-    yield headers
-
-    now = tools.get_date()
-    for job in jobs:
-        # Compute job duration
-        duration = 0
-        if job.start_time:
-            if now > job.start_time:
-                if job.state in ["Running", "Launching", "Finishing"]:
-                    duration = now - job.start_time
-                elif job.stop_time != 0:
-                    duration = job.stop_time - job.start_time
-                else:
-                    duration = -1
-
-        # !! It must be consistent wih `header_columns`
-        job_line = [
-            str(job.id),
-            STATE2CHAR[job.state],
-            str(job.user),
-            str(datetime.timedelta(seconds=duration)),
-            str(job.message),
-        ]
-
-        yield job_line
-
-
-def get_table_lines_jobs(jobs, arg) -> List[str]:
+def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
@@ -111,10 +79,10 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
     # First yield the headers
     yield headers
 
-    now = tools.get_date()
+    now = tools.get_date(session)
     for job in jobs:
         # Compute job duration
-        duration = 0
+        duration = -1
         if job.start_time:
             if now > job.start_time:
                 if job.state in ["Running", "Launching", "Finishing"]:
@@ -123,13 +91,17 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
                     duration = job.stop_time - job.start_time
                 else:
                     duration = -1
+        if duration >= 0:
+            duration_string = str(datetime.timedelta(seconds=duration))
+        else:
+            duration_string = "-"
 
         # !! It must be consistent wih `header_columns`
         job_line = [
             str(job.id),
             job.state,
             str(job.user),
-            str(datetime.timedelta(seconds=duration)),
+            duration_string,
             str(job.message),
             str(job.queue_name),
         ]
@@ -140,7 +112,7 @@ def get_table_lines_jobs(jobs, arg) -> List[str]:
         yield job_line
 
 
-def gather_all_user_accounting(items, arg) -> List[str]:
+def gather_all_user_accounting(session, items, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "User",
@@ -173,6 +145,7 @@ def gather_all_user_accounting(items, arg) -> List[str]:
 
 
 def print_table(
+    session,
     objects: List[any],
     gather_prop: Generator[List[str], None, None],
     min_column_size: int = 7,
@@ -182,7 +155,7 @@ def print_table(
     Use Rich to print a table in the terminal
     """
     table = Table(title="")
-    lines_generator = gather_prop(objects, extra_arg)
+    lines_generator = gather_prop(session, objects, extra_arg)
 
     # The first yielded value should be the header list
     lines = [next(lines_generator)]
@@ -198,11 +171,14 @@ def print_table(
     console.print(table)
 
 
-def print_jobs(legacy, jobs, json, show_resources=False, full=False):
+def print_jobs(
+    session, legacy, jobs, format: Optional[str], show_resources=False, full=False
+):
     console = Console()
+    queryCollection = BaseQueryCollection(session)
 
     if full or show_resources:
-        res = db.queries.get_assigned_jobs_resources(jobs)
+        res = queryCollection.get_assigned_jobs_resources(jobs)
         for job in jobs:
             if job.id in res:
                 nodes = NodeSet.fromlist(
@@ -210,18 +186,37 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
                 )
                 job.network_adresses = nodes
 
-    if json:
+        jobs_types = queryCollection.get_jobs_types(jobs)
+        for job in jobs:
+            if job.id in jobs_types:
+                types = []
+                for job_type, value in jobs_types[job.id].items():
+                    if type(value) == bool:
+                        types.append(f"{job_type}")
+                    else:
+                        types.append(f"{job_type}={value}")
+                job.types = ", ".join(types)
+
+        jobs_walltime = queryCollection.get_jobs_walltime(jobs)
+        for job in jobs:
+            if job.id in jobs_walltime:
+                job.walltime = jobs_walltime[job.id]
+
+    if format:
         to_dump = {}
         # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
         jobs_properties = [
             {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
         ]
 
-        if json:
-            for job in jobs_properties:
-                to_dump[job["id"]] = job
+        for job in jobs_properties:
+            to_dump[job["id"]] = job
 
-            console.print_json(dumps(to_dump))
+        if format == "json":
+            console.print_json(json_dumps(to_dump))
+
+        if format == "yaml":
+            console.print(yaml_dump(to_dump))
 
     elif legacy and full:
         for job in jobs:
@@ -240,12 +235,14 @@ def print_jobs(legacy, jobs, json, show_resources=False, full=False):
                 )
             console.print()
     elif legacy:
-        print_table(jobs, get_table_lines_jobs, extra_arg={"resources": show_resources})
+        print_table(
+            session, jobs, get_table_lines_jobs, extra_arg={"resources": show_resources}
+        )
     else:
         print(jobs)
 
 
-def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
+def print_accounting(session, cmd_ret, accounting, user, sql_property):
     # --accounting "YYYY-MM-DD, YYYY-MM-DD"
     m = re.match(
         r"\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*,\s*(\d{4}\-\d{1,2}\-\d{1,2})\s*", accounting
@@ -256,7 +253,9 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
         d1_local = sql_to_local(date1)
         d2_local = sql_to_local(date2)
 
-        consumptions = get_accounting_summary(d1_local, d2_local, user, sql_property)
+        consumptions = get_accounting_summary(
+            session, d1_local, d2_local, user, sql_property
+        )
         # import pdb; pdb.set_trace()
         # One user output
         if user:
@@ -294,7 +293,7 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
             print("By project consumption:")
 
             consumptions_by_project = get_accounting_summary_byproject(
-                d1_local, d2_local, user
+                session, d1_local, d2_local, user
             )
             for project, consumptions_proj in consumptions_by_project.items():
                 print("  " + project + ":")
@@ -316,28 +315,28 @@ def print_accounting(cmd_ret, accounting, user, sql_property, json=False):
                     )
                 )
 
-                last_karma = get_last_project_karma(user, project, d2_local)
+                last_karma = get_last_project_karma(session, user, project, d2_local)
                 if last_karma:
                     m = re.match(r".*Karma\s*\=\s*(\d+\.\d+)", last_karma)
                     if m:
                         print("{:>28}: {}".format("Last Karma", m.group(1)))
         # All users array output
         else:
-            print_table(consumptions.items(), gather_all_user_accounting)
+            print_table(session, consumptions.items(), gather_all_user_accounting)
     else:
         cmd_ret.error("Bad syntax for --accounting", 1, 1)
         cmd_ret.exit()
 
 
-def print_events(cmd_ret, job_ids, array_id, json):
+def print_events(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
 
     if job_ids:
-        events = get_jobs_events(job_ids)
-        if not json:
+        events = get_jobs_events(session, job_ids)
+        if not format:
 
-            def gather_events(events, extra_args={}):
+            def gather_events(_, events, extra_args={}):
                 yield ["Date", "job id", "Type", "Description"]
                 for event in events:
                     yield [
@@ -347,7 +346,7 @@ def print_events(cmd_ret, job_ids, array_id, json):
                         str(event.description),
                     ]
 
-            print_table(events, gather_events)
+            print_table(session, events, gather_events)
         else:
             events_per_jobs = dict()
             for event in events:
@@ -359,22 +358,26 @@ def print_events(cmd_ret, job_ids, array_id, json):
                     "description": str(event.description),
                 }
                 events_per_jobs[str(event.job_id)].append(event_dict)
-            print(dumps(events_per_jobs))
+
+            if format == "json":
+                print(json_dumps(events_per_jobs))
+            if format == "yaml":
+                print(yaml_dump(events_per_jobs))
 
     else:
         cmd_ret.warning("No job ids specified")
 
 
-def print_properties(cmd_ret, job_ids, array_id, json):
+def print_properties(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
 
     if job_ids:
         # Gather a list of [(Resource, job_id), ...]
         resources_properties = [
             (p, job_id)
             for job_id in job_ids
-            for p in get_job_resources_properties(job_id)
+            for p in get_job_resources_properties(session, job_id)
         ]
 
         # For each job, construct the list of its resources properties
@@ -392,8 +395,10 @@ def print_properties(cmd_ret, job_ids, array_id, json):
             )
 
         # If json, the `properties_for_job` is ready to be dumped
-        if json:
-            print(dumps(properties_for_job))
+        if format and format == "json":
+            print(json_dumps(properties_for_job))
+        elif format and format == "yaml":
+            print(yaml_dump(properties_for_job))
         else:
             # For normal print, all resources are printed in a new line regardless of their jobs
             # First flatten the properties into an array
@@ -415,22 +420,26 @@ def print_properties(cmd_ret, job_ids, array_id, json):
         cmd_ret.warning("No job ids specified")
 
 
-def print_state(cmd_ret, job_ids, array_id, json):
+def print_state(session, cmd_ret, job_ids, array_id, format: Optional[str]):
     # TODO json mode
     if array_id:
-        job_ids = get_array_job_ids(array_id)
+        job_ids = get_array_job_ids(session, array_id)
     if job_ids:
-        job_ids_state = get_jobs_state(job_ids)
-        if json:
+        job_ids_state = get_jobs_state(session, job_ids)
+        if format:
             json_dict = {}
             for i, job_id_state in enumerate(job_ids_state):
                 job_id, state = job_id_state
                 json_dict[str(job_id)] = state
                 # print('"{}" : "{}"{}'.format(job_id, state, comma))
             # import pdb; pdb.set_trace()
-            print(dumps(json_dict))
+            if format == "json":
+                print(json_dumps(json_dict))
+            if format == "yaml":
+                print(yaml_dump(json_dict))
+
         else:
-            for job_id_state in get_jobs_state(job_ids):
+            for job_id_state in get_jobs_state(session, job_ids):
                 job_id, state = job_id_state
                 print("{}: {}".format(job_id, state))
     else:
@@ -508,9 +517,26 @@ class UserOption(click.Command):
     type=click.STRING,
     help="restricts display by applying the SQL where clause on the table jobs (ex: \"project = 'p1'\")",
 )
-@click.option("-J", "--json", is_flag=True, help="print result in JSON format")
+@click.option(
+    "-J",
+    "--json",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["yaml"],
+    help="print result in JSON format",
+)
+@click.option(
+    "-Y",
+    "--yaml",
+    cls=MutuallyExclusiveOption,
+    is_flag=True,
+    mutually_exclusive=["json"],
+    help="print result in YAML format",
+)
 @click.option("-V", "--version", is_flag=True, help="print OAR version number")
+@click.pass_context
 def cli(
+    ctx,
     job,
     full,
     state,
@@ -524,9 +550,21 @@ def cli(
     accounting,
     sql,
     json,
+    yaml,
     version,
 ):
+    ctx = click.get_current_context()
+    if ctx.obj:
+        session = ctx.obj
+    else:
+        _, engine = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
     cmd_ret = CommandReturns(cli)
+
+    queryCollection = BaseQueryCollection(session)
 
     # Print OAR version and exit
     if version:
@@ -538,8 +576,14 @@ def cli(
 
     # if accounting print it and exit
     if accounting:
-        print_accounting(cmd_ret, accounting, user, sql)
+        print_accounting(session, cmd_ret, accounting, user, sql)
         cmd_ret.exit()
+
+    format = None
+    if json:
+        format = "json"
+    if yaml:
+        format = "yaml"
 
     job_ids = job
     array_id = array
@@ -552,11 +596,11 @@ def cli(
         cmd_ret.exit()
 
     if events:
-        print_events(cmd_ret, job_ids, array_id, json)
+        print_events(session, cmd_ret, job_ids, array_id, format)
     elif properties:
-        print_properties(cmd_ret, job_ids, array_id, json)
+        print_properties(session, cmd_ret, job_ids, array_id, format)
     elif state:
-        print_state(cmd_ret, job_ids, array_id, json)
+        print_state(session, cmd_ret, job_ids, array_id, format)
     else:
         start_time = None
         stop_time = None
@@ -570,13 +614,16 @@ def cli(
             start_time = sql_to_local(date1)
             stop_time = sql_to_local(date2)
 
-        jobs = db.queries.get_jobs_for_user(
+        jobs = queryCollection.get_jobs_for_user(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
         for job in jobs:
-            job.cpuset_name = get_job_cpuset_name(job.id, job=job)
+            job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
+            job.exit_status_code = str(
+                get_job_exit_status_code(session, job.id, job=job)
+            )
 
-        print_jobs(True, jobs, json, show_resources, full)
+        print_jobs(session, True, jobs, format, show_resources, full)
 
     cmd_ret.exit()

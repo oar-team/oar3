@@ -22,13 +22,21 @@ from subprocess import (  # noqa
     check_output,
     run,
 )
+from typing import List, Optional
 
 import psutil
 import zmq
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from oar.lib import config, db, get_logger
-from oar.lib import logger as log
 from oar.lib.event import add_new_event
+
+# from oar.lib import config, db
+from oar.lib.globals import get_logger, init_config
+
+# from oar.lib import logger as log
+# FIXME:Global config
+config = init_config()
 
 tools_logger = get_logger("oar.lib.tools", forward_stderr=True)
 
@@ -38,7 +46,7 @@ bipbip_commander_socket = None
 oar2_almighty_socket = None
 
 
-def notify_user(job, state, msg):  # pragma: no cover
+def notify_user(session, job, state, msg):  # pragma: no cover
     if job.notify:
         tags = ["RUNNING", "END", "ERROR", "INFO", "SUSPENDED", "RESUMING"]
         m = re.match(r"^\s*\[\s*(.+)\s*\]\s*(mail|exec)\s*:.+$", job.notify)
@@ -50,6 +58,7 @@ def notify_user(job, state, msg):  # pragma: no cover
             if m:
                 mail_address = m.group(1)
                 add_new_event(
+                    session,
                     "USER_MAIL_NOTIFICATION",
                     job.id,
                     "Send a mail to {}: state: {}".format(mail_address, state),
@@ -91,11 +100,13 @@ def notify_user(job, state, msg):  # pragma: no cover
                         p.kill()
                         msg = "User notification failed: ssh timeout (cmd: " + cmd + ")"
                         tools_logger.error(msg)
-                        add_new_event("USER_EXEC_NOTIFICATION_ERROR", job.id, msg)
+                        add_new_event(
+                            session, "USER_EXEC_NOTIFICATION_ERROR", job.id, msg
+                        )
                         return False
 
                     msg = "Launched user notification command : " + cmd
-                    add_new_event("USER_EXEC_NOTIFICATION", job.id, msg)
+                    add_new_event(session, "USER_EXEC_NOTIFICATION", job.id, msg)
     return True
 
 
@@ -115,7 +126,7 @@ def send_mail(job, mail_address, subject, msg_content):  # pragma: no cover
     s.quit()
 
 
-def create_almighty_socket():  # pragma: no cover
+def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: no cover
     global zmq_context
     global almighty_socket
 
@@ -123,15 +134,17 @@ def create_almighty_socket():  # pragma: no cover
         zmq_context = zmq.Context()
 
     almighty_socket = zmq_context.socket(zmq.PUSH)
-    almighty_socket.connect(
-        "tcp://" + config["SERVER_HOSTNAME"] + ":" + config["APPENDICE_SERVER_PORT"]
-    )
+    almighty_socket.connect("tcp://" + server_hostname + ":" + server_port)
 
 
 # TODO: refactor to use zmq and/or conserve notification through TCP (for oarsub by example ???)
-def notify_almighty(cmd, job_id=None, args=None):  # pragma: no cover
+def notify_almighty(
+    cmd: str, job_id: Optional[int] = None, args: Optional[List[str]] = None
+) -> bool:  # pragma: no cover
     if not almighty_socket:
-        create_almighty_socket()
+        create_almighty_socket(
+            config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]
+        )
 
     message = {"cmd": cmd}
     if job_id:
@@ -284,7 +297,7 @@ def pingchecker(hosts):  # pragma: no cover
 
 
 def pingchecker_exec_command(
-    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=log
+    cmd, hosts, filter_output, ip2hostname, pipe_hosts, add_bad_hosts, log=tools_logger
 ):  # pragma: no cover
     log.debug("[PingChecker] command to run : {}".format(cmd))
 
@@ -309,6 +322,8 @@ def pingchecker_exec_command(
     output = out.decode()
     error = err.decode()  # noqa TODO: not used
 
+    log.debug(f"out: {output}, err: {error}")
+
     for line in output.split("\n"):
         host = filter_output(*(line, ip2hostname))
         if host and host in bad_hosts:
@@ -328,7 +343,7 @@ def send_log_by_email(title, message):  # pragma: no cover
     return
 
 
-def exec_with_timeout(cmd, timeout=config["TIMEOUT_SSH"]):  # pragma: no cover
+def exec_with_timeout(cmd, timeout=None):  # pragma: no cover
     # Launch admin script
     error_msg = ""
     try:
@@ -448,16 +463,16 @@ def signal_oarexec(
 
 
 # TODO
-def send_to_hulot(cmd, data):
-    config.setdefault_config({"FIFO_HULOT": "/tmp/oar_hulot_pipe"})
-    fifoname = config["FIFO_HULOT"]
+def send_to_greta(cmd, data):
+    config.setdefault_config({"FIFO_GRETA": "/tmp/oar_greta_pipe"})
+    fifoname = config["FIFO_GRETA"]
     try:
         with open(fifoname, "w") as fifo:
             fifo.write("HALT:%s\n" % data)
             fifo.flush()
     except IOError as e:  # pragma: no cover
         e.strerror = (
-            "Unable to communication with Hulot: %s (%s)" % fifoname % e.strerror
+            "Unable to communication with Greta: %s (%s)" % fifoname % e.strerror
         )
         tools_logger.error(e.strerror)
         return 1
@@ -577,7 +592,7 @@ def manage_remote_commands(
                 str_to_transfer.encode("utf8"), timeout=(2 * config["TIMEOUT_SSH"])
             )
         except TimeoutExpired:
-            tools_logger.error("Popen.comminicate TimeoutExpired")
+            tools_logger.error("Popen.communicate TimeoutExpired")
             p.kill()
             # m = re.match(br'^STATUS ([\w\.\-\d]+) (\d+)$', out)
             return (0, [])
@@ -603,13 +618,14 @@ def manage_remote_commands(
     return (0, [])
 
 
-def get_date():  # pragma: no cover
-    if db.engine.dialect.name == "sqlite":
+def get_date(session: Session):  # pragma: no cover
+    dialect = session.bind.dialect.name
+    if dialect == "sqlite":
         req = "SELECT strftime('%s','now')"
     else:
         req = "SELECT EXTRACT(EPOCH FROM current_timestamp)"
 
-    result = db.session.execute(req).scalar()
+    result = session.execute(text(req)).scalar()
     return int(result)
 
 
@@ -633,7 +649,7 @@ def hms_str_to_duration(hms_str):
         return 3600 * int(hms[0]) + 60 * int(hms[1]) + int(hms[2])
 
 
-def sql_to_local(date):
+def sql_to_local(date) -> int:
     """Converts a date specified in the format used by the sql database to an
     integer local time format
     Date 'year mon mday hour min sec'"""
@@ -802,7 +818,7 @@ def format_ssh_pub_key(key, cpuset, user, job_user=None):
     return formated_key
 
 
-def get_private_ssh_key_file_name(cpuset_name):
+def get_private_ssh_key_file_name(cpuset_name, config):
     """Get the name of the file of the private ssh key for the given cpuset name"""
     return config["OAREXEC_DIRECTORY"] + "/" + cpuset_name + ".jobkey"
 
@@ -888,7 +904,7 @@ def resources2dump_perl(resources):
 
 
 def get_oarexecuser_script_for_oarsub(
-    job, job_walltime, node_file, shell, resource_file
+    config, job, job_walltime, node_file, shell, resource_file
 ):  # pragma: no cover
     """Create the shell script used to execute right command for the user
     The resulting script can be launched with : bash -c 'script'
@@ -962,11 +978,12 @@ def get_oarexecuser_script_for_oarsub(
     return script
 
 
-def check_process(pid):
+def check_process(pid, logger):
     """Check for the existence process."""
     try:
         os.kill(pid, 0)
-    except OSError:
+    except OSError as error:
+        logger.info(f"checking process error: {error}")
         return False
     else:
         return True

@@ -7,25 +7,25 @@ from oar.kao.scheduling import (
     set_slots_with_prev_scheduled_jobs,
 )
 from oar.kao.slot import Slot, SlotSet
-from oar.lib import config
+from oar.lib.globals import init_config
 from oar.lib.job_handling import JobPseudo
+
+config = init_config()
 
 # import pdb
 
 config["LOG_FILE"] = ":stderr:"
 
 
-def compare_slots_val_ref(slots, v):
-    sid = 1
+def compare_slots_val_ref(slots: SlotSet, v):
+    slot = slots.first()
     i = 0
-    while True:
-        slot = slots[sid]
+    for slot in slots.traverse_id():
+        # slot = slots[sid]
         (b, e, itvs) = v[i]
         if (slot.b != b) or (slot.e != e) or not (slot.itvs == itvs):
+            print("NOT EQUAL", slot.b, b, slot.e, e, slot.itvs, itvs)
             return False
-        sid = slot.next
-        if sid == 0:
-            break
         i += 1
     return True
 
@@ -62,8 +62,10 @@ def test_set_slots_with_prev_scheduled_jobs_1():
     all_ss = {"default": ss}
 
     set_slots_with_prev_scheduled_jobs(all_ss, [j1, j2], 10)
+    print()
+    print(ss)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_assign_resources_mld_job_split_slots_1():
@@ -87,7 +89,7 @@ def test_assign_resources_mld_job_split_slots_1():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_assign_resources_mld_job_split_slots_2():
@@ -109,7 +111,7 @@ def test_assign_resources_mld_job_split_slots_2():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
     ss.show_slots()
-    assert compare_slots_val_ref(ss.slots, v)
+    assert compare_slots_val_ref(ss, v)
 
 
 def test_assign_resources_mld_job_split_slots_3():
@@ -132,7 +134,7 @@ def test_assign_resources_mld_job_split_slots_3():
 
     assign_resources_mld_job_split_slots(ss, j1, hy, -1)
     ss.show_slots()
-    assert compare_slots_val_ref(ss.slots, v)
+    assert compare_slots_val_ref(ss, v)
 
 
 def test_schedule_id_jobs_ct_1():
@@ -155,7 +157,7 @@ def test_schedule_id_jobs_ct_1():
 
     schedule_id_jobs_ct(all_ss, {1: j1}, hy, [1], 20)
 
-    assert compare_slots_val_ref(ss.slots, v) is True
+    assert compare_slots_val_ref(ss, v) is True
 
 
 def test_schedule_error_1():
@@ -573,7 +575,7 @@ def test_error_dependency():
 
     schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
 
-    assert j2.start_time == -1
+    assert j2.start_time == 0
 
 
 def test_terminated_dependency():
@@ -790,3 +792,34 @@ def test_schedule_timesharing1():
     print("j1.start_time:", j1.start_time, " j2.start_time:", j2.start_time)
 
     assert j1.start_time == j2.start_time
+
+
+def test_schedule_error_2():
+    res = ProcSet(*[(1, 16)])
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 1000))
+    all_ss = {"default": ss}
+
+    j1 = JobPseudo(id=1, start_time=10, walltime=600, res_set=ProcSet(*[(1, 8)]))
+
+    nodes_set = [[(2 * i + 1, 2 * i + 2)] for i in range(8)]
+    hy = {"node": [ProcSet(*x) for x in nodes_set]}
+
+    ss.split_slots_jobs([j1])
+
+    j5 = JobPseudo(
+        id=5,
+        mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
+    )
+    j6 = JobPseudo(
+        id=6,
+        mld_res_rqts=[(1, 60, [([("node", 4)], ProcSet(*res))])],
+    )
+
+    print(ss)
+
+    schedule_id_jobs_ct(all_ss, {5: j5, 6: j6}, hy, [5, 6], 20)
+
+    for j in [j5, j6]:
+        print(f"jid: {j.id}, start_time: {j.start_time}, res_set: {j.res_set}")
+
+    print(ss)

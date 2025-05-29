@@ -31,6 +31,8 @@ OAROWNERGROUP="%%OAROWNERGROUP%%"
 WWWUSER="%%WWWUSER%%"
 APACHECONFDIR="%%APACHECONFDIR%%"
 WWWROOTDIR="%%WWWROOTDIR%%"
+RESTAPI_ROOTPATH="%%RESTAPI_ROOTPATH%%"
+RESTAPI_PORT="%%RESTAPI_PORT%%"
 WWWDIR="%%WWWDIR%%"
 XAUTHCMDPATH="%%XAUTHCMDPATH%%"
 OARSHCMD="%%OARSHCMD%%"
@@ -39,6 +41,7 @@ DEFAULTDIR="%%DEFAULTDIR%%"
 SETUP_TYPE="%%SETUP_TYPE%%"
 TARGET_DIST="%%TARGET_DIST%%"
 OARDOPATH="%%OARDOPATH%%"
+SYSTEMD_CONFDIR="%%SYSTEMD_CONFDIR%%"
 
 #
 # shared functions for oar setup files.
@@ -46,7 +49,7 @@ OARDOPATH="%%OARDOPATH%%"
 
 install_conffile() {
 
-    
+
     case "${SETUP_TYPE}" in
         "deb")
             install_deb_conffile $*
@@ -81,7 +84,7 @@ install_deb_conffile() {
     if [ -n "$owner" ]; then
         chown $owner $dst
     fi
-    
+
     if [ -f "$tmpfile" ]; then
         rm -f "$tmpfile"
     fi
@@ -97,7 +100,7 @@ install_rpm_conffile() {
     dst=$2
     rights=$3
     owner=$4
-    
+
     if [ -n "$rights" ]; then
         chmod $rights $dst
     fi
@@ -113,7 +116,7 @@ install_if_not_exist() {
     rights=$3
     owner=$4
 
-        
+
     # Decompress the file, if compressed
     tmpfile=
     if [ ! -f "$src" ] && [ -f "${src}.gz" ]; then
@@ -122,9 +125,9 @@ install_if_not_exist() {
         src=$tmpfile
     fi
 
-    if [ -f "$dst" ]; then 
+    if [ -f "$dst" ]; then
         :
-    else 
+    else
         install $src $dst
         if [ -n "$rights" ]; then
             chmod $rights $dst
@@ -133,7 +136,7 @@ install_if_not_exist() {
             chown $owner $dst
         fi
     fi
-    
+
     if [ -f "$tmpfile" ]; then
         rm -f "$tmpfile"
     fi

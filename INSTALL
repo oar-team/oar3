@@ -357,7 +357,7 @@ To activate this feature, you have to:
 
 You need to restart OAR each time you change an ``ENERGY_*`` variable.
 More informations are available inside the oar.conf file itself. For more
-details about the mechanism, take a look at the "Hulot" module documentation.
+details about the mechanism, take a look at the "Greta" module documentation.
 
 Disabling SELinux
 ~~~~~~~~~~~~~~~~~

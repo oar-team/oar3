@@ -6,6 +6,8 @@ In oar, resources are organized as a `nested sets`_.
 .. _nested sets: https://en.wikipedia.org/wiki/Nested_set_model
 """
 
+from typing import List
+
 from procset import ProcSet
 
 
@@ -28,7 +30,7 @@ class Hierarchy(object):
                 raise Exception("Hierarchy description must be provided")
 
 
-def keep_no_empty_scat_bks(itvs, itvss_ref):
+def keep_no_empty_scat_bks(itvs: ProcSet, itvss_ref):
     """
     Filter :class:`ProcSet` from itvss_ref that has no element in `itvs`
 
@@ -53,7 +55,7 @@ def keep_no_empty_scat_bks(itvs, itvss_ref):
     return r_itvss
 
 
-def extract_n_scattered_block_itv(itvs1, itvs_ref, n):
+def extract_n_scattered_block_itv(itvs1: ProcSet, itvs_ref: List[ProcSet], n: int):
     """
     Try to take `n` resources from hierarchy level `itvs_ref`.
     Only takes resources from resource for which all their sub-resources are available.

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: TODO: not tested
 
 # TODO: Evalys integration
 # TODO: Complete Job header
@@ -21,7 +22,8 @@ from collections import OrderedDict
 import click
 from sqlalchemy.sql import distinct, func, or_
 
-from oar.lib import AssignedResource, Job, MoldableJobDescription, Resource, db
+from oar.lib.globals import init_oar
+from oar.lib.models import AssignedResource, Job, MoldableJobDescription, Resource
 
 click.disable_unicode_literals_warning = True
 
@@ -178,9 +180,11 @@ def get_jobs(first_jobid, last_jobid, wkld_metadata):
                 array=job.array_id,
                 type=0 if job.type == "PASSIVE" else 1,
                 reservation=1 if (job.reservation != "None") else 0,
-                cigri=job.name.split(".")[1]
-                if (job.name and job.name.split(".")[0] == "cigri")
-                else "0",
+                cigri=(
+                    job.name.split(".")[1]
+                    if (job.name and job.name.split(".")[0] == "cigri")
+                    else "0"
+                ),
             )
             jobs_metrics[job.id] = job_metrics
 
@@ -524,8 +528,6 @@ def cli(
     oar2trace --db-url 'postgresql://oar:oar@server/oar' -m owf
 
     """
-    # import pdb; pdb.set_trace()
-
     display = p
     jobids_range = None
 
@@ -538,9 +540,10 @@ def cli(
         db_name = db_url.split("/")[-1]
         db_server = (db_url.split("/")[-2]).split("@")[-1]
     else:
-        db_name = "oar"
-        db_server = "localhost"
-
+        _, engine = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
     try:
         jobids_range = db.query(
             func.max(Job.id).label("max"), func.min(Job.id).label("min")

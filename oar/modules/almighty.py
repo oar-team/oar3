@@ -21,20 +21,7 @@ import time
 import zmq
 
 import oar.lib.tools as tools
-from oar.lib import config, get_logger
-
-# Set undefined config value to default one
-DEFAULT_CONFIG = {
-    "META_SCHED_CMD": "kao",
-    "SERVER_HOSTNAME": "localhost",
-    "APPENDICE_SERVER_PORT": "6670",  # new endpoint which replaces appendice
-    "SCHEDULER_MIN_TIME_BETWEEN_2_CALLS": "1",
-    "FINAUD_FREQUENCY": "300",
-    "LOG_FILE": "/var/log/oar.log",
-    "ENERGY_SAVING_INTERNAL": "no",
-}
-
-config.setdefault_config(DEFAULT_CONFIG)
+from oar.lib.globals import get_logger, init_config
 
 # Everything is run by oar user (The real uid of this process.)
 os.environ["OARDO_UID"] = str(os.geteuid())
@@ -53,10 +40,6 @@ else:
     )
     os.environ["OARDIR"] = binpath
 
-meta_sched_command = config["META_SCHED_CMD"]
-m = re.match(r"^\/", meta_sched_command)
-if not m:
-    meta_sched_command = os.path.join(binpath, meta_sched_command)
 
 leon_command = os.path.join(binpath, "oar-leon")
 check_for_villains_command = os.path.join(binpath, "oar-sarko")
@@ -72,7 +55,7 @@ nodeChangeState_command = os.path.join(binpath, "oar-node-change-state")
 
 proxy_appendice_command = os.path.join(binpath, "oar-appendice-proxy")
 bipbip_commander = os.path.join(binpath, "oar-bipbip-commander")
-hulot_command = os.path.join(binpath, "oar-hulot")
+greta_command = os.path.join(binpath, "oar-greta")
 
 # This timeout is used to slowdown the main automaton when the
 # command queue is empty, it correspond to a blocking read of
@@ -93,17 +76,9 @@ max_successive_read = 1
 # Max waiting time before new scheduling attempt (in the case of
 # no notification)
 schedulertimeout = 60
-# Min waiting time before 2 scheduling attempts
-scheduler_min_time_between_2_calls = int(config["SCHEDULER_MIN_TIME_BETWEEN_2_CALLS"])
-
 
 # Max waiting time before check for jobs whose time allowed has elapsed
 villainstimeout = 10
-
-# Max waiting time before check node states
-checknodestimeout = int(config["FINAUD_FREQUENCY"])
-
-Log_file = config["LOG_FILE"]
 
 energy_pid = 0
 
@@ -149,24 +124,40 @@ def launch_command(command):
     return return_code
 
 
-def start_hulot():
-    """Start :mod:`oar.kao.hulot`"""
-    return tools.Popen(hulot_command)
+def start_greta() -> tools.Popen:
+    """Start :mod:`oar.kao.greta`"""
+    command = greta_command
+    logger.debug("Launching command : [" + command + "]")
+
+    greta = tools.Popen(command)
+    try:
+        stdout, stderr = greta.communicate(timeout=10)
+        logger.info(f"greta: {stdout}\n{stderr}")
+    except Exception as e:
+        logger.info(f"greta: {e}")
+        pass
+
+    return greta
 
 
-def check_hulot(hulot):
-    """Check the presence hulot process"""
-    return tools.check_process(hulot.pid)
+def check_greta(greta, logger):
+    """Check the presence greta process"""
+    logger.debug(f"checking if Greta is still alive: pid:{greta.pid}")
+
+    res = tools.check_process(greta.pid, logger)
+
+    try:
+        greta.communicate(timeout=0)
+    except Exception as e:
+        logger.debug(f"{vars(e)}")
+        pass
+
+    return res
 
 
 #
 # functions associated with each state of the automaton
 #
-
-
-def meta_scheduler():
-    """Start :mod:`oar.kao.meta_sched`"""
-    return launch_command(meta_sched_command)
 
 
 def check_for_villains():
@@ -192,15 +183,18 @@ def nodeChangeState():
 class Almighty(object):
     def __init__(self):
         self.state = "Init"
+
+        self._init(binpath)
+
         logger.debug("Current state [" + self.state + "]")
 
         # Activate appendice socket
         self.context = zmq.Context()
         self.appendice = self.context.socket(zmq.PULL)
-        ip_addr_server = socket.gethostbyname(config["SERVER_HOSTNAME"])
+        ip_addr_server = socket.gethostbyname(self.config["SERVER_HOSTNAME"])
         try:
             self.appendice.bind(
-                "tcp://" + ip_addr_server + ":" + config["APPENDICE_SERVER_PORT"]
+                "tcp://" + ip_addr_server + ":" + self.config["APPENDICE_SERVER_PORT"]
             )
         except Exception as e:
             logger.error(f"Failed to activate appendice endpoint: {e}")
@@ -208,10 +202,12 @@ class Almighty(object):
 
         self.set_appendice_timeout(read_commands_timeout)
 
-        # Starting of Hulot, the Energy saving module
-        self.hulot = None
-        if config["ENERGY_SAVING_INTERNAL"] == "yes":
-            self.hulot = start_hulot()
+        # Starting of Greta, the Energy saving module
+        self.greta = None
+        if self.config["ENERGY_SAVING_INTERNAL"] == "yes":
+            logger.info("Energy saving internal mode: Starting up Greta")
+            self.greta = start_greta()
+            logger.info(f"{self.greta}")
 
         self.lastscheduler = 0
         self.lastvillains = 0
@@ -224,6 +220,42 @@ class Almighty(object):
         self.state = "Qget"
 
         self.start_companions()
+
+    def _init(self, binpath):
+        config = init_config()
+
+        # Set undefined config value to default one
+        DEFAULT_CONFIG = {
+            "META_SCHED_CMD": "kao",
+            "SERVER_HOSTNAME": "localhost",
+            "APPENDICE_SERVER_PORT": "6670",  # new endpoint which replaces appendice
+            "SCHEDULER_MIN_TIME_BETWEEN_2_CALLS": "1",
+            "FINAUD_FREQUENCY": "300",
+            "LOG_FILE": "/var/log/oar.log",
+            "ENERGY_SAVING_INTERNAL": "no",
+        }
+
+        config.setdefault_config(DEFAULT_CONFIG)
+
+        self.meta_sched_command = config["META_SCHED_CMD"]
+        m = re.match(r"^\/", self.meta_sched_command)
+        if not m:
+            self.meta_sched_command = os.path.join(binpath, self.meta_sched_command)
+
+        # Min waiting time before 2 scheduling attempts
+        self.scheduler_min_time_between_2_calls = int(
+            config["SCHEDULER_MIN_TIME_BETWEEN_2_CALLS"]
+        )
+
+        # Max waiting time before check node states
+        self.checknodestimeout = int(config["FINAUD_FREQUENCY"])
+
+        self.Log_file = config["LOG_FILE"]
+        self.config = config
+
+    def meta_scheduler(self):
+        """Start :mod:`oar.kao.meta_sched`"""
+        return launch_command(self.meta_sched_command)
 
     def start_companions(self):
         """Start appendice :mod:`oar.modules.appendice_proxy` and :mod:`oar.modules.bipbip_commander` commander processes"""
@@ -239,7 +271,10 @@ class Almighty(object):
         if (
             (current >= (self.lastscheduler + schedulertimeout))
             or (self.scheduler_wanted >= 1)
-            and (current >= (self.lastscheduler + scheduler_min_time_between_2_calls))
+            and (
+                current
+                >= (self.lastscheduler + self.scheduler_min_time_between_2_calls)
+            )
         ):
             logger.debug("Scheduling timeout")
             # lastscheduler = current + schedulertimeout
@@ -250,8 +285,8 @@ class Almighty(object):
             # lastvillains =  current +  villainstimeout
             self.add_command("Villains")
 
-        if (current >= (self.lastchecknodes + checknodestimeout)) and (
-            checknodestimeout > 0
+        if (current >= (self.lastchecknodes + self.checknodestimeout)) and (
+            self.checknodestimeout > 0
         ):
             logger.debug("Node check timeout")
             # lastchecknodes = -current + checknodestimeout
@@ -309,6 +344,7 @@ class Almighty(object):
             if remaining != max_successive_read:
                 timeout = 0
             if command is None:
+                logger.debug(f"qget command: {command}")
                 break
             self.add_command(command["cmd"])
             remaining -= 1
@@ -335,19 +371,18 @@ class Almighty(object):
                 # TODO: send_log_by_email("Stop OAR server", "[Almighty] Stop Almighty")
                 return 10
 
-            # We check Hulot
-            if self.hulot and not check_hulot(self.hulot):
-                logger.warning("Energy saving module (hulot) died. Restarting it.")
-                start_hulot(self)
+            # We check Greta
+            if self.greta and not check_greta(self.greta, logger):
+                logger.warning("Energy saving module (greta) died. Restarting it.")
+                self.greta = start_greta()
             # QGET
             elif self.state == "Qget":
-                # if len(self.command_queue) > 0:
-                # self.read_commands(0)
-                #    pass
-                # else:
-                self.read_commands(read_commands_timeout)
+                # Execute commands already in queue if any before read news ones
+                if self.command_queue == []:
+                    self.read_commands(read_commands_timeout)
 
-                logger.debug("Command queue : " + str(self.command_queue))
+                logger.debug("Command queue: " + str(self.command_queue))
+
                 command = self.command_queue.pop(0)
                 # Remove useless 'Time' command to enhance reactivity
                 if command == "Time" and self.command_queue != []:
@@ -381,46 +416,51 @@ class Almighty(object):
             elif self.state == "Scheduler":
                 current_time = tools.get_time()
                 if current_time >= (
-                    self.lastscheduler + scheduler_min_time_between_2_calls
+                    self.lastscheduler + self.scheduler_min_time_between_2_calls
                 ):
                     self.scheduler_wanted = 0
+                    # We put  nodeChangeState() / self.state = "Change node state" after scheduler
+                    # to enhance reactivity, "Change node state" is done after schduling rounc
                     # First, check pending events
-                    check_result = nodeChangeState()
-                    if check_result == 2:
-                        self.state = "Leon"
-                        self.add_command("Term")
-                    elif check_result == 1:
+                    #
+                    # check_result = nodeChangeState()
+                    # if check_result == 2:
+                    #     self.state = "Leon"
+                    #     self.add_command("Term")
+                    # elif check_result == 1:
+                    #     self.state = "Scheduler"
+                    # elif check_result == 0:
+                    # Launch the scheduler
+                    # We check Greta just before starting the scheduler
+                    # because if the pipe is not read, it may freeze oar
+                    if (energy_pid > 0) and not check_greta(self.greta, logger):
+                        logger.warning(
+                            "Energy saving module (greta) died. Restarting it."
+                        )
+                        time.sleep(5)
+                        start_greta()
+
+                    scheduler_result = self.meta_scheduler()
+                    self.lastscheduler = tools.get_time()
+                    if scheduler_result == 0:
+                        # Change node state moved here after Scheduling (TODO: to remove if extensive test)
+                        # self.state = "Time update"
+                        self.state = "Change node state"
+                    elif scheduler_result == 1:
                         self.state = "Scheduler"
-                    elif check_result == 0:
-                        # Launch the scheduler
-                        # We check Hulot just before starting the scheduler
-                        # because if the pipe is not read, it may freeze oar
-                        if (energy_pid > 0) and not check_hulot():
-                            logger.warning(
-                                "Energy saving module (hulot) died. Restarting it."
-                            )
-                            time.sleep(5)
-                            start_hulot()
-
-                        scheduler_result = meta_scheduler()
-                        self.lastscheduler = tools.get_time()
-                        if scheduler_result == 0:
-                            self.state = "Time update"
-                        elif scheduler_result == 1:
-                            self.state = "Scheduler"
-                        elif scheduler_result == 2:
-                            self.state = "Leon"
-                        else:
-                            logger.error(
-                                "Scheduler returned an unknown value : scheduler_result"
-                            )
-                            finishTag = 1
-
+                    elif scheduler_result == 2:
+                        self.state = "Leon"
                     else:
                         logger.error(
-                            "nodeChangeState_command returned an unknown value."
+                            "Scheduler returned an unknown value : scheduler_result"
                         )
                         finishTag = 1
+
+                    # else:
+                    #     logger.error(
+                    #         "nodeChangeState_command returned an unknown value."
+                    #     )
+                    #     finishTag = 1
                 else:
                     self.scheduler_wanted = 1
                     self.state = "Time update"
@@ -430,7 +470,7 @@ class Almighty(object):
                         + ">= ("
                         + str(self.lastscheduler)
                         + " + "
-                        + str(scheduler_min_time_between_2_calls)
+                        + str(self.scheduler_min_time_between_2_calls)
                         + ")"
                     )
 

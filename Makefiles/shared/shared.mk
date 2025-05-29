@@ -7,7 +7,7 @@ export OARDO_UNINSTALL = $(MAKE) -f Makefiles/oardo/oardo.mk uninstall
 SHARED_INSTALL   = $(MAKE) -f Makefiles/shared/common_target.mk install
 SHARED_UNINSTALL = $(MAKE) -f Makefiles/shared/common_target.mk uninstall
 
-# == 
+# ==
 TARGET_DIST?=$(shell if [ -f /etc/debian_version ]; then echo "debian"; fi; \
 	             if [ -f /etc/redhat-release ]; then echo "redhat"; fi; \
 	      )
@@ -20,9 +20,9 @@ ifeq "$(SETUP_TYPE)" "deb"
 include Makefiles/shared/dist/debian-deb.mk
 else
 include Makefiles/shared/dist/debian-tgz.mk
-endif 
+endif
 
-endif 
+endif
 # == debian
 
 # == redhat
@@ -32,9 +32,9 @@ ifeq "$(SETUP_TYPE)" "rpm"
 include Makefiles/shared/dist/redhat-rpm.mk
 else
 include Makefiles/shared/dist/redhat-tgz.mk
-endif 
+endif
 
-endif 
+endif
 # == redhat
 
 include Makefiles/shared/dist/common.mk
@@ -43,7 +43,7 @@ all:
 
 setup: setup_shared
 
-SHARED_ACTIONS=oardata oarbin doc man1 bin sbin examples setup_scripts init logrotate default cron cgi www
+SHARED_ACTIONS=oardata oarbin doc man1 bin sbin examples setup_scripts init systemd logrotate default cron cgi www
 
 
 clean_shared: clean_templates clean_man1 clean_setup_scripts
@@ -66,6 +66,7 @@ MODULE_SETUP_TARGET_FILES  = $(addprefix $(DESTDIR)$(OARDIR)/setup/,$(notdir $(b
 TEMPLATE_SOURCE_FILES=$(filter %.in, $(PROCESS_TEMPLATE_FILES) \
 									 $(MANDIR_FILES) \
                                      $(INITDIR_FILES) \
+                                     $(SYSTEMD_FILES) \
                                      $(DEFAULTDIR_FILES) \
                                      $(LOGROTATEDIR_FILES) \
                                      $(CRONDIR_FILES) \
@@ -113,15 +114,19 @@ $(TEMPLATE_BUILDED_FILES) : %: %.in
 	    s#%%WWWUSER%%#$(WWWUSER)#g;;\
 	    s#%%APACHECONFDIR%%#$(APACHECONFDIR)#g;;\
 	    s#%%WWWROOTDIR%%#$(WWWROOTDIR)#g;;\
+	    s#%%RESTAPI_ROOTPATH%%#$(RESTAPI_ROOTPATH)#g;;\
+	    s#%%RESTAPI_PORT%%#$(RESTAPI_PORT)#g;;\
 	    s#%%WWWDIR%%#$(WWWDIR)#g;;\
 	    s#%%XAUTHCMDPATH%%#$(XAUTHCMDPATH)#g;;\
 	    s#%%OARSHCMD%%#$(OARSHCMD)#g;;\
 	    s#%%INITDIR%%#$(INITDIR)#g;;\
+	    s#%%SYSTEMDDIR%%#$(SYSTEMDDIR)#g;;\
 	    s#%%DEFAULTDIR%%#$(DEFAULTDIR)#g;;\
 	    s#%%SETUP_TYPE%%#$(SETUP_TYPE)#g;;\
 	    s#%%TARGET_DIST%%#$(TARGET_DIST)#g;;\
 	    s#%%OARDOPATH%%#/bin:/sbin:/usr/bin:/usr/sbin:$(BINDIR):$(SBINDIR):$(OARDIR)/oardodo#;;\
-	    " "$@.in" > $@ 
+	    s#%%SYSTEMD_CONFDIR%%#$(SYSTEMD_CONFDIR)#g;;\
+	    " "$@.in" > $@
 
 clean_templates:
 	-rm -f $(TEMPLATE_BUILDED_FILES)
@@ -186,7 +191,7 @@ SOURCE_MANDIR_FILES = $(filter %.pod, $(patsubst %.pod.in, %.pod, $(MANDIR_FILES
 BUILD_MANDIR_FILES = $(patsubst %.pod, %.1, $(SOURCE_MANDIR_FILES)) $(filter %.1,$(MANDIR_FILES))
 TARGET_MANDIR_FILES = $(addprefix $(DESTDIR)$(MANDIR)/man1, $(notdir $(BUILD_MANDIR_FILES)))
 
-install_man1: 
+install_man1:
 	$(SHARED_INSTALL) TARGET_DIR="$(DESTDIR)$(MANDIR)/man1" SOURCE_FILES="$(BUILD_MANDIR_FILES)" TARGET_FILE_RIGHTS=0644
 
 uninstall_man1:
@@ -236,6 +241,14 @@ install_init:
 uninstall_init:
 	$(SHARED_UNINSTALL) TARGET_DIR="$(DESTDIR)$(SHAREDIR)/init.d" SOURCE_FILES="$(INITDIR_FILES)" TARGET_FILE_RIGHTS=0755
 
+#
+# SYSTEMD_FILES
+#
+install_systemd:
+	$(SHARED_INSTALL) TARGET_DIR="$(DESTDIR)$(SHAREDIR)/systemd/system" SOURCE_FILES="$(SYSTEMD_FILES)" TARGET_FILE_RIGHTS=0755
+
+uninstall_systemd:
+	$(SHARED_UNINSTALL) TARGET_DIR="$(DESTDIR)$(SHAREDIR)/systemd/system" SOURCE_FILES="$(SYSTEMD_FILES)" TARGET_FILE_RIGHTS=0755
 
 #
 # CRONDIR_FILES

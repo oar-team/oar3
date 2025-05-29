@@ -3,10 +3,11 @@
 import os
 
 import click
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import oar.lib.tools as tools
 from oar import VERSION
-from oar.lib import config
+from oar.lib.globals import init_oar
 from oar.lib.job_handling import (
     add_current_job_types,
     add_new_event,
@@ -29,6 +30,8 @@ click.disable_unicode_literals_warning = True
 
 
 def oardel(
+    session,
+    config,
     job_ids,
     checkpoint,
     signal,
@@ -40,31 +43,30 @@ def oardel(
     user=None,
     cli=True,
 ):
+    cmd_ret = CommandReturns(cli)
+    if version:
+        cmd_ret.print_("OAR version : " + VERSION)
+        return cmd_ret
+
     if not user:
         if "OARDO_USER" in os.environ:
             user = os.environ["OARDO_USER"]
         else:
             user = os.environ["USER"]
 
-    cmd_ret = CommandReturns(cli)
-
-    if version:
-        cmd_ret.print_("OAR version : " + VERSION)
-        return cmd_ret
-
     if not job_ids and not sql and not array:
         cmd_ret.usage(1)
         return cmd_ret
 
     if array:
-        job_ids = get_array_job_ids(array)
+        job_ids = get_array_job_ids(session, array)
 
         if not job_ids:
             cmd_ret.warning("There are no job for this array job ({})".format(array), 4)
             return cmd_ret
 
     if sql:
-        job_ids = get_job_ids_with_given_properties(sql)
+        job_ids = get_job_ids_with_given_properties(session, sql)
         if not job_ids:
             cmd_ret.warning(
                 "There are no job for this SQL WHERE clause ({})".format(array), 4
@@ -72,10 +74,17 @@ def oardel(
             return cmd_ret
 
     if checkpoint or signal:
+        if signal:
+            user_signal = signal
+            signal = "SIGURG"
+        else:
+            user_signal = None
+
         for job_id in job_ids:
             if checkpoint:
                 tag = "CHECKPOINT"
                 cmd_ret.print_("Checkpointing the job {} ...".format(job_id))
+                signal = "SIGUSR2"
             else:
                 tag = "SIG"
                 cmd_ret.print_(
@@ -84,7 +93,7 @@ def oardel(
                     )
                 )
 
-            error, error_msg = ask_checkpoint_signal_job(job_id, signal, user)
+            error, error_msg = ask_checkpoint_signal_job(session, job_id, signal, user)
 
             if error > 0:
                 cmd_ret.print_("ERROR")
@@ -96,8 +105,8 @@ def oardel(
                     cmd_ret.error(error_msg, error, 5)
             else:
                 # Retrieve hostnames used by the job
-                hosts = get_job_current_hostnames(job_id)
-                types = get_job_types(job_id)
+                hosts = get_job_current_hostnames(session, job_id)
+                types = get_job_types(session, job_id)
                 host_to_connect = None
                 if "cosystem" in types:
                     host_to_connect = config["COSYSTEM_HOSTNAME"]
@@ -107,17 +116,17 @@ def oardel(
                     host_to_connect = hosts[0]
                 timeout_ssh = config["OAR_SSH_CONNECTION_TIMEOUT"]
 
-                error = tools.signal_oarexec(
+                error_command = tools.signal_oarexec(
                     host_to_connect,
                     job_id,
-                    "SIGUSR2",
+                    signal,
                     timeout_ssh,
                     config["OPENSSH_CMD"],
-                    "",
+                    user_signal=user_signal,
                 )
-                if error != 0:
+                if error_command:
                     cmd_ret.print_("ERROR")
-                    if error == 3:
+                    if 0 == 0:  # error == 3: TODO
                         comment = (
                             "Cannot contact {}, operation timouted ({} s).".format(
                                 host_to_connect, timeout_ssh
@@ -127,7 +136,7 @@ def oardel(
                     else:
                         comment = "An unknown error occured."
                         cmd_ret.error(comment, error, 1)
-                    add_new_event("{}_ERROR".format(tag), job_id, comment)
+                    add_new_event(session, "{}_ERROR".format(tag), job_id, comment)
                 else:
                     cmd_ret.print_("DONE")
                     comment = (
@@ -135,7 +144,7 @@ def oardel(
                             job_id, host_to_connect
                         )
                     )
-                    add_new_event("{}_SUCCESS".format(tag), job_id, comment)
+                    add_new_event(session, "{}_SUCCESS".format(tag), job_id, comment)
 
     elif force_terminate_finishing_job:
         if not (user == "oar" or user == "root"):
@@ -151,13 +160,15 @@ def oardel(
                 cmd_ret.print_(
                     "Force the termination of the job = {} ...".format(job_id)
                 )
-                if get_job_state(job_id) == "Finishing":
-                    duration = get_job_duration_in_state(job_id, "Finishing")
+                if get_job_state(session, job_id) == "Finishing":
+                    duration = get_job_duration_in_state(session, job_id, "Finishing")
                     if duration > max_duration:
                         comment = "Force to Terminate the job {} which is in Finishing state".format(
                             job_id
                         )
-                        add_new_event("FORCE_TERMINATE_FINISHING_JOB", job_id, comment)
+                        add_new_event(
+                            session, "FORCE_TERMINATE_FINISHING_JOB", job_id, comment
+                        )
                         cmd_ret.print_("REGISTERED.")
                     else:
                         error_msg = "The job {} is not in the Finishing state for more than {}s ({}s).".format(
@@ -180,12 +191,15 @@ def oardel(
             cmd_ret.error(comment, 1, 8)
         else:
             for job_id in job_ids:
-                job = get_job(job_id)
+                job = get_job(session, job_id)
                 if job.state == "Running":
-                    if "besteffort" in get_job_types(job_id):
-                        update_current_scheduler_priority(job, "-2", "STOP")
-                        remove_current_job_types(job_id, "besteffort")
+                    if "besteffort" in get_job_types(session, job_id):
+                        update_current_scheduler_priority(
+                            session, config, job, "-2", "STOP"
+                        )
+                        remove_current_job_types(session, job_id, "besteffort")
                         add_new_event(
+                            session,
                             "DELETE_BESTEFFORT_JOB_TYPE",
                             job_id,
                             "User {} removed the besteffort type.".format(user),
@@ -194,9 +208,12 @@ def oardel(
                             "Remove besteffort type for the job {}.".format(job_id)
                         )
                     else:
-                        add_current_job_types(job_id, "besteffort")
-                        update_current_scheduler_priority(job, "+2", "START")
+                        add_current_job_types(session, job_id, "besteffort")
+                        update_current_scheduler_priority(
+                            session, config, job, "+2", "START"
+                        )
                         add_new_event(
+                            session,
                             "ADD_BESTEFFORT_JOB_TYPE",
                             job_id,
                             "User {} added the besteffort type.".format(user),
@@ -220,7 +237,7 @@ def oardel(
         for job_id in job_ids:
             # TODO array of errors and error messages
             cmd_ret.info("Deleting the job = {} ...".format(job_id))
-            error = frag_job(job_id)
+            error = frag_job(session, job_id, user=user)
             error_msg = ""
             if error == -1:
                 error_msg = "Cannot frag {} ; You are not the right user.".format(
@@ -294,7 +311,9 @@ def oardel(
               subsequently be turned into Suspected.",
 )
 @click.option("-V", "--version", is_flag=True, help="Print OAR version.")
+@click.pass_context
 def cli(
+    ctx,
     job_id,
     checkpoint,
     signal,
@@ -305,7 +324,20 @@ def cli(
     version,
 ):
     """Kill or remove a job from the waiting queue."""
+    ctx = click.get_current_context()
+    cmd_ret = CommandReturns(cli)
+    if ctx.obj:
+        session, config = ctx.obj
+
+    else:
+        config, engine = init_oar()
+        session_factory = sessionmaker(bind=engine)
+        scoped = scoped_session(session_factory)
+        session = scoped()
+
     cmd_ret = oardel(
+        session,
+        config,
         job_id,
         checkpoint,
         signal,

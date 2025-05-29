@@ -15,18 +15,21 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Check out repository code
-          uses: actions/checkout@v2
-        - name: Install dev requirements
-          run: pip install -r requirements/dev.txt
+          uses: actions/checkout@v3
+        - uses: cachix/install-nix-action@v20
+        # - run: nix develop
+        # - run: nix flake check
+        # - name: Install dev requirements
+        #   run: pip install -r requirements/dev.txt
         - name: Check code formatting
-          run: ./scripts/ci/check-formatting.sh
+          run: nix develop --command ./scripts/ci/check-formatting.sh
     Run-Tests-On-Docker:
       runs-on: ubuntu-latest
       strategy:
           matrix:
             images:
               # Configuration for bullseye
-              - { PYTHON_IMAGE: "python:3.9", POSTGRES_IMAGE: "postgres:13" }
+              - { PYTHON_IMAGE: "python:3.10", POSTGRES_IMAGE: "postgres:13" }
       steps:
         - name: Check out repository code
           uses: actions/checkout@v2
@@ -48,7 +51,7 @@ jobs:
             PYTHON_IMAGE: ${{ matrix.images.PYTHON_IMAGE }}
             POSTGRES_IMAGE: ${{ matrix.images.POSTGRES_IMAGE }}
         - name: Upload coverage
-          uses: actions/upload-artifact@v2
+          uses: actions/upload-artifact@v4
           with:
             name: coverage-report
             path: coverage.xml
@@ -60,10 +63,13 @@ jobs:
         # Check out repository so codecov isn't lost
         - uses: actions/checkout@master
         - name: Download artifacts
-          uses: actions/download-artifact@v2
+          uses: actions/download-artifact@v4
           with:
             path: artifacts
-        - uses: codecov/codecov-action@v1
+        - uses: codecov/codecov-action@v4
           with:
-            files: ./artifacts/coverage-report/coverage.xml
-            fail_ci_if_error: true # optional (default = false)
+            fail_ci_if_erro: true
+            flags: unittests
+            name: codecov-umbrella
+            token: ${{ secrets.CODECOV_TOKEN }} # required
+            verbose: true # optional (default = false)

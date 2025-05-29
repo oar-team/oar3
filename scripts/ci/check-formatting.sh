@@ -10,10 +10,13 @@
 set -e
 
 echo "-- Check imports"
-isort . --check-only --diff
+isort --version
+isort oar tests --check-only --diff
 
 echo "-- Check code formatting"
-black . --check --diff
+black --version
+black oar tests --check --diff
 
 echo "-- Static code check"
+flake8 --version
 flake8 .

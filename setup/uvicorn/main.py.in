@@ -1,0 +1,28 @@
+import time
+import sys
+
+from oar.lib.tools import get_date
+from oar.api.app import create_app
+from oar.lib.globals import init_oar, init_and_get_session, init_config, get_logger
+
+r = True
+
+config = init_config()
+
+# Force writing to stderr to otherwise log are lost
+config["LOG_FILE"] = ":stderr:"
+
+logger = get_logger("asgi", config=config)
+
+# Waiting for the database to be accessible
+# This is needed in the context of nixos-compose.
+while r:
+    try:
+        session = init_and_get_session(config)
+        r = False
+    except Exception as e:
+        logger.error(f"db not ready: {e}")
+        time.sleep(0.25)
+
+# The root path must be defined according to the nginx/apache configuration
+app = create_app(config=config, root_path="%%RESTAPI_ROOTPATH%%/")

@@ -1,25 +1,45 @@
 import os
 import re
+import time
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from oar.api.query import APIQueryCollection, paginate
 from oar.cli.oardel import oardel
 from oar.cli.oarhold import oarhold
 from oar.cli.oarresume import oarresume
-from oar.lib import Job, db
+from oar.lib.configuration import Configuration
+from oar.lib.job_handling import convert_status_code
+from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
 
-from ..dependencies import need_authentication
-from . import TimestampRoute
+from ..auth import need_authentication
+from ..dependencies import get_config, get_db
 
 router = APIRouter(
-    route_class=TimestampRoute,
+    # route_class=TimestampRoute,
     prefix="/jobs",
     tags=["jobs"],
     responses={404: {"description": "Not found"}},
 )
+
+
+def attach_types(job, job_types):
+    if job["id"] in job_types:
+        job["types"] = job_types[job["id"]]
+
+
+def attach_events(job, job_events):
+    if job["id"] in job_events:
+        job["events"] = job_events[job["id"]]
+
+
+def attach_walltime(job, job_walltime):
+    if job["id"] in job_walltime:
+        job["walltime"] = job_walltime[job["id"]]
 
 
 def attach_resources(job, jobs_resources):
@@ -40,6 +60,19 @@ def attach_nodes(job, jobs_resources):
             network_addresses.append(node["network_address"])
 
 
+def attach_exit_status(job):
+    if "exit_code" in job and job["exit_code"] is not None:
+        job["exit_status_code"] = convert_status_code(job["exit_code"])
+    else:
+        job["exit_status_code"] = None
+
+
+def remove_null_fields(job):
+    for k in list(job.keys()):
+        if job[k] is None:
+            del job[k]
+
+
 @router.get("")
 @router.get("/")
 def index(
@@ -48,44 +81,74 @@ def index(
     stop_time: int = None,
     states: List[str] = Query([]),
     array: int = None,
-    job_ids: List[int] = [],
+    job_ids: List[int] = Query([]),
     details: str = None,
     offset: int = 0,
     limit: int = 500,
+    db: Session = Depends(get_db),
 ):
+    queryCollection = APIQueryCollection(db)
+
     # import pdb; pdb.set_trace()
-    query = db.queries.get_jobs_for_user(
+    query = queryCollection.get_jobs_for_user(
         user, start_time, stop_time, states, job_ids, array, None, details
     )
     data = {}
-    page = query.paginate(offset, limit)
+
+    # page = query.paginate(offset, limit)
+    page = paginate(query, offset, limit)
+
     data["total"] = page.total
     data["offset"] = offset
     data["items"] = []
 
     if details:
-        jobs_resources = db.queries.get_assigned_jobs_resources(page.items)
+        jobs_resources = queryCollection.get_assigned_jobs_resources(page.items)
+        jobs_types = queryCollection.get_jobs_types(page.items)
+        job_events = queryCollection.get_jobs_events(page.items)
+        job_walltime = queryCollection.get_jobs_walltime(page.items)
         pass
     for item in page:
+        attach_exit_status(item)
         if details:
+            attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
+            attach_events(item, job_events)
+            attach_walltime(item, job_walltime)
         data["items"].append(item)
+        remove_null_fields(item)
 
     return data
 
 
 @router.get("/{job_id}")
-def show(job_id: int, details: Optional[bool] = None):
-    job = db.query(Job).get_or_404(job_id)
+def show(
+    job_id: int,
+    details: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    queryCollection = APIQueryCollection(db)
+    job = db.get(Job, job_id)
     data = job.asdict()
-    if details:
+    attach_exit_status(data)
+    if details and job:
         job = Job()
         job.id = job_id
-        job_resources = db.queries.get_assigned_jobs_resources([job])
+        job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
-        # attach_nodes(data, job_resources)
+        job_events = queryCollection.get_jobs_events([job])
+        jobs_types = queryCollection.get_jobs_types([job])
+        jobs_walltime = queryCollection.get_jobs_walltime([job])
+        attach_events(data, job_events)
+        attach_types(data, jobs_types)
+        attach_walltime(data, jobs_walltime)
 
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    remove_null_fields(data)
     return data
 
 
@@ -104,11 +167,38 @@ def get_resources(
     job_id: int,
     offset: int = 0,
     limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
+    queryCollection = APIQueryCollection(db)
     job = Job()
     job.id = job_id
-    query = db.queries.get_assigned_one_job_resources(job)
-    page = query.paginate(offset, limit)
+    query = queryCollection.get_assigned_one_job_resources(job)
+    page = paginate(query, offset, limit)
+    data = {}
+    data["total"] = page.total
+    data["offset"] = offset
+    data["items"] = []
+
+    for item in page:
+        data["items"].append(item[1])
+
+    return data
+
+
+@router.get("/{job_id}/events")
+def get_events(
+    job_id: int,
+    offset: int = 0,
+    limit: int = 500,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    queryCollection = APIQueryCollection(db)
+    job = Job()
+    job.id = job_id
+    query = queryCollection.get_one_job_events(job)
+    page = paginate(query, offset, limit)
     data = {}
     data["total"] = page.total
     data["offset"] = offset
@@ -151,7 +241,12 @@ class SumbitParameters(BaseModel):
 
 @router.post("")
 @router.post("/")
-def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
+def submit(
+    sp: SumbitParameters,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     """Job submission
 
         resource (string): the resources description as required by oar (example: “/nodes=1/cpu=2”)
@@ -219,27 +314,18 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
         stagein-md5sum=<md5sum>   Set the stagein file md5sum
 
 
-        Input yaml example
-        ---
-        stdout: /tmp/outfile
-        command: /usr/bin/id;echo "OK"
-        resource: /nodes=2/cpu=1
-        workdir: ~bzizou/tmp
-        type:
-        - besteffort
-        - timesharing
-        use-job-key: 1
+        Input json example
+        {
+            "command": "sleep 3600",
+            "resource": ["/cpu=1,walltime=0:10:0"],
+            "project": "test",
+            "type": ["devel"]
+        }
 
-
-        Output yaml example
-        ---
-        api_timestamp: 1332323792
-        cmd_output: |
-          [ADMISSION RULE] Modify resource description with type constraints
-          OAR_JOB_ID=4
-        id: 4
-
-        Note: up to now yaml is no supported, only json and html form.
+        Output example
+        {
+           "id": 113
+        }
 
     """
     initial_request = ""  # TODO Json version ?
@@ -268,6 +354,7 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
     #    resource = [resource]
 
     job_parameters = JobParameters(
+        config,
         job_type="PASSIVE",
         command=sp.command,
         resource=sp.resource,
@@ -298,16 +385,18 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
         hold=sp.hold,
     )
 
-    # import pdb; pdb.set_trace()
-
     error = job_parameters.check_parameters()
     if error[0] != 0:
+        print(error)
         raise HTTPException(status_code=501)
-        pass  # TODO
 
     submission = Submission(job_parameters)
 
-    (error, job_id_lst) = submission.submit()
+    (error, job_id_lst) = submission.submit(db, config)
+    if error[0] == -2:
+        raise HTTPException(status_code=403, detail=error[1])
+    elif error[0] != 0:
+        raise HTTPException(status_code=400, detail=error[1])
 
     # TODO Enhance
     data = {}
@@ -330,13 +419,23 @@ def submit(sp: SumbitParameters, user: str = Depends(need_authentication)):
 # @app.route("/<any(array):array>/<int:job_id>/deletions/new", methods=["POST", "DELETE"])
 @router.delete("/{job_id}")
 @router.api_route("/{job_id}/deletions/new", methods=["POST", "DELETE"])
-def delete(job_id: int, array: bool = False, user: str = Depends(need_authentication)):
+def delete(
+    job_id: int,
+    array: bool = False,
+    user: str = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     # TODO Get and return error codes ans messages
+    # os.environ["OARDO_USER"] = user
+
     if array:
-        cmd_ret = oardel(None, None, None, None, job_id, None, None, None, user, False)
+        cmd_ret = oardel(
+            db, config, None, None, None, None, job_id, None, None, None, user, False
+        )
     else:
         cmd_ret = oardel(
-            [job_id], None, None, None, None, None, None, None, user, False
+            db, config, [job_id], None, None, None, None, None, None, None, user, False
         )
     data = {}
     data["id"] = job_id
@@ -348,7 +447,11 @@ def delete(job_id: int, array: bool = False, user: str = Depends(need_authentica
 @router.post("/{job_id}/signal/{signal}")
 @router.post("/{job_id}/checkpoints/new")
 def signal(
-    job_id: int, signal: Optional[int] = None, user: dict = Depends(need_authentication)
+    job_id: int,
+    signal: Optional[int] = None,
+    user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
     if signal:
         checkpointing = False
@@ -356,7 +459,18 @@ def signal(
         checkpointing = True
 
     cmd_ret = oardel(
-        [job_id], checkpointing, signal, None, None, None, None, None, user, False
+        db,
+        config,
+        [job_id],
+        checkpointing,
+        signal,
+        None,
+        None,
+        None,
+        None,
+        None,
+        user,
+        False,
     )
 
     data = {}
@@ -368,10 +482,15 @@ def signal(
 
 
 @router.post("/{job_id}/resumptions/new")
-def resume(job_id: int, user: dict = Depends(need_authentication)):
+def resume(
+    job_id: int,
+    user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
     """Asks to resume a holded job"""
 
-    cmd_ret = oarresume([job_id], None, None, None, user, False)
+    cmd_ret = oarresume(db, config, [job_id], None, None, None, user, False)
     data = {}
     data["id"] = job_id
     data["cmd_output"] = cmd_ret.to_str()
@@ -385,15 +504,51 @@ def hold(
     job_id: int,
     hold: str = "hold",
     user: dict = Depends(need_authentication),
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
 ):
     running = False
     if hold == "rhold":
         running = True
 
-    cmd_ret = oarhold([job_id], running, None, None, None, user, False)
+    cmd_ret = oarhold(db, config, [job_id], running, None, None, None, user, False)
 
     data = {}
     data["id"] = job_id
     data["cmd_output"] = cmd_ret.to_str()
     data["exit_status"] = cmd_ret.get_exit_value()
     return data
+
+@router.get("/gantt")
+@router.get("/gantt/{horizon_now}/{horizon_then}")
+def gantt(
+    horizon_now : int = 0,
+    horizon_then : int = 0,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    now = int(time.time())
+    time_horizon_now = now + horizon_now
+    time_horizon_then = now + horizon_then
+    queryCollection = APIQueryCollection(db)
+    items = queryCollection.get_gantt_prediction(time_horizon_now, time_horizon_then)
+    data = {}
+    data["now"] = now
+    data["horizon_now"] = time_horizon_now
+    data["horizon_then"] = time_horizon_then
+    data["items"] = items
+    return data
+
+@router.get("/cigri_completions/{cycle_duration}")
+def cigri_completions(
+    cycle_duration: int,
+    db: Session = Depends(get_db),
+    config: Configuration = Depends(get_config),
+):
+    now = int(time.time())
+    previous_cycle = now - cycle_duration
+    queryCollection = APIQueryCollection(db)
+    items = queryCollection.get_cigri_completions(previous_cycle, now)
+    data = {}
+    data["now"] = now
+    data["items"] = items

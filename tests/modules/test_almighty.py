@@ -6,11 +6,14 @@ import pytest
 import zmq
 
 import oar.lib.tools
-from oar.lib import config
+
+# from oar.lib import config
 from oar.modules.almighty import Almighty, signal_handler
 
 from ..faketools import FakePopen, fake_call, fake_get_date, fake_popen, set_fake_date
 from ..fakezmq import FakeZmq
+
+# config, db, log, session_factory = init_oar()
 
 fakezmq = FakeZmq()
 
@@ -38,19 +41,21 @@ def monkeypatch_tools(request, monkeypatch):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup(request):
+def setup(request, setup_config):
+    config, _ = setup_config
+
     config["SERVER_HOSTNAME"] = "localhost"
     config["APPENDICE_SERVER_PORT"] = "6670"
     config["BIPBIP_COMMANDER_SERVER"] = "localhost"
     config["BIPBIP_COMMANDER_PORT"] = "6671"
     fakezmq.reset()
 
-    @request.addfinalizer
-    def teardown():
-        del config["SERVER_HOSTNAME"]
-        del config["APPENDICE_SERVER_PORT"]
-        del config["BIPBIP_COMMANDER_SERVER"]
-        del config["BIPBIP_COMMANDER_PORT"]
+    yield config
+
+    del config["SERVER_HOSTNAME"]
+    del config["APPENDICE_SERVER_PORT"]
+    del config["BIPBIP_COMMANDER_SERVER"]
+    del config["BIPBIP_COMMANDER_PORT"]
 
 
 @pytest.mark.parametrize(
@@ -82,7 +87,7 @@ def test_almighty_state_Qget(command, state, monkeypatch):
 @pytest.mark.parametrize(
     "state_in, state_out, called_cmd",
     [
-        ("Scheduler", "Time update", KAO),  # Scheduler_1
+        ("Scheduler", "Change node state", KAO),  # Scheduler_1
         ("Check for villains", "Time update", SARKO),
         ("Check node states", "Time update", FINAUD),
         ("Leon", "Time update", LEON),  # Leon 1
@@ -102,11 +107,11 @@ def test_almighty_state_called_command(state_in, state_out, called_cmd, monkeypa
 @pytest.mark.parametrize(
     "state_in, exit_value, state_out, called_cmd",
     [
-        ("Scheduler", 2, "Leon", NODE_CHANGE_STATE),
-        ("Scheduler", 1, "Scheduler", NODE_CHANGE_STATE),
-        ("Scheduler", 0, "Time update", KAO),
-        ("Scheduler", [1, 0], "Scheduler", KAO),
-        ("Scheduler", [2, 0], "Leon", KAO),
+        ("Scheduler", 2, "Leon", KAO),
+        ("Scheduler", 1, "Scheduler", KAO),
+        ("Scheduler", 0, "Change node state", KAO),
+        ("Scheduler", [1, 0], "Change node state", KAO),
+        ("Scheduler", [2, 0], "Change node state", KAO),
     ],
 )
 def test_almighty_state_called_command_with_exit_value(

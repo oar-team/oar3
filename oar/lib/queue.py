@@ -3,19 +3,20 @@
 # QUEUES MANAGEMENT
 # TODO is_waiting_job_specific_queue_present($$);
 from itertools import groupby
+from typing import List
 
-from oar.lib import Queue, db, get_logger
+from sqlalchemy.orm import Session
 
-logger = get_logger("oar.lib.queue")
-
-
-def get_all_queue_by_priority():
-    return db.query(Queue).order_by(Queue.priority.desc()).all()
+from oar.lib.models import Queue
 
 
-def get_queues_groupby_priority():
+def get_all_queue_by_priority(session: Session) -> List[Queue]:
+    return session.query(Queue).order_by(Queue.priority.desc()).all()
+
+
+def get_queues_groupby_priority(session: Session) -> Queue:
     """Return queues grouped by priority, groups are sorted by priority (higher value in first)"""
-    queues_ordered = db.query(Queue).order_by(Queue.priority.desc()).all()
+    queues_ordered = session.query(Queue).order_by(Queue.priority.desc()).all()
     res = []
 
     for key, queues_group in groupby(queues_ordered, lambda q: q.priority):
@@ -26,47 +27,53 @@ def get_queues_groupby_priority():
     return res
 
 
-def stop_queue(name):
+def stop_queue(session: Session, name: str):
     """Stop a queue"""
-    db.query(Queue).filter(Queue.name == name).update(
+    session.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "notActive"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def start_queue(name):
+def start_queue(session: Session, name: str):
     """Start a queue"""
-    db.query(Queue).filter(Queue.name == name).update(
+    session.query(Queue).filter(Queue.name == name).update(
         {Queue.state: "Active"}, synchronize_session=False
     )
-    db.commit()
+    session.commit()
 
 
-def stop_all_queues():
+def stop_all_queues(
+    session: Session,
+):
     """Stop all queues"""
-    db.query(Queue).update({Queue.state: "notActive"}, synchronize_session=False)
-    db.commit()
+    session.query(Queue).update({Queue.state: "notActive"}, synchronize_session=False)
+    session.commit()
 
 
-def start_all_queues():
+def start_all_queues(
+    session: Session,
+):
     """Start all queues"""
-    db.query(Queue).update({Queue.state: "Active"}, synchronize_session=False)
-    db.commit()
+    session.query(Queue).update({Queue.state: "Active"}, synchronize_session=False)
+    session.commit()
 
 
-def create_queue(name, priority, policy):
-    Queue.create(name=name, priority=priority, scheduler_policy=policy, state="Active")
-    db.commit()
+def create_queue(session: Session, name: str, priority: int, policy: str):
+    Queue.create(
+        session, name=name, priority=priority, scheduler_policy=policy, state="Active"
+    )
+    session.commit()
 
 
-def change_queue(name, priority, policy):
-    db.query(Queue).filter(Queue.name == name).update(
+def change_queue(session: Session, name: str, priority: int, policy: str):
+    session.query(Queue).filter(Queue.name == name).update(
         {Queue.priority: priority, Queue.scheduler_policy: policy},
         synchronize_session=False,
     )
-    db.commit()
+    session.commit()
 
 
-def remove_queue(name):
-    db.query(Queue).filter(Queue.name == name).delete(synchronize_session=False)
-    db.commit()
+def remove_queue(session: Session, name: str):
+    session.query(Queue).filter(Queue.name == name).delete(synchronize_session=False)
+    session.commit()

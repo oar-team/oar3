@@ -4,10 +4,7 @@ import re
 
 from sqlalchemy import func
 
-from oar.lib import Accounting, config, db, get_logger
-
-# Log category
-logger = get_logger("oar.kao.karma")
+from oar.lib.models import Accounting
 
 
 # convert perl hash 2 dict
@@ -21,9 +18,9 @@ def perl_hash_2_dict(str):
     return d
 
 
-def get_sum_accounting_window(queues, window_start, window_stop):
+def get_sum_accounting_window(session, queues, window_start, window_stop):
     req = (
-        db.query(Accounting.consumption_type, func.sum(Accounting.consumption))
+        session.query(Accounting.consumption_type, func.sum(Accounting.consumption))
         .filter(Accounting.queue_name.in_(tuple(queues)))
         .filter(Accounting.window_start >= window_start)
         .filter(Accounting.window_stop < window_stop)
@@ -48,9 +45,9 @@ def get_sum_accounting_window(queues, window_start, window_stop):
 # window_start window_stop
 
 
-def get_sum_accounting_by_project(queues, window_start, window_stop):
+def get_sum_accounting_by_project(session, queues, window_start, window_stop):
     req = (
-        db.query(
+        session.query(
             Accounting.project,
             Accounting.consumption_type,
             func.sum(Accounting.consumption),
@@ -76,10 +73,10 @@ def get_sum_accounting_by_project(queues, window_start, window_stop):
     return (karma_asked, karma_used)
 
 
-def get_sum_accounting_by_user(queues, window_start, window_stop):
+def get_sum_accounting_by_user(session, queues, window_start, window_stop):
     # print " window_start, window_stop", window_start, window_stop
     req = (
-        db.query(
+        session.query(
             Accounting.user,
             Accounting.consumption_type,
             func.sum(Accounting.consumption),
@@ -108,7 +105,7 @@ def get_sum_accounting_by_user(queues, window_start, window_stop):
 #
 # Evaluate Karma value for each job
 #
-def evaluate_jobs_karma(queues, now, jids, jobs, plt):
+def evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt):
     # if "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER" in config:
     #    fairsharing_nb_job_limit = config["SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER"]
     # TODO NOT UDSED
@@ -135,13 +132,13 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
     window_stop = now
 
     karma_sum_time_asked, karma_sum_time_used = plt.get_sum_accounting_window(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     karma_projects_asked, karma_projects_used = plt.get_sum_accounting_by_project(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
-        queues, window_start, window_stop
+        session, queues, window_start, window_stop
     )
     #
     # Compute actual karma for each job
@@ -189,8 +186,8 @@ def evaluate_jobs_karma(queues, now, jids, jobs, plt):
         job.karma = projet + user + user_ask
 
 
-def karma_jobs_sorting(queues, now, jids, jobs, plt):
-    evaluate_jobs_karma(queues, now, jids, jobs, plt)
+def karma_jobs_sorting(session, config, queues, now, jids, jobs, plt):
+    evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt)
     #
     # Sort jobs accordingly to karma value (fairsharing)
     #
