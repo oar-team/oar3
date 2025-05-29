@@ -519,13 +519,12 @@ def hold(
     data["exit_status"] = cmd_ret.get_exit_value()
     return data
 
-@router.get("/gantt")
+# @router.get("/gantt")
 @router.get("/gantt/{horizon_now}/{horizon_then}")
 def gantt(
     horizon_now : int = 0,
     horizon_then : int = 0,
     db: Session = Depends(get_db),
-    config: Configuration = Depends(get_config),
 ):
     now = int(time.time())
     time_horizon_now = now + horizon_now
@@ -543,7 +542,6 @@ def gantt(
 def cigri_completions(
     cycle_duration: int,
     db: Session = Depends(get_db),
-    config: Configuration = Depends(get_config),
 ):
     now = int(time.time())
     previous_cycle = now - cycle_duration
@@ -552,3 +550,4 @@ def cigri_completions(
     data = {}
     data["now"] = now
     data["items"] = items
+    return data
