@@ -194,6 +194,7 @@ CREATE INDEX log_types ON job_types (types_index);
 CREATE INDEX type ON job_types (type);
 CREATE INDEX id_types ON job_types (job_id);
 
+CREATE TYPE job_state as ENUM('Waiting','Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing','Terminated','Error');
 
 CREATE TABLE jobs (
   job_id bigserial,
@@ -204,7 +205,7 @@ CREATE TABLE jobs (
   job_env text ,
   job_type varchar(11) check (job_type in ('INTERACTIVE','PASSIVE')) NOT NULL default 'PASSIVE',
   info_type varchar(255) default NULL,
-  state varchar(16) check (state in ('Waiting','Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing','Terminated','Error')) NOT NULL default 'Waiting',
+  state job_state NOT NULL default 'Waiting',
   reservation varchar(10) check (reservation in ('None','toSchedule','Scheduled')) NOT NULL default 'None',
   message varchar(255) NOT NULL default '',
   scheduler_info varchar(255) NOT NULL default '',
