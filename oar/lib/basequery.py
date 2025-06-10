@@ -116,6 +116,7 @@ class BaseQuery:
                 (Job.assigned_moldable_job == 0)
                 | (Job.assigned_moldable_job == AssignedResource.moldable_id)
             )
+            .filter(AssignedResource.index == "CURRENT")
             .filter(MoldableJobDescription.job_id == Job.id)
         )
         q1 = apply_commons_filters(q1, c1_from, c1_to)
