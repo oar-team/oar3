@@ -31,10 +31,12 @@ CREATE TABLE admission_rules (
 );
 
 
+CREATE TYPE resource_index AS enum('CURRENT','LOG');
+
 CREATE TABLE assigned_resources (
   moldable_job_id integer  NOT NULL default '0',
   resource_id integer NOT NULL default '0',
-  assigned_resource_index varchar(7) check (assigned_resource_index in ('CURRENT','LOG')) NOT NULL default 'CURRENT',
+  assigned_resource_index resource_index NOT NULL default 'CURRENT',
   PRIMARY KEY  (moldable_job_id,resource_id)
 );
 CREATE INDEX mjob_id ON assigned_resources (moldable_job_id);
