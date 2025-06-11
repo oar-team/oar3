@@ -57,6 +57,7 @@ class BaseQuery:
         self, query, user, from_time, to_time, states, job_ids, array_id, sql_property
     ):
         db = self.session
+        assigned_resource_index = "CURRENT"
         if not states and not (job_ids or array_id):
             states = [
                 "Finishing",
@@ -72,6 +73,8 @@ class BaseQuery:
             if from_time or to_time or job_ids or array_id:
                 states.append("Terminated")
                 states.append("Error")
+        else:
+            assigned_resource_index = "LOG"
 
         c1_from, c2_from, c3_from = None, None, None
         if from_time is not None:
@@ -116,7 +119,7 @@ class BaseQuery:
                 (Job.assigned_moldable_job == 0)
                 | (Job.assigned_moldable_job == AssignedResource.moldable_id)
             )
-            .filter(AssignedResource.index == "CURRENT")
+            .filter(AssignedResource.index == assigned_resource_index)
             .filter(MoldableJobDescription.job_id == Job.id)
         )
         q1 = apply_commons_filters(q1, c1_from, c1_to)
