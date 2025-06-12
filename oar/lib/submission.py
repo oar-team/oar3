@@ -529,6 +529,8 @@ def scan_script(
         user = os.environ["OARDO_USER"]
     os.environ["OARDO_BECOME_USER"] = user
 
+    submitted_filename = submitted_filename.split()[0]
+
     try:
         process = tools.Popen(["oardodo", "cat", submitted_filename], stdout=PIPE)
     except Exception:
