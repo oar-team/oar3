@@ -15,6 +15,7 @@ Unreleased
 - Fixed a bug with Suspended state
 - Removed verbose debug of the API
 - Fixed job_manager_systemd suspecting nodes in some cases (#81)
+- Fixed oarsub -S "./script with args"
 
 Version 3.0.0.dev16
 -------------------
