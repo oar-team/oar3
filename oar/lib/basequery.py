@@ -115,11 +115,11 @@ class BaseQuery:
         q1 = (
             db.query(Job.id.label("job_id"))
             .distinct()
+            .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
             .filter(
-                (Job.assigned_moldable_job == 0)
-                | (Job.assigned_moldable_job == AssignedResource.moldable_id)
+                (AssignedResource.index == assigned_resource_index)
+                | (Job.assigned_moldable_job == 0)
             )
-            .filter(AssignedResource.index == assigned_resource_index)
             .filter(MoldableJobDescription.job_id == Job.id)
         )
         q1 = apply_commons_filters(q1, c1_from, c1_to)
