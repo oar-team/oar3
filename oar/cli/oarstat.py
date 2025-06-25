@@ -3,6 +3,7 @@ import datetime
 import re
 import sys
 from json import dumps as json_dumps
+from time import localtime, strftime
 from typing import Generator, List, Optional
 
 import click
@@ -171,6 +172,10 @@ def print_table(
     console.print(table)
 
 
+def human_date(timestamp):
+    return strftime("%Y-%m-%d %H:%M:%S", localtime(int(timestamp)))
+
+
 def print_jobs(
     session, legacy, jobs, format: Optional[str], show_resources=False, full=False
 ):
@@ -191,7 +196,7 @@ def print_jobs(
             if job.id in jobs_types:
                 types = []
                 for job_type, value in jobs_types[job.id].items():
-                    if type(value) == bool:
+                    if type(value) is bool:
                         types.append(f"{job_type}")
                     else:
                         types.append(f"{job_type}={value}")
@@ -220,6 +225,12 @@ def print_jobs(
 
     elif legacy and full:
         for job in jobs:
+            if job.submission_time:
+                job.submission_time = human_date(job.submission_time)
+            if job.start_time:
+                job.start_time = human_date(job.start_time)
+            if job.stop_time:
+                job.stop_time = human_date(job.stop_time)
             console.print(f"id: {job.id}")
             attributes = [
                 key
