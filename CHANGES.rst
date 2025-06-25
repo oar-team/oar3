@@ -17,6 +17,7 @@ Unreleased
 - Fixed job_manager_systemd suspecting nodes in some cases (#81)
 - Fixed oarsub -S "./script with args"
 - Oarsub prints human dates
+- Fixed 'oarnodes -p' for 0 values not being printed
 
 Version 3.0.0.dev16
 -------------------
