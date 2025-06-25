@@ -16,8 +16,9 @@ Unreleased
 - Removed verbose debug of the API
 - Fixed job_manager_systemd suspecting nodes in some cases (#81)
 - Fixed oarsub -S "./script with args"
-- Oarsub prints human dates
-- Fixed 'oarnodes -p' for 0 values not being printed
+- Oarsub prints human dates (#93)
+- Fixed 'oarnodes -p' for 0 values not being printed (#92)
+- Fixed job dependency to an interactive job (#90)
 
 Version 3.0.0.dev16
 -------------------
