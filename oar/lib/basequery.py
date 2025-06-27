@@ -112,16 +112,32 @@ class BaseQuery:
                 q = q.filter(criteria) if criteria is not None else q
             return q
 
-        q1 = (
-            db.query(Job.id.label("job_id"))
-            .distinct()
-            .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
-            .filter(
-                (AssignedResource.index == assigned_resource_index)
-                | (Job.assigned_moldable_job == 0)
+        # The following test may look overkill, but we need to be very careful of the
+        # SQL optimization to avoid a full parsing of the AssignedResource table
+        # For this, we use the AssignedResource.index to speed up the case where
+        # we want to get current jobs (typically, oarstat with no args)
+        if job_ids:
+            q1 = (
+                db.query(Job.id.label("job_id"))
+                .distinct()
+                .filter(
+                    (Job.assigned_moldable_job == AssignedResource.moldable_id)
+                    | (Job.assigned_moldable_job == 0)
+                )
+                .filter(MoldableJobDescription.job_id == Job.id)
             )
-            .filter(MoldableJobDescription.job_id == Job.id)
-        )
+        else:
+            q1 = (
+                db.query(Job.id.label("job_id"))
+                .distinct()
+                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
+                .filter(
+                    (AssignedResource.index == assigned_resource_index)
+                    | (Job.assigned_moldable_job == 0)
+                )
+                .filter(MoldableJobDescription.job_id == Job.id)
+            )
+
         q1 = apply_commons_filters(q1, c1_from, c1_to)
 
         q2 = (
