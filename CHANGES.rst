@@ -19,6 +19,7 @@ Unreleased
 - Oarsub prints human dates (#93)
 - Fixed 'oarnodes -p' for 0 values not being printed (#92)
 - Fixed job dependency to an interactive job (#90)
+- Fixed a timing issue into almighty (could prevent Leon from working under heavy load) (#83)
 
 Version 3.0.0.dev16
 -------------------
