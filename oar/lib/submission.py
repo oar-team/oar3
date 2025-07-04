@@ -126,6 +126,8 @@ class JobParameters:
 
         if scanscript:
             self.initial_request = scanscript_values["initial_request"]
+            if "properties" in scanscript_values:
+                self.properties = " AND ".join(scanscript_values["properties"])
 
         if self.array:
             self.array_nb = self.array
@@ -527,6 +529,8 @@ def scan_script(
         user = os.environ["OARDO_USER"]
     os.environ["OARDO_BECOME_USER"] = user
 
+    submitted_filename = submitted_filename.split()[0]
+
     try:
         process = tools.Popen(["oardodo", "cat", submitted_filename], stdout=PIPE)
     except Exception:
@@ -554,7 +558,10 @@ def scan_script(
                 continue
             m = re.match(r"^#OAR\s+(-p|--property)\s*(.+)\s*$", line)
             if m:
-                result["property"] = m.group(2)
+                if "properties" in result:
+                    result["properties"].append(m.group(2))
+                else:
+                    result["properties"] = [m.group(2)]
                 initial_request_str += " " + m.group(1) + " " + m.group(2)
                 continue
             m = re.match(r"^#OAR\s+(--checkpoint)\s*(\d+)\s*$", line)

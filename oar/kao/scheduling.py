@@ -449,7 +449,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     # TODO
                     to_skip = True
                     break
-            elif state == "Terminated" and exit_code == 0:
+            elif state == "Terminated" and (exit_code == 0 or exit_code is None):
                 next
             else:
                 to_skip = True

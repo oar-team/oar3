@@ -45,12 +45,12 @@ class PaginationQuery(object):
 
     def __init__(self, query, offset, limit, error_out):
         self.query = query.limit(limit).offset(offset)
-        print(self.query)
+        # print(self.query)
         self.items = self.query.all()
         self.offset = offset
         self.limit = limit
 
-        print("offfset", offset, self.items)
+        # print("offfset", offset, self.items)
         # No need to count if we're on the first page and there are fewer
         # items than we expected.
         if offset == 0 and len(self.items) < limit:

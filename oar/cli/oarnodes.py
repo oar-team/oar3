@@ -228,7 +228,11 @@ def print_resources_table(
         if show_properties:
             for prop in properties:
                 value = getattr(resource, prop)
-                if value:
+                try:
+                    value
+                except NameError:
+                    value = None
+                if value is not None:
                     row.append(str(value))
                 else:
                     row.append("")

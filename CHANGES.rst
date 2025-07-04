@@ -5,6 +5,22 @@
 Changelog
 =========
 
+Version 3.0.0.dev17
+-------------------
+
+Released on Jul 4, 2025
+
+- Fixed several database performance issues (#84)
+- Fixed a bug with oarsub -S and properties (#85)
+- Fixed a bug with Suspended state
+- Removed verbose debug of the API
+- Fixed job_manager_systemd suspecting nodes in some cases (#81)
+- Fixed oarsub -S "./script with args"
+- Oarsub prints human dates (#93)
+- Fixed 'oarnodes -p' for 0 values not being printed (#92)
+- Fixed job dependency to an interactive job (#90)
+- Fixed a timing issue into almighty (could prevent Leon from working under heavy load) (#83)
+
 Version 3.0.0.dev16
 -------------------
 
@@ -19,7 +35,7 @@ Released on May 20, 2025
 - Null valued fields are removed from the /jobs api output
 - Added /get_new_token API entry to re-generate JWT 
 - Added cgroup-v2 support through systemd
-- Fixed a bug with oarsub -S and array-param-file 
+- Fixed a bug with oarsub -S and array-param-file
 
 Version 3.0.0.dev15
 -------------------
