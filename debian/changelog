@@ -1,3 +1,9 @@
+oar3 (3.0.0~rc6-1) unstable; urgency=low
+
+  * Test release.
+ 
+ -- Bruno Bzeznik <bruno.bzeznik@univ-grenoble-alpes.fr>  Tue, 4 Jul 2025 09:48:00 +0200
+
 oar3 (3.0.0~rc5-1) unstable; urgency=low
 
   * Test release.
