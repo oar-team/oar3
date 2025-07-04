@@ -5,10 +5,10 @@
 Changelog
 =========
 
-Version 3.0.0
--------------
+Version 3.0.0.dev17
+-------------------
 
-Unreleased
+Released on Jul 4, 2025
 
 - Fixed several database performance issues (#84)
 - Fixed a bug with oarsub -S and properties (#85)
