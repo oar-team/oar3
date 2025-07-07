@@ -26,7 +26,7 @@ RUN apt-get -y install \
 RUN mkdir -p /etc/oar
 RUN virtualenv -p python $HOME/virtualenv
 RUN /bin/bash -c "source $HOME/virtualenv/bin/activate"
-RUN pip install tox coverage pytest psycopg2 sphinx pytest-flask pytest-cov
+RUN pip install tox coverage pytest psycopg2 sphinx pytest-flask pytest-cov sphinx-rtd-theme
 
 RUN sed -i 's/peer/trust/g' /etc/postgresql/9.3/main/pg_hba.conf
 
