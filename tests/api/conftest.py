@@ -162,7 +162,7 @@ def with_admission_rules(request, setup_config):
 
     config["ADMISSION_RULES_IN_FILES"] = "yes"
     config["ADMISSION_RULES_PATH"] = os.path.join(
-        os.path.dirname(__file__), "..", "lib/etc/oar/admission_rules.d/"
+        os.path.dirname(__file__), "..", "etc/oar/admission_rules.d/"
     )
 
     yield
