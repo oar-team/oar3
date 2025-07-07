@@ -5,6 +5,13 @@
 Changelog
 =========
 
+Version 3.0.0.dev18
+-------------
+
+Released on Jul 7, 2025
+
+- oarstat and oarapi now print correctly std[err,out] filenames #97 
+
 Version 3.0.0.dev17
 -------------------
 

@@ -124,6 +124,7 @@
                     # Dev dependencies
                     isort
                     flake8
+                    black
 
                     # Docs
                     sphinx

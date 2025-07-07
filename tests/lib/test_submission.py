@@ -259,9 +259,9 @@ def test_add_micheline_simple_array_job(setup_config, minimal_db_initialization)
     prev_conf0 = config["OARSUB_DEFAULT_RESOURCES"]
     prev_conf1 = config["OARSUB_NODES_RESOURCES"]
 
-    config[
-        "OARSUB_DEFAULT_RESOURCES"
-    ] = "network_address=2/resource_id=1+/resource_id=2"
+    config["OARSUB_DEFAULT_RESOURCES"] = (
+        "network_address=2/resource_id=1+/resource_id=2"
+    )
     config["OARSUB_NODES_RESOURCES"] = "resource_id"
 
     job_parameters = default_job_parameters(config, None)
