@@ -65,11 +65,13 @@ def attach_exit_status(job):
     else:
         job["exit_status_code"] = None
 
+
 def macro_replacements(job):
     if "stderr_file" in job and job["stderr_file"] is not None:
         job["stderr_file"] = job["stderr_file"].replace("%jobid%", str(job["id"]))
     if "stdout_file" in job and job["stdout_file"] is not None:
         job["stdout_file"] = job["stdout_file"].replace("%jobid%", str(job["id"]))
+
 
 def remove_null_fields(job):
     for k in list(job.keys()):

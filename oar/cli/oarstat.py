@@ -189,7 +189,10 @@ def print_jobs(
         for job in jobs:
             if job.id in job_resources:
                 nodes = NodeSet.fromlist(
-                    [str(job_resources.network_address) for job_resources in job_resources[job.id]]
+                    [
+                        str(job_resources.network_address)
+                        for job_resources in job_resources[job.id]
+                    ]
                 )
                 job.network_adresses = nodes
             if job.id in jobs_types:
