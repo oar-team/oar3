@@ -889,10 +889,16 @@ def add_micheline_subjob(
     date = get_date(session)
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
-
-    error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        session, config, resource_request, properties
-    )
+    if hasattr(job_parameters, "estimated_resources"):
+        (
+            error,
+            resource_available,
+            estimated_nb_resources,
+        ) = job_parameters.estimated_resources
+    else:
+        error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
+            session, config, resource_request, properties
+        )
     if error[0] != 0:
         return (error, -1)
 
