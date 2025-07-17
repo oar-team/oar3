@@ -12,6 +12,8 @@ from .models import (
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
     Job,
+    JobResourceDescription,
+    JobResourceGroup,
     JobType,
     MoldableJobDescription,
     Resource,
@@ -231,6 +233,12 @@ class BaseQueryCollection(object):
             jobs_events[job_id].append(event)
         return jobs_events
 
+    def groupby_jobs_requests(self, jobs, query):
+        jobs_reqs = dict(((job.id, []) for job in jobs))
+        for job_id, prop, res, value in query:
+            jobs_reqs[job_id].append([prop, res, value])
+        return jobs_reqs
+
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
@@ -248,6 +256,32 @@ class BaseQueryCollection(object):
             .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
+
+    def get_actual_requests(self, jobs):
+        """Returns the actual resources request of a scheduled job."""
+        # .options(Load(JobResourceGroup).load_only(JobResourceGroup.property), Load(JobResourceDescription).load_only(JobResourceDescription.resource_type, JobResourceDescription.value))
+        db = self.session
+        query = (
+            db.query(
+                Job.id,
+                JobResourceGroup.property,
+                JobResourceDescription.resource_type,
+                JobResourceDescription.value,
+            )
+            .join(
+                JobResourceGroup,
+                Job.assigned_moldable_job == JobResourceGroup.moldable_id,
+            )
+            .join(
+                JobResourceDescription,
+                JobResourceDescription.group_id == JobResourceGroup.id,
+            )
+            .filter(Job.id.in_([job.id for job in jobs]))
+            .order_by(
+                JobResourceGroup.property.asc(), JobResourceDescription.order.asc()
+            )
+        )
+        return self.groupby_jobs_requests(jobs, query)
 
     def get_jobs_walltime(self, jobs):
         """Get the walltime of the assigned jobs"""
