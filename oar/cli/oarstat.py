@@ -186,6 +186,7 @@ def print_jobs(
         job_resources = queryCollection.get_assigned_jobs_resources(jobs)
         jobs_types = queryCollection.get_jobs_types(jobs)
         jobs_walltime = queryCollection.get_jobs_walltime(jobs)
+        jobs_reqs = queryCollection.get_actual_requests(jobs)
         for job in jobs:
             if job.id in job_resources:
                 nodes = NodeSet.fromlist(
@@ -205,6 +206,8 @@ def print_jobs(
                 job.types = ", ".join(types)
             if job.id in jobs_walltime:
                 job.walltime = jobs_walltime[job.id]
+            if job.id in jobs_reqs:
+                job.actual_resources = tools.format_actual_request(job.id, jobs_reqs)
             if job.stdout_file:
                 job.stdout_file = job.stdout_file.replace("%jobid%", str(job.id))
             if job.stderr_file:
