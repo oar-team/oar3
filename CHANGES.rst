@@ -11,6 +11,10 @@ Version 3.0.0
 
 Unreleased
 
+- A call from admission rules: 
+    `estimated_resources = estimate_job_nb_resources(session, config, resource_request, properties)`
+    allows to re-use the `estimated_resources` data structure and prevents the scheduler from 
+    computing this several times (#96)
 - oarstat and oarapi prints 'actual_resources' (#99)
 
 Version 3.0.0.dev18
