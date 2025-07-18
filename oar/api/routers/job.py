@@ -337,7 +337,7 @@ def submit(
             "command": "sleep 3600",
             "resource": ["/cpu=1,walltime=0:10:0"],
             "project": "test",
-            "type": ["devel"]
+            "types": ["devel"]
         }
 
         Output example
