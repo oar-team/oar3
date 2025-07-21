@@ -6,10 +6,10 @@ Changelog
 =========
 
 
-Version 3.0.0
--------------
+Version 3.0.0.dev19
+-------------------
 
-Unreleased
+Released on Jul 21, 2025
 
 - A call from admission rules: 
     `estimated_resources = estimate_job_nb_resources(session, config, resource_request, properties)`
