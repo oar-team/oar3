@@ -5,6 +5,12 @@
 Changelog
 =========
 
+Version 3.0.0
+-------------
+
+Released on Jul 21, 2025
+
+- Initial OAR v3 release!
 
 Version 3.0.0.dev19
 -------------------
