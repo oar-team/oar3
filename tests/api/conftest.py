@@ -68,9 +68,9 @@ def fastapi_app(setup_config):
 
     tempdir = tempfile.mkdtemp()
     # Config for jwt
-    config[
-        "API_SECRET_KEY"
-    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+    config["API_SECRET_KEY"] = (
+        "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+    )
     config["API_SECRET_ALGORITHM"] = "HS256"
     config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
 
@@ -162,7 +162,7 @@ def with_admission_rules(request, setup_config):
 
     config["ADMISSION_RULES_IN_FILES"] = "yes"
     config["ADMISSION_RULES_PATH"] = os.path.join(
-        os.path.dirname(__file__), "..", "lib/etc/oar/admission_rules.d/"
+        os.path.dirname(__file__), "..", "etc/oar/admission_rules.d/"
     )
 
     yield

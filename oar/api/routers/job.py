@@ -14,6 +14,7 @@ from oar.lib.configuration import Configuration
 from oar.lib.job_handling import convert_status_code
 from oar.lib.models import Job
 from oar.lib.submission import JobParameters, Submission, check_reservation
+from oar.lib.tools import format_actual_request
 
 from ..auth import need_authentication
 from ..dependencies import get_config, get_db
@@ -59,11 +60,23 @@ def attach_nodes(job, jobs_resources):
             network_addresses.append(node["network_address"])
 
 
+def attach_actual_resources(job, jobs_reqs):
+    if job["id"] in jobs_reqs:
+        job["actual_resources"] = format_actual_request(job["id"], jobs_reqs)
+
+
 def attach_exit_status(job):
     if "exit_code" in job and job["exit_code"] is not None:
         job["exit_status_code"] = convert_status_code(job["exit_code"])
     else:
         job["exit_status_code"] = None
+
+
+def macro_replacements(job):
+    if "stderr_file" in job and job["stderr_file"] is not None:
+        job["stderr_file"] = job["stderr_file"].replace("%jobid%", str(job["id"]))
+    if "stdout_file" in job and job["stdout_file"] is not None:
+        job["stdout_file"] = job["stdout_file"].replace("%jobid%", str(job["id"]))
 
 
 def remove_null_fields(job):
@@ -106,15 +119,18 @@ def index(
         jobs_types = queryCollection.get_jobs_types(page.items)
         job_events = queryCollection.get_jobs_events(page.items)
         job_walltime = queryCollection.get_jobs_walltime(page.items)
+        jobs_reqs = queryCollection.get_actual_requests(page.items)
         pass
     for item in page:
         attach_exit_status(item)
+        macro_replacements(item)
         if details:
             attach_types(item, jobs_types)
             attach_resources(item, jobs_resources)
             attach_nodes(item, jobs_resources)
             attach_events(item, job_events)
             attach_walltime(item, job_walltime)
+            attach_actual_resources(item, jobs_reqs)
         data["items"].append(item)
         remove_null_fields(item)
 
@@ -132,6 +148,7 @@ def show(
     job = db.get(Job, job_id)
     data = job.asdict()
     attach_exit_status(data)
+    macro_replacements(data)
     if details and job:
         job = Job()
         job.id = job_id
@@ -140,9 +157,11 @@ def show(
         job_events = queryCollection.get_jobs_events([job])
         jobs_types = queryCollection.get_jobs_types([job])
         jobs_walltime = queryCollection.get_jobs_walltime([job])
+        jobs_reqs = queryCollection.get_actual_requests([job])
         attach_events(data, job_events)
         attach_types(data, jobs_types)
         attach_walltime(data, jobs_walltime)
+        attach_actual_resources(data, jobs_reqs)
 
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -327,7 +346,7 @@ def submit(
             "command": "sleep 3600",
             "resource": ["/cpu=1,walltime=0:10:0"],
             "project": "test",
-            "type": ["devel"]
+            "types": ["devel"]
         }
 
         Output example

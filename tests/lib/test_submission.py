@@ -259,9 +259,9 @@ def test_add_micheline_simple_array_job(setup_config, minimal_db_initialization)
     prev_conf0 = config["OARSUB_DEFAULT_RESOURCES"]
     prev_conf1 = config["OARSUB_NODES_RESOURCES"]
 
-    config[
-        "OARSUB_DEFAULT_RESOURCES"
-    ] = "network_address=2/resource_id=1+/resource_id=2"
+    config["OARSUB_DEFAULT_RESOURCES"] = (
+        "network_address=2/resource_id=1+/resource_id=2"
+    )
     config["OARSUB_NODES_RESOURCES"] = "resource_id"
 
     job_parameters = default_job_parameters(config, None)
@@ -309,6 +309,7 @@ def test_scan_script(monkeypatch_tools, setup_config, minimal_db_initialization)
         "#OAR -l gpu=10\n"
         "#OAR -q yop\n"
         "#OAR -p pa=b\n"
+        "#OAR -p pb=a\n"
         "#OAR --checkpoint 12\n"
         "#OAR --notify noti-exec\n"
         "#OAR -d /tmp/\n"
@@ -332,10 +333,10 @@ def test_scan_script(monkeypatch_tools, setup_config, minimal_db_initialization)
     )
 
     result = {
-        "initial_request": "command -l nodes=10,walltime=3600 -l gpu=10 -q yop -p pa=b --checkpoint 12 --notify noti-exec -d /tmp/ -n funky --project batcave --hold -a 12 -a 32 --signal 12 -O sto -E ste -k --import-job-key-inline-priv key -i key_file -e key_file -s stage_filein --stagein -md5sum file_md5sum --array 10 --array-param-file p_file",
+        "initial_request": "command -l nodes=10,walltime=3600 -l gpu=10 -q yop -p pa=b -p pb=a --checkpoint 12 --notify noti-exec -d /tmp/ -n funky --project batcave --hold -a 12 -a 32 --signal 12 -O sto -E ste -k --import-job-key-inline-priv key -i key_file -e key_file -s stage_filein --stagein -md5sum file_md5sum --array 10 --array-param-file p_file",
         "resource": ["nodes=10,walltime=3600", "gpu=10"],
         "queue": "yop",
-        "property": "pa=b",
+        "properties": ["pa=b", "pb=a"],
         "checkpoint": 12,
         "notify": "noti-exec",
         "directory": "/tmp/",

@@ -12,6 +12,8 @@ from .models import (
     GanttJobsPredictionsVisu,
     GanttJobsResourcesVisu,
     Job,
+    JobResourceDescription,
+    JobResourceGroup,
     JobType,
     MoldableJobDescription,
     Resource,
@@ -57,6 +59,7 @@ class BaseQuery:
         self, query, user, from_time, to_time, states, job_ids, array_id, sql_property
     ):
         db = self.session
+        assigned_resource_index = "CURRENT"
         if not states and not (job_ids or array_id):
             states = [
                 "Finishing",
@@ -72,6 +75,8 @@ class BaseQuery:
             if from_time or to_time or job_ids or array_id:
                 states.append("Terminated")
                 states.append("Error")
+        else:
+            assigned_resource_index = "LOG"
 
         c1_from, c2_from, c3_from = None, None, None
         if from_time is not None:
@@ -109,15 +114,32 @@ class BaseQuery:
                 q = q.filter(criteria) if criteria is not None else q
             return q
 
-        q1 = (
-            db.query(Job.id.label("job_id"))
-            .distinct()
-            .filter(
-                (Job.assigned_moldable_job == 0)
-                | (Job.assigned_moldable_job == AssignedResource.moldable_id)
+        # The following test may look overkill, but we need to be very careful of the
+        # SQL optimization to avoid a full parsing of the AssignedResource table
+        # For this, we use the AssignedResource.index to speed up the case where
+        # we want to get current jobs (typically, oarstat with no args)
+        if job_ids:
+            q1 = (
+                db.query(Job.id.label("job_id"))
+                .distinct()
+                .filter(
+                    (Job.assigned_moldable_job == AssignedResource.moldable_id)
+                    | (Job.assigned_moldable_job == 0)
+                )
+                .filter(MoldableJobDescription.job_id == Job.id)
             )
-            .filter(MoldableJobDescription.job_id == Job.id)
-        )
+        else:
+            q1 = (
+                db.query(Job.id.label("job_id"))
+                .distinct()
+                .filter(Job.assigned_moldable_job == AssignedResource.moldable_id)
+                .filter(
+                    (AssignedResource.index == assigned_resource_index)
+                    | (Job.assigned_moldable_job == 0)
+                )
+                .filter(MoldableJobDescription.job_id == Job.id)
+            )
+
         q1 = apply_commons_filters(q1, c1_from, c1_to)
 
         q2 = (
@@ -211,6 +233,12 @@ class BaseQueryCollection(object):
             jobs_events[job_id].append(event)
         return jobs_events
 
+    def groupby_jobs_requests(self, jobs, query):
+        jobs_reqs = dict(((job.id, []) for job in jobs))
+        for job_id, prop, res, value in query:
+            jobs_reqs[job_id].append([prop, res, value])
+        return jobs_reqs
+
     def get_assigned_jobs_resources(self, jobs):
         """Returns the list of assigned resources associated to the job passed
         in parameter."""
@@ -228,6 +256,32 @@ class BaseQueryCollection(object):
             .order_by(Job.id.asc())
         )
         return self.groupby_jobs_resources(jobs, query)
+
+    def get_actual_requests(self, jobs):
+        """Returns the actual resources request of a scheduled job."""
+        # .options(Load(JobResourceGroup).load_only(JobResourceGroup.property), Load(JobResourceDescription).load_only(JobResourceDescription.resource_type, JobResourceDescription.value))
+        db = self.session
+        query = (
+            db.query(
+                Job.id,
+                JobResourceGroup.property,
+                JobResourceDescription.resource_type,
+                JobResourceDescription.value,
+            )
+            .join(
+                JobResourceGroup,
+                Job.assigned_moldable_job == JobResourceGroup.moldable_id,
+            )
+            .join(
+                JobResourceDescription,
+                JobResourceDescription.group_id == JobResourceGroup.id,
+            )
+            .filter(Job.id.in_([job.id for job in jobs]))
+            .order_by(
+                JobResourceGroup.property.asc(), JobResourceDescription.order.asc()
+            )
+        )
+        return self.groupby_jobs_requests(jobs, query)
 
     def get_jobs_walltime(self, jobs):
         """Get the walltime of the assigned jobs"""

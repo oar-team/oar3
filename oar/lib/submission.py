@@ -126,11 +126,16 @@ class JobParameters:
 
         if scanscript:
             self.initial_request = scanscript_values["initial_request"]
+            if "properties" in scanscript_values:
+                self.properties = " AND ".join(scanscript_values["properties"])
 
         if self.array:
             self.array_nb = self.array
         else:
-            self.array_nb = 1
+            if self.array_param_file:
+                self.read_array_param_file()
+            else:
+                self.array_nb = 1
 
         if not self.queue:
             self.queue = config["QUEUE"]
@@ -524,6 +529,8 @@ def scan_script(
         user = os.environ["OARDO_USER"]
     os.environ["OARDO_BECOME_USER"] = user
 
+    submitted_filename = submitted_filename.split()[0]
+
     try:
         process = tools.Popen(["oardodo", "cat", submitted_filename], stdout=PIPE)
     except Exception:
@@ -551,7 +558,10 @@ def scan_script(
                 continue
             m = re.match(r"^#OAR\s+(-p|--property)\s*(.+)\s*$", line)
             if m:
-                result["property"] = m.group(2)
+                if "properties" in result:
+                    result["properties"].append(m.group(2))
+                else:
+                    result["properties"] = [m.group(2)]
                 initial_request_str += " " + m.group(1) + " " + m.group(2)
                 continue
             m = re.match(r"^#OAR\s+(--checkpoint)\s*(\d+)\s*$", line)
@@ -879,10 +889,16 @@ def add_micheline_subjob(
     date = get_date(session)
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
-
-    error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        session, config, resource_request, properties
-    )
+    if hasattr(job_parameters, "estimated_resources"):
+        (
+            error,
+            resource_available,
+            estimated_nb_resources,
+        ) = job_parameters.estimated_resources
+    else:
+        error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
+            session, config, resource_request, properties
+        )
     if error[0] != 0:
         return (error, -1)
 

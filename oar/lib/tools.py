@@ -921,7 +921,7 @@ def get_oarexecuser_script_for_oarsub(
     str_job_types = str_job_types[:-1]
 
     script = (
-        'if [ "a\$TERM" == "a" ] || [ "x\$TERM" == "xunknown" ]; then export TERM=xterm; fi;'
+        'if [ "a\\$TERM" == "a" ] || [ "x\\$TERM" == "xunknown" ]; then export TERM=xterm; fi;'
         + (job.env if job.env else "")
         + 'export OAR_FILE_NODES="'
         + node_file
@@ -944,14 +944,14 @@ def get_oarexecuser_script_for_oarsub(
         + 'export OAR_RESOURCE_PROPERTIES_FILE="'
         + resource_file
         + '";'
-        + "export OAR_NODEFILE=\$OAR_FILE_NODES;"
-        + "export OAR_O_WORKDIR=\$OAR_WORKDIR;"
-        + "export OAR_NODE_FILE=\$OAR_FILE_NODES;"
-        + "export OAR_RESOURCE_FILE=\$OAR_FILE_NODES;"
-        + "export OAR_WORKING_DIRECTORY=\$OAR_WORKDIR;"
-        + "export OAR_JOB_ID=\$OAR_JOBID;"
-        + "export OAR_ARRAY_ID=\$OAR_ARRAYID;"
-        + "export OAR_ARRAY_INDEX=\$OAR_ARRAYINDEX;"
+        + "export OAR_NODEFILE=\\$OAR_FILE_NODES;"
+        + "export OAR_O_WORKDIR=\\$OAR_WORKDIR;"
+        + "export OAR_NODE_FILE=\\$OAR_FILE_NODES;"
+        + "export OAR_RESOURCE_FILE=\\$OAR_FILE_NODES;"
+        + "export OAR_WORKING_DIRECTORY=\\$OAR_WORKDIR;"
+        + "export OAR_JOB_ID=\\$OAR_JOBID;"
+        + "export OAR_ARRAY_ID=\\$OAR_ARRAYID;"
+        + "export OAR_ARRAY_INDEX=\\$OAR_ARRAYINDEX;"
         + 'export OAR_JOB_NAME="'
         + (job.name if job.name else "")
         + '";'
@@ -973,13 +973,13 @@ def get_oarexecuser_script_for_oarsub(
         + '";'
         + " export SUDO_COMMAND=OAR;"
         + " SHLVL=1;"
-        + ' if ( cd "\$OAR_WORKING_DIRECTORY" &> /dev/null );'
+        + ' if ( cd "\\$OAR_WORKING_DIRECTORY" &> /dev/null );'
         + " then"
-        + '     cd "\$OAR_WORKING_DIRECTORY";'
+        + '     cd "\\$OAR_WORKING_DIRECTORY";'
         + " else"
         + "     exit 2;"
         + " fi;"
-        + " (exec -a -\${SHELL##*/} \$SHELL);"
+        + " (exec -a -\\${SHELL##*/} \\$SHELL);"
         + " exit 0"
     )
 
@@ -995,3 +995,18 @@ def check_process(pid, logger):
         return False
     else:
         return True
+
+
+def format_actual_request(id, jobs_reqs):
+    """Format the actual job request for humans"""
+    tmp_str = ""
+    grp_prop = ""
+    for desc in jobs_reqs[id]:
+        if desc[0] != "":
+            if grp_prop != desc[0]:
+                grp_prop = desc[0]
+                if tmp_str != "":
+                    tmp_str += "+"
+                tmp_str += "{" + desc[0] + "}"
+        tmp_str += "/" + desc[1] + "=" + str(desc[2])
+    return tmp_str

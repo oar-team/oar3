@@ -715,3 +715,4 @@ def test_oarsub_array_index(monkeypatch, minimal_db_initialization, setup_config
     ).all()
     print(job_array_ids)
     assert result.exit_code == 0
+    assert len(job_array_ids) == 3

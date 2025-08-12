@@ -5,10 +5,51 @@
 Changelog
 =========
 
+Version 3.0.0
+-------------
+
+Released on Jul 21, 2025
+
+- Initial OAR v3 release!
+
+Version 3.0.0.dev19
+-------------------
+
+Released on Jul 21, 2025
+
+- A call from admission rules: 
+    `estimated_resources = estimate_job_nb_resources(session, config, resource_request, properties)`
+    allows to re-use the `estimated_resources` data structure and prevents the scheduler from 
+    computing this several times (#96)
+- oarstat and oarapi prints 'actual_resources' (#99)
+
+Version 3.0.0.dev18
+-------------------
+
+Released on Jul 7, 2025
+
+- oarstat and oarapi now print correctly std[err,out] filenames (#97) 
+
+Version 3.0.0.dev17
+-------------------
+
+Released on Jul 4, 2025
+
+- Fixed several database performance issues (#84)
+- Fixed a bug with oarsub -S and properties (#85)
+- Fixed a bug with Suspended state
+- Removed verbose debug of the API
+- Fixed job_manager_systemd suspecting nodes in some cases (#81)
+- Fixed oarsub -S "./script with args"
+- Oarsub prints human dates (#93)
+- Fixed 'oarnodes -p' for 0 values not being printed (#92)
+- Fixed job dependency to an interactive job (#90)
+- Fixed a timing issue into almighty (could prevent Leon from working under heavy load) (#83)
+
 Version 3.0.0.dev16
 -------------------
 
-Unreleased
+Released on May 20, 2025
 
 - Fixed oarapi installation issue
 - Oarnodes now prints standby state 
@@ -19,6 +60,7 @@ Unreleased
 - Null valued fields are removed from the /jobs api output
 - Added /get_new_token API entry to re-generate JWT 
 - Added cgroup-v2 support through systemd
+- Fixed a bug with oarsub -S and array-param-file
 
 Version 3.0.0.dev15
 -------------------

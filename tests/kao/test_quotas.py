@@ -312,6 +312,40 @@ def test_quotas_two_job_rules_nb_res_quotas_file():
     assert j2.res_set == ProcSet(*[(1, 16)])
 
 
+def test_quotas_two_jobs_job_user_proc():
+    _, quotas_file_name = mkstemp()
+    config["QUOTAS_CONF_FILE"] = quotas_file_name
+
+    # quotas_file = open(quotas_file_name, 'w')
+    with open(config["QUOTAS_CONF_FILE"], "w", encoding="utf-8") as quotas_fd:
+        quotas_fd.write(
+            '{"quotas": {"*,*,besteffort,*": [-1,-1,-1],"*,*,*,yop": [-1,1,-1]}}'
+        )
+
+    Quotas.enable(config)
+
+    print(Quotas.default_rules, Quotas.job_types)
+
+    res = ProcSet(*[(1, 32)])
+    ResourceSet.default_itvs = res
+
+    ss = SlotSet(Slot(1, 0, 0, res, 0, 100))
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet(*x) for x in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]}
+
+    j1 = JobPseudo(id=1, queue="default", user="yop", project="")
+    j1.simple_req(("node", 1), 50, res)
+    j2 = JobPseudo(id=2, queue="default", user="yop", project="")
+    j2.simple_req(("node", 1), 50, res)
+
+    schedule_id_jobs_ct(all_ss, {1: j1, 2: j2}, hy, [1, 2], 20)
+
+    print(j1.start_time, j2.start_time)
+
+    assert j1.start_time == 0
+    assert j2.start_time == 50
+
+
 def test_quotas_two_jobs_job_type_proc():
     _, quotas_file_name = mkstemp()
     config["QUOTAS_CONF_FILE"] = quotas_file_name
