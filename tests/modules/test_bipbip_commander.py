@@ -53,7 +53,13 @@ def test_bipbip_commander_OAREXEC(setup):
     # exitcode = bipbip_commander.bipbip_leon_executors[10].exitcode
     print("helloe", fake_popen)
     assert bipbip_commander.bipbip_leon_commands_to_run == []
-    assert ["/usr/local/lib/oar/oar-bipbip", "10", "2", "N", "34",] == fake_popen[
+    assert [
+        "/usr/local/lib/oar/oar-bipbip",
+        "10",
+        "2",
+        "N",
+        "34",
+    ] == fake_popen[
         "cmd"
     ].split(" ")
 
