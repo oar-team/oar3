@@ -122,10 +122,18 @@ def schedule_cycle(
 ):
 
     if use_rust:
-        import oar3_scheduler_lib
+        import imp
 
-        oar3_scheduler_lib.schedule_cycle(session, config, plt, queues)
-        return
+        try:
+            imp.find_module("oar3_scheduler_lib")
+            import oar3_scheduler_lib
+
+            oar3_scheduler_lib.schedule_cycle(session, config, plt, queues)
+            return
+        except ImportError:
+            logger.warning(
+                "You specified to use the rust scheduler, but the library is not installed. Falling back to python scheduler."
+            )
 
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
