@@ -421,7 +421,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     # logger.debug(f"SlotSet Default (Before):\n{slots_sets['default']}")
 
     for jid in id_jobs:
-        #logger.debug("Schedule job:" + str(jid))
+        # logger.debug("Schedule job:" + str(jid))
         job = jobs[jid]
 
         min_start_time = -1
