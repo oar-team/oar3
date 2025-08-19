@@ -118,7 +118,14 @@ def schedule_cycle(
     plt: Platform,
     now: int,
     queues: List[str] = ["default"],
+    use_rust=True
 ):
+
+    if use_rust:
+        import oar3_scheduler_lib
+        oar3_scheduler_lib.schedule_cycle(session, config, plt, queues)
+        return
+
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
             now, " ".join([q for q in queues])
@@ -132,9 +139,9 @@ def schedule_cycle(
     )
 
     if nb_waiting_jobs > 0:
-        logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
-        for jid in waiting_jids:
-            logger.debug("waiting_jid: " + str(jid))
+        #logger.info("nb_waiting_jobs:" + str(nb_waiting_jobs))
+        #for jid in waiting_jids:
+            #logger.debug("waiting_jid: " + str(jid))
 
         job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
 
