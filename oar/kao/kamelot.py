@@ -120,14 +120,11 @@ def schedule_cycle(
     queues: List[str] = ["default"],
     use_rust=True,
 ):
-
     if use_rust:
-        import imp
+        import importlib
 
         try:
-            imp.find_module("oar3_scheduler_lib")
-            import oar3_scheduler_lib
-
+            oar3_scheduler_lib = importlib.import_module("oar3_scheduler_lib")
             oar3_scheduler_lib.schedule_cycle(session, config, plt, queues)
             return
         except ImportError:
