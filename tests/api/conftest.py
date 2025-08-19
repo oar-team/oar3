@@ -68,9 +68,9 @@ def fastapi_app(setup_config):
 
     tempdir = tempfile.mkdtemp()
     # Config for jwt
-    config["API_SECRET_KEY"] = (
-        "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
-    )
+    config[
+        "API_SECRET_KEY"
+    ] = "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
     config["API_SECRET_ALGORITHM"] = "HS256"
     config["API_ACCESS_TOKEN_EXPIRE_MINUTES"] = 524160  # One year
 
