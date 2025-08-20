@@ -43,7 +43,7 @@ def queues_schedule_redox(
     for queues in get_queues_groupby_priority(session):
         # Plugin hook: extra_metasched_func
         prev_queues = queues
-        active_queues = [q for q in queues if q.state == "Active"]
+        active_queues = [q.name for q in queues if q.state == "Active"]
 
         oar_scheduler_redox.schedule_cycle_internal(
             redox_platform, redox_slot_sets, active_queues
@@ -53,7 +53,7 @@ def queues_schedule_redox(
             handle_waiting_reservation_jobs(
                 session,
                 config,
-                queue.name,
+                queue,
                 resource_set,
                 job_security_time,
                 current_time_sec,
