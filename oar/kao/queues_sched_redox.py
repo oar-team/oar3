@@ -34,7 +34,7 @@ def queues_schedule_redox(
 
     # Init redox with session, config, platform
     redox_platform = oar_scheduler_redox.build_redox_platform(
-        session, config, plt, initial_time_sec
+        session, config, plt, initial_time_sec, scheduled_jobs
     )
     redox_slot_sets = oar_scheduler_redox.build_redox_slot_sets(redox_platform)
 

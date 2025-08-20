@@ -66,6 +66,7 @@ class Configuration(dict):
         "GRETA_PORT": 6672,
         # kao
         "METASCHEDULER_MODE": "internal",
+        "REDOX_SCHEDULER": "yes",
         # Tell the metascheduler that it runs into an oar2 installation.
         "METASCHEDULER_OAR3_WITH_OAR2": "no",
         "HIERARCHY_LABELS": "resource_id,network_address",
