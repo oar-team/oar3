@@ -6,7 +6,6 @@ It iteratively calls scheduling algorithms on the different queues based on thei
 
 import re
 import sys
-from typing import Dict
 
 from procset import ProcSet
 
@@ -14,48 +13,28 @@ from procset import ProcSet
 from sqlalchemy import text
 
 import oar.lib.tools as tools
-from oar.kao.kamelot import internal_schedule_cycle
 from oar.kao.platform import Platform
+from oar.kao.queues_sched import queues_schedule
+from oar.kao.queues_sched_redox import queues_schedule_redox
 from oar.kao.quotas import Quotas
-from oar.kao.scheduling import (
-    find_resource_hierarchies_job,
-    set_slots_with_prev_scheduled_jobs,
-)
-from oar.kao.slot import (
-    MAX_TIME,
-    SlotSet,
-    intersec_itvs_slots,
-    intersec_ts_ph_itvs_slots,
-)
+from oar.kao.redox import can_use_redox_scheduler
 
 # for walltime change requests
 from oar.kao.walltime_change import process_walltime_change_requests
-from oar.lib.configuration import Configuration
 from oar.lib.event import add_new_event, get_job_events
 from oar.lib.globals import get_logger
 from oar.lib.job_handling import (
-    ALLOW,
-    NO_PLACEHOLDER,
-    JobPseudo,
     add_resource_job_pairs,
     frag_job,
-    gantt_flush_tables,
-    get_after_sched_no_AR_jobs,
     get_cpuset_values,
     get_current_not_waiting_jobs,
     get_gantt_jobs_to_launch,
     get_gantt_waiting_interactive_prediction_date,
-    get_jobs_in_multiple_states,
     get_jobs_on_resuming_job_resources,
-    get_waiting_moldable_of_reservations_already_scheduled,
-    get_waiting_scheduled_AR_jobs,
     is_timesharing_for_two_jobs,
-    remove_gantt_resource_job,
     resume_job_action,
-    save_assigns,
     set_gantt_job_start_time,
     set_job_message,
-    set_job_resa_state,
     set_job_start_time_assigned_moldable_id,
     set_job_state,
     set_moldable_job_max_time,
@@ -67,9 +46,7 @@ from oar.lib.node import (
     get_next_job_date_on_node,
     search_idle_nodes,
 )
-from oar.lib.plugins import find_plugin_function
-from oar.lib.queue import get_queues_groupby_priority, stop_queue
-from oar.lib.tools import PIPE, TimeoutExpired, duration_to_sql, local_to_sql
+from oar.lib.tools import TimeoutExpired, duration_to_sql, local_to_sql
 from oar.modules.greta import GretaClient
 
 # FIXME global config
@@ -77,8 +54,6 @@ from oar.modules.greta import GretaClient
 
 # Constant duration time of a besteffort job *)
 besteffort_duration = 300  # TODO conf ???
-
-EXTRA_METASCHED_FUNC_ENTRY_POINT = "oar.extra_metasched_func"
 
 # TODO : not used, to confirm
 # timeout for validating reservation
@@ -101,91 +76,6 @@ to_launch_jobs_already_treated = {}
 
 
 batsim_sched_proxy = None
-
-
-def gantt_init_with_running_jobs(
-    session, config, plt, initial_time_sec, job_security_time
-):
-    """
-    Initialize gantt tables with scheduled reservation jobs, Running jobs,
-    toLaunch jobs and Launching jobs.
-
-    :param oar.kao.platform.Platform plt: \
-        Scheduling Platform to schedule jobs.
-    :param int scheduled_jobs: \
-        Time from which to schedule.
-    :param int job_security_time: \
-        Job security time.
-    """
-    #
-    # Determine Global Resource Intervals and Initial Slot
-    #
-    resource_set = plt.resource_set(session, config)
-    initial_slot_set = SlotSet((resource_set.roid_itvs, initial_time_sec))
-
-    logger.debug("Processing of processing of already handled reservations")
-    moldable_ids = get_waiting_moldable_of_reservations_already_scheduled(session)
-    gantt_flush_tables(session, moldable_ids)
-
-    # TODO Can we remove this step, below ???
-    #  why don't use: assigned_resources and job start_time ??? in get_scheduled_jobs ???
-    logger.debug("Processing of current jobs")
-    current_jobs = get_jobs_in_multiple_states(
-        session,
-        ["Running", "toLaunch", "Launching", "Finishing", "Suspended", "Resuming"],
-        resource_set,
-    )
-    plt.save_assigns(session, current_jobs, resource_set)  # TODO to verify
-
-    #
-    #  Resource availabilty (Available_upto field) is integrated through pseudo job
-    #
-    pseudo_jobs = []
-    for t_avail_upto in sorted(resource_set.available_upto.keys()):
-        itvs = resource_set.available_upto[t_avail_upto]
-        j = JobPseudo()
-        j.start_time = t_avail_upto
-        j.walltime = MAX_TIME - t_avail_upto
-        j.res_set = itvs
-        j.ts = False
-        j.ph = NO_PLACEHOLDER
-
-        pseudo_jobs.append(j)
-
-    if pseudo_jobs != []:
-        initial_slot_set.split_slots_jobs(pseudo_jobs)
-
-    #
-    # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
-    #
-    # TODO?: Remove resources of the type specified in
-    # SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE
-    scheduled_jobs = plt.get_scheduled_jobs(
-        session, resource_set, job_security_time, initial_time_sec
-    )
-
-    # retrieve resources used by besteffort jobs
-    besteffort_rid2job = {}
-
-    for job in scheduled_jobs:
-        #  print("job.id:", job.id, job.queue_name, job.types, job.res_set, job.start_time)
-        if "besteffort" in job.types:
-            for r_id in list(job.res_set):
-                besteffort_rid2job[r_id] = job
-
-    # Create and fill gantt
-    all_slot_sets = {"default": initial_slot_set}
-    if scheduled_jobs != []:
-        filter_besteffort = True
-        set_slots_with_prev_scheduled_jobs(
-            all_slot_sets,
-            scheduled_jobs,
-            job_security_time,
-            initial_time_sec,
-            filter_besteffort,
-        )
-
-    return (all_slot_sets, scheduled_jobs, besteffort_rid2job)
 
 
 def notify_to_run_job(config, jid):
@@ -253,225 +143,6 @@ def prepare_job_to_be_launched(session, config, job, current_time_sec):
     set_job_state(session, config, job.id, "toLaunch")
 
     notify_to_run_job(config, job.id)
-
-
-def handle_waiting_reservation_jobs(
-    session, config, queue_name, resource_set, job_security_time, current_time_sec
-):
-    reservation_waiting_timeout = int(config["RESERVATION_WAITING_RESOURCES_TIMEOUT"])
-    logger.debug(
-        "Queue " + queue_name + ": begin processing accepted Advance Reservations"
-    )
-
-    ar_jobs = get_waiting_scheduled_AR_jobs(
-        session, queue_name, resource_set, job_security_time, current_time_sec
-    )
-
-    for job in ar_jobs:
-        moldable_id = job.moldable_id
-        walltime = job.walltime
-
-        # Test if AR job is expired and handle it
-        if current_time_sec > (job.start_time + walltime):
-            logger.warning(
-                "["
-                + str(job.id)
-                + "] set job state to Error: avdance reservation expired and couldn't be started"
-            )
-            set_job_state(session, config, job.id, "Error")
-            set_job_message(
-                session, job.id, "Reservation expired and couldn't be started."
-            )
-        else:
-            # Determine current available resources
-            avail_res = resource_set.roid_itvs & job.res_set
-
-            # Test if the AR job is waiting to be launched due to nodes' unavailabilities
-            if (len(avail_res) == 0) and (job.start_time < current_time_sec):
-                logger.warning(
-                    "[%s] advance reservation is waiting because no resource is present"
-                    % str(job.id)
-                )
-
-                # Delay launching time
-                set_gantt_job_start_time(session, moldable_id, current_time_sec + 1)
-            elif job.start_time < current_time_sec:
-                # TODO: not tested
-                if (job.start_time + reservation_waiting_timeout) > current_time_sec:
-                    if avail_res != job.res_set:
-                        # The expected resources are not all available,
-                        # wait the specified timeout
-                        logger.warning(
-                            "["
-                            + str(job.id)
-                            + "] advance reservation is waiting because not all \
-                                       resources are available yet (timeout in "
-                            + (
-                                job.start_time
-                                + reservation_waiting_timeout
-                                - current_time_sec
-                            )
-                            + " seconds)"
-                        )
-                        set_gantt_job_start_time(
-                            session, moldable_id, current_time_sec + 1
-                        )
-                else:
-                    # It's time to launch the AR job, remove missing resources
-                    missing_resources_itvs = job.res_set - avail_res
-                    remove_gantt_resource_job(
-                        session, moldable_id, missing_resources_itvs, resource_set
-                    )
-                    logger.warning(
-                        "["
-                        + str(job.id)
-                        + "remove some resources assigned to this advance reservation, \
-                                   because there are not Alive"
-                    )
-
-                    add_new_event(
-                        session,
-                        "SCHEDULER_REDUCE_NB_RESSOURCES_FOR_RESERVATION",
-                        job.id,
-                        "[MetaSched] Reduce the number of resources for the job "
-                        + str(job.id),
-                    )
-
-                    nb_res = len(job.res_set) - len(missing_resources_itvs)
-                    new_message = re.sub(r"R=\d+", "R=" + str(nb_res), job.message)
-                    if new_message != job.message:
-                        set_job_message(session, job.id, new_message)
-
-    logger.debug(
-        "Queue "
-        + queue_name
-        + ": end processing of reservations with missing resources"
-    )
-
-
-def check_reservation_jobs(
-    session,
-    config: Configuration,
-    plt: Platform,
-    resource_set: ProcSet,
-    queue_name: str,
-    all_slot_sets: Dict[str, SlotSet],
-    current_time_sec,
-):
-    """Processing of new Advance Reservations"""
-
-    logger.debug("Queue " + queue_name + ": begin processing of new reservations")
-
-    ar_jobs_scheduled = {}
-
-    ar_jobs, ar_jids, nb_ar_jobs = plt.get_waiting_jobs(
-        queue_name, "toSchedule", session=session
-    )
-    logger.debug("nb_ar_jobs:" + str(nb_ar_jobs))
-
-    if nb_ar_jobs > 0:
-        job_security_time = int(config["SCHEDULER_JOB_SECURITY_TIME"])
-        plt.get_data_jobs(session, ar_jobs, ar_jids, resource_set, job_security_time)
-
-        logger.debug("Try and schedule new Advance Reservations")
-        for jid in ar_jids:
-            job = ar_jobs[jid]
-            logger.debug("Find resource for Advance Reservation job:" + str(job.id))
-
-            # It is a reservation, we take care only of the first moldable job
-            moldable_id, walltime, hy_res_rqts = job.mld_res_rqts[0]
-
-            # test if reservation is too old
-            if current_time_sec >= (job.start_time + walltime):
-                logger.warning(
-                    "[" + str(job.id) + "] Canceling job: reservation is too old"
-                )
-                set_job_message(session, job.id, "Reservation too old")
-                set_job_state(session, config, job.id, "toError")
-                continue
-            else:
-                if job.start_time < current_time_sec:
-                    # TODO update to DB ????
-                    job.start_time = current_time_sec
-
-            ss_name = "default"
-
-            # TODO container
-            # if 'inner' in job.types:
-            #    ss_name = job.types['inner']
-
-            # TODO: test if container is an AR job
-
-            slots_set = all_slot_sets[ss_name]
-
-            t_e = job.start_time + walltime - job_security_time
-            sid_left, sid_right = slots_set.get_encompassing_slots(job.start_time, t_e)
-
-            slots = slots_set.slots
-
-            if job.ts or (job.ph == ALLOW):
-                itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
-            else:
-                itvs_avail = intersec_itvs_slots(slots, sid_left, sid_right)
-
-            itvs = find_resource_hierarchies_job(
-                itvs_avail, hy_res_rqts, resource_set.hierarchy
-            )
-
-            if Quotas.enabled:
-                nb_res = len(itvs & resource_set.default_itvs)
-                res = Quotas.check_slots_quotas(
-                    slots, sid_left, sid_right, job, nb_res, walltime
-                )
-                print(f"res: {res}")
-                (quotas_ok, quotas_msg, rule, value) = res
-                if not quotas_ok:
-                    itvs = ProcSet()
-                    logger.info(
-                        f"Quotas limitation reached, job:{str(job.id)}, {quotas_msg}, rule: {str(rule)}, value: {str(value)}"
-                    )
-                    set_job_state(session, config, job.id, "toError")
-                    set_job_message(
-                        session,
-                        job.id,
-                        "This advance reservation cannot run due to quotas",
-                    )
-
-            if len(itvs) == 0:
-                # not enough resource available
-                logger.warning(
-                    "["
-                    + str(job.id)
-                    + "] advance reservation cannot be validated, not enough resources"
-                )
-                set_job_state(session, config, job.id, "toError")
-                set_job_message(session, job.id, "This advance reservation cannot run")
-            else:
-                # The reservation can be scheduled
-                logger.debug("[" + str(job.id) + "] advance reservation is validated")
-                job.moldable_id = moldable_id
-                job.res_set = itvs
-                job.walltime = walltime
-                ar_jobs_scheduled[job.id] = job
-
-                (sid_left, sid_right) = all_slot_sets[ss_name].get_encompassing_range(
-                    job.start_time, job.start_time + job.walltime
-                )
-
-                # print(f"what should: {(a, b)}, what is: {(sid_left, sid_right)} security: {job_security_time}")
-                print(
-                    f"check for yourself {job.start_time} + {job.walltime} = {job.start_time + job.walltime}:\n{all_slot_sets[ss_name]}"
-                )
-                all_slot_sets[ss_name].split_slots(sid_left, sid_right, job)
-                set_job_state(session, config, job.id, "toAckReservation")
-
-            set_job_resa_state(session, job.id, "Scheduled")
-
-    if ar_jobs_scheduled != []:
-        logger.debug("Save AR jobs' assignements in database")
-        save_assigns(session, ar_jobs_scheduled, resource_set)
-
-    logger.debug("Queue " + queue_name + ": end processing of new reservations")
 
 
 def check_besteffort_jobs_to_kill(
@@ -891,10 +562,6 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     current_time_sec = initial_time_sec
     current_time_sql = initial_time_sql
 
-    gantt_init_results = gantt_init_with_running_jobs(
-        session, config, plt, initial_time_sec, job_security_time
-    )
-    all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
     resource_set = plt.resource_set(session=session, config=config)
 
     # Path for external schedulers if needed
@@ -923,20 +590,26 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     for queues in get_queues_groupby_priority(session):
         extra_metasched_func(
             session,
-            prev_queues,
+            config,
+            mode,
             plt,
-            scheduled_jobs,
-            all_slot_sets,
-            job_security_time,
-            queues,
+            resource_set,
             initial_time_sec,
-            extra_metasched_config,
+            initial_time_sql,
+            current_time_sec,
+            job_security_time,
         )
-
-        logger.debug(
-            "Queue(s): {},  Launching scheduler, at time: {}, ({})".format(
-                " ".join([q.name for q in queues]), initial_time_sql, initial_time_sec
-            )
+    else:
+        besteffort_rid2job = queues_schedule(
+            session,
+            config,
+            mode,
+            plt,
+            resource_set,
+            initial_time_sec,
+            initial_time_sql,
+            current_time_sec,
+            job_security_time,
         )
 
         prev_queues = queues
@@ -1043,7 +716,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             jobs_to_launch_with_security_time,  # Jobs to launch or about to be launched
             rid2jid_to_launch,
             current_time_sec,
-            besteffort_rid2jid,
+            besteffort_rid2job,
             resource_set,
         )
         == 1

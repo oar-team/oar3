@@ -7,6 +7,7 @@ from oar.kao.karma import karma_jobs_sorting
 from oar.kao.multifactor_priority import multifactor_jobs_sorting
 from oar.kao.platform import Platform
 from oar.kao.quotas import Quotas
+from oar.kao.redox import can_use_redox_scheduler
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import MAX_TIME, SlotSet
 from oar.lib.configuration import Configuration
@@ -119,18 +120,11 @@ def schedule_cycle(
     now: int,
     queues: List[str] = ["default"],
 ):
-    if ("REDOX_SCHEDULER" in config) and (config["REDOX_SCHEDULER"] == "yes"):
-        import importlib
+    if can_use_redox_scheduler(config):
+        import oar_scheduler_redox
 
-        try:
-            oar_scheduler_redox = importlib.import_module("oar_scheduler_redox")
-            oar_scheduler_redox.schedule_cycle(session, config, plt, queues)
-            return
-        except ImportError:
-            logger.error(
-                "You specified to use the rust scheduler with REDOX_SCHEDULER in config, "
-                "but the library is not installed (module oar_scheduler_redox not reachable). Falling back to python scheduler."
-            )
+        oar_scheduler_redox.schedule_cycle_external(session, config, plt, queues)
+        return
 
     logger.info(
         "Begin scheduling....now: {}, queue(s): {}".format(
