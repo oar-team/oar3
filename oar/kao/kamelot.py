@@ -118,18 +118,18 @@ def schedule_cycle(
     plt: Platform,
     now: int,
     queues: List[str] = ["default"],
-    use_rust=True,
 ):
-    if use_rust:
+    if ("REDOX_SCHEDULER" in config) and (config["REDOX_SCHEDULER"] == "yes"):
         import importlib
 
         try:
-            oar3_scheduler_lib = importlib.import_module("oar3_scheduler_lib")
-            oar3_scheduler_lib.schedule_cycle(session, config, plt, queues)
+            oar_scheduler_redox = importlib.import_module("oar_scheduler_redox")
+            oar_scheduler_redox.schedule_cycle(session, config, plt, queues)
             return
         except ImportError:
-            logger.warning(
-                "You specified to use the rust scheduler, but the library is not installed. Falling back to python scheduler."
+            logger.error(
+                "You specified to use the rust scheduler with REDOX_SCHEDULER in config, "
+                "but the library is not installed (module oar_scheduler_redox not reachable). Falling back to python scheduler."
             )
 
     logger.info(
