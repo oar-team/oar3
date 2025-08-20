@@ -2,9 +2,9 @@
   description = "oar";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils";
-    kapack.url = "github:oar-team/nur-kapack?ref=master";
+    kapack.url = "github:oar-team/nur-kapack?ref=oar-redox";
     kapack.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -26,6 +26,7 @@
                 requests
                 alembic
                 kapackpkgs.procset
+                kapackpkgs.oar-scheduler-redox
                 click
                 simplejson
                 flask
@@ -114,6 +115,7 @@
                     python-multipart
                     python-jose
                     kapackpkgs.procset
+                    kapackpkgs.oar-scheduler-redox
                     rich
                     pexpect
                     simpy
