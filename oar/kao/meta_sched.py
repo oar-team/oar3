@@ -412,7 +412,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
 
     resource_set = plt.resource_set(session=session, config=config)
 
-    if mode == "internal" and can_use_redox_scheduler(config) and False:
+    if mode == "internal" and can_use_redox_scheduler(config):
         besteffort_rid2job = queues_schedule_redox(
             session,
             config,
