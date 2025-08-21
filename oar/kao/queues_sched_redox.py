@@ -58,7 +58,9 @@ def queues_schedule_redox(
                 job_security_time,
                 current_time_sec,
             )
-            # TODO: Call check_reservation_jobs
+            oar_scheduler_redox.check_reservation_jobs(
+                redox_platform, redox_slot_sets, queue
+            )
 
     return besteffort_rid2job
 
