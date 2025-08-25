@@ -123,7 +123,7 @@ def schedule_cycle(
     if can_use_redox_scheduler(config):
         import oar_scheduler_redox
 
-        oar_scheduler_redox.schedule_cycle_external(session, config, plt, queues)
+        oar_scheduler_redox.schedule_cycle_external(session, config, plt, now, queues)
         return
 
     logger.info(
