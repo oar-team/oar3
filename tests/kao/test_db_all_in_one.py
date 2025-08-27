@@ -374,8 +374,8 @@ def test_db_all_in_one_temporal_quotas_1(
     a = deepcopy(quotas_simple_temporal_rules)
 
     now = get_date(minimal_db_initialization)
-    t1 = now + int(2 * 86400)
-    t2 = t1 + 86400
+    t1 = now + int(2 * 86400) # 2 days
+    t2 = t1 + 86400  # 1 day
     a["oneshot"] = [[local_to_sql(t1)[:-3], local_to_sql(t2)[:-3], "quotas_2", ""]]
 
     rules_str = str(a).replace("'", '"')
