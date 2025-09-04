@@ -5,6 +5,14 @@
 Changelog
 =========
 
+Version 3.0.1
+-------------
+Unreleased
+
+- Fixes and enhancements of the scheduling #104 #105
+- Fixed major bug in `oarnodesetting -m off` #109
+- Kamelot set as default scheduler
+
 Version 3.0.0
 -------------
 
