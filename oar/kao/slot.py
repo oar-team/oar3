@@ -603,6 +603,8 @@ class SlotSet:
 
             if job.ts_name not in slot.ts_itvs[job.ts_user]:
                 slot.ts_itvs[job.ts_user][job.ts_name] = copy.copy(job.res_set)
+            else:
+                slot.ts_itvs[job.ts_user][job.ts_name] |= copy.copy(job.res_set)
 
         if job.ph == ALLOW:
             if job.ph_name in slot.ph_itvs:
