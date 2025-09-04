@@ -222,6 +222,7 @@ def test_add_split_slots_jobs_2_jobs_2():
 
     assert compare_slots_val_ref(ss, v)
 
+
 def test_add_split_slots_jobs_2_jobs_2_2():
     v = [
         (0, 299, ProcSet(*[])),
