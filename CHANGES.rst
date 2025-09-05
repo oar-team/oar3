@@ -12,6 +12,7 @@ Unreleased
 - Fixes and enhancements of the scheduling #104 #105
 - Fixed major bug in `oarnodesetting -m off` #109
 - Kamelot set as default scheduler
+- Fixed `oarstat -g` #110
 
 Version 3.0.0
 -------------
