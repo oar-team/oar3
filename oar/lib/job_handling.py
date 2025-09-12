@@ -1015,6 +1015,7 @@ def resubmit_job(session, job_id):
     # Detach and prepare old job to be reinserted
     session.expunge(job)
     make_transient(job)
+    job.resubmit_job_id = job_id
     job.id = None
     job.state = "Hold"
     job.date = date
