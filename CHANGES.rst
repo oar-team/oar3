@@ -13,6 +13,8 @@ Unreleased
 - Fixed major bug in `oarnodesetting -m off` #109
 - Kamelot set as default scheduler
 - Fixed `oarstat -g` #110
+- Fixed possible bibpib crash (jobs stuck in the Launching state) # 113
+- Fixed resubmit_job_id value of jobs #114
 
 Version 3.0.0
 -------------
