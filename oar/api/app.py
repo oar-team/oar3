@@ -18,6 +18,7 @@ default_config = {
     "API_DEFAULT_DATA_STRUCTURE": "simple",
     "API_DEFAULT_MAX_ITEMS_NUMBER": 500,
     "API_ABSOLUTE_URIS": 1,
+    "API_TEST_MODE": 0,
 }
 
 
@@ -98,10 +99,13 @@ def create_app(
             request.state.logger = logger
             response = await call_next(request)
         finally:
-            # FIXME: closing the session here causes the ephemeral session to remove all the data
-            # leading to breaking tests
-            # request.state.db.close()
-            pass
+            # Closing the session here causes the ephemeral session to remove all the data
+            # leading to breaking tests, so use "API_TEST_MODE": 1 during the tests
+            test_mode = 0
+            if "API_TEST_MODE" in config:
+                test_mode = config["API_TEST_MODE"]
+            if not test_mode:
+                request.state.db.close()
         return response
 
     @app.middleware("http")
