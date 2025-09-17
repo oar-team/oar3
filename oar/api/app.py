@@ -105,7 +105,7 @@ def create_app(
             if "API_TEST_MODE" in config:
                 test_mode = config["API_TEST_MODE"]
             if not test_mode:
-                request.state.db.close()
+                request.state.db.flush()
         return response
 
     @app.middleware("http")
