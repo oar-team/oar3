@@ -9,6 +9,7 @@ Version 3.0.1
 -------------
 Unreleased
 
+- Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
 - Fixes and enhancements of the scheduling #104 #105
 - Fixed major bug in `oarnodesetting -m off` #109
 - Kamelot set as default scheduler
@@ -28,9 +29,9 @@ Version 3.0.0.dev19
 
 Released on Jul 21, 2025
 
-- A call from admission rules: 
+- A call from admission rules:
     `estimated_resources = estimate_job_nb_resources(session, config, resource_request, properties)`
-    allows to re-use the `estimated_resources` data structure and prevents the scheduler from 
+    allows to re-use the `estimated_resources` data structure and prevents the scheduler from
     computing this several times (#96)
 - oarstat and oarapi prints 'actual_resources' (#99)
 
@@ -39,7 +40,7 @@ Version 3.0.0.dev18
 
 Released on Jul 7, 2025
 
-- oarstat and oarapi now print correctly std[err,out] filenames (#97) 
+- oarstat and oarapi now print correctly std[err,out] filenames (#97)
 
 Version 3.0.0.dev17
 -------------------
@@ -63,13 +64,13 @@ Version 3.0.0.dev16
 Released on May 20, 2025
 
 - Fixed oarapi installation issue
-- Oarnodes now prints standby state 
+- Oarnodes now prints standby state
 - Added misssing "types" array from /jobs/{id} (issue #43)
 - Oarstat did not display some jobs (issue #48)
 - Performance fix (#63)
 - Karma is now recorded and printed by oarstat and oarapi (#65)
 - Null valued fields are removed from the /jobs api output
-- Added /get_new_token API entry to re-generate JWT 
+- Added /get_new_token API entry to re-generate JWT
 - Added cgroup-v2 support through systemd
 - Fixed a bug with oarsub -S and array-param-file
 

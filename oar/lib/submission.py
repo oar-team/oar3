@@ -160,7 +160,8 @@ class JobParameters:
         # prepare and build resource_request
         default_resources = config["OARSUB_DEFAULT_RESOURCES"]
         nodes_resources = config["OARSUB_NODES_RESOURCES"]
-        self.resource_request = parse_resource_descriptions(
+
+        self.error, self.resource_request = parse_resource_descriptions(
             self.resource, default_resources, nodes_resources
         )
 
@@ -673,7 +674,7 @@ def scan_script(
 
 def parse_resource_descriptions(
     str_resource_request_list: List[str], default_resources: str, nodes_resources: str
-) -> List[Tuple[dict[str, Any], int]]:
+) -> Tuple[Tuple[int, str], List[Tuple[dict[str, Any], int]]]:
     """Parse and transform a cli oar resource request in python structure which is manipulated
     in admission process
 
@@ -739,6 +740,10 @@ def parse_resource_descriptions(
 
             resources = []  # resources = [{resource: r, value: v}]
 
+            # Flags to guarantee that all_half_best is used with only
+            # one hierarchy level
+            all_half_best_one_hierarchy_level = 0
+
             for str_res_value in str_res_value_lst:
                 if (
                     str_res_value.lstrip()
@@ -750,19 +755,30 @@ def parse_resource_descriptions(
                         res = nodes_resources
                     if value == "ALL":
                         v = -1
-                    elif value == "BESTHALF":
-                        v = -2
+                        all_half_best_one_hierarchy_level += 1
                     elif value == "BEST":
+                        v = -2
+                        all_half_best_one_hierarchy_level += 1
+                    elif value == "HALF_BEST":
                         v = -3
+                        all_half_best_one_hierarchy_level += 1
                     else:
                         v = str(value)
                     resources.append({"resource": res, "value": v})
+                if all_half_best_one_hierarchy_level > 1:
+                    return (
+                        (
+                            25,
+                            "ALL, HALF_BEST, BEST are only usable with only one level of hierarchy",
+                        ),
+                        [],
+                    )
 
             resource_desc.append({"property": property, "resources": resources})
 
         resource_request.append((resource_desc, walltime))
 
-    return resource_request
+    return ((0, ""), resource_request)
 
 
 def estimate_job_nb_resources(
