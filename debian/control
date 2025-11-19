@@ -96,7 +96,8 @@ Depends: ${misc:Depends},
          lsb-base (>= 3.0-6),
          oar-common (= ${binary:Version}),
          hwloc (>= 2.12.0-4),
-         libbpf1 (>1:1.5.0-3)
+         libbpf1 (>1:1.5.0-3),
+         bpftool
 Suggests: oar-doc,
           xauth
 Description: OAR batch scheduler node package
