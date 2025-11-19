@@ -16,6 +16,7 @@ Unreleased
 - Fixed `oarstat -g` #110
 - Fixed possible bibpib crash (jobs stuck in the Launching state) # 113
 - Fixed resubmit_job_id value of jobs #114
+- Added missing oarcgdev binary for GPU confinement
 
 Version 3.0.0
 -------------

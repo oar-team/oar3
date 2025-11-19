@@ -12,4 +12,4 @@ oarcgdev.bpf: oarcgdev-ebpf.c
 	clang -I /usr/include/*-linux-gnu/ -O2 -target bpf -c oarcgdev-ebpf.c -mcpu=v3 -g -o oarcgdev.bpf
 
 clean:
-	rm oarcgdev oarcgdev.bpf
+	rm -f oarcgdev oarcgdev.bpf
