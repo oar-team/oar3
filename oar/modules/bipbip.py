@@ -273,7 +273,8 @@ class BipBip(object):
                         + cpuset_file
                     )
                     self.logger.error(msg)
-                    events.append(("CPUSET_MANAGER_FILE", msg, None))
+                    # events.append(("CPUSET_MANAGER_FILE", msg, None))
+                    add_new_event(session, "CPUSET_MANAGER_FILE", job_id, msg)
                 else:
                     bad = bad + bad_hosts
                     event_type = "CPUSET_ERROR"

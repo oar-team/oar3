@@ -24,9 +24,11 @@ include Makefiles/shared/shared.mk
 
 build: build_shared
 	$(MAKE) -f Makefiles/man.mk build
+	$(MAKE) -C $(SRCDIR)/tools/oarcgdev oarcgdev
 
 clean: clean_shared
 	$(MAKE) -f Makefiles/man.mk clean
+	$(MAKE) -C $(SRCDIR)/tools/oarcgdev clean
 
 install: install_shared
 
@@ -35,6 +37,10 @@ install: install_shared
 	install -d $(DESTDIR)$(DOCDIR)/oarnodecheck 
 	install -m 0644 oar/tools/oarnodecheck/README $(DESTDIR)$(DOCDIR)/oarnodecheck
 	install -m 0644 oar/tools/oarnodecheck/template $(DESTDIR)$(DOCDIR)/oarnodecheck
+
+	install -m 755 $(SRCDIR)/tools/oarcgdev/oarcgdev $(DESTDIR)$(OARDIR)/oarcgdev
+	install -m 0644 $(SRCDIR)/tools/oarcgdev/oarcgdev.bpf $(DESTDIR)$(OARHOMEDIR)/oarcgdev.bpf
+
 
 uninstall: uninstall_shared
 

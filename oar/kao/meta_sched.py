@@ -4,7 +4,6 @@ This module defines the top level scheduler of OAR.
 It iteratively calls scheduling algorithms on the different queues based on their priorities.
 """
 
-import os
 import re
 import sys
 from typing import Dict
@@ -632,7 +631,7 @@ def update_gantt_visualization(session):
 
 def call_external_scheduler(
     session,
-    binpath,
+    schedulers_path,
     scheduled_jobs,
     all_slot_sets,
     resource_set,
@@ -644,7 +643,7 @@ def call_external_scheduler(
     """
     Call scheduler from command line.
 
-        :param int binpath: \
+        :param int schedulers_path: \
             Base path of the schedulers folder.
         :param List[Job] scheduled_jobs: \
             TODO: Not used (or rather overridden).
@@ -661,7 +660,7 @@ def call_external_scheduler(
         :param int initial_time_sql: \
             Minimun time at which jobs will be retrieved (TODO: verify explanation).
     """
-    cmd_scheduler = binpath + "schedulers/" + queue.scheduler_policy
+    cmd_scheduler = schedulers_path + queue.scheduler_policy
 
     child_launched = True
     # TODO TO CONFIRM
@@ -674,8 +673,8 @@ def call_external_scheduler(
             stdout=PIPE,
         )
 
-        for line in iter(child.stdout.readline, ""):
-            logger.debug("Read on the scheduler output:" + str(line.rstrip()))
+        for line in iter(child.stdout.readline, b""):
+            logger.debug("Read on the scheduler output:" + line.rstrip().decode())
 
         # TODO SCHEDULER_LAUNCHER_OPTIMIZATION
         # if
@@ -898,14 +897,11 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     all_slot_sets, scheduled_jobs, besteffort_rid2jid = gantt_init_results
     resource_set = plt.resource_set(session=session, config=config)
 
-    # Path for user of external schedulers
-    if "OARDIR" in os.environ:
-        binpath = os.environ["OARDIR"] + "/"
+    # Path for external schedulers if needed
+    if "SCHEDULERS_PATH" in config:
+        schedulers_path = config["SCHEDULERS_PATH"] + "/"
     else:
-        binpath = "/usr/local/lib/oar"
-        logger.warning(
-            "OARDIR env variable must be defined, " + binpath + " is used by default"
-        )
+        schedulers_path = ""
 
     if ("EXTRA_METASCHED" in config) and (config["EXTRA_METASCHED"] != "default"):
         extra_metasched_func = find_plugin_function(
@@ -984,7 +980,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                 if mode == "external":  # pragma: no cover
                     call_external_scheduler(
                         session,
-                        binpath,
+                        schedulers_path,
                         scheduled_jobs,
                         all_slot_sets,
                         resource_set,

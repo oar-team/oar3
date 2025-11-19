@@ -1,9 +1,9 @@
 # coding: utf-8
 import time
 
-from oar.kao.job import JobPseudo, set_jobs_cache_keys
 from oar.kao.scheduling import schedule_id_jobs_ct
 from oar.kao.slot import Slot, SlotSet
+from oar.lib.job_handling import JobPseudo  # , set_jobs_cache_keys
 
 
 class Timer(object):
@@ -75,8 +75,8 @@ def simple_bench_1(job_key_cache=False):
         (res, hy, all_ss) = init_data_structure(nb_res)
         (j_ids, jobs) = simple_same_jobs_nb_res(i, 10, res)
 
-        if job_key_cache:
-            set_jobs_cache_keys(jobs)
+        # if job_key_cache:
+        #    set_jobs_cache_keys(jobs)
 
         # for k,job in jobs.items():
         #    print job.key_cache
@@ -102,8 +102,9 @@ def simple_bench_0():
     eva_sched_foo(all_ss, jobs, hy, j_ids)
 
 
-print("simple_bench_1 same job cache enable")
-simple_bench_1(True)
+simple_bench_0()
+# print("simple_bench_1 same job cache enable")
+# simple_bench_1(True)
 print("simple_bench_1 same job cache disable")
 simple_bench_1(False)
 

@@ -368,7 +368,7 @@ def assign_resources_mld_job_split_slots(
             continue
 
         # print("after find fisrt suitable")
-        t_finish = slots[sid_left].b + walltime
+        t_finish = slots[sid_left].b + walltime - 1
         if t_finish < prev_t_finish:
             prev_start_time = slots[sid_left].b
             prev_t_finish = t_finish
