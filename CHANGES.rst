@@ -7,7 +7,7 @@ Changelog
 
 Version 3.0.1
 -------------
-Unreleased
+Released on Nov 26, 2025
 
 - Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
 - Fixes and enhancements of the scheduling #104 #105
