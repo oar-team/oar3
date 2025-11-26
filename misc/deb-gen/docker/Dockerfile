@@ -7,6 +7,11 @@ ENV DEBCONF_NOWARNINGS yes
 
 RUN sed -i -e's/ main/ main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
 RUN apt-get update
+RUN cat <<'EOF' | debconf-set-selections
+kexec-tools     kexec-tools/load_kexec  boolean true
+kexec-tools     kexec-tools/use_grub_config     boolean true
+EOF
+
 RUN apt-get -y install \
     dpkg-dev fakeroot lintian python3-sphinx \
     debhelper po-debconf dh-make python3-all python3-setuptools \

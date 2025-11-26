@@ -1,6 +1,21 @@
+oar3 (3.0.1-1) unstable; urgency=low
+
+  * Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
+  * Fixes and enhancements of the scheduling #104 #105
+  * Fixed major bug in `oarnodesetting -m off` #109
+  * Kamelot set as default scheduler
+  * Fixed `oarstat -g` #110
+  * Fixed possible bibpib crash (jobs stuck in the Launching state) # 113
+  * Fixed resubmit_job_id value of jobs #114
+  * Added missing oarcgdev binary for GPU confinement
+
+ -- Bruno Bzeznik <bruno.bzeznik@univ-grenoble-alpes.fr>  Wed, 19 Nov 2025 14:35:00 +0100
+
 oar3 (3.0.0-1) unstable; urgency=low
 
   * Initial release.
+
+ -- Bruno Bzeznik <bruno.bzeznik@univ-grenoble-alpes.fr>  Tue, 21 Jul 2025 16:05:00 +0200
 
 oar3 (3.0.0~rc8-1) unstable; urgency=low
 
