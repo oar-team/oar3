@@ -501,9 +501,11 @@ def get_resources_state(
     )
     res = [
         {
-            r.id: "Standby"
-            if (r.state == "Absent") and (r.available_upto >= date)
-            else r.state
+            r.id: (
+                "Standby"
+                if (r.state == "Absent") and (r.available_upto >= date)
+                else r.state
+            )
         }
         for r in result
     ]

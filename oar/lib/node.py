@@ -163,7 +163,7 @@ def get_alive_nodes_with_jobs(
                     "toAckReservation",
                     "Launching",
                     "Running",
-                    "Suspended ",
+                    "Suspended",
                     "Resuming",
                 )
             )

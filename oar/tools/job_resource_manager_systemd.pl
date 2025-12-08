@@ -371,7 +371,7 @@ if ($ARGV[0] eq "init") {
         my %tmp_already_there;
         foreach my $r (@{ $Cpuset->{resources} }) {
             if (($r->{ $Cpuset->{node_file_db_fields} } ne "") and ($r->{type} eq "default")) {
-                if (($r->{ $Cpuset->{node_file_db_fields_distinct_values} } ne "") and
+                if ( (defined($r->{ $Cpuset->{node_file_db_fields_distinct_values} }) and $r->{ $Cpuset->{node_file_db_fields_distinct_values} } ne "") and
                     (
                         !defined(
                             $tmp_already_there{

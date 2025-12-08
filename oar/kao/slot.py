@@ -682,7 +682,7 @@ class SlotSet:
                 not (job.start_time > self.end)
             ):
                 (left_sid_2_split, right_sid_2_split) = self.get_encompassing_slots(
-                    job.start_time, job.start_time + job.walltime, first_id
+                    job.start_time, job.start_time + job.walltime - 1, first_id
                 )
                 first_id = left_sid_2_split
 

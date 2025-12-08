@@ -131,7 +131,7 @@ def set_maintenance(session, cmd_ret, resources, maintenance, no_wait):
                 set_resources_properties(
                     session, cmd_ret, [resource_id], None, prop_to_set
                 )
-            set_resource_nextState(session, resource_id, "Absent")
+            set_resource_nextState(session, resource_id, "Alive")
             tools.notify_almighty("ChState")
 
 

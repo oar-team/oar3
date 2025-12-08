@@ -5,21 +5,75 @@
 Changelog
 =========
 
+Version 3.0.1
+-------------
+Released on Nov 26, 2025
+
+- Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
+- Fixes and enhancements of the scheduling #104 #105
+- Fixed major bug in `oarnodesetting -m off` #109
+- Kamelot set as default scheduler
+- Fixed `oarstat -g` #110
+- Fixed possible bibpib crash (jobs stuck in the Launching state) #113
+- Fixed resubmit_job_id value of jobs #114
+- Added missing oarcgdev binary for GPU confinement #112
+
+Version 3.0.0
+-------------
+
+Released on Jul 21, 2025
+
+- Initial OAR v3 release!
+
+Version 3.0.0.dev19
+-------------------
+
+Released on Jul 21, 2025
+
+- A call from admission rules:
+    `estimated_resources = estimate_job_nb_resources(session, config, resource_request, properties)`
+    allows to re-use the `estimated_resources` data structure and prevents the scheduler from
+    computing this several times (#96)
+- oarstat and oarapi prints 'actual_resources' (#99)
+
+Version 3.0.0.dev18
+-------------------
+
+Released on Jul 7, 2025
+
+- oarstat and oarapi now print correctly std[err,out] filenames (#97)
+
+Version 3.0.0.dev17
+-------------------
+
+Released on Jul 4, 2025
+
+- Fixed several database performance issues (#84)
+- Fixed a bug with oarsub -S and properties (#85)
+- Fixed a bug with Suspended state
+- Removed verbose debug of the API
+- Fixed job_manager_systemd suspecting nodes in some cases (#81)
+- Fixed oarsub -S "./script with args"
+- Oarsub prints human dates (#93)
+- Fixed 'oarnodes -p' for 0 values not being printed (#92)
+- Fixed job dependency to an interactive job (#90)
+- Fixed a timing issue into almighty (could prevent Leon from working under heavy load) (#83)
+
 Version 3.0.0.dev16
 -------------------
 
 Released on May 20, 2025
 
 - Fixed oarapi installation issue
-- Oarnodes now prints standby state 
+- Oarnodes now prints standby state
 - Added misssing "types" array from /jobs/{id} (issue #43)
 - Oarstat did not display some jobs (issue #48)
 - Performance fix (#63)
 - Karma is now recorded and printed by oarstat and oarapi (#65)
 - Null valued fields are removed from the /jobs api output
-- Added /get_new_token API entry to re-generate JWT 
+- Added /get_new_token API entry to re-generate JWT
 - Added cgroup-v2 support through systemd
-- Fixed a bug with oarsub -S and array-param-file 
+- Fixed a bug with oarsub -S and array-param-file
 
 Version 3.0.0.dev15
 -------------------

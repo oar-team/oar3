@@ -223,6 +223,29 @@ def test_add_split_slots_jobs_2_jobs_2():
     assert compare_slots_val_ref(ss, v)
 
 
+def test_add_split_slots_jobs_2_jobs_2_2():
+    v = [
+        (0, 299, ProcSet(*[])),
+        (300, MAX_TIME, ProcSet(*[(1, 20)])),
+    ]
+
+    ss = SlotSet((ProcSet(*[(1, 20)]), 0))
+
+    j1 = JobPseudo(
+        id=1, start_time=0, walltime=300, res_set=ProcSet(*[(1, 10)]), ts=False, ph=0
+    )
+    j2 = JobPseudo(
+        id=2, start_time=0, walltime=300, res_set=ProcSet(*[(11, 20)]), ts=False, ph=0
+    )
+
+    ss.split_slots_jobs([j1], True)
+    ss.split_slots_jobs([j2], True)
+
+    print(ss)
+
+    assert compare_slots_val_ref(ss, v)
+
+
 def check_slot_integrity(slotset: SlotSet):
     # Check some properties
     slots = slotset.slots.values()

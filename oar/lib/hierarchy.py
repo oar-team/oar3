@@ -58,14 +58,14 @@ def keep_no_empty_scat_bks(itvs: ProcSet, itvss_ref):
 def extract_n_scattered_block_itv(itvs1: ProcSet, itvs_ref: List[ProcSet], n: int):
     """
     Try to take `n` resources from hierarchy level `itvs_ref`.
-    Only takes resources from resource for which all their sub-resources are available.
+    Only takes resources from resource for which all their sub-resources (block) are available.
 
     :param ProcSet itvs1: \
         class:`ProcSet` of available resources of the current hierarchy (`itvs_ref`)
     :param [ProcSet] itvs_ref: \
         An hierarchy level
     :param Integer n: \
-        Array containing the number of resources to extract from itvs1
+        The number of block of resources to extract from itvs1
     :return: \
         A :class:`ProcSet` containing the intervalset that can be extracted from itvs1,
         or an empty :class:`ProcSet` if the request cannot be fullfilled
@@ -109,6 +109,71 @@ def extract_n_scattered_block_itv(itvs1: ProcSet, itvs_ref: List[ProcSet], n: in
         return ProcSet()
 
 
+def extract_all_best_half_scattered_block_itv(
+    itvs1: ProcSet, itvs_ref: List[ProcSet], n: int
+):
+    """
+    Try to take ALL, HALF_BEST, BEST resources from hierarchy level `itvs_ref`.
+    Only takes resources from resource for which all their sub-resources (block) are available.
+
+    :param ProcSet itvs1: \
+        class:`ProcSet` of available resources of the current hierarchy (`itvs_ref`)
+    :param [ProcSet] itvs_ref: \
+        An hierarchy level
+    :param Integer n: \
+        The number of blocks from itvs_ref to obtain, ALL (n=-1) all blocks, BEST (n=-2)
+        the available number of blocks at time, HALF_BEST the half number of available blocks.
+    :return: \
+        A :class:`ProcSet` containing the intervalset that can be extracted from itvs1,
+        or an empty :class:`ProcSet` if the request cannot be fullfilled
+
+    Examples:
+        >>> ALL = -1
+        >>> y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+        >>> extract_all_best_half_scattered_block_itv(ProcSet((1, 32)), y, ALL)
+            ProcSet((1, 32))
+
+        >>> HALF_BEST = -3
+        >>> y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+        >>> extract_all_best_half_scattered_block_itv(ProcSet((2, 32)), y, HALF_BEST)
+            ProcSet(((9,16)))
+
+    """
+
+    b = 0
+
+    itvs = ProcSet()
+
+    # Evaluate availability of all considered blocks
+    for lr, x in enumerate(itvs_ref):
+        y = itvs1 & x
+        # Check that all the resources contained in itvs_ref[i] are free
+        if x == y:
+            itvs = itvs | y
+            b += 1
+    lr += 1
+    if (n == -1) and (lr == b):  # ALL
+        return itvs
+    elif n == -2:  # BEST
+        return itvs
+    elif n == -3:  # HALF_BEST
+        j = 0
+        i = 0
+        itvs = ProcSet()
+        while j < int(b / 2):
+            x = itvs_ref[i]
+            y = itvs1 & x
+            # Check that all the resources contained in itvs_ref[i] are free
+            if x == y:
+                itvs = itvs | y
+                j += 1
+            i += 1
+        return itvs
+    else:
+        # Not enough resources in the hierarchy, the request cannot be fullfilled
+        return ProcSet()
+
+
 def find_resource_hierarchies_scattered(itvs, hy, rqts):
     """
     According to a resources set `itvs`, find a resources set compatible with the request in `rqts`.
@@ -145,7 +210,10 @@ def find_resource_hierarchies_scattered(itvs, hy, rqts):
     l_hy = len(hy)
     #    print "find itvs: ", itvs, rqts[0]
     if l_hy == 1:
-        return extract_n_scattered_block_itv(itvs, hy[0], rqts[0])
+        if rqts[0] > 0:
+            return extract_n_scattered_block_itv(itvs, hy[0], rqts[0])
+        else:
+            return extract_all_best_half_scattered_block_itv(itvs, hy[0], rqts[0])
     else:
         # Call to recursive function
         return find_resource_n_h(itvs, hy, rqts, hy[0], 0, l_hy)
