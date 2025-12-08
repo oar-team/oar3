@@ -2,6 +2,7 @@
 from procset import ProcSet
 
 from oar.lib.hierarchy import (
+    extract_all_best_half_scattered_block_itv,
     extract_n_scattered_block_itv,
     find_resource_hierarchies_scattered,
     keep_no_empty_scat_bks,
@@ -29,6 +30,34 @@ def test_extract_n_scattered_block_itv_2():
     ]
     a = extract_n_scattered_block_itv(ProcSet((1, 30)), y, 2)
     assert a == ProcSet(*[(1, 4), (6, 17), (19, 22)])
+
+
+def test_extract_all_best_half_scattered_block_itv_all_1():
+    ALL = -1
+    y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    a = extract_all_best_half_scattered_block_itv(ProcSet((1, 32)), y, ALL)
+    assert a == ProcSet((1, 32))
+
+
+def test_extract_all_best_half_scattered_block_itv_all_2():
+    ALL = -1
+    y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    a = extract_all_best_half_scattered_block_itv(ProcSet((2, 32)), y, ALL)
+    assert a == ProcSet()
+
+
+def test_extract_all_best_half_scattered_block_itv_best_1():
+    BEST = -2
+    y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    a = extract_all_best_half_scattered_block_itv(ProcSet((2, 32)), y, BEST)
+    assert a == ProcSet(((9, 32)))
+
+
+def test_extract_all_best_half_scattered_block_itv_half_best_1():
+    HALF_BEST = -3
+    y = [ProcSet(*z) for z in [[(1, 8)], [(9, 16)], [(17, 24)], [(25, 32)]]]
+    a = extract_all_best_half_scattered_block_itv(ProcSet((2, 32)), y, HALF_BEST)
+    assert a == ProcSet(((9, 16)))
 
 
 def test_keep_no_empty_scat_bks():

@@ -126,6 +126,8 @@ class JobParameters:
 
         if scanscript:
             self.initial_request = scanscript_values["initial_request"]
+            if "properties" in scanscript_values:
+                self.properties = " AND ".join(scanscript_values["properties"])
 
         if self.array:
             self.array_nb = self.array
@@ -158,7 +160,8 @@ class JobParameters:
         # prepare and build resource_request
         default_resources = config["OARSUB_DEFAULT_RESOURCES"]
         nodes_resources = config["OARSUB_NODES_RESOURCES"]
-        self.resource_request = parse_resource_descriptions(
+
+        self.error, self.resource_request = parse_resource_descriptions(
             self.resource, default_resources, nodes_resources
         )
 
@@ -527,6 +530,8 @@ def scan_script(
         user = os.environ["OARDO_USER"]
     os.environ["OARDO_BECOME_USER"] = user
 
+    submitted_filename = submitted_filename.split()[0]
+
     try:
         process = tools.Popen(["oardodo", "cat", submitted_filename], stdout=PIPE)
     except Exception:
@@ -554,7 +559,10 @@ def scan_script(
                 continue
             m = re.match(r"^#OAR\s+(-p|--property)\s*(.+)\s*$", line)
             if m:
-                result["property"] = m.group(2)
+                if "properties" in result:
+                    result["properties"].append(m.group(2))
+                else:
+                    result["properties"] = [m.group(2)]
                 initial_request_str += " " + m.group(1) + " " + m.group(2)
                 continue
             m = re.match(r"^#OAR\s+(--checkpoint)\s*(\d+)\s*$", line)
@@ -666,7 +674,7 @@ def scan_script(
 
 def parse_resource_descriptions(
     str_resource_request_list: List[str], default_resources: str, nodes_resources: str
-) -> List[Tuple[dict[str, Any], int]]:
+) -> Tuple[Tuple[int, str], List[Tuple[dict[str, Any], int]]]:
     """Parse and transform a cli oar resource request in python structure which is manipulated
     in admission process
 
@@ -732,6 +740,10 @@ def parse_resource_descriptions(
 
             resources = []  # resources = [{resource: r, value: v}]
 
+            # Flags to guarantee that all_half_best is used with only
+            # one hierarchy level
+            all_half_best_one_hierarchy_level = 0
+
             for str_res_value in str_res_value_lst:
                 if (
                     str_res_value.lstrip()
@@ -743,19 +755,30 @@ def parse_resource_descriptions(
                         res = nodes_resources
                     if value == "ALL":
                         v = -1
-                    elif value == "BESTHALF":
-                        v = -2
+                        all_half_best_one_hierarchy_level += 1
                     elif value == "BEST":
+                        v = -2
+                        all_half_best_one_hierarchy_level += 1
+                    elif value == "HALF_BEST":
                         v = -3
+                        all_half_best_one_hierarchy_level += 1
                     else:
                         v = str(value)
                     resources.append({"resource": res, "value": v})
+                if all_half_best_one_hierarchy_level > 1:
+                    return (
+                        (
+                            25,
+                            "ALL, HALF_BEST, BEST are only usable with only one level of hierarchy",
+                        ),
+                        [],
+                    )
 
             resource_desc.append({"property": property, "resources": resources})
 
         resource_request.append((resource_desc, walltime))
 
-    return resource_request
+    return ((0, ""), resource_request)
 
 
 def estimate_job_nb_resources(
@@ -882,10 +905,16 @@ def add_micheline_subjob(
     date = get_date(session)
     properties = job_parameters.properties
     resource_request = job_parameters.resource_request
-
-    error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
-        session, config, resource_request, properties
-    )
+    if hasattr(job_parameters, "estimated_resources"):
+        (
+            error,
+            resource_available,
+            estimated_nb_resources,
+        ) = job_parameters.estimated_resources
+    else:
+        error, resource_available, estimated_nb_resources = estimate_job_nb_resources(
+            session, config, resource_request, properties
+        )
     if error[0] != 0:
         return (error, -1)
 
