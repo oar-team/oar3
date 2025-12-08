@@ -56,6 +56,7 @@ DEFAULT_CONFIG = {
     "HIERARCHY_LABELS": "resource_id,network_address,cpu,core",
     "OAR_PROXY_INTERNAL": "no",
     "OAR_PROXY_BASE_URL": "/oarapi-priv/proxy",
+    "API_TEST_MODE": 1,
 }
 
 

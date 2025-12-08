@@ -33,7 +33,8 @@ umask 0022
 add_process_to_cpuset() {
     [ "$1" = "undef" ] && return
     CGROUP_MOUNT_POINT=$(sed -ne 's/^[^ ]\+ \([^ ]\+\) cgroup2 .*/\1/p' /proc/mounts)
-    CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT${OAR_CPUSET%/*}.slice
+    PROC_SELF_CPUSET_PATH=$(cat /proc/self/cpuset)
+    CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH/..${OAR_CPUSET%/*}.slice
     JOB_ID=${OAR_CPUSET##*_}
     JOB_USER=${OAR_CPUSET##*/}
     JOB_USER=${JOB_USER%_*}
@@ -87,7 +88,7 @@ add_process_to_cpuset() {
                     DEV_DENY+=( "$f" )
                 fi
             done
-            oardodo /usr/lib/oar/oarcgdev "$CGROUP_SUBJOB_PATH" "${DEV_DENY[@]}"
+            oardodo oarcgdev "$CGROUP_SUBJOB_PATH" "${DEV_DENY[@]}"
         fi
     fi
     oardodo busctl call -q org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager StartTransientUnit 'ssa(sv)a(sa(sv))' "${SYSTEMD_PROC_SCOPE}" fail 3 Delegate b 1 PIDs au $# "$@" Slice s "${SYSTEMD_PROC_SCOPE%-p*}".slice 0

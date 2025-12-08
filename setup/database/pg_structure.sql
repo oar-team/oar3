@@ -31,10 +31,12 @@ CREATE TABLE admission_rules (
 );
 
 
+CREATE TYPE resource_index AS enum('CURRENT','LOG');
+
 CREATE TABLE assigned_resources (
   moldable_job_id integer  NOT NULL default '0',
   resource_id integer NOT NULL default '0',
-  assigned_resource_index varchar(7) check (assigned_resource_index in ('CURRENT','LOG')) NOT NULL default 'CURRENT',
+  assigned_resource_index resource_index NOT NULL default 'CURRENT',
   PRIMARY KEY  (moldable_job_id,resource_id)
 );
 CREATE INDEX mjob_id ON assigned_resources (moldable_job_id);
@@ -194,6 +196,7 @@ CREATE INDEX log_types ON job_types (types_index);
 CREATE INDEX type ON job_types (type);
 CREATE INDEX id_types ON job_types (job_id);
 
+CREATE TYPE job_state as ENUM('Waiting','Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing','Terminated','Error');
 
 CREATE TABLE jobs (
   job_id bigserial,
@@ -204,7 +207,7 @@ CREATE TABLE jobs (
   job_env text ,
   job_type varchar(11) check (job_type in ('INTERACTIVE','PASSIVE')) NOT NULL default 'PASSIVE',
   info_type varchar(255) default NULL,
-  state varchar(16) check (state in ('Waiting','Hold','toLaunch','toError','toAckReservation','Launching','Running','Suspended','Resuming','Finishing','Terminated','Error')) NOT NULL default 'Waiting',
+  state job_state NOT NULL default 'Waiting',
   reservation varchar(10) check (reservation in ('None','toSchedule','Scheduled')) NOT NULL default 'None',
   message varchar(255) NOT NULL default '',
   scheduler_info varchar(255) NOT NULL default '',
@@ -239,7 +242,7 @@ CREATE INDEX queue_name ON jobs (queue_name);
 CREATE INDEX accounted ON jobs (accounted);
 CREATE INDEX suspended ON jobs (suspended);
 CREATE INDEX job_array_id ON jobs (array_id);
-
+CREATE INDEX assigned_moldable_job ON jobs (assigned_moldable_job);
 
 CREATE TABLE moldable_job_descriptions (
   moldable_id bigserial,

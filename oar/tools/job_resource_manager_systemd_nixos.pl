@@ -183,6 +183,14 @@ while (<MOUNTS>) {
 }
 close MOUNTS;
 
+# Inside container, /proc/self/cpuset helps to find the rigth scope
+my $Proc_self_cpuset = do { open my $fh, "<", "/proc/self/cpuset" or exit_myself(5, "Failed to /proc/self/cpuset $!"); <$fh> };
+chomp($Proc_self_cpuset);
+
+if ($Proc_self_cpuset !~ "/user.slice") {
+    $Cgroup_root_path = "$Cgroup_root_path$Proc_self_cpuset";
+}
+
 my $Cgroup_oar_path = "$Cgroup_root_path/$Systemd_oar_slice.slice";
 my $Cgroup_user_path = "$Cgroup_oar_path/$Systemd_user_slice.slice";
 my $Cgroup_job_path = "$Cgroup_user_path/$Systemd_job_slice.slice";

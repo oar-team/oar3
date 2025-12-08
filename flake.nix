@@ -124,6 +124,7 @@
                     # Dev dependencies
                     isort
                     flake8
+                    black
 
                     # Docs
                     sphinx
@@ -134,8 +135,9 @@
               pkgs.mkShell {
                   packages = with pkgs; [ pre-commit ] ++ pythonEnv;
               };
-
+            with-oar = pkgs.mkShell {
+                packages = [ self.packages.${system}.${packageName} ];
+            };
         };
-
     });
 }

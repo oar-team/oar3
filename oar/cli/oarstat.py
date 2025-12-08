@@ -3,6 +3,7 @@ import datetime
 import re
 import sys
 from json import dumps as json_dumps
+from time import localtime, strftime
 from typing import Generator, List, Optional
 
 import click
@@ -171,6 +172,10 @@ def print_table(
     console.print(table)
 
 
+def human_date(timestamp):
+    return strftime("%Y-%m-%d %H:%M:%S", localtime(int(timestamp)))
+
+
 def print_jobs(
     session, legacy, jobs, format: Optional[str], show_resources=False, full=False
 ):
@@ -178,29 +183,35 @@ def print_jobs(
     queryCollection = BaseQueryCollection(session)
 
     if full or show_resources:
-        res = queryCollection.get_assigned_jobs_resources(jobs)
+        job_resources = queryCollection.get_assigned_jobs_resources(jobs)
+        jobs_types = queryCollection.get_jobs_types(jobs)
+        jobs_walltime = queryCollection.get_jobs_walltime(jobs)
+        jobs_reqs = queryCollection.get_actual_requests(jobs)
         for job in jobs:
-            if job.id in res:
+            if job.id in job_resources:
                 nodes = NodeSet.fromlist(
-                    [str(res.network_address) for res in res[job.id]]
+                    [
+                        str(job_resources.network_address)
+                        for job_resources in job_resources[job.id]
+                    ]
                 )
                 job.network_adresses = nodes
-
-        jobs_types = queryCollection.get_jobs_types(jobs)
-        for job in jobs:
             if job.id in jobs_types:
                 types = []
                 for job_type, value in jobs_types[job.id].items():
-                    if type(value) == bool:
+                    if type(value) is bool:
                         types.append(f"{job_type}")
                     else:
                         types.append(f"{job_type}={value}")
                 job.types = ", ".join(types)
-
-        jobs_walltime = queryCollection.get_jobs_walltime(jobs)
-        for job in jobs:
             if job.id in jobs_walltime:
                 job.walltime = jobs_walltime[job.id]
+            if job.id in jobs_reqs:
+                job.actual_resources = tools.format_actual_request(job.id, jobs_reqs)
+            if job.stdout_file:
+                job.stdout_file = job.stdout_file.replace("%jobid%", str(job.id))
+            if job.stderr_file:
+                job.stderr_file = job.stderr_file.replace("%jobid%", str(job.id))
 
     if format:
         to_dump = {}
@@ -220,6 +231,12 @@ def print_jobs(
 
     elif legacy and full:
         for job in jobs:
+            if job.submission_time:
+                job.submission_time = human_date(job.submission_time)
+            if job.start_time:
+                job.start_time = human_date(job.start_time)
+            if job.stop_time:
+                job.stop_time = human_date(job.stop_time)
             console.print(f"id: {job.id}")
             attributes = [
                 key
