@@ -2147,7 +2147,7 @@ def check_end_of_job(
             if ("besteffort" in job_types.keys()) and (
                 "idempotent" in job_types.keys()
             ):
-                if is_an_event_exists(job_id, "BESTEFFORT_KILL"):
+                if is_an_event_exists(session, job_id, "BESTEFFORT_KILL"):
                     new_job_id = resubmit_job(session, job_id)
                     logger.warning(
                         "We resubmit the job "
