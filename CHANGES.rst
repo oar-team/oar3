@@ -5,6 +5,12 @@
 Changelog
 =========
 
+Version 3.0.2
+-------------
+Unreleased
+- Fixed missing session parameter in some function calls : #131 #127
+- Some dependencies updates
+
 Version 3.0.1
 -------------
 Released on Nov 26, 2025

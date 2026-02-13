@@ -2570,7 +2570,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
             add_new_event(session, ev_type, job_id, msg)
         else:
             ev_type, msg, hosts = event
-            add_new_event_with_host(ev_type, job_id, msg, hosts)
+            add_new_event_with_host(session, ev_type, job_id, msg, hosts)
 
     # Just to force commit (from OAR2, useful for OAR3 ?)
     session.commit()
