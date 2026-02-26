@@ -416,7 +416,7 @@ def job_key_management(
                 with os.fdopen(
                     os.open(tmp_job_key_file, os.O_WRONLY | os.O_CREAT, 0o600), "w"
                 ) as f:
-                    f.write(import_job_key_inline)
+                    f.write(import_job_key)
             except Exception as e:
                 error = (
                     -14,

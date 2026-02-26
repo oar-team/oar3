@@ -10,6 +10,7 @@ Version 3.0.2
 Unreleased
 - Fixed missing session parameter in some function calls : #131 #127
 - Some dependencies updates
+- Fixed oarsub -k -i (job key file submission) 
 
 Version 3.0.1
 -------------
