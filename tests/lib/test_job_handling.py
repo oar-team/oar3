@@ -5,9 +5,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.kao.platform import Platform
 from oar.lib.database import ephemeral_session
-from oar.lib.job_handling import check_end_of_job, get_data_jobs, insert_job
-from oar.lib.models import EventLog
+from oar.lib.job_handling import check_end_of_job, get_data_jobs, insert_job, job_message
+from oar.lib.models import EventLog, Job
+from tests.cli.test_oarstat import NB_JOBS
 
+NB_JOBS = 5
 
 @pytest.fixture(scope="function", autouse=False)
 def minimal_db_initialization(request, setup_config):
@@ -121,3 +123,35 @@ def test_get_data_jobs_moldable(monkeypatch, minimal_db_initialization, setup_co
         test_nb_mold = job_and_nb_moldable[1]
         # Assert that the jobs has two moldable
         assert len(jobs[0][test_job_id].mld_res_rqts) == test_nb_mold
+
+
+def test_job_message(minimal_db_initialization):
+    session = minimal_db_initialization
+
+    # Job avec job_name
+    job_id_with_name = insert_job(
+        session,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Running",
+        job_user="Toto",
+        job_name="Titi",
+    )
+
+    # Job sans job_name
+    job_id_without_name = insert_job(
+        session,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Running",
+        job_user="Toto",
+    )
+
+    job_with_name = session.query(Job).filter(Job.id == job_id_with_name).one()
+    job_without_name = session.query(Job).filter(Job.id == job_id_without_name).one()
+
+    result_with_name = job_message(session, job_with_name)
+    assert "N=Titi" in result_with_name
+
+    result_without_name = job_message(session, job_without_name)
+    assert "N=" not in result_without_name

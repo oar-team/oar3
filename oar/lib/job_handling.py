@@ -7,7 +7,7 @@ import re
 from typing import List
 
 from procset import ProcSet
-from sqlalchemy import distinct, func, insert, text
+from sqlalchemy import Null, distinct, func, insert, null, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.session import make_transient
 from sqlalchemy.sql import case
@@ -622,6 +622,9 @@ def job_message(session, job, nb_resources=None):
         message_list.append("J=I")
 
     message_list.append("Q={}".format(job.queue_name))
+
+    if job.name:
+        message_list.append("N={}".format(job.name)) # à corriger le nom n'est pas obligatoire
 
     logger.info("save assignements")
 

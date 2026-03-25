@@ -587,5 +587,67 @@ def test_oarstat_job_types(minimal_db_initialization, setup_config):
         if line.startswith("    types = "):
             line = line.strip()
             assert line == "types = inner=4, cosystem"
+def test_oarstat_specified_fields(minimal_db_initialization, setup_config):
+    for i in range(NB_JOBS):
+        id = insert_job(
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            state="Running",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+        assign_resources(minimal_db_initialization, id)
 
+    for i in range(NB_JOBS):
+        id = insert_job(
+            minimal_db_initialization,
+            res=[(60, [("resource_id=4", "")])],
+            properties="",
+            job_user="Toto",
+            message="Relatively long message",
+        )
+
+    runner = CliRunner()
+    result = runner.invoke(
+            cli, ["-s" "job_id:job_identifier"], catch_exceptions=False, obj=minimal_db_initialization
+    )
+    print("\n" + result.output)
+    assert "job_identifier" in result.output
     assert result.exit_code == 0
+
+def test_oarstat_default_fields(minimal_db_initialization, setup_config):
+    """Vérifie que les champs par défaut de OARSTAT_DEFAULT_FIELD sont utilisés."""
+    config, _ = setup_config
+    # S'assurer que la valeur par défaut est bien là
+    assert "OARSTAT_DEFAULT_FIELD" in config
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, [], catch_exceptions=False, obj=(minimal_db_initialization, config)
+    )
+    print("\n" + result.output)
+    assert result.exit_code == 0
+    # Vérifier que les colonnes par défaut apparaissent dans l'output
+    for label in ["Job_id", "Job_name", "State", "User", "Queue"]:
+        assert label in result.output
+
+
+def test_oarstat_custom_fields_from_config(minimal_db_initialization, setup_config):
+    """Vérifie qu'une modification de OARSTAT_DEFAULT_FIELD dans la config est prise en compte."""
+    config, _ = setup_config
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+
+    # Modifier la config comme si oar.conf avait été changé
+    config["OARSTAT_DEFAULT_FIELD"] = "job_id:Identifiant,state:Statut"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, [], catch_exceptions=False, obj=(minimal_db_initialization, config)
+    )
+    print(result.output)
+    assert result.exit_code == 0
+    assert "Identifiant" in result.output
+    assert "Statut" in result.output
+    # Les colonnes par défaut ne doivent plus apparaître
+    assert "Job_name" not in result.output
