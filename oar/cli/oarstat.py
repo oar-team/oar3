@@ -67,21 +67,28 @@ STATE2CHAR = {
 
 def parse_field_label(fields: str, cmd_ret) -> dict[str,str]: #changer le click pour prendre en entrer un fichier à la place du set de virgule
     fields_labels : dict[str,str] = {}
-    valid_fields = inspect(Job).column_attrs.keys()
-    # print(inspect(Job).columns)
     if fields:
         requested_fields_and_labels = fields.split(',')
         for field_label in requested_fields_and_labels:
-            field, label = field_label.split(':')
-            field = str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key)
-            fields_labels[field] = label
+            if field_label == '':
+                cmd_ret.error(f"Missing field", 1, 1)
+                cmd_ret.exit()
 
-            invalid_fields = [f for f in fields_labels.keys() if f not in valid_fields]
-            if invalid_fields:
-                cmd_ret.error(f"Invalid fields: {', '.join(invalid_fields)}", 1, 1)
+            result = field_label.split(':')
+            if len(result) == 2 or len(result) == 1:
+                field, label = result if len(result) == 2 else (result[0], result[0])
+                field = str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key) if field != "Duration" else "Duration"
+                fields_labels[field] = label
+                valid_fields = inspect(Job).column_attrs.keys() + ["Duration"]
+                invalid_fields = [f for f in fields_labels.keys() if f not in valid_fields]
+                if invalid_fields:
+                    cmd_ret.error(f"Invalid fields: {', '.join(invalid_fields)}", 1, 1)
+                    cmd_ret.exit()
+            else:
+                cmd_ret.error(f"Invalid fields: {field_label}", 1, 1)
                 cmd_ret.exit()
     else:
-        raise ValueError("Internal error field missing")
+        raise RuntimeError("fields argument is required for get_table_lines_specified_fields")
     return fields_labels
 
 def get_table_lines_jobs(session, jobs, arg) -> List[str]:
@@ -137,11 +144,34 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
 
 def get_table_lines_fields(session, jobs, arg) -> List[str]:
     fields = arg.get("fields", [])
-    if not fields:
-        raise ValueError("fields argument is required for get_table_lines_specified_fields")
     yield fields.values()
+    now = tools.get_date(session)
     for job in jobs:
-        yield [str(getattr(job, f)) for f in fields.keys()]
+        duration = -1
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
+        if duration >= 0:
+            duration_string = str(datetime.timedelta(seconds=duration))
+        else:
+            duration_string = "-"
+
+        # !! It must be consistent wih `header_columns`
+        job_line = [
+            str(job.id),
+            job.name,
+            job.state,
+            str(job.user),
+            duration_string,
+            str(job.message),
+            str(job.queue_name),
+        ]
+        yield [str(getattr(job, f)) if f != "Duration" else duration_string for f in fields.keys()]
 
 def gather_all_user_accounting(session, items, arg) -> List[str]:
     # The headers to print
@@ -552,7 +582,7 @@ class UserOption(click.Command):
 )
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
 @click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
-@click.option("-s", "--specified-field", type=click.STRING, help="show the specified fields in the information")
+@click.option("-s", "--specified-field", type=click.STRING, help="show the specified jobs fields")
 @click.option(
     "-A",
     "--accounting",
@@ -603,7 +633,7 @@ def cli(
     version,
 ):
     ctx = click.get_current_context()
-    if ctx.obj:
+    if ctx.obj: # I change this cause the previous tests didn't defined a config for the ctx.
         if isinstance(ctx.obj, tuple):
             session, config = ctx.obj
         else:
