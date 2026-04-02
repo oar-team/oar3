@@ -75,7 +75,7 @@ def parse_field_label(
         requested_fields_and_labels = fields.split(",")
         for field_label in requested_fields_and_labels:
             if field_label == "":
-                cmd_ret.error(f"Missing field", 1, 1)
+                cmd_ret.error("Missing field", 1, 1)
                 cmd_ret.exit()
 
             result = field_label.split(":")
@@ -175,16 +175,6 @@ def get_table_lines_fields(session, jobs, arg) -> List[str]:
         else:
             duration_string = "-"
 
-        # !! It must be consistent wih `header_columns`
-        job_line = [
-            str(job.id),
-            job.name,
-            job.state,
-            str(job.user),
-            duration_string,
-            str(job.message),
-            str(job.queue_name),
-        ]
         yield [
             str(getattr(job, f)) if f != "Duration" else duration_string
             for f in fields.keys()
