@@ -5,11 +5,16 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.kao.platform import Platform
 from oar.lib.database import ephemeral_session
-from oar.lib.job_handling import check_end_of_job, get_data_jobs, insert_job, job_message
+from oar.lib.job_handling import (
+    check_end_of_job,
+    get_data_jobs,
+    insert_job,
+    job_message,
+)
 from oar.lib.models import EventLog, Job
-from tests.cli.test_oarstat import NB_JOBS
 
 NB_JOBS = 5
+
 
 @pytest.fixture(scope="function", autouse=False)
 def minimal_db_initialization(request, setup_config):

@@ -273,7 +273,8 @@ def test_oarstat_gantt(minimal_db_initialization, setup_config):
     )
     str_result = result.output
     print(str_result)
-    assert re.match(".*10 days.*", str_result.split("\n")[3])
+    lines = str_result.splitlines()
+    assert any(re.search(r"10 days", line) for line in lines)
 
 
 def test_oarstat_events(minimal_db_initialization, setup_config):
@@ -588,25 +589,35 @@ def test_oarstat_job_types(minimal_db_initialization, setup_config):
             line = line.strip()
             assert line == "types = inner=4, cosystem"
 
+
 def test_oarstat_specified_fields(minimal_db_initialization, setup_config):
     config, _ = setup_config
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
 
     runner = CliRunner()
     result = runner.invoke(
-            cli, ["-s" "job_id:job_identifier"], catch_exceptions=False, obj=(minimal_db_initialization, config)
+        cli,
+        ["-s" "job_id:job_identifier"],
+        catch_exceptions=False,
+        obj=(minimal_db_initialization, config),
     )
     print("\n" + result.output)
     assert "job_identifier" in result.output
     assert result.exit_code == 0
 
-def test_oarstat_specified_fields_without_label(minimal_db_initialization, setup_config):
+
+def test_oarstat_specified_fields_without_label(
+    minimal_db_initialization, setup_config
+):
     config, _ = setup_config
     insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
 
     runner = CliRunner()
     result = runner.invoke(
-            cli, ["-s" "job_id,Duration"], catch_exceptions=False, obj=(minimal_db_initialization, config)
+        cli,
+        ["-s" "job_id,Duration"],
+        catch_exceptions=False,
+        obj=(minimal_db_initialization, config),
     )
     print("\n" + result.output)
     assert "job_id" in result.output

@@ -18,7 +18,7 @@ from oar.kao.helpers import extract_find_assign_args
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 
 # from oar.lib.utils import render_query
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.models import (
     AssignedResource,
     Challenge,
@@ -624,7 +624,9 @@ def job_message(session, job, nb_resources=None):
     message_list.append("Q={}".format(job.queue_name))
 
     if job.name:
-        message_list.append("N={}".format(job.name)) # à corriger le nom n'est pas obligatoire
+        message_list.append(
+            "N={}".format(job.name)
+        )  # à corriger le nom n'est pas obligatoire
 
     logger.info("save assignements")
 

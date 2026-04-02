@@ -16,8 +16,6 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import scoped_session, sessionmaker
 from yaml import dump as yaml_dump
 
-from oar.lib.configuration import Configuration
-from oar.lib.models import Job
 import oar.lib.tools as tools
 from oar import VERSION
 from oar.lib.accounting import (
@@ -35,6 +33,7 @@ from oar.lib.job_handling import (
     get_job_resources_properties,
     get_jobs_state,
 )
+from oar.lib.models import Job
 from oar.lib.tools import (
     check_resource_system_property,
     get_duration,
@@ -65,22 +64,33 @@ STATE2CHAR = {
     "NA": "-",
 }
 
-def parse_field_label(fields: str, cmd_ret) -> dict[str,str]: #changer le click pour prendre en entrer un fichier à la place du set de virgule
-    fields_labels : dict[str,str] = {}
+
+def parse_field_label(
+    fields: str, cmd_ret
+) -> dict[
+    str, str
+]:  # changer le click pour prendre en entrer un fichier à la place du set de virgule
+    fields_labels: dict[str, str] = {}
     if fields:
-        requested_fields_and_labels = fields.split(',')
+        requested_fields_and_labels = fields.split(",")
         for field_label in requested_fields_and_labels:
-            if field_label == '':
+            if field_label == "":
                 cmd_ret.error(f"Missing field", 1, 1)
                 cmd_ret.exit()
 
-            result = field_label.split(':')
+            result = field_label.split(":")
             if len(result) == 2 or len(result) == 1:
                 field, label = result if len(result) == 2 else (result[0], result[0])
-                field = str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key) if field != "Duration" else "Duration"
+                field = (
+                    str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key)
+                    if field != "Duration"
+                    else "Duration"
+                )
                 fields_labels[field] = label
                 valid_fields = inspect(Job).column_attrs.keys() + ["Duration"]
-                invalid_fields = [f for f in fields_labels.keys() if f not in valid_fields]
+                invalid_fields = [
+                    f for f in fields_labels.keys() if f not in valid_fields
+                ]
                 if invalid_fields:
                     cmd_ret.error(f"Invalid fields: {', '.join(invalid_fields)}", 1, 1)
                     cmd_ret.exit()
@@ -88,8 +98,11 @@ def parse_field_label(fields: str, cmd_ret) -> dict[str,str]: #changer le click 
                 cmd_ret.error(f"Invalid fields: {field_label}", 1, 1)
                 cmd_ret.exit()
     else:
-        raise RuntimeError("fields argument is required for get_table_lines_specified_fields")
+        raise RuntimeError(
+            "fields argument is required for get_table_lines_specified_fields"
+        )
     return fields_labels
+
 
 def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     # The headers to print
@@ -142,6 +155,7 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
 
         yield job_line
 
+
 def get_table_lines_fields(session, jobs, arg) -> List[str]:
     fields = arg.get("fields", [])
     yield fields.values()
@@ -171,7 +185,11 @@ def get_table_lines_fields(session, jobs, arg) -> List[str]:
             str(job.message),
             str(job.queue_name),
         ]
-        yield [str(getattr(job, f)) if f != "Duration" else duration_string for f in fields.keys()]
+        yield [
+            str(getattr(job, f)) if f != "Duration" else duration_string
+            for f in fields.keys()
+        ]
+
 
 def gather_all_user_accounting(session, items, arg) -> List[str]:
     # The headers to print
@@ -237,7 +255,13 @@ def human_date(timestamp):
 
 
 def print_jobs(
-        session, legacy, jobs, format: Optional[str], fields: dict, show_resources=False, full=False
+    session,
+    legacy,
+    jobs,
+    format: Optional[str],
+    fields: dict,
+    show_resources=False,
+    full=False,
 ):
     console = Console()
     queryCollection = BaseQueryCollection(session)
@@ -312,9 +336,7 @@ def print_jobs(
                 )
             console.print()
     elif legacy:
-        print_table(
-            session, jobs, get_table_lines_fields, extra_arg={"fields": fields}
-        )
+        print_table(session, jobs, get_table_lines_fields, extra_arg={"fields": fields})
     else:
         print(jobs)
 
@@ -582,7 +604,9 @@ class UserOption(click.Command):
 )
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
 @click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
-@click.option("-s", "--specified-field", type=click.STRING, help="show the specified jobs fields")
+@click.option(
+    "-s", "--specified-field", type=click.STRING, help="show the specified jobs fields"
+)
 @click.option(
     "-A",
     "--accounting",
@@ -633,7 +657,9 @@ def cli(
     version,
 ):
     ctx = click.get_current_context()
-    if ctx.obj: # I change this cause the previous tests didn't defined a config for the ctx.
+    if (
+        ctx.obj
+    ):  # I change this cause the previous tests didn't defined a config for the ctx.
         if isinstance(ctx.obj, tuple):
             session, config = ctx.obj
         else:
@@ -641,7 +667,7 @@ def cli(
             config, _ = init_oar(no_db=True)
 
     else:
-        config , engine = init_oar()
+        config, engine = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
@@ -668,8 +694,6 @@ def cli(
         format = "json"
     if yaml:
         format = "yaml"
-
-
 
     job_ids = job
     array_id = array
@@ -711,8 +735,8 @@ def cli(
         # print(config.get_namespace('OARSTAT_'))
 
         if not specified_field:
-            config_dict = config.get_namespace('OARSTAT_')
-            specified_field = config_dict['default_field']
+            config_dict = config.get_namespace("OARSTAT_")
+            specified_field = config_dict["default_field"]
 
         fields_labels = parse_field_label(specified_field, cmd_ret)
 
