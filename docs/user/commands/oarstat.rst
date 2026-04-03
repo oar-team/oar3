@@ -13,7 +13,7 @@ Options
       --array               show informations for the specified array_job(s) and
                             toggle array view in
 
-  -s, --specified-field     show the specified jobs fields
+      --specified-field     show the specified jobs fields
 
   -c, --compact             prints a single line for array jobs
   -g, --gantt               show job informations between two date-times
