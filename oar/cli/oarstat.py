@@ -595,7 +595,7 @@ class UserOption(click.Command):
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
 @click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
 @click.option(
-    "-s", "--specified-field", type=click.STRING, help="show the specified jobs fields"
+    "--specified-field", type=click.STRING, help="show the specified jobs fields"
 )
 @click.option(
     "-A",

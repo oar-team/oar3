@@ -597,7 +597,7 @@ def test_oarstat_specified_fields(minimal_db_initialization, setup_config):
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["-s" "job_id:job_identifier"],
+        ["--specified-field", "job_id:job_identifier"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, config),
     )
@@ -615,7 +615,7 @@ def test_oarstat_specified_fields_without_label(
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["-s" "job_id,Duration"],
+        ["--specified-field", "job_id,Duration"],
         catch_exceptions=False,
         obj=(minimal_db_initialization, config),
     )
