@@ -238,6 +238,36 @@ def test_oarstat_accounting_user(
     print(str_result.split("\n")[-2])
     assert re.match(r".*Karma.*0.345.*", str_result.split("\n")[-2])
 
+@pytest.mark.skipif(
+    "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
+)
+def test_oarstat_accounting_error_user_missing(
+    monkeypatch_tools, minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization)
+    karma = " Karma=0.345"
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        command="yop",
+        user="zozo",
+        project="yopa",
+        start_time=0,
+        message=karma,
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-u", "bzizou", "--accounting", "1970-01-01, 1970-01-20"],
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
+    )
+    str_result = result.output
+    print(str_result)
+    #print(str_result.split("\n")[-2])
+    assert re.match(r".*Karma.*0.345.*", str_result.split("\n")[-2])
+
 
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
