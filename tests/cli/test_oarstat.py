@@ -238,6 +238,7 @@ def test_oarstat_accounting_user(
     print(str_result.split("\n")[-2])
     assert re.match(r".*Karma.*0.345.*", str_result.split("\n")[-2])
 
+
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
@@ -256,17 +257,17 @@ def test_oarstat_accounting_error_user_missing(
         start_time=0,
         message=karma,
     )
+    user_test = "shadow"
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["-u", "bzizou", "--accounting", "1970-01-01, 1970-01-20"],
+        ["-u", user_test, "--accounting", "1970-01-01, 1970-01-20"],
         obj=minimal_db_initialization,
         catch_exceptions=False,
     )
     str_result = result.output
     print(str_result)
-    #print(str_result.split("\n")[-2])
-    assert re.match(r".*Karma.*0.345.*", str_result.split("\n")[-2])
+    assert str_result == f"User, {user_test}, not in the accounting table\n"
 
 
 @pytest.mark.skipif(
