@@ -267,7 +267,7 @@ def test_oarstat_accounting_error_user_missing(
     )
     str_result = result.output
     print(str_result)
-    assert str_result == f"User, {user_test}, not in the accounting table\n"
+    assert str_result == f"#WARNING: User, {user_test}, not in the accounting table\n"
 
 
 @pytest.mark.skipif(

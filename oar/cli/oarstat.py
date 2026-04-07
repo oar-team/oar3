@@ -277,7 +277,7 @@ def print_accounting(session, cmd_ret, accounting, user, sql_property):
         # One user output
         if user:
             if user not in consumptions:
-                print(f"User, {user}, not in the accounting table")
+                cmd_ret.warning(f"User, {user}, not in the accounting table")
                 cmd_ret.exit()
             else:
                 asked = 0
