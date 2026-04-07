@@ -12,6 +12,7 @@ from rich import box
 from rich.console import Console
 from rich.padding import Padding
 from rich.table import Table
+from sqlalchemy import inspect
 from sqlalchemy.orm import scoped_session, sessionmaker
 from yaml import dump as yaml_dump
 
@@ -32,6 +33,7 @@ from oar.lib.job_handling import (
     get_job_resources_properties,
     get_jobs_state,
 )
+from oar.lib.models import Job
 from oar.lib.tools import (
     check_resource_system_property,
     get_duration,
@@ -63,10 +65,50 @@ STATE2CHAR = {
 }
 
 
+def parse_field_label(
+    fields: str, cmd_ret
+) -> dict[
+    str, str
+]:  # changer le click pour prendre en entrer un fichier à la place du set de virgule
+    fields_labels: dict[str, str] = {}
+    if fields:
+        requested_fields_and_labels = fields.split(",")
+        for field_label in requested_fields_and_labels:
+            if field_label == "":
+                cmd_ret.error("Missing field", 1, 1)
+                cmd_ret.exit()
+
+            result = field_label.split(":")
+            if len(result) == 2 or len(result) == 1:
+                field, label = result if len(result) == 2 else (result[0], result[0])
+                field = (
+                    str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key)
+                    if field != "Duration"
+                    else "Duration"
+                )
+                fields_labels[field] = label
+                valid_fields = inspect(Job).column_attrs.keys() + ["Duration"]
+                invalid_fields = [
+                    f for f in fields_labels.keys() if f not in valid_fields
+                ]
+                if invalid_fields:
+                    cmd_ret.error(f"Invalid fields: {', '.join(invalid_fields)}", 1, 1)
+                    cmd_ret.exit()
+            else:
+                cmd_ret.error(f"Invalid fields: {field_label}", 1, 1)
+                cmd_ret.exit()
+    else:
+        raise RuntimeError(
+            "fields argument is required for get_table_lines_specified_fields"
+        )
+    return fields_labels
+
+
 def get_table_lines_jobs(session, jobs, arg) -> List[str]:
     # The headers to print
     headers: List[str] = [
         "Job id",
+        "Job name",
         "State",
         "User",
         "Duration",
@@ -100,6 +142,7 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
         # !! It must be consistent wih `header_columns`
         job_line = [
             str(job.id),
+            job.name,
             job.state,
             str(job.user),
             duration_string,
@@ -111,6 +154,31 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
             job_line.append(str(job.network_adresses))
 
         yield job_line
+
+
+def get_table_lines_fields(session, jobs, arg) -> List[str]:
+    fields = arg.get("fields", [])
+    yield fields.values()
+    now = tools.get_date(session)
+    for job in jobs:
+        duration = -1
+        if job.start_time:
+            if now > job.start_time:
+                if job.state in ["Running", "Launching", "Finishing"]:
+                    duration = now - job.start_time
+                elif job.stop_time != 0:
+                    duration = job.stop_time - job.start_time
+                else:
+                    duration = -1
+        if duration >= 0:
+            duration_string = str(datetime.timedelta(seconds=duration))
+        else:
+            duration_string = "-"
+
+        yield [
+            str(getattr(job, f)) if f != "Duration" else duration_string
+            for f in fields.keys()
+        ]
 
 
 def gather_all_user_accounting(session, items, arg) -> List[str]:
@@ -177,7 +245,13 @@ def human_date(timestamp):
 
 
 def print_jobs(
-    session, legacy, jobs, format: Optional[str], show_resources=False, full=False
+    session,
+    legacy,
+    jobs,
+    format: Optional[str],
+    fields: dict,
+    show_resources=False,
+    full=False,
 ):
     console = Console()
     queryCollection = BaseQueryCollection(session)
@@ -252,9 +326,7 @@ def print_jobs(
                 )
             console.print()
     elif legacy:
-        print_table(
-            session, jobs, get_table_lines_jobs, extra_arg={"resources": show_resources}
-        )
+        print_table(session, jobs, get_table_lines_fields, extra_arg={"fields": fields})
     else:
         print(jobs)
 
@@ -523,6 +595,9 @@ class UserOption(click.Command):
 @click.option("-e", "--events", is_flag=True, type=click.STRING, help="show job events")
 @click.option("-p", "--properties", is_flag=True, help="Show job resources properties")
 @click.option(
+    "--specified-field", type=click.STRING, help="show the specified jobs fields"
+)
+@click.option(
     "-A",
     "--accounting",
     type=click.STRING,
@@ -564,6 +639,7 @@ def cli(
     gantt,
     events,
     properties,
+    specified_field,
     accounting,
     sql,
     json,
@@ -571,10 +647,17 @@ def cli(
     version,
 ):
     ctx = click.get_current_context()
-    if ctx.obj:
-        session = ctx.obj
+    if (
+        ctx.obj
+    ):  # I change this cause the previous tests didn't defined a config for the ctx.
+        if isinstance(ctx.obj, tuple):
+            session, config = ctx.obj
+        else:
+            session = ctx.obj
+            config, _ = init_oar(no_db=True)
+
     else:
-        _, engine = init_oar()
+        config, engine = init_oar()
         session_factory = sessionmaker(bind=engine)
         scoped = scoped_session(session_factory)
         session = scoped()
@@ -635,12 +718,24 @@ def cli(
             user, start_time, stop_time, None, job_ids, array_id, sql, detailed=full
         ).all()
 
+        # mytest = inspect(Job).columns
+        # print(mytest)
+        # restest = [str(inspect(Job).get_property_by_column(f).key) for f in mytest]
+        # print(restest)
+        # print(config.get_namespace('OARSTAT_'))
+
+        if not specified_field:
+            config_dict = config.get_namespace("OARSTAT_")
+            specified_field = config_dict["default_field"]
+
+        fields_labels = parse_field_label(specified_field, cmd_ret)
+
         for job in jobs:
             job.cpuset_name = get_job_cpuset_name(session, job.id, job=job)
             job.exit_status_code = str(
                 get_job_exit_status_code(session, job.id, job=job)
             )
 
-        print_jobs(session, True, jobs, format, show_resources, full)
+        print_jobs(session, True, jobs, format, fields_labels, show_resources, full)
 
     cmd_ret.exit()

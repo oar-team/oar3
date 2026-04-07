@@ -496,7 +496,7 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 # Possible values are "yes" and "no"
 ENERGY_SAVING_INTERNAL="no"
 
-# The internal energy saving module is "GRETA" 
+# The internal energy saving module is "GRETA"
 # Communication port of GRETA wan be changed here.
 # Default: localhost on 6672
 #GRETA_SERVER = localhost
@@ -665,10 +665,22 @@ OARSH_OPENSSH_DEFAULT_OPTIONS="-oProxyCommand=none -oPermitLocalCommand=no -oUse
 
 ###############################################################################
 
+###########
+# OARSTAT #
+###############################################################################
+
+# The following variable can be use to modify the display of the command oarstat or oarstat with connerning a job
+# Each value refer to a Job table attribute except Duration which is internally computed
+# Each value as to be separated with a comma ( Example job_id,jab_name,Duration)
+# Also, you can change the displayed name for an attribute by declaring a label (Example job_id:Identifier)
+OARSTAT_DEFAULT_FIELD="job_id:Job_id,job_name:Job_name,Duration,state:State,job_user:User,message:System_message,queue_name:Queue"
+
 # Default oarstat output format.
 # See oarstat "--format" option to know the available values
 # (default is 1)
 OARSTAT_DEFAULT_OUTPUT_FORMAT=2
+
+###############################################################################
 
 ###########
 # OAR API #

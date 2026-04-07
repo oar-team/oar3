@@ -12,6 +12,9 @@ Options
   -u, --user                show informations for this user only
       --array               show informations for the specified array_job(s) and
                             toggle array view in
+
+      --specified-field     show the specified jobs fields
+
   -c, --compact             prints a single line for array jobs
   -g, --gantt               show job informations between two date-times
   -e, --events              show job events
@@ -36,3 +39,6 @@ Examples
   # oarstat -j 42 -f
   # oarstat --sql "project='p1' and state='Waiting'"
   # oarstat -s -j 42
+  # oarstat -s job_id:id,job_name:name //<Job_table_attr>:<label>
+  # oarstat -s job_id,job_name //if you want to keep the database name do not add ':<label>'
+
