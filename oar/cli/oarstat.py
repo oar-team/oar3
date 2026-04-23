@@ -348,50 +348,35 @@ def print_accounting(session, cmd_ret, accounting, user, sql_property):
         # import pdb; pdb.set_trace()
         # One user output
         if user:
-            asked = 0
-            if user in consumptions and "ASKED" in consumptions[user]:
-                asked = consumptions[user]["ASKED"]
-            used = 0
-            if user in consumptions and "USED" in consumptions[user]:
-                used = consumptions[user]["USED"]
-
-            print("Usage summary for user {} from {} to {}:".format(user, date1, date2))
-            print("-------------------------------------------------------------")
-
-            start_first_window = "No window found"
-            if "begin" in consumptions[user]:
-                start_first_window = local_to_sql(consumptions[user]["begin"])
-            print("{:>28}: {}".format("Start of the first window", start_first_window))
-
-            end_last_window = "No window found"
-            if "end" in consumptions[user]:
-                end_last_window = local_to_sql(consumptions[user]["end"])
-            print("{:>28}: {}".format("End of the last window", end_last_window))
-
-            print(
-                "{:>28}: {:>10} ({:>10})".format(
-                    "Asked consumption", asked, get_duration(asked)
-                )
-            )
-            print(
-                "{:>28}: {:>10} ({:>10})".format(
-                    "Used consumption", used, get_duration(used)
-                )
-            )
-
-            print("By project consumption:")
-
-            consumptions_by_project = get_accounting_summary_byproject(
-                session, d1_local, d2_local, user
-            )
-            for project, consumptions_proj in consumptions_by_project.items():
-                print("  " + project + ":")
+            if user not in consumptions:
+                cmd_ret.warning(f"User, {user}, not in the accounting table")
+                cmd_ret.exit()
+            else:
                 asked = 0
-                if "ASKED" in consumptions_proj and user in consumptions_proj["ASKED"]:
-                    asked = consumptions_proj["ASKED"][user]
+                if "ASKED" in consumptions[user]:
+                    asked = consumptions[user]["ASKED"]
                 used = 0
-                if "USED" in consumptions_proj and user in consumptions_proj["USED"]:
-                    used = consumptions_proj["USED"][user]
+                if "USED" in consumptions[user]:
+                    used = consumptions[user]["USED"]
+
+                print(
+                    "Usage summary for user {} from {} to {}:".format(
+                        user, date1, date2
+                    )
+                )
+                print("-------------------------------------------------------------")
+
+                start_first_window = "No window found"
+                if "begin" in consumptions[user]:
+                    start_first_window = local_to_sql(consumptions[user]["begin"])
+                print(
+                    "{:>28}: {}".format("Start of the first window", start_first_window)
+                )
+
+                end_last_window = "No window found"
+                if "end" in consumptions[user]:
+                    end_last_window = local_to_sql(consumptions[user]["end"])
+                print("{:>28}: {}".format("End of the last window", end_last_window))
 
                 print(
                     "{:>28}: {:>10} ({:>10})".format(
@@ -404,11 +389,44 @@ def print_accounting(session, cmd_ret, accounting, user, sql_property):
                     )
                 )
 
-                last_karma = get_last_project_karma(session, user, project, d2_local)
-                if last_karma:
-                    m = re.match(r".*Karma\s*\=\s*(\d+\.\d+)", last_karma)
-                    if m:
-                        print("{:>28}: {}".format("Last Karma", m.group(1)))
+                print("By project consumption:")
+
+                consumptions_by_project = get_accounting_summary_byproject(
+                    session, d1_local, d2_local, user
+                )
+                for project, consumptions_proj in consumptions_by_project.items():
+                    print("  " + project + ":")
+                    asked = 0
+                    if (
+                        "ASKED" in consumptions_proj
+                        and user in consumptions_proj["ASKED"]
+                    ):
+                        asked = consumptions_proj["ASKED"][user]
+                    used = 0
+                    if (
+                        "USED" in consumptions_proj
+                        and user in consumptions_proj["USED"]
+                    ):
+                        used = consumptions_proj["USED"][user]
+
+                    print(
+                        "{:>28}: {:>10} ({:>10})".format(
+                            "Asked consumption", asked, get_duration(asked)
+                        )
+                    )
+                    print(
+                        "{:>28}: {:>10} ({:>10})".format(
+                            "Used consumption", used, get_duration(used)
+                        )
+                    )
+
+                    last_karma = get_last_project_karma(
+                        session, user, project, d2_local
+                    )
+                    if last_karma:
+                        m = re.match(r".*Karma\s*\=\s*(\d+\.\d+)", last_karma)
+                        if m:
+                            print("{:>28}: {}".format("Last Karma", m.group(1)))
         # All users array output
         else:
             print_table(session, consumptions.items(), gather_all_user_accounting)

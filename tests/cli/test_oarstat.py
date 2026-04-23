@@ -242,6 +242,37 @@ def test_oarstat_accounting_user(
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
+def test_oarstat_accounting_error_user_missing(
+    monkeypatch_tools, minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization)
+    karma = " Karma=0.345"
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        command="yop",
+        user="zozo",
+        project="yopa",
+        start_time=0,
+        message=karma,
+    )
+    user_test = "shadow"
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-u", user_test, "--accounting", "1970-01-01, 1970-01-20"],
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
+    )
+    str_result = result.output
+    print(str_result)
+    assert str_result == f"#WARNING: User, {user_test}, not in the accounting table\n"
+
+
+@pytest.mark.skipif(
+    "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
+)
 def test_oarstat_accounting_error(
     monkeypatch_tools, minimal_db_initialization, setup_config
 ):
