@@ -4,13 +4,19 @@
 
 Changelog
 =========
+Version 3.0.3 (unreleased)
+--------------------------
+Unreleased
+- Fixed #80 #116
+- Possibility for admin to set a list of default field for oarstat in oar.conf
+- Option add on oarstat: --specified-field
 
-Version 3.0.2
--------------
+Version 3.0.2 (unreleased)
+--------------------------
 Unreleased
 - Fixed missing session parameter in some function calls : #131 #127
 - Some dependencies updates
-- Fixed oarsub -k -i (job key file submission) 
+- Fixed oarsub -k -i (job key file submission)
 
 Version 3.0.1
 -------------
