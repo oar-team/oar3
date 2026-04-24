@@ -4,16 +4,28 @@
 
 Changelog
 =========
-Version 3.0.3 (unreleased)
---------------------------
 Unreleased
-- Fixed #80 #116
-- Possibility for admin to set a list of default field for oarstat in oar.conf
-- Option add on oarstat: --specified-field
+----------
+
+Added
+~~~~~
+- Add configurable default fields for ``oarstat`` via ``oar.conf``
+- Add ``--specified-field`` option to allow custom field selection in ``oarstat``
+
+Changed
+~~~~~~~
+- Harmonize job name display in ``System message`` across job states (#80)
+- Improve ``oarstat`` output flexibility and field handling
+
+Fixed
+~~~~~
+- Fix job name disappearing from ``oarstat`` output when job transitions from Waiting to Running (#80)
+- Prevent crash in ``oarstat --accounting`` when user is absent from accounting table (#116)
 
 Version 3.0.2 (unreleased)
 --------------------------
-Unreleased
+Released on TBD
+
 - Fixed missing session parameter in some function calls : #131 #127
 - Some dependencies updates
 - Fixed oarsub -k -i (job key file submission)
