@@ -1,5 +1,6 @@
 # coding: utf-8
-""" Functions to handle jobs"""
+"""Functions to handle jobs"""
+
 import copy
 import os
 import random
@@ -202,7 +203,7 @@ def set_jobs_cache_keys(session, jobs):
     for job_id, job in jobs.items():
         if (not job.ts) and (job.ph == NO_PLACEHOLDER):
             for res_rqt in job.mld_res_rqts:
-                (moldable_id, walltime, hy_res_rqts) = res_rqt
+                moldable_id, walltime, hy_res_rqts = res_rqt
                 job.key_cache[int(moldable_id)] = str(walltime) + str(hy_res_rqts)
 
 
@@ -931,7 +932,7 @@ def insert_job(session, **kwargs):
         moldable_id = mld_ids[mld_idx]
 
         for r_hy_prop in res_grp:
-            (res_hy, properties) = r_hy_prop
+            res_hy, properties = r_hy_prop
             mld_id_property.append(
                 {"res_group_moldable_id": moldable_id, "res_group_property": properties}
             )
@@ -1745,11 +1746,29 @@ def set_job_state(session, config, jid, state):
         ):
             job = session.query(Job).filter(Job.id == jid).one()
             if state == "Suspended":
-                tools.notify_user(session, job, "SUSPENDED", "Job is suspended.")
+                tools.notify_user(
+                    session,
+                    job,
+                    "SUSPENDED",
+                    get_custom_notification_message(config, state, job, session, jid)
+                    or "Job is suspended.",
+                )
             elif state == "Resuming":
-                tools.notify_user(session, job, "RESUMING", "Job is resuming.")
+                tools.notify_user(
+                    session,
+                    job,
+                    "RESUMING",
+                    get_custom_notification_message(config, state, job, session, jid)
+                    or "Job is resuming.",
+                )
             elif state == "Running":
-                tools.notify_user(session, job, "RUNNING", "Job is running.")
+                tools.notify_user(
+                    session,
+                    job,
+                    "RUNNING",
+                    get_custom_notification_message(config, state, job, session, jid)
+                    or "Job is running.",
+                )
             elif state == "toLaunch":
                 update_current_scheduler_priority(session, config, job, "+2", "START")
             else:  # job is "Terminated" or ($state eq "Error")
@@ -1766,7 +1785,15 @@ def set_job_state(session, config, jid, state):
                     )
 
                 if state == "Terminated":
-                    tools.notify_user(session, job, "END", "Job stopped normally.")
+                    tools.notify_user(
+                        session,
+                        job,
+                        "END",
+                        get_custom_notification_message(
+                            config, state, job, session, jid
+                        )
+                        or "Job stopped normally.",
+                    )
                 else:
                     # Verify if the job was suspended and if the resource
                     # property suspended is updated
@@ -1789,7 +1816,10 @@ def set_job_state(session, config, jid, state):
                         session,
                         job,
                         "ERROR",
-                        "Job stopped abnormally or an OAR error occured.",
+                        get_custom_notification_message(
+                            config, state, job, session, jid
+                        )
+                        or "Job stopped abnormally or an OAR error occured.",
                     )
 
                 update_current_scheduler_priority(session, config, job, "-2", "STOP")
@@ -2547,7 +2577,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
             + str(hosts)
         )
 
-        (pingcheck, bad_hosts) = tools.pingchecker(hosts)
+        pingcheck, bad_hosts = tools.pingchecker(hosts)
 
         if (pingcheck and len(bad_hosts) > 0) or not pingcheck:
             if pingcheck:
@@ -2849,9 +2879,7 @@ WHERE
       t.type = 'besteffort' )
   ) AND
   gr.resource_id IN ( {} )
-    """.format(
-        only_adv_reservations, from_, to, exclude, resources_str
-    )
+    """.format(only_adv_reservations, from_, to, exclude, resources_str)
     raw_start_times = session.get_bind().execute(text(req))
 
     for start_time in raw_start_times.fetchall():
@@ -2869,3 +2897,67 @@ def change_walltime(session, job_id, new_walltime, message):
     session.commit()
     add_new_event(session, "WALLTIME", job_id, message, to_check="NO")
     session.commit()
+
+
+def get_custom_notification_message(config, state, job, session, jid):
+    """
+    Generates a custom notification message based on text templates.
+
+    Returns the message body as a string.
+    Returns None in case of an error (missing or malformed template),
+    forcing OAR to fallback to its default notification system.
+    """
+    path = config.get(f"MAIL_TEMPLATE_{state.upper()}")
+    if not (path and os.path.isfile(path)):
+        return None
+
+    # 1. Standard dictionary with safe default values
+    data = {
+        "id": jid,
+        "user": getattr(job, "user", "unknown"),
+        "state": state,
+        "name": getattr(job, "name", "N/A") or "N/A",
+        "project": getattr(job, "project", "N/A"),
+        "queue": getattr(job, "queue_name", "N/A"),
+        "dir": getattr(job, "launching_directory", "N/A"),
+        "command": getattr(job, "command", "N/A"),
+        "stdout": (getattr(job, "stdout_file", "") or "").replace("%jobid%", str(jid)),
+        "stderr": (getattr(job, "stderr_file", "") or "").replace("%jobid%", str(jid)),
+        "exit_code": getattr(job, "exit_code", "N/A"),
+        "message": getattr(job, "message", ""),
+        "array_id": getattr(job, "array_id", jid),
+        "array_index": getattr(job, "array_index", "1"),
+        "nodes": "N/A",
+        "core_count": 0,
+        "walltime": "N/A",
+    }
+
+    # 2. Nodes block (Independent)
+    try:
+        node_list = get_job_current_hostnames(session, jid)
+        if node_list:
+            data["nodes"] = ", ".join(node_list)
+            data["core_count"] = len(node_list)
+    except Exception as e:
+        logger.debug(f"[OAR_CUSTOM_MAIL] Nodes extraction failed for job {jid}: {e}")
+
+    # 3. Walltime block (Independent)
+    try:
+        m_id = getattr(job, "assigned_moldable_job", 0)
+        if m_id:
+            mld = session.query(MoldableJobDescription).filter_by(id=m_id).first()
+            if mld and mld.walltime:
+                data["walltime"] = (
+                    f"{mld.walltime // 3600}h {(mld.walltime % 3600) // 60}m"
+                )
+    except Exception as e:
+        logger.debug(f"[OAR_CUSTOM_MAIL] Walltime extraction failed for job {jid}: {e}")
+
+    # 4. Final rendering (Secure with fallback on formatting error)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().format(**data)
+    except Exception as e:
+        # Catch KeyError if a template tag is misspelled
+        logger.error(f"[OAR_CUSTOM_MAIL] Template formatting error on '{path}': {e}")
+        return None
