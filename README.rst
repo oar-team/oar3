@@ -16,6 +16,14 @@ OAR: Versatile Resource and Job Manager
 
 OAR is a versatile resource and job manager (also called a batch scheduler or job scheduler) for HPC clusters and other computing infrastructures (like distributed computing experimental testbeds where versatility is a key). This is the third generation.
 
+Features
+--------
+
+* Customizable job state notification emails via text templates.
+
+Links
+-----
+
 * Free software: GPL-2.1 license.
 * Documentation: https://oar-3.readthedocs.org.
 * General Information: http://oar.imag.fr/oar_3.
