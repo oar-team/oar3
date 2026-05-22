@@ -4,8 +4,10 @@
 
 Changelog
 =========
-Unreleased
-----------
+
+Version 3.0.2 
+-------------
+Released on May 22, 2026
 
 Added
 ~~~~~
@@ -21,11 +23,6 @@ Fixed
 ~~~~~
 - Fix job name disappearing from ``oarstat`` output when job transitions from Waiting to Running (#80)
 - Prevent crash in ``oarstat --accounting`` when user is absent from accounting table (#116)
-
-Version 3.0.2 (unreleased)
---------------------------
-Released on TBD
-
 - Fixed missing session parameter in some function calls : #131 #127
 - Some dependencies updates
 - Fixed oarsub -k -i (job key file submission)
