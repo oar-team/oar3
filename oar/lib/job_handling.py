@@ -7,7 +7,7 @@ import re
 from typing import List
 
 from procset import ProcSet
-from sqlalchemy import distinct, func, insert, text
+from sqlalchemy import Null, distinct, func, insert, null, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.session import make_transient
 from sqlalchemy.sql import case
@@ -18,7 +18,7 @@ from oar.kao.helpers import extract_find_assign_args
 from oar.lib.event import add_new_event, add_new_event_with_host, is_an_event_exists
 
 # from oar.lib.utils import render_query
-from oar.lib.globals import get_logger, init_oar
+from oar.lib.globals import get_logger
 from oar.lib.models import (
     AssignedResource,
     Challenge,
@@ -622,6 +622,11 @@ def job_message(session, job, nb_resources=None):
         message_list.append("J=I")
 
     message_list.append("Q={}".format(job.queue_name))
+
+    if job.name:
+        message_list.append(
+            "N={}".format(job.name)
+        )  # à corriger le nom n'est pas obligatoire
 
     logger.info("save assignements")
 
@@ -2147,7 +2152,7 @@ def check_end_of_job(
             if ("besteffort" in job_types.keys()) and (
                 "idempotent" in job_types.keys()
             ):
-                if is_an_event_exists(job_id, "BESTEFFORT_KILL"):
+                if is_an_event_exists(session, job_id, "BESTEFFORT_KILL"):
                     new_job_id = resubmit_job(session, job_id)
                     logger.warning(
                         "We resubmit the job "
@@ -2570,7 +2575,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
             add_new_event(session, ev_type, job_id, msg)
         else:
             ev_type, msg, hosts = event
-            add_new_event_with_host(ev_type, job_id, msg, hosts)
+            add_new_event_with_host(session, ev_type, job_id, msg, hosts)
 
     # Just to force commit (from OAR2, useful for OAR3 ?)
     session.commit()

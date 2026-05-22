@@ -111,6 +111,7 @@ class Configuration(dict):
         "DEFAULT_JOB_WALLTIME": 3600,
         "OARSUB_DEFAULT_RESOURCES": "/resource_id=1",
         "OARSUB_NODES_RESOURCES": "resource_id",
+        "OARSTAT_DEFAULT_FIELD": "job_id:Job id,job_name:Job name,Duration,state:State,job_user:User,message:System message,queue_name:Queue",
         "QUEUE": "default",
         "PROJECT": "default",
         "SIGNAL": 12,

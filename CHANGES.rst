@@ -5,9 +5,31 @@
 Changelog
 =========
 
+Version 3.0.2 
+-------------
+Released on May 22, 2026
+
+Added
+~~~~~
+- Add configurable default fields for ``oarstat`` via ``oar.conf``
+- Add ``--specified-field`` option to allow custom field selection in ``oarstat``
+
+Changed
+~~~~~~~
+- Harmonize job name display in ``System message`` across job states (#80)
+- Improve ``oarstat`` output flexibility and field handling
+
+Fixed
+~~~~~
+- Fix job name disappearing from ``oarstat`` output when job transitions from Waiting to Running (#80)
+- Prevent crash in ``oarstat --accounting`` when user is absent from accounting table (#116)
+- Fixed missing session parameter in some function calls : #131 #127
+- Some dependencies updates
+- Fixed oarsub -k -i (job key file submission)
+
 Version 3.0.1
 -------------
-Unreleased
+Released on Nov 26, 2025
 
 - Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
 - Fixes and enhancements of the scheduling #104 #105

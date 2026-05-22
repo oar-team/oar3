@@ -242,6 +242,37 @@ def test_oarstat_accounting_user(
 @pytest.mark.skipif(
     "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
 )
+def test_oarstat_accounting_error_user_missing(
+    monkeypatch_tools, minimal_db_initialization, setup_config
+):
+    insert_terminated_jobs(minimal_db_initialization)
+    karma = " Karma=0.345"
+    insert_job(
+        minimal_db_initialization,
+        res=[(60, [("resource_id=2", "")])],
+        properties="",
+        command="yop",
+        user="zozo",
+        project="yopa",
+        start_time=0,
+        message=karma,
+    )
+    user_test = "shadow"
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-u", user_test, "--accounting", "1970-01-01, 1970-01-20"],
+        obj=minimal_db_initialization,
+        catch_exceptions=False,
+    )
+    str_result = result.output
+    print(str_result)
+    assert str_result == f"#WARNING: User, {user_test}, not in the accounting table\n"
+
+
+@pytest.mark.skipif(
+    "os.environ.get('DB_TYPE', '') != 'postgresql'", reason="need postgresql database"
+)
 def test_oarstat_accounting_error(
     monkeypatch_tools, minimal_db_initialization, setup_config
 ):
@@ -273,7 +304,8 @@ def test_oarstat_gantt(minimal_db_initialization, setup_config):
     )
     str_result = result.output
     print(str_result)
-    assert re.match(".*10 days.*", str_result.split("\n")[3])
+    lines = str_result.splitlines()
+    assert any(re.search(r"10 days", line) for line in lines)
 
 
 def test_oarstat_events(minimal_db_initialization, setup_config):
@@ -588,4 +620,53 @@ def test_oarstat_job_types(minimal_db_initialization, setup_config):
             line = line.strip()
             assert line == "types = inner=4, cosystem"
 
+
+def test_oarstat_specified_fields(minimal_db_initialization, setup_config):
+    config, _ = setup_config
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--specified-field", "job_id:job_identifier"],
+        catch_exceptions=False,
+        obj=(minimal_db_initialization, config),
+    )
+    print("\n" + result.output)
+    assert "job_identifier" in result.output
     assert result.exit_code == 0
+
+
+def test_oarstat_specified_fields_without_label(
+    minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--specified-field", "job_id,Duration"],
+        catch_exceptions=False,
+        obj=(minimal_db_initialization, config),
+    )
+    print("\n" + result.output)
+    assert "job_id" in result.output
+    assert result.exit_code == 0
+
+
+def test_oarstat_default_fields(minimal_db_initialization, setup_config):
+    """Vérifie que les champs par défaut de OARSTAT_DEFAULT_FIELD sont utilisés."""
+    config, _ = setup_config
+    # S'assurer que la valeur par défaut est bien là
+    assert "OARSTAT_DEFAULT_FIELD" in config
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, [], catch_exceptions=False, obj=(minimal_db_initialization, config)
+    )
+    print("\n" + result.output)
+    assert result.exit_code == 0
+    # Vérifier que les colonnes par défaut apparaissent dans l'output
+    for label in ["Job id", "Job name", "State", "User", "Queue"]:
+        assert label in result.output
