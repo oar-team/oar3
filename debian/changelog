@@ -1,3 +1,17 @@
+oar3 (3.0.2-1) unstable; urgency=low
+
+  * Add configurable default fields for ``oarstat`` via ``oar.conf``
+  * Add ``--specified-field`` option to allow custom field selection in ``oarstat``
+  * Harmonize job name display in ``System message`` across job states (#80)
+  * Improve ``oarstat`` output flexibility and field handling
+  * Fix job name disappearing from ``oarstat`` output when job transitions from Waiting to Running (#80)
+  * Prevent crash in ``oarstat --accounting`` when user is absent from accounting table (#116)
+  * Fixed missing session parameter in some function calls : #131 #127
+  * Some dependencies updates
+  * Fixed oarsub -k -i (job key file submission)
+
+ -- Bruno Bzeznik <bruno.bzeznik@univ-grenoble-alpes.fr>  Fri, 22 May 2026 11:10:00 +0200
+
 oar3 (3.0.1-1) unstable; urgency=low
 
   * Added ALL, BEST, HALF_BEST as resquestable number of resource (#57)
