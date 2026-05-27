@@ -5,6 +5,16 @@
 Changelog
 =========
 
+
+Version 3.0.3
+-------------
+Unreleased
+
+Changed
+~~~~~~~
+- API logging now defaults to "INFO" instead of "DEBUG"
+
+
 Version 3.0.2 
 -------------
 Released on May 22, 2026
