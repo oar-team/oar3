@@ -536,7 +536,7 @@ def resources_creation(
     for i in range(nb_resources):
         Resource.create(
             session,
-            network_address=f"{node_name}{int(i / ((nb_core if vfactor == 1 else vfactor) + 1))}",
+            network_address=f"{node_name}{int(i / (nb_core if vfactor == 1 else vfactor) + 1)}",
             cpuset=i % (nb_core),
             state="Alive",
         )
