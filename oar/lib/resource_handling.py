@@ -529,11 +529,13 @@ def get_count_busy_resources(
 def resources_creation(
     session: Session, node_name: str, nb_nodes: int, nb_core: int = 1, vfactor: int = 1
 ):
-    for i in range(nb_nodes * nb_core * vfactor):
+    logger.warning(f" nb_nodes {nb_nodes} nb_core {nb_core} vfactor {vfactor}")
+    for i in range(nb_nodes * vfactor):
+        logger.warning(f" i {i} cpuset {i%(nb_core)}")
         Resource.create(
             session,
-            network_address=f"{node_name}{int(i / (nb_core * vfactor) + 1)}",
-            cpuset=i % nb_core,
+            network_address=f"{node_name}{int(i / (vfactor) + 1)}",
+            cpuset=i % (nb_core),
             state="Alive",
         )
     session.commit()
