@@ -442,7 +442,10 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                 # determine endtime
                 if jid_dep in jobs:
                     job_dep = jobs[jid_dep]
-                    job_dep_stop_time = job_dep.start_time + job_dep.walltime
+                    try:
+                        job_dep_stop_time = job_dep.start_time + job_dep.walltime
+                    except AttributeError:
+                        job_dep_stop_time = job_dep.start_time
                     if job_dep_stop_time > min_start_time:
                         min_start_time = job_dep_stop_time
                 else:

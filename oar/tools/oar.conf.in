@@ -298,7 +298,7 @@ HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 
 # Number of jobs which will be scheduled by scheduling round for each queue where Kamelot is used
 # ***NOT LIMITED by default***
-#MAX_JOB_PER_SCHEDULING_ROUND=1000
+MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND="1000"
 
 # Mode to get resources and generate hierarchy levels, values are following:
 # default:     all is done dynamically, does not scale very beyond 5000 resourcess

@@ -21,6 +21,24 @@ config, db = init_oar(no_db=True)
 logger = get_logger("oar.kamelot")
 
 
+def get_max_job_per_queues_group(config):
+    """Read MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND from the config.
+    Returns None when the option is unset or non-positive (no limit).
+    """
+
+    if "MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND" not in config:
+        return None
+    try:
+        value = int(config["MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND"])
+    except (TypeError, ValueError):
+        logger.warning(
+            "MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND is not an integer: %r (ignored)",
+            config["MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND"],
+        )
+        return None
+    return value if value > 0 else None
+
+
 def jobs_sorting(session, config, queues, now, waiting_jids, waiting_jobs, plt):
     waiting_ordered_jids = waiting_jids
 
@@ -90,6 +108,19 @@ def internal_schedule_cycle(
         waiting_ordered_jids = jobs_sorting(
             session, config, queues, now, waiting_jids, waiting_jobs, plt
         )
+
+        # Limit the number of jobs scheduled per round for this group of queues.
+        max_job = get_max_job_per_queues_group(config)
+        if max_job is not None and len(waiting_ordered_jids) > max_job:
+            logger.info(
+                "MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND=%d reached for queues %s: scheduling %d of %d waiting jobs",
+                max_job,
+                queues,
+                max_job,
+                len(waiting_ordered_jids),
+            )
+            waiting_ordered_jids = waiting_ordered_jids[:max_job]
+            waiting_jobs = {jid: waiting_jobs[jid] for jid in waiting_ordered_jids}
 
         #
         # Scheduled
@@ -174,6 +205,19 @@ def schedule_cycle(
         waiting_ordered_jids = jobs_sorting(
             session, config, queues, now, waiting_jids, waiting_jobs, plt
         )
+
+        # Limit the number of jobs scheduled per round for this group of queues.
+        max_job = get_max_job_per_queues_group(config)
+        if max_job is not None and len(waiting_ordered_jids) > max_job:
+            logger.info(
+                "MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND=%d reached for queues %s: scheduling %d of %d waiting jobs",
+                max_job,
+                queues,
+                max_job,
+                len(waiting_ordered_jids),
+            )
+            waiting_ordered_jids = waiting_ordered_jids[:max_job]
+            waiting_jobs = {jid: waiting_jobs[jid] for jid in waiting_ordered_jids}
 
         #
         # Get already scheduled jobs advanced reservations and jobs from more higher priority queues
