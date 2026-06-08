@@ -154,6 +154,7 @@ def show(
         job.id = job_id
         job_resources = queryCollection.get_assigned_jobs_resources([job])
         attach_resources(data, job_resources)
+        attach_nodes(data, job_resources)
         job_events = queryCollection.get_jobs_events([job])
         jobs_types = queryCollection.get_jobs_types([job])
         jobs_walltime = queryCollection.get_jobs_walltime([job])

@@ -14,7 +14,7 @@ Changed
 ~~~~~~~
 - API logging now defaults to "INFO" instead of "DEBUG"
 - Fixing a possible scheduling outage (#139]
-
+- API: added nodes into /jobs/<ID>?details=1
 
 Version 3.0.2 
 -------------
