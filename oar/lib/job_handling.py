@@ -649,21 +649,22 @@ def save_assigns(session, jobs, resource_set):
         for j in jobs.values() if isinstance(jobs, dict) else jobs:
             if j.start_time > -1:
                 logger.debug("job_id to save: " + str(j.id))
-                mld_id_start_time_s.append(
-                    {"moldable_job_id": j.moldable_id, "start_time": j.start_time}
-                )
-                riods = list(j.res_set)
-                mld_id_rid_s.extend(
-                    [
-                        {
-                            "moldable_job_id": j.moldable_id,
-                            "resource_id": resource_set.rid_o2i[rid],
-                        }
-                        for rid in riods
-                    ]
-                )
-                msg = job_message(session, j, nb_resources=len(riods))
-                message_updates[j.id] = msg
+                if j.moldable_id != 0:
+                  mld_id_start_time_s.append(
+                      {"moldable_job_id": j.moldable_id, "start_time": j.start_time}
+                  )
+                  riods = list(j.res_set)
+                  mld_id_rid_s.extend(
+                      [
+                          {
+                              "moldable_job_id": j.moldable_id,
+                              "resource_id": resource_set.rid_o2i[rid],
+                          }
+                          for rid in riods
+                      ]
+                  )
+                  msg = job_message(session, j, nb_resources=len(riods))
+                  message_updates[j.id] = msg
 
         if message_updates:
             logger.info("save job messages")
