@@ -3,10 +3,12 @@
 Scheduling functions used by :py:mod:`oar.kao.kamelot`.
 """
 import copy
+import time
 from typing import Any, Tuple
 
 from procset import ProcSet
 
+from oar.kao.helpers import job_scheduling_record, write_scheduling_timing_yaml
 from oar.kao.quotas import Quotas
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
 from oar.lib.globals import get_logger, init_oar
@@ -415,6 +417,13 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     :param Int job_security_time: The job security time (see `oar.conf <../admin/configuration.html>`_ ``SCHEDULER_JOB_SECURITY_TIME`` variable)
     """
 
+    # Per-job scheduling timing, driven by oar.conf (read from the module-level
+    # config loaded at import from OARCONFFILE).
+    timing = config.get("SCHEDULER_LOG_JOB_SCHEDULING_TIME") == "yes"
+    timing_yaml_path = config.get("SCHEDULER_JOB_SCHEDULING_TIME_YAML") or None
+    measure = timing or bool(timing_yaml_path)
+    timing_records = []
+
     #    for k,job in jobs.items():
     # print("*********j_id:", k, job.mld_res_rqts[0])
 
@@ -423,6 +432,7 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
     for jid in id_jobs:
         logger.debug("Schedule job:" + str(jid))
         job = jobs[jid]
+        job_sched_start = time.perf_counter() if measure else None
 
         min_start_time = -1
         to_skip = False
@@ -520,6 +530,18 @@ def schedule_id_jobs_ct(slots_sets, jobs, hy, id_jobs, job_security_time):
                     )
                     # slot.show()
                     slots_sets[ss_name] = SlotSet(slot)
+
+        if job_sched_start:
+            elapsed_ms = (time.perf_counter() - job_sched_start) * 1000
+            if timing:
+                logger.info(
+                    "scheduling timing: job %s scheduled in %.3f ms", jid, elapsed_ms
+                )
+            if timing_yaml_path:
+                timing_records.append(job_scheduling_record(job, elapsed_ms))
+
+    if timing_yaml_path:
+        write_scheduling_timing_yaml(timing_yaml_path, timing_records)
 
     # logger.debug(f"SlotSet Default (After):\n{slots_sets['default']}")
     # for jid in id_jobs:
