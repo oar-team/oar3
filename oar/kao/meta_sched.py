@@ -1241,7 +1241,7 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             + job_message
             + ")"
         )
-        tools.notify_tcp_socket(
+        res = tools.notify_tcp_socket(
             addr,
             port,
             "["
@@ -1252,6 +1252,15 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
             + job_message
             + ")",
         )
+        if res == 0:
+            add_new_event(
+                session,
+                "LOST_SESSION",
+                job_id,
+                "kill the interactive job because session is lost " + str(job_id),
+            )
+            frag_job(session, job_id)
+            tools.notify_almighty("Qdel")
 
     # Run the decisions
     # Process "toError" jobs
