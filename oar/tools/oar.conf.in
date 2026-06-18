@@ -232,6 +232,16 @@ SCHEDULER_TIMEOUT="30"
 # default time is 60 seconds
 SCHEDULER_JOB_SECURITY_TIME="60"
 
+# Log the scheduling duration of each job (and the round total). Useful to
+# profile the scheduler under load. Values: "yes" or "no".
+SCHEDULER_LOG_JOB_SCHEDULING_TIME="no"
+
+# If set to a file path, append for each scheduling round a YAML document with,
+# per scheduled job, its info (id, name, queue, user, project, walltime,
+# start_time, moldable_id, resources, types) and its scheduling duration in ms.
+# Leave empty to disable.
+SCHEDULER_JOB_SCHEDULING_TIME_YAML=""
+
 # Number of seconds before the start of an advance reservation, which besteffort
 # jobs must be killed at (in order to let time to get nodes back and healthy
 # for the advance reservation). Default is 0 seconds.
@@ -298,7 +308,7 @@ HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 
 # Number of jobs which will be scheduled by scheduling round for each queue where Kamelot is used
 # ***NOT LIMITED by default***
-#MAX_JOB_PER_SCHEDULING_ROUND=1000
+MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND="1000"
 
 # Mode to get resources and generate hierarchy levels, values are following:
 # default:     all is done dynamically, does not scale very beyond 5000 resourcess

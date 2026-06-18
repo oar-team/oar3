@@ -69,8 +69,11 @@ class Configuration(dict):
         # Tell the metascheduler that it runs into an oar2 installation.
         "METASCHEDULER_OAR3_WITH_OAR2": "no",
         "HIERARCHY_LABELS": "resource_id,network_address",
+        "MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND": "1000",
         "SCHEDULER_RESOURCE_ORDER": "resource_id ASC",
         "SCHEDULER_JOB_SECURITY_TIME": "60",  # TODO should be int
+        "SCHEDULER_LOG_JOB_SCHEDULING_TIME": "no",
+        "SCHEDULER_JOB_SCHEDULING_TIME_YAML": "",
         "SCHEDULER_AVAILABLE_SUSPENDED_RESOURCE_TYPE": "default",
         "FAIRSHARING_ENABLED": "no",
         "SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER": "30",
