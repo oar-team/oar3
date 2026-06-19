@@ -214,6 +214,16 @@ class JobParameters:
                     "insecure characters found in the notification method (the allowed regexp is: [a-zA-Z0-9_.\\/ -]+).",
                 )
 
+        # name : check insecure character
+        if self.name:
+            m = re.search(r"([^\w]+)", self.name)
+            if m:
+                return (
+                    16,
+                    "insecure characters found in the name of the job, please use only a-z, A-Z, 0-9, _",
+                )
+
+
         return (0, "")
 
     def read_array_param_file(self):
