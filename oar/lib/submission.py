@@ -216,11 +216,11 @@ class JobParameters:
 
         # name : check insecure character
         if self.name:
-            m = re.search(r"([^\w]+)", self.name)
+            m = re.search(r"([^\w.-]+)", self.name)
             if m:
                 return (
                     16,
-                    "insecure characters found in the name of the job, please use only a-z, A-Z, 0-9, _",
+                    "insecure characters found in the name of the job, please use only a-z, A-Z, 0-9, _.-",
                 )
 
 
