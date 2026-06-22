@@ -5,17 +5,16 @@
 Changelog
 =========
 
-Added
-~~~~~
-- Add SCHEDULER_LOG_JOB_SCHEDULING_TIME and SCHEDULER_JOB_SCHEDULING_TIME_YAML to oar.conf to measure the time taken to schedule each job.
-
 Changed
 ~~~~~~~
-- Replace MAX_JOB_PER_SCHEDULING_ROUND with MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND in oar.conf to limit the number of jobs scheduled per scheduling round.
 
 Version 3.0.3
 -------------
 Unreleased
+
+Added
+~~~~~
+- Add SCHEDULER_LOG_JOB_SCHEDULING_TIME and SCHEDULER_JOB_SCHEDULING_TIME_YAML to oar.conf to measure the time taken to schedule each job.
 
 Changed
 ~~~~~~~
@@ -23,6 +22,8 @@ Changed
 - Fixing a possible scheduling outage (#139]
 - API: added nodes into /jobs/<ID>?details=1
 - Interactive waiting jobs with lost session should be killed (#143)
+- Replace MAX_JOB_PER_SCHEDULING_ROUND with MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND in oar.conf to limit the number of jobs scheduled per scheduling round.
+- Fixed ACTIVATE_PINGCHECKER_AT_JOB_END (#150)
 
 Version 3.0.2
 -------------
