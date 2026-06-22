@@ -223,7 +223,6 @@ class JobParameters:
                     "insecure characters found in the name of the job, please use only a-z, A-Z, 0-9, _.-",
                 )
 
-
         return (0, "")
 
     def read_array_param_file(self):
