@@ -706,7 +706,7 @@ class Quotas(object):
 
     def check(self, job) -> tuple[bool, str, str, int]:
         (rule, complete_key, rl_quotas) = self.find_applicable_rule(job)
-        print("on en est la", self.rule_tree, self.rules, rule, complete_key, rl_quotas)
+        # print("on en est la", self.rule_tree, self.rules, rule, complete_key, rl_quotas)
 
         if rule and complete_key in self.counters:
             rl_nb_resources, rl_nb_jobs, rl_resources_time = rule

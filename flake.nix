@@ -120,6 +120,7 @@
                     redis
                     clustershell
                     httpx
+                    matplotlib
 
                     # Dev dependencies
                     isort
