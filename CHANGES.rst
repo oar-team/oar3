@@ -17,7 +17,12 @@ Changed
 - API: added nodes into /jobs/<ID>?details=1
 - Interactive waiting jobs with lost session should be killed (#143)
 
-Version 3.0.2 
+Fixed
+~~~~~
+- Fixed quadratic scheduling time when quotas are enabled: the slot-search cache
+  was read but never written on the quotas path
+
+Version 3.0.2
 -------------
 Released on May 22, 2026
 
