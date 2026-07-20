@@ -399,7 +399,7 @@ def signal_oarexec(
     """
     filename = get_oar_pid_file_name(job_id)
     cmd = ssh_cmd.split()
-    cmd += ["-x", "-T", host]
+    cmd += ["-o ConnectTimeout=10", "-x", "-T", host]
     if user_signal:
         signal_file = get_oar_user_signal_file_name(job_id)
         cmd.append(
@@ -453,6 +453,8 @@ def signal_oarexec(
             )
     else:
         # TODO kill after timeout, note Popen launchs process in background
+        # TODO update (B. Bzeznik 2026-07-20: added "-o ConnectTimeout=10" to the ssh_cmd
+        #              so timeout management here might not be necessary)
         Popen(cmd)
 
     return comment

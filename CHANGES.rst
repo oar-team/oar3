@@ -24,6 +24,7 @@ Changed
 - Interactive waiting jobs with lost session should be killed (#143)
 - Replace MAX_JOB_PER_SCHEDULING_ROUND with MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND in oar.conf to limit the number of jobs scheduled per scheduling round.
 - Fixed ACTIVATE_PINGCHECKER_AT_JOB_END (#150)
+- Fixed a possible almighty lock when signaling jobs (#153)
 
 Version 3.0.2
 -------------
