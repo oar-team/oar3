@@ -5,7 +5,29 @@
 Changelog
 =========
 
-Version 3.0.2 
+Changed
+~~~~~~~
+
+Version 3.0.3
+-------------
+Unreleased
+
+Added
+~~~~~
+- Add SCHEDULER_LOG_JOB_SCHEDULING_TIME and SCHEDULER_JOB_SCHEDULING_TIME_YAML to oar.conf to measure the time taken to schedule each job.
+
+Changed
+~~~~~~~
+- API logging now defaults to "INFO" instead of "DEBUG"
+- Fixing a possible scheduling outage (#139]
+- API: added nodes into /jobs/<ID>?details=1
+- Interactive waiting jobs with lost session should be killed (#143)
+- Replace MAX_JOB_PER_SCHEDULING_ROUND with MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND in oar.conf to limit the number of jobs scheduled per scheduling round.
+- Fixed ACTIVATE_PINGCHECKER_AT_JOB_END (#150)
+- Fixed a possible almighty lock when signaling jobs (#153)
+- Fixed quadratic scheduling time when quotas are enabled: the slot-search cache was read but never written on the quotas path
+
+Version 3.0.2
 -------------
 Released on May 22, 2026
 

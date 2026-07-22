@@ -2,10 +2,13 @@
 import colorsys
 import random
 
+from oar.lib.globals import get_logger
+
 NB_COLORS = 15
 HSV_tuples = [(x * 1.0 / NB_COLORS, 0.5, 0.5) for x in range(NB_COLORS)]
 RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
+logger = get_logger("oar.kamelot", forward_stderr=True)
 # TODO remove useless code in profit to Evalys usage
 
 
@@ -128,6 +131,47 @@ def extract_find_assign_args(raw_args):
         else:
             args.append(arg)
     return funcname, args, kwargs
+
+
+def job_scheduling_record(job, scheduling_time_ms):
+    """A small, oarstat-like summary of the job plus its scheduling duration."""
+    deps = getattr(job, "deps", None) or []
+    res_set = getattr(job, "res_set", None)
+    record = {
+        "job_id": getattr(job, "id", None),
+        "name": getattr(job, "name", None),
+        "queue": getattr(job, "queue_name", None),
+        "user": getattr(job, "user", None),
+        "project": getattr(job, "project", None),
+        "types": dict(getattr(job, "types", {}) or {}),
+        "dependencies": [dep[0] for dep in deps],
+        "walltime": getattr(job, "walltime", None),
+        "start_time": getattr(job, "start_time", None),
+        "moldable_id": getattr(job, "moldable_id", None),
+        "resources": str(res_set) if res_set is not None and len(res_set) > 0 else None,
+        "scheduling_time_ms": round(scheduling_time_ms, 3),
+    }
+    # drop empty/missing fields to keep the yaml compact
+    return {k: v for k, v in record.items() if v not in (None, {}, [])}
+
+
+def write_scheduling_timing_yaml(path, records):
+    """Append the per-job timing records of this round as one YAML document."""
+    if not records:
+        return
+    try:
+        import yaml
+
+        with open(path, "a") as f:
+            yaml.safe_dump(
+                records,
+                f,
+                explicit_start=True,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+    except Exception as e:  # pragma: no cover - best effort, never break scheduling
+        logger.warning("could not write scheduling timing yaml to %s: %s", path, e)
 
 
 # j1 = Job(1,"", 10, 10, "", "", "", {}, [(10, 20), (25,30)], 1, [])

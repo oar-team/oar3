@@ -9,7 +9,7 @@ from oar.kao.quotas import Quotas
 from oar.kao.scheduling import schedule_id_jobs_ct, set_slots_with_prev_scheduled_jobs
 from oar.kao.slot import Slot, SlotSet
 from oar.lib.globals import init_oar
-from oar.lib.job_handling import JobPseudo
+from oar.lib.job_handling import JobPseudo, set_jobs_cache_keys
 from oar.lib.resource import ResourceSet
 
 config, engine = init_oar(no_db=True)
@@ -41,6 +41,37 @@ def compare_slots_val_ref(slots, v):
             break
         i += 1
     return True
+
+
+def sched_placement(nb_jobs, rules, alt_users=False):
+
+    res = ProcSet((1, 32))
+    ResourceSet.default_itvs = ProcSet((1, 32))
+
+    Quotas.enabled = rules is not None
+    if rules is not None:
+        Quotas.default_rules = rules
+    ss = SlotSet(Slot(1, 0, 0, ProcSet((1, 32)), 0, 2**31))
+    all_ss = {"default": ss}
+    hy = {"node": [ProcSet((i, i)) for i in range(1, 32 + 1)]}
+    jobs, jids = {}, list(range(1, nb_jobs + 1))
+    for i in jids:
+        user = ("u0" if i % 2 == 0 else "u1") if alt_users else "u%d" % (i % 4)
+        jobs[i] = JobPseudo(
+            id=i,
+            types={},
+            deps=[],
+            key_cache={},
+            queue="default",
+            user=user,
+            project="",
+            mld_res_rqts=[(i, 60, [([("node", 2)], res)])],
+            ts=False,
+            ph=0,
+        )
+    set_jobs_cache_keys(None, jobs)  # session arg is unused
+    schedule_id_jobs_ct(all_ss, jobs, hy, jids, 10)
+    return {i: jobs[i].start_time for i in jids}
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -376,3 +407,34 @@ def test_quotas_two_jobs_job_type_proc():
 
     assert j1.start_time == 0
     assert j2.start_time == 50
+
+
+def test_quotas_nonblocking_placement_equals_no_quotas():
+    """
+    Non-blocking quotas reject nothing, so placement must match no-quotas.
+    (regression test relatively to no quota resource research)
+    """
+    big_quota = 10**9
+    nb = 48
+    off = sched_placement(nb, None)
+    nonblocking = {
+        ("*", "*", "*", "/"): [big_quota, -1, -1],
+        ("*", "/", "*", "*"): [big_quota, -1, -1],
+        ("*", "*", "*", "*"): [-1, -1, -1],
+    }
+    on = sched_placement(nb, nonblocking)
+    assert on == off
+
+
+def test_quotas_cache_no_gap_under_blocking():
+    # Blocking per-user quota + mixed users: the cache must not leave a gap in
+    # the first time layer (catches caching the quota-validated slot instead of
+    # the resource frontier). Cluster 32 res, 2 res/job -> 16 jobs fill layer 0.
+    nb = 64  # 32 u0 + 32 u1
+    rules = {("*", "*", "*", "u0"): [2, -1, -1], ("*", "*", "*", "*"): [-1, -1, -1]}
+    st = sched_placement(nb, rules, alt_users=True)
+    t0 = min(st.values())
+    nb_first_layer = sum(1 for t in st.values() if t == t0)
+    assert nb_first_layer == 16, (
+        "gap in first layer: %d/16 jobs (poisoned cache?)" % nb_first_layer
+    )

@@ -537,3 +537,20 @@ def resources_creation(
             state="Alive",
         )
     session.commit()
+
+
+def resources_creation_folding(
+    session: Session, node_name: str, nb_nodes: int, nb_core: int = 1, vfactor: int = 1
+):
+    logger.info(
+        f" resources creation : nb_nodes {nb_nodes} nb_core {nb_core} vfactor {vfactor}"
+    )
+    nb_resources = nb_nodes * nb_core if vfactor == 1 else nb_nodes * vfactor
+    for i in range(nb_resources):
+        Resource.create(
+            session,
+            network_address=f"{node_name}{int(i / (nb_core if vfactor == 1 else vfactor) + 1)}",
+            cpuset=i % (nb_core),
+            state="Alive",
+        )
+    session.commit()
