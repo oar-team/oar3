@@ -2539,7 +2539,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
         and ("deploy" not in job_types.keys())
         and ("noop" not in job_types.keys())
     ):
-        hosts = get_job_current_hostnames(job_id)
+        hosts = get_job_current_hostnames(session, job_id)
         logger.debug(
             "[job_finishing_sequence] ["
             + str(job_id)
