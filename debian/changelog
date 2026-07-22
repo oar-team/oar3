@@ -1,3 +1,9 @@
+oar3 (3.0.3.b1-1) unstable, urgency=low
+  * This is a beta release
+  * see master CHANGES.rst file for changelog
+
+ -- Bruno Bzeznik <bruno.bzeznik@univ-grenoble-alpes.fr>  Fri, 22 Jul 2026 13:03:00 +0200
+
 oar3 (3.0.2-1) unstable; urgency=low
 
   * Add configurable default fields for ``oarstat`` via ``oar.conf``
