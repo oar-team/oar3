@@ -132,19 +132,24 @@ def get_waiting_jobs(session, queues, reservation="None"):
         jid = int(j.id)
 
         juser = j.user
-        if juser in user_jobs :
-          user_jobs[juser] += 1
+        if juser in user_jobs:
+            user_jobs[juser] += 1
         else:
-          user_jobs[juser] = 1
+            user_jobs[juser] = 1
 
         # TODO: get this value from config[SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER]
         max_jobs_per_user = 5
-        if user_jobs[juser] >= max_jobs_per_user :
-          logger.info("Skipping "+ str(jid) + " as max jobs per user limit is reached for "+ juser)
+        if user_jobs[juser] >= max_jobs_per_user:
+            logger.info(
+                "Skipping "
+                + str(jid)
+                + " as max jobs per user limit is reached for "
+                + juser
+            )
         else:
-          waiting_jobs[jid] = j
-          waiting_jids.append(jid)
-          nb_waiting_jobs += 1
+            waiting_jobs[jid] = j
+            waiting_jids.append(jid)
+            nb_waiting_jobs += 1
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
 
