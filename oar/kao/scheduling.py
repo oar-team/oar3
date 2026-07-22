@@ -154,6 +154,7 @@ def find_first_suitable_contiguous_slots_quotas(
         sid_left = slots_set.slot_id_at(min_start_time)
 
     sid_right = sid_left
+    sid_left_cache = -1
     for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
@@ -201,6 +202,8 @@ def find_first_suitable_contiguous_slots_quotas(
             itvs = find_resource_hierarchies_job(itvs_avail, hy_res_rqts, hy)
 
         if len(itvs) != 0:
+            if sid_left_cache == -1:
+                sid_left_cache = sid_left  # resource frontier
             nb_res = len(itvs & ResourceSet.default_itvs)
             res = Quotas.check_slots_quotas(
                 slots, sid_left, sid_right, job, nb_res, walltime
@@ -222,7 +225,8 @@ def find_first_suitable_contiguous_slots_quotas(
             )
         )
         return (ProcSet(), -1, -1)
-
+    if job.key_cache and (min_start_time < 0):
+        cache[job.key_cache[mld_id]] = sid_left_cache
     return (itvs, sid_left, sid_right)
 
 
