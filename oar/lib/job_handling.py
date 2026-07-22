@@ -115,10 +115,10 @@ class JobPseudo(object):
 
 
 def get_waiting_jobs(session, queues, reservation="None"):
-    # TODO fairsharing_nb_job_limit
     waiting_jobs = {}
     waiting_jids = []
     nb_waiting_jobs = 0
+    user_jobs = {}
 
     query = session.query(Job).filter(Job.state == "Waiting")
     if isinstance(queues, str):
@@ -130,9 +130,21 @@ def get_waiting_jobs(session, queues, reservation="None"):
 
     for j in query.all():
         jid = int(j.id)
-        waiting_jobs[jid] = j
-        waiting_jids.append(jid)
-        nb_waiting_jobs += 1
+
+        juser = j.user
+        if juser in user_jobs :
+          user_jobs[juser] += 1
+        else:
+          user_jobs[juser] = 1
+
+        # TODO: get this value from config[SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER]
+        max_jobs_per_user = 5
+        if user_jobs[juser] >= max_jobs_per_user :
+          logger.info("Skipping "+ str(jid) + " as max jobs per user limit is reached for "+ juser)
+        else:
+          waiting_jobs[jid] = j
+          waiting_jids.append(jid)
+          nb_waiting_jobs += 1
 
     return (waiting_jobs, waiting_jids, nb_waiting_jobs)
 
