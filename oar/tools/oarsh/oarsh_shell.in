@@ -33,8 +33,31 @@ umask 0022
 add_process_to_cpuset() {
     [ "$1" = "undef" ] && return
     CGROUP_MOUNT_POINT=$(sed -ne 's/^[^ ]\+ \([^ ]\+\) cgroup2 .*/\1/p' /proc/mounts)
-    PROC_SELF_CPUSET_PATH=$(cat /proc/self/cpuset)
-    CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH/..${OAR_CPUSET%/*}.slice
+    if [ -r /proc/self/cgroup ];
+    then
+        PROC_SELF_CPUSET_PATH=$(sed -ne 's/^0:://p' /proc/self/cgroup)
+        case "$PROC_SELF_CPUSET_PATH" in
+            /user.slice/*)
+                PROC_SELF_CPUSET_PATH=
+                ;;
+            *.scope*)
+                PROC_SELF_CPUSET_PATH=${PROC_SELF_CPUSET_PATH%%.scope*}.scope
+                ;;
+            *)
+                echo "oarsh: cannot locate the container scope..." 1>&2
+                exit 61
+                ;;
+        esac
+        CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH${OAR_CPUSET%/*}.slice
+    elif [ -r /proc/self/cpuset ];
+    then
+        PROC_SELF_CPUSET_PATH=$(cat /proc/self/cpuset)
+        CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH/..${OAR_CPUSET%/*}.slice
+
+    else
+        echo "oarsh: neither /proc/self/cpuset nor /proc/self/cgroup is readable, cannot determine the job's cgroup" 1>&2
+        exit 61
+    fi
     JOB_ID=${OAR_CPUSET##*_}
     JOB_USER=${OAR_CPUSET##*/}
     JOB_USER=${JOB_USER%_*}

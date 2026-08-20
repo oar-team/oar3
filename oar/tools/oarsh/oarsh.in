@@ -209,7 +209,14 @@ if [ -r "$TMP_JOB_KEY_FILE" ]; then
 fi
 
 if [ -n "$CPUSET_PATH" ]; then
-    if [ -r /proc/self/cpuset ]; then
+    if [ -r /proc/self/cgroup ]; then
+        PROC_SELF_CPUSET_SRC=/proc/self/cgroup
+    elif [ -r /proc/self/cpuset ]; then
+        PROC_SELF_CPUSET_SRC=/proc/self/cpuset
+    else
+        PROC_SELF_CPUSET_SRC=
+    fi
+    if [ -n "$PROC_SELF_CPUSET_SRC" ]; then
         unset OAR_CPUSET
         if [ -n "$GET_CURRENT_CPUSET_CMD" ]; then
             OAR_CPUSET=$(bash -c "$GET_CURRENT_CPUSET_CMD")
@@ -217,7 +224,7 @@ if [ -n "$CPUSET_PATH" ]; then
             # cpuset must be of the form /oar/username_jobid, extract it from the cgroup path, supposedliy
             # if not sub task: /oar.slice/oar-Uxxx.slice/oar-uXXX-jYYY.slice/oar-uXXX-jYYY-sZZZ.scope
             # or if sub task:  /oar.slice/oar-Uxxx.slice/oar-uXXX-jYYY.slice/oar-uXXX-jYYY-tZZZ.slice/oar-uXXX-jYYY-tTTT-sZZZ.scope
-            OAR_CPUSET=$(sed -ne "s#.*$CPUSET_PATH.slice/[^/]\+$CPUSET_PATH-u\([[:digit:]]\+\)-j\([[:digit:]]\+\)\.slice/.*#\1_\2#p" /proc/self/cpuset)
+            OAR_CPUSET=$(sed -ne "s#^0::##; s#.*$CPUSET_PATH.slice/[^/]\+$CPUSET_PATH-u\([[:digit:]]\+\)-j\([[:digit:]]\+\)\.slice/.*#\1_\2#p" "$PROC_SELF_CPUSET_SRC")
             if [[ $OAR_CPUSET =~ ([[:digit:]]+)_([[:digit:]]+) ]]; then
                 OAR_CPUSET=$(id -un "${BASH_REMATCH[1]}")_${BASH_REMATCH[2]}
             else

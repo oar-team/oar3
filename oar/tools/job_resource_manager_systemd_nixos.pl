@@ -177,18 +177,41 @@ my $Systemd_allowed_cpus_cmd = "/run/current-system/sw/bin/hwloc-calc --cof syst
 my $Systemd_allowed_memory_nodes_cmd = "/run/current-system/sw/bin/hwloc-calc --nof systemd-dbus-api --pi $Hwloc_pu";
 
 my $Cgroup_root_path;
+my $Cgroup_v2 = 0;
 open MOUNTS, '/proc/mounts' or exit_myself(3, 'Failed to open /proc/mounts.');
 while (<MOUNTS>) {
-    last if ($Cgroup_root_path) = /^cgroup2 ([^ ]+) .*/;
+    if (($Cgroup_root_path) = /^cgroup2 ([^ ]+) .*/) {
+        $Cgroup_v2 = 1;
+        last;
+    }
 }
 close MOUNTS;
 
-# Inside container, /proc/self/cpuset helps to find the rigth scope
-my $Proc_self_cpuset = do { open my $fh, "<", "/proc/self/cpuset" or exit_myself(5, "Failed to /proc/self/cpuset $!"); <$fh> };
-chomp($Proc_self_cpuset);
+# Inside container, vm /proc/self/[cpuset, cgroup] helps to find the rigth scope
+my $Proc_self_cpuset;
+if ($Cgroup_v2) {
+    open my $fh, "<", "/proc/self/cgroup" or exit_myself(5, "Failed to open /proc/self/cgroup $!");
+    while (my $line = <$fh>) {
+        if ($line =~ m#^0::(.*)$#) {
+            my $path = $1;
+            if ($path !~ m#^/user\.slice/# and $path =~ m#^(.*?\.scope)#) {
+                $Cgroup_root_path .= $1;
+            }
+            last;
+        }
+    }
+    close $fh;
+} else {
+    my $Proc_self_cpuset = do {
+        open my $fh, "<", "/proc/self/cpuset"
+          or exit_myself(5, "Failed to open /proc/self/cpuset $!");
+        <$fh>;
+    };
+    chomp($Proc_self_cpuset);
 
-if ($Proc_self_cpuset !~ "/user.slice") {
-    $Cgroup_root_path = "$Cgroup_root_path$Proc_self_cpuset";
+    if ($Proc_self_cpuset !~ "/user.slice") {
+        $Cgroup_root_path = "$Cgroup_root_path$Proc_self_cpuset";
+    }
 }
 
 my $Cgroup_oar_path = "$Cgroup_root_path/$Systemd_oar_slice.slice";
