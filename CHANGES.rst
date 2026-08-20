@@ -26,6 +26,7 @@ Changed
 - Fixed ACTIVATE_PINGCHECKER_AT_JOB_END (#150)
 - Fixed a possible almighty lock when signaling jobs (#153)
 - Fixed quadratic scheduling time when quotas are enabled: the slot-search cache was read but never written on the quotas path
+- Support cgroup v2 (unified hierarchy) in ``job_resource_manager_systemd_nixos.pl``, ``oarsh.in`` and ``oarsh_shell.in``
 
 Version 3.0.2
 -------------
