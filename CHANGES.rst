@@ -26,6 +26,7 @@ Changed
 - Fixed ACTIVATE_PINGCHECKER_AT_JOB_END (#150)
 - Fixed a possible almighty lock when signaling jobs (#153)
 - Fixed quadratic scheduling time when quotas are enabled: the slot-search cache was read but never written on the quotas path
+- Fixed a possible non managed OSError exception when sending e-mails
 
 Version 3.0.2
 -------------
