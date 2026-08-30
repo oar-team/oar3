@@ -10,6 +10,7 @@ from oar.lib.job_handling import (
     get_data_jobs,
     insert_job,
     job_message,
+    get_custom_notification_message,
 )
 from oar.lib.models import EventLog, Job
 
@@ -160,3 +161,44 @@ def test_job_message(minimal_db_initialization):
 
     result_without_name = job_message(session, job_without_name)
     assert "N=" not in result_without_name
+
+
+def test_get_custom_notification_message(
+    minimal_db_initialization, setup_config, tmp_path
+):
+    config, _ = setup_config
+    session = minimal_db_initialization
+
+    # Create a test job
+    job_id = insert_job(
+        session,
+        res=[(60, [("resource_id=4", "")])],
+        properties="",
+        state="Running",
+        job_user="Toto",
+    )
+    job = session.query(Job).filter(Job.id == job_id).one()
+
+    # Case 1: No template configured -> Must return None
+    assert (
+        get_custom_notification_message(config, "RUNNING", job, session, job_id) is None
+    )
+
+    # Case 2: Valid template -> Must replace the tags
+    valid_tpl = tmp_path / "valid.txt"
+    valid_tpl.write_text("Hello {user}, Job {id} is {state}")
+    config["MAIL_TEMPLATE_RUNNING"] = str(valid_tpl)
+
+    res = get_custom_notification_message(config, "RUNNING", job, session, job_id)
+    assert res is not None
+    assert "Hello Toto" in res
+    assert f"Job {job_id} is RUNNING" in res
+
+    # Case 3: Invalid template -> Must return None without crashing
+    bad_tpl = tmp_path / "bad.txt"
+    bad_tpl.write_text("Crash {unknown_variable}")
+    config["MAIL_TEMPLATE_ERROR"] = str(bad_tpl)
+
+    assert (
+        get_custom_notification_message(config, "ERROR", job, session, job_id) is None
+    )
