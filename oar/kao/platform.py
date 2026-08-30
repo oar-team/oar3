@@ -135,17 +135,8 @@ class SimuPlatform(Platform):
         self.waiting_jids = None
         self.completed_jids = None
 
-    # Karma
-    def get_sum_accounting_window(self, *args):
-        print("get_sum_accounting_window NOT IMPLEMENTED")
-
-    def get_sum_accounting_by_project(self, *args):
-        print("get_sum_accounting_by_project NOT IMPLEMENTED")
-
-    def get_sum_accounting_by_user(self, *args):
-        print("get_sum_accounting_by_user NOT IMPLEMENTED")
-
-    def get_waiting_jobs(self, queue):
+    
+    def get_waiting_jobs(self, queue, session=None):
         print(" get_waiting_jobs_simu:", self.waiting_jids)
         waiting_jobs = {}
         waiting_jids_lst = []
@@ -168,12 +159,9 @@ class SimuPlatform(Platform):
 
     def get_scheduled_jobs(self, resource_set, job_security_time, now):
         running_jobs = [self.jobs[jid] for jid in self.running_jids]
-        # for job in running_jobs:
-        # print "running_jobs", job.id, job.start_time, job.walltime,
-        # job.res_set
         return running_jobs
 
-    def save_assigns(self, jobs, resource_set):
+    def save_assigns(self, session, jobs, resource_set):
         print("save_assigns_simu")
 
         for jid, job in jobs.items():
@@ -183,17 +171,29 @@ class SimuPlatform(Platform):
             job.res_set = ProcSet(*r_ids)
         self.assigned_jobs = jobs
 
-    def resource_set(self):
+    def resource_set(self, session=None, config=None):
         return self.res_set
 
     def get_time(self):
         return self.env.now
+    
+    # Karma
+    def get_sum_accounting_window(self, *args):
+        print("get_sum_accounting_window NOT IMPLEMENTED")
+
+    def get_sum_accounting_by_project(self, *args):
+        print("get_sum_accounting_by_project NOT IMPLEMENTED")
+
+    def get_sum_accounting_by_user(self, *args):
+        print("get_sum_accounting_by_user NOT IMPLEMENTED")
 
 
-class BatsimPlatform(Platform):
+
+class PyBatsimPlatform(Platform):
+    """ Custom OAR platform adapted for BatSim + DB mode 
+    Bridge between OAR DB jobs (db_jid) and in-memory JobSimu objects (jid) and copie scheduling results from DB → JobSimu """
     def __init__(self, env, jobs, db_jid2s_jid):
         self.env = env
-        self.assigned_jobs = {}
         self.jobs = jobs
         self.db_jid2s_jid = db_jid2s_jid
         self.running_jids = None
@@ -203,22 +203,18 @@ class BatsimPlatform(Platform):
     def get_time(self):
         return self.env.now
 
-    def save_assigns(self, jobs, resource_set):
-        print("save assigns for BatsimPlatform........................")
-        # assigned_jobs = {}
-        for jid, job in jobs.items():
-            sid = self.db_jid2s_jid[jid]
+    def save_assigns(self, session, jobs, resource_set):
+        """ Copy scheduling results from OAR DB jobs into JobSimu objects and save assignments in the DB"""
+        
+        for db_jid, job in jobs.items():
+            sid = self.db_jid2s_jid[db_jid]
             jobsimu = self.jobs[sid]
             jres_set = job.res_set
             r_ids = [resource_set.rid_o2i[roid] for roid in list(jres_set)]
             jobsimu.res_set = ProcSet(*r_ids)
-            print(
-                "save assign jid, sid, res_set: ", jid, " ", sid, " ", jobsimu.res_set
-            )
             jobsimu.start_time = job.start_time
             jobsimu.walltime = job.walltime
-            # assigned_jobs[sid] = jobsimu
+  
 
-        # self.assigned_jobs = assigned_jobs
+        return save_assigns(session, jobs, resource_set)
 
-        return save_assigns(jobs, resource_set)
