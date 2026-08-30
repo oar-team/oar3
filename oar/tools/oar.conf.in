@@ -506,6 +506,10 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 # Possible values are "yes" and "no"
 ENERGY_SAVING_INTERNAL="no"
 
+# Energy saving decision coordination mode.
+# Required for OAR to automatically shut down and wake up nodes.
+#ENERGY_SAVING_MODE="metascheduler_decision_making"
+
 # The internal energy saving module is "GRETA"
 # Communication port of GRETA wan be changed here.
 # Default: localhost on 6672
