@@ -445,7 +445,21 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
                 prev_jid = j.id
                 job = j
                 job.start_time = start_time
-                job.walltime = walltime + job_security_time
+                if (
+                    job.state
+                    in (
+                        "toLaunch",
+                        "Launching",
+                        "Running",
+                        "Finishing",
+                        "Suspended",
+                        "Resuming",
+                    )
+                    and start_time + walltime + job_security_time < now
+                ):
+                    job.walltime = now + job_security_time - start_time
+                else:
+                    job.walltime = walltime + job_security_time
                 job.moldable_id = moldable_id
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
