@@ -81,19 +81,15 @@ def parse_field_label(
             result = field_label.split(":")
             if len(result) == 2 or len(result) == 1:
                 field, label = result if len(result) == 2 else (result[0], result[0])
+                if field != "Duration" and field not in Job.__table__.c:
+                    cmd_ret.error(f"Invalid fields: {field}", 1, 1)
+                    cmd_ret.exit()
                 field = (
                     str(inspect(Job).get_property_by_column(Job.__table__.c[field]).key)
                     if field != "Duration"
                     else "Duration"
                 )
                 fields_labels[field] = label
-                valid_fields = inspect(Job).column_attrs.keys() + ["Duration"]
-                invalid_fields = [
-                    f for f in fields_labels.keys() if f not in valid_fields
-                ]
-                if invalid_fields:
-                    cmd_ret.error(f"Invalid fields: {', '.join(invalid_fields)}", 1, 1)
-                    cmd_ret.exit()
             else:
                 cmd_ret.error(f"Invalid fields: {field_label}", 1, 1)
                 cmd_ret.exit()
@@ -150,8 +146,8 @@ def get_table_lines_jobs(session, jobs, arg) -> List[str]:
             str(job.queue_name),
         ]
 
-        if "resources" in arg and hasattr(job, "network_adresses"):
-            job_line.append(str(job.network_adresses))
+        if "resources" in arg and hasattr(job, "network_addresses"):
+            job_line.append(str(job.network_addresses))
 
         yield job_line
 
@@ -269,7 +265,7 @@ def print_jobs(
                         for job_resources in job_resources[job.id]
                     ]
                 )
-                job.network_adresses = nodes
+                job.network_addresses = str(nodes)
             if job.id in jobs_types:
                 types = []
                 for job_type, value in jobs_types[job.id].items():
@@ -289,17 +285,18 @@ def print_jobs(
 
     if format:
         to_dump = {}
-        # to_dict() doesn't incorporate attributes not defined in the class, thus the dict merging
-        jobs_properties = [
-            {**j.to_dict(), **{"cpuset_name": j.cpuset_name}} for j in jobs
-        ]
-
-        for job in jobs_properties:
-            to_dump[job["id"]] = job
+        for job in jobs:
+            # to_dict() only returns mapped columns;
+            # plain dict() avoids a python-specific tag in the YAML output.
+            job_dict = dict(job.to_dict())
+            for key, value in vars(job).items():
+                if key.startswith("_") or key in job_dict:
+                    continue
+                job_dict[key] = value
+            to_dump[job_dict["id"]] = job_dict
 
         if format == "json":
-            console.print_json(json_dumps(to_dump))
-
+            console.print_json(json_dumps(to_dump, default=str))
         if format == "yaml":
             console.print(yaml_dump(to_dump))
 
@@ -562,7 +559,7 @@ def user_option_flag_or_string():
     for i in range(len(sys.argv) - 1):
         a = sys.argv[i]
         argv.append(a)
-        if (a == "-u" or a == "--user") and ((sys.argv[i + 1])[0] == "-"):
+        if (a == "-u" or a == "--user") and sys.argv[i + 1].startswith("-"):
             argv.append("_this_user_")
 
     argv.append(sys.argv[-1])

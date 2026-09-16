@@ -7,6 +7,9 @@ Changelog
 
 Changed
 ~~~~~~~
+- oarstat: fixed missing job data in JSON and YAML full output (#158)
+- oarstat: fixed a bare KeyError raised by an unknown --specified-field
+- oarstat: fixed a crash when -u/--user is given an empty argument
 
 Version 3.0.3
 -------------
