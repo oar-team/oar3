@@ -5,6 +5,12 @@
 Changelog
 =========
 
+Version 3.0.4-dev1
+------------------
+Unreleased
+
+- Devel version
+
 Version 3.0.3
 -------------
 Released on September 18, 2026
