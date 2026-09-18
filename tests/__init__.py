@@ -57,6 +57,11 @@ DEFAULT_CONFIG = {
     "OAR_PROXY_INTERNAL": "no",
     "OAR_PROXY_BASE_URL": "/oarapi-priv/proxy",
     "API_TEST_MODE": 1,
+    # Token signing key used only by the test suite. It must be a valid
+    # (non "TO_CHANGE") value, see oar.lib.access_token.check_api_secret_key.
+    "API_SECRET_KEY": "2d610d90251c884d572057ac19335f21467a82bce3084a4e5ea94e72bb61663c",
+    "API_SECRET_ALGORITHM": "HS256",
+    "API_ACCESS_TOKEN_EXPIRE_MINUTES": 524160,
 }
 
 

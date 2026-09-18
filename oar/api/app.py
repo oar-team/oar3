@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import FastAPI, Request, Response
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+from oar.lib.access_token import check_api_secret_key
 from oar.lib.configuration import Configuration
 from oar.lib.globals import get_logger, init_config, init_oar
 
@@ -55,6 +56,9 @@ def create_app(
 
     if not config:
         config = init_config()
+
+    # Fail fast if the API secret key is still the public placeholder.
+    check_api_secret_key(config)
 
     if engine is None:
         config, engine = init_oar(config=config)

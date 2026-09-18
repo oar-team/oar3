@@ -11,6 +11,10 @@ Unreleased
 
 - Devel version
 
+Changed
+~~~~~~~
+- API: refuse to start while API_SECRET_KEY is empty or still set to the "TO_CHANGE" placeholder. The default config no longer ships a publicly-known key that allowed forging valid API tokens; generate a real one with `openssl rand -hex 32` during setup.
+
 Version 3.0.3
 -------------
 Released on September 18, 2026

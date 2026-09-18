@@ -698,10 +698,14 @@ OARSTAT_DEFAULT_OUTPUT_FORMAT=2
 
 
 # Secret Key for token generation
-# IMORTANT: don't use the example for production
-# to get a string like this run:
-# openssl rand -hex 32
-API_SECRET_KEY="3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b"
+# IMPORTANT: this is a placeholder value. You MUST replace it with a real
+# random key before going to production, otherwise anybody is able to forge
+# valid API tokens (and impersonate any user, including root).
+# To generate a strong random key, run one of the following commands:
+#   openssl rand -hex 32
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
+# Then set the generated value below (keep it secret, never commit it).
+API_SECRET_KEY="TO_CHANGE"
 API_SECRET_ALGORITHM="HS256"
 API_ACCESS_TOKEN_EXPIRE_MINUTES="524160" # One year
 

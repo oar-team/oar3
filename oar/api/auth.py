@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 
+from oar.lib.access_token import check_api_secret_key
 from oar.lib.submission import check_reservation
 
 from .dependencies import get_config, get_revoked_tokens
@@ -18,7 +19,7 @@ def get_token_data(
     token = credentials.credentials
 
     # FIXME: HAndlre er
-    SECRET_KEY = config["API_SECRET_KEY"]
+    SECRET_KEY = check_api_secret_key(config)
     ALGORITHM = config["API_SECRET_ALGORITHM"]
 
     payload = None
