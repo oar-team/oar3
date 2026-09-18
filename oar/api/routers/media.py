@@ -7,7 +7,6 @@ Define media (aka file access) api interaction
 
 """
 import os
-import re
 from typing import Optional
 
 from fastapi import (
@@ -53,11 +52,6 @@ def user_and_filename_setup(user, path_filename):
     # user setup
     oar_user_env = os.environ.copy()
     oar_user_env["OARDO_BECOME_USER"] = user
-
-    # Security escaping
-    path_filename = re.sub(r"([$,`, ])", r"\\\1", path_filename)
-
-    # $path =~ s/(\\*)(`|\$)/$1$1\\$2/g;
 
     # Get the path and replace "~" by the home directory
     pw_dir = tools.getpwnam(user).pw_dir
@@ -209,7 +203,12 @@ def post_file(
                 detail="The file already exists: {}".format(path_filename),
             )
 
-    cmd = [OARDODO_CMD, "bash", "--noprofile", "--norc", "-c", "cat > " + path_filename]
+    # Write the uploaded content to the target file without using a shell:
+    # "tee" reads stdin and writes it to the given path. Passing the path as a
+    # plain argument (and not inside a "bash -c" string) makes shell injection
+    # impossible. Note: keep "tee" unqualified on purpose, its location may
+    # differ between systems (it is resolved through the server PATH).
+    cmd = [OARDODO_CMD, "tee", path_filename]
 
     if request.headers["Content-Type"] == "application/octet-stream":
         p = tools.Popen(cmd, env=env, stdin=PIPE)

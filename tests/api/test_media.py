@@ -6,13 +6,16 @@ from tempfile import mkstemp
 import pytest
 
 import oar.lib.tools  # for monkeypatching
+from oar.api.routers import media as media_module
 
 fake_popen_data = None
+fake_popen_cmd = None
 
 
 class FakePopen(object):
     def __init__(self, cmd, env, stdin):
-        pass
+        global fake_popen_cmd
+        fake_popen_cmd = cmd
 
     def communicate(self, data):
         global fake_popen_data
@@ -170,6 +173,40 @@ def test_app_media_post_file(client, user_tokens):
     )
 
     assert res.status_code == 200
+
+
+def test_app_media_post_file_shell_free(client, user_tokens):
+    """Regression test for the C2 injection: the upload command must be
+    shell-free (argv-based), so shell metacharacters in the filename cannot
+    inject arbitrary commands.
+    """
+    global fake_call_retcodes
+    fake_call_retcodes = [1]
+
+    global fake_popen_cmd
+    fake_popen_cmd = None
+
+    malformed_name = "myfile; id; echo pwned & whoami"
+    res = client.post(
+        "/media/",
+        files={
+            "file": (
+                malformed_name,
+                BytesIO(b"my file contents"),
+                "multipart/form-data",
+            )
+        },
+        headers={"Authorization": f"Bearer {user_tokens['bob']}"},
+    )
+
+    assert res.status_code == 200
+    # The filename must be passed as a single plain argument to "tee":
+    # no shell, no "bash -c", no concatenated string.
+    assert fake_popen_cmd == [
+        media_module.OARDODO_CMD,
+        "tee",
+        "/" + malformed_name,
+    ]
 
 
 def test_app_media_delete_file_not_exit(client, user_tokens):
