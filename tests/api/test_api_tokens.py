@@ -53,11 +53,21 @@ def test_token_renew(client, user_tokens):
     assert data["OAR_API_TOKEN"] is not None
 
 
-@pytest.mark.parametrize("secret", ["TO_CHANGE", "", None])
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "TO_CHANGE",  # placeholder documented in oar.conf
+        "3f22a0a65212bfb6cdf0dc4b39be189b3c89c6c2c8ed0d1655e0df837145208b",  # old default key
+        "short-key",  # too short
+        "",  # empty
+        None,  # missing
+    ],
+)
 def test_api_does_not_start_with_invalid_secret(setup_config, secret):
-    """The API must refuse to start while API_SECRET_KEY is the public
-    placeholder (TO_CHANGE), empty or missing. Otherwise anybody could forge
-    valid tokens, see oar.lib.access_token.check_api_secret_key.
+    """The API must refuse to start while API_SECRET_KEY is a public/known
+    value (placeholder, legacy default), too short, empty or missing.
+    Otherwise anybody could forge valid tokens, see
+    oar.lib.access_token.check_api_secret_key.
     """
     config, engine = setup_config
     # Deep copy: setup_config is session scoped, we must not pollute it.

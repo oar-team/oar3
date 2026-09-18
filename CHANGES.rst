@@ -13,7 +13,7 @@ Unreleased
 
 Changed
 ~~~~~~~
-- API: refuse to start while API_SECRET_KEY is empty or still set to the "TO_CHANGE" placeholder. The default config no longer ships a publicly-known key that allowed forging valid API tokens; generate a real one with `openssl rand -hex 32` during setup.
+- API: refuse to start while API_SECRET_KEY is empty, too short or still set to a known/default value (the "TO_CHANGE" placeholder or the key shipped as default in older OAR versions). The default config no longer ships a publicly-known key that allowed forging valid API tokens; generate a real one with `openssl rand -hex 32` during setup.
 
 Version 3.0.3
 -------------
