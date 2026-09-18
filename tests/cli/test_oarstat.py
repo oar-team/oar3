@@ -656,7 +656,7 @@ def test_oarstat_specified_fields_without_label(
 
 
 def test_oarstat_default_fields(minimal_db_initialization, setup_config):
-    """Vérifie que les champs par défaut de OARSTAT_DEFAULT_FIELD sont utilisés."""
+    """Verify that the default OARSTAT_DEFAULT_FIELD are used"""
     config, _ = setup_config
     # S'assurer que la valeur par défaut est bien là
     assert "OARSTAT_DEFAULT_FIELD" in config
@@ -670,3 +670,44 @@ def test_oarstat_default_fields(minimal_db_initialization, setup_config):
     # Vérifier que les colonnes par défaut apparaissent dans l'output
     for label in ["Job id", "Job name", "State", "User", "Queue"]:
         assert label in result.output
+
+
+def test_oarstat_specified_fields_invalid_field(
+    minimal_db_initialization, setup_config
+):
+    """An unknown field must produce a clean error"""
+    config, _ = setup_config
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["--specified-field", "nexistepas"],
+        obj=(minimal_db_initialization, config),
+    )
+    print("\n" + result.output)
+
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert "Invalid fields: nexistepas" in result.output
+    assert result.exit_code == 1
+
+
+def test_oarstat_specified_fields_invalid_field_with_label(
+    minimal_db_initialization, setup_config
+):
+    """Same when the unknown field carries a label, and when it follows a
+    valid one."""
+    config, _ = setup_config
+    insert_job(minimal_db_initialization, res=[(60, [("resource_id=2", "")])])
+
+    runner = CliRunner()
+    for arg in ("nexistepas:MonLabel", "job_id:ID,nexistepas"):
+        result = runner.invoke(
+            cli,
+            ["--specified-field", arg],
+            obj=(minimal_db_initialization, config),
+        )
+        print("\n" + result.output)
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        assert "Invalid fields: nexistepas" in result.output
+        assert result.exit_code == 1

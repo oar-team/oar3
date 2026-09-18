@@ -122,8 +122,12 @@ def send_mail(job, mail_address, subject, msg_content):  # pragma: no cover
     msg["To"] = mail_address
 
     s = smtplib.SMTP(config["MAIL_SMTP_SERVER"])
-    s.send_message(msg)
-    s.quit()
+    try:
+        s.send_message(msg)
+    except OSError as e:
+        tools_logger.error("Something wrong happened when sending mail: " + str(e))
+    else:
+        s.quit()
 
 
 def create_almighty_socket(server_hostname: str, server_port: str):  # pragma: no cover
