@@ -5,15 +5,9 @@
 Changelog
 =========
 
-Changed
-~~~~~~~
-- oarstat: fixed missing job data in JSON and YAML full output (#158)
-- oarstat: fixed a bare KeyError raised by an unknown --specified-field
-- oarstat: fixed a crash when -u/--user is given an empty argument
-
 Version 3.0.3
 -------------
-Unreleased
+Released on September 18, 2026
 
 Added
 ~~~~~
@@ -30,6 +24,9 @@ Changed
 - Fixed a possible almighty lock when signaling jobs (#153)
 - Fixed quadratic scheduling time when quotas are enabled: the slot-search cache was read but never written on the quotas path
 - Fixed a possible non managed OSError exception when sending e-mails
+- oarstat: fixed missing job data in JSON and YAML full output (#158)
+- oarstat: fixed a bare KeyError raised by an unknown --specified-field
+- oarstat: fixed a crash when -u/--user is given an empty argument
 
 Version 3.0.2
 -------------
