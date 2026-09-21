@@ -445,7 +445,29 @@ def extract_scheduled_jobs(session, result, resource_set, job_security_time, now
                 prev_jid = j.id
                 job = j
                 job.start_time = start_time
-                job.walltime = walltime + job_security_time
+                # jobs.start_time is set at scheduling decision time
+                # (prepare_job_to_be_launched) and never refreshed when oarexec
+                # actually starts. With a launch latency > SECURITY_TIME, the
+                # window [start_time, start_time + walltime + security] expires
+                # while the job still holds its resources: split_slots_jobs()
+                # then skips it and the resources are given to another job.
+                # For a job already started, extend the window up to
+                # now + security so its resources stay reserved until it ends.
+                if (
+                    job.state
+                    in (
+                        "toLaunch",
+                        "Launching",
+                        "Running",
+                        "Finishing",
+                        "Suspended",
+                        "Resuming",
+                    )
+                    and start_time + walltime + job_security_time < now
+                ):
+                    job.walltime = now - start_time + job_security_time
+                else:
+                    job.walltime = walltime + job_security_time
                 job.moldable_id = moldable_id
                 job.ts = False
                 job.ph = NO_PLACEHOLDER
