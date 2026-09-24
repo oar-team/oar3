@@ -1,4 +1,4 @@
-# The job_resource_manager_cgroups script is a perl script that oar server
+# The job_resource_manager_systemd script is a perl script that oar server
 # deploys on nodes to manage cpusets, users, job keys, ...
 #
 # In this script some cgroup Linux features are incorporated:
@@ -180,12 +180,31 @@ my $Hwloc_pu = join(' ', map { "pu:$_" } @Cpuset_list);
 my $Systemd_allowed_cpus_cmd = "hwloc-calc --cof systemd-dbus-api --pi $Hwloc_pu";
 my $Systemd_allowed_memory_nodes_cmd = "hwloc-calc --nof systemd-dbus-api --pi $Hwloc_pu";
 
+# cgroup v2 only (use job_resource_manager_cgroups.pl on cgroup v1 nodes)
 my $Cgroup_root_path;
-open MOUNTS, '/proc/mounts' or exit_myself(3, 'Failed to open /proc/mounts.');
+open(MOUNTS, '<', '/proc/mounts') or exit_myself(3, "Failed to open /proc/mounts: $!");
 while (<MOUNTS>) {
-    last if ($Cgroup_root_path) = /^cgroup2 ([^ ]+) .*/;
+    my (undef, $mount_point, $fs_type) = split;
+    if (defined($fs_type) and $fs_type eq 'cgroup2') {
+        $Cgroup_root_path = $mount_point;
+        last;
+    }
 }
-close MOUNTS;
+close(MOUNTS);
+if (!defined($Cgroup_root_path)) {
+    exit_myself(3, "No cgroup2 filesystem mounted: this job resource manager requires cgroup v2 "
+        . "(use job_resource_manager_cgroups.pl on cgroup v1 nodes)");
+}
+
+my $Cgroup_controllers = '';
+if (open(my $ctrl_fh, '<', "$Cgroup_root_path/cgroup.controllers")) {
+    $Cgroup_controllers = <$ctrl_fh> // '';
+    close($ctrl_fh);
+}
+if ($Cgroup_controllers !~ /\bcpuset\b/) {
+    exit_myself(3, "cpuset controller not available in $Cgroup_root_path/cgroup.controllers "
+        . "(cgroup v1/hybrid node, or cpuset not delegated to this container)");
+}
 
 my $Cgroup_oar_path = "$Cgroup_root_path/$Systemd_oar_slice.slice";
 my $Cgroup_user_path = "$Cgroup_oar_path/$Systemd_user_slice.slice";

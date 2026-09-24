@@ -32,9 +32,25 @@ umask 0022
 # Add PIDS into the job cgroups
 add_process_to_cpuset() {
     [ "$1" = "undef" ] && return
-    CGROUP_MOUNT_POINT=$(sed -ne 's/^[^ ]\+ \([^ ]\+\) cgroup2 .*/\1/p' /proc/mounts)
-    PROC_SELF_CPUSET_PATH=$(cat /proc/self/cpuset)
-    CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH/..${OAR_CPUSET%/*}.slice
+    CGROUP_MOUNT_POINT=$(sed -ne 's/^[^ ]\+ \([^ ]\+\) cgroup2 .*/\1/p;T;q' /proc/mounts)
+    if [ -z "$CGROUP_MOUNT_POINT" ] || [ ! -r /proc/self/cgroup ]; then
+        echo "oarsh: cgroup v2 not available, cannot determine the job's cgroup" 1>&2
+        exit 61
+    fi
+    PROC_SELF_CPUSET_PATH=$(sed -ne 's/^0:://p' /proc/self/cgroup)
+    # Inside a container, OAR slices are under the container scope (must match the job resource manager)
+    case "$PROC_SELF_CPUSET_PATH" in
+        /user.slice/*)
+            PROC_SELF_CPUSET_PATH=
+            ;;
+        *.scope*)
+            PROC_SELF_CPUSET_PATH=${PROC_SELF_CPUSET_PATH%%.scope*}.scope
+            ;;
+        *)
+            PROC_SELF_CPUSET_PATH=
+            ;;
+    esac
+    CGROUP_OAR_PATH=$CGROUP_MOUNT_POINT$PROC_SELF_CPUSET_PATH${OAR_CPUSET%/*}.slice
     JOB_ID=${OAR_CPUSET##*_}
     JOB_USER=${OAR_CPUSET##*/}
     JOB_USER=${JOB_USER%_*}
