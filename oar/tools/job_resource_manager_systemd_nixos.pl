@@ -1,4 +1,4 @@
-# The job_resource_manager_cgroups script is a perl script that oar server
+# The job_resource_manager_systemd_nixos script is a perl script that oar server
 # deploys on nodes to manage cpusets, users, job keys, ...
 #
 # In this script some cgroup Linux features are incorporated:
@@ -176,20 +176,49 @@ my $Hwloc_pu = join(' ', map { "pu:$_" } @Cpuset_list);
 my $Systemd_allowed_cpus_cmd = "/run/current-system/sw/bin/hwloc-calc --cof systemd-dbus-api --pi $Hwloc_pu";
 my $Systemd_allowed_memory_nodes_cmd = "/run/current-system/sw/bin/hwloc-calc --nof systemd-dbus-api --pi $Hwloc_pu";
 
+# cgroup v2 only (use job_resource_manager_cgroups.pl on cgroup v1 nodes)
 my $Cgroup_root_path;
-open MOUNTS, '/proc/mounts' or exit_myself(3, 'Failed to open /proc/mounts.');
+open(MOUNTS, '<', '/proc/mounts') or exit_myself(3, "Failed to open /proc/mounts: $!");
 while (<MOUNTS>) {
-    last if ($Cgroup_root_path) = /^cgroup2 ([^ ]+) .*/;
+    my (undef, $mount_point, $fs_type) = split;
+    if (defined($fs_type) and $fs_type eq 'cgroup2') {
+        $Cgroup_root_path = $mount_point;
+        last;
+    }
 }
-close MOUNTS;
-
-# Inside container, /proc/self/cpuset helps to find the rigth scope
-my $Proc_self_cpuset = do { open my $fh, "<", "/proc/self/cpuset" or exit_myself(5, "Failed to /proc/self/cpuset $!"); <$fh> };
-chomp($Proc_self_cpuset);
-
-if ($Proc_self_cpuset !~ "/user.slice") {
-    $Cgroup_root_path = "$Cgroup_root_path$Proc_self_cpuset";
+close(MOUNTS);
+if (!defined($Cgroup_root_path)) {
+    exit_myself(3, "No cgroup2 filesystem mounted: this job resource manager requires cgroup v2 "
+        . "(use job_resource_manager_cgroups.pl on cgroup v1 nodes)");
 }
+
+my $Cgroup_controllers = '';
+if (open(my $ctrl_fh, '<', "$Cgroup_root_path/cgroup.controllers")) {
+    $Cgroup_controllers = <$ctrl_fh> // '';
+    close($ctrl_fh);
+}
+if ($Cgroup_controllers !~ /\bcpuset\b/) {
+    exit_myself(3, "cpuset controller not available in $Cgroup_root_path/cgroup.controllers "
+        . "(cgroup v1/hybrid node, or cpuset not delegated to this container)");
+}
+
+# Inside a container, OAR slices are under the container scope (must match oarsh_shell)
+my $Proc_self_cgroup;
+open(my $cg_fh, '<', '/proc/self/cgroup') or exit_myself(5, "Failed to open /proc/self/cgroup: $!");
+while (my $line = <$cg_fh>) {
+    if ($line =~ m#^0::(/.*)$#) {
+        $Proc_self_cgroup = $1;
+        last;
+    }
+}
+close($cg_fh);
+if (!defined($Proc_self_cgroup)) {
+    exit_myself(5, "No cgroup v2 entry (0::) found in /proc/self/cgroup");
+}
+if ($Proc_self_cgroup !~ m#^/user\.slice/# and $Proc_self_cgroup =~ m#^(.*?\.scope)#) {
+    $Cgroup_root_path .= $1;
+}
+print_log(4, "Cgroup v2 root path used for OAR slices: $Cgroup_root_path");
 
 my $Cgroup_oar_path = "$Cgroup_root_path/$Systemd_oar_slice.slice";
 my $Cgroup_user_path = "$Cgroup_oar_path/$Systemd_user_slice.slice";

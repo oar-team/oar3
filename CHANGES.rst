@@ -16,6 +16,7 @@ Changed
 - API: refuse to start while API_SECRET_KEY is empty, too short or still set to a known/default value (the "TO_CHANGE" placeholder or the key shipped as default in older OAR versions). The default config no longer ships a publicly-known key that allowed forging valid API tokens; generate a real one with `openssl rand -hex 32` during setup.
 - API: fix a possible shell command injection in the `/media` upload endpoint.
 - Fixed running jobs having their resources reassigned when the launch latency exceeded SCHEDULER_JOB_SECURITY_TIME #154
+- Support cgroup v2 (unified hierarchy) in ``job_resource_manager_systemd.pl``, ``job_resource_manager_systemd_nixos.pl``, ``oarsh.in`` and ``oarsh_shell.in``
 
 Version 3.0.3
 -------------
