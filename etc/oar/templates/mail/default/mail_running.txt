@@ -1,0 +1,27 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 JOB STARTING | #{id} | STATE: {state}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUMMARY
+  Job Name    : {name}
+  User        : {user}
+  Project     : {project}
+  Queue       : {queue}
+
+RESOURCES & CONFIGURATION
+  Nodes       : {core_count} node(s) allocated
+  Hostlist    : {nodes}
+  Walltime    : ⏳ {walltime} (estimated limit)
+  Directory   : {dir}
+
+OUTPUT MONITORING
+  Stdout      : {stdout}
+  Stderr      : {stderr}
+
+TECHNICAL INFO
+  Command     : {command}
+  Array Info  : ID {array_id} (Index: {array_index})
+  OAR Message : {message}
+  Exit Code   : {exit_code}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

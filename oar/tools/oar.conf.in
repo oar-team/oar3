@@ -189,6 +189,18 @@ PINGCHECKER_SENTINELLE_SCRIPT_COMMAND="%%OARDIR%%/sentinelle.pl -t 30 -w 20"
 #MAIL_RECIPIENT="user@domain.com"
 #MAIL_SENDER="oar@domain.com"
 
+#######################################
+# Custom Mail Templates Configuration #
+###############################################################################
+# Path to the text files used as templates for job notifications.
+# If a file is missing or the line is commented out, OAR will use
+# the default hardcoded messages.
+#MAIL_TEMPLATE_RUNNING="/etc/oar/templates/mail/default/mail_running.txt"
+#MAIL_TEMPLATE_TERMINATED="/etc/oar/templates/mail/default/mail_terminated.txt"
+#MAIL_TEMPLATE_ERROR="/etc/oar/templates/mail/default/mail_error.txt"
+#MAIL_TEMPLATE_SUSPENDED="/etc/oar/templates/mail/default/mail_suspended.txt"
+#MAIL_TEMPLATE_RESUMING="/etc/oar/templates/mail/default/mail_resuming.txt"
+
 ###############################################################################
 
 ###########
