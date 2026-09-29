@@ -77,7 +77,7 @@ def oarwalltime(
                 cmd_ret.print_(
                     "  Already granted: {:>12}".format(walltime_change.granted)
                 )
-                cmd_ret.print_("  ({})".format(", ".granted_with))
+                cmd_ret.print_("  ({})".format(", ".join(granted_with)))
                 msg = ""
                 if walltime_change.delay_next_jobs and (
                     walltime_change.delay_next_jobs == "YES"
@@ -96,7 +96,7 @@ def oarwalltime(
                 )
                 cmd_ret.print_("  Walltime: {:>11}".format(walltime_change.walltime))
                 cmd_ret.print_("  Granted: {:>12}".format(walltime_change.granted))
-                cmd_ret.print_("  ({})".format(", ".granted_with))
+                cmd_ret.print_("  ({})".format(", ".join(granted_with)))
                 msg = ""
                 if walltime_change.delay_next_jobs and (
                     walltime_change.delay_next_jobs == "YES"
