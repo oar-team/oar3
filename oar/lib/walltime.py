@@ -3,6 +3,7 @@
 # WALLTIME CHANGE MANAGEMENT
 #
 
+import ast
 import re
 
 import oar.lib.tools as tools
@@ -21,16 +22,25 @@ config, engine = init_oar(no_db=True)
 logger = get_logger("oar.lib.walltime")
 
 
-def get_conf(config_value, queue, walltime, value):
+def get_conf(config_value, queue, walltime, default):
     value = config_value
-    if isinstance(config_value, str) and (config_value != ""):
-        # TODO add try / except
-        conf_val = eval(config_value)
+    if isinstance(config_value, str) and config_value.strip().startswith("{"):
+        # Perl hash syntax: {key => val} -> {'key': val}
+        py_str = re.sub(r"(\w+)\s*=>", r"'\1':", config_value.strip())
+        try:
+            conf_val = ast.literal_eval(py_str)
+        except (ValueError, SyntaxError):
+            logger.error("cannot parse walltime setting: {}".format(config_value))
+            conf_val = None
         if isinstance(conf_val, dict):
             if queue and queue in conf_val:
                 value = conf_val[queue]
             elif "_" in conf_val:
                 value = conf_val["_"]
+            else:
+                value = default
+        else:
+            value = default
 
     if walltime and isinstance(value, float) and value <= 1.0:
         value = int(walltime * value)
@@ -57,10 +67,7 @@ def get_walltime_change_for_job(session, job_id):
 
 
 def get(session, config, job_id):
-    if (
-        "WALLTIME_CHANGE_ENABLED" not in config
-        or config["WALLTIME_CHANGE_ENABLED"] != "YES"
-    ):
+    if str(config.get("WALLTIME_CHANGE_ENABLED", "NO")).upper() != "YES":
         return (None, "functionality is disabled", None)
 
     job = get_job(session, job_id)
@@ -74,7 +81,7 @@ def get(session, config, job_id):
 
     if job.assigned_moldable_job != 0:
         moldable = get_current_moldable_job(session, job.assigned_moldable_job)
-        walltime_change.walltime = moldable.moldable_walltime
+        walltime_change.walltime = moldable.walltime
     else:
         walltime_change.walltime = 0
 
@@ -150,10 +157,7 @@ def get(session, config, job_id):
 
 
 def request(session, config, job_id, user, new_walltime, force, delay_next_jobs):
-    if (
-        "WALLTIME_CHANGE_ENABLED" not in config
-        or config["WALLTIME_CHANGE_ENABLED"] != "YES"
-    ):
+    if str(config.get("WALLTIME_CHANGE_ENABLED", "NO")).upper() != "YES":
         return (5, 405, "not available", "functionality is disabled")
 
     job = get_job(session, job_id)
@@ -295,9 +299,9 @@ def request(session, config, job_id, user, new_walltime, force, delay_next_jobs)
                 new_walltime_seconds,
                 "YES" if (force and (new_walltime_seconds > 0)) else "NO",
                 "YES" if (delay_next_jobs and (new_walltime_seconds > 0)) else "NO",
-                None,
-                None,
-                None,
+                current_walltime_change.granted,
+                current_walltime_change.granted_with_force,
+                current_walltime_change.granted_with_delay_next_jobs,
             )
 
             result = (
