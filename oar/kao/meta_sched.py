@@ -869,10 +869,8 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
     if ("QUOTAS" in config) and (config["QUOTAS"] == "yes"):
         Quotas.enable(config, plt.resource_set(session, config))
 
-    if ("WALLTIME_CHANGE_ENABLED" in config) and (
-        config["WALLTIME_CHANGE_ENABLED"] == "yes"
-    ):
-        process_walltime_change_requests(plt)
+    if str(config.get("WALLTIME_CHANGE_ENABLED", "NO")).upper() == "YES":
+        process_walltime_change_requests(session, config, plt)
 
     tools.create_almighty_socket(
         config["SERVER_HOSTNAME"], config["APPENDICE_SERVER_PORT"]

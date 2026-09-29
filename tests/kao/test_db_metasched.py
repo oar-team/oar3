@@ -16,9 +16,12 @@ from oar.lib.models import (
     MoldableJobDescription,
     Queue,
     Resource,
+    WalltimeChange,
 )
 from oar.lib.queue import get_all_queue_by_priority
 from oar.lib.tools import get_date
+
+from ..helpers import insert_running_jobs
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -369,3 +372,23 @@ def test_db_metasched_bug_toLaunch_absent(
     job = minimal_db_initialization.query(Job).one()
     print(job.state)
     assert job.state == "Waiting"
+
+
+def test_db_metasched_walltime_change(
+    monkeypatch, minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+    monkeypatch.setitem(config, "WALLTIME_CHANGE_ENABLED", "yes")
+    job_id = insert_running_jobs(minimal_db_initialization, 1)[0]
+    WalltimeChange.create(minimal_db_initialization, job_id=job_id, pending=600)
+
+    meta_schedule(minimal_db_initialization, config)
+
+    walltime_change = (
+        minimal_db_initialization.query(WalltimeChange)
+        .filter(WalltimeChange.job_id == job_id)
+        .one()
+    )
+    print(walltime_change.pending, walltime_change.granted)
+    assert walltime_change.granted == 600
+    assert walltime_change.pending == 0

@@ -2849,32 +2849,32 @@ def get_possible_job_end_time_in_interval(
         exclude = "t.type = 'placeholder={}' OR ".format(job_types["allowed"])
 
     req = """
-SELECT
-  DISTINCT gp.start_time
-FROM
-  jobs j, moldable_job_descriptions m, gantt_jobs_predictions gp, gantt_jobs_resources gr
-WHERE
-  j.job_id = m.moldable_job_id AND
-  {}
-  gp.moldable_job_id = m.moldable_id AND
-  gp.start_time > {} AND
-  gp.start_time <= {} AND
-  gr.moldable_job_id = gp.moldable_job_id AND
-  NOT EXISTS (
-    SELECT
-      t.job_id
-    FROM
-      job_types t
-    WHERE
-      t.job_id = j.job_id AND (
-      {}
-      t.type = 'besteffort' )
-  ) AND
-  gr.resource_id IN ( {} )
+        SELECT
+          DISTINCT gp.start_time
+        FROM
+          jobs j, moldable_job_descriptions m, gantt_jobs_predictions gp, gantt_jobs_resources gr
+        WHERE
+          j.job_id = m.moldable_job_id AND
+          {}
+          gp.moldable_job_id = m.moldable_id AND
+          gp.start_time > {} AND
+          gp.start_time <= {} AND
+          gr.moldable_job_id = gp.moldable_job_id AND
+          NOT EXISTS (
+            SELECT
+              t.job_id
+            FROM
+              job_types t
+            WHERE
+              t.job_id = j.job_id AND (
+              {}
+              t.type = 'besteffort' )
+          ) AND
+          gr.resource_id IN ( {} )
     """.format(
         only_adv_reservations, from_, to, exclude, resources_str
     )
-    raw_start_times = session.get_bind().execute(text(req))
+    raw_start_times = session.execute(text(req))
 
     for start_time in raw_start_times.fetchall():
         if (not first) or (first > (start_time[0] - scheduler_job_security_time)):
