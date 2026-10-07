@@ -654,8 +654,9 @@ def job_message(session, job, nb_resources=None):
 
     message = ",".join(message_list)
     if hasattr(job, "karma"):
+        # The last_karma write is batched by save_assigns (alongside the
+        # message bulk UPDATE) to avoid one UPDATE + commit per job.
         message += " " + "(Karma={})".format(job.karma)
-        set_job_last_karma(session, job.id, job.karma)
 
     return message
 
@@ -667,6 +668,7 @@ def save_assigns(session, jobs, resource_set):
         mld_id_start_time_s = []
         mld_id_rid_s = []
         message_updates = {}
+        last_karma_updates = {}
 
         for j in jobs.values() if isinstance(jobs, dict) else jobs:
             if j.start_time > -1:
@@ -686,6 +688,8 @@ def save_assigns(session, jobs, resource_set):
                 )
                 msg = job_message(session, j, nb_resources=len(riods))
                 message_updates[j.id] = msg
+                if hasattr(j, "karma"):
+                    last_karma_updates[j.id] = j.karma
 
         if message_updates:
             logger.info("save job messages")
@@ -693,6 +697,18 @@ def save_assigns(session, jobs, resource_set):
                 {
                     Job.message: case(
                         message_updates,
+                        value=Job.id,
+                    )
+                },
+                synchronize_session=False,
+            )
+
+        if last_karma_updates:
+            logger.info("save job last karma")
+            session.query(Job).filter(Job.id.in_(last_karma_updates)).update(
+                {
+                    Job.last_karma: case(
+                        last_karma_updates,
                         value=Job.id,
                     )
                 },
@@ -1179,6 +1195,9 @@ def set_job_message(session, job_id, message):
 def set_job_last_karma(session, job_id, last_karma):
     """Update the last_karma value of a job into database
     parameter : database ref, job id, karma value
+
+    Kept for API compatibility. save_assigns no longer calls this per job:
+    last_karma is batched into a single bulk UPDATE instead.
     """
     session.query(Job).filter(Job.id == job_id).update(
         {Job.last_karma: last_karma}, synchronize_session=False
