@@ -117,6 +117,18 @@ class BaseQuery:
                 q = q.filter(criteria) if criteria is not None else q
             return q
 
+        if job_ids or array_id:
+            # Explicit id/array selection: bypass the q1|q2|q3 union below.
+            # That union requires an AssignedResource, a gantt-visu row or
+            # stop_time == 0, so a job that was killed while still Waiting (never
+            # assigned, stop_time != 0, absent from the visu) would be dropped
+            # and "oarstat -fj <id>" would print nothing.
+            direct = query.outerjoin(
+                MoldableJobDescription,
+                Job.assigned_moldable_job == MoldableJobDescription.id,
+            )
+            return apply_commons_filters(direct, c1_from, c1_to, c3_from, c3_to)
+
         # The following test may look overkill, but we need to be very careful of the
         # SQL optimization to avoid a full parsing of the AssignedResource table
         # For this, we use the AssignedResource.index to speed up the case where
