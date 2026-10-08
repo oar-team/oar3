@@ -49,7 +49,7 @@ def keep_no_empty_scat_bks(itvs: ProcSet, itvss_ref):
 
     while i < lr:
         x = itvss_ref[i]
-        if len(x & itvs) != 0:
+        if not x.isdisjoint(itvs):
             r_itvss.append(x)
         i += 1
     return r_itvss
@@ -219,6 +219,57 @@ def find_resource_hierarchies_scattered(itvs, hy, rqts):
         return find_resource_n_h(itvs, hy, rqts, hy[0], 0, l_hy)
 
 
+# Memoized parent -> children relation per hierarchy level.  The hierarchy is
+# static within a scheduling round, so computing it once avoids rescanning the
+# whole next level for every block and every time window (the dominant cost on
+# large platforms).
+_CHILDREN_CACHE = {}
+
+
+def _children_map(parent_list, child_list):
+    """Return ``{id(parent_block): [child blocks]}`` for two hierarchy levels.
+
+    ``parent_list``/``child_list`` are kept alive by the cache so their ``id``
+    cannot be reused while cached; the identity check guards against a new list
+    with a recycled id.
+    """
+    cached = _CHILDREN_CACHE.get(id(parent_list))
+    if cached is not None and cached[0] is parent_list and cached[1] is child_list:
+        return cached[2]
+    mapping = {
+        id(blk): [sub for sub in child_list if sub.issubset(blk)] for blk in parent_list
+    }
+    if len(_CHILDREN_CACHE) > 16:
+        _CHILDREN_CACHE.clear()
+    _CHILDREN_CACHE[id(parent_list)] = (parent_list, child_list, mapping)
+    return mapping
+
+
+# Same cache for the bottom level, but keeping the exact original semantics:
+# the intersection ``parent & child`` for every child that overlaps the parent
+# (not only the children fully contained in it).
+_BOTTOM_CACHE = {}
+
+
+def _bottom_map(parent_list, child_list):
+    """Return ``{id(parent_block): [parent_block & child]}`` for the bottom level."""
+    cached = _BOTTOM_CACHE.get(id(parent_list))
+    if cached is not None and cached[0] is parent_list and cached[1] is child_list:
+        return cached[2]
+    mapping = {}
+    for blk in parent_list:
+        intersected = []
+        for x in child_list:
+            y = blk & x
+            if len(y) != 0:
+                intersected.append(y)
+        mapping[id(blk)] = intersected
+    if len(_BOTTOM_CACHE) > 16:
+        _BOTTOM_CACHE.clear()
+    _BOTTOM_CACHE[id(parent_list)] = (parent_list, child_list, mapping)
+    return mapping
+
+
 def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
     """
     Recursive function collecting resources from each hierarchy level.
@@ -255,9 +306,9 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
             while (i < l_avail_bks) and (nb_r != rqts[h]):  # need
                 # print avail_bks[i], "*", hy[h+1]
                 # TODO test cost of [] filtering .....
-                avail_sub_bks = [
-                    (avail_bks[i] & x) for x in hy[h + 1] if len(avail_bks[i] & x) != 0
-                ]
+                # cores of this cpu only (not the whole core level), with the
+                # exact intersection semantics of the original code
+                avail_sub_bks = _bottom_map(hy[h], hy[h + 1])[id(avail_bks[i])]
                 # print avail_sub_bks
                 # print "--------------------------------------"
                 r = extract_n_scattered_block_itv(itvs, avail_sub_bks, rqts[h + 1])
@@ -282,7 +333,7 @@ def find_resource_n_h(itvs, hy, rqts, top, h, h_bottom):
                 # Current picked level
                 level = avail_bks[i]
                 # Select children of this level to propagate it into the recursive call
-                children = [sub for sub in hy[h + 1] if sub.issubset(level)]
+                children = _children_map(hy[h], hy[h + 1])[id(level)]
                 r = find_resource_n_h(itvs, hy, rqts, children, h + 1, h_bottom)
                 # print("R: {}".format(r))
                 if len(r) != 0:
