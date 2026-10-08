@@ -2,6 +2,8 @@
 from procset import ProcSet
 
 from oar.lib.hierarchy import (
+    _bottom_map,
+    _children_map,
     extract_all_best_half_scattered_block_itv,
     extract_n_scattered_block_itv,
     find_resource_hierarchies_scattered,
@@ -196,3 +198,85 @@ def test_find_resource_hierarchies_scattere6_fail():
         ProcSet(*[(1, 32)]), [h0, h1, h2], [1, 2, 1]
     )
     assert x == ProcSet(*[(1, 4), (9, 12)])
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for the hierarchy parent/children cache
+# (oar.lib.hierarchy._children_map / _bottom_map).  They pin the exact
+# behaviour of find_resource_n_h, including non-tree hierarchies.
+# ---------------------------------------------------------------------------
+
+
+def test_children_map_returns_subsets():
+    parent = [ProcSet((1, 16)), ProcSet((17, 32))]
+    child = [ProcSet((1, 8)), ProcSet((9, 16)), ProcSet((17, 24)), ProcSet((25, 32))]
+    mapping = _children_map(parent, child)
+    assert mapping[id(parent[0])] == [child[0], child[1]]
+    assert mapping[id(parent[1])] == [child[2], child[3]]
+
+
+def test_bottom_map_keeps_intersection_for_overlapping_blocks():
+    # child (5,12) overlaps parent (1,8) without being a subset: the original
+    # code kept parent & child == (5,8); _bottom_map must do the same.
+    parent = [ProcSet((1, 8)), ProcSet((9, 16))]
+    child = [ProcSet((5, 12)), ProcSet((1, 8)), ProcSet((9, 16))]
+    mapping = _bottom_map(parent, child)
+    assert mapping[id(parent[0])] == [ProcSet((5, 8)), ProcSet((1, 8))]
+    assert mapping[id(parent[1])] == [ProcSet((9, 12)), ProcSet((9, 16))]
+
+
+def test_find_resource_scattered_non_tree_overlap():
+    # Non-tree hierarchy: the bottom level must keep the intersection semantics.
+    parent = [ProcSet((1, 8)), ProcSet((9, 16))]
+    child = [ProcSet((5, 12)), ProcSet((1, 8)), ProcSet((9, 16))]
+    assert find_resource_hierarchies_scattered(
+        ProcSet((1, 32)), [parent, child], [1, 1]
+    ) == ProcSet((5, 8))
+    assert find_resource_hierarchies_scattered(
+        ProcSet((6, 12)), [parent, child], [1, 1]
+    ) == ProcSet((9, 12))
+
+
+def test_find_resource_scattered_4_level_tree():
+    core = [ProcSet((i, i)) for i in range(1, 33)]
+    cpu = [ProcSet((8 * c + 1, 8 * c + 8)) for c in range(4)]
+    node = [ProcSet((16 * n + 1, 16 * n + 16)) for n in range(2)]
+    model = [ProcSet((1, 32))]
+    assert find_resource_hierarchies_scattered(
+        ProcSet((1, 32)), [model, node, cpu, core], [1, 1, 1, 8]
+    ) == ProcSet((1, 8))
+
+
+def test_find_resource_scattered_duplicate_levels():
+    # the finest level repeated (core == resource_id style) must behave like the
+    # original code, including for a shared level list object
+    core = [ProcSet((i, i)) for i in range(1, 33)]
+    cpu = [ProcSet((8 * c + 1, 8 * c + 8)) for c in range(4)]
+    assert (
+        find_resource_hierarchies_scattered(
+            ProcSet((1, 32)), [cpu, core, core], [1, 2, 2]
+        )
+        == ProcSet()
+    )
+    assert (
+        find_resource_hierarchies_scattered(ProcSet((1, 32)), [core, core], [4, 2])
+        == ProcSet()
+    )
+
+
+def test_cache_not_stale_between_different_hierarchies():
+    # two different hierarchies evaluated in the same process must not share a
+    # stale cached map; a repeated call must stay consistent
+    ha0 = [ProcSet((1, 16))]
+    ha1 = [ProcSet((1, 8)), ProcSet((9, 16))]
+    hb0 = [ProcSet((1, 32))]
+    hb1 = [ProcSet((1, 16)), ProcSet((17, 32))]
+    assert find_resource_hierarchies_scattered(
+        ProcSet((1, 16)), [ha0, ha1], [1, 1]
+    ) == ProcSet((1, 8))
+    assert find_resource_hierarchies_scattered(
+        ProcSet((1, 32)), [hb0, hb1], [1, 1]
+    ) == ProcSet((1, 16))
+    assert find_resource_hierarchies_scattered(
+        ProcSet((1, 16)), [ha0, ha1], [1, 1]
+    ) == ProcSet((1, 8))
