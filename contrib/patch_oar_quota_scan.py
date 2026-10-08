@@ -317,6 +317,7 @@ SCHED_NEW = L(
     "                    # log if the job ends up unscheduled (instead of one line",
     "                    # per scanned window).",
     "                    quota_precheck_failure = quotas_failure",
+    "                quota_skipped_windows += 1",
     "                if sid_left_cache == -1:",
     '                    # Keep the same "resource frontier" hint the regular path',
     "                    # would store; starting the next job at or before the first",
@@ -338,8 +339,9 @@ SCHED_INIT_OLD = """    sid_right = sid_left
 SCHED_INIT_NEW = """    sid_right = sid_left
     sid_left_cache = -1
     # First quota pre-check failure seen while scanning; used to emit a single
-    # summary log if the job ends up unscheduled.
+    # summary log if the job ends up unscheduled or scheduled later.
     quota_precheck_failure = None
+    quota_skipped_windows = 0
     for slot_begin, slot_end in slots_set.traverse_with_width(
 """
 
@@ -350,6 +352,9 @@ SCHED_END_OLD = """    if len(itvs) == 0:
             )
         )
         return (ProcSet(), -1, -1)
+    if job.key_cache and (min_start_time < 0):
+        cache[job.key_cache[mld_id]] = sid_left_cache
+    return (itvs, sid_left, sid_right)
 """
 
 SCHED_END_NEW = """    if len(itvs) == 0:
@@ -365,6 +370,16 @@ SCHED_END_NEW = """    if len(itvs) == 0:
                 )
             )
         return (ProcSet(), -1, -1)
+    if quota_skipped_windows > 0:
+        # Quota-limited on some windows but scheduled on a later one: report it
+        # once (instead of one line per skipped window).
+        (_quotas_ok, quotas_msg, rule, value) = quota_precheck_failure
+        logger.info(
+            f"Quotas limitation reached, job: {str(job.id)}, {quotas_msg}, rule: {rule}, value: {value}, scheduled later ({quota_skipped_windows} window(s) skipped)"
+        )
+    if job.key_cache and (min_start_time < 0):
+        cache[job.key_cache[mld_id]] = sid_left_cache
+    return (itvs, sid_left, sid_right)
 """
 
 
