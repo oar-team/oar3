@@ -568,16 +568,45 @@ class SlotSet:
         # Width of zero does not exist
         assert width > 0
 
+        # Same validity check as traverse_id: an unknown id means an empty traversal
+        if (start_id != 0 and start_id not in self.slots) or (
+            end_id != 0 and end_id not in self.slots
+        ):
+            return
+
+        # Persistent two-pointer: begin_time increases with start_slot, so the
+        # first end slot satisfying the width never moves backward.
+        end_slot = None
+        previous_start_id = None
+
         for start_slot in self.traverse_id(start=start_id, end=end_id):
             begin_time = start_slot.b
-            for end_slot in self.traverse_id(start=start_slot.id, end=end_id):
-                size = end_slot.e - begin_time
-                if size + 1 >= width:
-                    yield (start_slot, end_slot)
 
-                    # If we found a long enough interval from this starting point we don't need to continue
-                    # We can skip to the next start
-                    break
+            if end_slot is None:
+                end_slot = start_slot
+            elif end_slot.id == previous_start_id:
+                # The end pointer is exactly the previous start, i.e. one slot
+                # behind the new start; bring it up to the new start.
+                end_slot = start_slot
+
+            # Advance the end pointer until the width is reached, without ever
+            # going past end_id nor the end of the linked list (same terminal
+            # condition as traverse_id).
+            while (
+                end_slot.e - begin_time + 1 < width
+                and end_slot.next != 0
+                and end_slot.id != end_id
+            ):
+                end_slot = self.slots[end_slot.next]
+
+            if end_slot.e - begin_time + 1 >= width:
+                yield (start_slot, end_slot)
+            else:
+                # The width cannot be reached before the traversal end, and
+                # later starts begin even later: no more pair can be yielded.
+                break
+
+            previous_start_id = start_slot.id
 
     def copy_intervals_set(self, id_slot_from: int, id_slot_to: int):
         assert id_slot_from != id_slot_to and id_slot_to != 0

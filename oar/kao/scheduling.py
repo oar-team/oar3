@@ -155,6 +155,9 @@ def find_first_suitable_contiguous_slots_quotas(
 
     sid_right = sid_left
     sid_left_cache = -1
+    # First quota pre-check failure seen while scanning; used to emit a single
+    # summary log if the job ends up unscheduled.
+    quota_precheck_failure = None
     for slot_begin, slot_end in slots_set.traverse_with_width(
         walltime, start_id=sid_left
     ):
@@ -179,6 +182,27 @@ def find_first_suitable_contiguous_slots_quotas(
                 slots_set.temporal_quotas_split_slot(
                     slot_end, quotas_rules_id, remaining_duration
                 )
+
+        # Conservative quota early-out: if this window already exceeds the
+        # applicable quota limit before adding the job, any allocation would be
+        # rejected by check_slots_quotas() below.  Skip the expensive resource
+        # intersection and hierarchy search for such windows.
+        if Quotas.enabled and not job.no_quotas:
+            quotas_failure = Quotas.pre_check_slots_quotas(
+                slots, sid_left, sid_right, job
+            )
+            if quotas_failure is not None:
+                if quota_precheck_failure is None:
+                    # Remember the first quota reason to emit a single summary
+                    # log if the job ends up unscheduled (instead of one line
+                    # per scanned window).
+                    quota_precheck_failure = quotas_failure
+                if sid_left_cache == -1:
+                    # Keep the same "resource frontier" hint the regular path
+                    # would store; starting the next job at or before the first
+                    # resource-feasible window is result-preserving.
+                    sid_left_cache = sid_left
+                continue
 
         if job.ts or (job.ph == ALLOW):
             itvs_avail = intersec_ts_ph_itvs_slots(slots, sid_left, sid_right, job)
@@ -219,11 +243,17 @@ def find_first_suitable_contiguous_slots_quotas(
                 break
 
     if len(itvs) == 0:
-        logger.info(
-            "can't schedule job with id: {}, walltime not satisfied: {}".format(
-                job.id, walltime
+        if quota_precheck_failure is not None:
+            (_quotas_ok, quotas_msg, rule, value) = quota_precheck_failure
+            logger.info(
+                f"Quotas limitation reached, job: {str(job.id)}, {quotas_msg}, rule: {rule}, value: {value}"
             )
-        )
+        else:
+            logger.info(
+                "can't schedule job with id: {}, walltime not satisfied: {}".format(
+                    job.id, walltime
+                )
+            )
         return (ProcSet(), -1, -1)
     if job.key_cache and (min_start_time < 0):
         cache[job.key_cache[mld_id]] = sid_left_cache

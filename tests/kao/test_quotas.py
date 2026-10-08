@@ -1,5 +1,6 @@
 # coding: utf-8
 from codecs import open
+from copy import deepcopy
 from tempfile import mkstemp
 
 import pytest
@@ -44,7 +45,6 @@ def compare_slots_val_ref(slots, v):
 
 
 def sched_placement(nb_jobs, rules, alt_users=False):
-
     res = ProcSet((1, 32))
     ResourceSet.default_itvs = ProcSet((1, 32))
 
@@ -438,3 +438,43 @@ def test_quotas_cache_no_gap_under_blocking():
     assert nb_first_layer == 16, (
         "gap in first layer: %d/16 jobs (poisoned cache?)" % nb_first_layer
     )
+
+
+def test_rule_tree_cache_matches_fresh_build_and_switches():
+    """The content-keyed rule tree cache must return trees identical to a
+    freshly built one, and must switch entries when the rule set changes."""
+    default_rules = {("*", "*", "*", "/"): [16, -1, -1]}
+    temporal_rules = {
+        ("*", "projA", "*", "*"): [200, -1, -1],
+        ("*", "*", "*", "john"): [100, -1, -1],
+    }
+
+    fresh_trees = {}
+    for name, rules in (("default", default_rules), ("temporal", temporal_rules)):
+        # Build without cache first, keep a detached copy as reference.
+        Quotas.reset_rule_tree_cache()
+        fresh_trees[name] = deepcopy(Quotas(rules).rule_tree)
+
+        # Prime the cache, then a second construction must hit it.
+        Quotas.reset_rule_tree_cache()
+        primed = Quotas(rules)
+        hit = Quotas(rules)
+        assert hit.rule_tree is primed.rule_tree
+        assert hit.rule_tree == fresh_trees[name]
+
+    # set_rules switching to another rule set must use the matching cache entry.
+    class FakeCalendar:
+        def __init__(self, rules_list):
+            self.quotas_rules_list = rules_list
+
+    Quotas.calendar = FakeCalendar([default_rules, temporal_rules])
+    try:
+        q = Quotas()
+        q.set_rules(0)
+        assert q.rule_tree == fresh_trees["default"]
+        q.set_rules(1)
+        assert q.rule_tree == fresh_trees["temporal"]
+        assert q.rule_tree is not Quotas(default_rules).rule_tree
+    finally:
+        Quotas.calendar = None
+        Quotas.reset_rule_tree_cache()

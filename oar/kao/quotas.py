@@ -517,6 +517,17 @@ class Quotas(object):
     # Job types are apart, so they can extends the quotas globally ?
     job_types: List[str] = ["*"]
 
+    # Content-keyed cache of built rule trees.  Quotas.check_slots_quotas builds
+    # a fresh Quotas object for every distinct quotas_rules_id on every window;
+    # without a cache each construction walks the whole rules dict in
+    # init_rule_tree().  The rules attached to a slot (and to a temporal period)
+    # are immutable within a scheduling round, so the resulting tree can safely
+    # be shared.  The number of distinct rule sets is tiny (the default one plus
+    # one per temporal period), so this dict stays small.  The key is a hashable
+    # signature of the rules content (see _rules_signature), which makes the
+    # cache insensitive to reset_quotas test fixtures swapping default_rules.
+    _rule_tree_cache: dict = {}
+
     @classmethod
     def enable(cls, config: configuration, resource_set=None):
         cls.enabled = True
@@ -609,6 +620,16 @@ class Quotas(object):
             self.counters[key][2] += value[2]
         # self.show_counters('combine after')
 
+    @staticmethod
+    def _rules_signature(rules):
+        """Return a hashable signature of a rules dict for the tree cache."""
+        return frozenset((k, tuple(v)) for k, v in rules.items())
+
+    @classmethod
+    def reset_rule_tree_cache(cls):
+        """Drop the shared rule tree cache (useful for tests)."""
+        cls._rule_tree_cache.clear()
+
     def init_rule_tree(self):
         # Create the rule multi-tree from all active rules
         # The three depths correspond to the current entity on which the level applies
@@ -623,6 +644,12 @@ class Quotas(object):
         #                 /      \          /
         # user:         '/'     '*'       '*'
 
+        signature = self._rules_signature(self.rules)
+        cached = Quotas._rule_tree_cache.get(signature)
+        if cached is not None:
+            self.rule_tree = cached
+            return self.rule_tree
+
         self.rule_tree: dict[str, dict[str, dict[str, (int, int, float)]]] = dict()
 
         for fields, rule in self.rules.items():
@@ -634,6 +661,8 @@ class Quotas(object):
             queue, project, job_type, user = fields
 
             self.rule_tree[queue][project][job_type][user] = rule
+
+        Quotas._rule_tree_cache[signature] = self.rule_tree
 
         return self.rule_tree
 
@@ -785,6 +814,74 @@ class Quotas(object):
 
         # return last one that should be a success anyway
         return res
+
+    @staticmethod
+    def pre_check_slots_quotas(
+        slots,
+        sid_left: int,
+        sid_right: int,
+        job,
+    ):
+        """Conservative quota early-out used before the resource search.
+
+        Returns a ``(False, msg, rule, value)`` tuple (same shape as
+        :py:meth:`check`) when the candidate window is *already* over the
+        applicable quota limit **before** adding ``job``.  In that case any
+        allocation would be rejected by :py:meth:`check_slots_quotas` anyway, so
+        the caller can skip the expensive resource intersection and hierarchy
+        search.  Returns ``None`` when the window is not already over.
+
+        ``Quotas.combine`` takes the maximum over the window slots for the
+        resource and job counts, and the sum for the resource-time, so a single
+        slot exceeding a limit implies the combined window exceeds it: testing
+        each slot independently is conservative (never rejects a window that
+        would have been accepted).
+        """
+        if not Quotas.enabled or getattr(job, "no_quotas", False):
+            return None
+
+        # find_applicable_rule only depends on the rule set attached to the
+        # slot, which is immutable within a scheduling round; cache it per rule
+        # set to avoid re-walking the rule tree for every slot of the window.
+        rule_cache = {}
+        sid = sid_left
+        while True:
+            quotas = slots[sid].quotas
+            cache_key = id(quotas.rules)
+            entry = rule_cache.get(cache_key)
+            if entry is None:
+                entry = quotas.find_applicable_rule(job)
+                rule_cache[cache_key] = entry
+            rule, complete_key, rl_quotas = entry
+            if rule and complete_key in quotas.counters:
+                count = quotas.counters[complete_key]
+                rl_nb_resources, rl_nb_jobs, rl_resources_time = rule
+                # The job update increments the job counter by exactly one, so a
+                # window already *at* the job limit will be over it after the
+                # update (``>=`` is the tight, safe test here).  The resource
+                # and resource-time counters are only guaranteed to grow by at
+                # least one in normal cases, so keep the strict ``<`` for them
+                # to stay conservative (no false early-out).
+                if (rl_nb_resources > -1) and (rl_nb_resources < count[0]):
+                    return (
+                        False,
+                        "nb resources quotas failed",
+                        rl_quotas,
+                        rl_nb_resources,
+                    )
+                if (rl_nb_jobs > -1) and (rl_nb_jobs <= count[1]):
+                    return (False, "nb jobs quotas failed", rl_quotas, rl_nb_jobs)
+                if (rl_resources_time > -1) and (rl_resources_time < count[2]):
+                    return (
+                        False,
+                        "resources hours quotas failed",
+                        rl_quotas,
+                        rl_resources_time,
+                    )
+            if sid == sid_right:
+                break
+            sid = slots[sid].next
+        return None
 
     def set_rules(self, rules_id):
         """Use for temporal calendar, when rules must be change from default"""

@@ -579,3 +579,116 @@ def test_split_slots_jobs_job_4():
     print()
     print(ss)
     assert compare_slots_val_ref(ss, v)
+
+
+def _build_chain_slotset():
+    """Build a SlotSet with an explicit, monotonic chain of 7 slots.
+
+    (b, e) per id::
+        1: (1, 1)   2: (2, 4)   3: (5, 10)   4: (11, 11)
+        5: (12, 25) 6: (26, 30) 7: (31, 31)
+    """
+    intervals = [
+        (1, 1),
+        (2, 4),
+        (5, 10),
+        (11, 11),
+        (12, 25),
+        (26, 30),
+        (31, 31),
+    ]
+    slots = {}
+    for index, (b, e) in enumerate(intervals, start=1):
+        prev_id = index - 1
+        next_id = index + 1 if index < len(intervals) else 0
+        slots[index] = Slot(index, prev_id, next_id, ProcSet(*[(1, 32)]), b, e)
+    return SlotSet(slots)
+
+
+def test_traverse_with_width_explicit_chain():
+    ss = _build_chain_slotset()
+
+    def yielded_ids(**kwargs):
+        return [(s.id, e.id) for s, e in ss.traverse_with_width(**kwargs)]
+
+    # Width that every slot satisfies on its own
+    assert yielded_ids(width=1) == [
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 4),
+        (5, 5),
+        (6, 6),
+        (7, 7),
+    ]
+
+    # Miscellaneous widths exercising backward-persistent end pointer
+    assert yielded_ids(width=3) == [(1, 2), (2, 2), (3, 3), (4, 5), (5, 5), (6, 6)]
+    assert yielded_ids(width=5) == [(1, 3), (2, 3), (3, 3), (4, 5), (5, 5), (6, 6)]
+    assert yielded_ids(width=14) == [(1, 5), (2, 5), (3, 5), (4, 5), (5, 5)]
+
+    # Width that only fits for the first start, ending at the very last slot
+    assert yielded_ids(width=31) == [(1, 7)]
+
+    # Width that never fits
+    assert yielded_ids(width=100) == []
+
+    # end_id bounds the traversal
+    assert yielded_ids(width=14, end_id=5) == [(1, 5), (2, 5), (3, 5), (4, 5), (5, 5)]
+    assert yielded_ids(width=20, end_id=5) == [(1, 5), (2, 5), (3, 5)]
+
+    # start_id in the middle
+    assert yielded_ids(width=5, start_id=3) == [(3, 3), (4, 5), (5, 5), (6, 6)]
+    assert yielded_ids(width=14, start_id=2) == [(2, 5), (3, 5), (4, 5), (5, 5)]
+
+    # start_id == end_id
+    assert yielded_ids(width=1, start_id=4, end_id=4) == [(4, 4)]
+    assert yielded_ids(width=5, start_id=4, end_id=4) == []
+
+    # Unknown ids behave like an empty traversal
+    assert yielded_ids(width=1, start_id=99) == []
+    assert yielded_ids(width=1, end_id=99) == []
+
+
+def _reference_traverse_with_width(ss, width, start_id=0, end_id=0):
+    """Reference implementation of the ORIGINAL nested-loop semantics."""
+    assert width > 0
+    result = []
+    for start_slot in ss.traverse_id(start=start_id, end=end_id):
+        begin_time = start_slot.b
+        for end_slot in ss.traverse_id(start=start_slot.id, end=end_id):
+            if end_slot.e - begin_time + 1 >= width:
+                result.append((start_slot.id, end_slot.id))
+                break
+    return result
+
+
+def _random_chain_slotset(rng, n_slots):
+    b = rng.randint(0, 10)
+    slots = {}
+    for index in range(1, n_slots + 1):
+        e = b + rng.randint(0, 8)
+        prev_id = index - 1
+        next_id = index + 1 if index < n_slots else 0
+        slots[index] = Slot(index, prev_id, next_id, ProcSet(*[(1, 32)]), b, e)
+        b = e + 1 + rng.randint(0, 3)
+    return SlotSet(slots)
+
+
+def test_traverse_with_width_randomized_matches_original():
+    import random
+
+    rng = random.Random(20240607)
+    for _ in range(2000):
+        n_slots = rng.randint(1, 12)
+        ss = _random_chain_slotset(rng, n_slots)
+        width = rng.randint(1, 40)
+        start_id = rng.choice([0] + list(range(1, n_slots + 1)))
+        end_id = rng.choice([0] + list(range(1, n_slots + 1)))
+
+        got = [(s.id, e.id) for s, e in ss.traverse_with_width(width, start_id, end_id)]
+        expected = _reference_traverse_with_width(ss, width, start_id, end_id)
+        assert got == expected, (
+            f"mismatch width={width} start_id={start_id} end_id={end_id}\n"
+            f"got={got}\nexpected={expected}"
+        )
