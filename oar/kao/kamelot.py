@@ -86,6 +86,10 @@ def internal_schedule_cycle(
 ):
     resource_set = plt.resource_set(session, config)
 
+    from oar.kao import parallel_windows
+
+    parallel_windows.set_options(config)
+
     #
     # Retrieve waiting jobs
     #

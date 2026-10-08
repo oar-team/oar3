@@ -8,6 +8,7 @@ from typing import Any, Tuple
 
 from procset import ProcSet
 
+from oar.kao import parallel_windows
 from oar.kao.helpers import job_scheduling_record, write_scheduling_timing_yaml
 from oar.kao.quotas import Quotas
 from oar.kao.slot import Slot, SlotSet, intersec_itvs_slots, intersec_ts_ph_itvs_slots
@@ -364,7 +365,16 @@ def find_first_suitable_contiguous_slots(
     :param min_start_time: The earliest date at which the job can start
     """
 
-    if Quotas.enabled and not job.no_quotas:
+    use_quotas = Quotas.enabled and not job.no_quotas
+
+    if parallel_windows.get_options()[0] >= 2:
+        parallel_result = parallel_windows.find_first_suitable_parallel(
+            slots_set, job, res_rqt, hy, min_start_time, use_quotas
+        )
+        if parallel_result is not None:
+            return parallel_result
+
+    if use_quotas:
         return find_first_suitable_contiguous_slots_quotas(
             slots_set, job, res_rqt, hy, min_start_time
         )

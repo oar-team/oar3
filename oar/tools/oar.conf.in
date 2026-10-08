@@ -310,6 +310,21 @@ HIERARCHY_LABELS="resource_id,network_address,cpu,core"
 # ***NOT LIMITED by default***
 MAX_JOB_PER_QUEUES_GROUP_SCHEDULING_ROUND="1000"
 
+# Optional parallel scan of the time windows of a "hard" job (a job that
+# cannot be placed early and scans many windows).  The per-window scan is
+# read-only; it is evaluated concurrently in forked child processes and the
+# earliest suitable window is kept, exactly as the sequential scan.
+#   no/off/0 (default): sequential (unchanged behaviour)
+#   auto: use os.cpu_count() processes
+#   N:    use N processes (N >= 2)
+# Only "hard" jobs benefit; the first SCHEDULER_PARALLEL_MIN_WINDOWS windows are
+# always scanned sequentially, so easy jobs never fork.  Requires fork (Linux).
+SCHEDULER_PARALLEL_WINDOWS="no"
+
+# Number of windows scanned sequentially before the optional parallel scan is
+# used (see SCHEDULER_PARALLEL_WINDOWS).
+SCHEDULER_PARALLEL_MIN_WINDOWS="200"
+
 # Mode to get resources and generate hierarchy levels, values are following:
 # default:     all is done dynamically, does not scale very beyond 5000 resourcess
 #
