@@ -127,6 +127,7 @@ def _child_scan(
         passed = None
         pass_index = None
         frontier = None
+        frontier_begin = None
         precheck = None
         skipped = 0
         while True:
@@ -151,8 +152,13 @@ def _child_scan(
                     sid_right,
                     use_quotas,
                 )
-                if is_frontier and frontier is None:
-                    frontier = sid_left
+                if is_frontier:
+                    # Keep the temporally EARLIEST frontier: slot ids do not
+                    # follow time after splits, so compare the slot dates.
+                    begin = slots[sid_left].b
+                    if frontier is None or begin < frontier_begin:
+                        frontier = sid_left
+                        frontier_begin = begin
                 if failure is not None:
                     skipped += 1
                     if precheck is None:
@@ -378,7 +384,7 @@ def find_first_suitable_parallel(
     for res in results:
         worker_frontier = res.get("frontier")
         if worker_frontier is not None and (
-            frontier == -1 or worker_frontier < frontier
+            frontier == -1 or slots[worker_frontier].b < slots[frontier].b
         ):
             frontier = worker_frontier
         if precheck is None and res.get("precheck") is not None:

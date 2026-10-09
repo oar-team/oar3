@@ -118,3 +118,103 @@ def test_parallel_matches_sequential_nb_slots(nb_slots):
     sequential = run(4, NB_RES - 3, nb_slots=nb_slots, parallel=0)
     parallel = run(4, NB_RES - 3, nb_slots=nb_slots, parallel=6)
     assert sequential == parallel
+
+
+def run_reversed(parallel):
+    """Scenario with slot ids that do NOT follow temporal order.
+
+    Temporal order is 1,5,4,3,2,6 (slots 1 and 5 have no resources).  A running
+    job saturates the u0 ``nb_jobs=1`` quota on the middle slots, so the waiting
+    job is pre-check-rejected on several windows (setting the resource frontier)
+    and only finds a window at the very end.
+    """
+    order = [1, 5, 4, 3, 2, 6]
+    free = {
+        1: ProcSet(),
+        5: ProcSet(),
+        4: ProcSet((1, 4)),
+        3: ProcSet((1, 4)),
+        2: ProcSet((1, 4)),
+        6: ProcSet((1, 4)),
+    }
+
+    parallel_windows.set_options(
+        {
+            "SCHEDULER_PARALLEL_WINDOWS": str(parallel),
+            "SCHEDULER_PARALLEL_MIN_WINDOWS": "0",
+        }
+    )
+    Quotas.enabled = True
+    Quotas.default_rules = {("*", "*", "*", "/"): [-1, 1, -1]}
+    Quotas.calendar = None
+    Quotas.job_types = ["*"]
+    if hasattr(Quotas, "reset_rule_tree_cache"):
+        Quotas.reset_rule_tree_cache()
+    ResourceSet.default_itvs = ProcSet((1, 4))
+
+    slots = {}
+    for idx, sid in enumerate(order):
+        b = idx * 10
+        slots[sid] = Slot(
+            sid,
+            order[idx - 1] if idx > 0 else 0,
+            order[idx + 1] if idx < len(order) - 1 else 0,
+            free[sid],
+            b,
+            b + 9,
+        )
+    ss = SlotSet(slots)
+
+    all_ss = {"default": ss}
+    running = JobPseudo(
+        id=0,
+        types={},
+        deps=[],
+        key_cache={},
+        queue="default",
+        user="u0",
+        project="",
+        mld_res_rqts=[],
+        ts=False,
+        ph=0,
+    )
+    running.res_set = ProcSet((1, 4))
+    running.walltime = 30
+    for sid in (4, 3, 2):
+        ss.slots[sid].quotas.update(running)
+
+    hy = {"node": [ProcSet((i, i)) for i in range(1, 5)]}
+    jobs = {}
+    jids = list(range(1, 4))
+    for i in jids:
+        jobs[i] = JobPseudo(
+            id=i,
+            types={},
+            deps=[],
+            key_cache={},
+            queue="default",
+            user="u0",
+            project="",
+            mld_res_rqts=[(i, 10, [([("node", 1)], ProcSet((1, 4)))])],
+            ts=False,
+            ph=0,
+        )
+    set_jobs_cache_keys(None, jobs)
+    schedule_id_jobs_ct(all_ss, jobs, hy, jids, 10)
+    return (
+        {i: jobs[i].start_time for i in jids},
+        {key: (sid, ss.slots[sid].b) for key, sid in ss.cache.items()},
+    )
+
+
+def test_parallel_frontier_is_temporally_earliest():
+    # The parallel frontier aggregation must pick the temporally-earliest
+    # frontier, not the smallest slot id (ids do not follow time after splits).
+    # The fork/chunk assignment is nondeterministic, so repeat the run.
+    import multiprocessing
+
+    if "fork" not in multiprocessing.get_all_start_methods():
+        pytest.skip("fork not available")
+    sequential = run_reversed(0)
+    for _ in range(20):
+        assert run_reversed(4) == sequential
