@@ -2,13 +2,48 @@
 from array import array
 from collections import OrderedDict
 
-from procset import ProcSet
+from procset import ProcInt, ProcSet
 from sqlalchemy import text
 
 from oar.lib.hierarchy import Hierarchy
 from oar.lib.models import Resource
 
 MAX_NB_RESOURCES = 100000
+
+
+def procset_from_values(values):
+    """Build a :class:`ProcSet` from an iterable of non-negative integers.
+
+    ``ProcSet(*values)`` merges the values one by one and each merge rescans
+    the growing interval list, which is quadratic when the values are
+    scattered.  A job constraint (e.g. a resource property) can match
+    thousands of non-contiguous resources, stalling the scheduler for minutes.
+    Sort the values, collapse consecutive ones into intervals and fill the
+    interval list directly instead (linear).
+
+    The result is the same set as ``ProcSet(*values)``.
+    """
+    ordered = sorted(values)
+    itvs = []
+    if ordered:
+        begin = end = ordered[0]
+        for value in ordered[1:]:
+            if value == end + 1:
+                end = value
+            elif value <= end:  # duplicate value
+                continue
+            else:
+                itvs.append(ProcInt(begin, end))
+                begin = end = value
+        itvs.append(ProcInt(begin, end))
+
+    result = ProcSet()
+    try:
+        # pylint: disable=protected-access
+        result._itvs = itvs
+    except AttributeError:  # pragma: no cover - future-proof fallback
+        return ProcSet(*itvs)
+    return result
 
 
 class ResourceSet(object):
@@ -113,8 +148,8 @@ class ResourceSet(object):
 
         # global ordered resources intervals
         # print roids
-        self.roid_itvs = ProcSet(*roids)  # TODO
-        self.absent_roid_itvs = ProcSet(*absent_roids)
+        self.roid_itvs = procset_from_values(roids)
+        self.absent_roid_itvs = procset_from_values(absent_roids)
 
         if "id" in hy_roid:
             hy_roid["resource_id"] = hy_roid["id"]
@@ -125,11 +160,11 @@ class ResourceSet(object):
 
         # transform available_upto
         for k, v in available_upto.items():
-            self.available_upto[k] = ProcSet(*v)
+            self.available_upto[k] = procset_from_values(v)
 
         #
-        self.suspendable_roid_itvs = ProcSet(*suspendable_roids)
+        self.suspendable_roid_itvs = procset_from_values(suspendable_roids)
 
         default_roids = [self.rid_i2o[i] for i in default_rids]
-        self.default_itvs = ProcSet(*default_roids)
+        self.default_itvs = procset_from_values(default_roids)
         ResourceSet.default_itvs = self.default_itvs  # for Quotas

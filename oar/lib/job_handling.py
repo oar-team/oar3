@@ -36,6 +36,7 @@ from oar.lib.models import (
     WalltimeChange,
 )
 from oar.lib.plugins import find_plugin_function
+from oar.lib.resource import procset_from_values
 from oar.lib.resource_handling import (
     get_current_resources_with_suspended_job,
     update_current_scheduler_priority,
@@ -364,7 +365,7 @@ def get_data_jobs(
                     roids = [
                         resource_set.rid_i2o[int(y[0])] for y in request_constraints
                     ]
-                    res_constraints = ProcSet(*roids)
+                    res_constraints = procset_from_values(roids)
                     cache_constraints[sql_constraints] = res_constraints
         else:
             # add next res_type , res_value
