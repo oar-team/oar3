@@ -18,6 +18,7 @@ Changed
 - Fixed running jobs having their resources reassigned when the launch latency exceeded SCHEDULER_JOB_SECURITY_TIME #154
 - Support cgroup v2 (unified hierarchy) in ``job_resource_manager_systemd.pl``, ``job_resource_manager_systemd_nixos.pl``, ``oarsh.in`` and ``oarsh_shell.in``
 - oarstat: fixed ``oarstat -fj <job_id>`` printing nothing for jobs killed while still Waiting
+- fixed Warnings for invalid escape characters at installation time
 
 Version 3.0.3
 -------------

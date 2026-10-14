@@ -169,11 +169,11 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
 
         if ("DISPLAY" in os.environ) and os.environ["DISPLAY"]:
             cmd += (
-                "\"bash -c 'echo \$PPID >> "
+                "\"bash -c 'echo \\$PPID >> "
                 + oarsub_pids
                 + " && ("
                 + xauth_path
-                + " -q extract - \${DISPLAY/#localhost:/:} | OARDO_BECOME_USER="
+                + " -q extract - \\${DISPLAY/#localhost:/:} | OARDO_BECOME_USER="
                 + luser
                 + " oardodo "
                 + xauth_path
@@ -183,9 +183,9 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
                 + job.user
                 + '" ] && OARDO_BECOME_USER='
                 + luser
-                + ' oardodo bash --noprofile --norc -c "chmod 660 \\\$HOME/.Xauthority" ;TTY=\$(tty) && test -e \$TTY && oardodo chown '
+                + ' oardodo bash --noprofile --norc -c "chmod 660 \\\\$HOME/.Xauthority" ;TTY=\\$(tty) && test -e \\$TTY && oardodo chown '
                 + job.user
-                + ":oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER="
+                + ":oar \\$TTY && oardodo chmod 660 \\$TTY' && OARDO_BECOME_USER="
                 + job.user
                 + " oardodo bash --noprofile --norc -c '"
                 + script
@@ -195,11 +195,11 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
         else:
             # No X display forwarding
             cmd += (
-                "\"bash -c 'echo \$PPID >> "
+                "\"bash -c 'echo \\$PPID >> "
                 + oarsub_pids
-                + " && TTY=\$(tty) && test -e \$TTY && oardodo chown "
+                + " && TTY=\\$(tty) && test -e \\$TTY && oardodo chown "
                 + job.user
-                + ":oar \$TTY && oardodo chmod 660 \$TTY' && OARDO_BECOME_USER="
+                + ":oar \\$TTY && oardodo chmod 660 \\$TTY' && OARDO_BECOME_USER="
                 + job.user
                 + " oardodo bash --noprofile --norc -c '"
                 + script
@@ -360,7 +360,7 @@ def connect_job(session, config, job_id, stop_oarexec, openssh_cmd, cmd_ret):
     "--notify",
     type=click.STRING,
     help='Specify a notification method (mail or command to execute). Ex: \
-              --notify "mail:name\@domain.com"\
+              --notify "mail:name\\@domain.com"\
               --notify "exec:/path/to/script args"',
 )
 @click.option(

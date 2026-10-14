@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
+r"""
 Process that launches and manages bipbip and leon processes.
 
 ..
