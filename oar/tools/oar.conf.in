@@ -107,7 +107,7 @@ OPENSSH_CMD="/usr/bin/ssh -p 6667"
 # (with your options except "-m" and "-o").
 # You don t also have to give any taktuk command.
 # (taktuk version must be >= 3.6)
-#TAKTUK_CMD="/usr/bin/taktuk -t 30 -s"
+TAKTUK_CMD="/usr/bin/taktuk -t 30 -s"
 
 # Change the meta scheduler in use.
 #META_SCHED_CMD="kao"

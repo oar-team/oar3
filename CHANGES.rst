@@ -25,6 +25,7 @@ Changed
 - API: requests without a Bearer token now get ``401 Unauthorized`` instead of ``403 Forbidden`` (FastAPI >= 0.122)
 - Replaced python-jose dependency by python-jwt #166
 - Install the default admission rules files into ``/etc/oar/admission_rules.d``
+- Enable TAKTUK_CMD by default, as taktuk is required by the default cpuset resource manager
 
 Version 3.0.3
 -------------
