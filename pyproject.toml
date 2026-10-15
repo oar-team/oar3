@@ -80,7 +80,7 @@ rich = ">=12.5"
 ClusterShell = ">=1.8"
 httpx = ">=0.23.0"
 bcrypt = "^4.0.1"
-python-jose = {extras = ["cryptography"], version = "^3.4.0"}
+PyJWT = "^2.10"
 
 [tool.poetry.group.dev.dependencies]
 zerorpc = "^0.6.3"

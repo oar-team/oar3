@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from jose import jwt
+import jwt
 
 from oar.lib.configuration import Configuration
 

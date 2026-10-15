@@ -45,7 +45,7 @@
                 clustershell
                 rich
                 httpx
-                python-jose
+                pyjwt
                 passlib
                 bcrypt
             ];
@@ -111,7 +111,7 @@
                     pyyaml
                     ptpython
                     python-multipart
-                    python-jose
+                    pyjwt
                     kapackpkgs.procset
                     rich
                     pexpect

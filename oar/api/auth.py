@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Annotated, Optional
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
-from jose import JWTError, jwt
 
 from oar.lib.access_token import check_api_secret_key
 from oar.lib.submission import check_reservation
@@ -25,7 +25,7 @@ def get_token_data(
     payload = None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError as e:
+    except jwt.PyJWTError as e:
         print(f"error: {e}")
 
     return payload
