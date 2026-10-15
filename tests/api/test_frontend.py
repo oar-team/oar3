@@ -28,7 +28,7 @@ def test_app_frontend_whoami(client, setup_config):
 
     res = client.get("/whoami")
     print(res.json())
-    assert res.status_code == 403
+    assert res.status_code == 401
 
 
 def test_app_frontend_timezone(client, setup_config):

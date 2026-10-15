@@ -2,13 +2,13 @@
   description = "oar";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
-    kapack.url = "github:oar-team/nur-kapack?ref=master";
+    kapack.url = "git+https://gricad-gitlab.univ-grenoble-alpes.fr/kairns/kapack.git?ref=master";
     kapack.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, flake-utils, kapack }:
+  outputs = { nixpkgs, flake-utils, kapack, ... }:
 
     flake-utils.lib.eachDefaultSystem (system:
       let
@@ -54,14 +54,15 @@
       in {
           #pythonEnv = pkgs.python3.withPackages(ps: [ ]);
         packages.${packageName} = app;
+        packages.default = app;
         packages.documentation = pkgs.stdenv.mkDerivation {
           pname = "oar3-documentation";
           version = "1.0.1";
           src = ./.;
           buildInputs = with pkgs.python3Packages; [
-            (pkgs.poetry2nix.mkPoetryEnv { projectDir = self; })
+            app
             sphinx
-            sphinx_rtd_theme
+            sphinx-rtd-theme
           ];
 
           buildPhase = ''
@@ -75,17 +76,15 @@
           '';
         };
 
-        defaultPackage = self.packages.${system}.${packageName};
-
         devShells = {
             old = pkgs.mkShell {
                 LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
                 buildInputs = with pkgs; [
-                    (poetry2nix.mkPoetryEnv { projectDir = self; })
+                    app
                     # Install the entry point and the plugins
                     # Which is not needed anymore bc the plugins are on a new repo
                     # (poetry2nix.mkPoetryApplication { projectDir = self; })
-                    python3Packages.sphinx_rtd_theme
+                    python3Packages.sphinx-rtd-theme
                     poetry
                     postgresql
                     pre-commit
@@ -137,7 +136,14 @@
                   packages = with pkgs; [ pre-commit ] ++ pythonEnv;
               };
             with-oar = pkgs.mkShell {
-                packages = [ self.packages.${system}.${packageName} ];
+                packages = [ app ];
+            };
+            format = pkgs.mkShell {
+                packages = with pkgs.python3Packages; [
+                    isort
+                    black
+                    flake8
+                ];
             };
         };
     });

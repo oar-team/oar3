@@ -22,7 +22,7 @@ jobs:
         # - name: Install dev requirements
         #   run: pip install -r requirements/dev.txt
         - name: Check code formatting
-          run: nix develop --command ./scripts/ci/check-formatting.sh
+          run: nix develop .#format --command ./scripts/ci/check-formatting.sh
     Run-Tests-On-Docker:
       runs-on: ubuntu-latest
       strategy:

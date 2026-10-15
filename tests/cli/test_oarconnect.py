@@ -79,6 +79,6 @@ def test_oarconnect_connect_bad_user(
         catch_exceptions=False,
     )
 
-    out = res.stdout_bytes.decode()
+    out = res.stderr
     assert f"#ERROR: User mismatch for job {job_id} (job user is toto)\n" == out
     assert res.exit_code == 20
