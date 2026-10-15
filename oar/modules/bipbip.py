@@ -253,7 +253,7 @@ class BipBip(object):
                     "project": job.project,
                     "log_level": config["LOG_LEVEL"],
                 }
-                taktuk_cmd = config["TAKTUK_CMD"]
+                taktuk_cmd = config.get("TAKTUK_CMD", "/usr/bin/taktuk -t 30 -s")
 
                 cpuset_data_str = limited_dict2hash_perl(cpuset_data_hash)
                 cpuset_data_str = cpuset_data_str[:-1] + resources_data_str

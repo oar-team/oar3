@@ -1212,7 +1212,9 @@ def meta_schedule(session, config, mode="internal", plt=Platform()):
                     }
                 if cpuset_nodes:
                     # TODO
-                    taktuk_cmd = config["TAKTUK_CMD"]  # noqa: F841
+                    taktuk_cmd = config.get(  # noqa: F841
+                        "TAKTUK_CMD", "/usr/bin/taktuk -t 30 -s"
+                    )
                     if "SUSPEND_RESUME_FILE" in config:
                         suspend_file = config["SUSPEND_RESUME_FILE"]
                     else:

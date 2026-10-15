@@ -26,6 +26,7 @@ Changed
 - Replaced python-jose dependency by python-jwt #166
 - Install the default admission rules files into ``/etc/oar/admission_rules.d``
 - Enable TAKTUK_CMD by default, as taktuk is required by the default cpuset resource manager
+- Default TAKTUK_CMD to ``/usr/bin/taktuk -t 30 -s`` when unset in oar.conf
 
 Version 3.0.3
 -------------

@@ -2471,7 +2471,7 @@ def job_finishing_sequence(session, config, epilogue_script, job_id, events):
                     + str(job_id)
                     + "] Clean cpuset on each nodes"
                 )
-                taktuk_cmd = config["TAKTUK_CMD"]
+                taktuk_cmd = config.get("TAKTUK_CMD", "/usr/bin/taktuk -t 30 -s")
                 job_challenge, ssh_private_key, ssh_public_key = get_job_challenge(
                     session, job_id
                 )

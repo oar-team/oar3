@@ -419,7 +419,7 @@ class NodeChangeState(object):
             }
 
             if nodes_cpuset_fields:
-                taktuk_cmd = config["TAKTUK_CMD"]
+                taktuk_cmd = config.get("TAKTUK_CMD", "/usr/bin/taktuk -t 30 -s")
                 openssh_cmd = config["OPENSSH_CMD"]
                 # TODO: TOREMOVE ?
                 # if 'OAR_SSH_CONNECTION_TIMEOUT':
