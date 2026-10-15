@@ -133,18 +133,18 @@ def process_walltime_change_requests(session, config, plt):
             session,
             job_id,
             new_pending,
-            "NO" if (new_pending == 0) else None,
-            "NO" if (new_pending == 0) else None,
+            "NO" if (new_pending == 0) else job.force,
+            "NO" if (new_pending == 0) else job.delay_next_jobs,
             job.granted + fit,
             (
                 (job.granted_with_force + fit)
                 if (job.force == "YES" and fit > 0)
-                else None
+                else job.granted_with_force
             ),
             (
                 (job.granted_with_delay_next_jobs + fit)
                 if (job.delay_next_jobs == "YES" and fit > 0)
-                else 0
+                else job.granted_with_delay_next_jobs
             ),
         )
 

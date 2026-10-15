@@ -10,7 +10,7 @@ import oar.lib.tools  # for monkeypatching
 from oar.cli.oarwalltime import cli
 from oar.lib.database import ephemeral_session
 from oar.lib.job_handling import insert_job
-from oar.lib.models import Queue, Resource, WalltimeChange
+from oar.lib.models import Job, Queue, Resource, WalltimeChange
 
 from ..helpers import insert_running_jobs
 
@@ -54,6 +54,14 @@ def finalizer(request):
     def teardown():
         if "OARDO_USER" in os.environ:
             del os.environ["OARDO_USER"]
+
+
+@pytest.fixture(scope="function", autouse=True)
+def restore_walltime_change_enabled(setup_config):
+    config, _ = setup_config
+    walltime_change_enabled = config.get("WALLTIME_CHANGE_ENABLED")
+    yield
+    config["WALLTIME_CHANGE_ENABLED"] = walltime_change_enabled
 
 
 def test_version(minimal_db_initialization, setup_config):
@@ -218,3 +226,34 @@ def test_walltime_container_job(minimal_db_initialization, setup_config):
     assert walltime_change.granted_with_delay_next_jobs == 0
     assert re.match(r".*Accepted:.*", result.output)
     assert fake_notifications == ["Walltime"]
+
+
+def test_oarwalltime_status_running_job(minimal_db_initialization, setup_config):
+    config, _ = setup_config
+    config["WALLTIME_CHANGE_ENABLED"] = "YES"
+    job_id = insert_running_jobs(minimal_db_initialization, 1, walltime=3600)[0]
+
+    runner = CliRunner()
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
+    print(result.output)
+    assert result.exit_code == 0
+    assert re.match(r".*job is running.*", result.output)
+
+
+def test_oarwalltime_status_not_running_job(minimal_db_initialization, setup_config):
+    config, _ = setup_config
+    config["WALLTIME_CHANGE_ENABLED"] = "YES"
+    job_id = insert_running_jobs(minimal_db_initialization, 1, walltime=3600)[0]
+    WalltimeChange.create(
+        minimal_db_initialization, job_id=job_id, pending=0, granted=600
+    )
+    minimal_db_initialization.query(Job).filter(Job.id == job_id).update(
+        {Job.state: "Terminated"}, synchronize_session=False
+    )
+    minimal_db_initialization.commit()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, [str(job_id)], obj=(minimal_db_initialization, config))
+    print(result.output)
+    assert result.exit_code == 0
+    assert re.match(r".*job is not running.*", result.output)
