@@ -60,7 +60,7 @@ def get_global_stream_handler(
 ) -> dict[str, Optional[StreamHandler]]:
     # from . import config
 
-    global STREAM_HANDLER
+    # global STREAM_HANDLER
     if STREAM_HANDLER[output] is None:
         STREAM_HANDLER[output] = StreamHandler(getattr(sys, output, "stderr"))
         STREAM_HANDLER[output].setLevel(LEVELS[config["LOG_LEVEL"]])

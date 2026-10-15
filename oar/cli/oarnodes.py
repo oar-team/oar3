@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """oarnodes - print OAR node properties
- EXAMPLES:
- oarnodes -l
-   => returns the complete list without information  - status = 0
- oarnodes -s
-   => returns only the state of nodes - status = 0
- oarnodes -h|--help
-   => returns a help message - status = 0
- oarnodes host1 [.. hostn]
-   => returns the information for hostX - status is 0 for every host known - 1 otherwise
+EXAMPLES:
+oarnodes -l
+  => returns the complete list without information  - status = 0
+oarnodes -s
+  => returns only the state of nodes - status = 0
+oarnodes -h|--help
+  => returns a help message - status = 0
+oarnodes host1 [.. hostn]
+  => returns the information for hostX - status is 0 for every host known - 1 otherwise
 """
 # -*- coding: utf-8 -*-
 import itertools

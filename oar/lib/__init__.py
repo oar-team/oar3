@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    oar-lib
-    ~~~~~~~
+oar-lib
+~~~~~~~
 
-    Python version of OAR Common Library
+Python version of OAR Common Library
 
 """

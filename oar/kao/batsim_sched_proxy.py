@@ -1,49 +1,49 @@
 # coding: utf-8
 """Proxy to exploit BatSim compatible scheduler in OAR
 
- 1) Instrastrcuture bootstrap: open batsim session w/ batsim_sched_proxy CLI (option -s A)
+1) Instrastrcuture bootstrap: open batsim session w/ batsim_sched_proxy CLI (option -s A)
 
- 2) Almighty loop:
+2) Almighty loop:
 
- 2.1) New Metascheduler round (launch new processus at time)
+2.1) New Metascheduler round (launch new processus at time)
 
- 2.1.1)
-    - Create BatsimSchedProxy object: zmq connexion w/ Batsim compatible scheuler
-    - Get active ids of active jobs (from DataStore (DS) )
-    - ...
+2.1.1)
+   - Create BatsimSchedProxy object: zmq connexion w/ Batsim compatible scheuler
+   - Get active ids of active jobs (from DataStore (DS) )
+   - ...
 
- 2.1.2) Metascheduler: others steps
-    - Advance Reservations
-    - ...
+2.1.2) Metascheduler: others steps
+   - Advance Reservations
+   - ...
 
- 2.1.3) Metascheduler call BatsimSchedProxy.ask_schedule
-    - Check_pstate_changes
-    - Determine new submitted jobs
-    - Determine new completed jobs
-    - Send Bastim message w/ submessage:
-         - JOB_SUBMITTED
-         - JOB_COMPLETED
-         - RESOURCE_STATE_CHANGED
-         - Nop
-    - Wait for Bastim compatible scheduler's answer
-    - Handle answer
-     - EXECUTE_JOB: Save jobs' allocations in DS (ready to by executed)
-     - SET_RESOURCE_STATE: Save pstate to apply in resources_pstate_2_change_str[]
-                          (retrieve by Metasched through retrieve_pstate_changes_to_apply
-     - Nop
+2.1.3) Metascheduler call BatsimSchedProxy.ask_schedule
+   - Check_pstate_changes
+   - Determine new submitted jobs
+   - Determine new completed jobs
+   - Send Bastim message w/ submessage:
+        - JOB_SUBMITTED
+        - JOB_COMPLETED
+        - RESOURCE_STATE_CHANGED
+        - Nop
+   - Wait for Bastim compatible scheduler's answer
+   - Handle answer
+    - EXECUTE_JOB: Save jobs' allocations in DS (ready to by executed)
+    - SET_RESOURCE_STATE: Save pstate to apply in resources_pstate_2_change_str[]
+                         (retrieve by Metasched through retrieve_pstate_changes_to_apply
+    - Nop
 
- 2.1.3) Metascheduler manage pstate/energy
-    - Call retrieve_pstate_changes_to_apply
-    - Trigger pstate changes through Greta at node granularity
+2.1.3) Metascheduler manage pstate/energy
+   - Call retrieve_pstate_changes_to_apply
+   - Trigger pstate changes through Greta at node granularity
 
- 2.1.4) Metascheduler others steps
-    - Resuming/Suspending jobs,
-    - marking jobs to launch
-    - ...
+2.1.4) Metascheduler others steps
+   - Resuming/Suspending jobs,
+   - marking jobs to launch
+   - ...
 
- 2.1.5) Metascheduler round completed  (processus exits)
+2.1.5) Metascheduler round completed  (processus exits)
 
- 3)  Instrastrcuture shut down: closed batsim session w/ batsim_sched_proxy CLI (option -s Z)
+3)  Instrastrcuture shut down: closed batsim session w/ batsim_sched_proxy CLI (option -s Z)
 
 """
 

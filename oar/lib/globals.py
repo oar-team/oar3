@@ -38,7 +38,7 @@ def get_logger(*args, config: Optional[Configuration] = None, **kwargs) -> Logge
 
     logger = init_logger(config)
 
-    global STREAM_HANDLER
+    # global STREAM_HANDLER
     forward_stderr = kwargs.pop("forward_stderr", True)
     # Make sure that the root logger is configured
     sublogger = getLogger(*args, **kwargs)

@@ -18,7 +18,7 @@ fake_notifications = []
 
 
 def fake_notify_almighty(notification):
-    global fake_notifications
+    # global fake_notifications
     fake_notifications.append(notification)
 
 

@@ -143,7 +143,7 @@ def test_db_fairsharing(minimal_db_initialization, setup_config):
     assert flag
 
     # Check if messages are updated and valid
-    r = re.compile("R=\d+,W=\d+,J=(P|I),Q=\w+ \(Karma=\d+.\d+\)$")
+    r = re.compile(r"R=\d+,W=\d+,J=(P|I),Q=\w+ \(Karma=\d+.\d+\)$")
     req = minimal_db_initialization.query(Job).all()
 
     for j in req:

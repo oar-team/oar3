@@ -1,9 +1,9 @@
 """
-    lib.plugins
-    ~~~~~~~~~~~~~~~
+lib.plugins
+~~~~~~~~~~~~~~~
 
-    OAR plugin interface.
-    New plugins can be registered using the entry points mechanism.
+OAR plugin interface.
+New plugins can be registered using the entry points mechanism.
 """
 
 import sys

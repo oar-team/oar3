@@ -1,5 +1,5 @@
 # coding: utf-8
-""" Functions to handle jobs"""
+"""Functions to handle jobs"""
 import copy
 import os
 import random

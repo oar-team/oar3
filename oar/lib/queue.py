@@ -1,5 +1,5 @@
 # coding: utf-8
-""" Functions to handle queues"""
+"""Functions to handle queues"""
 # QUEUES MANAGEMENT
 # TODO is_waiting_job_specific_queue_present($$);
 from itertools import groupby

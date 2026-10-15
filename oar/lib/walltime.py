@@ -1,5 +1,5 @@
 # coding: utf-8
-""" Functions to handle walltime change"""
+"""Functions to handle walltime change"""
 # WALLTIME CHANGE MANAGEMENT
 #
 

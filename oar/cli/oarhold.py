@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""oarhold - Put one or more jobs on hold. A waiting job which is put on hold is not scheduled for running. An already running job which is put on hold is suspended: processes are frozen (operation permitted to the administrator only)
-"""
+"""oarhold - Put one or more jobs on hold. A waiting job which is put on hold is not scheduled for running. An already running job which is put on hold is suspended: processes are frozen (operation permitted to the administrator only)"""
 
 import click
 from sqlalchemy.orm import scoped_session

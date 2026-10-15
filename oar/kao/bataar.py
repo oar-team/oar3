@@ -60,7 +60,7 @@ logger = get_logger("oar.batsim")
 
 
 def monkeypatch_oar_lib_tools():
-    global orig_func
+    # global orig_func
 
     orig_func["notify_almighty"] = oar.lib.tools.notify_almighty
     orig_func["notify_bipbip_commander"] = oar.lib.tools.notify_bipbip_commander

@@ -1,5 +1,5 @@
 # coding: utf-8
-""" Functions to handle resource"""
+"""Functions to handle resource"""
 import os
 from typing import Any, List
 

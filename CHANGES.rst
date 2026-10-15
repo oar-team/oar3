@@ -21,7 +21,7 @@ Changed
 - fixed Warnings for invalid escape characters at installation time
 - oarwalltime fix #70
 - oarwalltime is set for all queues type, not only default
-- Updated Python dependencies : pyzmq simplejson psutil rich pytest pytest-cov redis
+- Updated Python dependencies : pyzmq simplejson psutil rich pytest pytest-cov redis black
 - API: requests without a Bearer token now get ``401 Unauthorized`` instead of ``403 Forbidden`` (FastAPI >= 0.122)
 
 Version 3.0.3
