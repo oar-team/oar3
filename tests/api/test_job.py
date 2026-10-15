@@ -229,7 +229,7 @@ def test_app_job_post_forbidden(client, minimal_db_initialization):
     url = replace_query_params("/jobs/", params=data)
     res = client.post(url)
     print(res.__dict__)
-    assert res.status_code == 403
+    assert res.status_code == 401
 
 
 def test_app_job_post(client, minimal_db_initialization, user_tokens):

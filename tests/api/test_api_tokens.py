@@ -9,7 +9,7 @@ from oar.api.app import create_app
 
 def test_whoami_not_auth(client):
     res = client.get("/whoami")
-    assert res.status_code == 403
+    assert res.status_code == 401
 
 
 def test_invalid_token(client):

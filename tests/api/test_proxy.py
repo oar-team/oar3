@@ -40,7 +40,7 @@ def oar_conf(request, setup_config):
 def test_proxy_no_auth(client):
     res = client.get("/proxy/{job_id}".format(job_id=11111111111111111))
     print(res.json())
-    assert res.status_code == 403
+    assert res.status_code == 401
 
 
 def test_proxy_no_jobid(client, user_tokens):
