@@ -152,6 +152,15 @@ common_setup() {
         ${OARCONFDIR}/update_cpuset_id.sh \
         0755
 
+    mkdir -p ${OARCONFDIR}/admission_rules.d
+    for rule_file in ${SHAREDIR}/admission_rules.d/*.py; do
+        [ -e "${rule_file}" ] || continue
+        install_conffile \
+            ${rule_file} \
+            ${OARCONFDIR}/admission_rules.d/$(basename ${rule_file}) \
+            0644
+    done
+
     set_rights ${BINDIR}/oarsh           6755 ${OARDO_DEFAULTUSER} ${OARDO_DEFAULTGROUP}
     set_rights ${SBINDIR}/oarnodesetting 6750 ${OARDO_DEFAULTUSER} ${OARDO_DEFAULTGROUP}
 

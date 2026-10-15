@@ -13,6 +13,9 @@ SHAREDIR_FILES = $(SRCDIR)/tools/oar.conf.in \
                    $(SRCDIR)/tools/oarnodesetting_ssh.in \
 		   $(SRCDIR)/tools/update_cpuset_id.sh.in
 
+ADMISSION_RULES_FILES = $(wildcard $(SRCDIR)/../etc/oar/admission_rules.d/*.py)
+ADMISSION_RULES_SHAREDIR = $(SHAREDIR)/admission_rules.d
+
 LOGROTATEDIR_FILES = setup/logrotate.d/oar-common.in
 
 PROCESS_TEMPLATE_FILES = $(SRCDIR)/tools/oarsh/oarcp.in \
@@ -51,10 +54,14 @@ install: build install_shared
 	install -d $(DESTDIR)$(OARDIR)/oardodo
 	install -m 0754 $(SRCDIR)/tools/oardodo $(DESTDIR)$(OARDIR)/oardodo
 
+	install -d $(DESTDIR)$(ADMISSION_RULES_SHAREDIR)
+	install -m 0644 $(ADMISSION_RULES_FILES) $(DESTDIR)$(ADMISSION_RULES_SHAREDIR)
+
 uninstall: uninstall_shared
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/oarsh CMD_TARGET=$(DESTDIR)$(BINDIR)/oarsh
 	$(OARDO_UNINSTALL) CMD_WRAPPER=$(OARDIR)/.oarnodesetting CMD_TARGET=$(DESTDIR)$(SBINDIR)/oarnodesetting
 	rm -rf $(DESTDIR)$(OARDIR)/oardodo
+	rm -rf $(DESTDIR)$(ADMISSION_RULES_SHAREDIR)
 	rm -rf $(DESTDIR)$(EXAMPLEDIR)
 
 .PHONY: install setup uninstall build clean

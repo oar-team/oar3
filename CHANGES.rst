@@ -24,6 +24,7 @@ Changed
 - Updated Python dependencies : pyzmq simplejson psutil rich pytest pytest-cov redis black
 - API: requests without a Bearer token now get ``401 Unauthorized`` instead of ``403 Forbidden`` (FastAPI >= 0.122)
 - Replaced python-jose dependency by python-jwt #166
+- Install the default admission rules files into ``/etc/oar/admission_rules.d``
 
 Version 3.0.3
 -------------
