@@ -27,6 +27,7 @@ Changed
 - Install the default admission rules files into ``/etc/oar/admission_rules.d``
 - Enable TAKTUK_CMD by default, as taktuk is required by the default cpuset resource manager
 - Default TAKTUK_CMD to ``/usr/bin/taktuk -t 30 -s`` when unset in oar.conf
+- Accounting (fairsharing): only the job being processed is marked as accounted; running/waiting jobs are no longer wrongly marked, which caused their consumption to be permanently lost
 
 Version 3.0.3
 -------------
