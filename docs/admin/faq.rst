@@ -148,8 +148,8 @@ These are the steps to follow:
         ...
 
  3. Then you have to restrict properties for new job type.
-    So an admission rule performs this job (you can insert this new rule with
-    the :doc:`commands/oaradmissionrules` command)::
+    So an admission rule performs this job (you can insert this new rule as a
+    file in `/etc/oar/admission_rules.d`)::
 
         my $cluster_constraint = 0;
         if (grep(/^cluster1$/, @{$type_list})){

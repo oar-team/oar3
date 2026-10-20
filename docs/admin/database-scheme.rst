@@ -100,10 +100,8 @@ submitted. So each admission rule is executed in the order of the id field and
 it can set several variables. If one of them exits then the others will not
 be evaluated and oarsub returns an error.
 
-The rules can be added with the following command:
-::
-
-    oaradmissionrules -n
+The rules can be added as plain files located in `/etc/oar/admission_rules.d`
+(see :doc:`installation`).
 
 Some examples are better than a long description:
 
@@ -173,9 +171,9 @@ Some examples are better than a long description:
         }
       }
 
-You can print all the admission rules with::
+You can see all the admission rules with::
 
-    oaradmissionrules -S -f
+    ls /etc/oar/admission_rules.d
 
 
 .. _database-event-logs-anchor:
