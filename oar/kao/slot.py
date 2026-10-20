@@ -214,6 +214,7 @@ def intersec_supersed_itvs_slots(
 
     return itvs_acc
 
+
 class SlotSet:
     """
     :class:`SlotSet` holds a linked list of slots and provides utilities for their manipulation.

@@ -858,7 +858,7 @@ class BipBip(object):
             "deploy_cosystem_job_exec_system": deploy_cosystem_job_exec_system,
             "tmp_directory": config["OAREXEC_DIRECTORY"],
             "detach_oarexec": config["DETACH_JOB_FROM_SERVER"],
-            "resources": [dict(r) for r in resources]
+            "resources": [dict(r) for r in resources],
             # "cpuset_full_path": oarexec_cpuset_path,
         }
 

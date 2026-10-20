@@ -111,12 +111,15 @@ def test_db_kao_envelope_1(monkeypatch, minimal_db_initialization, setup_config)
     # print("job state:", job.state)
 
     main(minimal_db_initialization, config)
+    first_resource_id = (
+        minimal_db_initialization.query(Resource.id).order_by(Resource.id).first()[0]
+    )
 
     job = minimal_db_initialization.query(Job).one()
     assert job.state == "toLaunch"
 
     res = minimal_db_initialization.query(AssignedResource).one()
-    assert res.resource_id == 1
+    assert res.resource_id == first_resource_id
 
 
 def test_db_kao_envelope_2(monkeypatch, minimal_db_initialization, setup_config):

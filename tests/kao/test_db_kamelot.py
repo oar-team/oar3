@@ -91,7 +91,6 @@ def test_db_kamelot_4(properties_init, minimal_db_initialization, setup_config):
         assert alloc.resource_id not in properties_init
 
 
-
 @pytest.fixture(scope="function", autouse=False)
 def minimal_db_envelope(request, setup_config):
     _, engine = setup_config
@@ -102,9 +101,15 @@ def minimal_db_envelope(request, setup_config):
         for i in range(5):
             Resource.create(session, network_address="localhost")
 
-        insert_job(session, types=["envelope"], res=[(60, [("resource_id=0", "")])], properties="")
+        insert_job(
+            session,
+            types=["envelope"],
+            res=[(60, [("resource_id=0", "")])],
+            properties="",
+        )
 
         yield session
+
 
 def test_db_kamelot_envelope(minimal_db_envelope, setup_config):
     config, _ = setup_config
