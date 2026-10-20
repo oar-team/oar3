@@ -604,7 +604,7 @@
         },
         {
           "id": 13,
-          "rule": "# Limit the walltime for interactive jobs\nmy $max_walltime = OAR::IO::sql_to_duration(\"12:00:00\");\nif (($jobType eq \"INTERACTIVE\") and ($reservationField eq \"None\")){ \n    foreach my $mold (@{$ref_resource_list}){\n        if ((defined($mold->[1])) and ($max_walltime < $mold->[1])){\n            print(\"[ADMISSION RULE] Walltime to big for an INTERACTIVE job so it is set to $max_walltime.\\n\");\n            $mold->[1] = $max_walltime;\n        }\n    }\n}\n",
+          "rule": "# Limit the walltime for interactive jobs\nmy $max_walltime = OAR::IO::sql_to_duration(\"12:00:00\");\nif (($jobType eq \"INTERACTIVE\") and ($reservationField eq \"None\")){ \n    foreach my $mold (@{$ref_resource_list}){\n        if ((defined($mold->[1])) and ($max_walltime < $mold->[1])){\n            print(\"[ADMISSION RULE] Walltime too big for an INTERACTIVE job so it is set to $max_walltime.\\n\");\n            $mold->[1] = $max_walltime;\n        }\n    }\n}\n",
           "priority": 13,
           "enabled": "YES"
         },

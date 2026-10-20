@@ -131,7 +131,7 @@ Some examples are better than a long description:
               (defined($mold->[1])) and
               ($max_walltime < $mold->[1])
             ){
-              print("[ADMISSION RULE] Walltime to big for an INTERACTIVE job so it is set to $max_walltime.\n");
+              print("[ADMISSION RULE] Walltime too big for an INTERACTIVE job so it is set to $max_walltime.\n");
               $mold->[1] = $max_walltime;
             }
           }

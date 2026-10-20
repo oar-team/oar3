@@ -5,7 +5,7 @@ if (job_type == "INTERACTIVE") and not reservation_date:
     for i, mold in enumerate(resource_request):
         if max_walltime < mold[1]:
             print(
-                "[ADMISSION RULE] Walltime to big for an INTERACTIVE job so it is set to {}.".format(
+                "[ADMISSION RULE] Walltime too big for an INTERACTIVE job so it is set to {}.".format(
                     max_walltime
                 )
             )
