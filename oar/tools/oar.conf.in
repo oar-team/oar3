@@ -369,6 +369,11 @@ SCHEDULER_FAIRSHARING_MAX_JOB_PER_USER=30
 #SCHEDULER_FAIRSHARING_COEF_USER=2
 #SCHEDULER_FAIRSHARING_COEF_USER_ASK=1
 
+# Include the consumption of currently running jobs in the fairsharing
+# window (in addition to the accounting table). Default is yes.
+# Set to no to restore the previous (accounting-only) behaviour.
+#SCHEDULER_FAIRSHARING_INCLUDE_RUNNING_JOBS=yes
+
 ##############################################
 
 ###############################################################

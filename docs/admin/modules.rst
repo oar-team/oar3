@@ -180,6 +180,13 @@ This scheduler takes its historical data in the :ref:`database-accounting-anchor
 the command :doc:`commands/oaraccounting` has to be run periodically (in a cron job for
 example). Otherwise the scheduler cannot be aware of new user consumptions.
 
+In addition to the accounting table, the consumption of jobs that are still
+running is now taken into account: the time already elapsed inside the
+fairsharing window plus the reserved walltime clamped to the window are added
+for each running job. This avoids penalising users whose jobs have not been
+accounted yet. Set ``SCHEDULER_FAIRSHARING_INCLUDE_RUNNING_JOBS=no`` in
+``oar.conf`` to restore the previous behaviour.
+
 oar_sched_gantt_with_timesharing_and_fairsharing_and_quotas
 ___________________________________________________________
 

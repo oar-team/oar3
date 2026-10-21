@@ -4,7 +4,13 @@ import re
 
 from sqlalchemy import func
 
-from oar.lib.models import Accounting
+from oar.lib.models import (
+    Accounting,
+    AssignedResource,
+    Job,
+    MoldableJobDescription,
+    Resource,
+)
 
 
 # convert perl hash 2 dict
@@ -38,6 +44,75 @@ def get_sum_accounting_window(session, queues, window_start, window_stop):
             karma_sum_time_used = float(total_consumption)
 
     return (karma_sum_time_asked, karma_sum_time_used)
+
+
+def get_running_consumption(session, queues, window_start, window_stop):
+    """Return the consumption of currently running jobs inside the window.
+
+    The returned 6-tuple mimics the accounting helpers:
+    (sum_asked, sum_used, projects_asked, projects_used, users_asked, users_used)
+
+    ``used`` is the resource-seconds already elapsed inside the window, while
+    ``asked`` clamps the reserved walltime (start + walltime) to the window.
+    """
+    req = (
+        session.query(
+            Job.project,
+            Job.user,
+            Job.queue_name,
+            Job.id,
+            Job.start_time,
+            MoldableJobDescription.walltime,
+            func.count(AssignedResource.resource_id),
+        )
+        .filter(Job.state == "Running")
+        .filter(Job.queue_name.in_(tuple(queues)))
+        # Mirror accounting: ignore rows without a sane start_time (a genuine
+        # Running job always has one, but a corrupted row must not be billed
+        # the whole window).
+        .filter(Job.start_time > 1)
+        .filter(Job.assigned_moldable_job == MoldableJobDescription.id)
+        .filter(AssignedResource.moldable_id == MoldableJobDescription.id)
+        .filter(AssignedResource.resource_id == Resource.id)
+        .filter(Resource.type == "default")
+        .group_by(
+            Job.project,
+            Job.user,
+            Job.queue_name,
+            Job.id,
+            Job.start_time,
+            MoldableJobDescription.walltime,
+        )
+        .all()
+    )
+
+    sum_asked = 0.0
+    sum_used = 0.0
+    projects_asked = {}
+    projects_used = {}
+    users_asked = {}
+    users_used = {}
+
+    for project, user, _queue_name, _job_id, start, walltime, nb_resources in req:
+        start = int(start or 0)
+        walltime = int(walltime or 0)
+        nb_resources = int(nb_resources or 0)
+
+        clamped_start = max(start, window_start)
+        used = max(0, window_stop - clamped_start) * nb_resources
+        asked = (
+            max(0, min(start + walltime, window_stop) - clamped_start) * nb_resources
+        )
+
+        sum_asked += asked
+        sum_used += used
+
+        projects_asked[project] = projects_asked.get(project, 0.0) + asked
+        projects_used[project] = projects_used.get(project, 0.0) + used
+        users_asked[user] = users_asked.get(user, 0.0) + asked
+        users_used[user] = users_used.get(user, 0.0) + used
+
+    return (sum_asked, sum_used, projects_asked, projects_used, users_asked, users_used)
 
 
 # and karma_projects_asked, karma_projects_used =
@@ -140,6 +215,38 @@ def evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt):
     karma_users_asked, karma_users_used = plt.get_sum_accounting_by_user(
         session, queues, window_start, window_stop
     )
+
+    # Optionally include the consumption of currently running jobs, which is
+    # not (yet) present in the accounting table. Defaults to "yes". Note that
+    # running jobs count partial window overlap (clamping), while accounting
+    # rows are only counted when fully contained in the window; the two sets
+    # are disjoint by job state, so there is no double counting.
+    include_running = (
+        str(config.get("SCHEDULER_FAIRSHARING_INCLUDE_RUNNING_JOBS", "yes"))
+        .strip()
+        .lower()
+        == "yes"
+    )
+
+    if include_running:
+        (
+            running_asked,
+            running_used,
+            _running_projects_asked,
+            running_projects_used,
+            running_users_asked,
+            running_users_used,
+        ) = plt.get_running_consumption(session, queues, window_start, window_stop)
+
+        karma_sum_time_asked += running_asked
+        karma_sum_time_used += running_used
+        for proj, value in running_projects_used.items():
+            karma_projects_used[proj] = karma_projects_used.get(proj, 0.0) + value
+        for usr, value in running_users_used.items():
+            karma_users_used[usr] = karma_users_used.get(usr, 0.0) + value
+        for usr, value in running_users_asked.items():
+            karma_users_asked[usr] = karma_users_asked.get(usr, 0.0) + value
+
     #
     # Compute actual karma for each job
     #
@@ -166,7 +273,7 @@ def evaluate_jobs_karma(session, config, queues, now, jids, jobs, plt):
             karma_proj_target = 0.0
 
         if job.user in karma_user_targets:
-            karma_user_target = karma_user_targets[job.user] / 100.0
+            karma_user_target = float(karma_user_targets[job.user]) / 100.0
         else:
             karma_user_target = 0.0
 

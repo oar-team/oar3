@@ -4,6 +4,7 @@ import time
 from procset import ProcSet
 
 from oar.kao.karma import (
+    get_running_consumption,
     get_sum_accounting_by_project,
     get_sum_accounting_by_user,
     get_sum_accounting_window,
@@ -54,6 +55,9 @@ class Platform(object):
 
     def get_sum_accounting_by_user(self, *args):
         return get_sum_accounting_by_user(*args)
+
+    def get_running_consumption(self, *args):
+        return get_running_consumption(*args)
 
     #
     # SimSim and BatSim mode simu
@@ -136,14 +140,19 @@ class SimuPlatform(Platform):
         self.completed_jids = None
 
     # Karma
+    # Simu mode has no accounting table: return empty/default values so that a
+    # fairsharing evaluation under sim does not crash.
     def get_sum_accounting_window(self, *args):
-        print("get_sum_accounting_window NOT IMPLEMENTED")
+        return (1, 1)
 
     def get_sum_accounting_by_project(self, *args):
-        print("get_sum_accounting_by_project NOT IMPLEMENTED")
+        return ({}, {})
 
     def get_sum_accounting_by_user(self, *args):
-        print("get_sum_accounting_by_user NOT IMPLEMENTED")
+        return ({}, {})
+
+    def get_running_consumption(self, *args):
+        return (0.0, 0.0, {}, {}, {}, {})
 
     def get_waiting_jobs(self, queue):
         print(" get_waiting_jobs_simu:", self.waiting_jids)
