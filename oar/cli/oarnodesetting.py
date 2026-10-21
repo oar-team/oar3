@@ -23,14 +23,14 @@ from oar.lib.node import (
 )
 from oar.lib.resource_handling import (
     add_resource,
-    get_resource,
     get_resource_job_to_frag,
     get_resource_max_value_of_property,
+    get_resources_from_ids,
     get_resources_with_given_sql,
-    log_resource_maintenance_event,
-    set_resource_nextState,
+    log_resources_maintenance_event,
     set_resources_nextState,
     set_resources_property,
+    set_resources_property_values,
 )
 from oar.lib.tools import check_resource_system_property
 
@@ -90,49 +90,66 @@ def wait_end_of_running_jobs(session, cmd_ret, jobs):
 
 
 def set_maintenance(session, cmd_ret, resources, maintenance, no_wait):
-    # import pdb; pdb.set_trace()
+    resources_data = get_resources_from_ids(session, resources)
+    found_resources = {resource.id for resource in resources_data}
     for resource_id in resources:
-        resource = get_resource(session, resource_id)
-        if not resource:
+        if resource_id not in found_resources:
             cmd_ret.error(
-                "The resource {} does not exist in OAR database.".format(resource_id)
+                "The resource {} does not exist in OAR database.".format(resource_id),
+                1,
+                1,
             )
-        elif maintenance == "on":
+
+    resource_ids = [resource.id for resource in resources_data]
+    if not resource_ids:
+        return
+
+    date = tools.get_date(session)
+
+    if maintenance == "on":
+        # Compute the values to save before available_upto is reset to 0
+        # (session objects are expired after each commit).
+        last_available_upto = {
+            resource.id: resource.available_upto
+            for resource in resources_data
+            if resource.available_upto
+            and resource.last_available_upto != resource.available_upto
+        }
+
+        for resource_id in resource_ids:
             cmd_ret.print_(
                 "Maintenance mode set to 'ON' on resource {}".format(resource_id)
             )
-            log_resource_maintenance_event(
-                session, resource_id, maintenance, tools.get_date(session)
-            )
-            prop_to_set = ["available_upto=0"]
-            last_available_upto = resource.available_upto
-            if last_available_upto != 0:
-                prop_to_set.append("last_available_upto=" + str(last_available_upto))
-            set_resources_properties(session, cmd_ret, [resource_id], None, prop_to_set)
-            set_resource_nextState(session, resource_id, "Absent")
-            tools.notify_almighty("ChState")
-            if not no_wait:
+        log_resources_maintenance_event(session, resource_ids, maintenance, date)
+        set_resources_property(session, resource_ids, None, "available_upto", 0)
+        set_resources_property_values(
+            session, "last_available_upto", last_available_upto
+        )
+        set_resources_nextState(session, resource_ids, "Absent")
+        tools.notify_almighty("ChState")
+        if not no_wait:
+            for resource_id in resource_ids:
                 cmd_ret.print_(
                     "Check jobs to delete on resource {}".format(resource_id)
                 )
                 jobs = get_resource_job_to_frag(session, resource_id)
                 wait_end_of_running_jobs(session, cmd_ret, jobs)
-        else:  # maintenance == off
+    else:  # maintenance == off
+        available_upto = {
+            resource.id: resource.last_available_upto
+            for resource in resources_data
+            if resource.last_available_upto
+            and resource.available_upto != resource.last_available_upto
+        }
+
+        for resource_id in resource_ids:
             cmd_ret.print_(
                 "Maintenance mode set to 'OFF' on resource {}".format(resource_id)
             )
-            log_resource_maintenance_event(
-                session, resource_id, maintenance, tools.get_date(session)
-            )
-            prop_to_set = []
-            available_upto = resource.last_available_upto
-            if available_upto != 0:
-                prop_to_set = ["available_upto={}".format(available_upto)]
-                set_resources_properties(
-                    session, cmd_ret, [resource_id], None, prop_to_set
-                )
-            set_resource_nextState(session, resource_id, "Alive")
-            tools.notify_almighty("ChState")
+        log_resources_maintenance_event(session, resource_ids, maintenance, date)
+        set_resources_property_values(session, "available_upto", available_upto)
+        set_resources_nextState(session, resource_ids, "Alive")
+        tools.notify_almighty("ChState")
 
 
 def oarnodesetting(

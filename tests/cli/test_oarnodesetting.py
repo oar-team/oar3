@@ -10,7 +10,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import oar.lib.tools  # for monkeypatching
 from oar.cli.oarnodesetting import cli
 from oar.lib.database import ephemeral_session
-from oar.lib.models import Resource
+from oar.lib.models import Resource, ResourceLog
 
 from ..helpers import insert_running_jobs
 
@@ -410,3 +410,135 @@ def test_oarnodesetting_maintenance_on_wait_timeout(
     # assert len(fake_notifications) == 10
     # resources = db['Resource'].query.order_by(Resource.id).all()
     # assert last_available_upto != resources[0].last_available_upto
+
+
+def test_oarnodesetting_maintenance_batch_on_off(
+    minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+    nb_resources = 5
+    initial_upto = {}
+    for i in range(nb_resources):
+        resource = Resource.create(
+            minimal_db_initialization,
+            network_address="localhost",
+            available_upto=1000 + i,
+        )
+        initial_upto[resource.id] = 1000 + i
+    minimal_db_initialization.commit()
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-h", "localhost", "--maintenance", "on", "--no-wait"],
+        obj=(minimal_db_initialization, config),
+    )
+    assert result.exit_code == 0
+    assert fake_notifications == ["ChState"]
+
+    resources = minimal_db_initialization.query(Resource).order_by(Resource.id).all()
+    assert [resource.id for resource in resources] == list(initial_upto)
+    for resource in resources:
+        assert resource.available_upto == 0
+        assert resource.last_available_upto == initial_upto[resource.id]
+        assert resource.next_state == "Absent"
+
+    # One maintenance log and one last_available_upto log per resource.
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "maintenance")
+        .count()
+        == nb_resources
+    )
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "last_available_upto")
+        .count()
+        == nb_resources
+    )
+
+    result = runner.invoke(
+        cli,
+        ["-h", "localhost", "--maintenance", "off", "--no-wait"],
+        obj=(minimal_db_initialization, config),
+    )
+    assert result.exit_code == 0
+    resources = minimal_db_initialization.query(Resource).order_by(Resource.id).all()
+    for resource in resources:
+        assert resource.available_upto == initial_upto[resource.id]
+        assert resource.next_state == "Alive"
+
+    # "off" did not create new last_available_upto log rows (values were
+    # already equal) and closed the open maintenance log rows.
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "last_available_upto")
+        .count()
+        == nb_resources
+    )
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "maintenance")
+        .filter(ResourceLog.date_stop == 0)
+        .count()
+        == 0
+    )
+
+
+def test_oarnodesetting_maintenance_batch_chunked(
+    minimal_db_initialization, setup_config, monkeypatch
+):
+    """The batched update must still be correct when it is split into chunks."""
+    import oar.lib.resource_handling as resource_handling
+
+    monkeypatch.setattr(resource_handling, "MAX_RESOURCES_PER_STATEMENT", 1)
+    config, _ = setup_config
+    initial_upto = {}
+    for i in range(3):
+        resource = Resource.create(
+            minimal_db_initialization,
+            network_address="localhost",
+            available_upto=2000 + i,
+        )
+        initial_upto[resource.id] = 2000 + i
+    minimal_db_initialization.commit()
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-h", "localhost", "--maintenance", "on", "--no-wait"],
+        obj=(minimal_db_initialization, config),
+    )
+    assert result.exit_code == 0
+    for resource in minimal_db_initialization.query(Resource).all():
+        assert resource.available_upto == 0
+        assert resource.last_available_upto == initial_upto[resource.id]
+
+    # Chunking must not duplicate or drop any resource_logs row either.
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "maintenance")
+        .count()
+        == 3
+    )
+    assert (
+        minimal_db_initialization.query(ResourceLog)
+        .filter(ResourceLog.attribute == "last_available_upto")
+        .count()
+        == 3
+    )
+
+
+def test_oarnodesetting_maintenance_missing_resource(
+    minimal_db_initialization, setup_config
+):
+    config, _ = setup_config
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["-r", "123456", "--maintenance", "on", "--no-wait"],
+        obj=(minimal_db_initialization, config),
+    )
+    print(result.output)
+    assert result.exit_code != 0
+    assert "does not exist" in result.output

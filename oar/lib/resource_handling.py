@@ -3,7 +3,7 @@
 import os
 from typing import Any, List
 
-from sqlalchemy import distinct, func, or_, text
+from sqlalchemy import case, distinct, func, or_, text
 from sqlalchemy.orm import Session
 
 import oar.lib.tools as tools
@@ -22,7 +22,19 @@ from oar.lib.models import (
 
 State_to_num = {"Alive": 1, "Absent": 2, "Suspected": 3, "Dead": 4}
 
+# Maximum number of resources updated by a single SQL statement. Keeps the
+# number of bind parameters (IN list + CASE branches) well below the common
+# database limits (e.g. PostgreSQL's 65535) when a cluster-wide operation
+# targets tens of thousands of resources.
+MAX_RESOURCES_PER_STATEMENT = 1000
+
 logger = get_logger("oar.lib.resource_handling")
+
+
+def _chunked(sequence, size):
+    """Yield successive lists of at most `size` items from `sequence`."""
+    for start in range(0, len(sequence), size):
+        yield sequence[start : start + size]
 
 
 def add_resource(session, name, state):
@@ -180,6 +192,64 @@ def set_resources_property(session, resources, hostnames, prop_name, prop_value)
             session.commit()
         else:
             logger.warning("Failed to update resources")
+
+    return nb_affected_rows
+
+
+def set_resources_property_values(session, prop_name, values):
+    """Set a property to a distinct value for each resource.
+
+    values is a mapping {resource_id: value}. Unlike calling
+    set_resources_property() once per resource, this only performs a constant
+    number of SQL statements per chunk of resources (one resource update, one
+    log closing update and one log insert) whatever the number of resources.
+
+    Contrary to set_resources_property, values whose new value is equal to the
+    current one are not filtered out here: callers must only pass the resources
+    that actually change, otherwise an extra resource_logs row is written.
+    return : number of changed rows
+    """
+
+    if not values:
+        return 0
+
+    prop = getattr(Resource, prop_name)
+    nb_affected_rows = 0
+    items = list(values.items())
+
+    for chunk in _chunked(items, MAX_RESOURCES_PER_STATEMENT):
+        chunk_values = dict(chunk)
+        rids = tuple(chunk_values)
+        date = tools.get_date(session)
+
+        nb_affected_rows += (
+            session.query(Resource)
+            .filter(Resource.id.in_(rids))
+            .update(
+                {prop: case(chunk_values, value=Resource.id)},
+                synchronize_session=False,
+            )
+        )
+
+        # Update LOG table
+        session.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
+            ResourceLog.attribute == prop_name
+        ).filter(ResourceLog.resource_id.in_(rids)).update(
+            {ResourceLog.date_stop: date}, synchronize_session=False
+        )
+
+        # Insert Logs
+        resource_logs = [
+            {
+                ResourceLog.resource_id.name: rid,
+                ResourceLog.attribute.name: prop_name,
+                ResourceLog.value.name: value,
+                ResourceLog.date_start.name: date,
+            }
+            for rid, value in chunk_values.items()
+        ]
+        session.execute(ResourceLog.__table__.insert(), resource_logs)
+        session.commit()
 
     return nb_affected_rows
 
@@ -475,6 +545,37 @@ def log_resource_maintenance_event(session, resource_id, maintenance, date):
         ).filter(ResourceLog.resource_id == resource_id).update(
             {ResourceLog.date_stop: date}, synchronize_session=False
         )
+        session.commit()
+
+
+def log_resources_maintenance_event(session, resource_ids, maintenance, date):
+    """Batched version of log_resource_maintenance_event for several resources
+
+    Performs a single SQL statement per chunk of resources whatever the number
+    of resources.
+    """
+    resource_ids = tuple(resource_ids)
+    if not resource_ids:
+        return
+
+    for chunk in _chunked(resource_ids, MAX_RESOURCES_PER_STATEMENT):
+        if maintenance == "on":
+            ins = [
+                {
+                    ResourceLog.resource_id.name: resource_id,
+                    ResourceLog.attribute.name: "maintenance",
+                    ResourceLog.value.name: maintenance,
+                    ResourceLog.date_start.name: date,
+                }
+                for resource_id in chunk
+            ]
+            session.execute(ResourceLog.__table__.insert(), ins)
+        else:
+            session.query(ResourceLog).filter(ResourceLog.date_stop == 0).filter(
+                ResourceLog.attribute == "maintenance"
+            ).filter(ResourceLog.resource_id.in_(chunk)).update(
+                {ResourceLog.date_stop: date}, synchronize_session=False
+            )
         session.commit()
 
 
