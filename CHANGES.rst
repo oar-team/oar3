@@ -30,6 +30,7 @@ Changed
 - Accounting (fairsharing): only the job being processed is marked as accounted; running/waiting jobs are no longer wrongly marked, which caused their consumption to be permanently lost
 - oarnodesetting: ``-m/--maintenance on|off`` now batches its database updates (a constant number of statements per node instead of ~14 per resource), and reports a non-zero exit code when a requested resource does not exist
 - Fairsharing: include the consumption of currently running jobs (elapsed time and reserved walltime clamped to the fairsharing window) in the karma computation. Controlled by ``SCHEDULER_FAIRSHARING_INCLUDE_RUNNING_JOBS`` (default ``yes``); set it to ``no`` to restore the previous behaviour
+- kao: fix a crash (``duplicate key value violates unique constraint "gantt_jobs_predictions_pkey"``, key ``moldable_job_id = 0``) when a scheduling round ends with no schedulable job: ``save_assigns()`` no longer executes an empty INSERT, which SQLAlchemy turned into ``INSERT ... DEFAULT VALUES`` and which collided with the existing row of the same round
 
 Version 3.0.3
 -------------

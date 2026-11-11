@@ -700,8 +700,16 @@ def save_assigns(session, jobs, resource_set):
             )
 
         logger.info("save assignements")
-        session.execute(GanttJobsPrediction.__table__.insert(), mld_id_start_time_s)
-        session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
+        # Guard against empty parameter lists: SQLAlchemy turns
+        # execute(insert, []) into "INSERT ... DEFAULT VALUES", and
+        # moldable_job_id defaults to 0 => primary key collision
+        # (jobs with start_time = -1 are not schedulable this round).
+        if mld_id_start_time_s:
+            session.execute(
+                GanttJobsPrediction.__table__.insert(), mld_id_start_time_s
+            )
+        if mld_id_rid_s:
+            session.execute(GanttJobsResource.__table__.insert(), mld_id_rid_s)
         session.commit()
 
 
