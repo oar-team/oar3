@@ -43,10 +43,12 @@
 use strict;
 use warnings;
 use Fcntl ':flock';
+use File::Find;
 
 sub exit_myself($$);
 sub print_log($$);
 sub system_with_log($);
+sub migrate_superseded_job_processes();
 
 ###############################################################################
 # Script configuration start
@@ -118,6 +120,10 @@ my $Cpuset;
 #               walltime_seconds => job walltime in seconds,
 #               walltime => job walltime,
 #               project => job project name,
+#               supersed_job_id => id of the job superseded by this job (type
+#                                  supersed=<id>), undef otherwise,
+#               migrate_processes_from_oarexec_pid_file => pid file of the oarexec
+#                                  of the superseded job ("undef" if none),
 #               log_level => debug level number,
 #           }
 
@@ -547,6 +553,9 @@ EOF
         }
     }
 
+    # supersed: move the processes of the superseded job into this job
+    migrate_superseded_job_processes() if (defined($Cpuset->{cpuset_path}));
+
 ###############################################################################
     # Node cleaning: run on all the nodes of the job after the job ends
 ###############################################################################
@@ -706,6 +715,83 @@ EOF
 }
 
 exit(0);
+
+# supersed: move the processes of the superseded job (type supersed=<id>) from its
+# systemd slice into the slice of this job.
+# On the nodes of the superseded job which are not reused by
+# this job (removed nodes), its processes are killed later by its "clean".
+sub migrate_superseded_job_processes() {
+    my $old_job_id = $Cpuset->{supersed_job_id};
+    return if (!defined($old_job_id) or ($old_job_id !~ /^\d+$/));
+
+    my $old_job_slice       = "$Systemd_user_slice-j$old_job_id";
+    my $old_cgroup_job_path = "$Cgroup_user_path/$old_job_slice.slice";
+    if (!-d $old_cgroup_job_path) {
+        print_log(3, "supersed: job $old_job_id has no cgroup on this node, nothing to migrate");
+        return;
+    }
+
+    # The oarexec of the superseded job stays in its slice: it is killed (SIGKILL) by
+    # the clean of the superseded job.
+    my $old_oarexec_pid = -1;
+    my $pid_file        = $Cpuset->{migrate_processes_from_oarexec_pid_file};
+    if (defined($pid_file) and ($pid_file ne "undef") and open(my $pid_fh, '<', $pid_file)) {
+        my $line = <$pid_fh>;
+        close($pid_fh);
+        $old_oarexec_pid = $1 if (defined($line) and ($line =~ /^\s*(\d+)\s*$/));
+    }
+
+    # Freeze the superseded job: no process can be created or exit during the move.
+    # A process moved into the (not frozen) slice of this job is thawed by the kernel.
+    my $frozen = 0;
+    if (system_with_log('oardodo busctl call -q org.freedesktop.systemd1 /org/freedesktop/systemd1 '
+            . "org.freedesktop.systemd1.Manager FreezeUnit s $old_job_slice.slice") == 0) {
+        $frozen = 1;
+    } else {
+        print_log(2, "supersed: cannot freeze $old_job_slice.slice, processes are moved without freezing");
+    }
+
+    # Processes of the superseded job on this node (all its scopes), except its oarexec
+    my @pids;
+    find(
+        {   no_chdir => 1,
+            wanted   => sub {
+                return if ($_ !~ m#/cgroup\.procs$#);
+                if (open(my $procs_fh, '<', $_)) {
+                    while (my $p = <$procs_fh>) {
+                        chomp($p);
+                        push(@pids, $p) if (($p =~ /^\d+$/) and ($p != $old_oarexec_pid));
+                    }
+                    close($procs_fh);
+                }
+            }
+        },
+        $old_cgroup_job_path);
+
+    # Move them into a new scope of this job (same mechanism as oarsh_shell)
+    my $error = 0;
+    if ($#pids >= 0) {
+        my $scope = "$Systemd_job_slice-m$$.scope";
+        print_log(3, "supersed: move " . scalar(@pids) . " processes of job $old_job_id into $scope: @pids");
+        $error = system_with_log(
+            'oardodo busctl call -q org.freedesktop.systemd1 /org/freedesktop/systemd1 '
+            . "org.freedesktop.systemd1.Manager StartTransientUnit 'ssa(sv)a(sa(sv))' $scope fail"
+            . " 3 Delegate b 1 PIDs au " . scalar(@pids) . " @pids Slice s $Systemd_job_slice.slice 0"
+            . ' && while oardodo busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1'
+            . " org.freedesktop.systemd1.Manager ListJobs | grep -q $scope; do sleep 0.1; done");
+    } else {
+        print_log(3, "supersed: no process to migrate from job $old_job_id");
+    }
+
+    # Thaw the superseded job (only its oarexec is left, on its head node)
+    if ($frozen) {
+        system_with_log('oardodo busctl call -q org.freedesktop.systemd1 /org/freedesktop/systemd1 '
+            . "org.freedesktop.systemd1.Manager ThawUnit s $old_job_slice.slice")
+          and exit_myself(5, "supersed: failed to thaw $old_job_slice.slice");
+    }
+    exit_myself(5, "supersed: failed to move the processes of job $old_job_id into $Systemd_job_slice.slice")
+      if ($error);
+}
 
 # Print error message and exit
 sub exit_myself($$) {

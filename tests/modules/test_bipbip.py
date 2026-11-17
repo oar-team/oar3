@@ -11,6 +11,7 @@ from oar.lib.models import (
     Challenge,
     EventLog,
     Job,
+    JobType,
     MoldableJobDescription,
     Resource,
 )
@@ -36,9 +37,14 @@ def fake_launch_oarexec(cmt, data, oarexec_files):
     return True
 
 
+# calls to the job resource manager: (action, data sent to the JRM)
+remote_calls = []
+
+
 def fake_manage_remote_commands(
     hosts, data_str, manage_file, action, ssh_command, taktuk_cmd=None
 ):
+    remote_calls.append((action, data_str))
     return (fake_tag, fake_bad_nodes[action])
 
 
@@ -73,6 +79,7 @@ def fake_notify_interactif_user(job, y):
 
 @pytest.fixture(scope="function", autouse=True)
 def monkeypatch_tools(request, monkeypatch):
+    remote_calls.clear()
     monkeypatch.setattr(oar.lib.tools, "create_almighty_socket", lambda x, y: None)
     monkeypatch.setattr(oar.lib.tools, "notify_almighty", lambda x: True)
     monkeypatch.setattr(oar.lib.tools, "pingchecker", fake_pingchecker)
@@ -387,3 +394,124 @@ def test_bipbip_toLaunch_leaflet(minimal_db_initialization, builtin_config):
         get_job_cpuset_name(minimal_db_initialization, job_id)
         == "l_impertinent_survolte_12345"
     )
+
+
+def _insert_assigned_job(session, user, state, types=[], nb_resources=4):
+    """Insert a job with its own assigned moldable and the first nb_resources resources"""
+    (job_id, moldable_id) = insert_job(
+        session,
+        res=[(60, [(f"resource_id={nb_resources}", "")])],
+        properties="",
+        command="yop",
+        state=state,
+        user=user,
+        stdout_file="poy",
+        stderr_file="yop",
+        types=types,
+        return_moldable=True,
+    )
+    session.query(Job).filter(Job.id == job_id).update(
+        {Job.assigned_moldable_job: moldable_id[0], Job.start_time: 10},
+        synchronize_session=False,
+    )
+    Challenge.create(
+        session,
+        job_id=job_id,
+        challenge="foo1",
+        ssh_private_key="foo2",
+        ssh_public_key="foo2",
+    )
+    for r in session.query(Resource).order_by(Resource.id).all()[:nb_resources]:
+        AssignedResource.create(session, moldable_id=moldable_id[0], resource_id=r.id)
+    session.commit()
+    return job_id
+
+
+def _job_events(session, job_id):
+    return [e.type for e in session.query(EventLog).filter(EventLog.job_id == job_id)]
+
+
+def _run_supersed(session, config, old_user, old_state, new_user="toto"):
+    """Job N (old) and job N+1 (supersed=N) on the same resources; run bipbip on N+1"""
+    old_id = _insert_assigned_job(session, old_user, old_state)
+    new_id = _insert_assigned_job(
+        session, new_user, "toLaunch", types=[f"supersed={old_id}"]
+    )
+    config["SERVER_HOSTNAME"] = "localhost"
+    config["DETACH_JOB_FROM_SERVER"] = "localhost"
+    bipbip = BipBip([new_id], config=config)
+    bipbip.run(session, config)
+    session.expire_all()
+    old = session.query(Job).filter(Job.id == old_id).one()
+    new = session.query(Job).filter(Job.id == new_id).one()
+    return old, new, bipbip
+
+
+def test_bipbip_supersed_running_job(minimal_db_initialization, builtin_config):
+    session = minimal_db_initialization
+    old, new, bipbip = _run_supersed(session, builtin_config, "toto", "Running")
+
+    assert bipbip.exit_code == 0
+    assert new.state == "Running"
+
+    # the id of the superseded job is sent to the job resource manager (init of N+1)
+    init_data = [d for (action, d) in remote_calls if action == "init"]
+    assert len(init_data) == 1
+    assert f"'supersed_job_id' => {old.id}," in init_data[0]
+
+    # the superseded job is finished: Finishing, its cgroups are cleaned and
+    # node_change_state will switch it to Terminated
+    assert old.state == "Finishing"
+    clean_data = [d for (action, d) in remote_calls if action == "clean"]
+    assert len(clean_data) == 1
+    assert f"'job_id' => {old.id}," in clean_data[0]
+    events = _job_events(session, old.id)
+    assert "SUPERSEDED" in events
+    assert "SWITCH_INTO_TERMINATE_STATE" in events
+
+
+def test_bipbip_supersed_job_not_running(minimal_db_initialization, builtin_config):
+    session = minimal_db_initialization
+    old, new, bipbip = _run_supersed(session, builtin_config, "toto", "Terminated")
+
+    assert bipbip.exit_code == 0
+    assert new.state == "Running"
+    assert old.state == "Terminated"
+    assert "SUPERSEDED" not in _job_events(session, old.id)
+    assert [action for (action, _) in remote_calls] == ["init"]
+
+
+def test_bipbip_supersed_job_of_another_user(minimal_db_initialization, builtin_config):
+    session = minimal_db_initialization
+    old, new, bipbip = _run_supersed(session, builtin_config, "titi", "Running")
+
+    assert bipbip.exit_code == 0
+    assert new.state == "Running"
+    assert old.state == "Running"
+    assert "SUPERSEDED" not in _job_events(session, old.id)
+
+
+def test_bipbip_supersed_bad_value(minimal_db_initialization, builtin_config):
+    session = minimal_db_initialization
+    job_id = _insert_assigned_job(session, "toto", "toLaunch", types=["supersed=abc"])
+    bipbip = BipBip([job_id], config=builtin_config)
+    bipbip.run(session, builtin_config)
+
+    assert bipbip.exit_code == 0
+    init_data = [d for (action, d) in remote_calls if action == "init"]
+    assert "'supersed_job_id' => undef," in init_data[0]
+
+
+def test_bipbip_supersed_itself(minimal_db_initialization, builtin_config):
+    session = minimal_db_initialization
+    job_id = _insert_assigned_job(session, "toto", "toLaunch")
+    session.query(JobType).filter(JobType.job_id == job_id).delete()
+    JobType.create(session, job_id=job_id, type=f"supersed={job_id}")
+    session.commit()
+    bipbip = BipBip([job_id], config=builtin_config)
+    bipbip.run(session, builtin_config)
+    session.expire_all()
+
+    job = session.query(Job).filter(Job.id == job_id).one()
+    assert job.state == "Running"
+    assert "SUPERSEDED" not in _job_events(session, job_id)

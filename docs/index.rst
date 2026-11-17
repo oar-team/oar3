@@ -23,6 +23,7 @@ This documentation is organized into a few different sections below:
 
    user/quickstart
    user/usecases
+   user/evolving
    user/mechanisms
    User Commands <user/commands.rst>
    user/api

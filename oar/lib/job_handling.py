@@ -2142,6 +2142,58 @@ def set_job_exit_code(session, job_id, exit_code):
     session.commit()
 
 
+def supersede_job(session, config, job_id, new_job, epilogue_script=None):
+    """Terminate the job ``job_id`` superseded by ``new_job`` (type supersed=<job_id>).
+
+    The superseded job is finished without signaling its oarexec: on a kill signal,
+    oarexec kills all its children, i.e. the migrated processes.
+
+    Return True if the job has been superseded, False otherwise.
+    """
+    log_jid = "[" + str(job_id) + "] "
+    if job_id == new_job.id:
+        logger.warning(log_jid + "a job cannot supersede itself")
+        return False
+    job = get_job(session, job_id)
+    if job is None:
+        logger.warning(
+            log_jid + "cannot be superseded by job " + str(new_job.id) + ": not found"
+        )
+        return False
+    if job.user != new_job.user:
+        logger.warning(
+            log_jid
+            + "cannot be superseded by job "
+            + str(new_job.id)
+            + ": different users ("
+            + str(job.user)
+            + " / "
+            + str(new_job.user)
+            + ")"
+        )
+        return False
+    if job.state not in ["Running", "Suspended", "Resuming"]:
+        logger.warning(
+            log_jid
+            + "cannot be superseded by job "
+            + str(new_job.id)
+            + ": state is "
+            + str(job.state)
+        )
+        return False
+
+    logger.info(log_jid + "superseded by job " + str(new_job.id))
+    set_finish_date(session, job)
+    set_job_state(session, config, job_id, "Finishing")
+    events = [
+        ("SUPERSEDED", log_jid + "Job superseded by job " + str(new_job.id)),
+        ("SWITCH_INTO_TERMINATE_STATE", log_jid + "Ask to change the job state"),
+    ]
+    job_finishing_sequence(session, config, epilogue_script, job_id, events)
+    tools.notify_almighty("Term")
+    return True
+
+
 def check_end_of_job(
     session,
     config,

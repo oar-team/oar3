@@ -29,6 +29,7 @@ from oar.lib.job_handling import (
     get_job_types,
     set_job_message,
     set_job_state,
+    supersede_job,
 )
 from oar.lib.resource_handling import get_current_assigned_job_resources
 from oar.lib.tools import (
@@ -216,8 +217,16 @@ class BipBip(object):
 
         # Job w/ "leaflet" type does not need to trigger process migration because it will/should
         # share the same cpuset "$user_$envelope_id"
+        supersed_job_id = None
         if "supersed" in job_types.keys() and "leaflet" not in job_types.keys():
             migrate_jobid = job_types["supersed"]
+            if str(migrate_jobid).isdigit():
+                supersed_job_id = int(migrate_jobid)
+            else:
+                self.logger.error(
+                    f"[{job.id}] bad value for type supersed={migrate_jobid}"
+                    " (a job id is expected): no process migration"
+                )
             # if not cpuset_full_path:
             #     msg = f"Cannot launch job {job.id} with type supersed={migrate_jobid}: cpuset_full_path is empty"
             #     self.logger.error(msg)
@@ -289,6 +298,7 @@ class BipBip(object):
                     "project": job.project,
                     "migrate_processes_from_cpusetpath": migrate_cpusetpath,
                     "migrate_processes_from_oarexec_pid_file": migrate_oarexec_pid_file,
+                    "supersed_job_id": supersed_job_id,
                     "log_level": config["LOG_LEVEL"],
                 }
                 taktuk_cmd = config["TAKTUK_CMD"]
@@ -587,6 +597,19 @@ class BipBip(object):
         # ssh-oarexec exist error
         if tools.launch_oarexec(cmd, data_to_transfer_str, oarexec_files):
             set_job_state(session, config, job_id, "Running")
+
+            # supersed: the processes of the superseded job have been migrated by
+            # the job resource manager (init), the superseded job can be terminated
+            if supersed_job_id is not None:
+                if cpuset_full_path:
+                    supersede_job(
+                        session, config, supersed_job_id, job, self.server_epilogue
+                    )
+                else:
+                    self.logger.warning(
+                        f"[{job.id}] supersed={supersed_job_id}: no job resource"
+                        " manager (cgroups) configured, job not superseded"
+                    )
 
             # Notify interactive oarsub
             if (job.type == "INTERACTIVE") and (job.reservation == "None"):
