@@ -183,16 +183,26 @@ class Greta(object):
             config["OAR_RUNTIME_DIRECTORY"], "greta_status.dump"
         )
         if os.path.isfile(self.greta_status_dump_name):
-            with open(self.greta_status_dump_name, "rb") as f:
-                greta_status_dump = pickle.load(f)
+            try:
+                with open(self.greta_status_dump_name, "rb") as f:
+                    greta_status_dump = pickle.load(f)
                 self.nodes_list_command_running = greta_status_dump[
                     "nodes_list_running"
                 ]
                 self.nodes_list_to_remind = greta_status_dump["nodes_list_to_remind"]
-
-                # with open('obj/'+ name + '.pkl', 'wb') as f:
-                #
-            os.remove(self.greta_status_dump_name)
+            except (
+                OSError,
+                EOFError,
+                KeyError,
+                TypeError,
+                pickle.UnpicklingError,
+            ) as e:
+                logger.warning(
+                    f"Ignoring unusable greta state dump "
+                    f"{self.greta_status_dump_name}: {e}"
+                )
+                self.nodes_list_command_running = {}
+                self.nodes_list_to_remind = {}
 
         # Init keepalive values ie construct a hash:
         #      sql properties => number of nodes to keepalive

@@ -32,6 +32,7 @@ Changed
 - Fairsharing: include the consumption of currently running jobs (elapsed time and reserved walltime clamped to the fairsharing window) in the karma computation. Controlled by ``SCHEDULER_FAIRSHARING_INCLUDE_RUNNING_JOBS`` (default ``yes``); set it to ``no`` to restore the previous behaviour
 - kao: fix a crash (``duplicate key value violates unique constraint "gantt_jobs_predictions_pkey"``, key ``moldable_job_id = 0``) when a scheduling round ends with no schedulable job: ``save_assigns()`` no longer executes an empty INSERT, which SQLAlchemy turned into ``INSERT ... DEFAULT VALUES`` and which collided with the existing row of the same round
 - greta: build the state dump path with ``os.path.join`` instead of string concatenation. When ``OAR_RUNTIME_DIRECTORY`` has no trailing slash, greta used ``/var/lib/oargreta_status.dump`` instead of ``/var/lib/oar/greta_status.dump``; ``/var/lib`` is not writable by the ``oar`` user, so greta failed at startup with ``PermissionError``
+- greta: keep the state dump file after loading it, and warn then start with an empty state when it is unreadable or corrupted, instead of crashing at startup
 
 Version 3.0.3
 -------------
