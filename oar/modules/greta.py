@@ -179,8 +179,8 @@ class Greta(object):
         # Load state if exists
         self.nodes_list_command_running = {}
         self.nodes_list_to_remind = {}
-        self.greta_status_dump_name = (
-            config["OAR_RUNTIME_DIRECTORY"] + "greta_status.dump"
+        self.greta_status_dump_name = os.path.join(
+            config["OAR_RUNTIME_DIRECTORY"], "greta_status.dump"
         )
         if os.path.isfile(self.greta_status_dump_name):
             with open(self.greta_status_dump_name, "rb") as f:
